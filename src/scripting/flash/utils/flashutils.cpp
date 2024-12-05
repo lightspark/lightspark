@@ -296,7 +296,8 @@ ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 
 ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 {
-	assert_and_throw(argslen >= 2);
+	if (argslen < 2)
+		return;
 
 	uint32_t paramstart = 2;
 	asAtom func = args[0];
@@ -304,7 +305,8 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 	asAtom o = asAtomHandler::nullAtom;
 	if (!asAtomHandler::isFunction(args[0])) // AVM1 also allows setInterval with arguments object,functionname,interval,params...
 	{
-		assert_and_throw(argslen >= 3);
+		if (argslen < 3)
+			return;
 		paramstart = 3;
 		delayarg = 2;
 		ASObject* oref = asAtomHandler::toObject(args[0],wrk);
@@ -363,7 +365,8 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 
 ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 {
-	assert_and_throw(argslen >= 2 && asAtomHandler::isFunction(args[0]));
+	if (argslen < 2 || !asAtomHandler::isFunction(args[0]))
+		return;
 
 	//Build arguments array
 	asAtom* callbackArgs = g_newa(asAtom,argslen-2);

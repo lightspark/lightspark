@@ -570,9 +570,8 @@ const std::vector<Class_base*>& Class_base::getInterfaces(bool *alldefined) cons
 			ASObject* target;
 			asAtom interface_obj=asAtomHandler::invalidAtom;
 			this->context->applicationDomain->getVariableAndTargetByMultiname(interface_obj,*it, target,context->applicationDomain->getInstanceWorker());
-			if (asAtomHandler::isValid(interface_obj))
+			if (asAtomHandler::isClass(interface_obj))
 			{
-				assert_and_throw(asAtomHandler::isClass(interface_obj));
 				Class_base* inter=static_cast<Class_base*>(asAtomHandler::getObject(interface_obj));
 				//Probe the interface for its interfaces
 				bool bAllDefinedSub;

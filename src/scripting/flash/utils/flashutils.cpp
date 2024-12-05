@@ -189,8 +189,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 		createError<ReferenceError>(wrk,kClassNotFoundError, tmp);
 		return;
 	}
-
-	assert_and_throw(asAtomHandler::isClass(ret));
+	
 	assert(!asAtomHandler::getObject(ret)->is<Class_inherit>() || asAtomHandler::getObject(ret)->getInstanceWorker() == wrk);
 
 	LOG(LOG_CALLS,"Getting definition for " << name<<" "<<asAtomHandler::toDebugString(ret)<<" "<<asAtomHandler::getObject(ret)->getInstanceWorker());

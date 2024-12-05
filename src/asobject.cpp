@@ -2077,7 +2077,7 @@ void ASObject::addToGarbageCollection()
 
 void ASObject::addStoredMember()
 {
-	if (this->getConstant())
+	if (this->getConstant() || !this->canHaveCyclicMemberReference())
 		return;
 	assert(storedmembercount<uint32_t(this->getRefCount()));
 	storedmembercount++;
@@ -2092,10 +2092,15 @@ void ASObject::removeStoredMember()
 {
 	if (getConstant() || getCached() || this->getInDestruction() || deletedingarbagecollection)
 		return;
+	if(!this->canHaveCyclicMemberReference())
+	{
+		decRef();
+		return;
+	}
 	assert(storedmembercount);
 	assert(storedmembercount<=uint32_t(this->getRefCount()));
 	storedmembercount--;
-	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1))
+	if (storedmembercount && ((uint32_t)this->getRefCount() == storedmembercount+1))
 	{
 		getInstanceWorker()->addObjectToGarbageCollector(this);
 		this->markedforgarbagecollection=true;

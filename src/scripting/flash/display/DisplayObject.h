@@ -365,7 +365,7 @@ public:
 	ASFUNCTION_ATOM(AVM1_getDepth);
 	ASFUNCTION_ATOM(AVM1_toString);
 	static void AVM1SetupMethods(Class_base* c);
-	DisplayObject* AVM1GetClipFromPath(tiny_string& path);
+	DisplayObject* AVM1GetClipFromPath(tiny_string& path, lightspark::asAtom* member=nullptr);
 	void AVM1SetVariable(tiny_string& name, asAtom v, bool setMember=true);
 	void AVM1SetVariableDirect(uint32_t nameId, asAtom v);
 	asAtom AVM1GetVariable(const tiny_string &name, bool checkrootvars=true);

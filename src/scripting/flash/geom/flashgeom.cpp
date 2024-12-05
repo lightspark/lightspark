@@ -473,8 +473,6 @@ void Matrix::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Matrix,_constructor)
 {
-	assert_and_throw(argslen <= 6);
-	
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
 	
 	//Mapping to cairo_matrix_t
@@ -503,8 +501,13 @@ ASFUNCTIONBODY_ATOM(Matrix,_toString)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
 	char buf[512];
-	snprintf(buf,512,"(a=%f, b=%f, c=%f, d=%f, tx=%f, ty=%f)",
-			th->matrix.xx, th->matrix.yx, th->matrix.xy, th->matrix.yy, th->matrix.x0, th->matrix.y0);
+	snprintf(buf,512,"(a=%s, b=%s, c=%s, d=%s, tx=%s, ty=%s)",
+			 Number::toString(th->matrix.xx).raw_buf(),
+			 Number::toString(th->matrix.yx).raw_buf(),
+			 Number::toString(th->matrix.xy).raw_buf(),
+			 Number::toString(th->matrix.yy).raw_buf(),
+			 Number::toString(th->matrix.x0).raw_buf(),
+			 Number::toString(th->matrix.y0).raw_buf());
 	ret = asAtomHandler::fromObject(abstract_s(wrk,buf));
 }
 
@@ -717,25 +720,32 @@ ASFUNCTIONBODY_ATOM(Matrix,createGradientBox)
 
 ASFUNCTIONBODY_ATOM(Matrix,transformPoint)
 {
-	assert_and_throw(argslen==1);
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
-	Point* pt=asAtomHandler::as<Point>(args[0]);
-
-	number_t ttx = pt->getX();
-	number_t tty = pt->getY();
-	cairo_matrix_transform_point(&th->matrix,&ttx,&tty);
+	number_t ttx = Number::NaN;
+	number_t tty = Number::NaN;
+	if (argslen > 0)
+	{
+		Point* pt=asAtomHandler::as<Point>(args[0]);
+		ttx = pt->getX();
+		tty = pt->getY();
+		cairo_matrix_transform_point(&th->matrix,&ttx,&tty);
+	}
 	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,ttx, tty));
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,deltaTransformPoint)
 {
-	assert_and_throw(argslen==1);
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
-	Point* pt=asAtomHandler::as<Point>(args[0]);
-
-	number_t ttx = pt->getX();
-	number_t tty = pt->getY();
-	cairo_matrix_transform_distance(&th->matrix,&ttx,&tty);
+	
+	number_t ttx = Number::NaN;
+	number_t tty = Number::NaN;
+	if (argslen > 0)
+	{
+		Point* pt=asAtomHandler::as<Point>(args[0]);
+		ttx = pt->getX();
+		tty = pt->getY();
+		cairo_matrix_transform_distance(&th->matrix,&ttx,&tty);
+	}
 	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,ttx, tty));
 }
 

@@ -37,11 +37,12 @@ struct sorton_field
 	multiname fieldname;
 	sorton_field(const multiname& sortfieldname):isNumeric(false),isCaseInsensitive(false),isDescending(false),fieldname(sortfieldname){}
 };
-struct sorton_value
+struct sort_value
 {
 	std::vector<asAtom> sortvalues;
 	asAtom dataAtom;
-	sorton_value(asAtom _dataAtom):dataAtom(_dataAtom) {}
+	int originalindex;
+	sort_value(asAtom _dataAtom,int _originalindex):dataAtom(_dataAtom),originalindex(_originalindex) {}
 };
 
 class Array: public ASObject
@@ -55,6 +56,8 @@ protected:
 	
 	void outofbounds(unsigned int index) const;
 	~Array();
+	void fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_field>& sortfields);
+	void fillSortedArray(asAtom& ret, std::vector<sort_value>& tmp, bool isUniqueSort, bool returnIndexedArray, bool isCaseInsensitive, bool hasDuplicates);
 private:
 	class sortComparatorDefault
 	{
@@ -65,29 +68,39 @@ private:
 		bool useoldversion;
 	public:
 		sortComparatorDefault(bool oldversion, bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d),useoldversion(oldversion){}
-		bool operator()(const asAtom& d1, const asAtom& d2);
-	};
-	class sortOnComparator
-	{
-	private:
-		std::vector<sorton_field> fields;
-	public:
-		sortOnComparator(const std::vector<sorton_field>& sf):fields(sf){}
-		bool operator()(const sorton_value& d1, const sorton_value& d2);
+		bool operator()(const sort_value& d1, const sort_value& d2);
 	};
 	void constructorImpl(asAtom *args, const unsigned int argslen);
 	tiny_string toString_priv(bool localized=false);
 	int capIndex(int i);
 public:
-	class sortComparatorWrapper
+	class ISortComparator
+	{
+	public:
+		ISortComparator():hasduplicates(false){}
+		virtual ~ISortComparator(){}
+		virtual number_t compare(const sort_value& d1, const sort_value& d2)=0;
+		bool hasduplicates;
+	};
+	class sortOnComparator : public ISortComparator
+	{
+	private:
+		std::vector<sorton_field> fields;
+	public:
+		sortOnComparator(const std::vector<sorton_field>& sf):ISortComparator(),fields(sf){}
+		number_t compare(const sort_value& d1, const sort_value& d2) override;
+	};
+	class sortComparatorWrapper : public ISortComparator
 	{
 	private:
 		asAtom comparator;
 	public:
-		sortComparatorWrapper(asAtom c):comparator(c){}
-		number_t compare(const asAtom& d1, const asAtom& d2);
+		sortComparatorWrapper(asAtom c):ISortComparator(),comparator(c){}
+		virtual number_t compare(const sort_value& d1, const sort_value& d2);
 	};
 	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
+	virtual bool isAVM1Array() const { return false; }
+	virtual Array* createInstance();// returns new AVM1Array if this is an AVM1Array
 	enum SORTTYPE { CASEINSENSITIVE=1, DESCENDING=2, UNIQUESORT=4, RETURNINDEXEDARRAY=8, NUMERIC=16 };
 	Array(ASWorker *w,Class_base* c);
 	void finalize() override;

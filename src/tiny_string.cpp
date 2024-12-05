@@ -1304,6 +1304,8 @@ tiny_string tiny_string::uppercase() const
  * TODO: slow! */
 int tiny_string::strcasecmp(tiny_string& s2) const
 {
+	if (this->isASCII && s2.isASCII)
+		return ::strcasecmp(this->raw_buf(),s2.raw_buf());
 	char* str1 = g_utf8_casefold(this->raw_buf(),this->numBytes());
 	char* str2 = g_utf8_casefold(s2.raw_buf(),s2.numBytes());
 	int ret = g_utf8_collate(str1,str2);

@@ -496,7 +496,7 @@ tiny_string URLInfo::decode(const std::string& u, ENCODING type)
 
 	for(size_t i=0;i<u.length();i++)
 	{
-		if(i > u.length()-3 || u[i] != '%')
+		if(i+3 > u.length() || u[i] != '%')
 			str += u[i];
 		else
 		{

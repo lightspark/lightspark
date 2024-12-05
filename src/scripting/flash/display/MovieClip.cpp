@@ -1029,7 +1029,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	if (argslen != 3 && argslen != 4)
-		throw RunTimeException("AVM1: invalid number of arguments for attachMovie");
+	{
+		LOG(LOG_ERROR,"AVM1: invalid number of arguments for attachMovie");
+		return;
+	}
 	int Depth = asAtomHandler::toInt(args[2]);
 	uint32_t nameId = asAtomHandler::toStringId(args[1],wrk);
 	DictionaryTag* placedTag = th->loadedFrom->dictionaryLookupByName(asAtomHandler::toStringId(args[0],wrk));
@@ -1082,7 +1085,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	if (argslen < 2)
-		throw RunTimeException("AVM1: invalid number of arguments for CreateEmptyMovieClip");
+	{
+		LOG(LOG_ERROR,"AVM1: invalid number of arguments for CreateEmptyMovieClip");
+		return;
+	}
 	int Depth = asAtomHandler::toInt(args[1]);
 	uint32_t nameId = asAtomHandler::toStringId(args[0],wrk);
 	AVM1MovieClip* toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(wrk);
@@ -1123,7 +1129,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1DuplicateMovieClip)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	if (argslen < 2)
-		throw RunTimeException("AVM1: invalid number of arguments for DuplicateMovieClip");
+	{
+		LOG(LOG_ERROR,"AVM1: invalid number of arguments for DuplicateMovieClip");
+		return;
+	}
 	if (!th->getParent())
 	{
 		LOG(LOG_ERROR,"calling DuplicateMovieClip on clip without parent");

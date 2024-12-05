@@ -1399,6 +1399,30 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				PushStack(stack,res);
 				break;
 			}
+			case 0x46: // ActionEnumerate
+			{
+				asAtom path = PopStack(stack);
+				tiny_string s = asAtomHandler::toString(path,wrk).lowercase();
+				asAtom obj = clip->AVM1GetVariable(s);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEnumerate "<<s<<" "<<asAtomHandler::toDebugString(obj));
+				uint32_t index=0;
+				if (asAtomHandler::isObject(obj) && !asAtomHandler::isNumeric(obj))
+				{
+					PushStack(stack,asAtomHandler::nullAtom);
+					ASObject* o = asAtomHandler::toObject(obj,wrk);
+					while ((index = o->nextNameIndex(index)))
+					{
+						asAtom name=asAtomHandler::invalidAtom;
+						o->nextName(name,index);
+						PushStack(stack, name);
+					}
+				}
+				else
+					PushStack(stack,asAtomHandler::undefinedAtom);
+				ASATOM_DECREF(obj);
+				ASATOM_DECREF(path);
+				break;
+			}
 			case 0x47: // ActionAdd2
 			{
 				asAtom arg1 = PopStack(stack);
@@ -2015,10 +2039,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			{
 				asAtom obj = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEnumerate2 "<<asAtomHandler::toDebugString(obj));
-				PushStack(stack,asAtomHandler::nullAtom);
 				uint32_t index=0;
-				if (asAtomHandler::isObject(obj))
+				if (asAtomHandler::isObject(obj) && !asAtomHandler::isNumeric(obj))
 				{
+					PushStack(stack,asAtomHandler::nullAtom);
 					ASObject* o = asAtomHandler::toObject(obj,wrk);
 					while ((index = o->nextNameIndex(index)))
 					{
@@ -2027,6 +2051,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						PushStack(stack, name);
 					}
 				}
+				else
+					PushStack(stack,asAtomHandler::undefinedAtom);
 				ASATOM_DECREF(obj);
 				break;
 			}
@@ -2666,7 +2692,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				break;
 			case 0x45: // ActionTargetPath
-			case 0x46: // ActionEnumerate
 				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF5 DoActionTag "<<hex<<(int)opcode);
 				break;
 			case 0x68: // ActionStringGreater

@@ -334,7 +334,8 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 			if (f)
 				func = asAtomHandler::fromObjectNoPrimitive(f);
 		}
-		assert_and_throw (asAtomHandler::isFunction(func));
+		if (!asAtomHandler::isFunction(func))
+			return;
 	}
 	if (!asAtomHandler::is<AVM1Function>(func))
 		o = asAtomHandler::getClosureAtom(func,asAtomHandler::nullAtom);

@@ -2270,7 +2270,7 @@ ASFUNCTIONBODY_GETTER_SETTER(TextFormat,leftMargin)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,letterSpacing)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,rightMargin)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,size)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextFormat,tabStops)
+ASFUNCTIONBODY_GETTER_SETTER_CB(TextFormat,tabStops,onSetTabStops)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,target)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,underline)
 ASFUNCTIONBODY_GETTER_SETTER(TextFormat,url)
@@ -2287,6 +2287,15 @@ void TextFormat::onAlign(const asAtom& old)
 		align = old;
 		createError<ArgumentError>(getInstanceWorker(),kInvalidEnumError, "align");
 	}
+}
+
+void TextFormat::onSetTabStops(NullableRef<Array> old)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"TextFormat.tabStops");
+	if (old)
+		old->removeStoredMember();
+	if (tabStops)
+		tabStops->addStoredMember();
 }
 
 TextFormat::TextFormat(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_TEXTFORMAT)

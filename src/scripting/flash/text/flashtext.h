@@ -238,6 +238,7 @@ class TextFormat: public ASObject
 {
 private:
 	void onAlign(const asAtom& old);
+	void onSetTabStops(_NR<Array> old);
 public:
 	TextFormat(ASWorker* wrk,Class_base* c);
 	~TextFormat();

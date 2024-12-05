@@ -2806,10 +2806,17 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 	{
 		if (asAtomHandler::is<Undefined>(args[0]) || asAtomHandler::is<Null>(args[0]))
 			return;
-		if (!asAtomHandler::is<DisplayObject>(args[0]))
-			LOG(LOG_ERROR,"DisplayObject.getBounds invalid type:"<<asAtomHandler::toDebugString(args[0]));
-		assert_and_throw(asAtomHandler::is<DisplayObject>(args[0]));
-		target =asAtomHandler::as<DisplayObject>(args[0]);
+		asAtom t = args[0];
+		if (!asAtomHandler::is<DisplayObject>(t))
+		{
+			t = th->AVM1GetVariable(asAtomHandler::toString(args[0],wrk).lowercase());
+			if (!asAtomHandler::is<DisplayObject>(t))
+			{
+				LOG(LOG_ERROR,"AVM1_getBounds:path not found:"<<asAtomHandler::toDebugString(args[0])<<" on "<<th->toDebugString());
+				return;
+			}
+		}
+		target =asAtomHandler::as<DisplayObject>(t);
 	}
 	
 	//Compute the transformation matrix

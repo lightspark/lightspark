@@ -1291,7 +1291,11 @@ ASFUNCTIONBODY_ATOM(ASObject,_toLocaleString)
 
 ASFUNCTIONBODY_ATOM(ASObject,hasOwnProperty)
 {
-	assert_and_throw(argslen==1);
+	if (argslen==0)
+	{
+		ret = asAtomHandler::falseAtom;
+		return;
+	}
 	multiname name(nullptr);
 	switch (asAtomHandler::getObjectType(args[0]))
 	{
@@ -1310,6 +1314,11 @@ ASFUNCTIONBODY_ATOM(ASObject,hasOwnProperty)
 		default:
 			name.name_type=multiname::NAME_STRING;
 			name.name_s_id=asAtomHandler::toStringId(args[0],wrk);
+			if (name.name_s_id == BUILTIN_STRINGS::EMPTY)
+			{
+				ret = asAtomHandler::falseAtom;
+				return;
+			}
 			name.isInteger=Array::isIntegerWithoutLeadingZeros(wrk->getSystemState()->getStringFromUniqueId(name.name_s_id)) ;
 			break;
 	}

@@ -215,7 +215,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				);
 			}
 		}
-		if (curdepth > 0 && it == scopestackstop[curdepth])
+		while (curdepth > 0 && it == scopestackstop[curdepth])
 		{
 			LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" end with "<<asAtomHandler::toDebugString(scopestack[curdepth]));
 			if (asAtomHandler::is<DisplayObject>(scopestack[curdepth]))

@@ -38,6 +38,7 @@ protected:
 	pugi::xml_node node;
 	tiny_string toString_priv(pugi::xml_node outputNode);
 	pugi::xml_node getParentNode();
+	virtual _NR<XMLDocument> getRootDoc() { return root; }
 public:
 	XMLNode(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLNODE),root(NullRef),node(nullptr){}
 	XMLNode(ASWorker* wrk,Class_base* c, _NR<XMLDocument> _r, pugi::xml_node _n);
@@ -73,6 +74,11 @@ private:
 protected:
 	int32_t status; // only needed for AVM1
 	bool needsActionScript3;
+	_NR<XMLDocument> getRootDoc() override
+	{
+		this->incRef();
+		return _MR(this);
+	}
 public:
 	XMLDocument(ASWorker* wrk,Class_base* c, tiny_string s="");
 	int parseXMLImpl(const std::string& str);

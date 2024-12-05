@@ -86,8 +86,8 @@ ASFUNCTIONBODY_ATOM(XMLNode,firstChild)
 		asAtomHandler::setNull(ret);
 		return;
 	}
-	assert_and_throw(!th->root.isNull());
-	ret = asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(wrk,th->root,newNode));
+	_NR<XMLDocument> r = th->getRootDoc();
+	ret = asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(wrk,r,newNode));
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,lastChild)
@@ -105,8 +105,8 @@ ASFUNCTIONBODY_ATOM(XMLNode,lastChild)
 		asAtomHandler::setNull(ret);
 		return;
 	}
-	assert_and_throw(!th->root.isNull());
-	ret = asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(wrk,th->root,newNode));
+	_NR<XMLDocument> r = th->getRootDoc();
+	ret = asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(wrk,r,newNode));
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,childNodes)
@@ -119,12 +119,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,childNodes)
 		ret = asAtomHandler::fromObject(res);
 		return;
 	}
-	_NR<XMLDocument> r = th->root;
-	if (th->is<XMLDocument>())
-	{
-		th->incRef();
-		r = _MR(th->as<XMLDocument>());
-	}
+	_NR<XMLDocument> r = th->getRootDoc();
 	auto range = th->node.children();
 	for(auto it = range.begin();it!=range.end();++it)
 	{
@@ -289,8 +284,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,appendChild)
 	}
 	else
 	{
-		assert_and_throw(!th->root.isNull());
-		c->root = th->root;
+		c->root = th->getRootDoc();
 		th->root->incRef();
 	}
 }
@@ -434,7 +428,6 @@ ASFUNCTIONBODY_ATOM(XMLDocument,firstChild)
 ASFUNCTIONBODY_ATOM(XMLDocument,createElement)
 {
 	XMLDocument* th=asAtomHandler::as<XMLDocument>(obj);
-	assert(th->node==nullptr);
 	tiny_string name;
 	ARG_CHECK(ARG_UNPACK(name));
 	pugi::xml_node newNode;

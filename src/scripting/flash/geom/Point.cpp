@@ -52,7 +52,7 @@ ASFUNCTIONBODY_ATOM(Point,_toString)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
 	char buf[512];
-	snprintf(buf,512,"(a=%f, b=%f)",th->x,th->y);
+	snprintf(buf,512,"(x=%s, y=%s)",Number::toString(th->x).raw_buf(),Number::toString(th->y).raw_buf());
 	ret = asAtomHandler::fromObject(abstract_s(wrk,buf));
 }
 

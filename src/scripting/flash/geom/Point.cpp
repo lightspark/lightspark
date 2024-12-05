@@ -180,7 +180,6 @@ ASFUNCTIONBODY_ATOM(Point,subtract)
 ASFUNCTIONBODY_ATOM(Point,clone)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
-	assert_and_throw(argslen==0);
 	Point* res=Class<Point>::getInstanceS(wrk);
 	res->x = th->x;
 	res->y = th->y;
@@ -190,6 +189,11 @@ ASFUNCTIONBODY_ATOM(Point,clone)
 ASFUNCTIONBODY_ATOM(Point,equals)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
+	if (argslen < 1)
+	{
+		ret = asAtomHandler::falseAtom;
+		return;
+	}
 	assert_and_throw(argslen==1);
 	Point* toCompare=asAtomHandler::as<Point>(args[0]);
 	asAtomHandler::setBool(ret,(th->x == toCompare->x) & (th->y == toCompare->y));
@@ -198,7 +202,6 @@ ASFUNCTIONBODY_ATOM(Point,equals)
 ASFUNCTIONBODY_ATOM(Point,normalize)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
-	assert_and_throw(argslen<2);
 	number_t thickness = argslen > 0 ? asAtomHandler::toNumber(args[0]) : 1.0;
 	number_t len = th->len();
 	th->x = len == 0 ? 0 : th->x * thickness / len;
@@ -208,7 +211,12 @@ ASFUNCTIONBODY_ATOM(Point,normalize)
 ASFUNCTIONBODY_ATOM(Point,offset)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
-	assert_and_throw(argslen==2);
+	if (argslen < 2)
+	{
+		//TODO add excption for AS3
+		LOG(LOG_ERROR,"not enough params for Point.offset");
+		return;
+	}
 	number_t dx = asAtomHandler::toNumber(args[0]);
 	number_t dy = asAtomHandler::toNumber(args[1]);
 	th->x += dx;
@@ -217,7 +225,12 @@ ASFUNCTIONBODY_ATOM(Point,offset)
 
 ASFUNCTIONBODY_ATOM(Point,polar)
 {
-	assert_and_throw(argslen==2);
+	if (argslen < 2)
+	{
+		//TODO add excption for AS3
+		LOG(LOG_ERROR,"not enough params for Point.polar");
+		return;
+	}
 	number_t len = asAtomHandler::toNumber(args[0]);
 	number_t angle = asAtomHandler::toNumber(args[1]);
 	Point* res=Class<Point>::getInstanceS(wrk);

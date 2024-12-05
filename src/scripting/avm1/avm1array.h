@@ -31,6 +31,8 @@ class AVM1Array: public Array
 private:
 	int64_t avm1_currentsize;
 public:
+	bool isAVM1Array() const override { return true; }
+	Array* createInstance() override;
 	AVM1Array(ASWorker* wrk,Class_base* c):Array(wrk,c),avm1_currentsize(0){}
 	static void sinit(Class_base* c);
 	bool destruct() override;

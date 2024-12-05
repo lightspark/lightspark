@@ -38,6 +38,11 @@ bool AVM1Array::destruct()
 	return Array::destruct();
 }
 
+Array* AVM1Array::createInstance()
+{
+	return Class<AVM1Array>::getInstanceSNoArgs(getInstanceWorker());
+}
+
 // TODO: It appears that in AVM1, most of `Array`'s methods will treat a
 // non-array `this` object with numeric properties as if it were an array.
 

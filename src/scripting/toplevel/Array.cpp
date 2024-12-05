@@ -210,7 +210,7 @@ void Array::constructorImpl(asAtom* args, const unsigned int argslen)
 ASFUNCTIONBODY_ATOM(Array,_concat)
 {
 	Array* th=asAtomHandler::as<Array>(obj);
-	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
+	Array* res=th->createInstance();
 	
 	// copy values into new array
 	res->resize(th->size());
@@ -273,7 +273,7 @@ ASFUNCTIONBODY_ATOM(Array,_concat)
 ASFUNCTIONBODY_ATOM(Array,filter)
 {
 	Array* th=asAtomHandler::as<Array>(obj);
-	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
+	Array* res=th->createInstance();
 	_NR<IFunction> func;
 	asAtom f=asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(func));
@@ -750,7 +750,7 @@ ASFUNCTIONBODY_ATOM(Array,slice)
 	startIndex=th->capIndex(startIndex);
 	endIndex=th->capIndex(endIndex);
 
-	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
+	Array* res=th->createInstance();
 	uint32_t j = 0;
 	for(uint32_t i=startIndex; i<endIndex && i< th->currentsize; i++) 
 	{
@@ -773,7 +773,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 	ARG_CHECK(ARG_UNPACK_MORE_ALLOWED(startIndex) (deleteCount, th->size()));
 
 	uint32_t totalSize=th->size();
-	Array* res=Class<Array>::getInstanceSNoArgs(wrk);
+	Array* res=th->createInstance();
 
 	startIndex=th->capIndex(startIndex);
 
@@ -1000,11 +1000,11 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 }
 
 
-bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2)
+bool Array::sortComparatorDefault::operator()(const sort_value& d1, const sort_value& d2)
 {
-	asAtom o1 = d1;
-	asAtom o2 = d2;
-	if(isNumeric)
+	asAtom o1 = d1.dataAtom;
+	asAtom o2 = d2.dataAtom;
+	if(isNumeric && (!isCaseInsensitive || (asAtomHandler::isNumeric(o1) && asAtomHandler::isNumeric(o2))))
 	{
 		number_t a=numeric_limits<double>::quiet_NaN();
 		number_t b=numeric_limits<double>::quiet_NaN();
@@ -1018,8 +1018,6 @@ bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2
 			a=asAtomHandler::toNumber(o1);
 			b=asAtomHandler::toNumber(o2);
 		}
-		if((!asAtomHandler::isNumeric(o1) && std::isnan(a)) || (!asAtomHandler::isNumeric(o2) && std::isnan(b)))
-			throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
 		if(isDescending)
 			return a>b;
 		else
@@ -1056,7 +1054,7 @@ bool Array::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2
 
 // this is the quicksort algorithm used by avmplus
 // see https://github.com/adobe-flash/avmplus/blob/master/core/ArrayClass.cpp
-void qsort(std::vector<asAtom>& v, Array::sortComparatorWrapper& comp, uint32_t lo, uint32_t hi)
+void qsort(std::vector<sort_value>& v, Array::ISortComparator& comp, uint32_t lo, uint32_t hi)
 {
 	// This is an iterative implementation of the recursive quick sort.
 	// Recursive implementations are basically storing nested (lo,hi) pairs
@@ -1209,24 +1207,152 @@ recurse:
 	return;
 }
 
-number_t Array::sortComparatorWrapper::compare(const asAtom& d1, const asAtom& d2)
+number_t Array::sortComparatorWrapper::compare(const sort_value& d1, const sort_value& d2)
 {
 	asAtom objs[2];
-	objs[0]=d1;
-	objs[1]=d2;
+	objs[0]=d1.dataAtom;
+	objs[1]=d2.dataAtom;
 
-	assert(asAtomHandler::isFunction(comparator));
-	asAtom ret=asAtomHandler::invalidAtom;
+	asAtom ret=asAtomHandler::asAtomHandler::fromInt(0);
 	asAtom obj = asAtomHandler::getClosureAtom(comparator,asAtomHandler::nullAtom);
 	if (asAtomHandler::is<AVM1Function>(comparator))
-		asAtomHandler::as<AVM1Function>(comparator)->call(&ret,&obj,objs,1);
-	else
+		asAtomHandler::as<AVM1Function>(comparator)->call(&ret,&obj,objs,2);
+	else if (asAtomHandler::is<IFunction>(comparator))
 	{
 		// don't coerce the result, as it may be an int that would loose it's sign through coercion
 		asAtomHandler::callFunction(comparator,asAtomHandler::as<IFunction>(comparator)->getInstanceWorker(),ret,obj, objs, 2,false,false);
 	}
-	assert_and_throw(asAtomHandler::isValid(ret));
-	return asAtomHandler::toNumber(ret);
+	number_t r = asAtomHandler::toNumber(ret);
+	if (r == 0.0 && d1.dataAtom.uintval != d2.dataAtom.uintval)
+		this->hasduplicates=true;
+	
+	ASATOM_DECREF(ret);
+	return r;
+}
+
+void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_field>& sortfields)
+{
+	int currindex=0;
+	auto it1=data_first.begin();
+	for(;it1 != data_first.end();++it1)
+	{
+		if (asAtomHandler::isInvalid(*it1) || (!this->isAVM1Array() && asAtomHandler::isUndefined(*it1)))
+			continue;
+		// ensure ASObjects are created
+		if (!sortfields.empty())
+			asAtomHandler::toObject(*it1,getInstanceWorker());
+		
+		sort_value v(*it1,currindex);
+		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
+		{
+			asAtom tmpval=asAtomHandler::invalidAtom;
+			asAtomHandler::getObject(*it1)->getVariableByMultiname(tmpval,itsf->fieldname,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
+			if (asAtomHandler::isInvalid(tmpval))
+			{
+				tmpval=*it1;
+				ASATOM_INCREF(tmpval);
+			}
+			v.sortvalues.push_back(tmpval);
+		}
+		tmp.push_back(v);
+		currindex++;
+	}
+	auto it2=data_second.begin();
+	for(;it2 != data_second.end();++it2)
+	{
+		if (asAtomHandler::isInvalid(it2->second) || asAtomHandler::isUndefined(it2->second))
+			continue;
+		// ensure ASObjects are created
+		if (!sortfields.empty())
+			asAtomHandler::toObject(it2->second,getInstanceWorker());
+		
+		sort_value v(it2->second,currindex);
+		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
+		{
+			asAtom tmpval=asAtomHandler::invalidAtom;
+			asAtomHandler::getObject(it2->second)->getVariableByMultiname(tmpval,itsf->fieldname,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
+			if (asAtomHandler::isInvalid(tmpval))
+			{
+				tmpval=it2->second;
+				ASATOM_INCREF(tmpval);
+			}
+			v.sortvalues.push_back(tmpval);
+		}
+		tmp.push_back(v);
+		currindex++;
+	}
+}
+void Array::fillSortedArray(asAtom& ret, std::vector<sort_value>& tmp, bool isUniqueSort, bool returnIndexedArray, bool isCaseInsensitive, bool hasDuplicates)
+{
+	if (isUniqueSort)
+	{
+		std::vector<sort_value>::iterator ittmp=tmp.begin();
+		for(;ittmp != tmp.end();++ittmp)
+		{
+			auto itnext= ittmp+1;
+			bool isequal = false;
+			if (!hasDuplicates)
+			{
+				if (isCaseInsensitive)
+					isequal = (itnext != tmp.end() && asAtomHandler::toString(ittmp->dataAtom,getInstanceWorker()).lowercase() == asAtomHandler::toString(itnext->dataAtom,getInstanceWorker()));
+				else
+					isequal = (itnext != tmp.end() && asAtomHandler::isEqual(ittmp->dataAtom,getInstanceWorker(),itnext->dataAtom));
+				if (isequal)
+					hasDuplicates=true;
+			}
+			for (auto itsv = ittmp->sortvalues.begin(); itsv != ittmp->sortvalues.end(); itsv++)
+			{
+				ASATOM_DECREF(*itsv);
+			}
+		}
+		if (hasDuplicates)
+		{
+			ret = asAtomHandler::fromInt(0);
+			return;
+		}
+	}
+	
+	if (returnIndexedArray)
+	{
+		Array* arrayRet = createInstance();
+		auto ittmp=tmp.begin();
+		for(;ittmp != tmp.end();++ittmp)
+		{
+			arrayRet->push(asAtomHandler::fromInt(ittmp->originalindex));
+			if (!isUniqueSort) // sortvalues are already decreffed if isUniqueSort is set
+			{
+				for (auto itsv = ittmp->sortvalues.begin(); itsv != ittmp->sortvalues.end(); itsv++)
+				{
+					ASATOM_DECREF(*itsv);
+				}
+			}
+		}
+		ret = asAtomHandler::fromObjectNoPrimitive(arrayRet);
+	}
+	else
+	{
+		data_first.clear();
+		data_second.clear();
+		auto ittmp=tmp.begin();
+		uint32_t i = 0;
+		for(;ittmp != tmp.end();++ittmp)
+		{
+			if (i < ARRAY_SIZE_THRESHOLD)
+				data_first.push_back(ittmp->dataAtom);
+			else
+				data_second[i] = ittmp->dataAtom;
+			if (!isUniqueSort) // sortvalues are already decreffed if isUniqueSort is set
+			{
+				for (auto itsv = ittmp->sortvalues.begin(); itsv != ittmp->sortvalues.end(); itsv++)
+				{
+					ASATOM_DECREF(*itsv);
+				}
+			}
+			i++;
+		}
+		this->incRef();
+		ret = asAtomHandler::fromObjectNoPrimitive(this);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Array,_sort)
@@ -1242,67 +1368,49 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 	bool isNumeric=false;
 	bool isCaseInsensitive=false;
 	bool isDescending=false;
-	for(uint32_t i=0;i<argslen;i++)
+	bool isUniqueSort=false;
+	bool returnIndexedArray=false;
+	for (uint32_t i= 0; i < argslen; i++)
 	{
-		if(asAtomHandler::isFunction(args[i])) //Comparison func
-		{
-			assert_and_throw(asAtomHandler::isInvalid(comp));
-			comp=args[i];
-		}
-		else
+		if (asAtomHandler::isNumeric(args[i]))
 		{
 			uint32_t options=asAtomHandler::toInt(args[i]);
-			if(options&NUMERIC)
-				isNumeric=true;
-			if(options&CASEINSENSITIVE)
-				isCaseInsensitive=true;
-			if(options&DESCENDING)
-				isDescending=true;
-			if(options&(~(NUMERIC|CASEINSENSITIVE|DESCENDING)))
-				throw UnsupportedException("Array::sort not completely implemented");
+			isNumeric=options&NUMERIC;
+			isCaseInsensitive=options&CASEINSENSITIVE;
+			isDescending=options&DESCENDING;
+			isUniqueSort=options&UNIQUESORT;
+			returnIndexedArray=options&RETURNINDEXEDARRAY;
+		}
+		else if (asAtomHandler::isObject(args[i]) && i==0)
+		{
+			comp=args[i];
+		}
+		else if (i==0)
+		{
+			ret = asAtomHandler::undefinedAtom;
+			return;
 		}
 	}
-	std::vector<asAtom> tmp;
-	auto it1=th->data_first.begin();
-	for(;it1 != th->data_first.end();++it1)
-	{
-		if (asAtomHandler::isInvalid(*it1) || asAtomHandler::isUndefined(*it1))
-			continue;
-		tmp.push_back(*it1);
-	}
-	auto it2=th->data_second.begin();
-	for(;it2 != th->data_second.end();++it2)
-	{
-		if (asAtomHandler::isInvalid(it2->second) || asAtomHandler::isUndefined(it2->second))
-			continue;
-		tmp.push_back(it2->second);
-	}
-	
+	std::vector<sort_value> tmp;
+	std::vector<sorton_field> sortfields;
+	th->fillUnsortedArray(tmp,sortfields);
+	bool hasDuplicates=false;
 	if(asAtomHandler::isValid(comp))
 	{
 		sortComparatorWrapper c(comp);
-		qsort(tmp,c,0,tmp.size()-1);
+		if (asAtomHandler::isFunction(comp))
+			qsort(tmp,c,0,tmp.size()-1);
+		if (isDescending)
+			std::reverse(tmp.begin(),tmp.end());
+		hasDuplicates = c.hasduplicates;
 	}
 	else
 		sort(tmp.begin(),tmp.end(),sortComparatorDefault(wrk->getSystemState()->getSwfVersion() < 11, isNumeric,isCaseInsensitive,isDescending));
-
-	th->data_first.clear();
-	th->data_second.clear();
-	std::vector<asAtom>::iterator ittmp=tmp.begin();
-	int i = 0;
-	for(;ittmp != tmp.end();++ittmp)
-	{
-		if (i < ARRAY_SIZE_THRESHOLD)
-			th->data_first.push_back(*ittmp);
-		else
-			th->data_second[i] = *ittmp;
-		i++;
-	}
-	ASATOM_INCREF(obj);
-	ret = obj;
+	
+	th->fillSortedArray(ret,tmp,isUniqueSort,returnIndexedArray,isCaseInsensitive,hasDuplicates);
 }
 
-bool Array::sortOnComparator::operator()(const sorton_value& d1, const sorton_value& d2)
+number_t Array::sortOnComparator::compare(const sort_value& d1, const sort_value& d2)
 {
 	std::vector<sorton_field>::iterator it=fields.begin();
 	uint32_t i = 0;
@@ -1311,20 +1419,14 @@ bool Array::sortOnComparator::operator()(const sorton_value& d1, const sorton_va
 		asAtom obj1 = d1.sortvalues.at(i);
 		asAtom obj2 = d2.sortvalues.at(i);
 		i++;
-		if(it->isNumeric)
+		if (it->isNumeric && asAtomHandler::isNumeric(obj1) && asAtomHandler::isNumeric(obj2))
 		{
 			number_t a=numeric_limits<double>::quiet_NaN();
 			number_t b=numeric_limits<double>::quiet_NaN();
 			a=asAtomHandler::toNumber(obj1);
-			
 			b=asAtomHandler::toNumber(obj2);
-			
-			if((!asAtomHandler::isNumeric(obj1) && std::isnan(a)) || (!asAtomHandler::isNumeric(obj2) && std::isnan(b)))
-				throw RunTimeException("Cannot sort non number with Array.NUMERIC option");
-			if(it->isDescending)
-				return a>b;
-			else
-				return a<b;
+			if (a != b)
+				return it->isDescending ? b-a : a-b;
 		}
 		else
 		{
@@ -1333,38 +1435,43 @@ bool Array::sortOnComparator::operator()(const sorton_value& d1, const sorton_va
 			tiny_string s2;
 			s1=asAtomHandler::toString(obj1,getWorker());
 			s2=asAtomHandler::toString(obj2,getWorker());
-			if (s1 != s2)
+			if(it->isCaseInsensitive)
 			{
-				if(it->isDescending)
+				int n = s1.strcasecmp(s2);
+				if (n != 0)
+					return it->isDescending ? -n : n;
+			}
+			else
+			{
+				if (s1 != s2)
 				{
-					if(it->isCaseInsensitive)
-						return s1.strcasecmp(s2)>0;
-					else
-						return s1>s2;
-				}
-				else
-				{
-					if(it->isCaseInsensitive)
-						return s1.strcasecmp(s2)<0;
-					else
-						return s1<s2;
+					int n = s1<s2 ? -1 : 1;
+					return it->isDescending ? -n : n;
 				}
 			}
 		}
 	}
-	return false;
+	this->hasduplicates=true;
+	return 0;
 }
 
 ASFUNCTIONBODY_ATOM(Array,sortOn)
 {
+	Array* th=asAtomHandler::as<Array>(obj);
 	if (argslen != 1 && argslen != 2)
 	{
+		if (th->isAVM1Array())
+		{
+			ret = asAtomHandler::undefinedAtom;
+			return;
+		}
 		createError<ArgumentError>(wrk,kWrongArgumentCountError, "1",
 					  Integer::toString(argslen));
 		return;
 	}
-	Array* th=asAtomHandler::as<Array>(obj);
 	std::vector<sorton_field> sortfields;
+	bool isUniqueSort=false;
+	bool returnIndexedArray=false;
 	if(asAtomHandler::is<Array>(args[0]))
 	{
 		Array* obj=asAtomHandler::as<Array>(args[0]);
@@ -1393,8 +1500,10 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 					sortfields[nopt].isCaseInsensitive=true;
 				if(options&DESCENDING)
 					sortfields[nopt].isDescending=true;
-				if(options&(~(NUMERIC|CASEINSENSITIVE|DESCENDING)))
-					throw UnsupportedException("Array::sort not completely implemented");
+				if(options&UNIQUESORT)
+					isUniqueSort=true;
+				if(options&RETURNINDEXEDARRAY)
+					returnIndexedArray=true;
 				nopt++;
 			}
 		}
@@ -1415,69 +1524,19 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 				sf.isCaseInsensitive=true;
 			if(options&DESCENDING)
 				sf.isDescending=true;
-			if(options&(~(NUMERIC|CASEINSENSITIVE|DESCENDING)))
-				throw UnsupportedException("Array::sort not completely implemented");
+			if(options&UNIQUESORT)
+				isUniqueSort=true;
+			if(options&RETURNINDEXEDARRAY)
+				returnIndexedArray=true;
 		}
 		sortfields.push_back(sf);
 	}
 	
-	std::vector<sorton_value> tmp;
-	auto it1=th->data_first.begin();
-	for(;it1 != th->data_first.end();++it1)
-	{
-		if (asAtomHandler::isInvalid(*it1) || asAtomHandler::isUndefined(*it1))
-			continue;
-		// ensure ASObjects are created
-		asAtomHandler::toObject(*it1,wrk);
-		
-		sorton_value v(*it1);
-		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
-		{
-			asAtom tmpval=asAtomHandler::invalidAtom;
-			asAtomHandler::getObject(*it1)->getVariableByMultiname(tmpval,itsf->fieldname,GET_VARIABLE_OPTION::NONE,wrk);
-			v.sortvalues.push_back(tmpval);
-		}
-		tmp.push_back(v);
-	}
-	auto it2=th->data_second.begin();
-	for(;it2 != th->data_second.end();++it2)
-	{
-		if (asAtomHandler::isInvalid(it2->second) || asAtomHandler::isUndefined(it2->second))
-			continue;
-		// ensure ASObjects are created
-		asAtomHandler::toObject(it2->second,wrk);
-		
-		sorton_value v(it2->second);
-		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
-		{
-			asAtom tmpval=asAtomHandler::invalidAtom;
-			asAtomHandler::getObject(it2->second)->getVariableByMultiname(tmpval,itsf->fieldname,GET_VARIABLE_OPTION::NONE,wrk);
-			v.sortvalues.push_back(tmpval);
-		}
-		tmp.push_back(v);
-	}
-	
-	sort(tmp.begin(),tmp.end(),sortOnComparator(sortfields));
-
-	th->data_first.clear();
-	th->data_second.clear();
-	std::vector<sorton_value>::iterator ittmp=tmp.begin();
-	uint32_t i = 0;
-	for(;ittmp != tmp.end();++ittmp)
-	{
-		if (i < ARRAY_SIZE_THRESHOLD)
-			th->data_first.push_back(ittmp->dataAtom);
-		else
-			th->data_second[i] = ittmp->dataAtom;
-		for (auto itsv = ittmp->sortvalues.begin(); itsv != ittmp->sortvalues.end(); itsv++)
-		{
-			ASATOM_DECREF(*itsv);
-		}
-		i++;
-	}
-	// according to spec sortOn should return "nothing"(?), but it seems that the array is returned
-	ASATOM_INCREF(obj);
-	ret = obj;
+	std::vector<sort_value> tmp;
+	th->fillUnsortedArray(tmp,sortfields);
+	sortOnComparator c(sortfields);
+	qsort(tmp,c,0,tmp.size()-1);
+	th->fillSortedArray(ret,tmp,isUniqueSort,returnIndexedArray,false,c.hasduplicates);
 }
 
 ASFUNCTIONBODY_ATOM(Array,unshift)
@@ -1657,7 +1716,7 @@ ASFUNCTIONBODY_ATOM(Array,_map)
 	}
 	asAtom closure = asAtomHandler::getClosureAtom(func,asAtomHandler::nullAtom);
 	
-	Array* arrayRet=Class<Array>::getInstanceSNoArgs(wrk);
+	Array* arrayRet=th->createInstance();
 
 	asAtom params[3];
 	uint32_t index = 0;
@@ -2051,6 +2110,10 @@ bool Array::isIntegerWithoutLeadingZeros(const tiny_string& value)
 		return true;
 	return (value.isIntegerValue() && *(value.begin()) != '0');
 }
+Array* Array::createInstance()
+{
+	return Class<Array>::getInstanceSNoArgs(getInstanceWorker());
+}
 
 multiname *Array::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
@@ -2172,7 +2235,7 @@ tiny_string Array::toString_priv(bool localized)
 			if(it != data_second.end())
 				sl = it->second;
 		}
-		if(asAtomHandler::isValid(sl) && !asAtomHandler::isNull(sl) && !asAtomHandler::isUndefined(sl))
+		if(asAtomHandler::isValid(sl) && (this->isAVM1Array() || (!asAtomHandler::isNull(sl) && !asAtomHandler::isUndefined(sl))))
 		{
 			if (localized)
 				ret += asAtomHandler::toLocaleString(sl,getInstanceWorker()).raw_buf();

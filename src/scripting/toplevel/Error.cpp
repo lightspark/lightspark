@@ -180,7 +180,6 @@ ASFUNCTIONBODY_ATOM(ASError,generator)
 
 void ASError::errorGenerator(ASError* obj, asAtom* args, const unsigned int argslen)
 {
-	assert_and_throw(argslen <= 2);
 	if(argslen >= 1)
 	{
 		obj->message = asAtomHandler::toString(args[0],obj->getInstanceWorker());
@@ -208,7 +207,6 @@ ASFUNCTIONBODY_GETTER_SETTER(ASError, name)
 
 ASFUNCTIONBODY_ATOM(SecurityError,_constructor)
 {
-	assert(argslen<=1);
 	SecurityError* th=asAtomHandler::as<SecurityError>(obj);
 	if(argslen == 1)
 	{
@@ -230,7 +228,6 @@ void SecurityError::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(ArgumentError,_constructor)
 {
-	assert(argslen<=1);
 	ArgumentError* th=asAtomHandler::as<ArgumentError>(obj);
 	if(argslen == 1)
 	{
@@ -252,7 +249,6 @@ void ArgumentError::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(DefinitionError,_constructor)
 {
-	assert(argslen<=1);
 	DefinitionError* th=asAtomHandler::as<DefinitionError>(obj);
 	if(argslen == 1)
 	{
@@ -274,7 +270,6 @@ void DefinitionError::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(EvalError,_constructor)
 {
-	assert(argslen<=1);
 	EvalError* th=asAtomHandler::as<EvalError>(obj);
 	if(argslen == 1)
 	{
@@ -296,7 +291,6 @@ void EvalError::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(RangeError,_constructor)
 {
-	assert(argslen<=1);
 	RangeError* th=asAtomHandler::as<RangeError>(obj);
 	if(argslen == 1)
 	{
@@ -318,7 +312,6 @@ void RangeError::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(ReferenceError,_constructor)
 {
-	assert(argslen<=1);
 	ReferenceError* th=asAtomHandler::as<ReferenceError>(obj);
 	if(argslen == 1)
 	{
@@ -340,7 +333,6 @@ void ReferenceError::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(SyntaxError,_constructor)
 {
-	assert(argslen<=1);
 	SyntaxError* th=asAtomHandler::as<SyntaxError>(obj);
 	if(argslen == 1)
 	{
@@ -362,7 +354,6 @@ void SyntaxError::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(TypeError,_constructor)
 {
-	assert(argslen<=1);
 	TypeError* th=asAtomHandler::as<TypeError>(obj);
 	if(argslen == 1)
 	{
@@ -384,7 +375,6 @@ void TypeError::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(URIError,_constructor)
 {
-	assert(argslen<=1);
 	URIError* th=asAtomHandler::as<URIError>(obj);
 	if(argslen == 1)
 	{
@@ -406,7 +396,6 @@ void URIError::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(VerifyError,_constructor)
 {
-	assert(argslen<=1);
 	VerifyError* th=asAtomHandler::as<VerifyError>(obj);
 	if(argslen == 1)
 	{
@@ -428,7 +417,6 @@ void VerifyError::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(UninitializedError,_constructor)
 {
-	assert(argslen<=1);
 	UninitializedError* th=asAtomHandler::as<UninitializedError>(obj);
 	if(argslen == 1)
 	{

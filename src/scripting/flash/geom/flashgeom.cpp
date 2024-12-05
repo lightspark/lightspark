@@ -264,25 +264,33 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaOffset)
 
 ASFUNCTIONBODY_ATOM(ColorTransform,concat)
 {
-	assert_and_throw(argslen==1);
+	if (argslen==0)
+		return;//TODO throw exception if this is called in AS3?
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
 	ColorTransform* ct=asAtomHandler::as<ColorTransform>(args[0]);
+	th->redOffset = th->redOffset + ct->redOffset * th->redMultiplier;
 	th->redMultiplier *= ct->redMultiplier;
-	th->redOffset = th->redOffset * ct->redMultiplier + ct->redOffset;
+	th->greenOffset = th->greenOffset + ct->greenOffset * th->greenMultiplier;
 	th->greenMultiplier *= ct->greenMultiplier;
-	th->greenOffset = th->greenOffset * ct->greenMultiplier + ct->greenOffset;
+	th->blueOffset = th->blueOffset + ct->blueOffset * th->blueMultiplier;
 	th->blueMultiplier *= ct->blueMultiplier;
-	th->blueOffset = th->blueOffset * ct->blueMultiplier + ct->blueOffset;
+	th->alphaOffset = th->alphaOffset + ct->alphaOffset * th->alphaMultiplier;
 	th->alphaMultiplier *= ct->alphaMultiplier;
-	th->alphaOffset = th->alphaOffset * ct->alphaMultiplier + ct->alphaOffset;
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,_toString)
 {
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
 	char buf[1024];
-	snprintf(buf,1024,"(redOffset=%f, redMultiplier=%f, greenOffset=%f, greenMultiplier=%f blueOffset=%f blueMultiplier=%f alphaOffset=%f, alphaMultiplier=%f)",
-			th->redOffset, th->redMultiplier, th->greenOffset, th->greenMultiplier, th->blueOffset, th->blueMultiplier, th->alphaOffset, th->alphaMultiplier);
+	snprintf(buf,1024,"(redMultiplier=%s, greenMultiplier=%s, blueMultiplier=%s, alphaMultiplier=%s, redOffset=%s, greenOffset=%s, blueOffset=%s, alphaOffset=%s)",
+			Number::toString(th->redMultiplier).raw_buf(),
+			Number::toString(th->greenMultiplier).raw_buf(),
+			Number::toString(th->blueMultiplier).raw_buf(),
+			Number::toString(th->alphaMultiplier).raw_buf(),
+			Number::toString(th->redOffset).raw_buf(),
+			Number::toString(th->greenOffset).raw_buf(),
+			Number::toString(th->blueOffset).raw_buf(),
+			Number::toString(th->alphaOffset).raw_buf());
 	
 	ret = asAtomHandler::fromObject(abstract_s(wrk,buf));
 }

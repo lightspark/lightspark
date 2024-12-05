@@ -305,7 +305,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,clone)
 
 ASFUNCTIONBODY_ATOM(Rectangle,contains)
 {
-	assert_and_throw(argslen == 2);
+	if (argslen < 2)
+	{
+		LOG(LOG_ERROR,"not enough arguments in Rectangle.contains");
+		ret = asAtomHandler::falseAtom;
+		return;
+	}
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	number_t x = asAtomHandler::toNumber(args[0]);
 	number_t y = asAtomHandler::toNumber(args[1]);
@@ -328,7 +333,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,containsPoint)
 
 ASFUNCTIONBODY_ATOM(Rectangle,containsRect)
 {
-	assert_and_throw(argslen == 1);
+	if (argslen < 1)
+	{
+		LOG(LOG_ERROR,"not enough arguments in Rectangle.containsRect");
+		ret = asAtomHandler::falseAtom;
+		return;
+	}
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	Rectangle* cr = asAtomHandler::as<Rectangle>(args[0]);
 
@@ -348,7 +358,11 @@ ASFUNCTIONBODY_ATOM(Rectangle,equals)
 
 ASFUNCTIONBODY_ATOM(Rectangle,inflate)
 {
-	assert_and_throw(argslen == 2);
+	if (argslen < 2)
+	{
+		LOG(LOG_ERROR,"not enough arguments in Rectangle.inflate");
+		return;
+	}
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	number_t dx = asAtomHandler::toNumber(args[0]);
 	number_t dy = asAtomHandler::toNumber(args[1]);
@@ -362,6 +376,11 @@ ASFUNCTIONBODY_ATOM(Rectangle,inflate)
 
 ASFUNCTIONBODY_ATOM(Rectangle,inflatePoint)
 {
+	if (argslen < 1)
+	{
+		LOG(LOG_ERROR,"not enough arguments in Rectangle.inflatePoint");
+		return;
+	}
 	assert_and_throw(argslen == 1);
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	Point* po = asAtomHandler::as<Point>(args[0]);
@@ -377,7 +396,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,inflatePoint)
 
 ASFUNCTIONBODY_ATOM(Rectangle,intersection)
 {
-	assert_and_throw(argslen == 1);
+	if (argslen < 1)
+	{
+		LOG(LOG_ERROR,"not enough arguments in Rectangle.intersection");
+		ret = asAtomHandler::undefinedAtom;
+		return;
+	}
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	Rectangle* ti = asAtomHandler::as<Rectangle>(args[0]);
 	Rectangle* res = Class<Rectangle>::getInstanceS(wrk);
@@ -434,7 +458,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,intersection)
 
 ASFUNCTIONBODY_ATOM(Rectangle,intersects)
 {
-	assert_and_throw(argslen == 1);
+	if (argslen < 1)
+	{
+		LOG(LOG_ERROR,"not enough arguments in Rectangle.intersects");
+		ret = asAtomHandler::falseAtom;
+		return;
+	}
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	Rectangle* ti = asAtomHandler::as<Rectangle>(args[0]);
 
@@ -454,7 +483,6 @@ ASFUNCTIONBODY_ATOM(Rectangle,intersects)
 
 ASFUNCTIONBODY_ATOM(Rectangle,isEmpty)
 {
-	assert_and_throw(argslen == 0);
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 
 	asAtomHandler::setBool(ret,th->width <= 0 || th->height <= 0 );
@@ -462,7 +490,11 @@ ASFUNCTIONBODY_ATOM(Rectangle,isEmpty)
 
 ASFUNCTIONBODY_ATOM(Rectangle,offset)
 {
-	assert_and_throw(argslen == 2);
+	if (argslen < 2)
+	{
+		LOG(LOG_ERROR,"not enough arguments in Rectangle.offset");
+		return;
+	}
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 
 	th->x += asAtomHandler::toNumber(args[0]);
@@ -472,6 +504,11 @@ ASFUNCTIONBODY_ATOM(Rectangle,offset)
 
 ASFUNCTIONBODY_ATOM(Rectangle,offsetPoint)
 {
+	if (argslen < 1)
+	{
+		LOG(LOG_ERROR,"not enough arguments in Rectangle.offsetPoint");
+		return;
+	}
 	assert_and_throw(argslen == 1);
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	Point* po = asAtomHandler::as<Point>(args[0]);
@@ -483,7 +520,6 @@ ASFUNCTIONBODY_ATOM(Rectangle,offsetPoint)
 
 ASFUNCTIONBODY_ATOM(Rectangle,setEmpty)
 {
-	assert_and_throw(argslen == 0);
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 
 	th->x = 0;
@@ -495,7 +531,12 @@ ASFUNCTIONBODY_ATOM(Rectangle,setEmpty)
 
 ASFUNCTIONBODY_ATOM(Rectangle,_union)
 {
-	assert_and_throw(argslen == 1);
+	if (argslen < 1)
+	{
+		LOG(LOG_ERROR,"not enough arguments in Rectangle.union");
+		ret = asAtomHandler::undefinedAtom;
+		return;
+	}
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	Rectangle* ti = asAtomHandler::as<Rectangle>(args[0]);
 	Rectangle* res = Class<Rectangle>::getInstanceS(wrk);

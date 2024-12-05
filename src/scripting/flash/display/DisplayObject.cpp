@@ -2980,16 +2980,24 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->prototype->setDeclaredMethodByQName("_rotation","",c->getSystemState()->getBuiltinFunction(_setRotation),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(AVM1_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
 }
-DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
+DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path, asAtom* member)
 {
 	if (path.empty() || path == "this")
+	{
+		if (member)
+			*member=asAtomHandler::invalidAtom;
 		return this;
+	}
 	if (path =="_root")
 	{
+		if (member)
+			*member=asAtomHandler::invalidAtom;
 		return this->getRoot().getPtr();
 	}
 	if (path =="_parent")
 	{
+		if (member)
+			*member=asAtomHandler::invalidAtom;
 		return getParent();
 	}
 	if (path.startsWith("/"))
@@ -2997,38 +3005,56 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 		tiny_string newpath = path.substr_bytes(1,path.numBytes()-1);
 		MovieClip* root = getRoot().getPtr();
 		if (root)
-			return root->AVM1GetClipFromPath(newpath);
+			return root->AVM1GetClipFromPath(newpath,member);
 		LOG(LOG_ERROR,"AVM1: no root movie clip for path:"<<path<<" "<<this->toDebugString());
+		if (member)
+			*member=asAtomHandler::invalidAtom;
 		return nullptr;
 	}
 	if (path.startsWith("../"))
 	{
 		tiny_string newpath = path.substr_bytes(3,path.numBytes()-3);
 		if (this->getParent() && this->getParent()->is<MovieClip>())
-			return this->getParent()->as<MovieClip>()->AVM1GetClipFromPath(newpath);
+			return this->getParent()->as<MovieClip>()->AVM1GetClipFromPath(newpath,member);
 		LOG(LOG_ERROR,"AVM1: no parent clip for path:"<<path<<" "<<this->toDebugString());
+		if (member)
+			*member=asAtomHandler::invalidAtom;
 		return nullptr;
 	}
 	uint32_t pos = path.find("/");
 	tiny_string subpath = (pos == tiny_string::npos) ? path : path.substr_bytes(0,pos);
 	if (subpath.empty())
 	{
+		if (member)
+			*member=asAtomHandler::invalidAtom;
 		return nullptr;
 	}
 	// path "/stage" is mapped to the root movie (?) 
 	if (this == getSystemState()->mainClip && subpath == "stage")
+	{
+		if (member)
+			*member=asAtomHandler::invalidAtom;
 		return this;
+	}
 	uint32_t posdot = subpath.find(".");
 	if (posdot != tiny_string::npos)
 	{
 		tiny_string subdotpath =  subpath.substr_bytes(0,posdot);
 		if (subdotpath.empty())
+		{
+			if (member)
+				*member=asAtomHandler::invalidAtom;
 			return nullptr;
-		DisplayObject* parent = AVM1GetClipFromPath(subdotpath);
+		}
+		DisplayObject* parent = AVM1GetClipFromPath(subdotpath,member);
 		if (!parent)
+		{
+			if (member)
+				*member=asAtomHandler::invalidAtom;
 			return nullptr;
+		}
 		tiny_string localname = subpath.substr_bytes(posdot+1,subpath.numBytes()-posdot-1);
-		return parent->AVM1GetClipFromPath(localname);
+		return parent->AVM1GetClipFromPath(localname,member);
 	}
 	
 	multiname objName(nullptr);
@@ -3044,8 +3070,13 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path)
 		else
 		{
 			subpath = path.substr_bytes(pos+1,path.numBytes()-pos-1);
-			return asAtomHandler::as<DisplayObject>(ret)->AVM1GetClipFromPath(subpath);
+			return asAtomHandler::as<DisplayObject>(ret)->AVM1GetClipFromPath(subpath,member);
 		}
+	}
+	else if (asAtomHandler::isValid(ret))
+	{
+		if (member)
+			*member=ret;// we found a property/method of this clip
 	}
 	return nullptr;
 }
@@ -3228,7 +3259,9 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 			return ret;
 		}
 		path = name.lowercase();
-		clip = AVM1GetClipFromPath(path);
+		clip = AVM1GetClipFromPath(path,&ret);
+		if (asAtomHandler::isValid(ret))
+			return ret;
 		if (clip && clip != this)
 		{
 			clip->incRef();

@@ -188,7 +188,10 @@ void LoaderInfo::afterHandleEvent(Event* ev)
 {
 	Locker l(spinlock);
 	if (ev == progressEvent)
+	{
+		progressEvent->decRef();
 		progressEvent=nullptr;
+	}
 	auto it = loaderevents.find(ev);
 	if (it != loaderevents.end())
 	{
@@ -241,7 +244,10 @@ void LoaderInfo::setComplete()
 
 void LoaderInfo::setContent(DisplayObject* c)
 {
-	assert(!content);
+	if (content == c)
+		return;
+	if (content)
+		content->removeStoredMember();
 	content=c;
 	if (content)
 	{

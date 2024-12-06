@@ -60,28 +60,22 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,sendAndLoad)
 	AVM1LoadVars* th = asAtomHandler::as<AVM1LoadVars>(obj);
 	tiny_string strurl;
 	tiny_string method;
-	_NR<ASObject> target;
+	asAtom target = asAtomHandler::nullAtom;
 	ARG_CHECK(ARG_UNPACK(strurl)(target)(method,"POST"));
-
-	if (target)
+	
+	if (asAtomHandler::is<AVM1LoadVars>(target))
 	{
-		if (target->is<AVM1LoadVars>())
-		{
-			AVM1LoadVars* t = target->as<AVM1LoadVars>();
-			th->copyValues(t,wrk);
-			if (t->loader.isNull())
-				t->loader = _MR(Class<URLLoader>::getInstanceS(wrk));
-			t->incRef();
-			URLRequest* req = Class<URLRequest>::getInstanceS(wrk,strurl,method,_MR(t));
-			asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
-			asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(t->loader.getPtr());
-			URLLoader::load(ret,wrk,loaderobj,&urlarg,1);
-		}
-		else
-			LOG(LOG_NOT_IMPLEMENTED,"LoadVars.sendAndLoad with target "<<target->toDebugString());
+		AVM1LoadVars* t = asAtomHandler::as<AVM1LoadVars>(target);
+		th->copyValues(t,wrk);
+		if (t->loader.isNull())
+			t->loader = _MR(Class<URLLoader>::getInstanceS(wrk));
+		URLRequest* req = Class<URLRequest>::getInstanceS(wrk,strurl,method,target);
+		asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
+		asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(t->loader.getPtr());
+		URLLoader::load(ret,wrk,loaderobj,&urlarg,1);
 	}
 	else
-		LOG(LOG_ERROR,"LoadVars.sendAndLoad called without target");
+		LOG(LOG_NOT_IMPLEMENTED,"LoadVars.sendAndLoad with target "<<asAtomHandler::toDebugString(target));
 }
 ASFUNCTIONBODY_ATOM(AVM1LoadVars,load)
 {
@@ -91,8 +85,7 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,load)
 
 	if (th->loader.isNull())
 		th->loader = _MR(Class<URLLoader>::getInstanceS(wrk));
-	th->incRef();
-	URLRequest* req = Class<URLRequest>::getInstanceS(wrk,strurl,"GET",_MR(th));
+	URLRequest* req = Class<URLRequest>::getInstanceS(wrk,strurl,"GET",asAtomHandler::fromObjectNoPrimitive(th));
 	asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
 	asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(th->loader.getPtr());
 	URLLoader::load(ret,wrk,loaderobj,&urlarg,1);

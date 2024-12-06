@@ -2644,7 +2644,7 @@ void SystemState::handleLocalConnectionEvent(LocalConnectionEvent* ev)
 		if (asAtomHandler::isFunction(func))
 		{
 			asAtom o = asAtomHandler::fromObject(obj.getPtr());
-			asAtom ret;
+			asAtom ret = asAtomHandler::invalidAtom;
 			asAtomHandler::callFunction(func,worker,ret,o,ev->args,ev->numargs,false);
 			ASATOM_DECREF(ret);
 		}

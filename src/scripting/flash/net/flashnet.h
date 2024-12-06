@@ -40,10 +40,9 @@ namespace lightspark
 class URLRequest: public ASObject
 {
 private:
-	enum METHOD { GET=0, POST };
-	METHOD method;
+	tiny_string method;
 	tiny_string url;
-	_NR<ASObject> data;
+	asAtom data;
 	tiny_string digest;
 	tiny_string validatedContentType() const;
 	tiny_string getContentTypeHeader() const;
@@ -52,7 +51,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,requestHeaders);
 	ApplicationDomain* appDomain;
 public:
-	URLRequest(ASWorker* wrk,Class_base* c, const tiny_string u="", const tiny_string m="GET", _NR<ASObject> d = NullRef,ApplicationDomain* _appDomain=nullptr);
+	URLRequest(ASWorker* wrk,Class_base* c, const tiny_string u="", const tiny_string m="GET", const asAtom d = asAtomHandler::invalidAtom,ApplicationDomain* _appDomain=nullptr);
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
@@ -84,7 +83,7 @@ private:
 	void decode(const tiny_string& s);
 	tiny_string toString_priv();
 public:
-	URLVariables(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
+	URLVariables(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_URLVARIABLES){}
 	URLVariables(ASWorker* wrk,Class_base* c,const tiny_string& s);
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);

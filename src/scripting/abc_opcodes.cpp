@@ -2168,7 +2168,6 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 bool ABCVm::isType(ABCContext* context, ASObject* obj, multiname* name)
 {
 	bool ret = context->isinstance(obj, name);
-	obj->decRef();
 	return ret;
 }
 

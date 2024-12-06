@@ -195,6 +195,7 @@ public:
 #ifdef PROFILING_SUPPORT
 		uint64_t t1 = compat_get_thread_cputime_us();
 #endif
+		ret = asAtomHandler::undefinedAtom; // ensure we always have a valid result for cases where callproperty is done on a void method
 		/*
 		 * We do not enforce ABCVm::limits.max_recursion here.
 		 * This should be okey, because there is no infinite recursion

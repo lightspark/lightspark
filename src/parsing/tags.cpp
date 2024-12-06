@@ -1889,7 +1889,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		if(placedTag==nullptr)
 		{
 			LOG(LOG_ERROR,"no tag to place:"<<CharacterId);
-			throw RunTimeException("No tag to place");
+			return;
 		}
 
 		placedTag->loadedFrom->checkBinding(placedTag);

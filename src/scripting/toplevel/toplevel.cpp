@@ -564,9 +564,12 @@ bool SyntheticFunction::destruct()
 	{
 		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
 		{
-			ASObject* o = asAtomHandler::getObject(it->object);
-			if (o && !o->is<Global>())
-				o->removeStoredMember();
+			if (asAtomHandler::isAccessible(it->object))
+			{
+				ASObject* o = asAtomHandler::getObject(it->object);
+				if (o && !o->is<Global>())
+					o->removeStoredMember();
+			}
 		}
 	}
 	func_scope.reset();

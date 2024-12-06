@@ -1031,8 +1031,14 @@ ASFUNCTIONBODY_ATOM(XML,addNamespace)
 	{
 		ns_uri = asAtomHandler::as<ASQName>(newNamespace)->getURI();
 	}
-	else
+	else if (asAtomHandler::isStringID(newNamespace))
+	{
 		ns_uri = asAtomHandler::getStringId(newNamespace);
+	}
+	else 
+	{
+		ns_uri = asAtomHandler::toStringId(newNamespace,wrk);
+	}
 	if (th->nodenamespace_prefix == ns_prefix)
 		th->nodenamespace_prefix=BUILTIN_STRINGS::EMPTY;
 	for (uint32_t i = 0; i < th->namespacedefs.size(); i++)

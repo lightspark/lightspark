@@ -575,8 +575,8 @@ public:
 						  std::map<const ASObject*, uint32_t>& objMap,
 						  std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk,
 						  asAtom& a);
-	template<class T> static bool is(asAtom& a);
-	template<class T> static T* as(asAtom& a) 
+	template<class T> static bool is(const asAtom& a);
+	template<class T> static T* as(const asAtom& a) 
 	{ 
 		assert(isObject(a));
 		return static_cast<T*>((void*)(a.uintval& ~((LIGHTSPARK_ATOM_VALTYPE)0x7)));
@@ -1601,6 +1601,7 @@ class UninitializedError;
 class URIError;
 class URLLoader;
 class URLRequest;
+class URLVariables;
 class Vector;
 class Vector3D;
 class VerifyError;
@@ -1746,6 +1747,7 @@ template<> inline bool ASObject::is<UninitializedError>() const { return subtype
 template<> inline bool ASObject::is<URIError>() const { return subtype == SUBTYPE_URIERROR; }
 template<> inline bool ASObject::is<URLLoader>() const { return subtype == SUBTYPE_URLLOADER; }
 template<> inline bool ASObject::is<URLRequest>() const { return subtype == SUBTYPE_URLREQUEST; }
+template<> inline bool ASObject::is<URLVariables>() const { return subtype == SUBTYPE_URLVARIABLES; }
 template<> inline bool ASObject::is<Vector>() const { return subtype==SUBTYPE_VECTOR; }
 template<> inline bool ASObject::is<Vector3D>() const { return subtype==SUBTYPE_VECTOR3D; }
 template<> inline bool ASObject::is<VerifyError>() const { return subtype==SUBTYPE_VERIFYERROR; }
@@ -1761,18 +1763,18 @@ template<> inline bool ASObject::is<XMLList>() const { return subtype==SUBTYPE_X
 
 
 
-template<class T> inline bool asAtomHandler::is(asAtom& a) {
+template<class T> inline bool asAtomHandler::is(const asAtom& a) {
 	return isObject(a) ? getObjectNoCheck(a)->is<T>() : false;
 }
-template<> inline bool asAtomHandler::is<asAtom>(asAtom& a) { return true; }
-template<> inline bool asAtomHandler::is<ASObject>(asAtom& a) { return true; }
-template<> inline bool asAtomHandler::is<ASString>(asAtom& a) { return isStringID(a) || isString(a); }
-template<> inline bool asAtomHandler::is<Boolean>(asAtom& a) { return isBool(a); }
-template<> inline bool asAtomHandler::is<Integer>(asAtom& a) { return isInteger(a); }
-template<> inline bool asAtomHandler::is<Null>(asAtom& a) { return isNull(a); }
-template<> inline bool asAtomHandler::is<Number>(asAtom& a) { return isNumber(a); }
-template<> inline bool asAtomHandler::is<UInteger>(asAtom& a) { return isUInteger(a); }
-template<> inline bool asAtomHandler::is<Undefined>(asAtom& a) { return isUndefined(a); }
+template<> inline bool asAtomHandler::is<asAtom>(const asAtom& a) { return true; }
+template<> inline bool asAtomHandler::is<ASObject>(const asAtom& a) { return true; }
+template<> inline bool asAtomHandler::is<ASString>(const asAtom& a) { return isStringID(a) || isString(a); }
+template<> inline bool asAtomHandler::is<Boolean>(const asAtom& a) { return isBool(a); }
+template<> inline bool asAtomHandler::is<Integer>(const asAtom& a) { return isInteger(a); }
+template<> inline bool asAtomHandler::is<Null>(const asAtom& a) { return isNull(a); }
+template<> inline bool asAtomHandler::is<Number>(const asAtom& a) { return isNumber(a); }
+template<> inline bool asAtomHandler::is<UInteger>(const asAtom& a) { return isUInteger(a); }
+template<> inline bool asAtomHandler::is<Undefined>(const asAtom& a) { return isUndefined(a); }
 
 
 FORCE_INLINE int32_t asAtomHandler::toInt(const asAtom& a)

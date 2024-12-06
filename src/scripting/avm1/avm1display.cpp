@@ -246,7 +246,7 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"target");
 		return;
 	}
-	URLRequest* r = Class<URLRequest>::getInstanceS(wrk,strurl,"GET",NullRef,t->loadedFrom);
+	URLRequest* r = Class<URLRequest>::getInstanceS(wrk,strurl,"GET",asAtomHandler::invalidAtom,t->loadedFrom);
 	th->addLoader(r,t);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,addListener)
@@ -489,7 +489,7 @@ bool AVM1MovieClipLoader::countCylicMemberReferences(garbagecollectorstate& gcst
 
 void AVM1MovieClipLoader::load(const tiny_string& url, const tiny_string& method, AVM1MovieClip* target)
 {
-	URLRequest* r = Class<URLRequest>::getInstanceS(getInstanceWorker(),url,method,NullRef,target->loadedFrom);
+	URLRequest* r = Class<URLRequest>::getInstanceS(getInstanceWorker(),url,method,asAtomHandler::invalidAtom,target->loadedFrom);
 	addLoader(r, target);
 }
 

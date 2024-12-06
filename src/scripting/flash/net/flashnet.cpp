@@ -43,11 +43,12 @@
 using namespace std;
 using namespace lightspark;
 
-URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const tiny_string m, _NR<ASObject> d,ApplicationDomain* _appDomain):ASObject(wrk,c,T_OBJECT,SUBTYPE_URLREQUEST),
-	method(m=="POST" ? POST : GET),url(u),data(d),contentType("application/x-www-form-urlencoded"),
+URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const tiny_string m, const asAtom d,ApplicationDomain* _appDomain):ASObject(wrk,c,T_OBJECT,SUBTYPE_URLREQUEST),
+	method(m),url(u),data(d),contentType("application/x-www-form-urlencoded"),
 	requestHeaders(Class<Array>::getInstanceSNoArgs(wrk)),
 	appDomain(_appDomain)
 {
+	ASATOM_INCREF(data);
 	if (_appDomain==nullptr)
 		appDomain = c->getSystemState()->mainClip->applicationDomain.getPtr();
 }
@@ -72,18 +73,18 @@ URLInfo URLRequest::getRequestURL() const
 {
 	tiny_string urlencoded = URLInfo::encode(url, URLInfo::ENCODE_SPACES);
 	URLInfo ret=appDomain->getBaseURL().goToURL(urlencoded);
-	if(method!=GET)
+	if(method.uppercase()!="GET")
 		return ret;
 
-	if(data.isNull())
+	if(asAtomHandler::isInvalid(data))
 		return ret;
 
-	if(data->getClass()==Class<ByteArray>::getClass(data->getSystemState()))
+	if(asAtomHandler::is<ByteArray>(data))
 		ret=ret.getParsedURL();
 	else
 	{
 		tiny_string newURL = ret.getParsedURL();
-		tiny_string s = data->toString();
+		tiny_string s = asAtomHandler::toString(data,getInstanceWorker());
 		if (!s.empty())
 		{
 			if(ret.getQuery() == "")
@@ -209,10 +210,9 @@ std::list<tiny_string> URLRequest::getHeaders() const
 
 tiny_string URLRequest::getContentTypeHeader() const
 {
-	if(method!=POST)
+	if(method.uppercase()!="POST")
 		return "";
-
-	if(!data.isNull() && data->getClass()==Class<URLVariables>::getClass(data->getSystemState()))
+	if(asAtomHandler::is<URLVariables>(data))
 		return "Content-type: application/x-www-form-urlencoded";
 	else
 		return tiny_string("Content-Type: ") + validatedContentType();
@@ -220,21 +220,21 @@ tiny_string URLRequest::getContentTypeHeader() const
 
 void URLRequest::getPostData(vector<uint8_t>& outData) const
 {
-	if(method!=POST)
+	if(method.uppercase()!="POST")
 		return;
 
-	if(data.isNull())
+	if(asAtomHandler::isInvalid(data))
 		return;
 
-	if(data->getClass()==Class<ByteArray>::getClass(data->getSystemState()))
+	if(asAtomHandler::is<ByteArray>(data))
 	{
-		ByteArray *ba=data->as<ByteArray>();
+		ByteArray *ba=asAtomHandler::as<ByteArray>(data);
 		const uint8_t *buf=ba->getBuffer(ba->getLength(), false);
 		outData.insert(outData.end(),buf,buf+ba->getLength());
 	}
 	else
 	{
-		const tiny_string& strData=data->toString();
+		const tiny_string& strData=asAtomHandler::toString(data,getInstanceWorker());
 		outData.insert(outData.end(),strData.raw_buf(),strData.raw_buf()+strData.numBytes());
 	}
 }
@@ -242,16 +242,16 @@ void URLRequest::getPostData(vector<uint8_t>& outData) const
 void URLRequest::finalize()
 {
 	ASObject::finalize();
-	data.reset();
+	ASATOM_DECREF(data);
 	requestHeaders.reset();
 }
 
 bool URLRequest::destruct()
 {
-	method=GET;
+	method="GET";
 	url="";
 	digest="";
-	data.reset();
+	ASATOM_DECREF(data);
 	requestHeaders.reset();
 	return ASObject::destruct();
 }
@@ -261,8 +261,8 @@ void URLRequest::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	ASObject::prepareShutdown();
-	if (data)
-		data->prepareShutdown();
+	if (asAtomHandler::isObject(data))
+		asAtomHandler::getObjectNoCheck(data)->prepareShutdown();
 	if (requestHeaders)
 		requestHeaders->prepareShutdown();
 }
@@ -288,39 +288,29 @@ ASFUNCTIONBODY_ATOM(URLRequest,_getURL)
 ASFUNCTIONBODY_ATOM(URLRequest,_setMethod)
 {
 	URLRequest* th=asAtomHandler::as<URLRequest>(obj);
-	assert_and_throw(argslen==1);
-	const tiny_string& tmp=asAtomHandler::toString(args[0],wrk);
-	if(tmp=="GET")
-		th->method=GET;
-	else if(tmp=="POST")
-		th->method=POST;
+	tiny_string method;
+	ARG_CHECK(ARG_UNPACK(method));
+	if(method=="GET" || method=="get" || method=="POST" || method=="post")
+		th->method=method;
 	else
-		throw UnsupportedException("Unsupported method in URLLoader");
+		createError<ArgumentError>(wrk,kInvalidEnumError,"method");
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_getMethod)
 {
 	URLRequest* th=asAtomHandler::as<URLRequest>(obj);
-	switch(th->method)
-	{
-		case GET:
-			ret = asAtomHandler::fromString(wrk->getSystemState(),"GET");
-			break;
-		case POST:
-			ret = asAtomHandler::fromString(wrk->getSystemState(),"POST");
-			break;
-	}
+	ret = asAtomHandler::fromString(wrk->getSystemState(),th->method);
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_getData)
 {
 	URLRequest* th=asAtomHandler::as<URLRequest>(obj);
-	if(th->data.isNull())
+	if(asAtomHandler::isInvalid(th->data))
 		asAtomHandler::setUndefined(ret);
 	else
 	{
-		th->data->incRef();
-		ret = asAtomHandler::fromObject(th->data.getPtr());
+		ASATOM_INCREF(th->data);
+		ret = th->data;
 	}
 }
 
@@ -329,8 +319,9 @@ ASFUNCTIONBODY_ATOM(URLRequest,_setData)
 	URLRequest* th=asAtomHandler::as<URLRequest>(obj);
 	assert_and_throw(argslen==1);
 
+	ASATOM_DECREF(th->data);
 	ASATOM_INCREF(args[0]);
-	th->data=_MR(asAtomHandler::toObject(args[0],wrk));
+	th->data=args[0];
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_getDigest)
@@ -2464,7 +2455,7 @@ void URLVariables::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString),DYNAMIC_TRAIT);
 }
 
-URLVariables::URLVariables(ASWorker* wrk, Class_base* c, const tiny_string& s):ASObject(wrk,c)
+URLVariables::URLVariables(ASWorker* wrk, Class_base* c, const tiny_string& s):ASObject(wrk,c,T_OBJECT,SUBTYPE_URLVARIABLES)
 {
 	decode(s);
 }

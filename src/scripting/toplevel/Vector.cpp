@@ -146,7 +146,7 @@ void Vector::prepareShutdown()
 	ASObject::prepareShutdown();
 	while(vec.size())
 	{
-		ASObject* v = asAtomHandler::getObject(vec.back());
+		ASObject* v = asAtomHandler::isAccessible(vec.back()) ? asAtomHandler::getObject(vec.back()) : nullptr;
 		vec.pop_back();
 		if (v)
 		{

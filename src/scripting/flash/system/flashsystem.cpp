@@ -403,6 +403,7 @@ void ApplicationDomain::finalize()
 	for(auto it=dictionary.begin();it!=dictionary.end();++it)
 		delete it->second;
 	dictionary.clear();
+	aliasMap.clear();
 	domainMemory.reset();
 	defaultDomainMemory.reset();
 	for(auto it = instantiatedTemplates.begin(); it != instantiatedTemplates.end(); ++it)
@@ -419,6 +420,7 @@ void ApplicationDomain::prepareShutdown()
 	if (this->preparedforshutdown)
 		return;
 	ASObject::prepareShutdown();
+	aliasMap.clear();
 	if (domainMemory)
 		domainMemory->prepareShutdown();
 	if (defaultDomainMemory)

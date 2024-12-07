@@ -1721,7 +1721,22 @@ tiny_string QName::getQualifiedName(SystemState *sys,bool forDescribeType) const
 	if (forDescribeType && ret.startsWith("__AS3__.vec::Vector$"))
 	{
 		tiny_string ret2 = "__AS3__.vec::Vector.<";
-		ret2 += ret.substr(strlen("__AS3__.vec::Vector$"),ret.numChars());
+		tiny_string t = ret.substr(strlen("__AS3__.vec::Vector$"),ret.numChars());
+		uint32_t nsub = t.find("$");
+		if (nsub != tiny_string::npos)
+		{
+			t = t.substr(nsub+1,t.numChars());
+			uint32_t ns = BUILTIN_STRINGS::EMPTY;
+			uint32_t n = t.find("::");
+			if (n!= tiny_string::npos)
+			{
+				ns = sys->getUniqueStringId(t.substr_bytes(0,n));
+				t = t.substr(n,t.numChars());
+			}
+			QName qn(sys->getUniqueStringId(t),ns);
+			t = qn.getQualifiedName(sys,forDescribeType);
+		}
+		ret2 += t=="any" ? "*" : t;
 		ret2 += ">";
 		return ret2;
 	}

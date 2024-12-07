@@ -248,6 +248,7 @@ class Vector: public ASObject
 		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
 	asAtom getDefaultValue();
+	bool checkValue(asAtom& o);
 public:
 	class sortComparatorWrapper
 	{

@@ -66,6 +66,38 @@ Type* Type::getBuiltinType(ASWorker* wrk, multiname* mn)
 		return nullptr;
 }
 
+bool Type::coerceForTemplate(ASWorker* wrk, asAtom& o)
+{
+	switch (asAtomHandler::getObjectType(o))
+	{
+		case T_UNDEFINED:
+			asAtomHandler::setNull(o);
+			return true;
+		case T_NULL:
+			return true;
+		case T_UINTEGER:
+		case T_INTEGER:
+			if(this == Class<Integer>::getRef(wrk->getSystemState()).getPtr()
+				|| this == Class<UInteger>::getRef(wrk->getSystemState()).getPtr()
+				|| this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
+				return true;
+			break;
+		case T_NUMBER:
+			if(this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
+				return true;
+			break;
+		case T_STRING:
+			if(this == Class<ASString>::getRef(wrk->getSystemState()).getPtr())
+				return true;
+			break;
+		default:
+			break;
+	}
+	if (asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<ObjectConstructor>())
+		return true;
+	return false;
+}
+
 /*
  * This should only be called after all global objects have been created
  * by running ABCContext::exec() for all ABCContexts.
@@ -272,38 +304,6 @@ bool Class_base::coerce(ASWorker* wrk, asAtom& o)
 	if(!asAtomHandler::getObject(o) ||  !asAtomHandler::getObject(o)->getClass() || !asAtomHandler::getObject(o)->getClass()->isSubClass(this))
 		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(o,wrk)->getClassName(), getQualifiedClassName());
 	return false;
-}
-
-void Class_base::coerceForTemplate(ASWorker* wrk, asAtom &o)
-{
-	switch (asAtomHandler::getObjectType(o))
-	{
-		case T_UNDEFINED:
-			asAtomHandler::setNull(o);
-			return;
-		case T_NULL:
-			return;
-		case T_UINTEGER:
-		case T_INTEGER:
-			if(this == Class<Integer>::getRef(getSystemState()).getPtr() || this == Class<UInteger>::getRef(getSystemState()).getPtr())
-				return;
-			break;
-		case T_NUMBER:
-			if(this == Class<Number>::getRef(getSystemState()).getPtr())
-				return;
-			break;
-		case T_STRING:
-			if(this == Class<ASString>::getRef(getSystemState()).getPtr())
-				return;
-			break;
-		default:
-			break;
-	}
-	if (asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<ObjectConstructor>())
-		return;
-
-	if(!asAtomHandler::getObject(o) || !asAtomHandler::getObject(o)->getClass() || !asAtomHandler::getObject(o)->getClass()->isSubClass(this))
-		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(o,wrk)->getClassName(), getQualifiedClassName());
 }
 
 void Class_base::setSuper(_R<Class_base> super_)
@@ -678,7 +678,7 @@ uint32_t Class_base::getQualifiedClassNameID()
 	{
 		if(class_index==-1)
 		{
-			qualifiedClassnameID = getSystemState()->getUniqueStringId(class_name.getQualifiedName(getSystemState(),false));
+			qualifiedClassnameID = getSystemState()->getUniqueStringId(class_name.getQualifiedName(getSystemState(),true));
 		}
 		else
 		{
@@ -686,7 +686,7 @@ uint32_t Class_base::getQualifiedClassNameID()
 			int name_index=context->instances[class_index].name;
 			assert_and_throw(name_index);
 			const multiname* mname=context->getMultiname(name_index,nullptr);
-			qualifiedClassnameID=getSystemState()->getUniqueStringId(mname->qualifiedString(getSystemState(),false));
+			qualifiedClassnameID=getSystemState()->getUniqueStringId(mname->qualifiedString(getSystemState(),true));
 		}
 	}
 	return qualifiedClassnameID;
@@ -1341,3 +1341,4 @@ void Prototype::copyOriginalValues(Prototype* target)
 		target->workerDynamicClassVars = new_asobject(target->getObj()->getInstanceWorker());
 	target->getObj()->setRefConstant();
 }
+

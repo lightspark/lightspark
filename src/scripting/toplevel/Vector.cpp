@@ -123,6 +123,7 @@ bool Vector::destruct()
 	}
 	vec.clear();
 	vec_type=nullptr;
+	this->fixed=false;
 	return destructIntern();
 }
 
@@ -199,12 +200,13 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 		for(unsigned int i=0;i<a->size();++i)
 		{
 			asAtom o = a->at(i);
-			//Convert the elements of the array to the type of this vector
-			if (!type->coerce(wrk,o))
-				ASATOM_INCREF(o);
+			res->checkValue(o);
 			ASObject* obj = asAtomHandler::getObject(o);
 			if (obj)
+			{
+				obj->incRef();
 				obj->addStoredMember();
+			}
 			res->vec.push_back(o);
 		}
 		res->setIsInitialized(true);
@@ -291,8 +293,8 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 				if (asAtomHandler::isValid(*it))
 				{
 					res->vec[index]= *it;
-					th->vec_type->coerceForTemplate(th->getInstanceWorker(),res->vec[index]);
-					ASObject* obj = asAtomHandler::getObject(*it);
+					res->checkValue(res->vec[index]);
+					ASObject* obj = asAtomHandler::getObject(res->vec[index]);
 					if (obj)
 					{
 						obj->incRef();
@@ -541,8 +543,7 @@ ASFUNCTIONBODY_ATOM(Vector,push)
 		//The proprietary player violates the specification and allows elements of any type to be pushed;
 		//they are converted to the vec_type
 		asAtom v = args[i];
-		if (!th->vec_type->coerce(th->getInstanceWorker(),v))
-			ASATOM_INCREF(v);
+		th->checkValue(v);
 		ASObject* obj = asAtomHandler::getObject(v);
 		if (obj)
 			obj->addStoredMember();
@@ -786,6 +787,18 @@ asAtom Vector::getDefaultValue()
 		return asAtomHandler::fromInt(0);
 	else
 		return asAtomHandler::nullAtom;
+}
+
+bool Vector::checkValue(asAtom& o)
+{
+	if (!vec_type->coerceForTemplate(getInstanceWorker(),o))
+	{
+		Class_base* cls = dynamic_cast<Class_base*>(vec_type);
+		if(cls && cls != Class<ASObject>::getRef(getSystemState()).getPtr() && (!asAtomHandler::getObject(o) || !asAtomHandler::getObject(o)->getClass() || !asAtomHandler::getObject(o)->getClass()->isSubClass(cls)))
+			createError<TypeError>(getInstanceWorker(),kCheckTypeFailedError, asAtomHandler::toObject(o,getInstanceWorker())->getClassName(), cls->getQualifiedClassName());
+		return false;
+	}
+	return true;
 }
 
 ASFUNCTIONBODY_ATOM(Vector,slice)
@@ -1305,7 +1318,7 @@ ASFUNCTIONBODY_ATOM(Vector,insertAt)
 	int32_t index;
 	asAtom o=asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(index)(o));
-
+	th->checkValue(o);
 	if (index < 0 && th->vec.size() >= (uint32_t)(-index))
 		index = th->vec.size()+(index);
 	if (index < 0)
@@ -1752,7 +1765,10 @@ void Vector::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 		out->writeByte(fixed ? 0x01 : 0x00);
 		if (marker == vector_object_marker)
 		{
-			out->writeStringVR(stringMap,vec_type->getName());
+			tiny_string s = vec_type->getName();
+			if (s=="Object" || s=="any")
+				s.clear(); //vector types "Object"/"any" are stored as empty string
+			out->writeStringVR(stringMap,s);
 		}
 		for(uint32_t i=0;i<count;i++)
 		{

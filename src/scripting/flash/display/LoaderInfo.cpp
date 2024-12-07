@@ -293,6 +293,8 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 			}
 			checkSendComplete();
 		}
+		else
+			spinlock.unlock();
 	}
 }
 

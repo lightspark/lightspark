@@ -74,7 +74,7 @@ public:
 	 */
 	virtual bool coerce(ASWorker* wrk, asAtom& o)=0;
 
-	virtual void coerceForTemplate(ASWorker* wrk, asAtom& o)=0;
+	bool coerceForTemplate(ASWorker* wrk, asAtom& o);
 	
 	/* Return "any" for anyType, "void" for voidType and class_name.name for Class_base */
 	virtual tiny_string getName() const=0;
@@ -97,7 +97,6 @@ class ASAny: public Type
 {
 public:
 	bool coerce(ASWorker* wrk,asAtom& o) override { return false; }
-	void coerceForTemplate(ASWorker* wrk, asAtom& o) override {}
 	virtual ~ASAny() {}
 	tiny_string getName() const override { return "any"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return CANNOT_BIND; }
@@ -110,7 +109,6 @@ class Void: public Type
 {
 public:
 	bool coerce(ASWorker* wrk,asAtom& o) override { return false; }
-	void coerceForTemplate(ASWorker* wrk, asAtom& o) override { }
 	virtual ~Void() {}
 	tiny_string getName() const override { return "void"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return NOT_BINDED; }
@@ -129,7 +127,6 @@ private:
 public:
 	ActivationType(const method_info* m):mi(m){}
 	bool coerce(ASWorker* wrk,asAtom& o) override { throw RunTimeException("Coercing to an ActivationType should not happen");}
-	void coerceForTemplate(ASWorker* wrk,asAtom& o) override { throw RunTimeException("Coercing to an ActivationType should not happen");}
 	virtual ~ActivationType() {}
 	tiny_string getName() const override { return "activation"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override;
@@ -231,8 +228,6 @@ public:
 	 */
 	bool coerce(ASWorker* wrk, asAtom& o) override;
 	
-	void coerceForTemplate(ASWorker* wrk, asAtom& o) override;
-
 	void setSuper(_R<Class_base> super_);
 	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = nullptr) const
 	{
@@ -283,7 +278,6 @@ public:
 
 
 	bool coerce(ASWorker* wrk, asAtom& o) override { return false;}
-	void coerceForTemplate(ASWorker* wrk, asAtom& o) override {}
 	tiny_string getName() const override { return "template"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return CANNOT_BIND;}
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }

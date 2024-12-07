@@ -239,6 +239,8 @@ asAtom Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& s
 		{
 			tiny_string vectypename;
 			vectypename = parseStringVR(stringMap);
+			if (vectypename.empty()) // empty string indicates type "Object"
+				vectypename="Object";
 			multiname m(nullptr);
 			m.name_type=multiname::NAME_STRING;
 			m.name_s_id=input->getSystemState()->getUniqueStringId(vectypename);

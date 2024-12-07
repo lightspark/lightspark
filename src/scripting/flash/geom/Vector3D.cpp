@@ -143,12 +143,16 @@ ASFUNCTIONBODY_ATOM(Vector3D,clone)
 
 ASFUNCTIONBODY_ATOM(Vector3D,add)
 {
-	assert_and_throw(argslen==1);
+	Vector3D* th = asAtomHandler::as<Vector3D>(obj);
+	_NR<Vector3D> vc;
+	ARG_CHECK(ARG_UNPACK(vc));
+	if (vc.isNull())
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"a");
+		return;
+	}
 
-	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
-	Vector3D* vc=asAtomHandler::as<Vector3D>(args[0]);
-	Vector3D* res=Class<Vector3D>::getInstanceS(wrk);
-
+	Vector3D* res = Class<Vector3D>::getInstanceSNoArgs(wrk);
 	res->x = th->x + vc->x;
 	res->y = th->y + vc->y;
 	res->z = th->z + vc->z;
@@ -158,11 +162,10 @@ ASFUNCTIONBODY_ATOM(Vector3D,add)
 
 ASFUNCTIONBODY_ATOM(Vector3D,angleBetween)
 {
-	assert_and_throw(argslen==2);
-
-	Vector3D* vc1=asAtomHandler::as<Vector3D>(args[0]);
-	Vector3D* vc2=asAtomHandler::as<Vector3D>(args[1]);
-
+	_NR<Vector3D> vc1;
+	_NR<Vector3D> vc2;
+	ARG_CHECK(ARG_UNPACK(vc1)(vc2));
+	
 	number_t angle = vc1->x * vc2->x + vc1->y * vc2->y + vc1->z * vc2->z;
 	angle /= sqrt(vc1->x * vc1->x + vc1->y * vc1->y + vc1->z * vc1->z);
 	angle /= sqrt(vc2->x * vc2->x + vc2->y * vc2->y + vc2->z * vc2->z);
@@ -188,10 +191,9 @@ ASFUNCTIONBODY_ATOM(Vector3D,crossProduct)
 
 ASFUNCTIONBODY_ATOM(Vector3D,decrementBy)
 {
-	assert_and_throw(argslen==1);
-
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
-	Vector3D* vc=asAtomHandler::as<Vector3D>(args[0]);
+	_NR<Vector3D> vc;
+	ARG_CHECK(ARG_UNPACK(vc));
 
 	th->x -= vc->x;
 	th->y -= vc->y;
@@ -200,10 +202,9 @@ ASFUNCTIONBODY_ATOM(Vector3D,decrementBy)
 
 ASFUNCTIONBODY_ATOM(Vector3D,distance)
 {
-	assert_and_throw(argslen==2);
-
-	Vector3D* vc1=asAtomHandler::as<Vector3D>(args[0]);
-	Vector3D* vc2=asAtomHandler::as<Vector3D>(args[1]);
+	_NR<Vector3D> vc1;
+	_NR<Vector3D> vc2;
+	ARG_CHECK(ARG_UNPACK(vc1)(vc2));
 
 	number_t dx, dy, dz, dist;
 	dx = vc1->x - vc2->x;
@@ -216,18 +217,15 @@ ASFUNCTIONBODY_ATOM(Vector3D,distance)
 
 ASFUNCTIONBODY_ATOM(Vector3D,dotProduct)
 {
-	assert_and_throw(argslen==1);
-
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
-	Vector3D* vc=asAtomHandler::as<Vector3D>(args[0]);
+	_NR<Vector3D> vc;
+	ARG_CHECK(ARG_UNPACK(vc));
 
 	asAtomHandler::setNumber(ret,wrk,th->x * vc->x + th->y * vc->y + th->z * vc->z);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,equals)
 {
-	assert_and_throw(argslen==1 || argslen==2);
-
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
 	_NR<Vector3D> vc;
 	bool allfour;
@@ -237,10 +235,9 @@ ASFUNCTIONBODY_ATOM(Vector3D,equals)
 
 ASFUNCTIONBODY_ATOM(Vector3D,incrementBy)
 {
-	assert_and_throw(argslen==1);
-
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
-	Vector3D* vc=asAtomHandler::as<Vector3D>(args[0]);
+	_NR<Vector3D> vc;
+	ARG_CHECK(ARG_UNPACK(vc));
 
 	th->x += vc->x;
 	th->y += vc->y;
@@ -265,8 +262,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,nearEquals)
 
 ASFUNCTIONBODY_ATOM(Vector3D,negate)
 {
-	assert_and_throw(argslen==0);
-
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
 
 	th->x = -th->x;
@@ -276,8 +271,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,negate)
 
 ASFUNCTIONBODY_ATOM(Vector3D,normalize)
 {
-	assert_and_throw(argslen==0);
-
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
 
 	number_t len = sqrt(th->x * th->x + th->y * th->y + th->z * th->z);
@@ -305,8 +298,6 @@ ASFUNCTIONBODY_ATOM(Vector3D,normalize)
 
 ASFUNCTIONBODY_ATOM(Vector3D,project)
 {
-	assert_and_throw(argslen==0);
-
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
 
 	th->x /= th->w;
@@ -316,10 +307,10 @@ ASFUNCTIONBODY_ATOM(Vector3D,project)
 
 ASFUNCTIONBODY_ATOM(Vector3D,scaleBy)
 {
-	assert_and_throw(argslen==1);
-
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
-	number_t scale = asAtomHandler::toNumber(args[0]);
+
+	number_t scale;
+	ARG_CHECK(ARG_UNPACK(scale));
 
 	th->x *= scale;
 	th->y *= scale;

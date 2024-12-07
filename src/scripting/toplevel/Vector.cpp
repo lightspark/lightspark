@@ -546,7 +546,10 @@ ASFUNCTIONBODY_ATOM(Vector,push)
 		th->checkValue(v);
 		ASObject* obj = asAtomHandler::getObject(v);
 		if (obj)
+		{
+			obj->incRef();
 			obj->addStoredMember();
+		}
 		th->vec.push_back(v);
 	}
 	asAtomHandler::setUInt(ret,wrk,(uint32_t)th->vec.size());

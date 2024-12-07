@@ -3261,7 +3261,10 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 		path = name.lowercase();
 		clip = AVM1GetClipFromPath(path,&ret);
 		if (asAtomHandler::isValid(ret))
+		{
+			ASATOM_INCREF(ret);
 			return ret;
+		}
 		if (clip && clip != this)
 		{
 			clip->incRef();

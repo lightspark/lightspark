@@ -2182,6 +2182,12 @@ uint32_t XML::getNamespacePrefixByURI(uint32_t uri, bool create)
 
 ASFUNCTIONBODY_ATOM(XML,_toString)
 {
+	if (Class<XML>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
+	{
+		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
+		return;
+	}
+	
 	XML* th=asAtomHandler::as<XML>(obj);
 	if (th->nodetype == pugi::node_element && th->hasSimpleContent() && (th->childrenlist.isNull() || th->childrenlist->nodes.empty()))
 		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);

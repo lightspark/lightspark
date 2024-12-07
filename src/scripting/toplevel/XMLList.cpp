@@ -1399,6 +1399,11 @@ number_t XMLList::toNumberForComparison()
 
 ASFUNCTIONBODY_ATOM(XMLList,_toString)
 {
+	if (Class<XMLList>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
+	{
+		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
+		return;
+	}
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
 	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv()));
 }

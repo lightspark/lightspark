@@ -259,7 +259,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 {
 	if(b!=bytesLoaded)
 	{
-		Locker l(spinlock);
+		spinlock.lock();
 		bytesLoaded=b;
 		if(getVm(getSystemState()))
 		{
@@ -270,6 +270,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 				this->addLoaderEvent(progressEvent);
 				this->incRef();
 				progressEvent->incRef();
+				spinlock.unlock();
 				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(progressEvent));
 			}
 			else
@@ -284,8 +285,11 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 					this->addLoaderEvent(progressEvent);
 					this->incRef();
 					progressEvent->incRef();
+					spinlock.unlock();
 					getVm(getSystemState())->addIdleEvent(_MR(this),_MR(progressEvent));
 				}
+				else
+					spinlock.unlock();
 			}
 			checkSendComplete();
 		}

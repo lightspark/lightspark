@@ -3393,7 +3393,7 @@ void ABCVm::abc_callFunctionNoArgs_constant(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = *instrptr->arg1_constant;
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	LOG_CALL("callFunctionNoArgs_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	if(asAtomHandler::is<Null>(obj))
 	{
@@ -3414,7 +3414,7 @@ void ABCVm::abc_callFunctionNoArgs_local(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	LOG_CALL("callFunctionNoArgs_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	if(asAtomHandler::is<Null>(obj))
 	{
@@ -3986,7 +3986,7 @@ void ABCVm::abc_callFunctionSyntheticMultiArgsVoid(call_context* context)
 	SyntheticFunction* func = instrptr->cacheobj3->as<SyntheticFunction>();
 	LOG_CALL("callFunctionSyntheticMultiArgsVoid " << func->getSystemState()->getStringFromUniqueId(func->functionname) << ' ' <<argcount);
 	RUNTIME_STACK_POP_N_CREATE(context,argcount+1,args);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	func->call(context->worker,ret,*args, args+1, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(ret);
 	ASATOM_DECREF_POINTER(args);
@@ -4056,7 +4056,7 @@ void ABCVm::abc_callFunctionSyntheticMultiArgs(call_context* context)
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgs " << asAtomHandler::toDebugString(func) << ' ' <<argcount);
 	RUNTIME_STACK_POP_N_CREATE(context,argcount+1,args);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::as<SyntheticFunction>(func)->call(context->worker,ret,*args, args+1, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF_POINTER(args);
 	RUNTIME_STACK_PUSH(context,ret);
@@ -4084,7 +4084,7 @@ void ABCVm::abc_callFunctionSyntheticMultiArgs_constant(call_context* context)
 		else
 			args[i-1] = *context->exec_pos->arg1_constant;
 	}
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,ret,obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	RUNTIME_STACK_PUSH(context,ret);
 	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
@@ -4111,7 +4111,7 @@ void ABCVm::abc_callFunctionSyntheticMultiArgs_local(call_context* context)
 		else
 			args[i-1] = *context->exec_pos->arg1_constant;
 	}
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,ret,obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	RUNTIME_STACK_PUSH(context,ret);
 	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
@@ -7509,7 +7509,7 @@ void ABCVm::abc_callvoid_constant_constant(call_context* context)
 	asAtom func = *instrptr->arg1_constant;
 	asAtom obj = *instrptr->arg2_constant;
 	LOG_CALL("callvoid_cc " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	++(context->exec_pos);
 }
@@ -7519,7 +7519,7 @@ void ABCVm::abc_callvoid_local_constant(call_context* context)
 	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom obj = *instrptr->arg2_constant;
 	LOG_CALL("callvoid_lc " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	++(context->exec_pos);
 }
@@ -7530,7 +7530,7 @@ void ABCVm::abc_callvoid_constant_local(call_context* context)
 	asAtom func = *instrptr->arg1_constant;
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	LOG_CALL("callvoid_cl " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	++(context->exec_pos);
 }
@@ -7540,7 +7540,7 @@ void ABCVm::abc_callvoid_local_local(call_context* context)
 	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	LOG_CALL("callvoid_ll " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	++(context->exec_pos);
 }
@@ -7551,7 +7551,7 @@ void ABCVm::abc_call_constant_constant(call_context* context)
 	asAtom func = *instrptr->arg1_constant;
 	asAtom obj = *instrptr->arg2_constant;
 	LOG_CALL("call_cc " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
@@ -7562,7 +7562,7 @@ void ABCVm::abc_call_local_constant(call_context* context)
 	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom obj = *instrptr->arg2_constant;
 	LOG_CALL("call_lc " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
@@ -7573,7 +7573,7 @@ void ABCVm::abc_call_constant_local(call_context* context)
 	asAtom func = *instrptr->arg1_constant;
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	LOG_CALL("call_cl " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
@@ -7584,7 +7584,7 @@ void ABCVm::abc_call_local_local(call_context* context)
 	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	LOG_CALL("call_ll " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
@@ -7595,7 +7595,7 @@ void ABCVm::abc_call_constant_constant_localresult(call_context* context)
 	asAtom func = *instrptr->arg1_constant;
 	asAtom obj = *instrptr->arg2_constant;
 	LOG_CALL("call_ccl " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
@@ -7606,7 +7606,7 @@ void ABCVm::abc_call_local_constant_localresult(call_context* context)
 	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom obj = *instrptr->arg2_constant;
 	LOG_CALL("call_lcl " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
@@ -7617,7 +7617,7 @@ void ABCVm::abc_call_constant_local_localresult(call_context* context)
 	asAtom func = *instrptr->arg1_constant;
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	LOG_CALL("call_cll " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
@@ -7628,7 +7628,7 @@ void ABCVm::abc_call_local_local_localresult(call_context* context)
 	asAtom func = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	LOG_CALL("call_lll " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
 	replacelocalresult(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);

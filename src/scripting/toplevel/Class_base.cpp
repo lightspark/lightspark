@@ -75,15 +75,22 @@ bool Type::coerceForTemplate(ASWorker* wrk, asAtom& o)
 			return true;
 		case T_NULL:
 			return true;
+		case T_BOOLEAN:
+			if(this == Class<Boolean>::getRef(wrk->getSystemState()).getPtr())
+				return true;
+			break;
 		case T_UINTEGER:
+			if(this == Class<UInteger>::getRef(wrk->getSystemState()).getPtr())
+				return true;
+			break;
 		case T_INTEGER:
-			if(this == Class<Integer>::getRef(wrk->getSystemState()).getPtr()
-				|| this == Class<UInteger>::getRef(wrk->getSystemState()).getPtr()
-				|| this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
+			if(this == Class<Integer>::getRef(wrk->getSystemState()).getPtr())
 				return true;
 			break;
 		case T_NUMBER:
-			if(this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
+			if(this == Class<Integer>::getRef(wrk->getSystemState()).getPtr()
+				|| this == Class<UInteger>::getRef(wrk->getSystemState()).getPtr()
+				|| this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
 				return true;
 			break;
 		case T_STRING:
@@ -92,6 +99,34 @@ bool Type::coerceForTemplate(ASWorker* wrk, asAtom& o)
 			break;
 		default:
 			break;
+	}
+	if(this == Class<UInteger>::getRef(wrk->getSystemState()).getPtr())
+	{
+		asAtom n = o;
+		asAtomHandler::setUInt(o,wrk,asAtomHandler::toUInt(o));
+		ASATOM_DECREF(n);
+		return true;
+	}
+	if(this == Class<Integer>::getRef(wrk->getSystemState()).getPtr())
+	{
+		asAtom n = o;
+		asAtomHandler::setInt(o,wrk,asAtomHandler::toInt(o));
+		ASATOM_DECREF(n);
+		return true;
+	}
+	if(this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
+	{
+		asAtom n = o;
+		asAtomHandler::setNumber(o,wrk,asAtomHandler::toUInt(o));
+		ASATOM_DECREF(n);
+		return true;
+	}
+	if(this == Class<ASString>::getRef(wrk->getSystemState()).getPtr())
+	{
+		asAtom n = o;
+		o = asAtomHandler::fromObject(abstract_s(wrk,asAtomHandler::toString(o,wrk)));
+		ASATOM_DECREF(n);
+		return true;
 	}
 	if (asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<ObjectConstructor>())
 		return true;

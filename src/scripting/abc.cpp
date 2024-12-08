@@ -1121,6 +1121,11 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case SHUTDOWN:
 			{
+				while (!idleevents_queue.empty())
+				{
+					events_queue.push_back(idleevents_queue.front());
+					idleevents_queue.pop_front();
+				}
 				//no need to lock as this is the vm thread
 				shuttingdown=true;
 				m_sys->signalTerminated();
@@ -1326,24 +1331,12 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			{
 				FlushEventBufferEvent* ev=static_cast<FlushEventBufferEvent*>(e.second.getPtr());
 				Locker l(event_queue_mutex);
-				if (!m_sys->runSingleThreaded)
-				{
-					events_queue.insert
+				events_queue.insert
 					(
 						ev->append ? events_queue.end() : events_queue.begin(),
 						ev->reverse ? event_buffer.rend().base() : event_buffer.begin(),
 						ev->reverse ? event_buffer.rbegin().base() : event_buffer.end()
 					);
-				}
-				else
-				{
-					std::for_each
-					(
-						ev->reverse ? event_buffer.rend().base() : event_buffer.begin(),
-						ev->reverse ? event_buffer.rbegin().base() : event_buffer.end(),
-						[&](const eventType& ev) { handleEvent(ev); }
-					);
-				}
 				event_buffer.clear();
 				break;
 			}
@@ -1407,7 +1400,7 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
 			);
 		}
 		else
-		handleEvent( make_pair(obj,ev) );
+			handleEvent( make_pair(obj,ev) );
 		if (obj)
 			obj->afterHandleEvent(ev.getPtr());
 		return true;
@@ -1417,7 +1410,11 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
 
 	//If the system should terminate new events are not accepted
 	if(shuttingdown)
+	{
+		if (obj)
+			obj->afterHandleEvent(ev.getPtr());
 		return false;
+	}
 
 	if (!obj.isNull())
 		obj->onNewEvent(ev.getPtr());
@@ -1548,7 +1545,7 @@ Class_inherit* ABCVm::findClassInherit(const string& s, ApplicationDomain* appDo
 	LOG(LOG_CALLS,"Setting class name to " << s);
 	ASObject* target;
 	ASObject* derived_class=appDomain->getVariableByString(s,target);
-	if(derived_class==nullptr)
+	if(derived_class==nullptr || derived_class->getObjectType()==T_NULL)
 	{
 		//LOG(LOG_ERROR,"Class " << s << " not found in global for "<<root->getOrigin());
 		//throw RunTimeException("Class not found in global");

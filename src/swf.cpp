@@ -973,7 +973,8 @@ void SystemState::delayedCreation(SystemState* sys)
 		if (sys->engineData->startInFullScreenMode)
 			sys->engineData->setDisplayState("fullScreen",sys);
 	}
-	sys->inputThread->start(sys->engineData);
+	if (sys->inputThread)
+		sys->inputThread->start(sys->engineData);
 
 	if(EngineData::enablerendering && Config::getConfig()->isRenderingEnabled())
 	{

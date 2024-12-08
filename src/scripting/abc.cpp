@@ -1284,32 +1284,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					Locker l(event_queue_mutex);
 					while (!idleevents_queue.empty())
 					{
-						if (!m_sys->runSingleThreaded)
-							events_queue.push_back(idleevents_queue.front());
-						else
-						{
-							pair<_NR<EventDispatcher>,_R<Event>> e=idleevents_queue.front();
-							tryHandleEvent
-								(
-									[&](eventType&& e)
-									{
-										if (e.first)
-											e.first->addStoredMember();// member will be removed after event is handled
-									},
-									[&](eventType&& e)
-									{
-										if (!e.first.isNull())
-										{
-											e.first->afterHandleEvent(e.second.getPtr());
-											// ensure that test for garbage collection is done for event dispatcher
-											ASObject* o = e.first.getPtr();
-											e.first.fakeRelease();
-											o->removeStoredMember();
-										}
-									},
-									std::move(e)
-									);
-						}
+						events_queue.push_back(idleevents_queue.front());
 						idleevents_queue.pop_front();
 					}
 					isIdle = true;

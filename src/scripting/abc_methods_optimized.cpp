@@ -945,7 +945,7 @@ void ABCVm::abc_lf32_constant_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
 	ApplicationDomain::loadFloat(context->mi->context->applicationDomain,ret,*context->exec_pos->arg1_constant);
-	
+
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
 	LOG_CALL("lf32_cs " << t << " "<< asAtomHandler::toDebugString(ret) << " "<< asAtomHandler::toDebugString(obj));
@@ -956,7 +956,7 @@ void ABCVm::abc_lf32_local_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
 	ApplicationDomain::loadFloat(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
-	
+
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
 	LOG_CALL("lf32_ls " << t << " "<< asAtomHandler::toDebugString(ret) << " "<< asAtomHandler::toDebugString(obj));
@@ -1003,7 +1003,7 @@ void ABCVm::abc_lf64_constant_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
 	ApplicationDomain::loadDouble(context->mi->context->applicationDomain,ret,*context->exec_pos->arg1_constant);
-	
+
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
 	LOG_CALL("lf64_cs " << t << " "<< asAtomHandler::toDebugString(ret) << " "<< asAtomHandler::toDebugString(obj));
@@ -1014,7 +1014,7 @@ void ABCVm::abc_lf64_local_setslotnocoerce(call_context* context)
 {
 	asAtom ret=asAtomHandler::invalidAtom;
 	ApplicationDomain::loadDouble(context->mi->context->applicationDomain,ret,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
-	
+
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
 	LOG_CALL("lf64_ls " << t << " "<< asAtomHandler::toDebugString(ret) << " "<< asAtomHandler::toDebugString(obj));
@@ -1333,7 +1333,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 					&& asAtomHandler::canCacheMethod(obj,name)
 					&& asAtomHandler::isObject(o)
 					&& !asAtomHandler::as<IFunction>(o)->clonedFrom
-					&& ((asAtomHandler::is<Class_base>(obj) && asAtomHandler::as<IFunction>(o)->inClass == asAtomHandler::as<Class_base>(obj)) 
+					&& ((asAtomHandler::is<Class_base>(obj) && asAtomHandler::as<IFunction>(o)->inClass == asAtomHandler::as<Class_base>(obj))
 						|| (asAtomHandler::as<IFunction>(o)->inClass && asAtomHandler::getClass(obj,context->sys)->isSubClass(asAtomHandler::as<IFunction>(o)->inClass))))
 			{
 				// cache method if multiname is static and it is a method of a sealed class
@@ -4239,7 +4239,7 @@ void ABCVm::abc_callFunctionBuiltinMultiArgs_constant(call_context* context)
 		else
 			args[i-1] = *context->exec_pos->arg1_constant;
 	}
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker,obj, args, argcount);
 	RUNTIME_STACK_PUSH(context,ret);
 	if (!fromglobal &&instrptr->cacheobj3->as<IFunction>()->clonedFrom)
@@ -4263,7 +4263,7 @@ void ABCVm::abc_callFunctionBuiltinMultiArgs_local(call_context* context)
 		else
 			args[i-1] = *context->exec_pos->arg1_constant;
 	}
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker,obj, args, argcount);
 	RUNTIME_STACK_PUSH(context,ret);
 	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
@@ -4287,7 +4287,7 @@ void ABCVm::abc_callFunctionBuiltinMultiArgs_constant_localResult(call_context* 
 		else
 			args[i-1] = *context->exec_pos->arg1_constant;
 	}
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker,obj, args, argcount);
 	replacelocalresult(context,context->exec_pos->local3.pos,ret);
 	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
@@ -4311,7 +4311,7 @@ void ABCVm::abc_callFunctionBuiltinMultiArgs_local_localResult(call_context* con
 		else
 			args[i-1] = *context->exec_pos->arg1_constant;
 	}
-	asAtom ret;
+	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker,obj, args, argcount);
 	replacelocalresult(context,context->exec_pos->local3.pos,ret);
 	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
@@ -5062,7 +5062,7 @@ void ABCVm::abc_add_constant_local_setslotnocoerce(call_context* context)
 	LOG_CALL("add_cls");
 	asAtom res = asAtomHandler::invalidAtom;
 	asAtomHandler::addreplace(res,context->worker,*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->local3.flags & ABC_OP_FORCEINT);
-	
+
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
 	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res);
@@ -7696,7 +7696,7 @@ void ABCVm::abc_coerce_local_localresult(call_context* context)
 		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(getSys()));
 		return;
 	}
-	
+
 	if (!type->coerce(context->worker,res))
 		ASATOM_INCREF(res);
 	replacelocalresult(context,context->exec_pos->local3.pos,res);
@@ -8029,7 +8029,7 @@ void ABCVm::abc_newobject_noargs_localresult(call_context* context)
 void ABCVm::constructpropMultiArgs_intern(call_context* context,asAtom& ret,asAtom& obj)
 {
 	context->explicitConstruction = true;
-	
+
 	uint32_t argcount = context->exec_pos->local2.pos;
 	asAtom* args = g_newa(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -8043,7 +8043,7 @@ void ABCVm::constructpropMultiArgs_intern(call_context* context,asAtom& ret,asAt
 		else
 			args[i-1] = *context->exec_pos->arg1_constant;
 	}
-	
+
 	++(context->exec_pos);
 	ASObject* constructor = context->exec_pos->cacheobj1;
 	multiname* name = context->exec_pos->cachedmultiname2;

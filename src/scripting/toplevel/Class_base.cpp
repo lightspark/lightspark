@@ -117,7 +117,7 @@ bool Type::coerceForTemplate(ASWorker* wrk, asAtom& o)
 	if(this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
 	{
 		asAtom n = o;
-		asAtomHandler::setNumber(o,wrk,asAtomHandler::toUInt(o));
+		asAtomHandler::setNumber(o,wrk,asAtomHandler::toNumber(o));
 		ASATOM_DECREF(n);
 		return true;
 	}

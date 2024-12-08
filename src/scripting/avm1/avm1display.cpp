@@ -722,7 +722,7 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,broadcastMessage)
 				ASObject* listener = asAtomHandler::getObjectNoCheck(o);
 				asAtom f = asAtomHandler::invalidAtom;
 				listener->getVariableByMultiname(f,mmsg,GET_VARIABLE_OPTION::NONE,wrk);
-				asAtom res;
+				asAtom res = asAtomHandler::invalidAtom;
 				if (asAtomHandler::is<Function>(f))
 				{
 					asAtomHandler::as<Function>(f)->call(res,wrk,o,nullptr,0);

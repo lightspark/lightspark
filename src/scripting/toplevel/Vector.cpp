@@ -286,6 +286,11 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 		if (asAtomHandler::is<Vector>(args[pos]))
 		{
 			Vector* arg=asAtomHandler::as<Vector>(args[pos]);
+			Class_base* cls = dynamic_cast<Class_base*>(th->vec_type);
+			Class_base* clsarg = dynamic_cast<Class_base*>(arg->vec_type);
+			if(cls && cls != clsarg && cls != Class<ASObject>::getRef(th->getSystemState()).getPtr() && !clsarg->isSubClass(cls))
+				createError<TypeError>(wrk,kCheckTypeFailedError, clsarg->getQualifiedClassName(), cls->getQualifiedClassName());
+
 			res->vec.resize(index+arg->size(), th->getDefaultValue());
 			auto it=arg->vec.begin();
 			for(;it != arg->vec.end();++it)
@@ -566,8 +571,14 @@ ASFUNCTIONBODY_ATOM(Vector,_pop)
 	uint32_t size =th->size();
 	if (size == 0)
 	{
-		asAtomHandler::setNull(ret);
-		th->vec_type->coerce(th->getInstanceWorker(),ret);
+		if(th->vec_type == Class<Integer>::getRef(wrk->getSystemState()).getPtr())
+			ret = asAtomHandler::fromInt(0);
+		else if(th->vec_type == Class<UInteger>::getRef(wrk->getSystemState()).getPtr())
+			ret = asAtomHandler::fromUInt(0);
+		else if(th->vec_type == Class<Number>::getRef(wrk->getSystemState()).getPtr())
+			ret = asAtomHandler::fromNumber(wrk,0,false);
+		else
+			ret = asAtomHandler::undefinedAtom;
 		return;
 	}
 	ret = th->vec[size-1];
@@ -890,13 +901,15 @@ ASFUNCTIONBODY_ATOM(Vector,splice)
 	//Insert requested values starting at startIndex
 	for(unsigned int i=2;i<argslen;i++)
 	{
-		ASObject* obj = asAtomHandler::getObject(args[i]);
+		asAtom o = args[i];
+		th->checkValue(o);
+		ASObject* obj = asAtomHandler::getObject(o);
 		if (obj)
 		{
 			obj->incRef();
 			obj->addStoredMember();
 		}
-		th->vec.push_back(args[i]);
+		th->vec.push_back(o);
 	}
 	// move remembered items to new position
 	th->vec.resize((totalSize-deleteCount)+(argslen > 2 ? argslen-2 : 0), th->getDefaultValue());

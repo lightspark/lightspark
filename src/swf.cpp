@@ -804,6 +804,8 @@ void SystemState::destroy()
 		getEngineData()->addQuitEvent();
 	delete engineData;
 	engineData=nullptr;
+	if (EngineData::mainthread_running)
+		delete eventLoop;
 	eventLoop = nullptr;
 	time = nullptr;
 
@@ -983,17 +985,20 @@ void SystemState::delayedCreation(SystemState* sys)
 	}
 	else
 	{
-		sys->getRenderThread()->windowWidth = reqWidth;
-		sys->getRenderThread()->windowHeight = reqHeight;
-		sys->resizeCompleted();
-		//This just signals the 'initalized' semaphore
-		sys->renderThread->forceInitialization();
+		if (sys->getRenderThread())
+		{
+			sys->getRenderThread()->windowWidth = reqWidth;
+			sys->getRenderThread()->windowHeight = reqHeight;
+			sys->resizeCompleted();
+			//This just signals the 'initalized' semaphore
+			sys->renderThread->forceInitialization();
+		}
 		LOG(LOG_INFO,"Rendering is disabled by configuration");
 	}
 
-	if(sys->renderRate)
+	if(sys->getRenderThread() && sys->renderRate)
 		sys->startRenderTicks();
-	
+
 	{
 		Locker l(sys->initializedMutex);
 		sys->isinitialized=true;

@@ -2186,7 +2186,13 @@ bool ASObject::handleGarbageCollection()
 
 bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	return Variables.countCylicMemberReferences(gcstate,this);
+	bool ret = false;
+	for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
+		ret = (*it)->countCylicMemberReferences(gcstate) || ret;
+	if (gcstate.stopped)
+		return false;
+	ret = Variables.countCylicMemberReferences(gcstate,this) || ret;
+	return ret;
 }
 
 bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)

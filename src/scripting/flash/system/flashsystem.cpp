@@ -754,7 +754,15 @@ void ApplicationDomain::setOrigin(const tiny_string& u, const tiny_string& filen
 	//If this URL doesn't contain a filename, add the one passed as an argument (used in main.cpp)
 	if(origin.getPathFile() == "" && filename != "")
 	{
-		tiny_string fileurl = g_path_is_absolute(filename.raw_buf()) ? g_filename_to_uri(filename.raw_buf(), nullptr,nullptr) : filename;
+		tiny_string fileurl;
+		if (g_path_is_absolute(filename.raw_buf()))
+		{
+			gchar* uri = g_filename_to_uri(filename.raw_buf(), nullptr,nullptr);
+			fileurl = uri;
+			g_free(uri);
+		}
+		else
+			fileurl = filename;
 		origin = origin.goToURL(fileurl);
 	}
 }

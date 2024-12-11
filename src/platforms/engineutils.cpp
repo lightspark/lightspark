@@ -103,6 +103,7 @@ EngineData::~EngineData()
 	if (nvgcontext)
 		nvgDeleteGL2(nvgcontext);
 #endif
+	handleQuit();
 }
 
 void EngineData::runInTrueMainThread(SystemState* sys, MainThreadCallback func)
@@ -120,7 +121,8 @@ void EngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
 
 void EngineData::handleQuit()
 {
-	SDL_Quit();
+	if (!SDL_WasInit(0))
+		SDL_Quit ();
 }
 
 bool EngineData::mainloop_handleevent(const LSEvent& event, SystemState* sys)

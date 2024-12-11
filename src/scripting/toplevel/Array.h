@@ -70,10 +70,10 @@ private:
 		sortComparatorDefault(bool oldversion, bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d),useoldversion(oldversion){}
 		bool operator()(const sort_value& d1, const sort_value& d2);
 	};
-	void constructorImpl(asAtom *args, const unsigned int argslen);
 	tiny_string toString_priv(bool localized=false);
 	int capIndex(int i);
 public:
+	void constructorImpl(asAtom *args, const unsigned int argslen);
 	class ISortComparator
 	{
 	public:

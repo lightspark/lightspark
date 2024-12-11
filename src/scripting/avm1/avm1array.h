@@ -38,7 +38,9 @@ public:
 	bool destruct() override;
 	ASFUNCTION_ATOM(AVM1_getLength);
 	ASFUNCTION_ATOM(AVM1_setLength);
-	
+	ASFUNCTION_ATOM(AVM1_call);
+	ASFUNCTION_ATOM(AVM1_apply);
+	void setCurrentSize(int64_t size) {avm1_currentsize=size;}
 };
 
 }

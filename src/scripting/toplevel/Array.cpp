@@ -31,6 +31,7 @@
 #include "scripting/toplevel/RegExp.h"
 #include "scripting/toplevel/Undefined.h"
 #include "scripting/flash/utils/flashutils.h"
+#include "scripting/avm1/avm1array.h"
 #include <algorithm>
 
 using namespace std;
@@ -186,8 +187,16 @@ void Array::constructorImpl(asAtom* args, const unsigned int argslen)
 		uint32_t size = asAtomHandler::toUInt(args[0]);
 		if ((number_t)size != asAtomHandler::toNumber(args[0]))
 		{
-			createError<RangeError>(getInstanceWorker(),kArrayIndexNotIntegerError, Number::toString(asAtomHandler::toNumber(args[0])));
-			return;
+			if (this->isAVM1Array())
+			{
+				size=0;
+				static_cast<AVM1Array*>(this)->setCurrentSize(asAtomHandler::toNumber(args[0]));
+			}
+			else
+			{
+				createError<RangeError>(getInstanceWorker(),kArrayIndexNotIntegerError, Number::toString(asAtomHandler::toNumber(args[0])));
+				return;
+			}
 		}
 		LOG_CALL("Creating array of length " << size);
 		resize(size);
@@ -2235,6 +2244,8 @@ tiny_string Array::toString_priv(bool localized)
 			if(it != data_second.end())
 				sl = it->second;
 		}
+		if (this->isAVM1Array() && asAtomHandler::isInvalid(sl))
+			sl = asAtomHandler::undefinedAtom;
 		if(asAtomHandler::isValid(sl) && (this->isAVM1Array() || (!asAtomHandler::isNull(sl) && !asAtomHandler::isUndefined(sl))))
 		{
 			if (localized)

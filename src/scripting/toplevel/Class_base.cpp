@@ -102,30 +102,22 @@ bool Type::coerceForTemplate(ASWorker* wrk, asAtom& o)
 	}
 	if(this == Class<UInteger>::getRef(wrk->getSystemState()).getPtr())
 	{
-		asAtom n = o;
 		asAtomHandler::setUInt(o,wrk,asAtomHandler::toUInt(o));
-		ASATOM_DECREF(n);
 		return true;
 	}
 	if(this == Class<Integer>::getRef(wrk->getSystemState()).getPtr())
 	{
-		asAtom n = o;
 		asAtomHandler::setInt(o,wrk,asAtomHandler::toInt(o));
-		ASATOM_DECREF(n);
 		return true;
 	}
 	if(this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
 	{
-		asAtom n = o;
 		asAtomHandler::setNumber(o,wrk,asAtomHandler::toNumber(o));
-		ASATOM_DECREF(n);
 		return true;
 	}
 	if(this == Class<ASString>::getRef(wrk->getSystemState()).getPtr())
 	{
-		asAtom n = o;
 		o = asAtomHandler::fromObject(abstract_s(wrk,asAtomHandler::toString(o,wrk)));
-		ASATOM_DECREF(n);
 		return true;
 	}
 	if (asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<ObjectConstructor>())

@@ -1956,7 +1956,8 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 					if (itc != gcstate.checkedobjects.end())
 					{
 						ret = (*itc).second.hasmember || ret;
-						(*itc).second.hasmember=ret;
+						if ((*itc).second.isAncestor)
+							(*itc).second.hasmember=ret;
 					}
 					if (gcstate.stopped)
 						return false;
@@ -2066,6 +2067,8 @@ void ASObject::setClass(Class_base* c)
 
 bool ASObject::removefromGarbageCollection()
 {
+	if (!canHaveCyclicMemberReference())
+		return true;
 	if (getInstanceWorker() && getInstanceWorker()->isInGarbageCollection())
 		return true;
 	if (getInstanceWorker())

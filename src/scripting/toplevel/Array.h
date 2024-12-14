@@ -159,7 +159,7 @@ public:
 		if (asAtomHandler::isInvalid(ret))
 			asAtomHandler::setUndefined(ret);
 	}
-	
+	bool hasEntry(uint32_t index);
 	bool set(unsigned int index, asAtom &o, bool checkbounds = true, bool addref = true, bool addmember=true);
 	uint64_t size();
 	void push(asAtom o);// push doesn't increment the refcount, so the caller has to take care of that

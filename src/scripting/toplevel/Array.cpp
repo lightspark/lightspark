@@ -2356,6 +2356,23 @@ asAtom Array::at(unsigned int index)
 	return asAtomHandler::undefinedAtom;
 }
 
+bool Array::hasEntry(uint32_t index)
+{
+	asAtom ret=asAtomHandler::invalidAtom;
+	if (index < ARRAY_SIZE_THRESHOLD)
+	{
+		if (index < data_first.size())
+			asAtomHandler::set(ret,data_first.at(index));
+	}
+	else
+	{
+		auto it = data_second.find(index);
+		if (it != data_second.end())
+			asAtomHandler::set(ret,it->second);
+	}
+	return asAtomHandler::isValid(ret);
+}
+
 void Array::outofbounds(unsigned int index) const
 {
 	createError<RangeError>(getInstanceWorker(),kInvalidArrayLengthError, Number::toString(index));

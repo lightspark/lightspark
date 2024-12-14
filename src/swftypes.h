@@ -481,7 +481,7 @@ struct multiname: public memory_reporter
 	void setName(union asAtom &n, ASWorker* w);
 	void resetNameIfObject();
 	inline bool isQName() const { return ns.size() == 1; }
-	bool toUInt(SystemState *sys, uint32_t& out, bool acceptStringFractions=false, bool* isNumber=nullptr) const;
+	bool toUInt(SystemState *sys, uint32_t& out, bool acceptStringFractions=false, bool* isNumber=nullptr, bool forAVM1=false) const;
 	inline bool isEmpty() const { return name_type == NAME_OBJECT && name_o == nullptr;}
 };
 

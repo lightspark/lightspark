@@ -219,7 +219,7 @@ void multiname::resetNameIfObject()
 	}
 }
 
-bool multiname::toUInt(SystemState* sys, uint32_t& index, bool acceptStringFractions, bool *isNumber) const
+bool multiname::toUInt(SystemState* sys, uint32_t& index, bool acceptStringFractions, bool *isNumber, bool forAVM1) const
 {
 	if (isNumber)
 		*isNumber = false;
@@ -267,11 +267,11 @@ bool multiname::toUInt(SystemState* sys, uint32_t& index, bool acceptStringFract
 					return false;
 				parsed*=10;
 				parsed+=i.digit_value();
-				if (parsed > UINT32_MAX)
+				if (parsed > UINT32_MAX && !forAVM1)
 					break;
 			}
 
-			if (parsed > UINT32_MAX)
+			if (parsed > UINT32_MAX && !forAVM1)
 				return false;
 
 			index = (uint32_t)parsed;
@@ -287,8 +287,16 @@ bool multiname::toUInt(SystemState* sys, uint32_t& index, bool acceptStringFract
 			index=name_ui;
 			break;
 		case multiname::NAME_NUMBER:
-			if(!Number::isInteger(name_d) || name_d < 0 || name_d > UINT32_MAX)
-				return false;
+			if (forAVM1)
+			{
+				if(!Number::isInteger(name_d) || name_d > UINT32_MAX)
+					return false;
+			}
+			else
+			{
+				if(!Number::isInteger(name_d) || name_d < 0 || name_d > UINT32_MAX)
+					return false;
+			}
 			index=name_d;
 			break;
 		default:

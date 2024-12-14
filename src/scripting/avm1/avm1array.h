@@ -30,17 +30,34 @@ class AVM1Array: public Array
 {
 private:
 	int64_t avm1_currentsize;
+	// AVM1 array properties are enumerated by order of insertion
+	std::list<std::pair<uint32_t,bool>> name_enumeration;
+	uint32_t currentEnumerationIndex;
+	std::list<std::pair<uint32_t,bool>>::const_iterator currentEnumerationIterator;
+	void resetEnumerator();
+	void shrinkEnumeration(uint32_t oldsize);
 public:
 	bool isAVM1Array() const override { return true; }
 	Array* createInstance() override;
-	AVM1Array(ASWorker* wrk,Class_base* c):Array(wrk,c),avm1_currentsize(0){}
+	AVM1Array(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	bool destruct() override;
 	ASFUNCTION_ATOM(AVM1_getLength);
 	ASFUNCTION_ATOM(AVM1_setLength);
 	ASFUNCTION_ATOM(AVM1_call);
 	ASFUNCTION_ATOM(AVM1_apply);
-	void setCurrentSize(int64_t size) {avm1_currentsize=size;}
+	ASFUNCTION_ATOM(AVM1_pop);
+	ASFUNCTION_ATOM(AVM1_push);
+	ASFUNCTION_ATOM(AVM1_shift);
+	ASFUNCTION_ATOM(AVM1_unshift);
+	ASFUNCTION_ATOM(AVM1_splice);
+	void setCurrentSize(int64_t size);
+	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
+	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
+
+	uint32_t nextNameIndex(uint32_t cur_index) override;
+	void nextName(asAtom &ret, uint32_t index) override;
+	void nextValue(asAtom &ret, uint32_t index) override;
 };
 
 }

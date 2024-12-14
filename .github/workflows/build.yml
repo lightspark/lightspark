@@ -111,3 +111,32 @@ jobs:
             liblzma-dev
       - name: Run Build
         run: ./build.sh
+
+  macos:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    continue-on-error: false
+    strategy:
+      matrix:
+        os:
+          - macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: |
+          brew install \
+            ninja \
+            nasm \
+            mesa \
+            mesa-glu \
+            xquartz \
+            glew \
+            pango \
+            ffmpeg \
+            sdl2 \
+      - name: Run Build
+        run: |
+          export CPPFLAGS="-I$(brew --prefix)/include${CPPFLAGS+ ${CPPFLAGS}}"
+          export LDFLAGS="-L$(brew --prefix)/lib -Wl,-rpath,$(brew --prefix)/lib${LDFLAGS+ ${LDFLAGS}}"
+          cmake -DCMAKE_BUILD_TYPE=Release -B obj-release -D CMAKE_TRY_COMPILE_TARGET_TYPE="STATIC_LIBRARY" -G Ninja
+          cmake --build obj-release

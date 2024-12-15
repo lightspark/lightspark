@@ -678,11 +678,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	}
 	else
 	{
-		// TODO: Checking for dynamic variables works, but in the future,
-		// we should probably look into finding a better solution for
-		// this. For now, it's fine, and prevents a crash with Ruffle's
-		// `avm1/watch_property_proto` test.
-		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT|DYNAMIC_TRAIT);
+		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
 	}
 	if(this->is<Class_base>())
 	{
@@ -1397,25 +1393,30 @@ ASFUNCTIONBODY_ATOM(ASObject,setPropertyIsEnumerable)
 ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 {
 	ret = asAtomHandler::falseAtom;
-	tiny_string name;
+	asAtom name = asAtomHandler::invalidAtom;
 	_NR<IFunction> getter;
 	_NR<IFunction> setter;
 	ARG_CHECK(ARG_UNPACK(name)(getter)(setter));
-	if (name.empty())
+	multiname m(nullptr);
+	m.name_type = multiname::NAME_STRING;
+	m.name_s_id = asAtomHandler::getStringId(name);
+	m.ns.push_back(nsNameAndKind());
+	if (m.name_s_id == BUILTIN_STRINGS::EMPTY)
 		return;
+	asAtomHandler::toObject(obj,wrk)->deleteVariableByMultiname(m,wrk);
 	if (!getter.isNull())
 	{
 		ret = asAtomHandler::trueAtom;
 		getter->incRef();
 		getter->addStoredMember();
-		asAtomHandler::toObject(obj,wrk)->setDeclaredMethodByQName(name,"",getter.getPtr(),GETTER_METHOD,false);
+		asAtomHandler::toObject(obj,wrk)->setDeclaredMethodByQName(m.name_s_id,nsNameAndKind(),getter.getPtr(),GETTER_METHOD,false);
 	}
 	if (!setter.isNull())
 	{
 		ret = asAtomHandler::trueAtom;
 		setter->incRef();
 		setter->addStoredMember();
-		asAtomHandler::toObject(obj,wrk)->setDeclaredMethodByQName(name,"",setter.getPtr(),SETTER_METHOD,false);
+		asAtomHandler::toObject(obj,wrk)->setDeclaredMethodByQName(m.name_s_id,nsNameAndKind(),setter.getPtr(),SETTER_METHOD,false);
 	}
 }
 ASFUNCTIONBODY_ATOM(ASObject,registerClass)

@@ -3276,7 +3276,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 	if (loadedFrom->version > 4 && checkrootvars)
 	{
 		if (asAtomHandler::isInvalid(ret))// get Variable from root movie
-			ret = getRoot()->AVM1GetVariable(name,false);
+			ret = AVM1getRoot()->AVM1GetVariable(name,false);
 	}
 	return ret;
 }

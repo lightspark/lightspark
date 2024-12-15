@@ -52,6 +52,10 @@ public:
 	ASFUNCTION_ATOM(AVM1_unshift);
 	ASFUNCTION_ATOM(AVM1_splice);
 	void setCurrentSize(int64_t size);
+	void addEnumerationValue(uint32_t name, bool isIndex)
+	{
+		name_enumeration.push_back(make_pair(name,isIndex));
+	}
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 

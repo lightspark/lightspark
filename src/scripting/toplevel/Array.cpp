@@ -209,9 +209,20 @@ void Array::constructorImpl(asAtom* args, const unsigned int argslen)
 	{
 		LOG_CALL("Called Array constructor");
 		resize(argslen);
-		for(unsigned int i=0;i<argslen;i++)
+		if (this->isAVM1Array())
 		{
-			set(i,args[i],false);
+			for(unsigned int i=0;i<argslen;i++)
+			{
+				set(i,args[i],false);
+				this->as<AVM1Array>()->addEnumerationValue(i,true);
+			}
+		}
+		else
+		{
+			for(unsigned int i=0;i<argslen;i++)
+			{
+				set(i,args[i],false);
+			}
 		}
 	}
 }

@@ -1357,12 +1357,13 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom na = PopStack(stack);
 				uint32_t numargs = asAtomHandler::toUInt(na);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionInitArray "<<numargs);
-				Array* ret=Class<AVM1Array>::getInstanceSNoArgs(wrk);
+				AVM1Array* ret=Class<AVM1Array>::getInstanceSNoArgs(wrk);
 				ret->resize(numargs);
 				for (uint32_t i = 0; i < numargs; i++)
 				{
 					asAtom value = PopStack(stack);
 					ret->set(i,value,false,false);
+					ret->addEnumerationValue(i,true);
 				}
 				ASATOM_DECREF(na);
 				PushStack(stack,asAtomHandler::fromObject(ret));

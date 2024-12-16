@@ -69,6 +69,7 @@ class InteractiveObject: public DisplayObject
 protected:
 	bool mouseEnabled;
 	bool doubleClickEnabled;
+	asAtom avm1focusrect;
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	void onContextMenu(_NR<ASObject> oldValue);
 	~InteractiveObject();
@@ -98,6 +99,7 @@ public:
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	static void sinit(Class_base* c);
+	static void AVM1SetupMethods(Class_base* c);
 	virtual void lostFocus() {}
 	virtual void gotFocus() {} 
 	virtual void textInputChanged(const tiny_string& newtext) {} 
@@ -105,6 +107,8 @@ public:
 	void defaultEventBehavior(_R<Event> e) override;
 	// returns the owner of the contextmenu
 	_NR<InteractiveObject> getCurrentContextMenuItems(std::vector<_R<NativeMenuItem> > &items);
+	ASFUNCTION_ATOM(AVM1_setfocusrect);
+	ASFUNCTION_ATOM(AVM1_getfocusrect);
 };
 
 class DisplayObjectContainer: public InteractiveObject

@@ -438,6 +438,11 @@ public:
 		if (cur_recursion > 0)
 			--cur_recursion; //decrement current recursion depth
 	}
+	std::vector<AVM1context*> AVM1callStack;
+	uint8_t AVM1getSwfVersion() const
+	{
+		return AVM1callStack.empty() ? UINT8_MAX : AVM1callStack.back()->swfversion;
+	}
 	void throwStackOverflow();
 	ASFUNCTION_ATOM(_getCurrent);
 	ASFUNCTION_ATOM(getSharedProperty);

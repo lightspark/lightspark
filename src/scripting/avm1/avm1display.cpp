@@ -133,7 +133,7 @@ void AVM1SimpleButton::sinit(Class_base* c)
 {
 	SimpleButton::sinit(c);
 	c->isSealed = false;
-	DisplayObject::AVM1SetupMethods(c);
+	InteractiveObject::AVM1SetupMethods(c);
 }
 
 void AVM1Stage::sinit(Class_base* c)

@@ -283,13 +283,13 @@ void ASObject::addOwnedObject(ASObject* obj)
 
 void ASObject::sinit(Class_base* c)
 {
-	c->setDeclaredMethodByQName("hasOwnProperty",AS3,c->getSystemState()->getBuiltinFunction(hasOwnProperty,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hasOwnProperty",AS3,c->getSystemState()->getBuiltinFunction(hasOwnProperty,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true,true,6);
 	c->setDeclaredMethodByQName("setPropertyIsEnumerable",AS3,c->getSystemState()->getBuiltinFunction(setPropertyIsEnumerable),NORMAL_METHOD,true);
 
 	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleString","",c->getSystemState()->getBuiltinFunction(_toLocaleString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(valueOf,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("hasOwnProperty","",c->getSystemState()->getBuiltinFunction(hasOwnProperty,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setDeclaredMethodByQName("hasOwnProperty","",c->getSystemState()->getBuiltinFunction(hasOwnProperty,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,true,6);
 	c->prototype->setVariableByQName("isPrototypeOf","",c->getSystemState()->getBuiltinFunction(isPrototypeOf,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("propertyIsEnumerable","",c->getSystemState()->getBuiltinFunction(propertyIsEnumerable,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("setPropertyIsEnumerable","",c->getSystemState()->getBuiltinFunction(setPropertyIsEnumerable),DYNAMIC_TRAIT);
@@ -638,17 +638,17 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	return false;
 }
 
-void ASObject::setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
+void ASObject::setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable,uint8_t min_swfversion)
 {
-	setDeclaredMethodByQName(name, nsNameAndKind(getSystemState(),ns, NAMESPACE), o, type, isBorrowed,isEnumerable);
+	setDeclaredMethodByQName(name, nsNameAndKind(getSystemState(),ns, NAMESPACE), o, type, isBorrowed,isEnumerable,min_swfversion);
 }
 
-void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
+void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable,uint8_t min_swfversion)
 {
-	setDeclaredMethodByQName(getSystemState()->getUniqueStringId(name), ns, o, type, isBorrowed,isEnumerable);
+	setDeclaredMethodByQName(getSystemState()->getUniqueStringId(name), ns, o, type, isBorrowed,isEnumerable,min_swfversion);
 }
 
-void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
+void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable,uint8_t min_swfversion)
 {
 	check();
 #ifndef NDEBUG
@@ -692,6 +692,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	}
 	
 	obj->isenumerable = isEnumerable;
+	obj->min_swfversion = min_swfversion;
 	switch(type)
 	{
 		case NORMAL_METHOD:
@@ -886,7 +887,11 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		if (obj && asAtomHandler::isInvalid(obj->setter))
 			obj=nullptr;
 	}
-
+	if (!obj && cls &&!getInstanceWorker()->AVM1callStack.empty())
+	{
+		// we are in AVM1, look for setter in prototype
+		obj = cls->findSettableInPrototype(name);
+	}
 	//Do not set variables in prototype chain. Still have to do
 	//lookup to throw a correct error in case a named function
 	//exists in prototype chain. See Tamarin test
@@ -912,8 +917,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		}
 
 		// Properties can not be added to a sealed class
-		if (cls && cls->isSealed && 
-				this->getInstanceWorker()->rootClip->needsActionScript3()) // treat all AVM1 classes as dynamic
+		if (cls && cls->isSealed &&
+				getInstanceWorker()->AVM1callStack.empty()) // treat all AVM1 classes as dynamic
 		{
 			ABCContext* c = nullptr;
 			c = wrk->currentCallContext ? wrk->currentCallContext->mi->context : nullptr;
@@ -1034,7 +1039,7 @@ void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multina
 
 variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const nsNameAndKind& _ns, bool _isenumerable, bool _nameIsInteger)
 		: var(_v),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k)
-		,isResolved(false),isenumerable(_isenumerable),issealed(false),isrefcounted(true),nameIsInteger(_nameIsInteger)
+		,isResolved(false),isenumerable(_isenumerable),issealed(false),isrefcounted(true),nameIsInteger(_nameIsInteger),min_swfversion(0)
 {
 	if(_type)
 	{
@@ -1560,6 +1565,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		//something to get, it's ok
 		if(!(asAtomHandler::isValid(obj->getter) || asAtomHandler::isValid(obj->var)))
 			obj=nullptr;
+		else if (obj->min_swfversion &&  wrk->AVM1getSwfVersion() < obj->min_swfversion)
+			obj = nullptr; // we are in AVM1 script execution and the property asked for is not available for the current swfversion
 	}
 	else if (opt & DONT_CHECK_CLASS)
 		return res;
@@ -1590,6 +1597,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 				}
 			}
 		}
+		if (obj && obj->min_swfversion &&  wrk->AVM1getSwfVersion() < obj->min_swfversion)
+			obj = nullptr; // we are in AVM1 script execution and the property asked for is not available for the current swfversion
 		if(!obj)
 			return res;
 		res = (GET_VARIABLE_RESULT)(res | GETVAR_CACHEABLE);
@@ -3767,8 +3776,8 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 			}
 			else
 			{//Convert both to numbers and add
-				number_t num1=AVM1toNumber(val1p,wrk->getSystemState()->getSwfVersion());
-				number_t num2=AVM1toNumber(val2p,wrk->getSystemState()->getSwfVersion());
+				number_t num1=AVM1toNumber(val1p,wrk->AVM1getSwfVersion());
+				number_t num2=AVM1toNumber(val2p,wrk->AVM1getSwfVersion());
 				if (isrefcounted1)
 					ASATOM_DECREF(val1p);
 				if (isrefcounted2)
@@ -3891,8 +3900,8 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 			}
 			else
 			{//Convert both to numbers and add
-				number_t num1=AVM1toNumber(val1p,wrk->getSystemState()->getSwfVersion());
-				number_t num2=AVM1toNumber(val2p,wrk->getSystemState()->getSwfVersion());
+				number_t num1=AVM1toNumber(val1p,wrk->AVM1getSwfVersion());
+				number_t num2=AVM1toNumber(val2p,wrk->AVM1getSwfVersion());
 				if (isrefcounted1)
 					ASATOM_DECREF(val1p);
 				if (isrefcounted2)

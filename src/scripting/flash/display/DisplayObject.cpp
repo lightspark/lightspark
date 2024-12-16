@@ -3383,13 +3383,15 @@ DisplayObject* DisplayObject::AVM1getRoot()
 		return getSystemState()->mainClip;
 	if (parent && parent->needsActionScript3())
 		return this;
+	if (this->is<RootMovieClip>())
+		return this;
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=getSystemState()->getUniqueStringId("_lockroot");
 	m.isAttribute = false;
 	asAtom l= asAtomHandler::undefinedAtom;
 	getVariableByMultiname(l,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
-	bool lockroot = asAtomHandler::AVM1toBool(l);
+	bool lockroot = asAtomHandler::AVM1toBool(l,getInstanceWorker(),loadedFrom->version);
 	if (!lockroot && parent)
 		return parent->AVM1getRoot();
 	return getSystemState()->mainClip;

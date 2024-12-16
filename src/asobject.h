@@ -521,7 +521,7 @@ public:
 	static bool isTypelate(asAtom& a,asAtom& t);
 	static FORCE_INLINE number_t toNumber(const asAtom& a);
 	static FORCE_INLINE number_t AVM1toNumber(asAtom& a, uint32_t swfversion);
-	static FORCE_INLINE bool AVM1toBool(asAtom& a);
+	static FORCE_INLINE bool AVM1toBool(asAtom& a, ASWorker* wrk, uint32_t swfversion);
 	static FORCE_INLINE int32_t toInt(const asAtom& a);
 	static FORCE_INLINE int32_t toIntStrict(const asAtom& a);
 	static FORCE_INLINE int64_t toInt64(const asAtom& a);
@@ -609,10 +609,11 @@ struct variable
 	bool issealed:1;
 	bool isrefcounted:1;
 	bool nameIsInteger;
+	uint8_t min_swfversion;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns,bool _nameIsInteger)
 		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k)
 		,isResolved(false),isenumerable(true),issealed(false),isrefcounted(true)
-		,nameIsInteger(_nameIsInteger)
+		,nameIsInteger(_nameIsInteger),min_swfversion(0)
 	{}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* type, const nsNameAndKind &_ns, bool _isenumerable, bool _nameIsInteger);
 	void setVar(ASWorker* wrk, asAtom v, bool _isrefcounted = true);
@@ -1227,9 +1228,9 @@ public:
 	variable *setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable = true);
 	variable *setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable = true, bool isRefcounted = true);
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
-	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
-	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
-	void setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
+	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true,uint8_t min_swfversion=0);
+	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true, uint8_t min_swfversion=0);
+	void setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true, uint8_t min_swfversion=0);
 	void setDeclaredMethodAtomByQName(const tiny_string& name, const tiny_string& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom f, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
@@ -1848,7 +1849,20 @@ FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a, uint32_t swfversion
 		case ATOM_UINTEGER:
 			return a.uintval>>3;
 		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
-			return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : (a.uintval&ATOMTYPE_UNDEFINED_BIT) && swfversion > 6 ? numeric_limits<double>::quiet_NaN() : 0;
+		{
+			switch(a.uintval& (ATOMTYPE_BOOL_BIT|ATOMTYPE_UNDEFINED_BIT|ATOMTYPE_NULL_BIT))
+			{
+				case ATOMTYPE_BOOL_BIT:
+					return (a.uintval&0x80)>>7;
+				case ATOMTYPE_UNDEFINED_BIT:
+					return swfversion > 6 ? numeric_limits<double>::quiet_NaN() : 0;
+				case ATOMTYPE_NULL_BIT:
+					return swfversion > 6 && swfversion != UINT8_MAX ? numeric_limits<double>::quiet_NaN() : 0;
+				default:
+					assert(false);
+					return 0;
+			}
+		}
 		case ATOM_STRINGID:
 		{
 			ASObject* s = abstract_s(getWorker(),a.uintval>>3);
@@ -1856,12 +1870,18 @@ FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a, uint32_t swfversion
 			s->decRef();
 			return ret;
 		}
+		case ATOM_STRINGPTR:
+		case ATOM_NUMBERPTR:
+			assert(getObject(a));
+			return getObjectNoCheck(a)->toNumber();
 		default:
+			if (swfversion < 7)
+				return 0;
 			assert(getObject(a));
 			return getObjectNoCheck(a)->toNumber();
 	}
 }
-FORCE_INLINE bool asAtomHandler::AVM1toBool(asAtom& a)
+FORCE_INLINE bool asAtomHandler::AVM1toBool(asAtom& a, ASWorker* wrk, uint32_t swfversion)
 {
 	switch(a.uintval&0x7)
 	{
@@ -1870,7 +1890,26 @@ FORCE_INLINE bool asAtomHandler::AVM1toBool(asAtom& a)
 		case ATOM_UINTEGER:
 			return a.uintval>>3;
 		case ATOM_NUMBERPTR:
-			return toNumber(a);
+		{
+			number_t r = toNumber(a) ;
+			return !std::isnan(r) && r!= 0.0 ;
+		}
+		case ATOM_STRINGID:
+			if (swfversion <7)
+			{
+				number_t r = toNumber(a) ;
+				return r!=0.0; // returns true for NaN
+			}
+			else
+				return getStringId(a) != BUILTIN_STRINGS::EMPTY;
+		case ATOM_STRINGPTR:
+			if (swfversion <7)
+			{
+				number_t r = toNumber(a) ;
+				return r!=0.0; // returns true for NaN
+			}
+			else
+				return !toString(a,wrk).empty();
 		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
 			return (a.uintval&ATOMTYPE_BOOL_BIT) ? (a.uintval&0x80)>>7 : false;
 		default:

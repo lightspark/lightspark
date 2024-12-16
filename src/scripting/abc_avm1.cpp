@@ -67,7 +67,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("updateAfterEvent","",_MR(m_sys->getBuiltinFunction(AVM1_updateAfterEvent)));
 
 	builtinavm1->registerBuiltin("object","",Class<ASObject>::getRef(m_sys));
-	builtinavm1->registerBuiltin("Button","",Class<SimpleButton>::getRef(m_sys));
+	builtinavm1->registerBuiltin("Button","",Class<AVM1SimpleButton>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Array","",Class<AVM1Array>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Color","",Class<AVM1Color>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Date","",Class<AVM1Date>::getRef(m_sys));

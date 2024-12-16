@@ -1354,9 +1354,9 @@ void Prototype::setVariableAtomByQName(const tiny_string &name, const nsNameAndK
 	originalPrototypeVars->setVariableAtomByQName(nameID,ns,o,traitKind);
 }
 
-void Prototype::setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
+void Prototype::setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable, uint8_t min_swfversion)
 {
-	obj->setDeclaredMethodByQName(name, ns, o, type, isBorrowed, isEnumerable);
+	obj->setDeclaredMethodByQName(name, ns, o, type, isBorrowed, isEnumerable,min_swfversion);
 	o->setRefConstant();
 }
 void Prototype::copyOriginalValues(Prototype* target)

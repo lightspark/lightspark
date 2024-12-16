@@ -1021,7 +1021,7 @@ void DisplayObjectContainer::cloneDisplayList(std::vector<Ref<DisplayObject> >& 
 	}
 }
 
-InteractiveObject::InteractiveObject(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),mouseEnabled(true),doubleClickEnabled(false),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
+InteractiveObject::InteractiveObject(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),mouseEnabled(true),doubleClickEnabled(false),avm1focusrect(asAtomHandler::invalidAtom),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
 {
 	subtype=SUBTYPE_INTERACTIVE_OBJECT;
 }
@@ -1156,11 +1156,60 @@ void InteractiveObject::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, focusRect,ASObject);
 }
 
+void InteractiveObject::AVM1SetupMethods(Class_base* c)
+{
+	DisplayObject::AVM1SetupMethods(c);
+	c->setDeclaredMethodByQName("_focusrect","",c->getSystemState()->getBuiltinFunction(AVM1_setfocusrect),SETTER_METHOD,false);
+	c->setDeclaredMethodByQName("_focusrect","",c->getSystemState()->getBuiltinFunction(AVM1_getfocusrect,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("_focusrect","",c->getSystemState()->getBuiltinFunction(AVM1_setfocusrect),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("_focusrect","",c->getSystemState()->getBuiltinFunction(AVM1_getfocusrect,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+}
+
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, accessibilityImplementation)
 ASFUNCTIONBODY_GETTER_SETTER_CB(InteractiveObject, contextMenu,onContextMenu)
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabEnabled)
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabIndex)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(InteractiveObject, focusRect) // stub
+
+ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_getfocusrect)
+{
+	InteractiveObject* th=asAtomHandler::as<InteractiveObject>(obj);
+	if (th->loadedFrom->version <= 5)
+	{
+		DisplayObject* root = th->AVM1getRoot();
+		if (root && root->is<InteractiveObject>())
+		{
+			ret = asAtomHandler::fromInt(asAtomHandler::toInt(root->as<InteractiveObject>()->avm1focusrect) ? 1 : 0);
+			return;
+		}
+	}
+	ret = th->avm1focusrect;
+}
+
+ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_setfocusrect)
+{
+	InteractiveObject* th=asAtomHandler::as<InteractiveObject>(obj);
+	if (argslen
+		&& !asAtomHandler::isNull(args[0]) && !asAtomHandler::isUndefined(args[0])) // it seems that null/undefined leave _focusrect unchanged
+	{
+		if (th->loadedFrom->version < 6)
+		{
+			DisplayObject* root = th->AVM1getRoot();
+			if (root && root->is<InteractiveObject>())
+			{
+				number_t r = asAtomHandler::AVM1toNumber(args[0],th->loadedFrom->version);
+				root->as<InteractiveObject>()->avm1focusrect = asAtomHandler::fromInt(r == 0 ? 0 : 1);
+				if (r != 0)
+					LOG(LOG_NOT_IMPLEMENTED,"_focusrect not rendered");
+				return;
+			}
+		}
+		bool newval = asAtomHandler::AVM1toBool(args[0],wrk,th->loadedFrom->version);
+		th->avm1focusrect=asAtomHandler::fromBool(newval);
+		if (newval)
+			LOG(LOG_NOT_IMPLEMENTED,"_focusrect not rendered");
+	}
+}
 
 void InteractiveObject::onContextMenu(_NR<ASObject> oldValue)
 {

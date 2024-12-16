@@ -931,7 +931,7 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 
 void MovieClip::AVM1SetupMethods(Class_base* c)
 {
-	DisplayObject::AVM1SetupMethods(c);
+	InteractiveObject::AVM1SetupMethods(c);
 	c->setDeclaredMethodByQName("attachMovie","",c->getSystemState()->getBuiltinFunction(AVM1AttachMovie),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("loadMovie","",c->getSystemState()->getBuiltinFunction(AVM1LoadMovie),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unloadMovie","",c->getSystemState()->getBuiltinFunction(AVM1UnloadMovie),NORMAL_METHOD,true);
@@ -1703,11 +1703,11 @@ void MovieClip::constructionComplete(bool _explicit)
 }
 void MovieClip::beforeConstruction(bool _explicit)
 {
-	DisplayObject::beforeConstruction(_explicit);
+	Sprite::beforeConstruction(_explicit);
 }
 void MovieClip::afterConstruction(bool _explicit)
 {
-	DisplayObject::afterConstruction(_explicit);
+	Sprite::afterConstruction(_explicit);
 }
 
 Frame *MovieClip::getCurrentFrame()

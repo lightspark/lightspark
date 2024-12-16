@@ -520,7 +520,8 @@ ASFUNCTIONBODY_ATOM(ASString,substring)
 number_t ASString::toNumber()
 {
 	assert_and_throw(implEnable);
-
+	if (getInstanceWorker()->AVM1getSwfVersion()<6 && getData().empty())
+		return numeric_limits<double>::quiet_NaN();
 	const char *s = getData().raw_buf();
 	while (*s && isEcmaSpace(g_utf8_get_char(s)))
 		s = g_utf8_next_char(s);

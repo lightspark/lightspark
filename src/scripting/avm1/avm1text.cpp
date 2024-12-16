@@ -26,7 +26,7 @@ using namespace lightspark;
 
 void AVM1TextField::sinit(Class_base* c)
 {
-	DisplayObject::AVM1SetupMethods(c);
+	InteractiveObject::AVM1SetupMethods(c);
 	TextField::sinit(c);
 	c->isSealed = false;
 	c->setDeclaredMethodByQName("setNewTextFormat","",c->getSystemState()->getBuiltinFunction(TextField::_setDefaultTextFormat),NORMAL_METHOD,true);

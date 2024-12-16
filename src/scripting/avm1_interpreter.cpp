@@ -72,7 +72,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			ScriptLimitException::MaxFunctionRecursion
 		);
 	}
-
+	context->swfversion=clip->loadedFrom->version;
+	wrk->AVM1callStack.push_back(context);
 	context->callDepth++;
 	Log::calls_indent++;
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" executeActions "<<preloadParent<<preloadRoot<<suppressSuper<<preloadSuper<<suppressArguments<<preloadArguments<<suppressThis<<preloadThis<<preloadGlobal<<" "<<startactionpos<<" "<<num_args);
@@ -402,7 +403,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x12: // ActionNot
 			{
 				asAtom a = PopStack(stack);
-				bool value = asAtomHandler::AVM1toBool(a);
+				bool value = asAtomHandler::AVM1toBool(a,wrk,clip->loadedFrom->version);
 				ASATOM_DECREF(a);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNot "<<value);
 				PushStack(stack,asAtomHandler::fromBool(!value));
@@ -762,6 +763,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						case 15:// url
 							ret = asAtomHandler::fromString(clip->getSystemState(),clip->getSystemState()->mainClip->getOrigin().getURL());
 							break;
+						case 17:// focusrect
+							if (asAtomHandler::is<InteractiveObject>(obj))
+								InteractiveObject::AVM1_getfocusrect(ret,wrk,obj,nullptr,0);
+							break;
 						case 19:// quality
 							DisplayObject::AVM1_getQuality(ret,wrk,obj,nullptr,0);
 							break;
@@ -846,7 +851,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							break;
 						case 17:// focusrect
 							if (asAtomHandler::is<InteractiveObject>(obj))
-								InteractiveObject::_setter_focusRect(ret,wrk,obj,&value,1);
+								InteractiveObject::AVM1_setfocusrect(ret,wrk,obj,&value,1);
 							break;
 						case 19:// quality
 							DisplayObject::AVM1_setQuality(ret,wrk,obj,&value,1);
@@ -2544,7 +2549,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				int32_t skip = int16_t((*it++) | ((*it++)<<8));
 				asAtom a = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionIf "<<asAtomHandler::toDebugString(a)<<" "<<skip);
-				if (asAtomHandler::AVM1toBool(a))
+				if (asAtomHandler::AVM1toBool(a,wrk,clip->loadedFrom->version))
 				{
 					if (skip < 0 && it-actionlist.begin() < -skip)
 					{
@@ -2740,4 +2745,5 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" executeActions done");
 	Log::calls_indent--;
 	context->callDepth--;
+	wrk->AVM1callStack.pop_back();
 }

@@ -1231,10 +1231,11 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				LOG(LOG_CALLS,"EXECUTE_FRAMESCRIPT");
 				assert(!ev->clip.isNull());
 				ev->clip->executeFrameScript();
-				if (ev->clip == m_sys->stage)
-					m_sys->swapAsyncDrawJobQueue();
 				break;
 			}
+			case RENDER_FRAME:
+				m_sys->swapAsyncDrawJobQueue();
+				break;
 			case ADVANCE_FRAME:
 			{
 				m_sys->setFramePhase(FramePhase::ADVANCE_FRAME);
@@ -1363,7 +1364,7 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
 	 * because otherwise waiting on them in the vm thread
 	 * will block the vm thread from executing them.
 	 */
-	if(m_sys->runSingleThreaded || (isVmThread() && ev->is<WaitableEvent>()))
+	if(isVmThread() && ev->is<WaitableEvent>())
 	{
 		if (m_sys->runSingleThreaded)
 		{
@@ -1415,7 +1416,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool isGlobalMessag
 	 * because otherwise waiting on them in the vm thread
 	 * will block the vm thread from executing them.
 	 */
-	if(m_sys->runSingleThreaded || (isVmThread() && ev->is<WaitableEvent>()))
+	if(isVmThread() && ev->is<WaitableEvent>())
 	{
 		RELEASE_WRITE(ev->queued,true);
 		if (m_sys->runSingleThreaded)

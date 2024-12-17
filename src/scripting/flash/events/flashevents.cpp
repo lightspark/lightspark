@@ -147,6 +147,7 @@ void Event::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopPropagation","",c->getSystemState()->getBuiltinFunction(stopPropagation),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopImmediatePropagation","",c->getSystemState()->getBuiltinFunction(stopImmediatePropagation),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	REGISTER_GETTER_RESULTTYPE(c,currentTarget,ASObject);
 	REGISTER_GETTER_RESULTTYPE(c,target,ASObject);
 	REGISTER_GETTER_RESULTTYPE(c,type,ASString);
@@ -212,6 +213,24 @@ ASFUNCTIONBODY_ATOM(Event,formatToString)
 	ret = asAtomHandler::fromObject(abstract_s(wrk,msg));
 }
 
+ASFUNCTIONBODY_ATOM(Event,_toString)
+{
+	Event* th=asAtomHandler::as<Event>(obj);
+	tiny_string msg = "[";
+	msg += th->getSystemState()->getStringFromUniqueId(th->getClass()->class_name.nameId);
+	msg += " type=\"";
+	msg += th->type;
+	msg += "\" bubbles=";
+	msg += th->bubbles ? "true" : "false";
+	msg += " cancelable=";
+	msg += th->cancelable ? "true" : "false";
+	msg += " eventPhase=";
+	msg += Number::toString(th->eventPhase);
+	msg += "]";
+
+	ret = asAtomHandler::fromObject(abstract_s(wrk,msg));
+}
+
 Event* Event::cloneImpl() const
 {
 	return Class<Event>::getInstanceS(getInstanceWorker(),type, bubbles, cancelable);
@@ -262,7 +281,7 @@ void EventPhase::sinit(Class_base* c)
 	c->setVariableAtomByQName("AT_TARGET",nsNameAndKind(),asAtomHandler::fromUInt(AT_TARGET),DECLARED_TRAIT);
 }
 
-FocusEvent::FocusEvent(ASWorker* wrk, Class_base* c, tiny_string _type):Event(wrk,c, _type)
+FocusEvent::FocusEvent(ASWorker* wrk, Class_base* c, tiny_string _type):Event(wrk,c, _type,true)
 {
 }
 
@@ -320,6 +339,7 @@ void ProgressEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("STANDARD_OUTPUT_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardOutputData"),DECLARED_TRAIT);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,bytesLoaded,Number);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,bytesTotal,Number);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(ProgressEvent,bytesLoaded)
@@ -335,6 +355,28 @@ ASFUNCTIONBODY_ATOM(ProgressEvent,_constructor)
 		th->bytesLoaded=asAtomHandler::toInt(args[3]);
 	if(argslen>=5)
 		th->bytesTotal=asAtomHandler::toInt(args[4]);
+}
+
+ASFUNCTIONBODY_ATOM(ProgressEvent,_toString)
+{
+	ProgressEvent* th=asAtomHandler::as<ProgressEvent>(obj);
+	tiny_string msg = "[";
+	msg += th->getSystemState()->getStringFromUniqueId(th->getClass()->class_name.nameId);
+	msg += " type=\"";
+	msg += th->type;
+	msg += "\" bubbles=";
+	msg += th->bubbles ? "true" : "false";
+	msg += " cancelable=";
+	msg += th->cancelable ? "true" : "false";
+	msg += " eventPhase=";
+	msg += Number::toString(th->eventPhase);
+	msg += " bytesLoaded=";
+	msg += Number::toString(th->bytesLoaded);
+	msg += " bytesTotal=";
+	msg += Number::toString(th->bytesTotal);
+	msg += "]";
+
+	ret = asAtomHandler::fromObject(abstract_s(wrk,msg));
 }
 
 void TimerEvent::sinit(Class_base* c)

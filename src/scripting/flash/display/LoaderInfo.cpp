@@ -123,6 +123,7 @@ bool LoaderInfo::destruct()
 	frameRate =0;
 	parameters.reset();
 	uncaughtErrorEvents.reset();
+	assert(!progressEvent);
 	progressEvent=nullptr;
 	loaderevents.clear();
 	return EventDispatcher::destruct();
@@ -144,6 +145,7 @@ void LoaderInfo::finalize()
 	uncaughtErrorEvents.reset();
 	parameters.reset();
 	uncaughtErrorEvents.reset();
+	assert(!progressEvent);
 	progressEvent=nullptr;
 	loaderevents.clear();
 	EventDispatcher::finalize();
@@ -387,7 +389,10 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getURL)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 
-	ret = asAtomHandler::fromObject(abstract_s(wrk,th->url));
+	if (th->url.empty())
+		ret = asAtomHandler::nullAtom;
+	else
+		ret = asAtomHandler::fromObject(abstract_s(wrk,th->url));
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesLoaded)
@@ -404,21 +409,48 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesTotal)
 	asAtomHandler::setUInt(ret,wrk,th->bytesTotal);
 }
 
+bool LoaderInfo::fillBytesData(ByteArray* data)
+{
+	if (data)
+	{
+		if (bytesData.isNull())
+			bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));
+		bytesData->setLength(0);
+		bytesData->append(data->getBufferNoCheck(),data->getLength());
+		return true;
+	}
+	else if (!loader) //th is the LoaderInfo of the main clip
+	{
+		if (bytesData.isNull())
+			bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));
+		if (bytesData->getLength() == 0 && getSystemState()->mainClip->parsethread)
+			getSystemState()->mainClip->parsethread->getSWFByteArray(bytesData.getPtr());
+		return true;
+	}
+	else if (loader->getContent())
+	{
+		if (bytesData.isNull())
+			bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));
+		bytesData->writeObject(loader->getContent(),getInstanceWorker());
+		return true;
+	}
+	return !bytesData.isNull();
+}
+
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytes)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 
-	if (th->bytesData.isNull())
-		th->bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(wrk));
-	if (!th->loader) //th is the LoaderInfo of the main clip
+	if (th->fillBytesData(nullptr))
 	{
-		if (th->bytesData->getLength() == 0 && wrk->getSystemState()->mainClip->parsethread)
-			wrk->getSystemState()->mainClip->parsethread->getSWFByteArray(th->bytesData.getPtr());
+		th->bytesData->incRef();
+		ret = asAtomHandler::fromObject(th->bytesData.getPtr());
 	}
-	else if (th->loader->getContent())
-		th->bytesData->writeObject(th->loader->getContent(),wrk);
-	th->bytesData->incRef();
-	ret = asAtomHandler::fromObject(th->bytesData.getPtr());
+	else
+	{
+		ret = asAtomHandler::nullAtom;
+		return;
+	}
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getApplicationDomain)

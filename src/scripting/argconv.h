@@ -250,8 +250,8 @@ inline AS3KeyCode lightspark::ArgumentConversionAtom<AS3KeyCode>::failValue() { 
 template<>
 inline Vector2f lightspark::ArgumentConversionAtom<Vector2f>::toConcrete(ASWorker* wrk, asAtom obj, const Vector2f& v)
 {
-	bool needsAS3 = wrk->rootClip->needsActionScript3();
-	auto swfVersion = wrk->rootClip->applicationDomain->version;
+	bool needsAS3 = wrk->needsActionScript3();
+	auto swfVersion = wrk->AVM1getSwfVersion();
 	if (needsAS3 || asAtomHandler::is<Point>(obj))
 	{
 		auto point = asAtomHandler::as<Point>(obj);

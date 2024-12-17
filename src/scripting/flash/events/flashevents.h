@@ -35,7 +35,7 @@ namespace lightspark
 enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	FUNCTION,FUNCTION_ASYNC, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
 	FLUSH_INVALIDATION_QUEUE, FLUSH_EVENT_BUFFER, ADVANCE_FRAME, PARSE_RPC_MESSAGE,EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,
-	AVM1INITACTION_EVENT,SET_LOADER_CONTENT_EVENT,ROOTCONSTRUCTEDEVENT, LOCALCONNECTIONEVENT,GETMOUSETARGET_EVENT };
+	AVM1INITACTION_EVENT,SET_LOADER_CONTENT_EVENT,ROOTCONSTRUCTEDEVENT, LOCALCONNECTIONEVENT,GETMOUSETARGET_EVENT, RENDER_FRAME };
 
 class ABCContext;
 class DictionaryTag;
@@ -60,6 +60,7 @@ public:
 	ASFUNCTION_ATOM(_preventDefault);
 	ASFUNCTION_ATOM(_isDefaultPrevented);
 	ASFUNCTION_ATOM(formatToString);
+	ASFUNCTION_ATOM(_toString);
 	ASFUNCTION_ATOM(clone);
 	virtual EVENT_TYPE getEventType() const {return EVENT;}
 	ASPROPERTY_GETTER(bool,bubbles);
@@ -236,6 +237,7 @@ public:
 	ProgressEvent(ASWorker* wrk, Class_base* c, uint32_t loaded, uint32_t total, const tiny_string& t="progress");
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_toString);
 };
 
 class TimerEvent: public Event
@@ -517,6 +519,14 @@ public:
 	ExecuteFrameScriptEvent(_NR<DisplayObject> m);
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const override { return EXECUTE_FRAMESCRIPT; }
+};
+
+class RenderFrameEvent: public Event
+{
+public:
+	RenderFrameEvent():Event(nullptr,nullptr, "RenderFrameEvent") {}
+	static void sinit(Class_base*) {}
+	EVENT_TYPE getEventType() const override { return RENDER_FRAME; }
 };
 
 class AdvanceFrameEvent: public Event

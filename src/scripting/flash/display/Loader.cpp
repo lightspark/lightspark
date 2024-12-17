@@ -91,10 +91,15 @@ void LoaderThread::execute()
 	else if(source==BYTES)
 	{
 		assert_and_throw(bytes->bytes);
-
 		auto ev = Class<Event>::getInstanceS(loader->getInstanceWorker(),"open");
+		// it seems an additional ProgressEvent is always added at the start of loading a ByteArray (see ruffle test avm2/large_preload_from_bytes)
+		ProgressEvent* p = Class<ProgressEvent>::getInstanceS(loader->getInstanceWorker(),0,bytes->getLength());
+		loaderInfo->fillBytesData(bytes.getPtr());
 		loaderInfo->incRef();
 		if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev)))
+			loaderInfo->addLoaderEvent(ev);
+		loaderInfo->incRef();
+		if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(p)))
 			loaderInfo->addLoaderEvent(ev);
 
 		loaderInfo->setBytesTotal(bytes->getLength());
@@ -180,7 +185,7 @@ ASFUNCTIONBODY_ATOM(Loader,_getContent)
 	ASObject* res=th->content;
 	if(!res)
 	{
-		asAtomHandler::setUndefined(ret);
+		asAtomHandler::setNull(ret);
 		return;
 	}
 

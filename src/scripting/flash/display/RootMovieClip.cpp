@@ -166,7 +166,7 @@ void RootMovieClip::constructionComplete(bool _explicit)
 		return;
 	}
 	MovieClip::constructionComplete(_explicit);
-	
+
 	incRef();
 	getSystemState()->stage->_addChildAt(this,0);
 	this->setOnStage(true,true);
@@ -177,6 +177,7 @@ void RootMovieClip::afterConstruction(bool _explicit)
 	DisplayObject::afterConstruction(_explicit);
 	if (this!=getSystemState()->mainClip)
 		return;
+	executeFrameScript();
 }
 
 bool RootMovieClip::needsActionScript3() const

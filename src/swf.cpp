@@ -2397,6 +2397,8 @@ void SystemState::tick()
 		RELEASE_WRITE(stage->invalidated,false);
 		addBroadcastEvent("render");
 	}
+	/* Step 8: Scheduled screen render for frame */
+	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) RenderFrameEvent()));
 
 	/* Step 9: we are idle now, so we can handle all input events */
 	_R<IdleEvent> idle = _MR(new (unaccountedMemory) IdleEvent());

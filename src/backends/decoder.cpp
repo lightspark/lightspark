@@ -1121,7 +1121,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 {
 	if(codecContext->sample_rate!=0)
 	{
-		LOG(LOG_INFO,"AUDIO DEC: Audio sample rate " << codecContext->sample_rate);
+		LOG(LOG_TRACE,"AUDIO DEC: Audio sample rate " << codecContext->sample_rate);
 		sampleRate=codecContext->sample_rate;
 	}
 	else
@@ -1130,13 +1130,13 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 #if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
 	if(codecContext->ch_layout.nb_channels!=0)
 	{
-		LOG(LOG_INFO, "AUDIO DEC: Audio channels " << codecContext->ch_layout.nb_channels);
+		LOG(LOG_TRACE, "AUDIO DEC: Audio channels " << codecContext->ch_layout.nb_channels);
 		channelCount=codecContext->ch_layout.nb_channels;
 	}
 #else
 	if(codecContext->channels!=0)
 	{
-		LOG(LOG_INFO, "AUDIO DEC: Audio channels " << codecContext->channels);
+		LOG(LOG_TRACE, "AUDIO DEC: Audio channels " << codecContext->channels);
 		channelCount=codecContext->channels;
 	}
 #endif
@@ -1146,7 +1146,7 @@ bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 	if(initialTime==(uint32_t)-1 && (!samplesBufferS16.isEmpty() || !samplesBufferF32.isEmpty()))
 	{
 		initialTime=getFrontTime();
-		LOG(LOG_INFO,"AUDIO DEC: Initial timestamp " << initialTime);
+		LOG(LOG_TRACE,"AUDIO DEC: Initial timestamp " << initialTime);
 	}
 	else
 		return false;

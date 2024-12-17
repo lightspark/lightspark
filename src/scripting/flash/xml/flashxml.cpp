@@ -204,21 +204,23 @@ ASFUNCTIONBODY_ATOM(XMLNode,_getNodeType)
 	int t = 0;
 	switch (th->node.type())
 	{
+		case pugi::node_null:
 		case pugi::node_element:
+		case pugi::node_document:
 			t = 1;
 			break;
 		case pugi::node_pcdata:
 			t = 3;
 			break;
-		case pugi::node_declaration: 
-			t = 5;
-			break;
-		case pugi::node_pi:
-			t = 9;
-			break;
-		case pugi::node_document:
-			t = 11;
-			break;
+		// case pugi::node_declaration:
+		// 	t = 5;
+		// 	break;
+		// case pugi::node_pi:
+		// 	t = 9;
+		// 	break;
+		// case pugi::node_document:
+		// 	t = 11;
+		// 	break;
 		default:
 			LOG(LOG_NOT_IMPLEMENTED,"XMLNode.getNodeType: unhandled type:"<<th->node.type());
 			break;
@@ -229,7 +231,15 @@ ASFUNCTIONBODY_ATOM(XMLNode,_getNodeType)
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeName)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(wrk,th->node.name()));
+	switch (th->node.type())
+	{
+		case pugi::node_element:
+			ret = asAtomHandler::fromObject(abstract_s(wrk,th->node.name()));
+			break;
+		default:
+			ret = asAtomHandler::nullAtom;
+			break;
+	}
 }
 ASFUNCTIONBODY_ATOM(XMLNode,_setNodeName)
 {
@@ -308,10 +318,7 @@ XMLDocument::XMLDocument(ASWorker* wrk, Class_base* c, tiny_string s)
   : XMLNode(wrk,c),rootNode(nullptr),status(0),needsActionScript3(true),ignoreWhite(false)
 {
 	subtype=SUBTYPE_XMLDOCUMENT;
-	if(!s.empty())
-	{
-		parseXMLImpl(s);
-	}
+	parseXMLImpl(s);
 }
 
 void XMLDocument::sinit(Class_base* c)
@@ -332,8 +339,7 @@ ASFUNCTIONBODY_ATOM(XMLDocument,_constructor)
 	tiny_string source;
 
 	ARG_CHECK(ARG_UNPACK(source, ""));
-	if(!source.empty())
-		th->parseXMLImpl(source);
+	th->parseXMLImpl(source);
 }
 
 void XMLDocument::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -384,6 +390,7 @@ int XMLDocument::parseXMLImpl(const string& str)
 				return -5;
 			default:
 				LOG(LOG_ERROR,"xml parser error:"<<str<<" "<<parseresult.status<<" "<<parseresult.description());
+				node=rootNode=pugi::xml_node();
 				return -1000;
 			
 		}

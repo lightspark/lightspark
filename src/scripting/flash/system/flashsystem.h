@@ -443,6 +443,10 @@ public:
 	{
 		return AVM1callStack.empty() ? UINT8_MAX : AVM1callStack.back()->swfversion;
 	}
+	bool needsActionScript3() const
+	{
+		return AVM1getSwfVersion()==UINT8_MAX;
+	}
 	void throwStackOverflow();
 	ASFUNCTION_ATOM(_getCurrent);
 	ASFUNCTION_ATOM(getSharedProperty);

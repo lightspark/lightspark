@@ -65,6 +65,7 @@ public:
 	tiny_string methodName;
 	std::list<asAtom> dataobjectlist;
 	ScriptDataTag() {}
+	~ScriptDataTag();
 	ScriptDataTag(std::istream& s);
 };
 

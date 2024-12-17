@@ -90,6 +90,14 @@ VideoTag::VideoTag(istream& s)
 	assert_and_throw(StreamID==0);
 }
 
+ScriptDataTag::~ScriptDataTag()
+{
+	for (auto it = dataobjectlist.begin(); it != dataobjectlist.end(); it++)
+	{
+		ASATOM_DECREF(*it);
+	}
+}
+
 ScriptDataTag::ScriptDataTag(istream& s):VideoTag(s)
 {
 	unsigned int start=s.tellg();

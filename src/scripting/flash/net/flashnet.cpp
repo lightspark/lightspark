@@ -1490,7 +1490,7 @@ ASFUNCTIONBODY_ATOM(NetStream,_constructor)
 	tiny_string value;
 	_NR<NetConnection> netConnection;
 
-	if (wrk->rootClip->needsActionScript3())
+	if (wrk->needsActionScript3())
 	{
 		ARG_CHECK(ARG_UNPACK(netConnection)(value, "connectToFMS"));
 	}
@@ -1507,7 +1507,6 @@ ASFUNCTIONBODY_ATOM(NetStream,_constructor)
 	th->incRef();
 	if (netConnection.isNull())
 		netConnection = _MR(Class<NetConnection>::getInstanceSNoArgs(wrk));
-	netConnection->incRef();
 	th->connection=netConnection;
 	th->client = _NR<ASObject>(th);
 }

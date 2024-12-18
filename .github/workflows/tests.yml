@@ -81,6 +81,7 @@ jobs:
                 mingw-w64-clang-x86_64-glew 
                 mingw-w64-clang-x86_64-SDL2
                 mingw-w64-clang-x86_64-libjpeg-turbo
+                mingw-w64-clang-x86_64-libunwind	
                 liblzma
                 liblzma-devel
         - name: CI-Build

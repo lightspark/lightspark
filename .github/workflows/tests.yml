@@ -53,7 +53,8 @@
               run: |
                 cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
                 cmake --build obj-debug -t test-runner --parallel
-                ./obj-debug/x86_64/Debug/bin/test-runner
+            - name: Run Tests
+              run: ./obj-debug/x86_64/Debug/bin/test-runner --test-threads 1
   
       windows:
           runs-on: windows-latest
@@ -67,8 +68,6 @@
               msystem: MINGW64
               update: true
               install: >-
-                  git 
-                  mingw-w64-x86_64-clang
                   mingw-w64-x86_64-ninja 
                   mingw-w64-x86_64-nasm 
                   mingw-w64-x86_64-cmake 
@@ -84,10 +83,11 @@
                   mingw-w64-x86_64-libunwind	
                   liblzma
                   liblzma-devel
-          - name: CI-Build
+          - name: Run Build
             run: |
                 cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
                 cmake --build obj-debug -t test-runner --parallel
-                ./obj-debug/AMD64/Debug/bin/test-runner.exe
+          - name: Run Tests
+            run: ./obj-debug/AMD64/Debug/bin/test-runner.exe --test-threads 1
                   
               

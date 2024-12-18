@@ -935,6 +935,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->setDeclaredMethodByQName("attachMovie","",c->getSystemState()->getBuiltinFunction(AVM1AttachMovie),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("loadMovie","",c->getSystemState()->getBuiltinFunction(AVM1LoadMovie),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unloadMovie","",c->getSystemState()->getBuiltinFunction(AVM1UnloadMovie),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("loadMovieNum","",c->getSystemState()->getBuiltinFunction(AVM1LoadMovieNum),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createEmptyMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1CreateEmptyMovieClip),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1RemoveMovieClip),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("duplicateMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1DuplicateMovieClip),NORMAL_METHOD,true);
@@ -968,6 +969,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->prototype->setDeclaredMethodByQName("attachMovie","",c->getSystemState()->getBuiltinFunction(AVM1AttachMovie),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("loadMovie","",c->getSystemState()->getBuiltinFunction(AVM1LoadMovie),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("unloadMovie","",c->getSystemState()->getBuiltinFunction(AVM1UnloadMovie),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("loadMovieNum","",c->getSystemState()->getBuiltinFunction(AVM1LoadMovieNum),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("createEmptyMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1CreateEmptyMovieClip),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("removeMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1RemoveMovieClip),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("duplicateMovieClip","",c->getSystemState()->getBuiltinFunction(AVM1DuplicateMovieClip),NORMAL_METHOD,false);
@@ -1312,6 +1314,18 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	th->setOnStage(false,false);
 	th->tokens=nullptr;
+}
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovieNum)
+{
+	AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
+	tiny_string url;
+	tiny_string method;
+	int32_t level;
+	ARG_CHECK(ARG_UNPACK(url,"")(level,0)(method,"GET"));
+
+	AVM1MovieClipLoader* ld = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
+	th->avm1loader = _MR(ld);
+	ld->load(url,method,th,level);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 {

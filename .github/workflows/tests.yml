@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - new-test-runner
+      - test-runner-ci
   pull_request:
     branches:
       - new-test-runner
+      - test-runner-ci
 jobs:
     
     linux:
@@ -78,6 +80,7 @@ jobs:
                 mingw-w64-clang-x86_64-rtmpdump 
                 mingw-w64-clang-x86_64-cairo
                 mingw-w64-clang-x86_64-pango
+                mingw-w64-clang-x86_64-glew 
                 mingw-w64-clang-x86_64-SDL2
                 mingw-w64-clang-x86_64-libjpeg-turbo
                 liblzma

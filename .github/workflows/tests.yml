@@ -64,24 +64,24 @@ jobs:
         - uses: actions/checkout@v3
         - uses: msys2/setup-msys2@v2
           with:
-            msystem: CLANG64
+            msystem: MINGW64
             update: true
             install: >-
                 git 
-                mingw-w64-clang-x86_64-clang
-                mingw-w64-clang-x86_64-ninja 
-                mingw-w64-clang-x86_64-nasm 
-                mingw-w64-clang-x86_64-cmake 
-                mingw-w64-clang-x86_64-curl 
-                mingw-w64-clang-x86_64-zlib 
-                mingw-w64-clang-x86_64-ffmpeg 
-                mingw-w64-clang-x86_64-rtmpdump 
-                mingw-w64-clang-x86_64-cairo
-                mingw-w64-clang-x86_64-pango
-                mingw-w64-clang-x86_64-glew 
-                mingw-w64-clang-x86_64-SDL2
-                mingw-w64-clang-x86_64-libjpeg-turbo
-                mingw-w64-clang-x86_64-libunwind	
+                mingw-w64-x86_64-clang
+                mingw-w64-x86_64-ninja 
+                mingw-w64-x86_64-nasm 
+                mingw-w64-x86_64-cmake 
+                mingw-w64-x86_64-curl 
+                mingw-w64-x86_64-zlib 
+                mingw-w64-x86_64-ffmpeg 
+                mingw-w64-x86_64-rtmpdump 
+                mingw-w64-x86_64-cairo
+                mingw-w64-x86_64-pango
+                mingw-w64-x86_64-glew 
+                mingw-w64-x86_64-SDL2
+                mingw-w64-x86_64-libjpeg-turbo
+                mingw-w64-x86_64-libunwind	
                 liblzma
                 liblzma-devel
         - name: CI-Build

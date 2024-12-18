@@ -68,7 +68,8 @@
               msystem: MINGW64
               update: true
               install: >-
-                  mingw-w64-x86_64-ninja 
+                  mingw-w64-x86_64-ninja
+                  mingw-w64-x86_64-gcc
                   mingw-w64-x86_64-nasm 
                   mingw-w64-x86_64-cmake 
                   mingw-w64-x86_64-curl 

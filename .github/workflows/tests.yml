@@ -53,6 +53,7 @@ jobs:
                 ninja-build
           - name: Run Build
             run: |
+              git pull origin new-test-runner
               cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
               cmake --build obj-debug -t test-runner
               ./obj-debug/x86_64/Debug/bin/test-runner
@@ -87,6 +88,7 @@ jobs:
                 liblzma-devel
         - name: CI-Build
           run: |
+              git pull origin new-test-runner
               cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
               cmake --build obj-debug -t test-runner
               ./obj-debug/x86_64/Debug/bin/test-runner.exe

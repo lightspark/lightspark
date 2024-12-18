@@ -3,11 +3,10 @@ name: ci
 on:
   push:
     branches:
-      - master
-      - test-runner-ci
+      - new-test-runner
   pull_request:
     branches:
-      - master
+      - new-test-runner
 jobs:
     
     linux:

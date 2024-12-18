@@ -1,0 +1,92 @@
+---
+name: ci
+on:
+  push:
+    branches:
+      - master
+      - test-runner-ci
+  pull_request:
+    branches:
+      - master
+jobs:
+    
+    linux:
+        name: Linux / ${{ matrix.os }}
+        runs-on: ${{ matrix.os }}
+        continue-on-error: false
+        strategy:
+          matrix:
+            os:
+              - ubuntu-22.04
+              - ubuntu-20.04
+        steps:
+          - uses: actions/checkout@v4
+          - name: Install Dependencies
+            run: |
+              sudo `which apt || which apt-get` update
+              sudo `which apt || which apt-get` install \
+                curl \
+                cmake \
+                nasm \
+                gettext \
+                libcurl4-gnutls-dev \
+                libedit-dev \
+                zlib1g-dev \
+                libgl1-mesa-dev \
+                libavutil-dev \
+                libx11-dev \
+                libglu1-mesa-dev \
+                libglew-dev \
+                libavcodec-dev \
+                libavformat-dev \
+                libswresample-dev \
+                libcairo2-dev \
+                libpango1.0-dev \
+                libpng-dev \
+                libjpeg-dev \
+                librtmp-dev \
+                libsdl2-dev \
+                libgnutls28-dev \
+                liblzma-dev \
+                libunwind-dev \
+                ninja-build
+          - name: Run Build
+            run: |
+              cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
+              cmake --build obj-debug -t test-runner
+              ./obj-debug/x86_64/Debug/bin/test-runner
+
+    windows:
+        runs-on: windows-latest
+        defaults:
+          run:
+            shell: msys2 {0}
+        steps:
+        - uses: actions/checkout@v3
+        - uses: msys2/setup-msys2@v2
+          with:
+            msystem: CLANG64
+            update: true
+            install: >-
+                git 
+                mingw-w64-clang-x86_64-clang
+                mingw-w64-clang-x86_64-ninja 
+                mingw-w64-clang-x86_64-nasm 
+                mingw-w64-clang-x86_64-cmake 
+                mingw-w64-clang-x86_64-curl 
+                mingw-w64-clang-x86_64-zlib 
+                mingw-w64-clang-x86_64-ffmpeg 
+                mingw-w64-clang-x86_64-rtmpdump 
+                mingw-w64-clang-x86_64-cairo
+                mingw-w64-clang-x86_64-pango
+                mingw-w64-clang-x86_64-SDL2
+                mingw-w64-clang-x86_64-libjpeg-turbo
+                liblzma
+                liblzma-devel
+        - name: CI-Build
+          run: |
+              cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
+              cmake --build obj-debug -t test-runner
+              ./obj-debug/x86_64/Debug/bin/test-runner.exe
+                
+            

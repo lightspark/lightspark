@@ -52,8 +52,8 @@
             - name: Run Build
               run: |
                 cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
-                cmake --build obj-debug -t test-runner
-                ./obj-debug/x86_64/Debug/bin/test-runner --test-threads 1
+                cmake --build obj-debug -t test-runner --parallel
+                ./obj-debug/x86_64/Debug/bin/test-runner
   
       windows:
           runs-on: windows-latest
@@ -87,7 +87,7 @@
           - name: CI-Build
             run: |
                 cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
-                cmake --build obj-debug -t test-runner
-                ./obj-debug/x86_64/Debug/bin/test-runner.exe --test-threads 1
+                cmake --build obj-debug -t test-runner --parallel
+                ./obj-debug/x86_64/Debug/bin/test-runner.exe
                   
               

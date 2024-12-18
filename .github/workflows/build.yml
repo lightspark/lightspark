@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - test-runner-ci
   pull_request:
     branches:
       - master
@@ -71,43 +72,4 @@ jobs:
         run: |
           export CXX=`echo $CC | sed -e 's/clang/clang++/;s/gcc/g++/'`
           ./build.sh debug
-  linux:
-    name: Linux / ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
-    continue-on-error: false
-    strategy:
-      matrix:
-        os:
-          - ubuntu-22.04
-          - ubuntu-20.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Dependencies
-        run: |
-          sudo `which apt || which apt-get` update
-          sudo `which apt || which apt-get` install \
-            curl \
-            cmake \
-            nasm \
-            gettext \
-            libcurl4-gnutls-dev \
-            libedit-dev \
-            zlib1g-dev \
-            libgl1-mesa-dev \
-            libavutil-dev \
-            libx11-dev \
-            libglu1-mesa-dev \
-            libglew-dev \
-            libavcodec-dev \
-            libavformat-dev \
-            libswresample-dev \
-            libcairo2-dev \
-            libpango1.0-dev \
-            libpng-dev \
-            libjpeg-dev \
-            librtmp-dev \
-            libsdl2-dev \
-            libgnutls28-dev \
-            liblzma-dev
-      - name: Run Build
-        run: ./build.sh
+  

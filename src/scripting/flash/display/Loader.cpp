@@ -148,6 +148,10 @@ void LoaderThread::execute()
 	DisplayObject* res = obj.getPtr();
 	if (loader && res && (!res->is<RootMovieClip>() || res->as<RootMovieClip>()->hasFinishedLoading()))
 	{
+		if (res->is<RootMovieClip>())
+		{
+			res->as<RootMovieClip>()->AVM1setLevel(loader->AVM1getLevel());
+		}
 		if (res != loader->getSystemState()->mainClip)
 		{
 			res->incRef();
@@ -472,7 +476,8 @@ void Loader::prepareShutdown()
 	if (uncaughtErrorEvents)
 		uncaughtErrorEvents->prepareShutdown();
 }
-Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(nullptr),contentLoaderInfo(nullptr),loaded(false), allowCodeImport(true),uncaughtErrorEvents(NullRef)
+Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(nullptr),contentLoaderInfo(nullptr),loaded(false),
+	allowCodeImport(true),avm1level(-1),uncaughtErrorEvents(NullRef)
 {
 	subtype=SUBTYPE_LOADER;
 	contentLoaderInfo=Class<LoaderInfo>::getInstanceS(wrk,this);

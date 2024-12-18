@@ -32,7 +32,7 @@ using namespace lightspark;
 
 RootMovieClip::RootMovieClip(ASWorker* wrk, LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
 	MovieClip(wrk,c),
-	parsingIsFailed(false),waitingforparser(false),Background(0xFF,0xFF,0xFF),
+	parsingIsFailed(false),waitingforparser(false),Background(0xFF,0xFF,0xFF),avm1level(0),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
 	this->avm1focusrect=asAtomHandler::trueAtom;

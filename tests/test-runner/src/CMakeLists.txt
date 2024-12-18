@@ -44,13 +44,11 @@ FetchContent_Declare(
 	GIT_TAG 4354eb21ea3565a73afdf32ec0ba768fd648c425
 )
 
-if (NOT WIN32)
-	FIND_PACKAGE(LibUnwind)
-	if (${LibUnwind_FOUND})
-		MESSAGE(STATUS "Found libunwind")
-		SET(CPPTRACE_UNWIND_WITH_LIBUNWIND ON)
-		SET(SIGNAL_BACKTRACE ON)
-	endif()
+FIND_PACKAGE(LibUnwind)
+if (${LibUnwind_FOUND})
+	MESSAGE(STATUS "Found libunwind")
+	SET(CPPTRACE_UNWIND_WITH_LIBUNWIND ON)
+	SET(SIGNAL_BACKTRACE ON)
 endif()
 
 FetchContent_MakeAvailable(cpptrace)

@@ -35,8 +35,8 @@ private:
 	Loader* loader;
 	LoaderInfo* loaderInfo;
 	SOURCE source;
-	void jobFence() override;
 public:
+	void jobFence() override;
 	void execute() override;
 	LoaderThread(_R<URLRequest> request, Loader* loader);
 	LoaderThread(_R<ByteArray> bytes, Loader* loader);
@@ -55,6 +55,7 @@ private:
 	void unload();
 	bool loaded;
 	bool allowCodeImport;
+	int avm1level;
 protected:
 	_NR<DisplayObject> avm1target;
 public:
@@ -84,6 +85,8 @@ public:
 	LoaderInfo* getContentLoaderInfo();
 	bool allowLoadingSWF() { return allowCodeImport; }
 	bool hasAVM1Target() const { return !avm1target.isNull(); }
+	void AVM1setLevel(int level) { avm1level = level; }
+	int AVM1getLevel() const { return avm1level; }
 	void loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _avm1target=nullptr);
 };
 

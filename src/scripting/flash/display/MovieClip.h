@@ -227,6 +227,7 @@ public:
 	ASFUNCTION_ATOM(AVM1getSWFVersion);
 	ASFUNCTION_ATOM(AVM1LoadMovie);
 	ASFUNCTION_ATOM(AVM1UnloadMovie);
+	ASFUNCTION_ATOM(AVM1LoadMovieNum);
 	ASFUNCTION_ATOM(AVM1CreateTextField);
 	
 	std::string toDebugString() const override;

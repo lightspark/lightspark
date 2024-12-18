@@ -198,11 +198,12 @@ ASFUNCTIONBODY_ATOM(AVM1Stage,removeResizeListener)
 }
 
 
-void AVM1MovieClipLoader::addLoader(URLRequest* r, DisplayObject* target)
+void AVM1MovieClipLoader::addLoader(URLRequest* r, DisplayObject* target,int level)
 {
 	Loader* ldr = Class<Loader>::getInstanceSNoArgs(getInstanceWorker());
 	ldr->addStoredMember();
 	ldr->loadedFrom=target->loadedFrom;
+	ldr->AVM1setLevel(level);
 	loadermutex.lock();
 	loaderlist.insert(ldr);
 	loadermutex.unlock();
@@ -247,7 +248,7 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 		return;
 	}
 	URLRequest* r = Class<URLRequest>::getInstanceS(wrk,strurl,"GET",asAtomHandler::invalidAtom,t->loadedFrom);
-	th->addLoader(r,t);
+	th->addLoader(r,t,-1);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,addListener)
 {
@@ -487,10 +488,10 @@ bool AVM1MovieClipLoader::countCylicMemberReferences(garbagecollectorstate& gcst
 }
 
 
-void AVM1MovieClipLoader::load(const tiny_string& url, const tiny_string& method, AVM1MovieClip* target)
+void AVM1MovieClipLoader::load(const tiny_string& url, const tiny_string& method, AVM1MovieClip* target, int level)
 {
 	URLRequest* r = Class<URLRequest>::getInstanceS(getInstanceWorker(),url,method,asAtomHandler::invalidAtom,target->loadedFrom);
-	addLoader(r, target);
+	addLoader(r, target, level);
 }
 
 void AVM1Color::sinit(Class_base* c)

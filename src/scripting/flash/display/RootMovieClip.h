@@ -37,6 +37,7 @@ private:
 	bool parsingIsFailed;
 	bool waitingforparser;
 	RGB Background;
+	int avm1level;
 
 	/* those are private because you shouldn't call mainClip->*,
 	 * but mainClip->getStage()->* instead.
@@ -90,6 +91,8 @@ public:
 	void setupAVM1RootMovie();
 	void AVM1registerInitActionTag(uint32_t spriteID, AVM1InitActionTag* tag);
 	void AVM1checkInitActions(MovieClip *sprite);
+	int AVM1getLevel() const { return avm1level; }
+	void AVM1setLevel(int level) { avm1level = level; }
 };
 
 }

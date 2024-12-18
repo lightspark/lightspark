@@ -98,7 +98,7 @@ private:
 	Mutex loadermutex;
 	std::set<Loader*> loaderlist;
 	std::set<ASObject*> listeners;
-	void addLoader(URLRequest* r, DisplayObject* target);
+	void addLoader(URLRequest* r, DisplayObject* target, int level);
 public:
 	AVM1MovieClipLoader(ASWorker* wrk,Class_base* c):ASObject(wrk,c,SWFOBJECT_TYPE::T_OBJECT,CLASS_SUBTYPE::SUBTYPE_AVM1MOVIECLIPLOADER){}
 	static void sinit(Class_base* c);
@@ -110,7 +110,7 @@ public:
 	bool destruct() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
-	void load(const tiny_string& url, const tiny_string& method, AVM1MovieClip* target);
+	void load(const tiny_string& url, const tiny_string& method, AVM1MovieClip* target, int level=-1);
 };
 
 class AVM1Color: public ASObject

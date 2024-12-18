@@ -53,7 +53,7 @@
               run: |
                 cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
                 cmake --build obj-debug -t test-runner
-                ./obj-debug/x86_64/Debug/bin/test-runner
+                ./obj-debug/x86_64/Debug/bin/test-runner --test-threads 1
   
       windows:
           runs-on: windows-latest
@@ -88,6 +88,6 @@
             run: |
                 cmake -DCMAKE_BUILD_TYPE=Debug -B obj-debug -G Ninja
                 cmake --build obj-debug -t test-runner
-                ./obj-debug/x86_64/Debug/bin/test-runner.exe
+                ./obj-debug/x86_64/Debug/bin/test-runner.exe --test-threads 1
                   
               

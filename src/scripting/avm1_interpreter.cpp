@@ -298,8 +298,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			{
 				asAtom aa = PopStack(stack);
 				asAtom ab = PopStack(stack);
-				number_t a = asAtomHandler::AVM1toNumber(aa,clip->loadedFrom->version);
+				// we have to call AVM1toNumber for b first, as it may call an overridden valueOf()
+				// so we call in the same order that adobe does
 				number_t b = asAtomHandler::AVM1toNumber(ab,clip->loadedFrom->version);
+				number_t a = asAtomHandler::AVM1toNumber(aa,clip->loadedFrom->version);
 				ASATOM_DECREF(aa);
 				ASATOM_DECREF(ab);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionAdd "<<b<<"+"<<a);
@@ -1435,7 +1437,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom arg2 = PopStack(stack);
 				ASObject* o = asAtomHandler::getObject(arg2);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionAdd2 "<<asAtomHandler::toDebugString(arg2)<<" + "<<asAtomHandler::toDebugString(arg1));
-				if (asAtomHandler::add(arg2,arg1,wrk,false))
+				if (asAtomHandler::AVM1add(arg2,arg1,wrk,false))
 				{
 					if (o)
 						o->decRef();

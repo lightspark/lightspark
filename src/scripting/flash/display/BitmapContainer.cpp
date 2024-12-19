@@ -392,7 +392,7 @@ void BitmapContainer::copyRectangle(_R<BitmapContainer> source,
 				uint32_t b = ((((*psrc)     ) &0xff) * srcalpha + (((*pdst)     ) &0xff) * dstalpha) / 0xff;
 				uint32_t g = ((((*psrc) >> 8) &0xff) * srcalpha + (((*pdst) >> 8) &0xff) * dstalpha) / 0xff;
 				uint32_t r = ((((*psrc) >>16) &0xff) * srcalpha + (((*pdst) >>16) &0xff) * dstalpha) / 0xff;
-				uint32_t a = min (srcalpha + (((*pdst) >>24) &0xff) * dstalpha, 0xffU);
+				uint32_t a = (srcalpha + (((*pdst) >>24) &0xff) )&0xff ;
 				*pdst = (b & 0xff) | ((g&0xff)<<8) | ((r&0xff)<<16) | (a<<24);
 			}
 		}

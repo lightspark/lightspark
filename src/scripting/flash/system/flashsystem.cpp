@@ -38,7 +38,11 @@
 #include "scripting/toplevel/Undefined.h"
 #include "parsing/streams.h"
 #include "platforms/engineutils.h"
+#ifdef __APPLE__
+#include <stdlib.h>
+#else
 #include <malloc.h>
+#endif
 #include "3rdparty/pugixml/src/pugixml.hpp"
 
 #include <istream>
@@ -1236,8 +1240,8 @@ void System::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(System,totalMemory)
 {
-#ifdef _WIN32
-	LOG(LOG_NOT_IMPLEMENTED,"System.totalMemory not implemented for Windows");
+#if defined (_WIN32) || defined (__APPLE__)
+	LOG(LOG_NOT_IMPLEMENTED,"System.totalMemory not implemented for this platform");
 	asAtomHandler::setUInt(ret,wrk,1024);
 	return;
 #else

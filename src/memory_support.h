@@ -22,7 +22,11 @@
 
 #include "compat.h"
 #include "tiny_string.h"
+#ifdef __APPLE__
+#include <stdlib.h>
+#else
 #include <malloc.h>
+#endif
 
 namespace lightspark
 {

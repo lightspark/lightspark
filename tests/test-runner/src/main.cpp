@@ -28,6 +28,7 @@
 #include <thread>
 #include <condition_variable>
 #include <mutex>
+#include <unistd.h>
 
 #include <cpptrace/cpptrace.hpp>
 

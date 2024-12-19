@@ -20,6 +20,8 @@
 #ifndef UTILS_TYPE_TRAITS_H
 #define UTILS_TYPE_TRAITS_H 1
 
+#include <sys/types.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <type_traits>
 

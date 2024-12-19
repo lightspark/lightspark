@@ -113,6 +113,7 @@
                   pango \
                   ffmpeg \
                   sdl2 \
+                  libunwind-headers \
               - name: Run Build
                 run: |
                   export CPPFLAGS="-I$(brew --prefix)/include${CPPFLAGS+ ${CPPFLAGS}}"

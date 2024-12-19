@@ -177,8 +177,8 @@ tiny_string ASObject::toString()
 			asAtom ret = asAtomHandler::fromObject(this);
 			tiny_string s;
 			bool isrefcounted;
-			if (toPrimitive(ret,isrefcounted,STRING_HINT))
-				s=asAtomHandler::toString(ret,getWorker());
+			if (toPrimitive(ret,isrefcounted,getInstanceWorker()->needsActionScript3() ? STRING_HINT : NO_HINT))
+				s=asAtomHandler::toString(ret,getInstanceWorker());
 			if (isrefcounted)
 				ASATOM_DECREF(ret);
 			return s;
@@ -398,8 +398,10 @@ number_t ASObject::toNumberForComparison()
 }
 
 /* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
-bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint)
+bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint,bool* fromValueOf)
 {
+	if (fromValueOf)
+		*fromValueOf=false;
 	isrefcounted=false;
 	//See ECMA 8.6.2.6 for default hint regarding Date
 	if(hint == NO_HINT)
@@ -435,6 +437,8 @@ bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint)
 		call_valueOf(ret);
 		if(asAtomHandler::isPrimitive(ret))
 		{
+			if (fromValueOf)
+				*fromValueOf=true;
 			isrefcounted=true;
 			return true;
 		}
@@ -912,13 +916,16 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	{
 		if(has_getter)  // Is this a read-only property?
 		{
-			createError<ReferenceError>(getInstanceWorker(), kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
+			if (getInstanceWorker()->needsActionScript3())
+				createError<ReferenceError>(getInstanceWorker(), kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
+			else
+				ASATOM_DECREF(o);
 			return nullptr;
 		}
 
 		// Properties can not be added to a sealed class
 		if (cls && cls->isSealed &&
-				getInstanceWorker()->AVM1callStack.empty()) // treat all AVM1 classes as dynamic
+				getInstanceWorker()->needsActionScript3()) // treat all AVM1 classes as dynamic
 		{
 			ABCContext* c = nullptr;
 			c = wrk->currentCallContext ? wrk->currentCallContext->mi->context : nullptr;
@@ -1273,6 +1280,12 @@ ASFUNCTIONBODY_ATOM(ASObject,_toString)
 		res+="Function-46";
 		res+="]";
 	}
+	else if(!wrk->needsActionScript3() && asAtomHandler::is<RootMovieClip>(obj))
+	{
+		// handle special case for AVM1 root movie
+		res="_level";
+		res += Integer::toString(asAtomHandler::as<RootMovieClip>(obj)->AVM1getLevel());
+	}
 	else if(asAtomHandler::getClass(obj,wrk->getSystemState()))
 	{
 		res="[object ";
@@ -1398,19 +1411,25 @@ ASFUNCTIONBODY_ATOM(ASObject,setPropertyIsEnumerable)
 ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 {
 	ret = asAtomHandler::falseAtom;
+	if (argslen < 3)
+		return;
 	asAtom name = asAtomHandler::invalidAtom;
 	_NR<IFunction> getter;
 	_NR<IFunction> setter;
-	ARG_CHECK(ARG_UNPACK(name)(getter)(setter));
+	ARG_CHECK(ARG_UNPACK(name,asAtomHandler::invalidAtom)(getter, NullRef)(setter, NullRef));
+	if (asAtomHandler::isInvalid(name) )
+		return;
 	multiname m(nullptr);
 	m.name_type = multiname::NAME_STRING;
-	m.name_s_id = asAtomHandler::getStringId(name);
+	m.name_s_id = asAtomHandler::toStringId(name,wrk);
 	m.ns.push_back(nsNameAndKind());
 	if (m.name_s_id == BUILTIN_STRINGS::EMPTY)
 		return;
-	asAtomHandler::toObject(obj,wrk)->deleteVariableByMultiname(m,wrk);
+	asAtomHandler::toObject(obj,wrk)->deleteVariableByMultiname_intern(m,wrk);
 	if (!getter.isNull())
 	{
+		if (!getter->is<IFunction>())
+			return;
 		ret = asAtomHandler::trueAtom;
 		getter->incRef();
 		getter->addStoredMember();
@@ -1418,6 +1437,8 @@ ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 	}
 	if (!setter.isNull())
 	{
+		if (!setter->is<IFunction>())
+			return;
 		ret = asAtomHandler::trueAtom;
 		setter->incRef();
 		setter->addStoredMember();
@@ -3711,7 +3732,7 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 	{
 		tiny_string sa = toString(a,wrk);
 		sa += toString(v2,wrk);
-		LOG_CALL("add " << toString(a,wrk) << '+' << toString(v2,wrk));
+		LOG_CALL("add " << toDebugString(a) << '+' << toDebugString(v2));
 		if (forceint)
 			setInt(a,wrk,Integer::stringToASInteger(sa.raw_buf(),0));
 		else
@@ -3776,8 +3797,8 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 			}
 			else
 			{//Convert both to numbers and add
-				number_t num1=AVM1toNumber(val1p,wrk->AVM1getSwfVersion());
-				number_t num2=AVM1toNumber(val2p,wrk->AVM1getSwfVersion());
+				number_t num1=toNumber(val1p);
+				number_t num2=toNumber(val2p);
 				if (isrefcounted1)
 					ASATOM_DECREF(val1p);
 				if (isrefcounted2)
@@ -3900,8 +3921,8 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 			}
 			else
 			{//Convert both to numbers and add
-				number_t num1=AVM1toNumber(val1p,wrk->AVM1getSwfVersion());
-				number_t num2=AVM1toNumber(val2p,wrk->AVM1getSwfVersion());
+				number_t num1=toNumber(val1p);
+				number_t num2=toNumber(val2p);
 				if (isrefcounted1)
 					ASATOM_DECREF(val1p);
 				if (isrefcounted2)
@@ -3919,6 +3940,102 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 			}
 		}
 	}
+}
+
+bool asAtomHandler::AVM1add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
+{
+	//Implement AVM1 add algorithm for ActionAdd2 opcode
+
+	// if both values are Integers or UIntegers the result is also an int Number
+	if( (isInteger(a) || isUInteger(a) || isBool(a)) &&
+		(isInteger(v2) || isUInteger(v2) || isBool(v2)))
+	{
+		int64_t num1=toInt64(a);
+		int64_t num2=toInt64(v2);
+		int64_t res = num1+num2;
+		LOG_CALL("addI " << num1 << '+' << num2 <<"="<<res);
+		if (forceint || (res >= -(1<<28) && res < (1<<28)))
+			setInt(a,wrk,int32_t(res));
+		else if (res >= 0 && res < (1<<29))
+			setUInt(a,wrk,res);
+		else
+			return replaceNumber(a,wrk,res);
+	}
+	else if((isInteger(a) || isUInteger(a) || isNumber(a)) &&
+			   (isNumber(v2) || isInteger(v2) || isUInteger(v2)))
+	{
+		double num1=toNumber(a);
+		double num2=toNumber(v2);
+		LOG_CALL("addN " << num1 << '+' << num2<<" "<<toDebugString(a)<<" "<<toDebugString(v2));
+		if (forceint)
+			setInt(a,wrk,num1+num2);
+		else
+			return replaceNumber(a,wrk,num1+num2);
+	}
+	else if(isString(a) || isString(v2))
+	{
+		tiny_string sa = toString(a,wrk);
+		sa += toString(v2,wrk);
+		LOG_CALL("add " << toDebugString(a) << '+' << toDebugString(v2));
+		if (forceint)
+			setInt(a,wrk,Integer::stringToASInteger(sa.raw_buf(),0));
+		else
+			a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(wrk,sa))|ATOM_STRINGPTR;
+	}
+	else
+	{
+		ASObject* val1 = toObject(a,wrk);
+		ASObject* val2 = toObject(v2,wrk);
+		// order of toprimitive calls is important to match adobe behaviour
+		asAtom val2p=asAtomHandler::invalidAtom;
+		bool isrefcounted2;
+		bool fromValueOf2;
+		val2->toPrimitive(val2p,isrefcounted2,NO_HINT,&fromValueOf2);
+		asAtom val1p=asAtomHandler::invalidAtom;
+		bool isrefcounted1;
+		bool fromValueOf1;
+		val1->toPrimitive(val1p,isrefcounted1,NO_HINT,&fromValueOf1);
+		if((fromValueOf1 && isString(val1p)) || (fromValueOf2 && isString(val2p)))
+		{
+			tiny_string sa = toString(val1p,wrk);
+			sa += toString(val2p,wrk);
+			LOG_CALL("add sp " << toDebugString(a) << '+' << toDebugString(v2));
+			if (forceint)
+				setInt(a,wrk,Integer::stringToASInteger(sa.raw_buf(),0));
+			else
+				a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(wrk,sa))|ATOM_STRINGPTR;
+		}
+		else
+		if (asAtomHandler::isNumeric(val1p) || asAtomHandler::isNumeric(val2p) || asAtomHandler::isBool(val1p)  || asAtomHandler::isBool(val2p))
+		{
+			double num1=AVM1toNumber(val1p,wrk->AVM1getSwfVersion());
+			double num2=AVM1toNumber(val2p,wrk->AVM1getSwfVersion());
+			if (isrefcounted1)
+				ASATOM_DECREF(val1p);
+			if (isrefcounted2)
+				ASATOM_DECREF(val2p);
+			LOG_CALL("add np " << num1 << '+' << num2);
+			return replaceNumber(a,wrk,num1+num2);
+		}
+		else
+		{
+			string as(toString(val1p,wrk).raw_buf());
+			string bs(toString(val2p,wrk).raw_buf());
+			LOG_CALL("add p " << as << '+' << bs);
+			if (isrefcounted1)
+				ASATOM_DECREF(val1p);
+			if (isrefcounted2)
+				ASATOM_DECREF(val2p);
+			tiny_string s = as+bs;
+			number_t res = ASString::toNumber(val1->getInstanceWorker(),s);
+			return replaceNumber(a,wrk,res);
+		}
+		if (isrefcounted1)
+			ASATOM_DECREF(val1p);
+		if (isrefcounted2)
+			ASATOM_DECREF(val2p);
+	}
+	return true;
 }
 
 void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap, std::map<const ASObject*, uint32_t>& objMap, std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk, asAtom& a)

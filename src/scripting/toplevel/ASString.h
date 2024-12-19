@@ -40,7 +40,7 @@ class ASString: public ASObject
 	friend ASObject* abstract_s(ASWorker* wrk, const tiny_string& s);
 	friend ASObject* abstract_s(ASWorker* wrk, uint32_t stringId);
 private:
-	number_t parseStringInfinite(const char *s, char **end) const;
+	static number_t parseStringInfinite(const char *s, char **end);
 	tiny_string data;
 	
 	// stores the position of utf8-characters in the string
@@ -96,6 +96,7 @@ public:
 	TRISTATE isLess(ASObject* r) override;
 	TRISTATE isLessAtom(asAtom& r) override;
 	number_t toNumber() override;
+	static number_t toNumber(ASWorker* wrk, const tiny_string& value);
 	int32_t toInt() override;
 	int32_t toIntStrict() override;
 	uint32_t toUInt() override;

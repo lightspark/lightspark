@@ -551,6 +551,7 @@ public:
 	static FORCE_INLINE void decrement_i(asAtom& a, ASWorker* wrk, int32_t amount=1);
 	static bool add(asAtom& a, asAtom& v2, ASWorker *wrk, bool forceint);
 	static void addreplace(asAtom& ret, ASWorker* wrk, asAtom &v1, asAtom &v2,bool forceint);
+	static bool AVM1add(asAtom& a, asAtom& v2, ASWorker *wrk, bool forceint);
 	static FORCE_INLINE void bitnot(asAtom& a, ASWorker* wrk);
 	static FORCE_INLINE void subtract(asAtom& a,ASWorker* wrk,asAtom& v2,bool forceint);
 	static FORCE_INLINE void subtractreplace(asAtom& ret, ASWorker* wrk,const asAtom& v1, const asAtom& v2,bool forceint);
@@ -1316,7 +1317,7 @@ public:
 	virtual number_t toNumber();
 	virtual number_t toNumberForComparison();
 	/* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
-	bool toPrimitive(asAtom& ret,bool& isrefcounted, TP_HINT hint = NO_HINT);
+	bool toPrimitive(asAtom& ret,bool& isrefcounted, TP_HINT hint = NO_HINT, bool* fromValueOf=nullptr);
 	bool isPrimitive() const;
 
 	bool isInitialized() const {return traitsInitialized;}

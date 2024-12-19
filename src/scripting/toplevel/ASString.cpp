@@ -520,9 +520,14 @@ ASFUNCTIONBODY_ATOM(ASString,substring)
 number_t ASString::toNumber()
 {
 	assert_and_throw(implEnable);
-	if (getInstanceWorker()->AVM1getSwfVersion()<6 && getData().empty())
+	return toNumber(getInstanceWorker(),getData());
+}
+
+number_t ASString::toNumber(ASWorker* wrk, const tiny_string& value)
+{
+	if (wrk->AVM1getSwfVersion()<6 && value.empty())
 		return numeric_limits<double>::quiet_NaN();
-	const char *s = getData().raw_buf();
+	const char *s = value.raw_buf();
 	while (*s && isEcmaSpace(g_utf8_get_char(s)))
 		s = g_utf8_next_char(s);
 
@@ -533,6 +538,22 @@ number_t ASString::toNumber()
 	// If did not parse as infinite, try decimal
 	if (!std::isinf(val))
 	{
+		if (!wrk->needsActionScript3() && value.numBytes()>1)
+		{
+			if (s[0]=='0' && isdigit(s[1]))
+			{
+				// parse as octal number
+				Integer::fromStringFlashCompatible(s,val,8);
+				return val;
+			}
+
+			if (s[0]=='0' && (s[1] == 'x' || s[1]=='X'))
+			{
+				// parse as hex number
+				Integer::fromStringFlashCompatible(s,val,16);
+				return val;
+			}
+		}
 		errno = 0;
 		val = g_ascii_strtod(s, &end);
 
@@ -557,11 +578,10 @@ number_t ASString::toNumber()
 			return numeric_limits<double>::quiet_NaN();
 		end = g_utf8_next_char(end);
 	}
-
 	return val;
 }
 
-number_t ASString::parseStringInfinite(const char *s, char **end) const
+number_t ASString::parseStringInfinite(const char *s, char **end)
 {
 	if (end)
 		*end = const_cast<char *>(s);

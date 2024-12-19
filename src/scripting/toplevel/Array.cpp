@@ -1964,7 +1964,9 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 		createError<ReferenceError>(getInstanceWorker(),kReadSealedError,name.normalizedNameUnresolved(getSystemState()),getClass()->getQualifiedClassName());
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	}
-	
+	if (!getInstanceWorker()->needsActionScript3() && ASObject::hasPropertyByMultiname(name,true,false,wrk)) // AVM1 allows to add a property (via addProperty) with an int as name, so we have to check for that
+		return  getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
+
 	if (index < ARRAY_SIZE_THRESHOLD)
 	{
 		if (data_first.size() > index)

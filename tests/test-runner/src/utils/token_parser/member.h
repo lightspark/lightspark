@@ -246,30 +246,36 @@ struct GetValue<TimeSpec>
 	}
 };
 
+template<typename T, EnableIf<std::is_enum<T>::value, bool> = false>
+static T getEnumValue(const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr)
+{
+	if (!expr.isIdent())
+		throw LSMemberException("getEnumValue: LSMemberInfos require an identifier.");
+	auto _enum = memberInfo.getEnum(name);
+	auto shortEnum = memberInfo.getShortEnum(name);
+	return _enum.tryGetValue<T>(expr.ident).orElse([&]() -> Optional<T>
+	{
+		if (expr.ident.numChars() == 1)
+		{
+			auto ret = shortEnum.tryGetValue<T>(expr.ident[0]);
+			if (ret.hasValue())
+				return *ret;
+		}
+		std::stringstream s;
+		s << "getEnumValue: `" << expr.ident <<
+		"` isn't a valid enum value of member `" <<
+		name << "`.";
+		throw LSMemberException(s.str());
+		return nullOpt;
+	}).getValue();
+}
+
 template<typename T>
 struct GetValue<T, EnableIf<std::is_enum<T>::value>>
 {
 	static T getValue(const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr)
 	{
-		if (!expr.isIdent())
-			throw LSMemberException("getValue: LSMemberInfos require an identifier.");
-		auto _enum = memberInfo.getEnum(name);
-		auto shortEnum = memberInfo.getShortEnum(name);
-		return _enum.tryGetValue<T>(expr.ident).orElse([&]() -> Optional<T>
-		{
-			if (expr.ident.numChars() == 1)
-			{
-				auto ret = shortEnum.tryGetValue<T>(expr.ident[0]);
-				if (ret.hasValue())
-					return *ret;
-			}
-			std::stringstream s;
-			s << "getValue: `" << expr.ident <<
-			"` isn't a valid enum value of member `" <<
-			name << "`.";
-			throw LSMemberException(s.str());
-			return nullOpt;
-		}).getValue();
+		return getEnumValue<T>(memberInfo, name, expr);
 	}
 };
 

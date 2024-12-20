@@ -79,14 +79,14 @@ struct LSMovieHeader
 	tiny_string sha1Hash;
 
 	// The frame count of this movie.
-	size_t numFrames;
+	size_t numFrames { 0 };
 	// The re-record count of this movie.
-	size_t numRerecords;
+	size_t numRerecords { 0 };
 
 	// Allow the use of `noScale` for this movie.
 	//
 	// If empty, default to false.
-	bool allowNoScale;
+	bool allowNoScale { false };
 	// The end mode of this movie.
 	// Determines what should happen at the end of the movie.
 	//

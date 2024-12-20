@@ -137,7 +137,7 @@ struct IsValid<T, EnableIf<std::is_enum<T>::value>>
 };
 
 template<typename T>
-struct IsValid<std::list<T>>
+struct IsValid<T, EnableIf<IsIterable<T>::value>>
 {
 	static bool isValid(const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr)
 	{
@@ -145,7 +145,7 @@ struct IsValid<std::list<T>>
 			return false;
 		for (auto it : expr.value.list)
 		{
-			if (!IsValid<T>::isValid(memberInfo, name, it))
+			if (!IsValid<typename T::value_type>::isValid(memberInfo, name, it))
 				return false;
 		}
 		return true;

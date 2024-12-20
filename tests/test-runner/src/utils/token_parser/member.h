@@ -274,15 +274,15 @@ struct GetValue<T, EnableIf<std::is_enum<T>::value>>
 };
 
 template<typename T>
-struct GetValue<std::list<T>>
+struct GetValue<T, EnableIf<IsIterable<T>::value>>
 {
-	static std::list<T> getValue(const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr)
+	static T getValue(const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr)
 	{
 		if (!expr.isList())
 			throw LSMemberException("getValue: Lists require an array/table.");
-		std::list<T> list;
+		T list;
 		for (auto it : expr.value.list)
-			list.push_back(GetValue<T>::getValue(memberInfo, name, expr));
+			list.push_back(GetValue<typename T::value_type>::getValue(memberInfo, name, expr));
 		return list;
 	}
 };
@@ -332,13 +332,13 @@ private:
 	memberOffset(_memberOffset),
 	setter(_setter) {}
 public:
-	template<typename T, EnableIf<!IsSpecializationOf<T, std::list>::value, bool> = false>
+	template<typename T, EnableIf<!IsIterable<T>::value, bool> = false>
 	static LSMember create(size_t memberOffset)
 	{
 		return LSMember(memberOffset, &setMember<T>);
 	}
 
-	template<typename T, EnableIf<IsSpecializationOf<T, std::list>::value, bool> = false>
+	template<typename T, EnableIf<IsIterable<T>::value, bool> = false>
 	static LSMember create(size_t memberOffset, bool singleEntry = false)
 	{
 		auto setter = singleEntry ? setListMember<T> : setMember<T>;

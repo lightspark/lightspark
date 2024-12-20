@@ -85,6 +85,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setPixel","",c->getSystemState()->getBuiltinFunction(setPixel),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setPixel32","",c->getSystemState()->getBuiltinFunction(setPixel32),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyPixels","",c->getSystemState()->getBuiltinFunction(copyPixels),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("copyPixelsToByteArray","",c->getSystemState()->getBuiltinFunction(copyPixelsToByteArray),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("fillRect","",c->getSystemState()->getBuiltinFunction(fillRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("generateFilterRect","",c->getSystemState()->getBuiltinFunction(generateFilterRect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("hitTest","",c->getSystemState()->getBuiltinFunction(hitTest,2,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
@@ -369,8 +370,16 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel32)
 	int32_t y;
 	ARG_CHECK(ARG_UNPACK(x)(y));
 
-	uint32_t pix=th->pixels->getPixel(x, y,false);
-	asAtomHandler::setUInt(ret,wrk,pix);
+	if (wrk->needsActionScript3())
+	{
+		uint32_t pix=th->pixels->getPixel(x, y,false);
+		asAtomHandler::setUInt(ret,wrk,pix);
+	}
+	else
+	{
+		int32_t pix=(int32_t)th->pixels->getPixel(x, y,false);
+		asAtomHandler::setInt(ret,wrk,pix);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,setPixel)
@@ -518,6 +527,39 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 				  destPoint->getX(), destPoint->getY(),
 				  mergeAlpha|| !th->transparent);
 	th->notifyUsers();
+}
+
+ASFUNCTIONBODY_ATOM(BitmapData,copyPixelsToByteArray)
+{
+	BitmapData* th=asAtomHandler::as<BitmapData>(obj);
+	_NR<Rectangle> rect;
+	_NR<ByteArray> data;
+	ARG_CHECK(ARG_UNPACK(rect)(data));
+
+	if(th->pixels.isNull())
+	{
+		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		return;
+	}
+	if (rect.isNull())
+	{
+		createError<TypeError>(wrk,kNullPointerError, "rect");
+		return;
+	}
+	if (data.isNull())
+	{
+		createError<TypeError>(wrk,kNullPointerError, "data");
+		return;
+	}
+	RECT cliprect;
+	th->pixels->clipRect(rect->getRect(),cliprect);
+	for (int y=cliprect.Ymin; y<cliprect.Ymax; y++)
+	{
+		for (int x=cliprect.Xmin; x<cliprect.Xmax; x++)
+		{
+			data->writeUnsignedInt(data->endianIn(th->pixels->getPixel(x,y,false)));
+		}
+	}
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,generateFilterRect)
@@ -1184,6 +1226,11 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 	}
 }
 
+uint32_t LehmerRandom(uint32_t& seed)
+{
+	seed = (uint64_t(seed) * 16807U) % 2147483647;
+	return seed;
+}
 ASFUNCTIONBODY_ATOM(BitmapData,noise)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
@@ -1193,40 +1240,46 @@ ASFUNCTIONBODY_ATOM(BitmapData,noise)
 		return;
 	}
 
-	int randomSeed;
-	unsigned int low;
-	unsigned int high;
-	unsigned int channelOptions;
+	int32_t randomSeed;
+	uint32_t low;
+	uint32_t high;
+	uint32_t channelOptions;
 	bool grayScale;
 	ARG_CHECK(ARG_UNPACK(randomSeed)(low, 0) (high, 255) (channelOptions, 7) (grayScale, false));
 	
-	srand(randomSeed);
-
-	uint32_t range = high-low;
-
-	for (int32_t x=0; x<th->getWidth(); x++)
+	uint32_t randomval = randomSeed <= 0 ? -randomSeed+1 : randomSeed;
+	if (high < low)
+		high=low;
+	uint32_t range = (uint8_t)high-(uint8_t)low;
+	for (int32_t y=0; y<th->getHeight(); y++)
 	{
-		for (int32_t y=0; y<th->getHeight(); y++)
+		for (int32_t x=0; x<th->getWidth(); x++)
 		{
-			uint32_t pixel = 0x000000ff;
+			uint32_t pixel = 0;
 			
 			if (grayScale)
 			{
-				uint8_t v = (rand() % range + low) & 0xff;
-				pixel |= v<<24 | v<<16 | v<<8;
+				uint8_t v = (LehmerRandom(randomval) % (range +1) + low) & 0xff;
+				pixel |= v<<16 | v<<8 | v;
+				if((channelOptions & 0x8) == 0x8) // A
+					pixel |= (LehmerRandom(randomval) % (range +1) + low)<<24;
+				else
+					pixel |= 0xff<<24;
 			}
 			else
 			{
 				if((channelOptions & 0x1) == 0x1) // R
-					pixel |= ((rand() % range + low) & 0xff)<<24;
+					pixel |= ((LehmerRandom(randomval) % (range +1) + low) & 0xff)<<16;
 				if((channelOptions & 0x2) == 0x2) // G
-					pixel |= ((rand() % range + low) & 0xff)<<16;
+					pixel |= ((LehmerRandom(randomval) % (range +1) + low) & 0xff)<<8;
 				if((channelOptions & 0x4) == 0x4) // B
-					pixel |= ((rand() % range + low) & 0xff)<<8;
+					pixel |= ((LehmerRandom(randomval) % (range +1) + low) & 0xff);
 				if((channelOptions & 0x8) == 0x8) // A
-					pixel |= ((rand() % range + low) & 0xff);
+					pixel |= ((LehmerRandom(randomval) % (range +1) + low) & 0xff)<<24;
+				else
+					pixel |= 0xff<<24;
 			}
-			th->pixels->setPixel(x, y,pixel,true,true);
+			th->pixels->setPixel(x, y,pixel,true,false);
 		}
 	}
 }

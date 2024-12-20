@@ -30,10 +30,14 @@ SET(RUNNER_SOURCES
 	framework/test.cpp
 	
 	input/injector.cpp
+	input/formats/lightspark/parser.cpp
+	input/formats/lightspark/lsm_parser.cpp
 	input/formats/ruffle/parser.cpp
 
 	utils/args_parser.cpp
 	utils/option_parser.cpp
+	utils/token_parser/member.cpp
+	utils/token_parser/token_parser.cpp
 
 	main.cpp
 )

@@ -25,6 +25,7 @@
 #include "framework/test.h"
 #include "framework/runner.h"
 
+#include "input/formats/lightspark/parser.h"
 #include "input/formats/ruffle/parser.h"
 #include "input/injector.h"
 #include "input/parser.h"
@@ -51,8 +52,7 @@ static ::Impl<InputParser> toInputParser(const TestFormat& testFormat, const pat
 	{
 		// Default to our own test format, if we encounter an unknown format.
 		case TestFormat::Unknown:
-		// TODO: Implement our own test format.
-		case TestFormat::Lightspark: return Impl<InputParser>(); break;
+		case TestFormat::Lightspark: return LSInputParser(inputPath); break;
 		case TestFormat::Ruffle: return RuffleInputParser(inputPath); break;
 		// TODO: Implement this.
 		case TestFormat::Shumway: return Impl<InputParser>(); break;

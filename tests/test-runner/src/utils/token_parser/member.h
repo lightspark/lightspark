@@ -101,6 +101,17 @@ public:
 	const tiny_string& getReason() const noexcept { return reason; }
 };
 
+class ReturnNullOptException : public std::exception
+{
+private:
+	tiny_string reason;
+public:
+	ReturnNullOptException(const tiny_string& _reason) : reason(_reason) {}
+
+	const char* what() const noexcept override { return reason.raw_buf(); }
+	const tiny_string& getReason() const noexcept { return reason; }
+};
+
 struct LSMemberInfo
 {
 	using MemberMap = std::unordered_map<tiny_string, LSMember>;
@@ -298,7 +309,14 @@ struct GetValue<Optional<T>>
 {
 	static Optional<T> getValue(const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr)
 	{
-		return GetValue<T>::getValue(memberInfo, name, expr);
+		try
+		{
+			return GetValue<T>::getValue(memberInfo, name, expr);
+		}
+		catch (const ReturnNullOptException&)
+		{
+			return nullOpt;
+		}
 	}
 };
 

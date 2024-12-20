@@ -301,9 +301,9 @@ void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlp
 		{
 			uint32_t res = 0;
 			uint32_t alpha = ((color >> 24)&0xff);
-			res |= ((((color >> 0) &0xff) * alpha)&0xff) << 0;
-			res |= ((((color >> 8) &0xff) * alpha)&0xff) << 8;
-			res |= ((((color >> 16) &0xff) * alpha)&0xff) << 16;
+			res |= ((((color >> 0 ) &0xff) * alpha +0x7f)/0xff) << 0;
+			res |= ((((color >> 8 ) &0xff) * alpha +0x7f)/0xff) << 8;
+			res |= ((((color >> 16) &0xff) * alpha +0x7f)/0xff) << 16;
 			res |= alpha<<24;
 			*p=res;
 		}
@@ -311,6 +311,33 @@ void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlp
 	else
 		*p=(*p & 0xff000000) | (color & 0x00ffffff);
 }
+
+// values taken from ruffle, see https://github.com/ruffle-rs/ruffle/blob/master/core/src/bitmap/bitmap_data.rs
+uint32_t FLASH_PREMUL_FACTOR[256] = {
+	0, 16678912, 8339456, 5559638, 4169728, 3335783, 2779819, 2386603, 2086230, 1855488,
+	1667892, 1518251, 1391151, 1285234, 1193302, 1111928, 1043895, 981113, 927744, 879275,
+	834621, 795535, 759126, 726358, 695839, 668183, 642538, 618737, 596651, 576171, 555964,
+	538706, 522104, 506319, 490557, 477321, 464038, 451353, 439544, 428244, 417582, 407500,
+	397768, 388535, 379630, 371117, 363179, 355235, 348050, 340965, 334052, 327038, 321269,
+	315077, 309159, 303586, 298189, 293092, 287981, 283080, 278251, 273892, 269268, 265179,
+	261087, 256971, 253160, 249322, 245508, 242164, 238575, 235245, 231859, 228848, 225785,
+	222712, 219616, 216827, 213985, 211432, 208835, 206075, 203750, 201196, 198895, 196223,
+	194301, 191987, 189686, 187636, 185559, 183426, 181453, 179444, 177638, 175855, 174054,
+	171948, 170489, 168695, 166889, 165365, 163519, 162045, 160508, 158970, 157429, 156150,
+	154610, 153081, 151803, 150511, 148986, 147709, 146420, 145116, 143868, 142586, 141545,
+	140277, 139194, 137957, 136954, 135676, 134652, 133621, 132604, 131577, 130552, 129527,
+	128508, 127476, 126451, 125432, 124670, 123645, 122818, 121847, 121082, 120060, 119288,
+	118263, 117502, 116720, 115967, 115195, 114424, 113655, 112893, 112125, 111356, 110563,
+	109811, 109048, 108287, 107766, 107004, 106236, 105724, 104953, 104434, 103676, 102904,
+	102375, 101879, 101119, 100604, 99834, 99321, 98813, 98112, 97533, 97019, 96509, 95994,
+	95486, 94713, 94185, 93689, 93179, 92667, 92149, 91643, 91129, 90621, 90068, 89597,
+	89342, 88829, 88318, 87804, 87294, 87034, 86523, 85994, 85499, 85245, 84732, 84222,
+	83956, 83450, 82937, 82685, 82173, 81840, 81405, 80889, 80638, 80127, 79862, 79354,
+	79103, 78590, 78332, 78077, 77565, 77308, 76795, 76541, 76284, 75766, 75518, 75262,
+	74748, 74493, 74238, 73691, 73470, 73214, 72959, 72447, 72189, 71935, 71671, 71166,
+	70911, 70651, 70399, 70140, 69886, 69615, 69116, 68861, 68603, 68350, 68093, 67839,
+	67576, 67326, 67070, 66813, 66556, 66302, 66046, 65791, 65408,
+};
 
 uint32_t BitmapContainer::getPixel(int32_t x, int32_t y,bool premultiplied) const
 {
@@ -325,14 +352,16 @@ uint32_t BitmapContainer::getPixel(int32_t x, int32_t y,bool premultiplied) cons
 		uint32_t alpha = ((*p >> 24)&0xff);
 		if (alpha && alpha != 0xff)
 		{
-			// return value with "un-multiplied" alpha: ceiling(value*255/alpha)
+			// return value with "un-multiplied" alpha: algorithm taken from ruffle
 			uint32_t b = ((*p) >> 0) &0xff;
 			uint32_t g = ((*p) >> 8) &0xff;
 			uint32_t r = ((*p) >> 16) &0xff;
-			//x/y + (x % y != 0);
-			res |= (((b*0xff)/alpha+((b*0xff)%alpha ? 1:0))&0xff) << 0;
-			res |= (((g*0xff)/alpha+((g*0xff)%alpha ? 1:0))&0xff) << 8;
-			res |= (((r*0xff)/alpha+((r*0xff)%alpha ? 1:0))&0xff) << 16;
+
+			uint32_t alpha_factor = FLASH_PREMUL_FACTOR[alpha];
+
+			res |= ((b*alpha_factor+0x8000)>>16)<<0;
+			res |= ((g*alpha_factor+0x8000)>>16)<<8;
+			res |= ((r*alpha_factor+0x8000)>>16)<<16;
 			res |= alpha<<24;
 			return res;
 		}
@@ -387,12 +416,11 @@ void BitmapContainer::copyRectangle(_R<BitmapContainer> source,
 			{
 				uint32_t* pdst = reinterpret_cast<uint32_t *>(&p[(clippedY+i)*stride+4*(j+clippedX)]);
 				uint32_t* psrc = reinterpret_cast<uint32_t *>(&sourcedata[(sy+i)*source->stride+4*(j+sx)]);
-				uint32_t srcalpha = ((*psrc >> 24)&0xff);
-				uint32_t dstalpha = 0xff-srcalpha;
-				uint32_t b = ((((*psrc)     ) &0xff) * srcalpha + (((*pdst)     ) &0xff) * dstalpha) / 0xff;
-				uint32_t g = ((((*psrc) >> 8) &0xff) * srcalpha + (((*pdst) >> 8) &0xff) * dstalpha) / 0xff;
-				uint32_t r = ((((*psrc) >>16) &0xff) * srcalpha + (((*pdst) >>16) &0xff) * dstalpha) / 0xff;
-				uint32_t a = (srcalpha + (((*pdst) >>24) &0xff) )&0xff ;
+				uint32_t dstalpha = 0xff-((*psrc >> 24)&0xff);
+				uint32_t b = (((*psrc)     ) &0xff) + (((*pdst)     ) &0xff) * dstalpha / 0xff;
+				uint32_t g = (((*psrc) >> 8) &0xff) + (((*pdst) >> 8) &0xff) * dstalpha / 0xff;
+				uint32_t r = (((*psrc) >>16) &0xff) + (((*pdst) >>16) &0xff) * dstalpha / 0xff;
+				uint32_t a = (((*psrc) >>24) &0xff) + (((*pdst) >>24) &0xff) * dstalpha / 0xff;
 				*pdst = (b & 0xff) | ((g&0xff)<<8) | ((r&0xff)<<16) | (a<<24);
 			}
 		}

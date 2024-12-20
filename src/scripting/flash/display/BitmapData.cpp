@@ -94,14 +94,14 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("lock","",c->getSystemState()->getBuiltinFunction(lock),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unlock","",c->getSystemState()->getBuiltinFunction(unlock),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("floodFill","",c->getSystemState()->getBuiltinFunction(floodFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("histogram","",c->getSystemState()->getBuiltinFunction(histogram),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getColorBoundsRect","",c->getSystemState()->getBuiltinFunction(getColorBoundsRect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getPixels","",c->getSystemState()->getBuiltinFunction(getPixels),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getVector","",c->getSystemState()->getBuiltinFunction(getVector),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("histogram","",c->getSystemState()->getBuiltinFunction(histogram,0,Class<Vector>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getColorBoundsRect","",c->getSystemState()->getBuiltinFunction(getColorBoundsRect,2,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getPixels","",c->getSystemState()->getBuiltinFunction(getPixels,1,Class<ByteArray>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getVector","",c->getSystemState()->getBuiltinFunction(getVector,1,Class<Vector>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setPixels","",c->getSystemState()->getBuiltinFunction(setPixels),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setVector","",c->getSystemState()->getBuiltinFunction(setVector),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(colorTransform),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("compare","",c->getSystemState()->getBuiltinFunction(compare),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("compare","",c->getSystemState()->getBuiltinFunction(compare,1,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("applyFilter","",c->getSystemState()->getBuiltinFunction(applyFilter),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("noise","",c->getSystemState()->getBuiltinFunction(noise),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("perlinNoise","",c->getSystemState()->getBuiltinFunction(perlinNoise),NORMAL_METHOD,true);
@@ -218,9 +218,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 		uint32_t alpha = ((fillColor >> 24)&0xff);
 		if (alpha != 0xff)
 		{
-			res |= ((((fillColor >> 0) &0xff) * alpha)&0xff) << 0;
-			res |= ((((fillColor >> 8) &0xff) * alpha)&0xff) << 8;
-			res |= ((((fillColor >> 16) &0xff) * alpha)&0xff) << 16;
+			uint32_t alpha = ((fillColor >> 24)&0xff);
+			res |= ((((fillColor >> 0 ) &0xff) * alpha +0x7f)/0xff) << 0;
+			res |= ((((fillColor >> 8 ) &0xff) * alpha +0x7f)/0xff) << 8;
+			res |= ((((fillColor >> 16) &0xff) * alpha +0x7f)/0xff) << 16;
 			res |= alpha<<24;
 			c= GUINT32_TO_BE(res);
 		}

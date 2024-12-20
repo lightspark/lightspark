@@ -25,7 +25,11 @@
 
 #include <lightspark/tiny_string.h>
 
+#ifdef __APPLE__
+namespace fs = std::__fs::filesystem;
+#else
 namespace fs = std::filesystem;
+#endif
 using namespace lightspark;
 using path_t = fs::path;
 

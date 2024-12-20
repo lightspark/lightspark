@@ -29,7 +29,7 @@ namespace lightspark
 class IOError: public ASError
 {
 public:
-	IOError(ASWorker* wrk,Class_base* c,const tiny_string& error_message = "", int id = 0, tiny_string name = "IOError"):
+	IOError(ASWorker* wrk,Class_base* c,const tiny_string& error_message = "", int id = 0, tiny_string name = "Error"):
 		ASError(wrk,c, error_message, id, name){}
 	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
@@ -39,7 +39,7 @@ public:
 class EOFError: public IOError
 {
 public:
-	EOFError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : IOError(wrk,c, error_message, id, "EOFError"){}
+	EOFError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0) : IOError(wrk,c, error_message, id, "Error"){}
 	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

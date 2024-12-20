@@ -513,6 +513,21 @@ struct LSEventStorage
 			});
 	}
 
+	LSEventStorage(const LSEventStorage& other) : LSEventStorage((const LSEvent&)other) {}
+
+	LSEventStorage& operator=(const LSEventStorage& other)
+	{
+		const LSEvent& event = other;
+		if (event.isInvalid())
+			new(&data) LSEvent();
+		else
+			event.visit([&](const auto& event)
+			{
+				new(&data) RemoveCVRef<decltype(event)>(event);
+			});
+		return *this;
+	}
+
 	const LSEvent& event() const { return reinterpret_cast<const LSEvent&>(data); }
 	LSEvent& event() { return reinterpret_cast<LSEvent&>(data); }
 	operator const LSEvent&() const { return event(); }

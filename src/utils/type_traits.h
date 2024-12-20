@@ -93,6 +93,27 @@ struct IsSpecializationOf : std::false_type {};
 template<template<typename...> class T, typename... Args>
 struct IsSpecializationOf<T<Args...>, T> : std::true_type {};
 
+// Based on `https://stackoverflow.com/a/29634934`.
+template<typename T>
+auto isIterableImpl(int) -> decltype
+(
+	// Check for `std::{begin,end}()`, and `operator!=`.
+	begin(std::declval<T&>()) != end(std::declval<T&>()),
+	// Check for `operator,`.
+	void(),
+	// Check for `operator++`.
+	++std::declval<decltype(std::begin(std::declval<T&>()))&>(),
+	// Check for `operator*`.
+	void(*std::begin(std::declval<T&>())),
+	std::true_type {}
+);
+
+template<typename T>
+std::false_type isIterableImpl(...);
+
+template<typename T>
+using IsIterable = decltype(isIterableImpl<T>(0));
+
 template<typename T>
 struct Neg : BoolConstant<!T::value> {};
 

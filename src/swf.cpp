@@ -1856,7 +1856,7 @@ void ParseThread::parseSWF(UI8 ver)
 				//Official implementation is not strict in this regard. Let's continue and hope for the best.
 			}
 			//Check if this clip is the main clip then honour its FileAttributesTag
-			root->applicationDomain->usesActionScript3 = fat ? fat->ActionScript3 : root->applicationDomain->version>9;
+			root->applicationDomain->usesActionScript3 = fat && fat->ActionScript3;
 			if(root == root->getSystemState()->mainClip)
 			{
 				root->getSystemState()->needsAVM2(!usegnash || root->applicationDomain->usesActionScript3);

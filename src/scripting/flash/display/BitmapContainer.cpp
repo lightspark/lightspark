@@ -293,14 +293,14 @@ void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlp
 		return;
 	uint8_t* d = getCurrentData();
 	uint32_t *p=reinterpret_cast<uint32_t *>(&d[y*stride + 4*x]);
-	if(setAlpha)
+	if(true)//setAlpha)
 	{
 		if (ispremultiplied || ((color&0xff000000) == 0xff000000))
 			*p=color;
 		else
 		{
 			uint32_t res = 0;
-			uint32_t alpha = ((color >> 24)&0xff);
+			uint32_t alpha = (((setAlpha ? color : *p) >> 24)&0xff);
 			res |= ((((color >> 0 ) &0xff) * alpha +0x7f)/0xff) << 0;
 			res |= ((((color >> 8 ) &0xff) * alpha +0x7f)/0xff) << 8;
 			res |= ((((color >> 16) &0xff) * alpha +0x7f)/0xff) << 16;

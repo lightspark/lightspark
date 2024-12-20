@@ -477,9 +477,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,fillRect)
 		uint32_t alpha = ((color >> 24)&0xff);
 		if (alpha != 0xff)
 		{
-			res |= ((((color >> 0) &0xff) * alpha)&0xff) << 0;
-			res |= ((((color >> 8) &0xff) * alpha)&0xff) << 8;
-			res |= ((((color >> 16) &0xff) * alpha)&0xff) << 16;
+			res |= ((((color >> 0 ) &0xff) * alpha +0x7f)/0xff) << 0;
+			res |= ((((color >> 8 ) &0xff) * alpha +0x7f)/0xff) << 8;
+			res |= ((((color >> 16) &0xff) * alpha +0x7f)/0xff) << 16;
 			res |= alpha<<24;
 			color = res;
 		}
@@ -918,8 +918,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,getColorBoundsRect)
 	{
 		bounds->x = xmin;
 		bounds->y = ymin;
-		bounds->width = xmax - xmin + 1;
-		bounds->height = ymax - ymin + 1;
+		bounds->width = (xmax == 0) ? 0 : xmax - xmin + 1;
+		bounds->height = (ymax == 0) ? 0 : ymax - ymin + 1;
 	}
 	ret =asAtomHandler::fromObject(bounds);
 }
@@ -1019,7 +1019,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixels)
 				createError<EOFError>(wrk,kEOFError);
 				return;
 			}
-			th->pixels->setPixel(x, y, pixel, th->transparent);
+			th->pixels->setPixel(x, y, pixel, th->transparent,false);
 		}
 	}
 	th->notifyUsers();

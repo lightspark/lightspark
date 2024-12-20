@@ -70,6 +70,7 @@ public:
 	ASFUNCTION_ATOM(setPixel32);
 	ASFUNCTION_ATOM(getRect);
 	ASFUNCTION_ATOM(copyPixels);
+	ASFUNCTION_ATOM(copyPixelsToByteArray);
 	ASFUNCTION_ATOM(fillRect);
 	ASFUNCTION_ATOM(generateFilterRect);
 	ASFUNCTION_ATOM(hitTest);

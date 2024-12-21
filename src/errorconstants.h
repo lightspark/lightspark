@@ -175,6 +175,7 @@ enum
 	kConditionCannotBeInitialized           = 1519,
 	kMutexCannotBeInitialized               = 1520,
 	kWorkerIllegalCallToStart               = 1521,
+	kInvalidSocket                          = 2002,
 	kInvalidParamError                      = 2004,
 	kParamRangeError                        = 2006,
 	kNullPointerError                       = 2007,

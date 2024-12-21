@@ -186,7 +186,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	ARG_CHECK(ARG_UNPACK(width, 0)(height, 0)(transparent, true)(fillColor, 0xFFFFFFFF));
@@ -254,7 +254,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 
@@ -347,7 +347,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	int32_t x;
@@ -363,7 +363,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel32)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	int32_t x;
@@ -387,7 +387,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixel)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	int32_t x;
@@ -404,7 +404,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixel32)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	int32_t x;
@@ -421,7 +421,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getRect)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	Rectangle *rect=Class<Rectangle>::getInstanceS(wrk);
@@ -435,7 +435,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,_getHeight)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	asAtomHandler::setInt(ret,wrk,th->getHeight());
@@ -446,7 +446,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,_getWidth)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	asAtomHandler::setInt(ret,wrk,th->getWidth());
@@ -461,7 +461,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,fillRect)
 
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	if (rect.isNull())
@@ -501,7 +501,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	if (source.isNull())
@@ -538,7 +538,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixelsToByteArray)
 
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	if (rect.isNull())
@@ -568,7 +568,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,generateFilterRect)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	Rectangle *rect=Class<Rectangle>::getInstanceS(wrk);
@@ -582,7 +582,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 
@@ -675,7 +675,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,scroll)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 
@@ -693,7 +693,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,clone)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	BitmapData* clone = Class<BitmapData>::getInstanceS(wrk,th->getWidth(),th->getHeight());
@@ -708,7 +708,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyChannel)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	
@@ -777,7 +777,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,lock)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 
@@ -789,7 +789,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,unlock)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 
@@ -806,7 +806,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,floodFill)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 
@@ -827,7 +827,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,histogram)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 
@@ -880,7 +880,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getColorBoundsRect)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 
@@ -929,7 +929,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixels)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	
@@ -955,7 +955,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getVector)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	
@@ -987,7 +987,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixels)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	
@@ -1030,7 +1030,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setVector)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 	
@@ -1236,7 +1236,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,noise)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 
@@ -1288,7 +1288,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,perlinNoise)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->pixels.isNull())
 	{
-		createError<ArgumentError>(wrk,2015,"Disposed BitmapData");
+		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
 		return;
 	}
 

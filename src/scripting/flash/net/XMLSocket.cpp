@@ -188,7 +188,7 @@ ASFUNCTIONBODY_ATOM(XMLSocket, _send)
 	}
 	else
 	{
-		createError<IOError>(wrk,0,"Socket is not connected");
+		createError<IOError>(wrk,kInvalidSocket);
 	}
 }
 

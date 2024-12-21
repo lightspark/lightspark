@@ -173,6 +173,7 @@ const std::map<int, const char *> errorMessages = {
 	{kConditionCannotBeInitialized, "Condition cannot be initialized."},
 	{kMutexCannotBeInitialized, "Mutex cannot be initialized."},
 	{kWorkerIllegalCallToStart, "Only the worker's parent may call start."},
+	{kInvalidSocket, "Operation attempted on invalid socket."},
 	{kInvalidParamError, "One of the parameters is invalid."},
 	{kParamRangeError, "The supplied index is out of bounds."},
 	{kNullPointerError, "Parameter %1 must be non-null."},

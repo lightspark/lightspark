@@ -298,6 +298,10 @@ ASFUNCTIONBODY_ATOM(ASSocket, _close)
 	{
 		th->job->requestClose();
 	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,_getObjectEncoding)
@@ -444,7 +448,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readBoolean)
 	}
 	else
 	{
-		createError<IOError>(wrk,0,"Socket is not connected");
+		createError<IOError>(wrk,kInvalidSocket);
 		return;
 	}
 	asAtomHandler::setBool(ret,res!=0);
@@ -464,7 +468,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readByte)
 	}
 	else
 	{
-		createError<IOError>(wrk,0,"Socket is not connected");
+		createError<IOError>(wrk,kInvalidSocket);
 		return;
 	}
 	asAtomHandler::setInt(ret,wrk,int32_t(res));
@@ -497,91 +501,271 @@ ASFUNCTIONBODY_ATOM(ASSocket,readBytes)
 	}
 	else
 	{
-		createError<IOError>(wrk,0,"Socket is not connected");
+		createError<IOError>(wrk,kInvalidSocket);
 		return;
 	}
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,readDouble)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.readDouble");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.readDouble");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,readFloat)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.readFloat");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.readFloat");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,readInt)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.readInt");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.readInt");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,readMultiByte)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.readMultiByte");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.readMultiByte");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,readObject)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.readObject");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.readObject");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,readShort)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.readShort");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.readShort");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,readUnsignedByte)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.readUnsignedByte");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.readUnsignedByte");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,readUnsignedInt)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.readUnsignedInt");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.readUnsignedInt");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,readUnsignedShort)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.readUnsignedShort");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.readUnsignedShort");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,readUTF)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.readUTF");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.readUTF");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,writeBoolean)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.writeBoolean");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.writeBoolean");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeByte)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.writeByte");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.writeByte");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeDouble)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.writeDouble");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.writeDouble");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeFloat)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.writeFloat");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.writeFloat");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeInt)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.writeInt");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.writeInt");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeUnsignedInt)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.writeUnsignedInt");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.writeUnsignedInt");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeMultiByte)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.writeMultiByte");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.writeMultiByte");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeObject)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.writeObject");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.writeObject");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeShort)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.writeShort");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.writeShort");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeUTF)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"Socket.writeUTF");
+	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
+	Locker l(th->joblock);
+	if (th->job)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"Socket.writeUTF");
+	}
+	else
+	{
+		createError<IOError>(wrk,kInvalidSocket);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,writeUTFBytes)
@@ -598,32 +782,32 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeUTFBytes)
 	}
 	else
 	{
-		createError<IOError>(wrk,0,"Socket is not connected");
+		createError<IOError>(wrk,kInvalidSocket);
 		return;
 	}
 }
 ASFUNCTIONBODY_ATOM(ASSocket,writeBytes)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
-	_NR<ByteArray> data;
-	uint32_t offset;
-	uint32_t length;
-	ARG_CHECK(ARG_UNPACK (data)(offset,0)(length,0));
-	if (data.isNull())
-		return;
-	if (offset >= data->getLength())
-	{
-		createError<RangeError>(wrk,kParamRangeError);
-		return;
-	}
-	if (offset+length > data->getLength())
-	{
-		createError<RangeError>(wrk,kParamRangeError);
-		return;
-	}
 	Locker l(th->joblock);
 	if (th->job)
 	{
+		_NR<ByteArray> data;
+		uint32_t offset;
+		uint32_t length;
+		ARG_CHECK(ARG_UNPACK (data)(offset,0)(length,0));
+		if (data.isNull())
+			return;
+		if (offset >= data->getLength())
+		{
+			createError<RangeError>(wrk,kParamRangeError);
+			return;
+		}
+		if (offset+length > data->getLength())
+		{
+			createError<RangeError>(wrk,kParamRangeError);
+			return;
+		}
 		if (length == 0)
 			length = data->getLength()-offset;
 		uint8_t buf[length];
@@ -634,7 +818,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,writeBytes)
 	}
 	else
 	{
-		createError<IOError>(wrk,0,"Socket is not connected");
+		createError<IOError>(wrk,kInvalidSocket);
 		return;
 	}
 }
@@ -656,7 +840,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readUTFBytes)
 	}
 	else
 	{
-		createError<IOError>(wrk,0,"Socket is not connected");
+		createError<IOError>(wrk,kInvalidSocket);
 		return;
 	}
 }
@@ -670,7 +854,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,_flush)
 	}
 	else
 	{
-		createError<IOError>(wrk,0,"Socket is not connected");
+		createError<IOError>(wrk,kInvalidSocket);
 	}
 }
 

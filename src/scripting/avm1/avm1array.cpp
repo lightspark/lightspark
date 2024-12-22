@@ -40,9 +40,6 @@ void AVM1Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("shift","",c->getSystemState()->getBuiltinFunction(AVM1_shift,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("unshift","",c->getSystemState()->getBuiltinFunction(AVM1_unshift,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("splice","",c->getSystemState()->getBuiltinFunction(AVM1_splice,1),NORMAL_METHOD,true);
-
-	c->prototype->setVariableByQName("call","",c->getSystemState()->getBuiltinFunction(AVM1_call,1,Class<AVM1Array>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("apply","",c->getSystemState()->getBuiltinFunction(AVM1_apply,1,Class<AVM1Array>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
 }
 
 bool AVM1Array::destruct()
@@ -259,34 +256,6 @@ ASFUNCTIONBODY_ATOM(AVM1Array,AVM1_setLength)
 		Array::_setLength(ret,wrk,obj,args,argslen);
 	if (oldsize > th->size())
 		th->shrinkEnumeration(oldsize);
-}
-
-ASFUNCTIONBODY_ATOM(AVM1Array,AVM1_call)
-{
-	// implements Function.call as generator
-	if (argslen < 1)
-		return;
-	AVM1Array* th=Class<AVM1Array>::getInstanceSNoArgs(wrk);
-	th->constructorImpl(args+1,argslen-1); // ignore first argument, as it is the "this" object for the call
-	ret = asAtomHandler::fromObjectNoPrimitive(th);
-}
-ASFUNCTIONBODY_ATOM(AVM1Array,AVM1_apply)
-{
-	// implements Function.apply as generator
-	if (argslen < 1)
-		return;
-	if (argslen > 1 && !asAtomHandler::isArray(args[1]))
-		return;
-	AVM1Array* th=Class<AVM1Array>::getInstanceSNoArgs(wrk);
-
-	Array* argarray = asAtomHandler::as<Array>(args[1]);
-	th->resize(argarray->size());
-	for(unsigned int i=1;i<argarray->size();i++)
-	{
-		asAtom a= argarray->at(i);
-		th->set(i,a,false);
-	}
-	ret = asAtomHandler::fromObjectNoPrimitive(th);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Array,AVM1_pop)

@@ -711,6 +711,8 @@ void BitmapFilter::getRenderFilterArgsBevel(float* args, bool inner, bool knocko
 
 ASFUNCTIONBODY_ATOM(BitmapFilter,clone)
 {
+	if (!asAtomHandler::is<BitmapFilter>(obj))
+		return;
 	BitmapFilter* th=asAtomHandler::as<BitmapFilter>(obj);
 	ret = asAtomHandler::fromObject(th->cloneImpl());
 }

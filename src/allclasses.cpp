@@ -178,6 +178,7 @@
 #include "scripting/avm1/avm1xml.h"
 #include "scripting/avm1/avm1array.h"
 #include "scripting/avm1/avm1date.h"
+#include "scripting/avm1/avm1filter.h"
 
 using namespace lightspark;
 
@@ -194,6 +195,9 @@ using namespace lightspark;
 #define REGISTER_CLASS_NAME2(TYPE,NAME,NS) \
 	CLASS_##TYPE,
 
+#define REGISTER_CLASS_NAME_AVM1(TYPE,NAME,NS) \
+	CLASS_##TYPE,
+
 enum ASClassIds
 {
 //Leave a space for the special Class class
@@ -204,17 +208,27 @@ CLASS_LAST
 
 #undef REGISTER_CLASS_NAME
 #undef REGISTER_CLASS_NAME2
+#undef REGISTER_CLASS_NAME_AVM1
+
 
 //Phase 2: use the enumeratio to assign unique ids
 #define REGISTER_CLASS_NAME(TYPE, NS) \
 	template<> const char* ClassName<TYPE>::name = #TYPE; \
 	template<> const char* ClassName<TYPE>::ns = NS; \
-	template<> unsigned ClassName<TYPE>::id = CLASS_##TYPE;
+	template<> unsigned ClassName<TYPE>::id = CLASS_##TYPE; \
+	template<> bool ClassName<TYPE>::isAVM1 = false;
 
 #define REGISTER_CLASS_NAME2(TYPE,NAME,NS) \
 	template<> const char* ClassName<TYPE>::name = NAME; \
 	template<> const char* ClassName<TYPE>::ns = NS; \
-	template<> unsigned int ClassName<TYPE>::id = CLASS_##TYPE;
+	template<> unsigned int ClassName<TYPE>::id = CLASS_##TYPE; \
+	template<> bool ClassName<TYPE>::isAVM1 = false;
+
+#define REGISTER_CLASS_NAME_AVM1(TYPE,NAME,NS) \
+	template<> const char* ClassName<TYPE>::name = NAME; \
+	template<> const char* ClassName<TYPE>::ns = NS; \
+	template<> unsigned int ClassName<TYPE>::id = CLASS_##TYPE; \
+	template<> bool ClassName<TYPE>::isAVM1 = true;
 
 #include "allclasses.h"
 

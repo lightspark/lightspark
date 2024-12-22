@@ -44,8 +44,6 @@ public:
 	bool destruct() override;
 	ASFUNCTION_ATOM(AVM1_getLength);
 	ASFUNCTION_ATOM(AVM1_setLength);
-	ASFUNCTION_ATOM(AVM1_call);
-	ASFUNCTION_ATOM(AVM1_apply);
 	ASFUNCTION_ATOM(AVM1_pop);
 	ASFUNCTION_ATOM(AVM1_push);
 	ASFUNCTION_ATOM(AVM1_shift);

@@ -41,6 +41,7 @@ public:
 	static const char* ns;
 	static const char* name;
 	static uint32_t id;
+	static bool isAVM1;
 };
 
 class Class_inherit:public Class_base
@@ -78,7 +79,7 @@ public:
 	{
 		return &freelist;
 	}
-	
+
 	void buildInstanceTraits(ASObject* o) const override;
 	void setupDeclaredTraits(ASObject *target, bool checkclone=true) override;
 	void bindToTag(DictionaryTag* t)
@@ -219,7 +220,7 @@ public:
 			ret->setSystemState(sys);
 			ret->incRef();
 			*retAddr=ret;
-			ret->prototype = _MNR(new_objectPrototype(sys->worker));
+			ret->prototype = ClassName<T>::isAVM1 ? _MNR(new_functionPrototype(sys->worker,ret,NullRef)) : _MNR(new_objectPrototype(sys->worker));
 			T::sinit(ret);
 
 			ret->initStandardProps();

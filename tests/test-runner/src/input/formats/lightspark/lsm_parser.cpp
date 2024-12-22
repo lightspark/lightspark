@@ -1046,7 +1046,7 @@ void LSMovieParser::parseEvent
 	auto prevIt = types.cend();
 	resetMemberData(it);
 
-	parseBlock(block, [&](const BlockIter& token)
+	parseBlock(block, [&](BlockIter& token)
 	{
 		if (skipFirstToken)
 		{
@@ -1090,8 +1090,17 @@ void LSMovieParser::parseEvent
 				if (info.isValid(frameInfo, expr))
 					infoTable.push_back(info);
 			}
+
 			if (infoTable.empty())
-				throwError("Couldn't find a valid type for the given expression.");
+			{
+				// Got no members, try the next sub-type.
+				i = numMembers;
+				checkAssignedMembers(it, "");
+				if (it == types.cend())
+					throwError("Couldn't find a valid type for the given expression.");
+				token--;
+				return;
+			}
 			setMember(it, infoTable[(i + 1) % infoTable.size()].getName(), expr);
 			++i;
 			return;

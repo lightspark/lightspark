@@ -1430,7 +1430,12 @@ multiname* FunctionPrototype::setVariableByMultiname(multiname& name, asAtom& o,
 	return Function::setVariableByMultiname(name, o, allowConst,alreadyset,wrk);
 	
 }
-
+void FunctionPrototype::setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable, uint8_t min_swfversion)
+{
+	Prototype::setDeclaredMethodByQName(name,ns,o,type,isBorrowed,isEnumerable,min_swfversion);
+	if (o->is<Function>())
+		o->as<Function>()->inClass=this->getClass();
+}
 Prototype* FunctionPrototype::clonePrototype(ASWorker* wrk)
 {
 	Prototype* res = new_functionPrototype(wrk,getClass(),this->prevPrototype);

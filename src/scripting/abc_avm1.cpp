@@ -27,11 +27,11 @@
 #include "scripting/avm1/avm1xml.h"
 #include "scripting/avm1/avm1array.h"
 #include "scripting/avm1/avm1date.h"
+#include "scripting/avm1/avm1filter.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/geom/Point.h"
-#include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/filters/BevelFilter.h"
 #include "scripting/flash/filters/BlurFilter.h"
 #include "scripting/flash/filters/ColorMatrixFilter.h"
@@ -114,7 +114,7 @@ void ABCVm::registerClassesAVM1()
 		ASObject* flashfilterspackage = new_asobject(m_sys->worker);
 		flashpackage->setVariableByQName("filters",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashfilterspackage,CONSTANT_TRAIT);
 
-		flashfilterspackage->setVariableByQName("BitmapFilter","flash.filters",Class<BitmapFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashfilterspackage->setVariableByQName("BitmapFilter","flash.filters",Class<AVM1BitmapFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashfilterspackage->setVariableByQName("DropShadowFilter","flash.filters",Class<DropShadowFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashfilterspackage->setVariableByQName("GlowFilter","flash.filters",Class<GlowFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashfilterspackage->setVariableByQName("GradientGlowFilter","flash.filters",Class<GradientGlowFilter>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);

@@ -65,7 +65,7 @@
 #else
 #  include <llvm/Analysis/Verifier.h>
 #endif
-#include <llvm/Transforms/Scalar.h> 
+#include <llvm/Transforms/Scalar.h>
 #ifdef HAVE_TRANSFORMS_SCALAR_GVN_H
 #  include <llvm/Transforms/Scalar/GVN.h>
 #endif
@@ -268,7 +268,7 @@ multiname* ABCContext::getMultiname(unsigned int n, call_context* context)
 			return m->cached;
 		fromStack = m->runtimeargs;
 	}
-	
+
 	asAtom rt1=asAtomHandler::invalidAtom;
 	ASObject* rt2 = nullptr;
 	if(fromStack > 0)
@@ -615,7 +615,7 @@ ABCContext::ABCContext(ApplicationDomain* appDomain,SecurityDomain* secDomain, i
 	for (int32_t i = 0; i < 0x10000; i++)
 		constantAtoms_short[i] = asAtomHandler::fromInt((int32_t)(int16_t)i);
 	atomsCachedMaxID=0;
-	
+
 	namespaceBaseId=vm->getAndIncreaseNamespaceBase(constant_pool.namespaces.size());
 
 	in >> method_count;
@@ -852,7 +852,7 @@ void ABCVm::handleQueuedEvents()
 void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 {
 	event->getSystemState()->setInMouseEvent(event->is<MouseEvent>());
-	
+
 	if (event->type == "exitFrame")
 		event->getSystemState()->setFramePhase(FramePhase::EXIT_FRAME);
 	if (dispatcher && dispatcher->is<DisplayObject>() && event->type == "enterFrame" && (
@@ -878,16 +878,16 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	//Only set the default target is it's not overridden
 	if(asAtomHandler::isInvalid(event->target))
 		event->setTarget(asAtomHandler::fromObject(dispatcher));
-	/** rollOver/Out are special: according to spec 
-	http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/InteractiveObject.html?  		
-	filter_flash=cs5&filter_flashplayer=10.2&filter_air=2.6#event:rollOver 
+	/** rollOver/Out are special: according to spec
+	http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/InteractiveObject.html?
+	filter_flash=cs5&filter_flashplayer=10.2&filter_air=2.6#event:rollOver
 	*
-	*   The relatedObject is the object that was previously under the pointing device. 
-	*   The rollOver events are dispatched consecutively down the parent chain of the object, 
+	*   The relatedObject is the object that was previously under the pointing device.
+	*   The rollOver events are dispatched consecutively down the parent chain of the object,
 	*   starting with the highest parent that is neither the root nor an ancestor of the relatedObject
 	*   and ending with the object.
 	*
-	*   So no bubbling phase, a truncated capture phase, and sometimes no target phase (when the target is an ancestor 
+	*   So no bubbling phase, a truncated capture phase, and sometimes no target phase (when the target is an ancestor
 	*	of the relatedObject).
 	*/
 	//This is to take care of rollOver/Out
@@ -908,7 +908,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			}
 			dispatcher->as<DisplayObject>()->handleMouseCursor(event->type == "rollOver");
 		}
-		//If the relObj is non null, we get its ancestors to build a truncated parents queue for the target 
+		//If the relObj is non null, we get its ancestors to build a truncated parents queue for the target
 		if(rcur)
 		{
 			std::vector<DisplayObject*> rparents;
@@ -941,7 +941,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 				bool stop = false;
 				for(;i!=rparents.end();++i)
 				{
-					if((*i) == cur) 
+					if((*i) == cur)
 					{
 						stop = true;
 						break;
@@ -987,7 +987,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			event->currentTarget=NullRef;
 		}
 	}
-	
+
 	bool stagehandled=false;
 	//Do bubbling phase
 	if(event->bubbles && !parents.empty())
@@ -1032,11 +1032,11 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event.getPtr());
 	else
 		dispatcher->AVM1HandleEvent(dispatcher,event.getPtr());
-	
+
 	/* This must even be called if stop*Propagation has been called */
 	if(!event->defaultPrevented)
 		dispatcher->defaultEventBehavior(event);
-	
+
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
 	event->setTarget(asAtomHandler::invalidAtom);
@@ -1470,7 +1470,7 @@ bool ABCVm::addIdleEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool removeprev
 	}
 	if (!obj.isNull() && ev->getInstanceWorker() && !ev->getInstanceWorker()->isPrimordial)
 		return ev->getInstanceWorker()->addEvent(obj,ev);
-	if (removeprevious) 
+	if (removeprevious)
 	{
 		for (auto it = idleevents_queue.begin(); it != idleevents_queue.end(); it++)
 		{
@@ -1597,7 +1597,11 @@ void ABCVm::handleFrontEvent()
 
 	event_queue_mutex.unlock();
 	if (e.second->getEventType() != SHUTDOWN && !e.second->is<WaitableEvent>() && halted)
+	{
+		if (!e.first.isNull())
+			e.first->afterHandleEvent(e.second.getPtr());
 		return;
+	}
 
 	tryHandleEvent
 	(
@@ -1660,7 +1664,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 
 	if(name->name_s_id == BUILTIN_STRINGS::ANY)
 		return true;
-	
+
 	ASObject* target;
 	asAtom ret=asAtomHandler::invalidAtom;
 	applicationDomain->getVariableAndTargetByMultiname(ret,*name, target,applicationDomain->getInstanceWorker());
@@ -1691,7 +1695,7 @@ bool ABCContext::isinstance(ASObject* obj, multiname* name)
 	if (type->getObjectType()!=T_CLASS)
 		return false;
 	real_ret=objc->isSubClass(c);
-	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?"":"not ") 
+	LOG(LOG_CALLS,"Type " << objc->class_name << " is " << ((real_ret)?"":"not ")
 			<< "subclass of " << c->class_name);
 	return real_ret;
 }
@@ -1764,7 +1768,7 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 	method_info* m=get_method(scripts[i].init);
 	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(this->applicationDomain->getInstanceWorker(),m,m->numArgs());
 	entry->fromNewFunction=true;
-	
+
 	entry->addToScope(scope_entry(g,false));
 
 	asAtom ret=asAtomHandler::invalidAtom;
@@ -2023,14 +2027,14 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		return;
 	for(uint32_t i=0;i<numMessage;i++)
 	{
-	
+
 		tiny_string target;
 		if(!message->readUTF(target))
 			return;
 		tiny_string response;
 		if(!message->readUTF(response))
 			return;
-	
+
 		//TODO: Really use the response to map request/responses and detect errors
 		uint32_t objLen;
 		if(!message->readUnsignedInt(objLen))
@@ -2046,7 +2050,7 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 		asAtom v = asAtomHandler::fromObject(message.getPtr());
 		asAtom ret=asAtomHandler::invalidAtom;
 		ByteArray::readObject(ret,message->getInstanceWorker(),v, nullptr, 0);
-	
+
 		if(!responder.isNull())
 		{
 			multiname onResultName(nullptr);
@@ -2182,7 +2186,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			{
 				LOG(LOG_NOT_IMPLEMENTED,"Setter not linkable" << ": " << mname << c->toDebugString());
 			}
-			
+
 //			LOG(LOG_TRACE,"End Setter trait: " << mname);
 			break;
 		}
@@ -2361,7 +2365,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			{
 				return;
 			}
-			
+
 			ASObject* ret;
 
 			QName className(mname->name_s_id,mname->ns[0].nsNameId);

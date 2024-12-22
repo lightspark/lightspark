@@ -1286,7 +1286,7 @@ ASFUNCTIONBODY_ATOM(ASObject,_toString)
 		res="_level";
 		res += Integer::toString(asAtomHandler::as<RootMovieClip>(obj)->AVM1getLevel());
 	}
-	else if(asAtomHandler::getClass(obj,wrk->getSystemState()))
+	else if(wrk->needsActionScript3() && asAtomHandler::getClass(obj,wrk->getSystemState()))
 	{
 		res="[object ";
 		res+=wrk->getSystemState()->getStringFromUniqueId(asAtomHandler::getClass(obj,wrk->getSystemState())->class_name.nameId);

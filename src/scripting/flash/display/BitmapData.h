@@ -36,10 +36,12 @@ private:
 	_NR<BitmapContainer> pixels;
 	int locked;
 	bool needsupload;
+	bool transparent;
 	//Avoid cycles by not using automatic references
 	//Bitmap will take care of removing itself when needed
 	std::set<Bitmap*> users;
 	void notifyUsers();
+	bool checkDisposed(asAtom& ret);
 public:
 	BitmapData(ASWorker* wrk,Class_base* c);
 	BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b);
@@ -59,7 +61,6 @@ public:
 	 * Utility method to draw a DisplayObject on the surface
 	 */
 	void drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct);
-	ASPROPERTY_GETTER(bool, transparent);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(dispose);
 	ASFUNCTION_ATOM(draw);
@@ -76,6 +77,7 @@ public:
 	ASFUNCTION_ATOM(hitTest);
 	ASFUNCTION_ATOM(_getWidth);
 	ASFUNCTION_ATOM(_getHeight);
+	ASFUNCTION_ATOM(_getTransparent);
 	ASFUNCTION_ATOM(scroll);
 	ASFUNCTION_ATOM(clone);
 	ASFUNCTION_ATOM(copyChannel);
@@ -96,6 +98,7 @@ public:
 	ASFUNCTION_ATOM(threshold);
 	ASFUNCTION_ATOM(merge);
 	ASFUNCTION_ATOM(paletteMap);
+	ASFUNCTION_ATOM(pixelDissolve);
 };
 
 }

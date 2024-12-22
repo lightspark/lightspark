@@ -109,11 +109,13 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("threshold","",c->getSystemState()->getBuiltinFunction(threshold),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("merge","",c->getSystemState()->getBuiltinFunction(threshold),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("paletteMap","",c->getSystemState()->getBuiltinFunction(paletteMap),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("pixelDissolve","",c->getSystemState()->getBuiltinFunction(pixelDissolve),NORMAL_METHOD,true);
+
 	// properties
 	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_getHeight,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rect","",c->getSystemState()->getBuiltinFunction(getRect,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_getWidth,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	REGISTER_GETTER_RESULTTYPE(c,transparent,Boolean);
+	c->setDeclaredMethodByQName("transparent","",c->getSystemState()->getBuiltinFunction(_getTransparent,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 
 	IBitmapDrawable::linkTraits(c);
 }
@@ -177,6 +179,17 @@ void BitmapData::notifyUsers()
 		(*it)->updatedData();
 }
 
+bool BitmapData::checkDisposed(asAtom& ret)
+{
+	ret = getInstanceWorker()->needsActionScript3() ? asAtomHandler::undefinedAtom : asAtomHandler::fromInt(-1);
+	if(pixels.isNull())
+	{
+		createError<ArgumentError>(getInstanceWorker(),kInvalidBitmapData);
+		return true;
+	}
+	return false;
+}
+
 ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 {
 	int32_t width;
@@ -184,26 +197,27 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 	bool transparent;
 	uint32_t fillColor;
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
-		return;
-	}
-	ARG_CHECK(ARG_UNPACK(width, 0)(height, 0)(transparent, true)(fillColor, 0xFFFFFFFF));
+	ARG_CHECK(ARG_UNPACK(width)(height)(transparent, true)(fillColor, 0xFFFFFFFF));
 
 	//If the bitmap is already initialized, just return
 	if(width==0 || height==0 || !th->pixels->isEmpty())
 		return;
-	if(width<0 || height<0)
+	if((width<0) || (width> (wrk->AVM1getSwfVersion() >=10 ? 8191 : 2880)) )
 	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError,"invalid height or width");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"width");
 		return;
 	}
-	if(width>8191 || height>8191)
+	if((height<0) || (height > (wrk->AVM1getSwfVersion() >=10 ? 8191 : 2880)) )
 	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError,"invalid height or width");
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"height");
 		return;
 	}
+	if(height*width> 16777215 )
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"width/height");
+		return;
+	}
+
 
 	uint32_t *pixelArray=new uint32_t[width*height];
 	uint32_t c=GUINT32_TO_BE(fillColor); // fromRGB expects big endian data
@@ -233,11 +247,11 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 	th->transparent=transparent;
 }
 
-ASFUNCTIONBODY_GETTER(BitmapData, transparent)
-
 ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
+	if (th->checkDisposed(ret))
+		return;
 	th->pixels.reset();
 	th->notifyUsers();
 }
@@ -252,11 +266,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 
 	_NR<ASObject> drawable;
 	_NR<Matrix> matrix;
@@ -345,11 +356,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,draw)
 ASFUNCTIONBODY_ATOM(BitmapData,getPixel)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 	int32_t x;
 	int32_t y;
 	ARG_CHECK(ARG_UNPACK(x)(y));
@@ -361,11 +369,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel)
 ASFUNCTIONBODY_ATOM(BitmapData,getPixel32)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 	int32_t x;
 	int32_t y;
 	ARG_CHECK(ARG_UNPACK(x)(y));
@@ -385,11 +390,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel32)
 ASFUNCTIONBODY_ATOM(BitmapData,setPixel)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 	int32_t x;
 	int32_t y;
 	uint32_t color;
@@ -402,11 +404,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixel)
 ASFUNCTIONBODY_ATOM(BitmapData,setPixel32)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 	int32_t x;
 	int32_t y;
 	uint32_t color;
@@ -419,11 +418,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixel32)
 ASFUNCTIONBODY_ATOM(BitmapData,getRect)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 	Rectangle *rect=Class<Rectangle>::getInstanceS(wrk);
 	rect->width=th->pixels->getWidth();
 	rect->height=th->pixels->getHeight();
@@ -433,23 +429,24 @@ ASFUNCTIONBODY_ATOM(BitmapData,getRect)
 ASFUNCTIONBODY_ATOM(BitmapData,_getHeight)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 	asAtomHandler::setInt(ret,wrk,th->getHeight());
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,_getWidth)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 	asAtomHandler::setInt(ret,wrk,th->getWidth());
+}
+ASFUNCTIONBODY_ATOM(BitmapData,_getTransparent)
+{
+	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
+	if(th->checkDisposed(ret))
+		return;
+	asAtomHandler::setBool(ret,th->transparent);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,fillRect)
@@ -459,11 +456,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,fillRect)
 	uint32_t color;
 	ARG_CHECK(ARG_UNPACK(rect)(color));
 
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 	if (rect.isNull())
 	{
 		createError<TypeError>(wrk,kNullPointerError, "rect");
@@ -491,6 +485,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,fillRect)
 ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 {
 	BitmapData* th=asAtomHandler::as<BitmapData>(obj);
+	if (th->checkDisposed(ret))
+		return;
 	_NR<BitmapData> source;
 	_NR<Rectangle> sourceRect;
 	_NR<Point> destPoint;
@@ -499,11 +495,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 	bool mergeAlpha;
 	ARG_CHECK(ARG_UNPACK(source)(sourceRect)(destPoint)(alphaBitmapData, NullRef)(alphaPoint, NullRef)(mergeAlpha,false));
 
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 	if (source.isNull())
 	{
 		createError<TypeError>(wrk,kNullPointerError, "source");
@@ -536,11 +529,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixelsToByteArray)
 	_NR<ByteArray> data;
 	ARG_CHECK(ARG_UNPACK(rect)(data));
 
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 	if (rect.isNull())
 	{
 		createError<TypeError>(wrk,kNullPointerError, "rect");
@@ -566,11 +556,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,generateFilterRect)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData::generateFilterRect is just a stub");
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 	Rectangle *rect=Class<Rectangle>::getInstanceS(wrk);
 	rect->width=th->pixels->getWidth();
 	rect->height=th->pixels->getHeight();
@@ -580,13 +567,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,generateFilterRect)
 ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 
-	_NR<Point> firstPoint;
+	_NR<ASObject> firstPoint;
 	uint32_t firstAlphaThreshold;
 	_NR<ASObject> secondObject;
 	_NR<Point> secondBitmapDataPoint;
@@ -595,12 +579,46 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 					(secondAlphaThreshold,1));
 
 	asAtomHandler::setBool(ret,false);
+	number_t firstPointX=0;
+	number_t firstPointY=0;
+	if (wrk->needsActionScript3())
+	{
+		if (!firstPoint->is<Point>())
+		{
+			createError<ArgumentError>(wrk,kCheckTypeFailedError,
+									   th->getClassName(),
+									   "firstPoint");
+			return;
+		}
+		firstPointX = firstPoint->as<Point>()->getX();
+		firstPointY = firstPoint->as<Point>()->getY();
+	}
+	else
+	{
+		if (firstPoint->is<Point>())
+		{
+			firstPointX = firstPoint->as<Point>()->getX();
+			firstPointY = firstPoint->as<Point>()->getY();
+		}
+		else
+		{
+			asAtom a= asAtomHandler::invalidAtom;
+			list<tiny_string> ns;
+			firstPoint->getVariableByMultiname(a,"x",ns,wrk);
+			if (asAtomHandler::isValid(a))
+				firstPointX = asAtomHandler::AVM1toNumber(a,wrk->AVM1getSwfVersion());
+			a= asAtomHandler::invalidAtom;
+			firstPoint->getVariableByMultiname(a,"y",ns,wrk);
+			if (asAtomHandler::isValid(a))
+				firstPointY = asAtomHandler::AVM1toNumber(a,wrk->AVM1getSwfVersion());
+		}
+	}
 
 	if(secondObject->is<Point>())
 	{
 		Point* secondPoint = secondObject->as<Point>();
 	
-		uint32_t pix=th->pixels->getPixel(secondPoint->getX()-firstPoint->getX(), secondPoint->getY()-firstPoint->getY());
+		uint32_t pix=th->pixels->getPixel(secondPoint->getX()-firstPointX, secondPoint->getY()-firstPointY);
 		if((pix>>24)>=firstAlphaThreshold)
 			asAtomHandler::setBool(ret,true);
 		else
@@ -614,7 +632,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 		{
 			for (uint32_t y=0; y<r->height; y++)
 			{
-				uint32_t pix=th->pixels->getPixel(r->x+x-firstPoint->getX(), r->y+y-firstPoint->getY());
+				uint32_t pix=th->pixels->getPixel(r->x+x-firstPointX, r->y+y-firstPointY);
 				if((pix>>24)>=firstAlphaThreshold)
 				{
 					asAtomHandler::setBool(ret,true);
@@ -639,7 +657,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 			else
 			{
 				Point* secondPoint = secondBitmapDataPoint->as<Point>();
-				uint32_t pix1=th->pixels->getPixel(firstPoint->getX(), firstPoint->getY());
+				uint32_t pix1=th->pixels->getPixel(firstPointX, firstPointY);
 				uint32_t pix2=secondObject->as<Bitmap>()->bitmapData->pixels->getPixel(secondPoint->getX(), secondPoint->getY());
 				if(((pix1>>24)>=firstAlphaThreshold) && (pix2>>24)>=secondAlphaThreshold)
 					asAtomHandler::setBool(ret,true);
@@ -650,12 +668,14 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 	}
 	else if (secondObject->is<BitmapData>())
 	{
+		if (secondObject->as<BitmapData>()->checkDisposed(ret))
+			return;
 		if (secondBitmapDataPoint.isNull())
 			LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest with BitmapData as secondObject and no secondBitmapDataPoint");
 		else
 		{
 			Point* secondPoint = secondBitmapDataPoint->as<Point>();
-			uint32_t pix1=th->pixels->getPixel(firstPoint->getX(), firstPoint->getY());
+			uint32_t pix1=th->pixels->getPixel(firstPointX, firstPointY);
 			uint32_t pix2=secondObject->as<BitmapData>()->pixels->getPixel(secondPoint->getX(), secondPoint->getY());
 			if(((pix1>>24)>=firstAlphaThreshold) && (pix2>>24)>=secondAlphaThreshold)
 				asAtomHandler::setBool(ret,true);
@@ -667,17 +687,13 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 		createError<TypeError>(wrk,kCheckTypeFailedError, 
 				      secondObject->getClassName(),
 				      " Point, Rectangle, Bitmap, or BitmapData");
-	asAtomHandler::setBool(ret,false);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,scroll)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 
 	int x;
 	int y;
@@ -690,12 +706,14 @@ ASFUNCTIONBODY_ATOM(BitmapData,scroll)
 
 ASFUNCTIONBODY_ATOM(BitmapData,clone)
 {
-	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
+	if (!asAtomHandler::is<BitmapData>(obj))
 	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+		ret = wrk->needsActionScript3() ? asAtomHandler::undefinedAtom : asAtomHandler::fromInt(-1);
 		return;
 	}
+	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
+	if(th->checkDisposed(ret))
+		return;
 	BitmapData* clone = Class<BitmapData>::getInstanceS(wrk,th->getWidth(),th->getHeight());
 	clone->transparent = th->transparent;
 	if (th->getBitmapContainer())
@@ -706,12 +724,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,clone)
 ASFUNCTIONBODY_ATOM(BitmapData,copyChannel)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
-	
+
 	_NR<BitmapData> source;
 	_NR<Rectangle> sourceRect;
 	_NR<Point> destPoint;
@@ -775,11 +790,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyChannel)
 ASFUNCTIONBODY_ATOM(BitmapData,lock)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 
 	th->locked++;
 }
@@ -787,11 +799,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,lock)
 ASFUNCTIONBODY_ATOM(BitmapData,unlock)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 
 	if (th->locked > 0)
 	{
@@ -804,11 +813,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,unlock)
 ASFUNCTIONBODY_ATOM(BitmapData,floodFill)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 
 	int32_t x;
 	int32_t y;
@@ -825,11 +831,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,floodFill)
 ASFUNCTIONBODY_ATOM(BitmapData,histogram)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 
 	_NR<Rectangle> inputRect;
 	ARG_CHECK(ARG_UNPACK(inputRect));
@@ -878,11 +881,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,histogram)
 ASFUNCTIONBODY_ATOM(BitmapData,getColorBoundsRect)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 
 	uint32_t mask;
 	uint32_t color;
@@ -927,12 +927,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,getColorBoundsRect)
 ASFUNCTIONBODY_ATOM(BitmapData,getPixels)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
-	
+
 	_NR<Rectangle> rect;
 	ARG_CHECK(ARG_UNPACK(rect));
 
@@ -953,12 +950,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixels)
 ASFUNCTIONBODY_ATOM(BitmapData,getVector)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
-	
+
 	_NR<Rectangle> rect;
 	ARG_CHECK(ARG_UNPACK(rect));
 
@@ -985,12 +979,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,getVector)
 ASFUNCTIONBODY_ATOM(BitmapData,setPixels)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
-	
+
 	_NR<Rectangle> inputRect;
 	_NR<ByteArray> inputByteArray;
 	ARG_CHECK(ARG_UNPACK(inputRect) (inputByteArray));
@@ -1028,12 +1019,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixels)
 ASFUNCTIONBODY_ATOM(BitmapData,setVector)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
-	
+
 	_NR<Rectangle> inputRect;
 	_NR<Vector> inputVector;
 	ARG_CHECK(ARG_UNPACK(inputRect) (inputVector));
@@ -1075,24 +1063,63 @@ ASFUNCTIONBODY_ATOM(BitmapData,setVector)
 ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	
-	_NR<Rectangle> inputRect;
-	_NR<ColorTransform> inputColorTransform;
-	ARG_CHECK(ARG_UNPACK(inputRect) (inputColorTransform));
+	if (th->checkDisposed(ret))
+		return;
 
-	if (inputRect.isNull())
-	{
-		createError<TypeError>(wrk,kNullPointerError, "rect");
-		return;
-	}
-	if (inputColorTransform.isNull())
-	{
-		createError<TypeError>(wrk,kNullPointerError, "inputColor");
-		return;
-	}
 	RECT rect;
-	th->pixels->clipRect(inputRect->getRect(), rect);
-	
+	RECT inrect;
+	_NR<ColorTransform> inputColorTransform;
+	if (wrk->needsActionScript3())
+	{
+		_NR<Rectangle> inputRect;
+		ARG_CHECK(ARG_UNPACK(inputRect) (inputColorTransform));
+
+		if (inputRect.isNull())
+		{
+			createError<TypeError>(wrk,kNullPointerError, "rect");
+			return;
+		}
+		if (inputColorTransform.isNull())
+		{
+			createError<TypeError>(wrk,kNullPointerError, "inputColor");
+			return;
+		}
+		inrect=inputRect->getRect();
+	}
+	else
+	{
+		_NR<ASObject> inputRect;
+		ARG_CHECK(ARG_UNPACK(inputRect) (inputColorTransform));
+
+		if (inputRect.isNull())
+		{
+			createError<TypeError>(wrk,kNullPointerError, "rect");
+			return;
+		}
+		if (inputColorTransform.isNull())
+		{
+			createError<TypeError>(wrk,kNullPointerError, "inputColor");
+			return;
+		}
+		if (inputRect->is<Rectangle>())
+			inrect=inputRect->as<Rectangle>()->getRect();
+		else
+		{
+			// it seems adobe allows an object with x,y,width,height properties as inputRect
+			asAtom a;
+			std::list<tiny_string> ns;
+			inputRect->getVariableByMultiname(a,"x",ns,wrk);
+			inrect.Xmin=asAtomHandler::toInt(a);
+			inputRect->getVariableByMultiname(a,"y",ns,wrk);
+			inrect.Ymin=asAtomHandler::toInt(a);
+			inputRect->getVariableByMultiname(a,"width",ns,wrk);
+			inrect.Xmax=inrect.Xmin+asAtomHandler::toInt(a);
+			inputRect->getVariableByMultiname(a,"height",ns,wrk);
+			inrect.Ymax=inrect.Ymin+asAtomHandler::toInt(a);
+		}
+	}
+	th->pixels->clipRect(inrect, rect);
+
 	unsigned int i = 0;
 	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
 	{
@@ -1124,8 +1151,14 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 }
 ASFUNCTIONBODY_ATOM(BitmapData,compare)
 {
+	bool isAS3 = wrk->needsActionScript3();
+	if (!asAtomHandler::is<BitmapData>(obj))
+	{
+		if (!isAS3)
+			asAtomHandler::setInt(ret,wrk,-1);
+		return;
+	}
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	bool isAS3 = th->getSystemState()->mainClip->needsActionScript3();
 	
 	_NR<BitmapData> otherBitmapData;
 	ARG_CHECK(ARG_UNPACK(otherBitmapData));
@@ -1167,8 +1200,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 	rect.Ymin = 0;
 	rect.Ymax = th->getHeight();
 	
-	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect);
-	vector<uint32_t> otherpixelvec = otherBitmapData->pixels->getPixelVector(rect);
+	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect,false);
+	vector<uint32_t> otherpixelvec = otherBitmapData->pixels->getPixelVector(rect,false);
 	
 	BitmapData* res = Class<BitmapData>::getInstanceS(wrk,rect.Xmax,rect.Ymax);
 	unsigned int i = 0;
@@ -1177,7 +1210,6 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 	{
 		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
 		{
-
 			uint32_t pixel = pixelvec[i];
 			uint32_t otherpixel = otherpixelvec[i];
 			if (pixel == otherpixel)
@@ -1185,12 +1217,17 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 			else if ((pixel & 0x00FFFFFF) == (otherpixel & 0x00FFFFFF))
 			{
 				different = true;
-				res->pixels->setPixel(x, y, ((pixel & 0xFF000000) - (otherpixel & 0xFF000000)) | 0x00FFFFFF , true);
+				uint32_t resultpixel= (((pixel & 0xFF000000) - (otherpixel & 0xFF000000))&0xFF000000) | 0x00FFFFFF;
+				res->pixels->setPixel(x, y, resultpixel, true,false);
 			}
 			else 
 			{
 				different = true;
-				res->pixels->setPixel(x, y, ((pixel & 0x00FFFFFF) - (otherpixel & 0x00FFFFFF)), true);
+				uint32_t resultpixel= (((pixel & 0x00FF0000) - (otherpixel & 0x00FF0000)) &0x00FF0000) |
+									   (((pixel & 0x0000FF00) - (otherpixel & 0x0000FF00)) &0x0000FF00) |
+									   (((pixel & 0x000000FF) - (otherpixel & 0x000000FF)) &0x000000FF);
+				resultpixel |= 0xFF000000;
+				res->pixels->setPixel(x, y, resultpixel, true,false);
 			}
 			i++;
 		}
@@ -1204,6 +1241,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
+	if (th->checkDisposed(ret))
+		return;
 	_NR<BitmapData> sourceBitmapData;
 	_NR<Rectangle> sourceRect;
 	_NR<Point> destPoint;
@@ -1234,11 +1273,8 @@ uint32_t LehmerRandom(uint32_t& seed)
 ASFUNCTIONBODY_ATOM(BitmapData,noise)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 
 	int32_t randomSeed;
 	uint32_t low;
@@ -1286,11 +1322,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,noise)
 ASFUNCTIONBODY_ATOM(BitmapData,perlinNoise)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->pixels.isNull())
-	{
-		createError<ArgumentError>(wrk,kInvalidBitmapData,"Disposed BitmapData");
+	if(th->checkDisposed(ret))
 		return;
-	}
 
 	number_t baseX;
 	number_t baseY;
@@ -1352,6 +1385,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,perlinNoise)
 }
 ASFUNCTIONBODY_ATOM(BitmapData,threshold)
 {
+	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
+	if(th->checkDisposed(ret))
+		return;
 	_NR<BitmapData> sourceBitmapData;
 	_NR<Rectangle> sourceRect;
 	_NR<Point> destPoint;
@@ -1366,6 +1402,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,threshold)
 }
 ASFUNCTIONBODY_ATOM(BitmapData,merge)
 {
+	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
+	if(th->checkDisposed(ret))
+		return;
 	_NR<BitmapData> sourceBitmapData;
 	_NR<Rectangle> sourceRect;
 	_NR<Point> destPoint;
@@ -1379,7 +1418,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,merge)
 }
 ASFUNCTIONBODY_ATOM(BitmapData,paletteMap)
 {
-//	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
+	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
+	if(th->checkDisposed(ret))
+		return;
 
 	_NR<BitmapData> sourceBitmapData;
 	_NR<Rectangle> sourceRect;
@@ -1392,4 +1433,19 @@ ASFUNCTIONBODY_ATOM(BitmapData,paletteMap)
 
 	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.paletteMap not implemented");
 }
+ASFUNCTIONBODY_ATOM(BitmapData,pixelDissolve)
+{
+	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
+	if(th->checkDisposed(ret))
+		return;
 
+	_NR<BitmapData> sourceBitmapData;
+	_NR<Rectangle> sourceRect;
+	_NR<Point> destPoint;
+	int32_t randomSeed;
+	int32_t numPixels;
+	uint32_t fillColor;
+	ARG_CHECK(ARG_UNPACK(sourceBitmapData)(sourceRect) (destPoint) (randomSeed, 0) (numPixels, 0) (fillColor, 0));
+
+	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.pixelDissolve not implemented");
+}

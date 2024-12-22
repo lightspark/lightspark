@@ -89,6 +89,7 @@ struct TestOptions
 {
 	tiny_string name;
 	tiny_string description;
+	std::vector<tiny_string> authors;
 	Optional<size_t> numFrames;
 	Optional<double> tickRate;
 	tiny_string outputPath;

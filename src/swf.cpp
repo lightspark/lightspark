@@ -1366,7 +1366,7 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 {
 	Locker l(invalidateQueueLock);
 	//Check if the object is already in the queue
-	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail || !EngineData::enablerendering)
+	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail)
 		return;
 	if(!invalidateQueueHead)
 		invalidateQueueHead=invalidateQueueTail=d;
@@ -1421,7 +1421,7 @@ void SystemState::flushInvalidationQueue()
 			if(d)
 			{
 				cur->setupSurfaceState(d);
-				if (drawobj->getNeedsTextureRecalculation() || !d->isCachedSurfaceUsable(drawobj.getPtr()))
+				if (EngineData::enablerendering && (drawobj->getNeedsTextureRecalculation() || !d->isCachedSurfaceUsable(drawobj.getPtr())))
 				{
 					drawjobLock.lock();
 					AsyncDrawJob* j = new AsyncDrawJob(d,drawobj);
@@ -1452,9 +1452,9 @@ void SystemState::flushInvalidationQueue()
 					addJob(j);
 					drawjobLock.unlock();
 				}
-				else
+				else if (renderThread != nullptr)
 					renderThread->addRefreshableSurface(d,drawobj);
-				if (renderThread->isStarted())
+				if (renderThread != nullptr && renderThread->isStarted())
 					drawobj->resetNeedsTextureRecalculation();
 			}
 			drawobj->hasChanged=false;
@@ -1463,8 +1463,13 @@ void SystemState::flushInvalidationQueue()
 		cur->invalidateQueueNext=NullRef;
 		cur=next;
 	}
+	drawjobLock.lock();
+	if (getRenderThread() != nullptr)
+		getRenderThread()->canrender = drawJobsPending.empty();
+	drawjobLock.unlock();
 	influshing=false;
-	renderThread->signalSurfaceRefresh();
+	if (renderThread != nullptr)
+		renderThread->signalSurfaceRefresh();
 	invalidateQueueHead=NullRef;
 	invalidateQueueTail=NullRef;
 }

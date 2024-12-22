@@ -1236,7 +1236,7 @@ Vector2f DisplayObject::localToGlobal(const Vector2f& point, bool fromcurrentren
 //TODO: Fix precision issues
 Vector2f DisplayObject::globalToLocal(const Vector2f& point, bool fromcurrentrendering) const
 {
-	return getConcatenatedMatrix(fromcurrentrendering).getInverted().multiply2D(point);
+	return getConcatenatedMatrix(false, fromcurrentrendering).getInverted().multiply2D(point);
 }
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout, bool fromcurrentrendering) const
 {

@@ -106,6 +106,13 @@ void lightspark::setError(ASObject* error)
 		else
 			error->getInstanceWorker()->currentCallContext->exceptionthrown = error;
 	}
+	else if  (!error->getInstanceWorker()->needsActionScript3())
+	{
+		if (error->getInstanceWorker()->AVM1callStack.back()->exceptionthrown)
+			error->decRef();
+		else
+			error->getInstanceWorker()->AVM1callStack.back()->exceptionthrown = error;
+	}
 	else
 		throw error;
 }

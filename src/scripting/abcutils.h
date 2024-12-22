@@ -104,7 +104,7 @@ friend class AVM1Function;
 private:
 	std::vector<uint32_t> avm1strings;
 public:
-	AVM1context():keepLocals(true), callDepth(0), actionsExecuted(0),swfversion(0) {}
+	AVM1context():keepLocals(true), callDepth(0), actionsExecuted(0),swfversion(0),exceptionthrown(nullptr) {}
 	void AVM1ClearConstants()
 	{
 		avm1strings.clear();
@@ -125,6 +125,7 @@ public:
 	size_t actionsExecuted;
 	TimeSpec startTime;
 	uint8_t swfversion;
+	ASObject* exceptionthrown;
 };
 
 

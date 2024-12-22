@@ -728,6 +728,8 @@ void SystemState::destroy()
 
 		if (!runSingleThreaded)
 			terminated.wait();
+		else
+			currentVm->handleQueuedEvents();
 	}
 
 	//Kill our child process if any

@@ -1,0 +1,74 @@
+Main: constructing
+Main: frameConstructed
+Main: framescript 0
+Main: exitFrame
+Main: enterFrame. frame_count: 0
+Container: constructing
+Container: initializing event listeners
+Child: constructing
+Main: frameConstructed
+Container: frameConstructed
+Child: frameConstructed
+Main: framescript 1
+Container: framescript 0
+Child: framescript 2
+Child: going to frame 1. parent.currentFrame: 2
+Child: framescript 0
+Main: exitFrame
+Container: exitFrame
+Main: enterFrame. frame_count: 1
+Container: enterFrame
+Child: enterFrame
+InnerChild: constructing
+InnerChild2: constructing
+Main: frameConstructed
+Container: frameConstructed
+Child: frameConstructed
+Main: framescript 2
+Main: going to frame 2
+Container: framescript 1
+InnerChild: framescript 0
+InnerChild2: framescript 0
+Child: framescript 2
+Child: going to frame 1. parent.currentFrame: 2
+Main: queued framescript
+Main: framescript 1
+Child: framescript 0
+Main: exitFrame
+Container: exitFrame
+Main: enterFrame. frame_count: 2
+Container: enterFrame
+Child: enterFrame
+Main: frameConstructed
+Container: frameConstructed
+Child: frameConstructed
+Child: framescript 2
+Child: going to frame 1. parent.currentFrame: 2
+Child: framescript 0
+Main: exitFrame
+Container: exitFrame
+Main: enterFrame. frame_count: 3
+Container: enterFrame
+Child: enterFrame
+Main: frameConstructed
+Container: frameConstructed
+Child: frameConstructed
+Main: framescript 2
+Main: going to frame 2
+Container: framescript 2
+Container: going to frame 2. currentFrame: 3
+Container: after call to gotoAndPlay. currentFrame: 3
+InnerChild: framescript 1
+InnerChild: going to frame 1
+InnerChild2: framescript 1
+InnerChild2: going to frame 3
+Child: framescript 2
+Child: going to frame 1. parent.currentFrame: 2
+Main: queued framescript
+Main: framescript 1
+Container: framescript 1
+InnerChild: framescript 0
+InnerChild2: framescript 2
+Child: framescript 0
+Main: exitFrame
+Container: exitFrame

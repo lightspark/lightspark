@@ -1,0 +1,6 @@
+#test
+name = "Flash Player 9 queued framescripts";
+desc = "Tests queued framescripts, that got queued because a goto was ran inside a framescript.";
+author = "mr b0nk 500";
+frames = 4;
+knownFailure = true;

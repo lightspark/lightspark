@@ -1,0 +1,20 @@
+#lsm
+#version 0
+
+header
+{
+	name = "AVM1 propagated clip event order";
+	desc = "Tests the (input) event order of propagating clips.";
+	author = "mr b0nk 500";
+	file = "test.swf";
+	md5 = "fc8b3c29eba5889ce1052e33e17b6d43";
+	sha1 = "fc265e8119ba870923ca6051eb52c0793d85a014";
+	frames = 3;
+	rerecords = 0;
+};
+
+// NOTE: The `MouseMove` events are needed here, because the traces would
+// never get printed if they weren't there.
+frame { Mmc { [295px, 180px], l }; };
+frame { Mmc { [340px, 180px] }; };
+frame { Mmc { [320px, 180px] }; };

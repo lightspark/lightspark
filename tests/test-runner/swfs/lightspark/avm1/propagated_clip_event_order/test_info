@@ -1,0 +1,7 @@
+#test
+// NOTE: There's no frame count here because this uses an input file,
+// which means that the test will end when it reaches the end of the
+// input.
+name = "AVM1 propagated clip event order";
+desc = "Tests the (input) event order of propagating clips.";
+author = "mr b0nk 500";

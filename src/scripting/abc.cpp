@@ -1419,17 +1419,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool isGlobalMessag
 	if(isVmThread() && ev->is<WaitableEvent>())
 	{
 		RELEASE_WRITE(ev->queued,true);
-		if (m_sys->runSingleThreaded)
-		{
-			tryHandleEvent
-			(
-				[&](const eventType& ev) {},
-				[&](const eventType& ev) {},
-				std::make_pair(obj, ev)
-			);
-		}
-		else
-			handleEvent( make_pair(obj,ev) );
+		handleEvent( make_pair(obj,ev) );
 		if (obj)
 			obj->afterHandleEvent(ev.getPtr());
 		return true;

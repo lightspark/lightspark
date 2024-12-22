@@ -118,6 +118,9 @@ static LSMemberInfo testOptionsInfo
 	{
 		MEMBER(TestOptions, name),
 		MEMBER(TestOptions, description),
+		MEMBER(TestOptions, authors),
+		// Single entry version of `authors`.
+		MEMBER_NAME_LONG(TestOptions, authors, author, true),
 		MEMBER(TestOptions, numFrames),
 		MEMBER(TestOptions, tickRate),
 		MEMBER(TestOptions, outputPath),

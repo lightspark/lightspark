@@ -2292,7 +2292,7 @@ void SystemState::addFrameTiming(const TimeSpec& elapsed)
 // Based on Ruffle's `Player::tick()`.
 void SystemState::runTick(const TimeSpec& delta)
 {
-	if (mainClip == nullptr || mainClip->state.stop_FP)
+	if (mainClip == nullptr)
 		return;
 
 	frameAccumulator += delta;

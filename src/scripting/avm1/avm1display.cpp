@@ -803,7 +803,10 @@ void AVM1BitmapData::sinit(Class_base *c)
 	BitmapData::sinit(c);
 	c->setDeclaredMethodByQName("loadBitmap","",c->getSystemState()->getBuiltinFunction(loadBitmap),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("rectangle","",c->getSystemState()->getBuiltinFunction(getRect,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+
+	c->prototype->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<BitmapData>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
 }
+
 ASFUNCTIONBODY_ATOM(AVM1BitmapData,loadBitmap)
 {
 	tiny_string name;

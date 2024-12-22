@@ -23,36 +23,291 @@
 #include "framework/options.h"
 #include "framework/test.h"
 #include "utils/filesystem_overloads.h"
+#include "utils/token_parser/enum.h"
+#include "utils/token_parser/member.h"
+#include "utils/token_parser/token_parser.h"
 #include "utils/toml++_utils.h"
+
+static Approximations parseApproximations
+(
+	const LSMemberInfo& memberInfo,
+	const LSToken::Expr& expr
+);
+static ViewportDimensions parseViewportDimensions(const LSToken::Expr& expr);
+static RenderOptions parseRenderOptions(const LSToken::Expr& expr);
+static PlayerOptions parsePlayerOptions(const LSToken::Expr& expr);
+
+template<>
+struct GetValue<Approximations>
+{
+	static Approximations getValue(const LSMemberInfo& memberInfo, const tiny_string&, const Expr& expr)
+	{
+		return parseApproximations(memberInfo, expr);
+	}
+};
+
+template<>
+struct GetValue<ViewportDimensions>
+{
+	static ViewportDimensions getValue(const LSMemberInfo&, const tiny_string&, const Expr& expr)
+	{
+		return parseViewportDimensions(expr);
+	}
+};
+
+template<>
+struct GetValue<RenderOptions>
+{
+	static RenderOptions getValue(const LSMemberInfo&, const tiny_string&, const Expr& expr)
+	{
+		return parseRenderOptions(expr);
+	}
+};
+
+template<>
+struct GetValue<PlayerOptions>
+{
+	static PlayerOptions getValue(const LSMemberInfo&, const tiny_string&, const Expr& expr)
+	{
+		return parsePlayerOptions(expr);
+	}
+};
+
+template<>
+struct GetValue<FailureType>
+{
+	static FailureType getValue
+	(
+		const LSMemberInfo& memberInfo,
+		const tiny_string& name,
+		const Expr& expr
+	)
+	{
+		if (name == "knownFailure" || name == "knownCrash")
+		{
+			if (!expr.isBool())
+			{
+				std::stringstream s;
+				s << "FailureType: `" << name << "` requires a bool.";
+				throw TestRunnerException(s.str());
+			}
+
+			// Throw `ReturnNullOptException`, to return an empty
+			// `Optional`.
+			if (!expr.eval<bool>())
+			{
+				std::stringstream s;
+				s << "FailureType: `" << name << "` is false.";
+				throw ReturnNullOptException(s.str());
+			}
+
+			return
+			(
+				name.endsWith("Crash") ?
+				FailureType::Crash :
+				FailureType::Fail
+			);
+		}
+		return getEnumValue<FailureType>(memberInfo, name, expr);
+	}
+};
+
+static LSMemberInfo testOptionsInfo
+{
+	// memberMap.
+	{
+		MEMBER(TestOptions, name),
+		MEMBER(TestOptions, description),
+		MEMBER(TestOptions, numFrames),
+		MEMBER(TestOptions, tickRate),
+		MEMBER(TestOptions, outputPath),
+		MEMBER(TestOptions, ignore),
+		MEMBER(TestOptions, knownFailType),
+		MEMBER(TestOptions, playerOptions),
+		MEMBER(TestOptions, logFetch),
+		MEMBER(TestOptions, screenDPI),
+		MEMBER(TestOptions, usesAssert),
+	},
+	// memberAliases.
+	{
+		// `description`.
+		{ "desc", "description" },
+		{ "info", "description" },
+		// `numFrames`.
+		{ "frames", "numFrames" },
+		{ "frameCount", "numFrames" },
+		// `knownFailType`.
+		// Same as `knownFailType = Fail;`.
+		{ "knownFailure", "knownFailType" },
+		// Same as `knownFailType = Crash;`.
+		{ "knownCrash", "knownFailType" },
+		// `screenDPI`.
+		{ "dpi", "screenDPI" },
+	},
+	// enumMap.
+	{
+		{
+			"knownFailType",
+			{
+				LSShortEnum(),
+				LSEnum
+				({
+					{ "Fail", ssize_t(FailureType::Fail) },
+					{ "Crash", ssize_t(FailureType::Crash) },
+				})
+			}
+		},
+	}
+};
+
+static LSMemberInfo playerOptionsInfo
+{
+	// memberMap.
+	{
+		MEMBER(PlayerOptions, maxExecution),
+		MEMBER(PlayerOptions, viewportDimensions),
+		MEMBER(PlayerOptions, renderOptions),
+		MEMBER(PlayerOptions, hasAudio),
+		MEMBER(PlayerOptions, hasVideo),
+		MEMBER(PlayerOptions, flashMode),
+	},
+	// memberAliases.
+	{
+		// `maxExecution`.
+		{ "timeout", "maxExecution" },
+		// `viewportDimensions`.
+		{ "viewport", "viewportDimensions" },
+	},
+	// enumMap.
+	{
+		{
+			"flashMode",
+			{
+				LSShortEnum(),
+				LSEnum
+				({
+					{ "AIR", FlashMode::AIR },
+					{ "Flash", FlashMode::Flash },
+					{ "AvmPlus", FlashMode::AvmPlus },
+					// Aliases.
+					{ "air", FlashMode::AIR },
+					{ "flash", FlashMode::Flash },
+					{ "avmplus", FlashMode::AvmPlus },
+					{ "FlashPlayer", FlashMode::Flash },
+					{ "fp", FlashMode::Flash },
+				})
+			}
+		},
+	}
+};
+
+static bool isTestInfoFile(const path_t& path, const LSToken& token)
+{
+	return
+	(
+		path.filename() == "test_info" &&
+		token.isDirective() &&
+		token.dir.name == "test"
+	);
+}
+
+static Approximations parseApproximations
+(
+	const LSMemberInfo& memberInfo,
+	const LSToken::Expr& expr
+)
+{
+	if (!expr.isBlock())
+		throw TestRunnerException("Approximations: Expression must be a block.");
+
+	Approximations ret;
+	parseAssignBlock(expr.block, [&](const tiny_string& name, const Expr& expr)
+	{
+		if (name == "numberPatterns")
+		{
+			ret.numberPatterns = GetValue<std::vector<tiny_string>>::getValue
+			(
+				memberInfo,
+				name,
+				expr
+			);
+		}
+		else if (name == "epsilon")
+			ret.epsilon = expr.eval<double>();
+		else if (name == "maxRelative")
+			ret.maxRelative = expr.eval<double>();
+	});
+	return ret;
+}
+
+static ViewportDimensions parseViewportDimensions(const LSToken::Expr& expr)
+{
+	if (!expr.isBlock())
+		throw TestRunnerException("ViewportDimensions: Expression must be a block.");
+
+	ViewportDimensions ret;
+	parseAssignBlock(expr.block, [&](const tiny_string& name, const Expr& expr)
+	{
+		if (name == "size")
+			ret.size = parsePoint<int>(expr);
+		else if (name == "scale")
+			ret.scale = expr.eval<double>();
+	});
+	return ret;
+}
+
+static RenderOptions parseRenderOptions(const LSToken::Expr& expr)
+{
+	if (!expr.isBlock())
+		throw TestRunnerException("RenderOptions: Expression must be a block.");
+
+	RenderOptions ret;
+	parseAssignBlock(expr.block, [&](const tiny_string& name, const Expr& expr)
+	{
+		if (name == "required")
+			ret.required = expr.eval<bool>();
+		else if (name == "sampleCount")
+			ret.sampleCount = expr.eval<size_t>();
+	});
+	return ret;
+}
+
+static PlayerOptions parsePlayerOptions(const LSToken::Expr& expr)
+{
+	if (!expr.isBlock())
+		throw TestRunnerException("PlayerOptions: Expression must be a block.");
+
+	PlayerOptions ret;
+	parseAssignBlock(expr.block, [&](const tiny_string& name, const Expr& expr)
+	{
+		playerOptionsInfo.getMember(name).set
+		(
+			&ret,
+			playerOptionsInfo,
+			name,
+			expr
+		);
+	});
+	return ret;
+}
 
 template<>
 struct TomlFrom<Approximations>
 {
 	template<typename V>
-	static Approximations get(const V& view, const TestFormat& testFormat)
+	static Approximations get(const V& v)
 	{
-		bool isRuffle = testFormat == TestFormat::Ruffle;
 		return Approximations
 		{
 			// numberPatterns
 			tomlValue<std::vector<tiny_string>>
 			(
-				view
-				[
-					isRuffle ?
-					"number_patterns" :
-					"numberPatterns"
-				]
+				v["number_patterns"]
 			).valueOr(std::vector<tiny_string> {}),
 			// epsilon
-			view["epsilon"].template value<double>(),
+			v["epsilon"].template value<double>(),
 			// maxRelative
-			view
-			[
-				isRuffle ?
-				"max_relative" :
-				"maxRelative"
-			].template value<double>()
+			v["max_relative"].template value<double>()
 		};
 	}
 };
@@ -63,15 +318,8 @@ struct TomlFrom<FlashMode>
 	template<typename V>
 	static FlashMode get(const V& v)
 	{
-		auto str = tiny_string(*v.template value<std::string>()).lowercase();
-		if (str == "air")
-			return FlashMode::AIR;
-		if (str == "flash")
-			return FlashMode::Flash;
-		if (str == "avmplus")
-			return FlashMode::AvmPlus;
-
-		throw std::bad_cast();
+		auto str = v.template value<std::string>();
+		return *str == "AIR" ? FlashMode::AIR : FlashMode::AvmPlus;
 	}
 };
 
@@ -79,9 +327,8 @@ template<>
 struct TomlFrom<ViewportDimensions>
 {
 	template<typename V>
-	static ViewportDimensions get(const V& view, const TestFormat& testFormat)
+	static ViewportDimensions get(const V& view)
 	{
-		bool isRuffle = testFormat == TestFormat::Ruffle;
 		return ViewportDimensions
 		{
 			// size
@@ -91,12 +338,7 @@ struct TomlFrom<ViewportDimensions>
 				*view["height"].template value<int>()
 			),
 			// scale
-			*view
-			[
-				isRuffle ?
-				"scale_factor" :
-				"scale"
-			].template value<double>()
+			*view["scale_factor"].template value<double>()
 		};
 	}
 };
@@ -105,26 +347,14 @@ template<>
 struct TomlFrom<RenderOptions>
 {
 	template<typename V>
-	static RenderOptions get(const V& view, const TestFormat& testFormat)
+	static RenderOptions get(const V& view)
 	{
-		bool isRuffle = testFormat == TestFormat::Ruffle;
-		bool required = view
-		[
-			isRuffle ?
-			"optional" :
-			"required"
-		].value_or(false);
 		return RenderOptions
 		{
 			// required
-			isRuffle ? !required : required,
+			!view["optional"].value_or(false),
 			// sampleCount
-			view
-			[
-				isRuffle ?
-				"sample_count" :
-				"sampleCount"
-			].value_or(size_t(1))
+			view["sample_count"].value_or(size_t(1))
 		};
 	}
 };
@@ -133,47 +363,22 @@ template<>
 struct TomlFrom<PlayerOptions>
 {
 	template<typename V>
-	static PlayerOptions get(const V& view, const TestFormat& testFormat)
+	static PlayerOptions get(const V& view)
 	{
-		bool isRuffle = testFormat == TestFormat::Ruffle;
 		return PlayerOptions
 		{
 			// maxExecution
-			tomlTryFindFlat<TimeSpec>
-			(
-				view,
-				// Lightspark.
-				"maxExecution",
-				"timeout",
-				// Ruffle.
-				"max_execution_duration"
-			),
+			tomlValue<TimeSpec>(view["max_execution_duration"]),
 			// viewportDimensions
-			tomlTryFindFlat<ViewportDimensions>
-			(
-				testFormat,
-				view,
-				// Lightspark.
-				"viewportDimensions",
-				"viewport"
-				// Ruffle.
-				"viewport_dimensions"
-			),
+			tomlValue<ViewportDimensions>(view["viewport_dimensions"]),
 			// renderOptions
-			tomlValue<RenderOptions>
-			(
-				testFormat,
-				view[isRuffle ? "with_renderer" : "renderOptions"]
-			),
+			tomlValue<RenderOptions>(view["with_renderer"]),
 			// hasAudio
-			view[isRuffle ? "with_audio" : "hasAudio"].value_or(false),
+			view["with_audio"].value_or(false),
 			// hasVideo
-			view[isRuffle ? "with_video" : "hasVideo"].value_or(false),
+			view["with_video"].value_or(false),
 			// flashMode
-			tomlValue<FlashMode>
-			(
-				view[isRuffle ? "runtime" : "flashMode"]
-			).valueOr(isRuffle ? FlashMode::AvmPlus : FlashMode::Flash)
+			tomlValue<FlashMode>(view["runtime"]).valueOr(FlashMode::AvmPlus)
 		};
 	}
 };
@@ -182,21 +387,11 @@ template<>
 struct TomlFrom<FailureType>
 {
 	template<typename V>
-	static FailureType get(const V& view, const TestFormat& testFormat)
+	static FailureType get(const V& view)
 	{
-		bool isRuffle = testFormat == TestFormat::Ruffle;
-		bool knownCrash = !isRuffle ? view["knownCrash"].value_or(false) : false;
-		bool knownFailure = view
-		[
-			isRuffle ?
-			"known_failure" :
-			"knownFailure"
-		].value_or(false);
-
-		if (!knownFailure && !knownCrash)
+		if (!view["known_failure"].value_or(false))
 			throw std::bad_cast();
-
-		return knownCrash ? FailureType::Crash : FailureType::Fail;
+		return FailureType::Fail;
 	}
 };
 
@@ -304,44 +499,32 @@ usesAssert(false)
 		{
 			try
 			{
-				auto data = toml::parse_file(path.string());
-				description = tomlTryFindFlat<tiny_string>
-				(
-					data,
-					"description",
-					"desc"
-				).valueOr("");
+				auto block = LSTokenParser().parseFile(path.string());
+				if (!isTestInfoFile(path, block.front()))
+				{
+					std::stringstream s;
+					s << path << " isn't a valid `test_info` file.";
+					throw TestRunnerException(s.str());
+				}
 
-				numFrames = tomlTryFind<size_t>
-				(
-					data,
-					"numFrames",
-					"frames"
-				);
-				tickRate = data["tickRate"].template value<double>();
+				// Remove the starting `#test` directive.
+				block.pop_front();
 
-				outputPath = data["outputPath"].value_or("expected_output");
-				ignore = data["ignore"].value_or(false);
-				knownFailType = tomlValue<FailureType>(testFormat, data);
-
-				playerOptions = tomlValue<PlayerOptions>
-				(
-					testFormat,
-					data
-				).valueOr(PlayerOptions());
-				logFetch = data["logFetch"].value_or(false);
-				approximations = tomlValue<Approximations>(testFormat, data);
-				screenDPI = data["screenDPI"].template value<double>();
-				usesAssert = data["usesAssert"].value_or(false);
+				parseAssignBlock(block, [&](const tiny_string& name, const Expr& expr)
+				{
+					testOptionsInfo.getMember(name).set
+					(
+						this,
+						testOptionsInfo,
+						name,
+						expr
+					);
+				});
 			}
-			catch (const toml::parse_error& e)
+			catch (const std::exception& e)
 			{
-				auto source = e.source();
-				auto _path = source.path != nullptr ? *source.path : path.string();
-				std::cerr << "Error parsing file " << _path << ':' <<
-				std::endl << "reason: " << e.description() <<
-				std::endl << '(' << source.begin << ')' <<
-				std::endl;
+				std::cerr << "Error parsing file " << path <<
+				". Reason: " << e.what() << std::endl;
 				std::exit(1);
 			}
 			break;
@@ -368,18 +551,16 @@ usesAssert(false)
 
 				outputPath = data["output_path"].value_or("output.txt");
 				ignore = data["ignore"].value_or(false);
-				knownFailType = tomlValue<FailureType>(testFormat, data);
+				knownFailType = tomlValue<FailureType>(data);
 
 				approximations = tomlTryFind<Approximations>
 				(
-					testFormat,
 					data,
 					"approximations"
 				);
 
 				playerOptions = tomlValue<PlayerOptions>
 				(
-					testFormat,
 					data["player_options"]
 				).valueOr(PlayerOptions());
 

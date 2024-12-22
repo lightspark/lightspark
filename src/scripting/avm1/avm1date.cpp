@@ -67,20 +67,20 @@ ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_setYear)
 
 	if (argslen > 1)
 		m++;
-	else
-		m = g_date_time_get_month(th->getDateTime());
+	else if (th->isValid())
+		m = g_date_time_get_month(th->getDateTime()) ;
 
-	if (argslen < 3)
-		d = g_date_time_get_day_of_month(th->getDateTime());
+	if (argslen < 3 && th->isValid())
+		d = th->getDateTime() ? g_date_time_get_day_of_month(th->getDateTime()) : 0;
 
 	th->MakeDate
 	(
 		y,
 		m,
 		d,
-		g_date_time_get_hour(th->getDateTime()),
-		g_date_time_get_minute(th->getDateTime()),
-		g_date_time_get_second(th->getDateTime()),
+		th->isValid() ? g_date_time_get_hour(th->getDateTime()) : 0,
+		th->isValid() ? g_date_time_get_minute(th->getDateTime()) : 0,
+		th->isValid() ? g_date_time_get_second(th->getDateTime()) : 0,
 		th->getMs() % 1000,
 		true
 	);
@@ -101,7 +101,7 @@ ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_setUTCYear)
 
 	if (argslen > 1)
 		m++;
-	else
+	else if (th->isValid())
 		m = g_date_time_get_month(th->getDateTimeUTC());
 
 	if (argslen < 3)

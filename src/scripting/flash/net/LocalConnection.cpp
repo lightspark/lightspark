@@ -192,6 +192,8 @@ ASFUNCTIONBODY_ATOM(LocalConnection, send)
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, connect)
 {
+	if (!asAtomHandler::is<LocalConnection>(obj))
+		return;
 	LocalConnection* th=asAtomHandler::as<LocalConnection>(obj);
 	asAtom connectionName = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(connectionName));
@@ -207,6 +209,8 @@ ASFUNCTIONBODY_ATOM(LocalConnection, connect)
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, close)
 {
+	if (!asAtomHandler::is<LocalConnection>(obj))
+		return;
 	LocalConnection* th=asAtomHandler::as<LocalConnection>(obj);
 	if (th->connectionNameID==UINT32_MAX)
 	{

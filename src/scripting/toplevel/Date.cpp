@@ -28,7 +28,7 @@
 using namespace std;
 using namespace lightspark;
 
-Date::Date(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_DATE),extrayears(0), nan(false), datetime(nullptr),datetimeUTC(nullptr)
+Date::Date(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_DATE),extrayears(0), nan(true), datetime(nullptr),datetimeUTC(nullptr)
 {
 }
 
@@ -224,12 +224,14 @@ void Date::MakeDateFromMilliseconds(int64_t ms)
 	this->milliseconds = ms;
 	datetimeUTC = g_date_time_new_from_unix_utc(ms/1000);
 	datetime = g_date_time_to_local(datetimeUTC);
+	nan = false;
 }
 
 int daysinyear[] ={ 0,31,59,90,120,151,181,212,243,273,304,334 };
-void Date::MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t millisecond, bool bIsLocalTime)
+void Date::MakeDate(number_t year, number_t month, number_t day, number_t hour, number_t minute, number_t second, number_t millisecond, bool bIsLocalTime)
 {
-	if (std::isnan(year) || std::isnan(month) || std::isnan(day) || std::isnan(hour) || std::isnan(minute) || std::isnan(second) || std::isnan(millisecond))
+	if (std::isnan(year) || std::isnan(month) || std::isnan(day) || std::isnan(hour) || std::isnan(minute) || std::isnan(second) || std::isnan(millisecond)
+		|| std::isinf(year) || std::isinf(month) || std::isinf(day) || std::isinf(hour) || std::isinf(minute) || std::isinf(second) || std::isinf(millisecond))
 	{
 		this->nan = true;
 		return;
@@ -239,10 +241,10 @@ void Date::MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int6
 	//GLib's GDateTime seems to have problems if the parameters are big values (e.g. second = 1234567)
 	//so we calculate the milliseconds by using the algorithm from ECMAScript documentation
 	extrayears = year;
-	year = 2000+year%400;
+	year = 2000+int64_t(year)%400;
 	extrayears = extrayears-year;
 	int64_t y = year +(month-1)/12;
-	int64_t m = (month-1)%12;
+	int64_t m = int64_t(month-1)%12;
 
 	int64_t d = (day-1) + (y-1970)*365 + (y-1969)/4 - (y-1901)/100 +(y-1601)/400+ daysinyear[m];
 	if (m > 1 && (y % 4 == 0) && ((y%100 != 0) || (y%400 == 0))) // we are in a leap year after february
@@ -483,7 +485,6 @@ ASFUNCTIONBODY_ATOM(Date,setFullYear)
 	Date* th=asAtomHandler::as<Date>(obj);
 	if (argslen == 0)
 	{
-		th->nan = true;
 		asAtomHandler::setNumber(ret,wrk,Number::NaN);
 		return;
 	}
@@ -493,10 +494,10 @@ ASFUNCTIONBODY_ATOM(Date,setFullYear)
 	if (argslen > 1)
 		m++;
 	else
-		m = g_date_time_get_month(th->datetime);
+		m = th->nan ? 1 : g_date_time_get_month(th->datetime);
 	if (argslen < 3)
-		d = g_date_time_get_day_of_month(th->datetime);
-	th->MakeDate(y, m, d, g_date_time_get_hour(th->datetime),g_date_time_get_minute(th->datetime),g_date_time_get_second(th->datetime),th->milliseconds % 1000,true);
+		d = th->nan ? 0 : g_date_time_get_day_of_month(th->datetime);
+	th->MakeDate(y, m, d, th->nan ? 0 : g_date_time_get_hour(th->datetime),th->nan ? 0 : g_date_time_get_minute(th->datetime),th->nan ? 0 : g_date_time_get_second(th->datetime),th->milliseconds % 1000,true);
 	ret = th->msSinceEpoch();
 }
 
@@ -518,7 +519,7 @@ ASFUNCTIONBODY_ATOM(Date,setMonth)
 		return;
 	}
 	if (argslen < 2)
-		d = g_date_time_get_day_of_month(th->datetime);
+		d = th->nan ? 0 : g_date_time_get_day_of_month(th->datetime);
 	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, m+1, d, g_date_time_get_hour(th->datetime),g_date_time_get_minute(th->datetime),g_date_time_get_second(th->datetime),th->milliseconds % 1000,true);
 	ret = th->msSinceEpoch();
 }
@@ -605,7 +606,12 @@ ASFUNCTIONBODY_ATOM(Date,setSeconds)
 	number_t sec, ms;
 	ARG_CHECK(ARG_UNPACK (sec) (ms, 0));
 
-	if (th->nan) {
+	if (th->nan
+		|| std::isnan(sec)
+		|| std::isinf(sec)
+		|| std::isnan(ms)
+		|| std::isinf(ms))
+	{
 		asAtomHandler::setNumber(ret,wrk,Number::NaN);
 		return;
 	}
@@ -647,7 +653,10 @@ ASFUNCTIONBODY_ATOM(Date,setUTCFullYear)
 	Date* th=asAtomHandler::as<Date>(obj);
 	number_t y, m, d;
 	ARG_CHECK(ARG_UNPACK (y) (m, 0) (d, 0));
-
+	if (th->nan) {
+		asAtomHandler::setNumber(ret,wrk,Number::NaN);
+		return;
+	}
 	if (argslen > 1)
 		m++;
 	else
@@ -891,8 +900,9 @@ tiny_string Date::toFormat(bool utc, tiny_string format)
 
 tiny_string Date::toString_priv(bool utc, const char* formatstr) const
 {
-	if(nan) 
+	if(nan)
 		return "Invalid Date";
+	assert(utc? this->datetimeUTC : this->datetime);
 	gchar* fs = g_date_time_format(utc? this->datetimeUTC : this->datetime, formatstr);
 	tiny_string res(fs);
 	char buf[10];

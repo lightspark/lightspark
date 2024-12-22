@@ -26,6 +26,12 @@
 using namespace std;
 using namespace lightspark;
 
+AVM1XMLDocument::AVM1XMLDocument(ASWorker* wrk, Class_base* c):XMLDocument(wrk,c)
+{
+	subtype=SUBTYPE_AVM1XMLDOCUMENT;
+	needsActionScript3=false;
+}
+
 void AVM1XMLDocument::finalize()
 {
 	XMLDocument::finalize();

@@ -44,7 +44,7 @@ protected:
 	GDateTime* getDateTimeUTC() { return datetimeUTC; }
 
 	asAtom msSinceEpoch();
-	void MakeDate(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute, int64_t second, int64_t millisecond, bool bIsLocalTime);
+	void MakeDate(number_t year, number_t month, number_t day, number_t hour, number_t minute, number_t second, number_t millisecond, bool bIsLocalTime);
 	~Date();
 public:
 	Date(ASWorker* wrk,Class_base* c);
@@ -54,10 +54,10 @@ public:
 			g_date_time_unref(datetimeUTC);
 		if (datetime)
 			g_date_time_unref(datetime);
-		datetime = NULL;
-		datetimeUTC = NULL;
+		datetime = nullptr;
+		datetimeUTC = nullptr;
 		extrayears = 0;
-		nan = false;
+		nan = true;
 		return destructIntern();
 	}
 

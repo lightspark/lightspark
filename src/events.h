@@ -97,16 +97,19 @@ struct LSEvent
 
 	template<typename U = LSUserEvent, typename V>
 	constexpr auto visit(V&& visitor) const;
-	template<typename T>
+	template<typename T, EnableIf<std::is_base_of<LSEvent, T>::value, bool> = false>
 	constexpr bool has() const
 	{
-		static_assert
-		(
-			std::is_base_of<LSEvent, T>::value ||
-			std::is_base_of<LSUserEvent, T>::value,
-			"T must be an LSEvent"
-		);
 		return visit(makeVisitor
+		(
+			[](const T&) { return true; },
+			[](const LSEvent&) { return false; }
+		));
+	}
+	template<typename T, EnableIf<std::is_base_of<LSUserEvent, T>::value, bool> = false>
+	constexpr bool has() const
+	{
+		return visit<T>(makeVisitor
 		(
 			[](const T&) { return true; },
 			[](const LSEvent&) { return false; }
@@ -417,7 +420,10 @@ struct LSRemovedFromStageEvent : public LSEvent
 	constexpr LSRemovedFromStageEvent() : LSEvent(EventType::RemovedFromStage) {}
 };
 
-struct LSUserEvent {};
+struct LSUserEvent
+{
+	constexpr operator LSEvent() const { return LSEvent(); }
+};
 
 struct LSUserEventImpl : public LSEvent
 {
@@ -426,6 +432,9 @@ struct LSUserEventImpl : public LSEvent
 	constexpr LSUserEventImpl(const LSUserEvent& event) :
 	LSEvent(EventType::User),
 	data(std::move(event)) {}
+
+	template<typename T, typename V, EnableIf<std::is_base_of<LSUserEvent, T>::value, bool> = false>
+	constexpr auto visit(V&& visitor) const { return visitor(static_cast<const T&>(*data)); }
 
 	template<typename T, EnableIf<std::is_base_of<LSUserEvent, T>::value, bool> = false>
 	constexpr operator const T&() const { return static_cast<const T&>(*data); }
@@ -485,7 +494,7 @@ constexpr auto LSEvent::visit(V&& visitor) const
 			break;
 		}
 		case LSEvent::Type::RemovedFromStage: return visitor(static_cast<const LSRemovedFromStageEvent&>(*this)); break;
-		case LSEvent::Type::User: return visitor(static_cast<const LSUserEventImpl&>(*this)); break;
+		case LSEvent::Type::User: return static_cast<const LSUserEventImpl&>(*this).visit<U>(visitor); break;
 		// Invalid event, should be unreachable.
 		// TODO: Add `compat_unreachable()`, and use it here.
 		default: assert(false); break;
@@ -506,6 +515,8 @@ struct LSEventStorage
 	{
 		if (event.isInvalid())
 			new(&data) LSEvent();
+		else if (event.getType() == LSEvent::Type::User)
+			new(&data) LSUserEventImpl(static_cast<const LSUserEventImpl&>(event));
 		else
 			event.visit([&](const auto& event)
 			{
@@ -520,6 +531,8 @@ struct LSEventStorage
 		const LSEvent& event = other;
 		if (event.isInvalid())
 			new(&data) LSEvent();
+		else if (event.getType() == LSEvent::Type::User)
+			new(&data) LSUserEventImpl(static_cast<const LSUserEventImpl&>(event));
 		else
 			event.visit([&](const auto& event)
 			{

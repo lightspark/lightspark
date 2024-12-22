@@ -1127,7 +1127,10 @@ void LSMovieParser::parseEvent
 		it = types.cbegin();
 
 	if (i >= numMembers - 1 || wasReset || block.empty())
-		movie.events.push_back(createEvent(eventTypes.hasValue() ? *it : T {}));
+	{
+		for (; it != types.cend(); ++it)
+			movie.events.push_back(createEvent(eventTypes.hasValue() ? *it : T {}));
+	}
 }
 
 void LSMovieParser::parseMouseEvent(const tiny_string& name, const Block& block)

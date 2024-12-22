@@ -91,7 +91,7 @@ struct LSMovieHeader
 	// Determines what should happen at the end of the movie.
 	//
 	// If empty, default to stopping on end-of-movie.
-	LSMovieEndMode endMode;
+	LSMovieEndMode endMode { LSMovieEndMode::Stop };
 
 	// Optional starting resolution of this movie.
 	//

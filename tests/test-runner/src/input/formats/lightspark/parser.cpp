@@ -44,9 +44,10 @@ std::vector<LSEventStorage> LSInputParser::parse()
 				);
 				return nullOpt;
 			});
-			if (i < movie.numFrames() - 1)
-				ret.push_back(TestRunnerNextFrameEvent {});
+			ret.push_back(TestRunnerNextFrameEvent {});
 		}
+		// Extra frame needed to run the events from the last frame.
+		ret.push_back(TestRunnerNextFrameEvent {});
 		return ret;
 	}
 	catch (const std::exception& e)

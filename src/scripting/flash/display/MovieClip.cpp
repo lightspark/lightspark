@@ -1111,6 +1111,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
 {
+	if (!asAtomHandler::is<MovieClip>(obj))
+		return;
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	if (th->getParent() && !th->is<RootMovieClip>())
 	{

@@ -791,6 +791,8 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 	//By default, delete all the element up to the end
 	//DeleteCount defaults to the array len, it will be capped below
 	ARG_CHECK(ARG_UNPACK_MORE_ALLOWED(startIndex) (deleteCount, th->size()));
+	if (deleteCount < 0)
+		return;
 
 	uint32_t totalSize=th->size();
 	Array* res=th->createInstance();

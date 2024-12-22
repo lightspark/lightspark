@@ -1086,6 +1086,8 @@ void NetConnection::jobFence()
 
 ASFUNCTIONBODY_ATOM(NetConnection,connect)
 {
+	if (!asAtomHandler::is<NetConnection>(obj))
+		return;
 	NetConnection* th=asAtomHandler::as<NetConnection>(obj);
 	//This takes 1 required parameter and an unspecified number of optional parameters
 	assert_and_throw(argslen>0);

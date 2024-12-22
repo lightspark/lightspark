@@ -17,31 +17,21 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_AVM1_AVM1XML_H
-#define SCRIPTING_AVM1_AVM1XML_H
+#ifndef SCRIPTING_AVM1_AVM1FILTER_H
+#define SCRIPTING_AVM1_AVM1FILTER_H
 
 
-#include "scripting/flash/xml/flashxml.h"
-#include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/filters/flashfilters.h"
 
 namespace lightspark
 {
 
-class AVM1XMLDocument: public XMLDocument
+class AVM1BitmapFilter: public BitmapFilter
 {
-	_NR<URLLoader> loader;
 public:
-	AVM1XMLDocument(ASWorker* wrk,Class_base* c);
-	void finalize() override;
-	bool destruct() override;
-	void prepareShutdown() override;
+	AVM1BitmapFilter(ASWorker* wrk,Class_base* c, CLASS_SUBTYPE st=SUBTYPE_BITMAPFILTER);
 	static void sinit(Class_base* c);
-	ASFUNCTION_ATOM(createTextNode);
-	ASFUNCTION_ATOM(load);
-	ASFUNCTION_ATOM(_getter_status);
-	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
-	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 };
 
 }
-#endif // SCRIPTING_AVM1_AVM1XML_H
+#endif // SCRIPTING_AVM1_AVM1FILTER_H

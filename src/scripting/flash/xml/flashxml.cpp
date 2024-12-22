@@ -24,6 +24,7 @@
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Integer.h"
+#include "scripting/avm1/avm1xml.h"
 #include "parsing/amf3_generator.h"
 
 using namespace std;
@@ -61,7 +62,10 @@ ASFUNCTIONBODY_ATOM(XMLNode,_constructor)
 	uint32_t type;
 	tiny_string value;
 	ARG_CHECK(ARG_UNPACK(type)(value));
-	th->root=_MR(Class<XMLDocument>::getInstanceS(wrk));
+	if(wrk->needsActionScript3())
+		th->root= _MR(Class<XMLDocument>::getInstanceS(wrk));
+	else
+		th->root = _MR(Class<AVM1XMLDocument>::getInstanceS(wrk));
 	if(type==1 || type==3)
 	{
 		th->root->parseXMLImpl(value);

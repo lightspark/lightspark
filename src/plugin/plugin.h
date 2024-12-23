@@ -3,6 +3,7 @@
 
     Copyright (C) 2009-2013  Alessandro Pignotti (a.pignotti@sssup.it)
     Copyright (C) 2010-2011  Timon Van Overveldt (timonvo@gmail.com)
+    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -29,14 +30,17 @@
 #include "compat.h"
 #include "plugin/include/pluginbase.h"
 #include "parsing/streams.h"
+#include "backends/event_loop.h"
 #include "backends/netutils.h"
 #include "backends/urlutils.h"
 #include "plugin/npscriptobject.h"
 #include "backends/lsopengl.h"
+#include "utils/timespec.h"
 
 namespace lightspark
 {
 
+class nsPluginInstance;
 class NPDownloader;
 typedef void(*helper_t)(void*);
 
@@ -71,6 +75,26 @@ public:
 	NPDownloader(const lightspark::tiny_string& _url, _R<StreamCache> cache, NPP _instance, lightspark::ILoadable* owner);
 	NPDownloader(const lightspark::tiny_string& _url, _R<StreamCache> cache, const std::vector<uint8_t>& _data,
 			const std::list<tiny_string>& headers, NPP _instance, lightspark::ILoadable* owner);
+};
+
+class PluginEventLoop : public EventLoop
+{
+private:
+	nsPluginInstance* instance;
+
+	// Wait indefinitely for an event.
+	// Optionally returns an event, if one was received.
+	Optional<LSEventStorage> waitEventImpl(SystemState*) override { return {}; }
+
+	// Notifies the platform event loop that an event was pushed.
+	void notify() override;
+public:
+	PluginEventLoop(ITime* time, nsPluginInstance* _instance) :
+	EventLoop(time),
+	instance(_instance) {}
+	// Returns true if the platform supports handling timers in the
+	// event loop.
+	bool timersInEventLoop() const override { return false; }
 };
 
 class PluginEngineData:	public EngineData
@@ -118,10 +142,6 @@ public:
 	void draw(void *event, uint32_t evx, uint32_t evy, uint32_t evwidth, uint32_t evheight);
 	void runInTrueMainThread(SystemState* sys, MainThreadCallback func) override;
 	void runInMainThread(SystemState* sys, MainThreadCallback func) override;
-	static void pluginCallHandler(void* d)
-	{
-		mainloop_from_plugin((SystemState*)d);
-	}
 	void openContextMenu() override;
 };
 
@@ -134,6 +154,7 @@ public:
 
 	NPBool init(NPWindow* aWindow);
 	void shut();
+	NPP getInstance() { return mInstance; }
 	NPBool isInitialized() {return mInitialized;}
 	NPError GetValue(NPPVariable variable, void *value);
 	NPError SetWindow(NPWindow* aWindow);
@@ -174,7 +195,8 @@ private:
 	NPDownloader* mainDownloader;
 	NPScriptObjectGW* scriptObject;
 	lightspark::ParseThread* m_pt;
-	gint64 lastclicktime;
+	TimeSpec lastclicktime;
+	PluginEventLoop eventLoop;
 };
 
 }

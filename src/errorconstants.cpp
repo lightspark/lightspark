@@ -180,6 +180,7 @@ const std::map<int, const char *> errorMessages = {
 	{kInvalidEnumError, "Parameter %1 must be one of the accepted values."},
 	{kCantInstantiateError, "%1 class cannot be instantiated."},
 	{kInvalidBitmapData, "Invalid BitmapData."},
+	{kParamRangeNonNegativeError, "Parameter %1 must be a non-negative number; got %2."},
 	{kEOFError, "End of file was encountered."},
 	{kCompressedDataError, "There was an error decompressing the data."},
 	{kEmptyStringError, "Parameter %1 must be non-empty string."},

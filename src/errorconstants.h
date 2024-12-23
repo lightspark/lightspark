@@ -182,6 +182,7 @@ enum
 	kInvalidEnumError                       = 2008,
 	kCantInstantiateError                   = 2012,
 	kInvalidBitmapData                      = 2015,
+	kParamRangeNonNegativeError             = 2027,
 	kEOFError                               = 2030,
 	kCompressedDataError                    = 2058,
 	kEmptyStringError                       = 2085,

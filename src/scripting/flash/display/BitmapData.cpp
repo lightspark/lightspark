@@ -109,7 +109,7 @@ void BitmapData::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("threshold","",c->getSystemState()->getBuiltinFunction(threshold),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("merge","",c->getSystemState()->getBuiltinFunction(threshold),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("paletteMap","",c->getSystemState()->getBuiltinFunction(paletteMap),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("pixelDissolve","",c->getSystemState()->getBuiltinFunction(pixelDissolve),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("pixelDissolve","",c->getSystemState()->getBuiltinFunction(pixelDissolve,3,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_getHeight,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
@@ -1439,13 +1439,141 @@ ASFUNCTIONBODY_ATOM(BitmapData,pixelDissolve)
 	if(th->checkDisposed(ret))
 		return;
 
+	ret = asAtomHandler::fromInt(-1);
 	_NR<BitmapData> sourceBitmapData;
 	_NR<Rectangle> sourceRect;
 	_NR<Point> destPoint;
 	int32_t randomSeed;
 	int32_t numPixels;
 	uint32_t fillColor;
-	ARG_CHECK(ARG_UNPACK(sourceBitmapData)(sourceRect) (destPoint) (randomSeed, 0) (numPixels, 0) (fillColor, 0));
+	if (wrk->needsActionScript3())
+	{
+		ARG_CHECK(ARG_UNPACK(sourceBitmapData)(sourceRect) (destPoint) (randomSeed, 0) (numPixels, 0) (fillColor, 0xff000000));
+		if (numPixels < 0)
+		{
+			createError<RangeError>(wrk,kParamRangeNonNegativeError,"numPixels",asAtomHandler::toString(args[4],wrk));
+			return;
+		}
+	}
+	else
+	{
+		// contrary to specs default fillcolor seems to be fully opaque black for AS3
+		ARG_CHECK(ARG_UNPACK_NO_ERROR(sourceBitmapData)(sourceRect) (destPoint) (randomSeed, 0) (numPixels, 0) (fillColor, 0));
+		if (wrk->AVM1callStack.back()->exceptionthrown)
+		{
+			wrk->AVM1callStack.back()->exceptionthrown->decRef();
+			wrk->AVM1callStack.back()->exceptionthrown=nullptr;
+			return;
+		}
+	}
+	if (sourceBitmapData.isNull())
+	{
+		if (wrk->needsActionScript3())
+			createError<TypeError>(wrk,kNullPointerError,"sourceBitmapData");
+		return;
+	}
+	if(sourceBitmapData->pixels.isNull())
+	{
+		if (wrk->needsActionScript3())
+			createError<ArgumentError>(wrk,kInvalidBitmapData);
+		return;
+	}
+	if (sourceRect.isNull())
+	{
+		if (wrk->needsActionScript3())
+			createError<TypeError>(wrk,kNullPointerError,"sourceRect");
+		else
+			ret = asAtomHandler::fromInt(-4);
+		return;
+	}
+	if (destPoint.isNull())
+	{
+		createError<TypeError>(wrk,kNullPointerError,"destPoint");
+		return;
+	}
 
-	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.pixelDissolve not implemented");
+	uint32_t seed = (uint32_t)randomSeed;
+	RECT rc = sourceRect->getRect();
+	if (rc.Xmin<0) rc.Xmin=0;
+	if (rc.Ymin<0) rc.Ymin=0;
+	if (rc.Xmin > th->pixels->getWidth()
+		|| rc.Ymin > th->pixels->getHeight()
+		|| rc.Xmax<=rc.Xmin
+		|| rc.Ymax<=rc.Ymin)
+	{
+		ret = asAtomHandler::fromInt(seed);
+		return;
+	}
+	uint32_t w =(rc.Xmax-rc.Xmin);
+	uint32_t h =(rc.Ymax-rc.Ymin);
+	uint32_t destx=0;
+	uint32_t desty=0;
+	if (destPoint->getX()>=0)
+		destx = (uint32_t)destPoint->getX();
+	else
+	{
+		destx =0;
+		if ((int32_t)w + destPoint->getX() > 0)
+			w = uint32_t((int32_t)w + destPoint->getX());
+		else
+		{
+			ret = asAtomHandler::fromInt(seed);
+			return;
+		}
+	}
+	if (destPoint->getY()>=0)
+		desty = (uint32_t)destPoint->getY();
+	else
+	{
+		desty =0;
+		if ((int32_t)h + destPoint->getY() > 0)
+			h = uint32_t((int32_t)h + destPoint->getY());
+		else
+		{
+			ret = asAtomHandler::fromInt(seed);
+			return;
+		}
+	}
+	if (sourceBitmapData.getPtr() == th) // it seems that first pixel is always set if source and target are the same
+		th->pixels->setPixel(destx,desty,fillColor,true);
+	if (w > th->pixels->getWidth()-destx-rc.Xmin )
+		w = th->pixels->getWidth()-destx-rc.Xmin;
+	if (h > th->pixels->getHeight()-desty-rc.Ymin)
+		h = th->pixels->getHeight()-desty-rc.Ymin;
+	for (int32_t i = 0; i < numPixels; i++)
+	{
+		int x = (((number_t)LehmerRandom(seed))/(number_t)UINT32_MAX)*w+destx;
+		int y = (((number_t)LehmerRandom(seed))/(number_t)UINT32_MAX)*h+desty;
+		if (sourceBitmapData.getPtr() == th)
+		{
+			int x1=x;
+			int y1=y;
+			while (th->pixels->getPixel(x,y)==fillColor)
+			{
+				// simple search for next unfilled position
+				x++;
+				if (x >= int(w+destx))
+				{
+					x = destx;
+					y++;
+					if (y >= int(h+desty))
+					{
+						y = desty;
+					}
+				}
+				if (y == y1 && x == x1)
+				{
+					// all is filled
+					ret = asAtomHandler::fromInt(seed);
+					return;
+				}
+			}
+			th->pixels->setPixel(x,y,fillColor,true);
+		}
+		else
+		{
+			th->pixels->setPixel(x,y,sourceBitmapData->pixels->getPixel(rc.Xmin+x,rc.Ymin+y),true);
+		}
+	}
+	ret = asAtomHandler::fromInt(seed);
 }

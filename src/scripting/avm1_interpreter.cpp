@@ -52,6 +52,15 @@ asAtom ACTIONRECORD::PeekStack(std::stack<asAtom>& stack)
 		throw RunTimeException("AVM1: empty stack");
 	return stack.top();
 }
+struct tryCatchBlock
+{
+	uint16_t trysize;
+	uint16_t catchsize;
+	uint16_t finallysize;
+	uint8_t reg=UINT8_MAX;
+	tiny_string name;
+	uint32_t startpos;
+};
 Mutex executeactionmutex;
 void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, const std::vector<uint8_t> &actionlist, uint32_t startactionpos, std::map<uint32_t, asAtom> &scopevariables, bool fromInitAction, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
 								  bool preloadParent, bool preloadRoot, bool suppressSuper, bool preloadSuper, bool suppressArguments, bool preloadArguments, bool suppressThis, bool preloadThis, bool preloadGlobal, AVM1Function *caller, AVM1Function *callee, Activation_object *actobj, asAtom *superobj)
@@ -196,10 +205,13 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			registers[paramregisternumbers[i]] = args[i];
 		}
 	}
+	std::vector<tryCatchBlock> trycatchblocks;
+	bool inCatchBlock = false;
 
 	Array* argarray = nullptr;
 	DisplayObject *originalclip = clip;
 	auto it = actionlist.begin()+startactionpos;
+	auto tryblockstart = actionlist.end();
 	while (it != actionlist.end())
 	{
 		if (!(context->actionsExecuted % 2000))
@@ -215,6 +227,46 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					ScriptLimitException::ScriptTimeout
 				);
 			}
+		}
+		if (tryblockstart!= actionlist.end())
+		{
+			tryCatchBlock trycatchblock = trycatchblocks.back();
+			if (context->exceptionthrown)
+			{
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<< " "<<int(it-actionlist.begin())<< " exception caught: action code:"<<hex<<(int)*it<<" "<<dec<<context->exceptionthrown->toDebugString());
+				it = tryblockstart + trycatchblock.trysize;
+				if (!trycatchblock.name.empty())
+				{
+					uint32_t nameID = clip->getSystemState()->getUniqueStringId(trycatchblock.name.lowercase());
+					ASATOM_DECREF(locals[nameID]);
+					locals[nameID] = asAtomHandler::fromObject(context->exceptionthrown);
+				}
+				else if(trycatchblock.reg != UINT8_MAX)
+				{
+					ASATOM_DECREF(registers[trycatchblock.reg]);
+					registers[trycatchblock.reg] = asAtomHandler::fromObject(context->exceptionthrown);
+				}
+				else
+					context->exceptionthrown->decRef();
+				context->exceptionthrown=nullptr;
+				inCatchBlock=true;
+			}
+			else if (it > tryblockstart + trycatchblock.trysize)
+			{
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<< " "<<int(it-actionlist.begin())<< " end of try block: action code:"<<hex<<(int)*it);
+				if (!inCatchBlock && it < tryblockstart + trycatchblock.trysize + trycatchblock.catchsize)
+				{
+					it = tryblockstart + trycatchblock.trysize + trycatchblock.catchsize; // skip catchblock
+					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<< " "<<int(it-actionlist.begin())<< " skip catch block("<<trycatchblock.catchsize<<") action code:"<<hex<<(int)*it);
+				}
+				inCatchBlock=false;
+				trycatchblocks.pop_back();
+				if (!trycatchblocks.empty())
+					tryblockstart = actionlist.begin()+ trycatchblocks.back().startpos;
+				else
+					tryblockstart = actionlist.end();
+			}
+			// TODO special handling for finally block necessary?
 		}
 		while (curdepth > 0 && it == scopestackstop[curdepth])
 		{
@@ -931,6 +983,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x26: // ActionTrace
 			{
 				asAtom value = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionTrace "<<asAtomHandler::toDebugString(value));
 				clip->getSystemState()->trace(asAtomHandler::toString(value,wrk));
 				ASATOM_DECREF(value);
 				break;
@@ -992,6 +1045,22 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom obj = asAtomHandler::fromObject(clip);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEndDrag "<<asAtomHandler::toDebugString(obj));
 				Sprite::_stopDrag(ret,wrk,obj,nullptr,0);
+				break;
+			}
+			case 0x2a: // ActionThrow
+			{
+				asAtom obj = PopStack(stack);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionThrow "<<asAtomHandler::toDebugString(obj));
+				if (!context->exceptionthrown)
+					context->exceptionthrown=asAtomHandler::toObject(obj,wrk);
+				else
+				{
+					ASATOM_DECREF(obj);
+				}
+				if (tryblockstart == actionlist.end())
+				{
+					it = actionlist.end(); // force quit loop;
+				}
 				break;
 			}
 			case 0x2b: // ActionCastOp
@@ -1938,7 +2007,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						}
 						else if (asAtomHandler::is<AVM1Function>(func))
 						{
-							LOG(LOG_ERROR,"call:"<<asAtomHandler::toDebugString(func));
 							if (scriptobject.uintval == super.uintval)
 								asAtomHandler::as<AVM1Function>(func)->call(&ret,&scopestack[0],args,numargs,caller,&locals);
 							else
@@ -1957,8 +2025,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject)<<" result:"<<asAtomHandler::toDebugString(ret));
 				if (context->exceptionthrown)
 				{
-					context->exceptionthrown->decRef();
-					context->exceptionthrown=nullptr;
+					if (tryblockstart== actionlist.end())
+					{
+						context->exceptionthrown->decRef();
+						context->exceptionthrown=nullptr;
+					}
 				}
 				PushStack(stack,ret);
 				for (uint32_t i = 0; i < numargs; i++)
@@ -2696,22 +2767,25 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x8f: // ActionTry
 			{
 				bool catchInRegister = (*it)&0x04;
-				bool finallyBlock = (*it)&0x02;
-				bool catchBlock = (*it)&0x01;
 				it++;
-				uint16_t trysize = uint16_t(*it++) | ((*it++)<<8);
-				uint16_t catchsize = uint16_t(*it++) | ((*it++)<<8);
-				uint16_t finallysize = uint16_t(*it++) | ((*it++)<<8);
-				uint8_t reg=UINT8_MAX;
-				tiny_string name;
+				tryCatchBlock trycatchblock;
+				trycatchblock.trysize = uint16_t(*it++) | ((*it++)<<8);
+				trycatchblock.catchsize = uint16_t(*it++) | ((*it++)<<8);
+				trycatchblock.finallysize = uint16_t(*it++) | ((*it++)<<8);
+				trycatchblock.reg=UINT8_MAX;
 				if (catchInRegister)
-					reg = *it++;
+					trycatchblock.reg = *it++;
 				else
 				{
-					name = tiny_string((const char*)&(*it),true);
-					it += name.numBytes()+1;
+					trycatchblock.name = tiny_string((const char*)&(*it),true);
+					it += trycatchblock.name.numBytes()+1;
 				}
-				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionTry "<<name<<" "<<(int)reg<<" "<<trysize<<"/"<<catchsize<<"/"<<finallysize<<" "<<catchBlock <<" "<<finallyBlock);
+				trycatchblock.startpos=it-actionlist.begin();
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionTry "<<trycatchblock.name<<" "<<(int)trycatchblock.reg<<" "<<trycatchblock.trysize<<"/"<<trycatchblock.catchsize<<"/"<<trycatchblock.finallysize);
+				if (trycatchblock.finallysize)
+					LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionTry with finallysize:"<<trycatchblock.name<<" "<<(int)trycatchblock.reg<<" "<<trycatchblock.trysize<<"/"<<trycatchblock.catchsize<<"/"<<trycatchblock.finallysize);
+				trycatchblocks.push_back(trycatchblock);
+				tryblockstart = it;
 				break;
 			}
 			case 0x33: // ActionAsciiToChar
@@ -2753,7 +2827,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x68: // ActionStringGreater
 				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF6 DoActionTag "<<hex<<(int)opcode);
 				break;
-			case 0x2a: // ActionThrow
 			case 0x2c: // ActionImplementsOp
 				LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" SWF7 DoActionTag "<<hex<<(int)opcode);
 				if(opcode >= 0x80)
@@ -2794,11 +2867,16 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" executeActions done");
 	Log::calls_indent--;
 	context->callDepth--;
-	if (context->exceptionthrown)
+	wrk->AVM1callStack.pop_back();
+	if (context->exceptionthrown && context->callDepth==0)
 	{
-		LOG(LOG_ERROR,"AVM1: unhandled exception:"<<context->exceptionthrown->toDebugString());
-		context->exceptionthrown->decRef();
+		if (wrk->AVM1callStack.empty())
+		{
+			LOG(LOG_ERROR,"AVM1: unhandled exception:"<<context->exceptionthrown->toDebugString());
+			context->exceptionthrown->decRef();
+		}
+		else
+			wrk->AVM1callStack.back()->exceptionthrown=context->exceptionthrown;
 		context->exceptionthrown=nullptr;
 	}
-	wrk->AVM1callStack.pop_back();
 }

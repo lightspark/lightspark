@@ -1,7 +1,9 @@
 #ifndef PPAPI_PLUGIN_H
 #define PPAPI_PLUGIN_H
 
+#include "events.h"
 #include "swf.h"
+#include "backends/event_loop.h"
 #include "backends/extscriptobject.h"
 #include "backends/streamcache.h"
 #include "backends/netutils.h"
@@ -128,6 +130,26 @@ public:
 	static PP_Var getppObject(std::map<const ExtObject*, PP_Var>& objectsMap, PP_Instance instance, const ExtObject* obj);
 };
 
+class ppPluginEventLoop : public EventLoop
+{
+private:
+	ppPluginInstance* instance;
+
+	// Wait indefinitely for an event.
+	// Optionally returns an event, if one was received.
+	Optional<LSEventStorage> waitEventImpl(SystemState*) override { return {}; }
+
+	// Notifies the platform event loop that an event was pushed.
+	void notify() override;
+public:
+	ppPluginEventLoop(ITime* time, ppPluginInstance* _instance) :
+	EventLoop(time),
+	instance(_instance) {}
+	// Returns true if the platform supports handling timers in the
+	// event loop.
+	bool timersInEventLoop() const override { return false; }
+};
+
 class ppPluginInstance
 {
 friend class ppPluginEngineData;
@@ -138,6 +160,7 @@ friend class ppPluginEngineData;
 	PP_Resource m_cachedirectory_ref;
 	ATOMIC_INT32(m_cachefilename);
 	SystemState* m_sys;
+	ppPluginEventLoop eventLoop;
 	std::streambuf *mainDownloaderStreambuf;
 	std::istream mainDownloaderStream;
 	ppDownloader* mainDownloader;
@@ -151,6 +174,7 @@ friend class ppPluginEngineData;
 	PP_Var *m_extexception;
 	static int worker(void *d);
 	PP_Point mousepos;
+	LSModifier modifiers;
 public:
 	ACQUIRE_RELEASE_FLAG(inReading);
 	ACQUIRE_RELEASE_FLAG(inWriting);
@@ -161,6 +185,7 @@ public:
 	bool executeScript(const std::string script, const ExtVariant **args, uint32_t argc, ASObject **result);
 	void executeScriptAsync(ExtScriptObject::HOST_CALL_DATA *data);
 	SystemState* getSystemState() const { return m_sys;}
+	const ppPluginEventLoop& getEventLoop() const { return eventLoop; }
 	void startMainParser();
 	PP_Instance getppInstance() { return m_ppinstance; }
 	PP_Instance getMessageLoop() { return m_messageloop; }

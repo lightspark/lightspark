@@ -20,7 +20,7 @@
 **************************************************************************/
 
 #include "version.h"
-#include "backends/sdl/event_loop.h"
+#include "backends/input.h"
 #include "backends/security.h"
 #include "backends/streamcache.h"
 #include "backends/config.h"
@@ -316,12 +316,23 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : 
 	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mWindow(0),
 	mainDownloaderStreambuf(nullptr),mainDownloaderStream(nullptr),
-	mainDownloader(nullptr),scriptObject(nullptr),m_pt(nullptr),lastclicktime(0)
+	mainDownloader(nullptr),scriptObject(nullptr),m_pt(nullptr),
+	eventLoop(new Time(), this)
 {
 	LOG(LOG_INFO, "Lightspark version " << VERSION << " Copyright 2009-2013 Alessandro Pignotti and others");
 	setTLSSys( nullptr );
 	setTLSWorker(nullptr);
-	m_sys=new lightspark::SystemState(0, lightspark::SystemState::FLASH);
+	// TODO: Add an NPAPI logging implementation, that can print to the
+	// JavaScript console.
+	m_sys=new lightspark::SystemState
+	(
+		0,
+		lightspark::SystemState::FLASH,
+		&eventLoop
+	);
+
+	mInstance->pdata = this;
+
 	//Files running in the plugin have REMOTE sandbox
 	m_sys->securityManager->setSandboxType(lightspark::SecurityManager::REMOTE);
 
@@ -371,7 +382,10 @@ nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, cha
 	}
 	else
 		LOG(LOG_ERROR, "PLUGIN: Browser doesn't support NPRuntime");
-	EngineData::mainthread_running = true;
+	// NOTE: `mainthread_running` has to be `false`, because `SystemState`
+	// would otherwise try to delete the event loop upon destruction, but
+	// in this case, the event loop is inside `nsPluginInstance`.
+	EngineData::mainthread_running = false;
 	//The sys var should be NULL in this thread
 	setTLSSys( nullptr );
 	setTLSWorker(nullptr);
@@ -455,111 +469,111 @@ NPError nsPluginInstance::GetValue(NPPVariable aVariable, void *aValue)
 
 }
 #ifdef MOZ_X11
-SDL_Keycode getSDLKeyCode(unsigned x11Keyval)
+AS3KeyCode x11GetAS3KeyCode(unsigned x11Keyval)
 {
 	switch (x11Keyval)
 	{
-		case XK_a: return SDLK_a;
-		case XK_Alt_L: return SDLK_LALT;
-		case XK_b: return SDLK_b;
-		case XK_grave: return SDLK_BACKQUOTE;
-		case XK_backslash: return SDLK_BACKSLASH;
-		case XK_BackSpace: return SDLK_BACKSPACE;
-		case XK_c: return SDLK_c;
-		case XK_Caps_Lock: return SDLK_CAPSLOCK;
-		case XK_comma: return SDLK_COMMA;
-		case XK_Control_L: return SDLK_LCTRL;
-		case XK_d: return SDLK_d;
-		case XK_Delete: return SDLK_DELETE;
-		case XK_Down: return SDLK_DOWN;
-		case XK_e: return SDLK_e;
-		case XK_End: return SDLK_END;
-		case XK_Return: return SDLK_RETURN;
-		case XK_equal: return SDLK_EQUALS;
-		case XK_Escape: return SDLK_ESCAPE;
-		case XK_f: return SDLK_f;
-		case XK_F1: return SDLK_F1;
-		case XK_F2: return SDLK_F2;
-		case XK_F3: return SDLK_F3;
-		case XK_F4: return SDLK_F4;
-		case XK_F5: return SDLK_F5;
-		case XK_F6: return SDLK_F6;
-		case XK_F7: return SDLK_F7;
-		case XK_F8: return SDLK_F8;
-		case XK_F9: return SDLK_F9;
-		case XK_F10: return SDLK_F10;
-		case XK_F11: return SDLK_F11;
-		case XK_F12: return SDLK_F12;
-		case XK_F13: return SDLK_F13;
-		case XK_F14: return SDLK_F14;
-		case XK_F15: return SDLK_F15;
-		case XK_g: return SDLK_g;
-		case XK_h: return SDLK_h;
-		case XK_Help: return SDLK_HELP;
-		case XK_Home: return SDLK_HOME;
-		case XK_i: return SDLK_i;
-		case XK_Insert: return SDLK_INSERT;
-		case XK_j: return SDLK_j;
-		case XK_k: return SDLK_k;
-		case XK_l: return SDLK_l;
-		case XK_Left: return SDLK_LEFT;
-		case XK_bracketleft: return SDLK_LEFTBRACKET;
-		case XK_m: return SDLK_m;
-		case XK_minus: return SDLK_MINUS;
-		case XK_n: return SDLK_n;
-		case XK_0: return SDLK_0;
-		case XK_1: return SDLK_1;
-		case XK_2: return SDLK_2;
-		case XK_3: return SDLK_3;
-		case XK_4: return SDLK_4;
-		case XK_5: return SDLK_5;
-		case XK_6: return SDLK_6;
-		case XK_7: return SDLK_7;
-		case XK_8: return SDLK_8;
-		case XK_9: return SDLK_9;
-		case XK_KP_0: return SDLK_KP_0;
-		case XK_KP_1: return SDLK_KP_1;
-		case XK_KP_2: return SDLK_KP_2;
-		case XK_KP_3: return SDLK_KP_3;
-		case XK_KP_4: return SDLK_KP_4;
-		case XK_KP_5: return SDLK_KP_5;
-		case XK_KP_6: return SDLK_KP_6;
-		case XK_KP_7: return SDLK_KP_7;
-		case XK_KP_8: return SDLK_KP_8;
-		case XK_KP_9: return SDLK_KP_9;
-		case XK_KP_Add: return SDLK_KP_MEMADD;
-		case XK_KP_Separator: return SDLK_KP_PERIOD; // TODO
-		case XK_KP_Divide: return SDLK_KP_DIVIDE;
-		case XK_KP_Enter: return SDLK_KP_ENTER;
-		case XK_KP_Multiply: return SDLK_KP_MULTIPLY;
-		case XK_KP_Subtract: return SDLK_KP_MINUS;
-		case XK_o: return SDLK_o;
-		case XK_p: return SDLK_p;
-		case XK_Page_Down: return SDLK_PAGEDOWN;
-		case XK_Page_Up: return SDLK_PAGEUP;
-		case XK_Pause: return SDLK_PAUSE;
-		case XK_period: return SDLK_PERIOD;
-		case XK_q: return SDLK_q;
-		case XK_quoteright: return SDLK_QUOTE;
-		case XK_r: return SDLK_r;
-		case XK_Right: return SDLK_RIGHT;
-		case XK_bracketright: return SDLK_RIGHTBRACKET;
-		case XK_s: return SDLK_s;
-		case XK_semicolon: return SDLK_SEMICOLON;
-		case XK_Shift_L: return SDLK_LSHIFT;
-		case XK_slash: return SDLK_SLASH;
-		case XK_space: return SDLK_SPACE;
-		case XK_t: return SDLK_t;
-		case XK_Tab: return SDLK_TAB;
-		case XK_u: return SDLK_u;
-		case XK_Up: return SDLK_UP;
-		case XK_v: return SDLK_v;
-		case XK_w: return SDLK_w;
-		case XK_x: return SDLK_x;
-		case XK_y: return SDLK_y;
-		case XK_z: return SDLK_z;
+		case XK_a: return AS3KEYCODE_A;
+		case XK_Alt_L: return AS3KEYCODE_ALTERNATE;
+		case XK_b: return AS3KEYCODE_B;
+		case XK_grave: return AS3KEYCODE_BACKQUOTE;
+		case XK_backslash: return AS3KEYCODE_BACKSLASH;
+		case XK_BackSpace: return AS3KEYCODE_BACKSPACE;
+		case XK_c: return AS3KEYCODE_C;
+		case XK_Caps_Lock: return AS3KEYCODE_CAPS_LOCK;
+		case XK_comma: return AS3KEYCODE_COMMA;
+		case XK_Control_L: return AS3KEYCODE_CONTROL;
+		case XK_d: return AS3KEYCODE_D;
+		case XK_Delete: return AS3KEYCODE_DELETE;
+		case XK_Down: return AS3KEYCODE_DOWN;
+		case XK_e: return AS3KEYCODE_E;
+		case XK_End: return AS3KEYCODE_END;
+		case XK_Return: return AS3KEYCODE_ENTER;
+		case XK_equal: return AS3KEYCODE_EQUAL;
+		case XK_Escape: return AS3KEYCODE_ESCAPE;
+		case XK_f: return AS3KEYCODE_F;
+		case XK_F1: return AS3KEYCODE_F1;
+		case XK_F2: return AS3KEYCODE_F2;
+		case XK_F3: return AS3KEYCODE_F3;
+		case XK_F4: return AS3KEYCODE_F4;
+		case XK_F5: return AS3KEYCODE_F5;
+		case XK_F6: return AS3KEYCODE_F6;
+		case XK_F7: return AS3KEYCODE_F7;
+		case XK_F8: return AS3KEYCODE_F8;
+		case XK_F9: return AS3KEYCODE_F9;
+		case XK_F10: return AS3KEYCODE_F10;
+		case XK_F11: return AS3KEYCODE_F11;
+		case XK_F12: return AS3KEYCODE_F12;
+		case XK_F13: return AS3KEYCODE_F13;
+		case XK_F14: return AS3KEYCODE_F14;
+		case XK_F15: return AS3KEYCODE_F15;
+		case XK_g: return AS3KEYCODE_G;
+		case XK_h: return AS3KEYCODE_H;
+		case XK_Help: return AS3KEYCODE_HELP;
+		case XK_Home: return AS3KEYCODE_HOME;
+		case XK_i: return AS3KEYCODE_I;
+		case XK_Insert: return AS3KEYCODE_INSERT;
+		case XK_j: return AS3KEYCODE_J;
+		case XK_k: return AS3KEYCODE_K;
+		case XK_l: return AS3KEYCODE_L;
+		case XK_Left: return AS3KEYCODE_LEFT;
+		case XK_bracketleft: return AS3KEYCODE_LEFTBRACKET;
+		case XK_m: return AS3KEYCODE_M;
+		case XK_minus: return AS3KEYCODE_MINUS;
+		case XK_n: return AS3KEYCODE_N;
+		case XK_0: return AS3KEYCODE_NUMBER_0;
+		case XK_1: return AS3KEYCODE_NUMBER_1;
+		case XK_2: return AS3KEYCODE_NUMBER_2;
+		case XK_3: return AS3KEYCODE_NUMBER_3;
+		case XK_4: return AS3KEYCODE_NUMBER_4;
+		case XK_5: return AS3KEYCODE_NUMBER_5;
+		case XK_6: return AS3KEYCODE_NUMBER_6;
+		case XK_7: return AS3KEYCODE_NUMBER_7;
+		case XK_8: return AS3KEYCODE_NUMBER_8;
+		case XK_9: return AS3KEYCODE_NUMBER_9;
+		case XK_KP_0: return AS3KEYCODE_NUMPAD_0;
+		case XK_KP_1: return AS3KEYCODE_NUMPAD_1;
+		case XK_KP_2: return AS3KEYCODE_NUMPAD_2;
+		case XK_KP_3: return AS3KEYCODE_NUMPAD_3;
+		case XK_KP_4: return AS3KEYCODE_NUMPAD_4;
+		case XK_KP_5: return AS3KEYCODE_NUMPAD_5;
+		case XK_KP_6: return AS3KEYCODE_NUMPAD_6;
+		case XK_KP_7: return AS3KEYCODE_NUMPAD_7;
+		case XK_KP_8: return AS3KEYCODE_NUMPAD_8;
+		case XK_KP_9: return AS3KEYCODE_NUMPAD_9;
+		case XK_KP_Add: return AS3KEYCODE_NUMPAD_ADD;
+		case XK_KP_Separator: return AS3KEYCODE_NUMPAD_DECIMAL; // TODO
+		case XK_KP_Divide: return AS3KEYCODE_NUMPAD_DIVIDE;
+		case XK_KP_Enter: return AS3KEYCODE_NUMPAD_ENTER;
+		case XK_KP_Multiply: return AS3KEYCODE_NUMPAD_MULTIPLY;
+		case XK_KP_Subtract: return AS3KEYCODE_NUMPAD_SUBTRACT;
+		case XK_o: return AS3KEYCODE_O;
+		case XK_p: return AS3KEYCODE_P;
+		case XK_Page_Down: return AS3KEYCODE_PAGE_DOWN;
+		case XK_Page_Up: return AS3KEYCODE_PAGE_UP;
+		case XK_Pause: return AS3KEYCODE_PAUSE;
+		case XK_period: return AS3KEYCODE_PERIOD;
+		case XK_q: return AS3KEYCODE_Q;
+		case XK_quoteright: return AS3KEYCODE_QUOTE;
+		case XK_r: return AS3KEYCODE_R;
+		case XK_Right: return AS3KEYCODE_RIGHT;
+		case XK_bracketright: return AS3KEYCODE_RIGHTBRACKET;
+		case XK_s: return AS3KEYCODE_S;
+		case XK_semicolon: return AS3KEYCODE_SEMICOLON;
+		case XK_Shift_L: return AS3KEYCODE_SHIFT;
+		case XK_slash: return AS3KEYCODE_SLASH;
+		case XK_space: return AS3KEYCODE_SPACE;
+		case XK_t: return AS3KEYCODE_T;
+		case XK_Tab: return AS3KEYCODE_TAB;
+		case XK_u: return AS3KEYCODE_U;
+		case XK_Up: return AS3KEYCODE_UP;
+		case XK_v: return AS3KEYCODE_V;
+		case XK_w: return AS3KEYCODE_W;
+		case XK_x: return AS3KEYCODE_X;
+		case XK_y: return AS3KEYCODE_Y;
+		case XK_z: return AS3KEYCODE_Z;
 	}
-	return SDLK_UNKNOWN;
+	return AS3KEYCODE_UNKNOWN;
 }
 #endif
 SDL_Window* PluginEngineData::createWidget(uint32_t w,uint32_t h)
@@ -876,14 +890,28 @@ void nsPluginInstance::URLNotify(const char* url, NPReason reason, void* notifyD
 	downloaderFinished(dl, url, reason);
 }
 
-// TODO: Convert input events into `LSEvent`s directly.
+#ifdef None
+#undef None
+#endif
+
 uint16_t nsPluginInstance::HandleEvent(void *event)
 {
-	if (m_sys && m_sys->getEngineData() && m_sys->getEngineData()->inFullScreenMode())
-		return 0;
-	EngineData::mainloop_from_plugin(m_sys);
+	using Button = LSMouseButtonEvent::Button;
+	using ButtonType = LSMouseButtonEvent::ButtonType;
+	using FocusType = LSWindowFocusEvent::FocusType;
+	using KeyType = LSKeyEvent::KeyType;
+
+	EngineData::mainloop_from_plugin(m_sys, &eventLoop);
 #if defined(MOZ_X11)
 	XEvent* nsEvent = (XEvent*)event;
+	LSEventStorage ev;
+	bool allowEvents =
+	(
+		m_sys->getEngineData() != nullptr &&
+		m_sys->getEngineData()->widget != nullptr &&
+		m_sys->currentVm != nullptr &&
+		m_sys->currentVm->hasEverStarted()
+	);
 	switch (nsEvent->type)
 	{
 		case GraphicsExpose:
@@ -900,83 +928,95 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 		}
 		case KeyPress:
 		case KeyRelease:
-			if (m_sys->getEngineData() && m_sys->getEngineData()->widget && m_sys->currentVm && m_sys->currentVm->hasEverStarted())
+			if (allowEvents)
 			{
-				SDL_Event ev;
-				ev.type = nsEvent->type == KeyPress ? SDL_KEYDOWN : SDL_KEYUP;
-				ev.key.keysym.sym = getSDLKeyCode(XLookupKeysym(&nsEvent->xkey,0));
-				ev.key.keysym.mod = KMOD_NONE;
+				auto mousePos = m_sys->getInputThread()->getMousePos();
+				LSModifier modifiers = LSModifier::None;
+				AS3KeyCode key = x11GetAS3KeyCode(XLookupKeysym(&nsEvent->xkey,0));
 				if (nsEvent->xkey.state & ControlMask)
-					ev.key.keysym.mod |= KMOD_CTRL;
+					modifiers |= LSModifier::Ctrl;
 				if (nsEvent->xkey.state & Mod1Mask)
-					ev.key.keysym.mod |= KMOD_ALT;
+					modifiers |= LSModifier::Alt;
 				if (nsEvent->xkey.state & ShiftMask)
-					ev.key.keysym.mod |= KMOD_SHIFT;
-				ev.key.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(SDLEventLoop::toLSEvent(m_sys, ev),m_sys);
+					modifiers |= LSModifier::Shift;
+				ev = LSKeyEvent
+				(
+					mousePos,
+					m_sys->windowToStagePoint(mousePos),
+					key,
+					key,
+					modifiers,
+					nsEvent->type == KeyPress ? KeyType::Down : KeyType::Up
+				);
 			}
 			break;
 		case MotionNotify: 
 			if (m_sys->getEngineData() && m_sys->getEngineData()->widget && m_sys->currentVm && m_sys->currentVm->hasEverStarted())
 			{
 				XMotionEvent* event = &nsEvent->xmotion;
-				SDL_Event ev;
-				ev.type = SDL_MOUSEMOTION;
-				ev.motion.state = event->state & Button1Mask ? SDL_PRESSED : SDL_RELEASED;
-				ev.motion.x = event->x;
-				ev.motion.y = event->y;
-				ev.motion.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(SDLEventLoop::toLSEvent(m_sys, ev),m_sys);
+				Vector2f mousePos(event->x, event->y);
+				ev = LSMouseMoveEvent
+				(
+					SDL_GetWindowID(m_sys->getEngineData()->widget),
+					mousePos,
+					m_sys->windowToStagePoint(mousePos),
+					LSModifier::None,
+					event->state & Button1Mask
+				);
 			}
 			break;
 		case ButtonPress:
 		case ButtonRelease: 
-			if (m_sys->getEngineData() && m_sys->getEngineData()->widget && m_sys->currentVm && m_sys->currentVm->hasEverStarted())
+			if (allowEvents)
 			{
-				SDL_Event ev;
 				XButtonEvent* event = &nsEvent->xbutton;
-				ev.type = (nsEvent->type == ButtonPress) ? SDL_MOUSEBUTTONDOWN :SDL_MOUSEBUTTONUP;
+				Vector2f mousePos(event->x, event->y);
+
+				bool isPressed = nsEvent->type == ButtonPress;
+				auto buttonType = isPressed ? ButtonType::Down : ButtonType::Up;
+
+				Button button;
 				switch (event->button)
 				{
-					case 1:
-						ev.button.button = SDL_BUTTON_LEFT;
-						ev.button.state = event->state & Button1Mask ? SDL_PRESSED : SDL_RELEASED;
-						break;
-					case 3:
-						ev.button.button = SDL_BUTTON_RIGHT;
-						ev.button.state = event->state & Button2Mask ? SDL_PRESSED : SDL_RELEASED;
-						break;
-					default:
-						ev.button.button = 0;
-						ev.button.state = SDL_RELEASED;
-						break;
+					case 1: button = Button::Left; break;
+					case 2: button = Button::Middle; break;
+					case 3: button = Button::Right; break;
+					default: button = Button::Invalid; break;
 				}
-				ev.button.x = event->x;
-				ev.button.y = event->y;
+
+				int clicks = 0;
 				if (nsEvent->type == ButtonPress)
 				{
-					gint64 now=g_get_monotonic_time();
-					if (now-lastclicktime < 500000) // TODO get double click intervall from elsewehere instead of hard coded 500 milliseconds?
-						ev.button.clicks = 2;
+					TimeSpec now = m_sys->now();
+					auto delta = now - lastclicktime;
+					if (delta < TimeSpec::fromMs(500)) // TODO get double click intervall from elsewehere instead of hard coded 500 milliseconds?
+						clicks = 2;
 					else
-						ev.button.clicks = 1;
+						clicks = 1;
 					lastclicktime = now;
 				}
 
-				ev.button.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(SDLEventLoop::toLSEvent(m_sys, ev),m_sys);
+				buttonType = clicks == 2 ? ButtonType::DoubleClick : buttonType;
+
+				ev = LSMouseButtonEvent
+				(
+					SDL_GetWindowID(m_sys->getEngineData()->widget),
+					mousePos,
+					m_sys->windowToStagePoint(mousePos),
+					LSModifier::None,
+					isPressed,
+					button,
+					clicks,
+					buttonType
+				);
 			}
 			break;
 		case FocusOut:
-			if (m_sys->getEngineData() && m_sys->getEngineData()->widget && m_sys->currentVm && m_sys->currentVm->hasEverStarted())
-			{
-				SDL_Event ev;
-				ev.type = SDL_WINDOWEVENT_FOCUS_LOST;
-				ev.window.windowID = SDL_GetWindowID(m_sys->getEngineData()->widget);
-				return EngineData::mainloop_handleevent(SDLEventLoop::toLSEvent(m_sys, ev),m_sys);
-			}
+			if (allowEvents)
+				ev = LSWindowFocusEvent(FocusType::Keyboard, false);
 			break;
 	}
+	return EngineData::mainloop_handleevent(ev, m_sys);
 #endif
 #if defined XP_WIN
 	
@@ -1003,6 +1043,15 @@ uint16_t nsPluginInstance::HandleEvent(void *event)
 	}
 #endif
 	return 0;
+}
+
+void PluginEventLoop::notify()
+{
+	NPN_PluginThreadAsyncCall(instance->getInstance(), [](void* data)
+	{
+		PluginEventLoop* eventLoop = static_cast<PluginEventLoop*>(data);
+		EngineData::mainloop_from_plugin(eventLoop->instance->m_sys, eventLoop);
+	}, this);
 }
 
 PluginEngineData::PluginEngineData(nsPluginInstance *i, uint32_t w, uint32_t h, SystemState *_sys) : instance(i),inputHandlerId(0),sizeHandlerId(0),sys(_sys)
@@ -1109,7 +1158,6 @@ void PluginEngineData::runInTrueMainThread(SystemState* sys, MainThreadCallback 
 void PluginEngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
 {
 	EngineData::runInMainThread(sys,func);
-	NPN_PluginThreadAsyncCall(instance->mInstance,pluginCallHandler,sys);
 }
 
 void PluginEngineData::openContextMenu()

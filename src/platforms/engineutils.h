@@ -29,6 +29,7 @@
 #include "forwards/swftypes.h"
 #include "forwards/events.h"
 #include "forwards/backends/graphics.h"
+#include "interfaces/backends/event_loop.h"
 #include "interfaces/threading.h"
 #include "compat.h"
 #include "threading.h"
@@ -140,10 +141,11 @@ public:
 	/* Runs 'func' in the mainLoopThread */
 	virtual void runInMainThread(SystemState* sys, MainThreadCallback func);
 	static bool mainloop_handleevent(const LSEvent& event, SystemState* sys);
-	static void mainloop_from_plugin(SystemState* sys);
+	static void mainloop_from_plugin(SystemState* sys, IEventLoop* eventLoop);
+	static void sdl_mainloop_from_plugin(SystemState* sys);
 
 	// this is called when going to fulllscreen mode or opening a context menu from plugin, to keep handling of SDL events alive
-	void startSDLEventTicker(SystemState *sys);
+	void startSDLEventTicker(SystemState* sys);
 	void resetSDLEventTicker() { sdleventtickjob=nullptr; }
 
 	SDL_Window* createMainSDLWidget(uint32_t w, uint32_t h);

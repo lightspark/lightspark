@@ -321,16 +321,25 @@ static int mainloop_runner(void* d)
 	}
 	return 0;
 }
-void EngineData::mainloop_from_plugin(SystemState* sys)
+void EngineData::mainloop_from_plugin(SystemState* sys, IEventLoop* eventLoop)
+{
+	initSDL();
+	EngineData::needinit = false;
+	Optional<LSEventStorage> event;
+	setTLSSys(sys);
+	while (event = eventLoop->waitEvent(sys), event.hasValue())
+		mainloop_handleevent(*event, sys);
+	setTLSSys(nullptr);
+}
+
+void EngineData::sdl_mainloop_from_plugin(SystemState* sys)
 {
 	initSDL();
 	EngineData::needinit = false;
 	SDL_Event event;
 	setTLSSys(sys);
 	while (SDL_PollEvent(&event))
-	{
 		mainloop_handleevent(SDLEventLoop::toLSEvent(sys, event),sys);
-	}
 	setTLSSys(nullptr);
 }
 
@@ -342,7 +351,7 @@ public:
 	SDLEventTicker(EngineData* engine,SystemState* sys):m_engine(engine),m_sys(sys) {}
 	void tick() override
 	{
-		m_engine->runInMainThread(m_sys,EngineData::mainloop_from_plugin);
+		m_engine->runInMainThread(m_sys,EngineData::sdl_mainloop_from_plugin);
 		if (!m_engine->inFullScreenMode() && !m_engine->inContextMenu() && !m_engine->inContextMenuPreparing() )
 			stopMe=true;
 	}

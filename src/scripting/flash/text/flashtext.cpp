@@ -1329,33 +1329,58 @@ void TextField::updateSizes()
 tiny_string TextField::toHtmlText()
 {
 	pugi::xml_document doc;
-	pugi::xml_node root = doc.append_child("font");
-
-	ostringstream ss;
-	ss << fontSize;
-	root.append_attribute("size").set_value(ss.str().c_str());
-	root.append_attribute("color").set_value(textColor.toString().raw_buf());
-	root.append_attribute("face").set_value(font.raw_buf());
 
 	Locker l(*linemutex);
 	//Split text into paragraphs and wraps them into <p> tags
 	for (auto it = textlines.begin(); it != textlines.end(); it++)
 	{
 		FormatText& format = (*it).format;
-		pugi::xml_node node = root;
-		if (format.bold)
-			node = node.append_child("b");
-		if (format.italic)
-			node = node.append_child("i");
-		if (format.underline)
-			node = node.append_child("u");
+		pugi::xml_node node;
 		if (format.bullet)
-			node = node.append_child("li");
-		node.append_child("p").text().set((*it).text.raw_buf());
+			node = doc.append_child("LI");
+		else
+		{
+			if (condenseWhite && (*it).text.empty() && textlines.size()>1)
+				continue;
+			node = doc.append_child("P");
+			switch (format.align)
+			{
+				case FormatText::AS_NONE:
+				case FormatText::AS_LEFT:
+					node.append_attribute("ALIGN").set_value("LEFT");
+					break;
+				case FormatText::AS_CENTER:
+					node.append_attribute("ALIGN").set_value("CENTER");
+					break;
+				case FormatText::AS_RIGHT:
+					node.append_attribute("ALIGN").set_value("RIGHT");
+					break;
+				default:
+					break;
+			}
+		}
+		node = node.append_child("FONT");
+		ostringstream ss;
+		ss << fontSize;
+		node.append_attribute("FACE").set_value(font.raw_buf());
+		node.append_attribute("SIZE").set_value(ss.str().c_str());
+		node.append_attribute("COLOR").set_value(textColor.toString().raw_buf());
+		node.append_attribute("LETTERSPACING").set_value(format.letterspacing);
+		node.append_attribute("KERNING").set_value(format.kerning);
+		if (format.bold)
+			node = node.append_child("B");
+		if (format.italic)
+			node = node.append_child("I");
+		if (format.underline)
+			node = node.append_child("U");
+		node.text().set((*it).text.raw_buf());
 	}
 
 	ostringstream buf;
-	doc.print(buf);
+	if (condenseWhite)
+		doc.print(buf,"\t",pugi::format_raw);
+	else
+		doc.print(buf);
 	tiny_string ret = tiny_string(buf.str());
 	return ret;
 }
@@ -2007,6 +2032,14 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 				textdata->textColor = RGB(tiny_string(it->value()));
 				format.fontColor = RGB(tiny_string(it->value()));
 			}
+			else if (attrname == "kerning")
+			{
+				format.kerning = it->as_double();
+			}
+			else if (attrname == "letterspacing")
+			{
+				format.letterspacing = it->as_double();
+			}
 			else
 				LOG(LOG_NOT_IMPLEMENTED,"TextField html tag <font>: unsupported attribute:"<<attrname<<" "<<it->value());
 		}
@@ -2035,7 +2068,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	{
 		format.underline = true;
 	}
-	else if (name == "li" && textdata->multiline)
+	else if (name == "li")
 	{
 		format.bullet = true;
 	}
@@ -2046,7 +2079,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	}
 	if (!skipFormatStackPushPop(name))
 		formatStack.push_back(format);
-	if (!newtext.empty())
+	if (!newtext.empty() || textdata->multiline)
 		textdata->appendFormatText(newtext.raw_buf(), format);
 	return true;
 }

@@ -420,6 +420,8 @@ struct FormatText
 	tiny_string font;
 	tiny_string url;
 	tiny_string target;
+	number_t kerning {0};
+	number_t letterspacing {0};
 };
 
 struct textline

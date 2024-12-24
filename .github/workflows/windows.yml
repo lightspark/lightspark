@@ -88,7 +88,7 @@
 
         - name: Run MXE Build
           run: |
-            x86_64-w64-mingw32.static-cmake .
+            x86_64-w64-mingw32.static-cmake -DMXE=YES .
             make
             sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
             make package
@@ -152,7 +152,7 @@
 
         - name: Run MXE Build
           run: |
-            i686-w64-mingw32.static-cmake .
+            i686-w64-mingw32.static-cmake -DMXE=YES .
             make
             sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
             make package

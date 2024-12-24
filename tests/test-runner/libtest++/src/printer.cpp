@@ -21,6 +21,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 
 #include <termcolor/termcolor.hpp>
 

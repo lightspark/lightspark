@@ -509,7 +509,11 @@ ELSE()
   INSTALL(FILES COPYING.LESSER DESTINATION "." RENAME COPYING.LESSER.txt)
 endif(UNIX)
 
-SUBDIRS(src EXCLUDE_FROM_ALL tests/test-runner)
+if (MXE)
+	SUBDIRS(src)
+else()
+	SUBDIRS(src EXCLUDE_FROM_ALL tests/test-runner)
+endif()
 
 #-- CPack setup - use 'make package' to build
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Lightspark is an LGPLv3 licensed cross-platform Flash player and browser plugin")

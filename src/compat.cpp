@@ -32,7 +32,7 @@
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
 #	include <winnt.h> // for Nt{Set,Query}TimerResolution()
-#	include <winbase.h> // for `CreateWaitableTimerExW()`
+#	include <synchapi.h> // for `CreateWaitableTimerExW()`
 #	include <versionhelpers.h> // for `IsWindowsVistaOrGreater()`
 #	undef DOUBLE_CLICK
 #	undef RGB
@@ -213,7 +213,7 @@ void compat_nsleep(uint64_t ns)
 	period.QuadPart = -ns/100;
 	HANDLE timer;
 	if (IsWindowsVistaOrGreater())
-		timer = CreateWaitableTimerEx(NULL, NULL, 2, TIMER_ALL_ACCESS);
+		timer = CreateWaitableTimerExW(NULL, NULL, 2, TIMER_ALL_ACCESS);
 	else
 		timer = CreateWaitableTimer(NULL, false, NULL);
 	SetWaitableTimer(timer, &period, 0, NULL, NULL, false);

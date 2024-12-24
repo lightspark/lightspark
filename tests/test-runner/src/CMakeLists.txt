@@ -85,6 +85,8 @@ if (WIN32)
 		$<TARGET_FILE:cpptrace::cpptrace>
 		$<TARGET_FILE_DIR:test-runner>
 	)
+else()
+	TARGET_LINK_LIBRARIES(test-runner pthread)
 endif()
 
 INSTALL(TARGETS test-runner RUNTIME DESTINATION ${BINDIR})

@@ -32,6 +32,7 @@
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
 #	include <winnt.h> // for Nt{Set,Query}TimerResolution()
+#	include <synchapi.h> // for `CreateWaitableTimerEx()`
 #	include <versionhelpers.h> // for `IsWindowsVistaOrGreater()`
 #	undef DOUBLE_CLICK
 #	undef RGB

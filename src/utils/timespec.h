@@ -21,6 +21,7 @@
 #define UTILS_TIMESPEC_H 1
 
 #include "utils/type_traits.h"
+#include <ctime>
 
 namespace lightspark
 {

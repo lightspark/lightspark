@@ -20,6 +20,7 @@
 #ifndef INPUT_FORMATS_LIGHTSPARK_ENUM_H
 #define INPUT_FORMATS_LIGHTSPARK_ENUM_H 1
 
+#include <algorithm>
 #include <exception>
 #include <list>
 #include <map>

@@ -37,7 +37,7 @@ namespace lightspark
 {
 	class TimeSpec;
 };
-class LSMember;
+class LSMemberInfo;
 
 // TODO: Move this into the main codebase, at some point.
 
@@ -110,6 +110,63 @@ public:
 
 	const char* what() const noexcept override { return reason.raw_buf(); }
 	const tiny_string& getReason() const noexcept { return reason; }
+};
+
+class LSMember
+{
+using Setter = void (*)
+(
+	void* data,
+	size_t offset,
+	const LSMemberInfo& memberInfo,
+	const tiny_string& name,
+	const Expr& expr
+);
+private:
+	size_t memberOffset;
+	Setter setter;
+
+	template<typename T>
+	static void setMember
+	(
+		void* data,
+		size_t offset,
+		const LSMemberInfo& memberInfo,
+		const tiny_string& name,
+		const Expr& expr
+	);
+
+	template<typename T>
+	static void setListMember
+	(
+		void* data,
+		size_t offset,
+		const LSMemberInfo& memberInfo,
+		const tiny_string& name,
+		const Expr& expr
+	);
+
+	LSMember(size_t _memberOffset, Setter _setter) :
+	memberOffset(_memberOffset),
+	setter(_setter) {}
+public:
+	template<typename T, EnableIf<!IsIterable<T>::value, bool> = false>
+	static LSMember create(size_t memberOffset)
+	{
+		return LSMember(memberOffset, &setMember<T>);
+	}
+
+	template<typename T, EnableIf<IsIterable<T>::value, bool> = false>
+	static LSMember create(size_t memberOffset, bool singleEntry = false)
+	{
+		auto setter = singleEntry ? setListMember<T> : setMember<T>;
+		return LSMember(memberOffset, setter);
+	}
+
+	void set(void* data, const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr) const
+	{
+		setter(data, memberOffset, memberInfo, name, expr);
+	}
 };
 
 struct LSMemberInfo
@@ -320,60 +377,22 @@ struct GetValue<Optional<T>>
 	}
 };
 
-class LSMember
+template<typename T>
+void LSMember::setMember(void* data, size_t offset, const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr)
 {
-using Setter = void (*)
-(
-	void* data,
-	size_t offset,
-	const LSMemberInfo& memberInfo,
-	const tiny_string& name,
-	const Expr& expr
-);
-private:
-	size_t memberOffset;
-	Setter setter;
+	uint8_t* _data = static_cast<uint8_t*>(data);
+	*reinterpret_cast<T*>(_data + offset) = GetValue<T>::getValue(memberInfo, name, expr);
+}
 
-	template<typename T>
-	static void setMember(void* data, size_t offset, const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr)
-	{
-		uint8_t* _data = static_cast<uint8_t*>(data);
-		*reinterpret_cast<T*>(_data + offset) = GetValue<T>::getValue(memberInfo, name, expr);
-	}
-
-	template<typename T>
-	static void setListMember(void* data, size_t offset, const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr)
-	{
-		uint8_t* _data = static_cast<uint8_t*>(data);
-		reinterpret_cast<T*>(_data + offset)->push_back
-		(
-			GetValue<typename T::value_type>::getValue(memberInfo, name, expr)
-		);
-	}
-
-
-	LSMember(size_t _memberOffset, Setter _setter) :
-	memberOffset(_memberOffset),
-	setter(_setter) {}
-public:
-	template<typename T, EnableIf<!IsIterable<T>::value, bool> = false>
-	static LSMember create(size_t memberOffset)
-	{
-		return LSMember(memberOffset, &setMember<T>);
-	}
-
-	template<typename T, EnableIf<IsIterable<T>::value, bool> = false>
-	static LSMember create(size_t memberOffset, bool singleEntry = false)
-	{
-		auto setter = singleEntry ? setListMember<T> : setMember<T>;
-		return LSMember(memberOffset, setter);
-	}
-
-	void set(void* data, const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr) const
-	{
-		setter(data, memberOffset, memberInfo, name, expr);
-	}
-};
+template<typename T>
+void LSMember::setListMember(void* data, size_t offset, const LSMemberInfo& memberInfo, const tiny_string& name, const Expr& expr)
+{
+	uint8_t* _data = static_cast<uint8_t*>(data);
+	reinterpret_cast<T*>(_data + offset)->push_back
+	(
+		GetValue<typename T::value_type>::getValue(memberInfo, name, expr)
+	);
+}
 
 static bool isValidPointUnitStr(const tiny_string& str)
 {

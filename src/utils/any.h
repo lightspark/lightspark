@@ -288,20 +288,20 @@ public:
 	}
 
 	template<typename T>
-	constexpr Any& operator=(T&& value)
+	Any& operator=(T&& value)
 	{
 		static_assert(std::is_copy_constructible<Decay<T>>::value, "T must be copy constructible");
 		Any(std::forward<T>(value)).swap(*this);
 		return *this;
 	}
 
-	constexpr Any& operator=(const Any& other)
+	Any& operator=(const Any& other)
 	{
 		Any(other).swap(*this);
 		return *this;
 	}
 
-	constexpr Any& operator=(Any&& other) noexcept
+	Any& operator=(Any&& other) noexcept
 	{
 		Any(std::move(other)).swap(*this);
 		return *this;
@@ -334,7 +334,7 @@ public:
 			handler(StorageOp::Destroy, this, nullptr);
 	}
 
-	constexpr void swap(Any& other) noexcept
+	void swap(Any& other) noexcept
 	{
 		if (this == &other)
 			return;

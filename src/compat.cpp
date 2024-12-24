@@ -26,13 +26,16 @@
 #include "utils/timespec.h"
 
 #ifdef _WIN32
+#	include <winsdkver.h>
 #	ifndef NOMINMAX
 #		define NOMINMAX
 #	endif
 #	define WIN32_LEAN_AND_MEAN
+#	define WINVER _WIN32_WINNT_VISTA
+#	define _WIN32_WINNT _WIN32_WINNT_VISTA
 #	include <windows.h>
 #	include <winnt.h> // for Nt{Set,Query}TimerResolution()
-#	include <synchapi.h> // for `CreateWaitableTimerExW()`
+#	include <synchapi.h> // for `CreateWaitableTimerEx()`
 #	include <versionhelpers.h> // for `IsWindowsVistaOrGreater()`
 #	undef DOUBLE_CLICK
 #	undef RGB
@@ -183,7 +186,7 @@ void compat_usleep(uint64_t us)
 	period.QuadPart = -us*10;
 	HANDLE timer;
 	if (IsWindowsVistaOrGreater())
-		timer = CreateWaitableTimerExW(NULL, NULL, 2, TIMER_ALL_ACCESS);
+		timer = CreateWaitableTimerEx(NULL, NULL, 2, TIMER_ALL_ACCESS);
 	else
 		timer = CreateWaitableTimer(NULL, false, NULL);
 	SetWaitableTimer(timer, &period, 0, NULL, NULL, false);
@@ -213,7 +216,7 @@ void compat_nsleep(uint64_t ns)
 	period.QuadPart = -ns/100;
 	HANDLE timer;
 	if (IsWindowsVistaOrGreater())
-		timer = CreateWaitableTimerExW(NULL, NULL, 2, TIMER_ALL_ACCESS);
+		timer = CreateWaitableTimerEx(NULL, NULL, 2, TIMER_ALL_ACCESS);
 	else
 		timer = CreateWaitableTimer(NULL, false, NULL);
 	SetWaitableTimer(timer, &period, 0, NULL, NULL, false);

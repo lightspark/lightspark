@@ -64,9 +64,10 @@ void RenderThread::wait()
 RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 	m_sys(s),status(CREATED),
 	prevUploadJob(nullptr),
-	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
+	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),canrender(false),
+	event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),refreshNeeded(false),renderToBitmapContainerNeeded(false),
-	screenshotneeded(false),inSettings(false),canrender(false),
+	screenshotneeded(false),inSettings(false),
 	cairoTextureContextSettings(nullptr),cairoTextureContext(nullptr)
 {
 	LOG(LOG_INFO,"RenderThread this=" << this);
@@ -422,9 +423,13 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	
 	if (profile && chronometer)
 		profile->accountTime(chronometer->checkpoint());
-	canrender=false;
 	renderNeeded=false;
 	return true;
+}
+void RenderThread::set_canrender(bool b)
+{
+	Locker l(mutexRendering);
+	canrender = b;
 }
 void RenderThread::renderSettingsPage()
 {
@@ -1257,6 +1262,7 @@ void RenderThread::coreRendering()
 		texturesToDelete.pop_front();
 	}
 	handleGLErrors();
+	canrender=false;
 }
 
 //Renders the error message which caused the VM to stop.

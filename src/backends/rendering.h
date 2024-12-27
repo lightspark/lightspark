@@ -60,6 +60,7 @@ private:
 	volatile bool uploadNeeded;
 	volatile bool resizeNeeded;
 	volatile bool newTextureNeeded;
+	volatile bool canrender;
 	void handleNewTexture();
 	void finalizeUpload();
 	void handleUpload();
@@ -116,7 +117,7 @@ public:
 	Mutex mutexRendering;
 	volatile bool screenshotneeded;
 	volatile bool inSettings;
-	volatile bool canrender;
+	void set_canrender(bool b);
 	RenderThread(SystemState* s);
 	~RenderThread();
 	/**

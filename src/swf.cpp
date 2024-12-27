@@ -802,10 +802,12 @@ void SystemState::destroy()
 	renderThread=nullptr;
 	delete inputThread;
 	inputThread=nullptr;
-	if (getEngineData() != nullptr)
-		getEngineData()->addQuitEvent();
-	delete engineData;
-	engineData=nullptr;
+	if (engineData != nullptr)
+	{
+		engineData->addQuitEvent();
+		delete engineData;
+		engineData=nullptr;
+	}
 	if (EngineData::mainthread_running)
 		delete eventLoop;
 	eventLoop = nullptr;
@@ -1463,10 +1465,6 @@ void SystemState::flushInvalidationQueue()
 		cur->invalidateQueueNext=NullRef;
 		cur=next;
 	}
-	drawjobLock.lock();
-	if (getRenderThread() != nullptr)
-		getRenderThread()->canrender = drawJobsPending.empty();
-	drawjobLock.unlock();
 	influshing=false;
 	if (renderThread != nullptr)
 		renderThread->signalSurfaceRefresh();
@@ -1478,8 +1476,6 @@ void SystemState::AsyncDrawJobCompleted(AsyncDrawJob *j)
 	drawjobLock.lock();
 	drawJobsNew.erase(j);
 	drawJobsPending.erase(j);
-	if (getRenderThread())
-		getRenderThread()->canrender = drawJobsPending.empty();
 	drawjobLock.unlock();
 }
 void SystemState::swapAsyncDrawJobQueue()
@@ -1487,9 +1483,10 @@ void SystemState::swapAsyncDrawJobQueue()
 	drawjobLock.lock();
 	drawJobsPending.insert(drawJobsNew.begin(),drawJobsNew.end());
 	drawJobsNew.clear();
-	if (getRenderThread())
-		getRenderThread()->canrender = drawJobsPending.empty();
+	bool canrender = drawJobsPending.empty();
 	drawjobLock.unlock();
+	if (getRenderThread())
+		getRenderThread()->set_canrender(canrender);
 }
 
 
@@ -1863,7 +1860,7 @@ void ParseThread::parseSWF(UI8 ver)
 				//Official implementation is not strict in this regard. Let's continue and hope for the best.
 			}
 			//Check if this clip is the main clip then honour its FileAttributesTag
-			root->applicationDomain->usesActionScript3 = fat ? fat->ActionScript3 : root->applicationDomain->version>9;
+			root->applicationDomain->usesActionScript3 = fat ? fat->ActionScript3 : false;
 			if(root == root->getSystemState()->mainClip)
 			{
 				root->getSystemState()->needsAVM2(!usegnash || root->applicationDomain->usesActionScript3);

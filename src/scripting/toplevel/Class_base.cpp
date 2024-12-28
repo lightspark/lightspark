@@ -290,6 +290,11 @@ void Class_base::initStandardProps()
 	addLengthGetter();
 }
 
+void Class_base::AVM1initPrototype()
+{
+	prototype->setVariableByQName("call","",getSystemState()->getBuiltinFunction(IFunction::_call,1),DYNAMIC_TRAIT);
+	prototype->setVariableByQName("apply","",getSystemState()->getBuiltinFunction(IFunction::apply,2),DYNAMIC_TRAIT);
+}
 
 bool Class_base::coerce(ASWorker* wrk, asAtom& o)
 {
@@ -1093,19 +1098,19 @@ variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_gett
 	return ASObject::findSettableImpl(getSystemState(),borrowedVariables,name,has_getter);
 }
 
-variable* Class_base::findSettableInPrototype(const multiname& name)
+variable* Class_base::findSettableInPrototype(const multiname& name, bool* has_getter)
 {
 	Prototype* proto = prototype.getPtr();
 	while(proto)
 	{
-		variable *obj = proto->getObj()->findSettable(name);
+		variable *obj = proto->getObj()->findSettable(name,has_getter);
 		if (obj)
 			return obj;
 
 		proto = proto->prevPrototype.getPtr();
 	}
 
-	return NULL;
+	return nullptr;
 }
 
 EARLY_BIND_STATUS Class_base::resolveMultinameStatically(const multiname& name) const

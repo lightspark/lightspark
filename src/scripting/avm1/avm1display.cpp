@@ -29,6 +29,8 @@
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Array.h"
+#include "scripting/toplevel/UInteger.h"
+#include "scripting/toplevel/Integer.h"
 #include "parsing/tags.h"
 #include "scripting/abc.h"
 #include "backends/security.h"
@@ -800,11 +802,39 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,removeListener)
 
 void AVM1BitmapData::sinit(Class_base *c)
 {
-	BitmapData::sinit(c);
-	c->setDeclaredMethodByQName("loadBitmap","",c->getSystemState()->getBuiltinFunction(loadBitmap),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("rectangle","",c->getSystemState()->getBuiltinFunction(getRect,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 
-	c->prototype->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<BitmapData>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<AVM1BitmapData>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("applyFilter","",c->getSystemState()->getBuiltinFunction(applyFilter),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<AVM1BitmapData>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(colorTransform),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("compare","",c->getSystemState()->getBuiltinFunction(compare,1,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("copyChannel","",c->getSystemState()->getBuiltinFunction(copyChannel),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("copyPixels","",c->getSystemState()->getBuiltinFunction(copyPixels),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("draw","",c->getSystemState()->getBuiltinFunction(draw),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("fillRect","",c->getSystemState()->getBuiltinFunction(fillRect),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("floodFill","",c->getSystemState()->getBuiltinFunction(floodFill),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("generateFilterRect","",c->getSystemState()->getBuiltinFunction(generateFilterRect),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getColorBoundsRect","",c->getSystemState()->getBuiltinFunction(getColorBoundsRect,2,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getPixel","",c->getSystemState()->getBuiltinFunction(getPixel,2,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getPixel32","",c->getSystemState()->getBuiltinFunction(getPixel32,2,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_getHeight,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("hitTest","",c->getSystemState()->getBuiltinFunction(hitTest,2,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("loadBitmap","",c->getSystemState()->getBuiltinFunction(loadBitmap),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("merge","",c->getSystemState()->getBuiltinFunction(threshold),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("noise","",c->getSystemState()->getBuiltinFunction(noise),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("paletteMap","",c->getSystemState()->getBuiltinFunction(paletteMap),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("perlinNoise","",c->getSystemState()->getBuiltinFunction(perlinNoise),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("pixelDissolve","",c->getSystemState()->getBuiltinFunction(pixelDissolve,3,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("rectangle","",c->getSystemState()->getBuiltinFunction(getRect,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("scroll","",c->getSystemState()->getBuiltinFunction(scroll),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("setPixel","",c->getSystemState()->getBuiltinFunction(setPixel),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("setPixel32","",c->getSystemState()->getBuiltinFunction(setPixel32),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("threshold","",c->getSystemState()->getBuiltinFunction(threshold),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("transparent","",c->getSystemState()->getBuiltinFunction(_getTransparent,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_getWidth,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1BitmapData,loadBitmap)

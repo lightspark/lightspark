@@ -375,7 +375,7 @@ int32_t ASObject::toInt()
 {
 	asAtom ret = asAtomHandler::fromObject(this);
 	bool isrefcounted;
-	toPrimitive(ret,isrefcounted);
+	toPrimitive(ret,isrefcounted,NUMBER_HINT);
 	int32_t res = asAtomHandler::toInt(ret);
 	if (isrefcounted)
 		ASATOM_DECREF(ret);
@@ -386,7 +386,7 @@ int64_t ASObject::toInt64()
 {
 	asAtom ret = asAtomHandler::fromObject(this);
 	bool isrefcounted;
-	toPrimitive(ret,isrefcounted);
+	toPrimitive(ret,isrefcounted,NUMBER_HINT);
 	int32_t res = asAtomHandler::toInt64(ret);
 	if (isrefcounted)
 		ASATOM_DECREF(ret);
@@ -398,11 +398,15 @@ number_t ASObject::toNumberForComparison()
 }
 
 /* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
-bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint,bool* fromValueOf)
+bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint)
 {
-	if (fromValueOf)
-		*fromValueOf=false;
+	if (!getInstanceWorker()->needsActionScript3())
+	{
+		bool fromValueOf;
+		return AVM1toPrimitive(ret,isrefcounted,fromValueOf,hint != NO_HINT);
+	}
 	isrefcounted=false;
+
 	//See ECMA 8.6.2.6 for default hint regarding Date
 	if(hint == NO_HINT)
 	{
@@ -437,8 +441,6 @@ bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint,bool* f
 		call_valueOf(ret);
 		if(asAtomHandler::isPrimitive(ret))
 		{
-			if (fromValueOf)
-				*fromValueOf=true;
 			isrefcounted=true;
 			return true;
 		}
@@ -458,9 +460,79 @@ bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint,bool* f
 			return false;
 		ASATOM_DECREF(ret);
 	}
-
-	createError<TypeError>(getInstanceWorker(),kConvertToPrimitiveError,this->getClassName());
+	if (getInstanceWorker()->needsActionScript3())
+		createError<TypeError>(getInstanceWorker(),kConvertToPrimitiveError,this->getClassName());
+	else
+	{
+		tiny_string res;
+		if(is<RootMovieClip>())
+		{
+			// handle special case for AVM1 root movie
+			res="_level";
+			res += Integer::toString(this->as<RootMovieClip>()->AVM1getLevel());
+		}
+		else if(is<IFunction>())
+			res = "[type Function]";
+		else
+			res="[object Object]";
+		return true;
+	}
 	return false;
+}
+
+bool ASObject::AVM1toPrimitive(asAtom& ret, bool& isrefcounted, bool& fromValueOf, bool fromAVM1Add2)
+{
+	assert(!getInstanceWorker()->needsActionScript3());
+	fromValueOf=false;
+	isrefcounted=false;
+	if(isPrimitive())
+	{
+		ret = asAtomHandler::fromObject(this);
+		return true;
+	}
+	if (!fromAVM1Add2)
+	{
+		call_toString(ret);
+		if(asAtomHandler::isPrimitive(ret))
+		{
+			isrefcounted=true;
+			return true;
+		}
+		ASATOM_DECREF(ret);
+	}
+	else
+	{
+		call_valueOf(ret);
+		if(asAtomHandler::isPrimitive(ret))
+		{
+			fromValueOf=true;
+			isrefcounted=true;
+			return true;
+		}
+		if (!this->is<Date>() || getInstanceWorker()->AVM1getSwfVersion() > 5)
+		{
+			ASATOM_DECREF(ret);
+			call_toString(ret);
+			if(asAtomHandler::isPrimitive(ret))
+			{
+				isrefcounted=true;
+				return true;
+			}
+		}
+	}
+	tiny_string res;
+	if(is<RootMovieClip>())
+	{
+		// handle special case for AVM1 root movie
+		res="_level";
+		res += Integer::toString(this->as<RootMovieClip>()->AVM1getLevel());
+	}
+	else if(is<IFunction>())
+		res = "[type Function]";
+	else
+		res="[type Object]";
+	ret = asAtomHandler::fromString(getSystemState(),res);
+	return true;
 }
 
 bool ASObject::has_valueOf()
@@ -479,6 +551,7 @@ bool ASObject::has_valueOf()
  */
 void ASObject::call_valueOf(asAtom& ret)
 {
+	ret = asAtomHandler::invalidAtom;
 	multiname valueOfName(nullptr);
 	valueOfName.name_type=multiname::NAME_STRING;
 	valueOfName.name_s_id=BUILTIN_STRINGS::STRING_VALUEOF;
@@ -486,15 +559,26 @@ void ASObject::call_valueOf(asAtom& ret)
 	valueOfName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 	valueOfName.isAttribute = false;
 
-	ASWorker* wrk = getWorker();
 	asAtom o=asAtomHandler::invalidAtom;
-	getVariableByMultiname(o,valueOfName,SKIP_IMPL,wrk);
+	if(!getInstanceWorker()->needsActionScript3())
+	{
+		// AVM1 object has overwritten it's own prototype
+		ASObject* pr = this->getprop_prototype();
+		if (pr)
+			pr->getVariableByMultiname(o,valueOfName,SKIP_IMPL,getInstanceWorker());
+	}
+	if (asAtomHandler::isInvalid(o))
+		getVariableByMultiname(o,valueOfName,SKIP_IMPL,getInstanceWorker());
 	if (!asAtomHandler::isFunction(o))
-		createError<TypeError>(getInstanceWorker(),kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
+	{
+		if (getInstanceWorker()->needsActionScript3())
+			createError<TypeError>(getInstanceWorker(),kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
+		ret = asAtomHandler::undefinedAtom;
+	}
 	else
 	{
 		asAtom v =asAtomHandler::fromObject(this);
-		asAtomHandler::callFunction(o,wrk,ret,v,nullptr,0,false);
+		asAtomHandler::callFunction(o,getInstanceWorker(),ret,v,nullptr,0,false);
 	}
 	ASATOM_DECREF(o);
 }
@@ -515,22 +599,32 @@ bool ASObject::has_toString()
  */
 void ASObject::call_toString(asAtom &ret)
 {
+	ret = asAtomHandler::invalidAtom;
 	multiname toStringName(nullptr);
 	toStringName.name_type=multiname::NAME_STRING;
 	toStringName.name_s_id=BUILTIN_STRINGS::STRING_TOSTRING;
 	toStringName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	toStringName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 	toStringName.isAttribute = false;
-
-	ASWorker* wrk = getWorker();
 	asAtom o=asAtomHandler::invalidAtom;
-	getVariableByMultiname(o,toStringName,SKIP_IMPL,wrk);
+	if(!getInstanceWorker()->needsActionScript3())
+	{
+		// AVM1 object has overwritten it's own prototype
+		ASObject* pr = this->getprop_prototype();
+		if (pr)
+			pr->getVariableByMultiname(o,toStringName,SKIP_IMPL,getInstanceWorker());
+	}
+	if (asAtomHandler::isInvalid(o))
+		getVariableByMultiname(o,toStringName,SKIP_IMPL,getInstanceWorker());
 	if (!asAtomHandler::isFunction(o))
-		createError<TypeError>(getInstanceWorker(), kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
+	{
+		if (getInstanceWorker()->needsActionScript3())
+			createError<TypeError>(getInstanceWorker(), kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
+	}
 	else
 	{
 		asAtom v =asAtomHandler::fromObject(this);
-		asAtomHandler::callFunction(o,wrk,ret,v,nullptr,0,false);
+		asAtomHandler::callFunction(o,getInstanceWorker(),ret,v,nullptr,0,false);
 	}
 	ASATOM_DECREF(o);
 }
@@ -891,10 +985,18 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		if (obj && asAtomHandler::isInvalid(obj->setter))
 			obj=nullptr;
 	}
-	if (!obj && cls &&!getInstanceWorker()->AVM1callStack.empty())
+	if (!obj && cls &&!getInstanceWorker()->needsActionScript3())
 	{
 		// we are in AVM1, look for setter in prototype
-		obj = cls->findSettableInPrototype(name);
+		bool has_getter=false;
+		obj = cls->findSettableInPrototype(name,&has_getter);
+		if (has_getter)
+		{
+			// found getter without setter in prototype
+			return nullptr;
+		}
+		if (obj && asAtomHandler::isInvalid(obj->setter))
+			obj=nullptr;
 	}
 	//Do not set variables in prototype chain. Still have to do
 	//lookup to throw a correct error in case a named function
@@ -902,7 +1004,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	//ecma3/Boolean/ecma4_sealedtype_1_rt
 	if(!obj && cls && cls->isSealed)
 	{
-		variable *protoObj = cls->findSettableInPrototype(name);
+		variable *protoObj = cls->findSettableInPrototype(name,nullptr);
 		if (protoObj && 
 			((asAtomHandler::isFunction(protoObj->var)) ||
 			 asAtomHandler::isValid(protoObj->setter)))
@@ -1266,35 +1368,44 @@ ASFUNCTIONBODY_ATOM(ASObject,generator)
 ASFUNCTIONBODY_ATOM(ASObject,_toString)
 {
 	tiny_string res;
-	if (asAtomHandler::is<Class_base>(obj))
+	if(wrk->needsActionScript3())
 	{
-		res="[object ";
-		res+=wrk->getSystemState()->getStringFromUniqueId(asAtomHandler::as<Class_base>(obj)->class_name.nameId);
-		res+="]";
-	}
-	else if(asAtomHandler::is<IFunction>(obj))
-	{
-		// ECMA spec 15.3.4.2 says that toString on a function object is implementation dependent
-		// adobe player returns "[object Function-46]", so we do the same
-		res="[object ";
-		res+="Function-46";
-		res+="]";
-	}
-	else if(!wrk->needsActionScript3() && asAtomHandler::is<RootMovieClip>(obj))
-	{
-		// handle special case for AVM1 root movie
-		res="_level";
-		res += Integer::toString(asAtomHandler::as<RootMovieClip>(obj)->AVM1getLevel());
-	}
-	else if(wrk->needsActionScript3() && asAtomHandler::getClass(obj,wrk->getSystemState()))
-	{
-		res="[object ";
-		res+=wrk->getSystemState()->getStringFromUniqueId(asAtomHandler::getClass(obj,wrk->getSystemState())->class_name.nameId);
-		res+="]";
+		if (asAtomHandler::is<Class_base>(obj))
+		{
+			res="[object ";
+			res+=wrk->getSystemState()->getStringFromUniqueId(asAtomHandler::as<Class_base>(obj)->class_name.nameId);
+			res+="]";
+		}
+		else if(asAtomHandler::is<IFunction>(obj))
+		{
+			// ECMA spec 15.3.4.2 says that toString on a function object is implementation dependent
+			// adobe player returns "[object Function-46]", so we do the same
+			res="[object ";
+			res+="Function-46";
+			res+="]";
+		}
+		else if(asAtomHandler::getClass(obj,wrk->getSystemState()))
+		{
+			res="[object ";
+			res+=wrk->getSystemState()->getStringFromUniqueId(asAtomHandler::getClass(obj,wrk->getSystemState())->class_name.nameId);
+			res+="]";
+		}
+		else
+			res="[object Object]";
 	}
 	else
-		res="[object Object]";
-
+	{
+		if(asAtomHandler::is<RootMovieClip>(obj))
+		{
+			// handle special case for AVM1 root movie
+			res="_level";
+			res += Integer::toString(asAtomHandler::as<RootMovieClip>(obj)->AVM1getLevel());
+		}
+		else if(asAtomHandler::is<IFunction>(obj))
+			res = "[type Function]";
+		else
+			res="[object Object]";
+	}
 	ret = asAtomHandler::fromString(wrk->getSystemState(),res);
 }
 
@@ -1987,7 +2098,8 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 					if (itc != gcstate.checkedobjects.end())
 					{
 						ret = (*itc).second.hasmember || ret;
-						(*itc).second.hasmember=ret;
+//						if ((*itc).second.isAncestor)
+							(*itc).second.hasmember=ret;
 					}
 					if (gcstate.stopped)
 						return false;
@@ -3566,7 +3678,7 @@ void asAtomHandler::getStringView(tiny_string& res, const asAtom& a, ASWorker* w
 	}
 }
 
-tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk)
+tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk, bool fromAVM1add2)
 {
 	switch(a.uintval&0x7)
 	{
@@ -3577,7 +3689,7 @@ tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk)
 				case ATOMTYPE_NULL_BIT:
 					return "null";
 				case ATOMTYPE_UNDEFINED_BIT:
-					return wrk->getSystemState()->getSwfVersion() > 6 ? "undefined" : "";
+					return !fromAVM1add2 || wrk->getSystemState()->getSwfVersion() > 6 ? "undefined" : "";
 				case ATOMTYPE_BOOL_BIT:
 					return a.uintval&0x80 ? "true" : "false";
 				default:
@@ -3974,13 +4086,32 @@ bool asAtomHandler::AVM1add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 	}
 	else if(isString(a) || isString(v2))
 	{
-		tiny_string sa = toString(a,wrk);
-		sa += toString(v2,wrk);
+		bool isRefCounted1=false;
+		bool isRefCounted2=false;
+		// order of toprimitive calls is important to match adobe behaviour
+		asAtom val2 =  v2;
+		if (!isString(val2) && isObject(val2))
+		{
+			bool fromValueOf;
+			getObjectNoCheck(val2)->AVM1toPrimitive(val2,isRefCounted2,fromValueOf,true);
+		}
+		asAtom val1 =  a;
+		if (!isString(val1) && isObject(val1))
+		{
+			bool fromValueOf;
+			getObjectNoCheck(val1)->AVM1toPrimitive(val1,isRefCounted1,fromValueOf,true);
+		}
+		tiny_string sa =  toString(val1,wrk,true);
+		sa += toString(val2,wrk,true);
 		LOG_CALL("add " << toDebugString(a) << '+' << toDebugString(v2));
 		if (forceint)
 			setInt(a,wrk,Integer::stringToASInteger(sa.raw_buf(),0));
 		else
 			a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(wrk,sa))|ATOM_STRINGPTR;
+		if (isRefCounted1)
+			ASATOM_DECREF(val1);
+		if (isRefCounted2)
+			ASATOM_DECREF(val2);
 	}
 	else
 	{
@@ -3990,11 +4121,11 @@ bool asAtomHandler::AVM1add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 		asAtom val2p=asAtomHandler::invalidAtom;
 		bool isrefcounted2;
 		bool fromValueOf2;
-		val2->toPrimitive(val2p,isrefcounted2,NO_HINT,&fromValueOf2);
+		val2->AVM1toPrimitive(val2p,isrefcounted2,fromValueOf2,true);
 		asAtom val1p=asAtomHandler::invalidAtom;
 		bool isrefcounted1;
 		bool fromValueOf1;
-		val1->toPrimitive(val1p,isrefcounted1,NO_HINT,&fromValueOf1);
+		val1->AVM1toPrimitive(val1p,isrefcounted1,fromValueOf1,true);
 		if((fromValueOf1 && isString(val1p)) || (fromValueOf2 && isString(val2p)))
 		{
 			tiny_string sa = toString(val1p,wrk);

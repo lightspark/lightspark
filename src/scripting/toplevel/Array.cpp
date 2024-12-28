@@ -1789,11 +1789,31 @@ ASFUNCTIONBODY_ATOM(Array,_toString)
 	}
 	if(!asAtomHandler::is<Array>(obj))
 	{
-		LOG(LOG_NOT_IMPLEMENTED, "generic Array::toString");
+		ASObject* o = asAtomHandler::getObject(obj);
+		if (o)
+		{
+			tiny_string res;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.name_s_id=BUILTIN_STRINGS::STRING_LENGTH;
+			asAtom v = asAtomHandler::invalidAtom;
+			o->getVariableByMultiname(v,m,SKIP_IMPL,wrk);
+			if (asAtomHandler::isValid(v))
+			{
+				int32_t len = asAtomHandler::toInt(v);
+				for (int32_t i = 0; i < len; i++)
+				{
+					if (!res.empty())
+						res +=",";
+					res += "undefined";
+				}
+			}
+			ret = asAtomHandler::fromString(wrk->getSystemState(),res);
+			return;
+		}
 		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 		return;
 	}
-	
 	Array* th=asAtomHandler::as<Array>(obj);
 	// Derived classes may be sealed!
 	if (th->getSystemState()->getSwfVersion() < 13 && th->getClass() && th->getClass()->isSealed)

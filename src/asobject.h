@@ -52,7 +52,7 @@
 	ASFUNCTION_ATOM( _setter_##name)
 
 #define ASPROPERTY_STATIC(type, class, name) \
-	type static_##class##_##name;
+	type static_##class##_##name
 
 /* declare setter/getter for already existing member variable */
 #define ASFUNCTION_GETTER(name) \
@@ -527,7 +527,7 @@ public:
 	static FORCE_INLINE int64_t toInt64(const asAtom& a);
 	static FORCE_INLINE uint32_t toUInt(asAtom& a);
 	static void getStringView(tiny_string& res, const asAtom &a, ASWorker* wrk); // this doesn't deep copy the data buffer if parameter a is an ASString
-	static tiny_string toString(const asAtom &a, ASWorker* wrk);
+	static tiny_string toString(const asAtom &a, ASWorker* wrk, bool fromAVM1add2=false);
 	static tiny_string toLocaleString(const asAtom &a, ASWorker* wrk);
 	static uint32_t toStringId(asAtom &a, ASWorker* wrk);
 	static FORCE_INLINE asAtom typeOf(asAtom& a);
@@ -1317,8 +1317,9 @@ public:
 	virtual number_t toNumber();
 	virtual number_t toNumberForComparison();
 	/* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
-	bool toPrimitive(asAtom& ret,bool& isrefcounted, TP_HINT hint = NO_HINT, bool* fromValueOf=nullptr);
+	bool toPrimitive(asAtom& ret,bool& isrefcounted, TP_HINT hint = NO_HINT);
 	bool isPrimitive() const;
+	bool AVM1toPrimitive(asAtom& ret, bool& isrefcounted, bool& fromValueOf, bool fromAVM1Add2);
 
 	bool isInitialized() const {return traitsInitialized;}
 	virtual bool isConstructed() const;
@@ -1858,7 +1859,7 @@ FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a, uint32_t swfversion
 				case ATOMTYPE_BOOL_BIT:
 					return (a.uintval&0x80)>>7;
 				case ATOMTYPE_UNDEFINED_BIT:
-					return swfversion > 6 ? numeric_limits<double>::quiet_NaN() : 0;
+					return numeric_limits<double>::quiet_NaN();
 				case ATOMTYPE_NULL_BIT:
 					return swfversion > 6 && swfversion != UINT8_MAX ? numeric_limits<double>::quiet_NaN() : 0;
 				default:

@@ -195,6 +195,13 @@ ASFUNCTIONBODY_ATOM(Number,generator)
 {
 	if(argslen==0)
 		asAtomHandler::setNumber(ret,wrk,0.);
+	else if (asAtomHandler::isUndefined(args[0]) && !wrk->needsActionScript3())
+	{
+		if (wrk->AVM1getSwfVersion() < 7)
+			ret = asAtomHandler::fromInt(0);
+		else
+			ret = wrk->getSystemState()->nanAtom;
+	}
 	else
 		asAtomHandler::setNumber(ret,wrk,asAtomHandler::toNumber(args[0]));
 }

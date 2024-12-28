@@ -19,6 +19,7 @@
 
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/Bitmap.h"
+#include "scripting/avm1/avm1display.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/geom/flashgeom.h"
@@ -1203,7 +1204,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect,false);
 	vector<uint32_t> otherpixelvec = otherBitmapData->pixels->getPixelVector(rect,false);
 	
-	BitmapData* res = Class<BitmapData>::getInstanceS(wrk,rect.Xmax,rect.Ymax);
+	BitmapData* res = wrk->needsActionScript3() ? Class<BitmapData>::getInstanceS(wrk,rect.Xmax,rect.Ymax) : Class<AVM1BitmapData>::getInstanceS(wrk,rect.Xmax,rect.Ymax);
 	unsigned int i = 0;
 	bool different = false;
 	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
@@ -1233,7 +1234,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 		}
 	}
 	if (!different)
+	{
 		asAtomHandler::setInt(ret,wrk,0);
+		res->decRef();
+	}
 	else
 		ret = asAtomHandler::fromObject(res);
 }

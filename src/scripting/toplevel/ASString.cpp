@@ -1166,6 +1166,8 @@ ASFUNCTIONBODY_ATOM(ASString,generator)
 	assert(argslen<=1);
 	if (argslen == 0)
 		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
+	else if (asAtomHandler::isUndefined(args[0]))
+		ret = asAtomHandler::fromStringID(wrk->AVM1getSwfVersion() < 7 ? BUILTIN_STRINGS::EMPTY : BUILTIN_STRINGS::STRING_UNDEFINED);
 	else
 		ret = asAtomHandler::fromObject(abstract_s(wrk,asAtomHandler::toString(args[0],wrk)));
 }

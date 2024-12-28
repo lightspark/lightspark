@@ -158,6 +158,7 @@ protected:
 	void describeMetadata(pugi::xml_node &node, const traits_info& trait) const;
 	ASFUNCTION_ATOM(_toString);
 	void initStandardProps();
+	void AVM1initPrototype();
 public:
 	void copyBorrowedTraits(Class_base* src);
 	virtual asfreelist* getFreeList(ASWorker* w)
@@ -235,7 +236,7 @@ public:
 	}
 	
 	variable* findBorrowedSettable(const multiname& name, bool* has_getter=nullptr);
-	variable* findSettableInPrototype(const multiname& name);
+	variable* findSettableInPrototype(const multiname& name, bool* has_getter);
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override;
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { /*TODO: implement*/ return nullptr; }
 	bool checkExistingFunction(const multiname& name);

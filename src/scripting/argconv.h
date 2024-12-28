@@ -132,7 +132,7 @@ public:
 		if(!asAtomHandler::is<T>(obj))
 		{
 			createError<ArgumentError>(wrk,kCheckTypeFailedError,
-												  asAtomHandler::toObject(obj,wrk)->getClassName(),
+												  asAtomHandler::getClass(obj,wrk->getSystemState())->getQualifiedClassName(),
 												  Class<T>::getClass(wrk->getSystemState())->getQualifiedClassName());
 			return NullRef;
 		}

@@ -220,10 +220,12 @@ public:
 			ret->setSystemState(sys);
 			ret->incRef();
 			*retAddr=ret;
-			ret->prototype = ClassName<T>::isAVM1 ? _MNR(new_functionPrototype(sys->worker,ret,NullRef)) : _MNR(new_objectPrototype(sys->worker));
+			ret->prototype = _MNR(new_objectPrototype(sys->worker));
 			T::sinit(ret);
 
 			ret->initStandardProps();
+			if (ClassName<T>::isAVM1)
+				ret->AVM1initPrototype();
 		}
 		else
 			ret=static_cast<Class<T>*>(*retAddr);

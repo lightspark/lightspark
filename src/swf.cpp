@@ -652,7 +652,13 @@ void SystemState::systemFinalize()
 	invalidateQueueHead.reset();
 	invalidateQueueTail.reset();
 	parameters.reset();
+	localconnection_client_map.clear();
 	static_SoundMixer_soundTransform.reset();
+	static_ObjectEncoding_dynamicPropertyWriter.reset();
+	static_ASFile_applicationDirectory.reset();
+	static_ASFile_applicationStorageDirectory.reset();
+	static_NativeApplication_nativeApplication.reset();
+
 	forEachEmbeddedFont([&](ASFont* font)
 	{
 		if (!font->isLastRef())

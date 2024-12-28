@@ -108,16 +108,19 @@ ASFUNCTIONBODY_ATOM(IFunction,_length)
 
 ASFUNCTIONBODY_ATOM(IFunction,apply)
 {
-	/* This function never changes the 'this' pointer of a method closure */
-	IFunction* th=asAtomHandler::as<IFunction>(obj);
 	assert_and_throw(argslen<=2);
 
 	asAtom newObj=asAtomHandler::invalidAtom;
 	asAtom* newArgs=nullptr;
 	int newArgsLen=0;
-	if(th->inClass && asAtomHandler::isValid(th->closure_this))
-		newObj = th->closure_this;
-	else
+	if(asAtomHandler::is<IFunction>(obj))
+	{
+		/* This function never changes the 'this' pointer of a method closure */
+		IFunction* f = asAtomHandler::as<IFunction>(obj);
+		if (f->inClass && asAtomHandler::isValid(f->closure_this))
+			newObj = f->closure_this;
+	}
+	if(asAtomHandler::isInvalid(newObj))
 	{
 		//Validate parameters
 		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
@@ -144,9 +147,14 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 			newObj=args[0];
 		}
 	}
-	if(argslen == 2 && asAtomHandler::isArray(args[1]))
+	if(argslen == 2 && !asAtomHandler::is<Null>(args[1]) && !asAtomHandler::is<Undefined>(args[1]))
 	{
-		Array* array=Class<Array>::cast(asAtomHandler::getObject(args[1]));
+		if (!asAtomHandler::isArray(args[1]))
+		{
+			createError<TypeError>(wrk,kApplyError);
+			return;
+		}
+		Array* array=asAtomHandler::as<Array>(args[1]);
 		newArgsLen=array->size();
 		newArgs=new asAtom[newArgsLen];
 		for(int i=0;i<newArgsLen;i++)
@@ -155,24 +163,29 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 			newArgs[i]=val;
 		}
 	}
-	if (asAtomHandler::is<AVM1Function>(obj))
-		asAtomHandler::as<AVM1Function>(obj)->call(&ret,&newObj,newArgs,newArgsLen);
-	else
+	if (asAtomHandler::is<Class_base>(obj))
+		asAtomHandler::as<Class_base>(obj)->generator(wrk,ret,newArgs,newArgsLen);
+	else if (asAtomHandler::is<IFunction>(obj))
 		asAtomHandler::callFunction(obj,wrk,ret,newObj,newArgs,newArgsLen,false);
+	else
+		ret = asAtomHandler::undefinedAtom;
 	if (newArgs)
 		delete[] newArgs;
 }
 
 ASFUNCTIONBODY_ATOM(IFunction,_call)
 {
-	/* This function never changes the 'this' pointer of a method closure */
-	IFunction* th=static_cast<IFunction*>(asAtomHandler::getObject(obj));
 	asAtom newObj=asAtomHandler::invalidAtom;
 	asAtom* newArgs=nullptr;
 	uint32_t newArgsLen=0;
-	if(th->inClass && asAtomHandler::isValid(th->closure_this))
-		newObj = th->closure_this;
-	else
+	if(asAtomHandler::is<IFunction>(obj))
+	{
+		/* This function never changes the 'this' pointer of a method closure */
+		IFunction* f = asAtomHandler::as<IFunction>(obj);
+		if (f->inClass && asAtomHandler::isValid(f->closure_this))
+			newObj = f->closure_this;
+	}
+	if(asAtomHandler::isInvalid(newObj))
 	{
 		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
 		{
@@ -207,10 +220,12 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 			newArgs[i]=args[i+1];
 		}
 	}
-	if (asAtomHandler::is<AVM1Function>(obj))
-		asAtomHandler::as<AVM1Function>(obj)->call(&ret,&newObj,newArgs,newArgsLen);
-	else
+	if (asAtomHandler::is<Class_base>(obj))
+		asAtomHandler::as<Class_base>(obj)->generator(wrk,ret,newArgs,newArgsLen);
+	else if (asAtomHandler::is<IFunction>(obj))
 		asAtomHandler::callFunction(obj,wrk,ret,newObj,newArgs,newArgsLen,false);
+	else
+		ret = asAtomHandler::undefinedAtom;
 }
 
 ASFUNCTIONBODY_ATOM(IFunction,_toString)

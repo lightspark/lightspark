@@ -32,14 +32,30 @@ AVM1Array::AVM1Array(ASWorker* wrk, Class_base* c):Array(wrk,c),avm1_currentsize
 
 void AVM1Array::sinit(Class_base* c)
 {
-	Array::sinit(c);
-	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(AVM1_getLength,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(AVM1_setLength),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("pop","",c->getSystemState()->getBuiltinFunction(AVM1_pop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("push","",c->getSystemState()->getBuiltinFunction(AVM1_push,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("shift","",c->getSystemState()->getBuiltinFunction(AVM1_shift,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("unshift","",c->getSystemState()->getBuiltinFunction(AVM1_unshift,1),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("splice","",c->getSystemState()->getBuiltinFunction(AVM1_splice,1),NORMAL_METHOD,true);
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	c->isReusable = true;
+
+	c->setVariableAtomByQName("CASEINSENSITIVE",nsNameAndKind(),asAtomHandler::fromUInt(CASEINSENSITIVE),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DESCENDING",nsNameAndKind(),asAtomHandler::fromUInt(DESCENDING),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NUMERIC",nsNameAndKind(),asAtomHandler::fromUInt(NUMERIC),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("RETURNINDEXEDARRAY",nsNameAndKind(),asAtomHandler::fromUInt(RETURNINDEXEDARRAY),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("UNIQUESORT",nsNameAndKind(),asAtomHandler::fromUInt(UNIQUESORT),CONSTANT_TRAIT);
+
+	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(AVM1_getLength,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(AVM1_setLength),SETTER_METHOD,false);
+	c->prototype->setVariableByQName("concat","",c->getSystemState()->getBuiltinFunction(_concat,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("join","",c->getSystemState()->getBuiltinFunction(join,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("pop","",c->getSystemState()->getBuiltinFunction(AVM1_pop),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("push","",c->getSystemState()->getBuiltinFunction(AVM1_push,1),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("shift","",c->getSystemState()->getBuiltinFunction(AVM1_shift),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("slice","",c->getSystemState()->getBuiltinFunction(slice,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("sort","",c->getSystemState()->getBuiltinFunction(_sort),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("sortOn","",c->getSystemState()->getBuiltinFunction(sortOn),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("splice","",c->getSystemState()->getBuiltinFunction(AVM1_splice,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("reverse","",c->getSystemState()->getBuiltinFunction(_reverse,2),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",c->getSystemState()->getBuiltinFunction(_toLocaleString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("unshift","",c->getSystemState()->getBuiltinFunction(AVM1_unshift),DYNAMIC_TRAIT);
 }
 
 bool AVM1Array::destruct()
@@ -151,9 +167,9 @@ uint32_t AVM1Array::nextNameIndex(uint32_t cur_index)
 	{
 		++i;
 		++it;
-		if (it == name_enumeration.cend())
-			return 0;
 	}
+	if (it == name_enumeration.cend())
+		return 0;
 	currentEnumerationIndex=i;
 	currentEnumerationIterator=it;
 	return i+1;

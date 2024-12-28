@@ -63,6 +63,7 @@ static bool runEventLoop(TestRunnerEventLoop& eventLoop, SystemState* sys, bool 
 }
 
 TestRunner::TestRunner(const Test& test, const InputInjector& _injector, bool debug, const LOG_LEVEL& logLevel) :
+isDone(false),
 rootPath(test.rootPath),
 outputPath(test.outputPath),
 options(test.options),
@@ -126,6 +127,9 @@ TestRunner::~TestRunner()
 
 void TestRunner::tick()
 {
+	isDone = runEventLoop(eventLoop, sys);
+	isDone |= injector.hasEvents() && injector.endOfInput();
+
 	sys->runTick(frameTime);
 	if (sys->hasError())
 		throw TestRunnerException(sys->getErrorCause());
@@ -137,10 +141,7 @@ void TestRunner::tick()
 
 TestStatus TestRunner::test()
 {
-	bool done = runEventLoop(eventLoop, sys);
-	done |= injector.hasEvents() && injector.endOfInput();
-
-	if (!remainingTicks || done)
+	if (!remainingTicks || isDone)
 	{
 		// End of test, check if everything went well.
 		std::string trace = log.traceOutput();

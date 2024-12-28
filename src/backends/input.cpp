@@ -87,12 +87,12 @@ int InputThread::worker(void* d)
 
 	while (true)
 	{
-		const auto& event = [&]()
+		auto event = [&]
 		{
 			Locker l(th->mutexQueue);
 			while (th->inputEventQueue.empty())
 				th->eventCond.wait(th->mutexQueue);
-			auto& ev = th->inputEventQueue.front();
+			auto ev = th->inputEventQueue.front();
 			th->inputEventQueue.pop_front();
 			return ev;
 		}();

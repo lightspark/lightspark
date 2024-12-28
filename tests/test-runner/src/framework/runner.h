@@ -50,6 +50,9 @@ enum TestStatus
 
 struct TestRunner
 {
+private:
+	bool isDone;
+public:
 	path_t rootPath;
 	path_t outputPath;
 	TestOptions options;

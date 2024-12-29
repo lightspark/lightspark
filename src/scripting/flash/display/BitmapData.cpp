@@ -565,6 +565,29 @@ ASFUNCTIONBODY_ATOM(BitmapData,generateFilterRect)
 	ret = asAtomHandler::fromObject(rect);
 }
 
+bool getXYfromObject(number_t& x, number_t& y, ASObject* o)
+{
+	asAtom a= asAtomHandler::invalidAtom;
+	list<tiny_string> ns;
+	o->getVariableByMultiname(a,"x",ns,o->getInstanceWorker());
+	if (asAtomHandler::isValid(a))
+	{
+		x = asAtomHandler::AVM1toNumber(a,o->getInstanceWorker()->AVM1getSwfVersion());
+		ASATOM_DECREF(a);
+	}
+	else
+		return false;
+	a= asAtomHandler::invalidAtom;
+	o->getVariableByMultiname(a,"y",ns,o->getInstanceWorker());
+	if (asAtomHandler::isValid(a))
+	{
+		y = asAtomHandler::AVM1toNumber(a,o->getInstanceWorker()->AVM1getSwfVersion());
+		ASATOM_DECREF(a);
+	}
+	else
+		return false;
+	return true;
+}
 ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 {
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
@@ -574,10 +597,20 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 	_NR<ASObject> firstPoint;
 	uint32_t firstAlphaThreshold;
 	_NR<ASObject> secondObject;
-	_NR<Point> secondBitmapDataPoint;
+	_NR<ASObject> secondBitmapDataPoint;
 	uint32_t secondAlphaThreshold;
 	ARG_CHECK(ARG_UNPACK(firstPoint) (firstAlphaThreshold) (secondObject) (secondBitmapDataPoint, NullRef)
 					(secondAlphaThreshold,1));
+	if (!wrk->needsActionScript3() && (
+			asAtomHandler::isPrimitive(args[0]) ||
+			asAtomHandler::isNull(args[1]) ||
+			asAtomHandler::isUndefined(args[1]) ||
+			asAtomHandler::isPrimitive(args[2])
+			))
+	{
+		ret = asAtomHandler::fromInt(-2);
+		return;
+	}
 
 	asAtomHandler::setBool(ret,false);
 	number_t firstPointX=0;
@@ -603,45 +636,44 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 		}
 		else
 		{
-			asAtom a= asAtomHandler::invalidAtom;
-			list<tiny_string> ns;
-			firstPoint->getVariableByMultiname(a,"x",ns,wrk);
-			if (asAtomHandler::isValid(a))
-				firstPointX = asAtomHandler::AVM1toNumber(a,wrk->AVM1getSwfVersion());
-			a= asAtomHandler::invalidAtom;
-			firstPoint->getVariableByMultiname(a,"y",ns,wrk);
-			if (asAtomHandler::isValid(a))
-				firstPointY = asAtomHandler::AVM1toNumber(a,wrk->AVM1getSwfVersion());
+			if (!getXYfromObject(firstPointX, firstPointY, firstPoint.getPtr()))
+			{
+				ret = asAtomHandler::fromInt(-2);
+				return;
+			}
 		}
 	}
 
 	if(secondObject->is<Point>())
 	{
 		Point* secondPoint = secondObject->as<Point>();
-	
-		uint32_t pix=th->pixels->getPixel(secondPoint->getX()-firstPointX, secondPoint->getY()-firstPointY);
+		ret = asAtomHandler::falseAtom;
+		int posx=secondPoint->getX()-firstPointX;
+		int posy=secondPoint->getY()-firstPointY;
+		if (posx < 0 || posx >= th->getWidth()
+			|| posy < 0 || posy >= th->getHeight())
+			return;
+		uint32_t pix=th->pixels->getPixel(posx, posy);
 		if((pix>>24)>=firstAlphaThreshold)
-			asAtomHandler::setBool(ret,true);
-		else
-			asAtomHandler::setBool(ret,false);
+			ret = asAtomHandler::trueAtom;
 	}
 	else if (secondObject->is<Rectangle>())
 	{
 		Rectangle* r = secondObject->as<Rectangle>();
-		
+		ret = asAtomHandler::falseAtom;
 		for (uint32_t x=0; x<r->width; x++)
 		{
 			for (uint32_t y=0; y<r->height; y++)
 			{
-				uint32_t pix=th->pixels->getPixel(r->x+x-firstPointX, r->y+y-firstPointY);
+				int posx=r->x+x-firstPointX;
+				int posy=r->y+y-firstPointY;
+				if (posx < 0 || posx >= th->getWidth()
+					|| posy < 0 || posy >= th->getHeight())
+					continue;
+				uint32_t pix=th->pixels->getPixel(posx,posy);
 				if((pix>>24)>=firstAlphaThreshold)
 				{
-					asAtomHandler::setBool(ret,true);
-					return;
-				}
-				else
-				{
-					asAtomHandler::setBool(ret,false);
+					ret = asAtomHandler::trueAtom;
 					return;
 				}
 			}
@@ -670,19 +702,74 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 	else if (secondObject->is<BitmapData>())
 	{
 		if (secondObject->as<BitmapData>()->checkDisposed(ret))
+		{
+			ret = asAtomHandler::fromInt(-3);
 			return;
-		if (secondBitmapDataPoint.isNull())
-			LOG(LOG_NOT_IMPLEMENTED,"BitmapData.hitTest with BitmapData as secondObject and no secondBitmapDataPoint");
-		else
+		}
+		number_t secondPointX=0;
+		number_t secondPointY=0;
+		if (wrk->needsActionScript3() && !secondBitmapDataPoint.isNull() && !secondBitmapDataPoint->is<Point>())
+		{
+			createError<ArgumentError>(wrk,kCheckTypeFailedError,
+									   th->getClassName(),
+									   "secondBitmapDataPoint");
+			return;
+		}
+		ret = asAtomHandler::falseAtom;
+		if (secondBitmapDataPoint->is<Point>())
 		{
 			Point* secondPoint = secondBitmapDataPoint->as<Point>();
-			uint32_t pix1=th->pixels->getPixel(firstPointX, firstPointY);
-			uint32_t pix2=secondObject->as<BitmapData>()->pixels->getPixel(secondPoint->getX(), secondPoint->getY());
-			if(((pix1>>24)>=firstAlphaThreshold) && (pix2>>24)>=secondAlphaThreshold)
-				asAtomHandler::setBool(ret,true);
-			else
-				asAtomHandler::setBool(ret,false);
+			secondPointX = secondPoint->getX();
+			secondPointY = secondPoint->getY();
 		}
+		else
+		{
+			if (asAtomHandler::isNull(args[3]) || asAtomHandler::isUndefined(args[3]))
+			{
+				ret = asAtomHandler::fromInt(-4);
+				return;
+			}
+			if (!getXYfromObject(secondPointX, secondPointY, secondBitmapDataPoint.getPtr()))
+			{
+				ret = asAtomHandler::fromInt(-3);
+				return;
+			}
+		}
+		for (int x = 0; x < th->getWidth()-firstPointX; x++)
+		{
+			for (int y = 0; y < th->getHeight()-firstPointY; y++)
+			{
+				uint32_t pix1=th->pixels->getPixel(x+firstPointX, y+firstPointY);
+				if((pix1>>24)>=firstAlphaThreshold)
+				{
+					uint32_t pix2=secondObject->as<BitmapData>()->pixels->getPixel(secondPointX+x, secondPointY+y);
+					if ((pix2>>24)>=secondAlphaThreshold)
+					{
+						ret = asAtomHandler::trueAtom;
+						return;
+					}
+				}
+			}
+		}
+	}
+	else if (!wrk->needsActionScript3())
+	{
+		number_t secondPointX=0;
+		number_t secondPointY=0;
+		if (!getXYfromObject(secondPointX, secondPointY, secondObject.getPtr()))
+		{
+			ret = asAtomHandler::fromInt(-3);
+			return;
+		}
+		ret = asAtomHandler::falseAtom;
+		int posx=secondPointX-firstPointX;
+		int posy=secondPointY-firstPointY;
+		if (posx < 0 || posx >= th->getWidth()
+			|| posy < 0 || posy >= th->getHeight())
+			return;
+		uint32_t pix=th->pixels->getPixel(posx, posy);
+		if((pix>>24)>=firstAlphaThreshold)
+			ret = asAtomHandler::trueAtom;
 	}
 	else
 		createError<TypeError>(wrk,kCheckTypeFailedError, 

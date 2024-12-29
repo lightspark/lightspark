@@ -95,6 +95,29 @@ struct TomlFrom<std::vector<T>>
 	}
 };
 
+template<typename T, typename U>
+struct TomlFrom<std::unordered_map<T, U>>
+{
+	template<typename V>
+	static std::unordered_map<T, U> get(const V& v)
+	{
+		auto table = v.as_table();
+		if (table == nullptr)
+			throw std::bad_cast();
+		std::unordered_map<T, U> ret;
+		for (auto it : *table)
+		{
+			T key;
+			if constexpr (std::is_same<T, tiny_string>::value)
+				key = (std::string)it.first.str();
+			else
+				key = it.first.str();
+			ret.emplace(key, *tomlValue<U>(it.second));
+		}
+		return ret;
+	}
+};
+
 template<>
 struct TomlFrom<tiny_string>
 {

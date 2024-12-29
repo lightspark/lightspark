@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <cassert>
 #include <cstdint>
 #include <string>
 
@@ -347,6 +348,66 @@ struct TomlFrom<ViewportDimensions>
 };
 
 template<>
+struct TomlFrom<ImageTrigger>
+{
+	template<typename V>
+	static ImageTrigger get(const V& view)
+	{
+		using TriggerType = ImageTrigger::Type;
+		if (!view.is_integer() && !view.is_string())
+		{
+			throw TestRunnerException
+			(
+				"ImageTrigger: Must be either a number, or a string."
+			);
+		}
+
+		if (view.is_integer())
+			return ImageTrigger(*view.template value<uint32_t>());
+
+		tiny_string str = *view.template value<std::string>();
+
+		if (str == "last_frame")
+			return ImageTrigger(TriggerType::LastFrame);
+		else if (str == "fs_command")
+			return ImageTrigger(TriggerType::FsCommand);
+
+		return str.tryToNumber<uint32_t>().orElse([&]
+		{
+			throw TestRunnerException
+			(
+				"ImageTrigger: Must be either a frame/tick number"
+				R"(", "last_frame")"
+				R"(, or "fs_command".)"
+			);
+			return nullOpt;
+		}).getValue();
+	}
+};
+
+template<>
+struct TomlFrom<ImageComparison>
+{
+	template<typename V>
+	static ImageComparison get(const V& v)
+	{
+		const auto& view = *v.as_table();
+		return ImageComparison
+		{
+			// tolerance
+			view["tolerance"].value_or(uint8_t(0)),
+			// maxOutliers
+			view["max_outliers"].value_or(size_t(0)),
+			// trigger
+			tomlValue<ImageTrigger>
+			(
+				view["trigger"]
+			).valueOr(ImageTrigger())
+		};
+	}
+};
+
+template<>
 struct TomlFrom<RenderOptions>
 {
 	template<typename V>
@@ -482,6 +543,11 @@ std::vector<std::regex> Approximations::getNumberPatterns() const
 	return ret;
 }
 
+ImageTrigger::ImageTrigger(const ImageTrigger::Type& _type) : type(_type)
+{
+	assert(type != Type::SpecificIteration);
+}
+
 TestOptions::TestOptions
 (
 	const tiny_string& _name,
@@ -553,6 +619,10 @@ usesAssert(false)
 				tickRate = data["tick_rate"].template value<double>();
 
 				outputPath = data["output_path"].value_or("output.txt");
+				imageComparisons = tomlValue<ImageComparisonMap>
+				(
+					data["image_comparisons"]
+				).valueOr(ImageComparisonMap {});
 				ignore = data["ignore"].value_or(false);
 				knownFailType = tomlValue<FailureType>(data);
 

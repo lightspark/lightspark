@@ -17,10 +17,6 @@ x86_64/*
 #
 CMakeFiles
 Makefile
-*.cmake
-# exception for files beyond conf/
-!conf/*
-
 CMakeCache.txt
 obj/
 obj-release/

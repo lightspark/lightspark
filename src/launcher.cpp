@@ -1230,7 +1230,7 @@ static const char font_openfonticons_compressed_data_base85[20900+1] =
 	"1kM<%?AZ1F0A?`%EgRaFc-'##(PUV$f%Dg14####";
 
 
-Launcher::Launcher():needsAIR(false),needsAVMplus(false),needsnetwork(false),needsfilesystem(false)
+Launcher::Launcher():needsAIR(false),needsnetwork(false),needsfilesystem(false)
 {
 	
 }
@@ -1313,7 +1313,6 @@ bool Launcher::start()
 	char swfpath[PATH_MAX];
 	char url[PATH_MAX];
 	bool bAIR=false;
-	bool bAVMplus=false;
 	bool bNetwork=false;
 	bool bFilesystem=false;
 	pugi::xml_node_iterator itcurrent;
@@ -1351,7 +1350,6 @@ bool Launcher::start()
 					selectedfile=(*it).attribute("file").as_string();
 					baseurl=(*it).attribute("url").as_string();
 					needsAIR=(*it).attribute("air").as_bool();
-					needsAVMplus=(*it).attribute("avmplus").as_bool();
 					needsnetwork=(*it).attribute("network").as_bool();
 					needsfilesystem=(*it).attribute("filesystem").as_bool();
 					done = true;
@@ -1370,7 +1368,6 @@ bool Launcher::start()
 					s =(*it).attribute("name").as_string();
 					strncpy(entryname,s.c_str(),PATH_MAX-1);
 					bAIR=(*it).attribute("air").as_bool();
-					bAVMplus=(*it).attribute("avmplus").as_bool();
 					bNetwork=(*it).attribute("network").as_bool();
 					bFilesystem=(*it).attribute("filesystem").as_bool();
 					inentryediting=true;
@@ -1413,7 +1410,6 @@ bool Launcher::start()
 				}
 			}
 			ImGui::Checkbox("AIR", &bAIR);
-			ImGui::Checkbox("AVMplus", &bAVMplus);
 			ImGui::Checkbox("network access", &bNetwork);
 			ImGui::Checkbox("file system access", &bFilesystem);
 			ImGui::Text("URL");
@@ -1431,7 +1427,6 @@ bool Launcher::start()
 				itcurrent->append_attribute("file").set_value(swfpath);
 				itcurrent->append_attribute("url").set_value(url);
 				itcurrent->append_attribute("air").set_value(bAIR);
-				itcurrent->append_attribute("avmplus").set_value(bAVMplus);
 				itcurrent->append_attribute("network").set_value(bNetwork);
 				itcurrent->append_attribute("filesystem").set_value(bFilesystem);
 				inentryediting=false;

@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -40,7 +41,6 @@ enum FlashMode
 {
 	Flash,
 	AIR,
-	AvmPlus,
 };
 
 struct Approximations
@@ -104,7 +104,7 @@ struct PlayerOptions
 	Optional<RenderOptions> renderOptions;
 	bool hasAudio { false };
 	bool hasVideo { false };
-	FlashMode flashMode { FlashMode::AvmPlus };
+	FlashMode flashMode { FlashMode::Flash };
 };
 
 enum class FailureType

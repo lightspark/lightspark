@@ -674,7 +674,7 @@ std::list<tiny_string> tiny_string::split(uint32_t delimiter) const
 	return res;
 }
 
-// upper/lowercase handling taken form avmplus
+// upper/lowercase handling taken from avmplus
 
 const uint16_t lowerCaseBase[] =
 {

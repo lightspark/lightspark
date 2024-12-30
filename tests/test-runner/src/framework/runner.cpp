@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -46,7 +47,6 @@ static SystemState::FLASH_MODE fromFlashMode(const FlashMode& mode)
 	{
 		case FlashMode::Flash: return FLASH_MODE::FLASH; break;
 		case FlashMode::AIR: return FLASH_MODE::AIR; break;
-		case FlashMode::AvmPlus: return FLASH_MODE::AVMPLUS; break;
 	}
 	return FLASH_MODE::FLASH;
 }

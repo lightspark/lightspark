@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -192,11 +193,9 @@ static LSMemberInfo playerOptionsInfo
 				({
 					{ "AIR", FlashMode::AIR },
 					{ "Flash", FlashMode::Flash },
-					{ "AvmPlus", FlashMode::AvmPlus },
 					// Aliases.
 					{ "air", FlashMode::AIR },
 					{ "flash", FlashMode::Flash },
-					{ "avmplus", FlashMode::AvmPlus },
 					{ "FlashPlayer", FlashMode::Flash },
 					{ "fp", FlashMode::Flash },
 				})
@@ -323,7 +322,7 @@ struct TomlFrom<FlashMode>
 	static FlashMode get(const V& v)
 	{
 		auto str = v.template value<std::string>();
-		return *str == "AIR" ? FlashMode::AIR : FlashMode::AvmPlus;
+		return *str == "AIR" ? FlashMode::AIR : FlashMode::Flash;
 	}
 };
 
@@ -442,7 +441,7 @@ struct TomlFrom<PlayerOptions>
 			// hasVideo
 			view["with_video"].value_or(false),
 			// flashMode
-			tomlValue<FlashMode>(view["runtime"]).valueOr(FlashMode::AvmPlus)
+			tomlValue<FlashMode>(view["runtime"]).valueOr(FlashMode::Flash)
 		};
 	}
 };

@@ -101,9 +101,6 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getPlayerType)
 {
 	switch (wrk->getSystemState()->flashMode)
 	{
-		case SystemState::AVMPLUS:
-			ret = asAtomHandler::fromString(wrk->getSystemState(),"AVMPlus");
-			break;
 		case SystemState::AIR:
 			ret = asAtomHandler::fromString(wrk->getSystemState(),"Desktop");
 			break;
@@ -1930,12 +1927,8 @@ void WorkerDomain::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("isSupported","",c->getSystemState()->getBuiltinFunction(_isSupported,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("createWorker","",c->getSystemState()->getBuiltinFunction(createWorker,1,Class<ASWorker>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("listWorkers","",c->getSystemState()->getBuiltinFunction(listWorkers),NORMAL_METHOD,true);
-	if(c->getSystemState()->flashMode==SystemState::AVMPLUS)
-	{
-		c->setDeclaredMethodByQName("createWorkerFromPrimordial","",c->getSystemState()->getBuiltinFunction(createWorkerFromPrimordial),NORMAL_METHOD,true);
-		c->setDeclaredMethodByQName("createWorkerFromByteArray","",c->getSystemState()->getBuiltinFunction(createWorkerFromByteArray),NORMAL_METHOD,true);
-	}
-
+	c->setDeclaredMethodByQName("createWorkerFromPrimordial","",c->getSystemState()->getBuiltinFunction(createWorkerFromPrimordial),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createWorkerFromByteArray","",c->getSystemState()->getBuiltinFunction(createWorkerFromByteArray),NORMAL_METHOD,true);
 }
 
 void WorkerDomain::addMessageChannel(MessageChannel* c)

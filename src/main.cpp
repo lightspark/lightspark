@@ -419,7 +419,7 @@ int main(int argc, char* argv[])
 		else if(strcmp(argv[i],"--air")==0)
 			flashMode=SystemState::AIR;
 		else if(strcmp(argv[i],"--avmplus")==0)
-			flashMode=SystemState::AVMPLUS;
+			LOG(LOG_INFO,"--avmplus is deprecated and ignored");
 		else if(strcmp(argv[i],"-ni")==0 || strcmp(argv[i],"--disable-interpreter")==0)
 			useInterpreter=false;
 		else if(strcmp(argv[i],"-fi")==0 || strcmp(argv[i],"--enable-fast-interpreter")==0)
@@ -548,7 +548,7 @@ int main(int argc, char* argv[])
 							   " [--enable-jit|-j]" <<
 #endif
 							   " [--log-level|-l 0-4] [--parameters-file|-p params-file] [--security-sandbox|-s sandbox]" <<
-							   " [--exit-on-error] [--HTTP-cookies cookie] [--air] [--avmplus] [--disable-rendering]" <<
+							   " [--exit-on-error] [--HTTP-cookies cookie] [--air] [--disable-rendering]" <<
 #ifdef PROFILING_SUPPORT
 							   " [--profiling-output|-o profiling-file]" <<
 #endif
@@ -586,9 +586,6 @@ int main(int argc, char* argv[])
 			fileName= (char*)l.selectedfile.raw_buf();
 			if (l.needsAIR)
 				flashMode=SystemState::AIR;
-			else if (l.needsAVMplus)
-				flashMode=SystemState::AVMPLUS;
-			
 			if (l.needsfilesystem && l.needsnetwork)
 				sandboxType = SecurityManager::LOCAL_TRUSTED;
 			else if (l.needsfilesystem)

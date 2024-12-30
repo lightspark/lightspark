@@ -34,7 +34,6 @@ public:
 	tiny_string selectedfile;
 	tiny_string baseurl;
 	bool needsAIR;
-	bool needsAVMplus;
 	bool needsnetwork;
 	bool needsfilesystem;
 	bool start();

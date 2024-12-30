@@ -268,7 +268,7 @@ public:
 	bool allowFullscreen;
 	bool allowFullscreenInteractive;
 	//Flash for execution mode
-	enum FLASH_MODE { FLASH=0, AIR, AVMPLUS };
+	enum FLASH_MODE { FLASH=0, AIR };
 	const FLASH_MODE flashMode;
 	uint32_t swffilesize;
 	asAtom nanAtom;

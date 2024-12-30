@@ -148,9 +148,9 @@ ASFUNCTIONBODY_ATOM(XMLNode,attributes)
 	auto it=th->node.attributes_begin();
 	for(;it!=th->node.attributes_end();++it)
 	{
-		tiny_string attrName = it->name();
-		ASObject* attrValue=abstract_s(wrk,it->value());
-		res->setVariableByQName(attrName,"",attrValue,DYNAMIC_TRAIT);
+		uint32_t attrName = wrk->getSystemState()->getUniqueStringId(it->name());
+		asAtom  attrValue = asAtomHandler::fromString(wrk->getSystemState(),it->value());
+		res->setDynamicVariableNoCheck(attrName,attrValue,false,true);
 	}
 	ret = asAtomHandler::fromObject(res);
 }

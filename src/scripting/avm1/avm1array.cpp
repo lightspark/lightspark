@@ -41,8 +41,8 @@ void AVM1Array::sinit(Class_base* c)
 	c->setVariableAtomByQName("RETURNINDEXEDARRAY",nsNameAndKind(),asAtomHandler::fromUInt(RETURNINDEXEDARRAY),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("UNIQUESORT",nsNameAndKind(),asAtomHandler::fromUInt(UNIQUESORT),CONSTANT_TRAIT);
 
-	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(AVM1_getLength,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(AVM1_setLength),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(AVM1_getLength,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(AVM1_setLength),SETTER_METHOD,false,false);
 	c->prototype->setVariableByQName("concat","",c->getSystemState()->getBuiltinFunction(_concat,1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("join","",c->getSystemState()->getBuiltinFunction(join,1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("pop","",c->getSystemState()->getBuiltinFunction(AVM1_pop),DYNAMIC_TRAIT);
@@ -216,6 +216,19 @@ void AVM1Array::nextValue(asAtom& ret, uint32_t index)
 		m.name_type = multiname::NAME_STRING;
 		m.name_s_id = currentEnumerationIterator->first;
 		Array::getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
+	}
+}
+
+void AVM1Array::AVM1enumerate(std::stack<asAtom>& stack)
+{
+	for (auto it = name_enumeration.begin(); it != name_enumeration.end(); it++)
+	{
+		asAtom a;
+		if  (it->second)
+			a = asAtomHandler::fromInt(it->first);
+		else
+			a = asAtomHandler::fromStringID(it->first);
+		stack.push(a);
 	}
 }
 

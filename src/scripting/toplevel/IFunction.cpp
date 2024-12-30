@@ -232,8 +232,10 @@ ASFUNCTIONBODY_ATOM(IFunction,_toString)
 {
 	if (asAtomHandler::is<Class_base>(obj))
 		ret = asAtomHandler::fromString(wrk->getSystemState(),"[class Function]");
-	else
+	else if (wrk->needsActionScript3())
 		ret = asAtomHandler::fromString(wrk->getSystemState(),"function Function() {}");
+	else
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"[type Function]");
 }
 
 ASObject *IFunction::describeType(ASWorker* wrk) const

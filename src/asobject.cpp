@@ -223,22 +223,24 @@ int variables_map::getNextEnumerable(unsigned int start)
 {
 	if(start>=Variables.size())
 		return -1;
-	const_var_iterator it=currentnameindex<=start ? currentnameiterator : Variables.cbegin();
+	variable* curvar = currentnameindex<=start ? currentnamevar : this->firstVar;
 	unsigned int i=currentnameindex<=start ? currentnameindex : 0;
 	while (i < start)
 	{
 		++i;
-		++it;
+		curvar = curvar->nextVar;
 	}
-	while(it->second.kind!=DYNAMIC_TRAIT || !it->second.isenumerable)
+	if(curvar==nullptr)
+		return -1;
+	while(curvar->kind!=DYNAMIC_TRAIT || !curvar->isenumerable)
 	{
 		++i;
-		++it;
-		if(it==Variables.cend())
+		curvar = curvar->nextVar;
+		if(curvar==nullptr)
 			return -1;
 	}
 	currentnameindex=i;
-	currentnameiterator=it;
+	currentnamevar=curvar;
 
 	return i;
 }
@@ -274,6 +276,37 @@ void ASObject::nextValue(asAtom& ret,uint32_t index)
 	getValueAt(ret,index-1);
 }
 
+void ASObject::AVM1enumerate(std::stack<asAtom>& stack)
+{
+	// add prototype vars first
+	ASObject* pr = this->getprop_prototype();
+	if (!pr)
+		pr = this->getClass()->prototype->getObj();
+	if (pr)
+	{
+		variable* v = pr->Variables.firstVar;
+		while (v)
+		{
+			if (v->isenumerable)
+			{
+				asAtom name = asAtomHandler::fromStringID(v->nameStringID);
+				ACTIONRECORD::PushStack(stack, name);
+			}
+			v = v->nextVar;
+		}
+	}
+	variable* v = this->Variables.firstVar;
+	while (v)
+	{
+		if (v->isenumerable)
+		{
+			asAtom name = asAtomHandler::fromStringID(v->nameStringID);
+			ACTIONRECORD::PushStack(stack, name);
+		}
+		v = v->nextVar;
+	}
+}
+
 void ASObject::addOwnedObject(ASObject* obj)
 {
 	obj->incRef(); // will be decreffed when this is destructed
@@ -289,7 +322,7 @@ void ASObject::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleString","",c->getSystemState()->getBuiltinFunction(_toLocaleString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(valueOf,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setDeclaredMethodByQName("hasOwnProperty","",c->getSystemState()->getBuiltinFunction(hasOwnProperty,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,true,6);
+	c->prototype->setDeclaredMethodByQName("hasOwnProperty","",c->getSystemState()->getBuiltinFunction(hasOwnProperty,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false,6);
 	c->prototype->setVariableByQName("isPrototypeOf","",c->getSystemState()->getBuiltinFunction(isPrototypeOf,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("propertyIsEnumerable","",c->getSystemState()->getBuiltinFunction(propertyIsEnumerable,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("setPropertyIsEnumerable","",c->getSystemState()->getBuiltinFunction(setPropertyIsEnumerable),DYNAMIC_TRAIT);
@@ -702,8 +735,8 @@ variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TR
 	if(createKind==NO_CREATE_TRAIT)
 		return nullptr;
 
-	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(nameId, variable(createKind,ns,false)) );
-	currentnameindex=UINT32_MAX;
+	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(nameId, variable(createKind,ns,false,nameId)) );
+	insertVar(&inserted->second);
 	return &inserted->second;
 }
 
@@ -1049,9 +1082,10 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 				return nullptr;
 			}
 			
+			uint32_t nameID = name.normalizedNameId(getSystemState());
 			variables_map::var_iterator inserted=Variables.Variables.insert(Variables.Variables.cbegin(),
-				make_pair(name.normalizedNameId(getSystemState()),variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind(),name.isInteger)));
-			Variables.currentnameindex=UINT32_MAX;
+				make_pair(nameID,variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind(),name.isInteger,nameID)));
+			Variables.insertVar(&inserted->second);
 			obj = &inserted->second;
 		}
 	}
@@ -1146,8 +1180,10 @@ void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multina
 	Variables.initializeVar(name, o, typemname, context, traitKind,this,slot_id,isenumerable);
 }
 
-variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const nsNameAndKind& _ns, bool _isenumerable, bool _nameIsInteger)
-		: var(_v),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom),ns(_ns),slotid(0),kind(_k)
+variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const nsNameAndKind& _ns, bool _isenumerable, bool _nameIsInteger, uint32_t nameID)
+		: var(_v),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom)
+		,prevVar(nullptr),nextVar(nullptr)
+		,nameStringID(nameID),ns(_ns),slotid(0),kind(_k)
 		,isResolved(false),isenumerable(_isenumerable),issealed(false),isrefcounted(true),nameIsInteger(_nameIsInteger),min_swfversion(0)
 {
 	if(_type)
@@ -1199,7 +1235,6 @@ void variables_map::killObjVar(SystemState* sys,const multiname& mname)
 	//The namespaces in the multiname are ordered. So it's possible to use lower_bound
 	//to find the first candidate one and move from it
 	assert(!mname.ns.empty());
-	currentnameindex=UINT32_MAX;
 	var_iterator ret=Variables.find(name);
 	auto nsIt=mname.ns.begin();
 
@@ -1210,6 +1245,7 @@ void variables_map::killObjVar(SystemState* sys,const multiname& mname)
 		const nsNameAndKind& ns=ret->second.ns;
 		if(ns==*nsIt)
 		{
+			removeVar(&ret->second);
 			Variables.erase(ret);
 			return;
 		}
@@ -1272,14 +1308,14 @@ variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRA
 	if(createKind == DYNAMIC_TRAIT)
 	{
 		var_iterator inserted=Variables.insert(Variables.cbegin(),
-			make_pair(name,variable(createKind,nsNameAndKind(),mname.isInteger)));
-		currentnameindex=UINT32_MAX;
+			make_pair(name,variable(createKind,nsNameAndKind(),mname.isInteger,name)));
+		insertVar(&inserted->second);
 		return &inserted->second;
 	}
 	assert(mname.ns.size() == 1);
 	var_iterator inserted=Variables.insert(Variables.cbegin(),
-		make_pair(name,variable(createKind,mname.ns[0],mname.isInteger)));
-	currentnameindex=UINT32_MAX;
+		make_pair(name,variable(createKind,mname.ns[0],mname.isInteger,name)));
+	insertVar(&inserted->second);
 	return &inserted->second;
 }
 
@@ -1344,8 +1380,8 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 		cloneable = false;
 
 	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
-	auto it = Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable,mname.isInteger)));
-	currentnameindex=UINT32_MAX;
+	auto it = Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable,mname.isInteger,name)));
+	insertVar(&it->second);
 	if (slot_id)
 		initSlot(slot_id,&(it->second));
 }
@@ -1627,6 +1663,7 @@ void ASObject::initAdditionalSlots(std::vector<multiname*>& additionalslots)
 		Variables.initSlot(++n,&(ret->second));
 	}
 }
+
 int32_t ASObject::getVariableByMultiname_i(const multiname& name, ASWorker* wrk)
 {
 	check();
@@ -1987,6 +2024,10 @@ void variables_map::destroyContents()
 	}
 	slots_vars.clear();
 	slotcount=0;
+	this->firstVar=nullptr;
+	this->lastVar=nullptr;
+	currentnameindex=UINT32_MAX;
+	currentnamevar=nullptr;
 }
 void variables_map::prepareShutdown()
 {
@@ -2117,6 +2158,50 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 		it++;
 	}
 	return ret;
+}
+
+void variables_map::insertVar(variable* v,bool prepend)
+{
+	currentnameindex=UINT32_MAX;
+
+	if (v->nameStringID==BUILTIN_STRINGS::STRING_PROTO || v->nameStringID==BUILTIN_STRINGS::PROTOTYPE)
+		v->isenumerable=false;
+	assert(v->prevVar==nullptr && v->nextVar==nullptr);
+	if (!this->firstVar)
+	{
+		this->firstVar=v;
+		this->lastVar=v;
+	}
+	else
+	{
+		if (prepend)
+		{
+			this->firstVar->prevVar=v;
+			v->nextVar=this->firstVar;
+			this->firstVar=v;
+		}
+		else
+		{
+			this->lastVar->nextVar=v;
+			v->prevVar=this->lastVar;
+			this->lastVar=v;
+		}
+	}
+}
+void variables_map::removeVar(variable* v)
+{
+	currentnameindex=UINT32_MAX;
+	assert(v->prevVar || v->nextVar);
+	if (v->prevVar)
+		v->prevVar->nextVar = v->nextVar;
+	else
+		this->firstVar=v->nextVar; // remove first element
+	if (v->nextVar)
+		v->nextVar->prevVar = v->prevVar;
+	else
+		this->lastVar=v->prevVar; // remove last element
+	v->prevVar=nullptr;
+	v->nextVar=nullptr;
 }
 
 #ifndef NDEBUG
@@ -2588,16 +2673,16 @@ const variable* variables_map::getValueAt(unsigned int index)
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
-		const_var_iterator it=currentnameindex <= index ? currentnameiterator : Variables.cbegin();
+		variable* curvar =currentnameindex <= index ? currentnamevar : this->firstVar;
 		uint32_t i = currentnameindex <= index ? currentnameindex : 0;
 		while (i < index)
 		{
 			++i;
-			++it;
+			curvar=curvar->nextVar;
 		}
 		currentnameindex=index;
-		currentnameiterator=it;
-		return &it->second;
+		currentnamevar=curvar;
+		return curvar;
 	}
 	else
 		throw RunTimeException("getValueAt out of bounds");
@@ -2628,17 +2713,17 @@ uint32_t variables_map::getNameAt(unsigned int index,bool& nameIsInteger)
 	//TODO: CHECK behaviour on overridden methods
 	if(index<Variables.size())
 	{
-		const_var_iterator it=currentnameindex<=index ? currentnameiterator : Variables.cbegin();
+		variable* curvar =currentnameindex<=index ? currentnamevar : this->firstVar;
 		uint32_t i = currentnameindex <= index ? currentnameindex : 0;
 		while (i < index)
 		{
 			++i;
-			++it;
+			curvar = curvar->nextVar;
 		}
 		currentnameindex=index;
-		currentnameiterator=it;
-		nameIsInteger = it->second.nameIsInteger;
-		return it->first;
+		currentnamevar=curvar;
+		nameIsInteger = curvar->nameIsInteger;
+		return curvar->nameStringID;
 	}
 	else
 		throw RunTimeException("getNameAt out of bounds");

@@ -1482,17 +1482,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				tiny_string s = asAtomHandler::toString(path,wrk).lowercase();
 				asAtom obj = clip->AVM1GetVariable(s);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEnumerate "<<s<<" "<<asAtomHandler::toDebugString(obj));
-				uint32_t index=0;
 				if (asAtomHandler::isObject(obj) && !asAtomHandler::isNumeric(obj))
 				{
-					PushStack(stack,asAtomHandler::nullAtom);
+					ACTIONRECORD::PushStack(stack,asAtomHandler::nullAtom);
 					ASObject* o = asAtomHandler::toObject(obj,wrk);
-					while ((index = o->nextNameIndex(index)))
-					{
-						asAtom name=asAtomHandler::invalidAtom;
-						o->nextName(name,index);
-						PushStack(stack, name);
-					}
+					o->AVM1enumerate(stack);
 				}
 				else
 					PushStack(stack,asAtomHandler::undefinedAtom);
@@ -2144,17 +2138,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			{
 				asAtom obj = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEnumerate2 "<<asAtomHandler::toDebugString(obj));
-				uint32_t index=0;
 				if (asAtomHandler::isObject(obj) && !asAtomHandler::isNumeric(obj))
 				{
-					PushStack(stack,asAtomHandler::nullAtom);
+					ACTIONRECORD::PushStack(stack,asAtomHandler::nullAtom);
 					ASObject* o = asAtomHandler::toObject(obj,wrk);
-					while ((index = o->nextNameIndex(index)))
-					{
-						asAtom name=asAtomHandler::invalidAtom;
-						o->nextName(name,index);
-						PushStack(stack, name);
-					}
+					o->AVM1enumerate(stack);
 				}
 				else
 					PushStack(stack,asAtomHandler::undefinedAtom);

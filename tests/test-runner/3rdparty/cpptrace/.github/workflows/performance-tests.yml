@@ -1,0 +1,68 @@
+name: performance-test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  performancetest-linux:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++-11, clang++-14]
+        config: [
+          -DSPEEDTEST_DWARF4=On,
+          -DSPEEDTEST_DWARF5=On
+        ]
+    steps:
+    - uses: actions/checkout@v4
+    - name: dependencies
+      run: sudo apt install gcc-11 g++-11 libgcc-11-dev
+    - name: build
+      run: |
+           mkdir -p build
+           cd build
+           cmake .. -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=foo
+           make -j
+           make install
+           mkdir -p ../test/speedtest/build
+           cd ../test/speedtest/build
+           cmake .. \
+            -DCMAKE_BUILD_TYPE=Debug \
+            ${{matrix.config}}
+           make -j
+    - name: speedtest
+      working-directory: test/speedtest/build
+      run: |
+           ./speedtest | python3 ../../../ci/speedtest.py ${{matrix.compiler}} ${{matrix.config}}
+
+  # I give up. For some reason SymInitialize is super slow on github's windows runner and it alone takes hundreds of ms.
+  # Nothing I can do about that.
+  #performancetest-windows:
+  # runs-on: windows-2022
+  # strategy:
+  #   fail-fast: false
+  #   matrix:
+  #     compiler: [cl, clang++]
+  # steps:
+  # - uses: actions/checkout@v4
+  # - name: Enable Developer Command Prompt
+  #   uses: ilammy/msvc-dev-cmd@v1.13.0
+  # - name: build
+  #   run: |
+  #        mkdir -p build
+  #        cd build
+  #        cmake .. -DCMAKE_CXX_COMPILER=${{matrix.compiler}} -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=foo
+  #        msbuild .\cpptrace.sln /property:Configuration=Release
+  #        msbuild .\INSTALL.vcxproj
+  #        mkdir -p ../test/speedtest/build
+  #        cd ../test/speedtest/build
+  #        cmake .. `
+  #          -DCMAKE_BUILD_TYPE=Debug `
+  #          ${{matrix.config}}
+  #        msbuild .\cpptrace-speedtest.sln
+  # - name: speedtest
+  #   working-directory: test/speedtest/build
+  #   run: |
+  #        .\Debug\speedtest.exe | python3 ../../../ci/speedtest.py ${{matrix.config}}

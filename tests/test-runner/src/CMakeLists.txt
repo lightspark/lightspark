@@ -17,7 +17,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #**************************************************************************
 
-INCLUDE(FetchContent)
+find_package(PkgConfig)
 
 SET(RUNNER_SOURCES
 	framework/backends/engineutils.cpp
@@ -42,11 +42,18 @@ SET(RUNNER_SOURCES
 	main.cpp
 )
 
-FetchContent_Declare(
-	cpptrace
-	GIT_REPOSITORY https://github.com/jeremy-rifkin/cpptrace.git
-	GIT_TAG 4354eb21ea3565a73afdf32ec0ba768fd648c425
-)
+# Libraries used by cpptrace.
+PKG_CHECK_MODULES(zstd libzstd)
+if (${zstd_FOUND})
+	MESSAGE(STATUS "Found external zstd")
+	SET(CPPTRACE_USE_EXTERNAL_ZSTD ON)
+endif()
+
+PKG_CHECK_MODULES(libdwarf libdwarf)
+if (${libdwarf_FOUND})
+	MESSAGE(STATUS "Found external libdwarf")
+	SET(CPPTRACE_USE_EXTERNAL_LIBDWARF ON)
+endif()
 
 FIND_PACKAGE(LibUnwind)
 if (${LibUnwind_FOUND})
@@ -54,8 +61,6 @@ if (${LibUnwind_FOUND})
 	SET(CPPTRACE_UNWIND_WITH_LIBUNWIND ON)
 	SET(SIGNAL_BACKTRACE ON)
 endif()
-
-FetchContent_MakeAvailable(cpptrace)
 
 SET(CMAKE_CXX_FLAGS "-Wall -pipe -std=c++17")
 

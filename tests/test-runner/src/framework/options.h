@@ -63,6 +63,34 @@ struct ViewportDimensions
 	double scale;
 };
 
+struct ImageTrigger
+{
+	enum Type
+	{
+		LastFrame,
+		SpecificIteration,
+		FsCommand,
+	};
+
+	Type type { Type::LastFrame };
+	Optional<uint32_t> iteration;
+
+	ImageTrigger() = default;
+
+	ImageTrigger(uint32_t _iteration) :
+	type(Type::SpecificIteration),
+	iteration(_iteration) {}
+
+	ImageTrigger(const Type& _type);
+};
+
+struct ImageComparison
+{
+	uint8_t tolerance { 0 };
+	size_t maxOutliers { 0 };
+	ImageTrigger trigger;
+};
+
 struct RenderOptions
 {
 	bool required { true };
@@ -87,12 +115,18 @@ enum class FailureType
 
 struct TestOptions
 {
+	using ImageComparisonMap = std::unordered_map
+	<
+		tiny_string,
+		ImageComparison
+	>;
 	tiny_string name;
 	tiny_string description;
 	std::vector<tiny_string> authors;
 	Optional<size_t> numFrames;
 	Optional<double> tickRate;
 	tiny_string outputPath;
+	ImageComparisonMap imageComparisons;
 	bool ignore;
 	Optional<FailureType> knownFailType;
 	PlayerOptions playerOptions;

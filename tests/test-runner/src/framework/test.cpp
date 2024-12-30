@@ -79,7 +79,8 @@ name(_name),
 format(_format)
 {
 	auto& playerOptions = options.playerOptions;
-	type = playerOptions.renderOptions.transformOr
+	auto& imageComparisons = options.imageComparisons;
+	type = imageComparisons.empty() ? playerOptions.renderOptions.transformOr
 	(
 		playerOptions.hasAudio ? Type::Audio : Type::Trace,
 		[&](const RenderOptions& renderOptions)
@@ -88,7 +89,7 @@ format(_format)
 				return playerOptions.hasVideo ? Type::Video : Type::Rendering;
 			return Type::Trace;
 		}
-	);
+	) : Type::Rendering;
 }
 
 TestRunner Test::createTestRunner(bool debug, const LOG_LEVEL& logLevel) const

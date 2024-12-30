@@ -1374,7 +1374,7 @@ void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
 {
 	Locker l(invalidateQueueLock);
 	//Check if the object is already in the queue
-	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail)
+	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail || isShuttingDown())
 		return;
 	if(!invalidateQueueHead)
 		invalidateQueueHead=invalidateQueueTail=d;

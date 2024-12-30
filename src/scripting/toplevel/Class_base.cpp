@@ -1327,35 +1327,35 @@ const multiname* ActivationType::resolveSlotTypeName(uint32_t slotId) const
 	return nullptr;
 }
 
-void Prototype::setVariableByQName(const tiny_string &name, const tiny_string &ns, ASObject *o, TRAIT_KIND traitKind)
+void Prototype::setVariableByQName(const tiny_string &name, const tiny_string &ns, ASObject *o, TRAIT_KIND traitKind, uint8_t min_swfversion)
 {
 	if (o->is<Function>())
 		o->as<Function>()->setRefConstant();
-	obj->setVariableByQName(name,ns,o,traitKind,false);
+	obj->setVariableByQName(name,ns,o,traitKind,false,min_swfversion);
 	originalPrototypeVars->setVariableByQName(name,ns,o,traitKind,false);
 }
-void Prototype::setVariableByQName(const tiny_string &name, const nsNameAndKind &ns, ASObject *o, TRAIT_KIND traitKind)
+void Prototype::setVariableByQName(const tiny_string &name, const nsNameAndKind &ns, ASObject *o, TRAIT_KIND traitKind, uint8_t min_swfversion)
 {
 	if (o->is<Function>())
 		o->as<Function>()->setRefConstant();
 	uint32_t nameID = obj->getSystemState()->getUniqueStringId(name);
-	obj->setVariableByQName(nameID,ns,o,traitKind,false);
+	obj->setVariableByQName(nameID,ns,o,traitKind,false,min_swfversion);
 	originalPrototypeVars->setVariableByQName(nameID,ns,o,traitKind,false);
 }
-void Prototype::setVariableByQName(uint32_t nameID, const nsNameAndKind &ns, ASObject *o, TRAIT_KIND traitKind)
+void Prototype::setVariableByQName(uint32_t nameID, const nsNameAndKind &ns, ASObject *o, TRAIT_KIND traitKind, uint8_t min_swfversion)
 {
 	if (o->is<Function>())
 		o->as<Function>()->setRefConstant();
-	obj->setVariableByQName(nameID,ns,o,traitKind,false);
+	obj->setVariableByQName(nameID,ns,o,traitKind,false,min_swfversion);
 	originalPrototypeVars->setVariableByQName(nameID,ns,o,traitKind,false);
 }
 
-void Prototype::setVariableAtomByQName(const tiny_string &name, const nsNameAndKind &ns, asAtom o, TRAIT_KIND traitKind)
+void Prototype::setVariableAtomByQName(const tiny_string &name, const nsNameAndKind &ns, asAtom o, TRAIT_KIND traitKind, uint8_t min_swfversion)
 {
 	if (asAtomHandler::is<Function>(o))
 		asAtomHandler::as<Function>(o)->setRefConstant();
 	uint32_t nameID = obj->getSystemState()->getUniqueStringId(name);
-	obj->setVariableAtomByQName(nameID,ns,o,traitKind);
+	obj->setVariableAtomByQName(nameID,ns,o,traitKind,min_swfversion);
 	originalPrototypeVars->setVariableAtomByQName(nameID,ns,o,traitKind);
 }
 

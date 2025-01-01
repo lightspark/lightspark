@@ -1656,16 +1656,20 @@ ASFUNCTIONBODY_ATOM(Context3D,present)
 	if (th->swapbuffers)
 	{
 		if (wrk->getSystemState()->getRenderThread()->isStarted() && !th->actions[th->currentactionvector].empty())
-			LOG(LOG_ERROR,"last frame has not been rendered yet, skipping frame:"<<th->actions[1-th->currentactionvector].size());
-		th->actions[th->currentactionvector].clear();
+			LOG(LOG_ERROR,"last frame has not been rendered yet, adding actions from next frame:"<<th->actions[th->currentactionvector].size()<<"+"<<th->actions[1-th->currentactionvector].size());
+		th->actions[1-th->currentactionvector].insert(
+			th->actions[1-th->currentactionvector].end(),
+			std::make_move_iterator(th->actions[th->currentactionvector].begin()),
+			std::make_move_iterator(th->actions[th->currentactionvector].end()));
+		th->actions[th->currentactionvector] = std::vector<renderaction>();
 	}
 	else
 	{
 		th->swapbuffers = true;
 		th->currentactionvector=1-th->currentactionvector;
-		if (wrk->getSystemState()->getRenderThread()->isStarted())
-			wrk->getSystemState()->getRenderThread()->draw(false);
 	}
+	if (wrk->getSystemState()->getRenderThread()->isStarted())
+		wrk->getSystemState()->getRenderThread()->draw(false);
 }
 ASFUNCTIONBODY_ATOM(Context3D,setStencilActions)
 {

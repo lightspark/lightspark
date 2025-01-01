@@ -44,7 +44,7 @@ ColorMatrixFilter::ColorMatrixFilter(ASWorker* wrk, Class_base* c, const COLORMA
 void ColorMatrixFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
-	REGISTER_GETTER_SETTER(c, matrix);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, matrix,Array);
 }
 
 void ColorMatrixFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
@@ -100,6 +100,24 @@ ASFUNCTIONBODY_ATOM(ColorMatrixFilter,_constructor)
 {
 	ColorMatrixFilter *th = asAtomHandler::as<ColorMatrixFilter>(obj);
 	ARG_CHECK(ARG_UNPACK(th->matrix,NullRef));
+	if (!th->matrix)
+	{
+		th->matrix = _MR(Class<Array>::getInstanceSNoArgs(wrk));
+		// fill with identity matrix
+		for (uint32_t i = 0; i < 20; i++)
+		{
+			asAtom a = asAtomHandler::fromInt(i%6 == 0 ? 1 : 0);
+			th->matrix->push(a);
+		}
+	}
+	else
+	{
+		for (uint32_t i = th->matrix->size(); i < 20; i++)
+		{
+			asAtom a = asAtomHandler::fromInt(0);
+			th->matrix->push(a);
+		}
+	}
 }
 
 bool ColorMatrixFilter::compareFILTER(const FILTER& filter) const

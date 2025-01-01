@@ -829,7 +829,11 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,_getMinDomainMemoryLength)
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_getCurrentDomain)
 {
-	ApplicationDomain* res=ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
+	ApplicationDomain* res= nullptr;
+	if (wrk->currentCallContext)
+		res=ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
+	else
+		res = wrk->rootClip->applicationDomain.getPtr();
 	res->incRef();
 	ret = asAtomHandler::fromObject(res);
 }
@@ -1423,6 +1427,7 @@ void ASWorker::finalize()
 	destroyContents();
 	loader.reset();
 	swf.reset();
+	rootClip.reset();
 	EventDispatcher::finalize();
 	constantrefs.erase(this);
 	ASObject* ogc = this->gcNext;

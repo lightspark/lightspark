@@ -133,7 +133,7 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 				if (asAtomHandler::is<AVM1Function>(func))
 				{
-					if (loader->getDataFormat()=="text")
+					if (loader->getDataFormat()=="text" && loader->getData())
 					{
 						// TODO how are '&' or '=' handled when inside keys/values?
 						tiny_string s = loader->getData()->toString();

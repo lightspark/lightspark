@@ -156,7 +156,6 @@ private:
 protected:
 	Global* global;
 	void describeMetadata(pugi::xml_node &node, const traits_info& trait) const;
-	ASFUNCTION_ATOM(_toString);
 	void initStandardProps();
 	void AVM1initPrototype();
 public:

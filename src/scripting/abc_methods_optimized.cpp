@@ -1307,7 +1307,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 	}
 	asAtom o=asAtomHandler::invalidAtom;
 	bool canCache = false;
-	asAtomHandler::getVariableByMultiname(obj,o,*name,context->worker,canCache,GET_VARIABLE_OPTION::SKIP_IMPL);
+	asAtomHandler::getVariableByMultiname(obj,o,*name,context->worker,canCache,GET_VARIABLE_OPTION(GET_VARIABLE_OPTION::SKIP_IMPL|GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE));
 	name->resetNameIfObject();
 	if(asAtomHandler::isInvalid(o) && asAtomHandler::is<Class_base>(obj))
 	{
@@ -3023,7 +3023,7 @@ void ABCVm::abc_getProperty_constant_constant(call_context* context)
 	LOG_CALL( "getProperty_cc " << *name << ' ' << asAtomHandler::toDebugString(obj));
 	asAtom prop=asAtomHandler::invalidAtom;
 	bool canCache=false;
-	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE);
+	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
 	if (checkPropertyException(obj,name,prop,context->worker))
 		return;
 	RUNTIME_STACK_PUSH(context,prop);
@@ -3068,7 +3068,7 @@ void ABCVm::abc_getProperty_local_local(call_context* context)
 	LOG_CALL( "getProperty_ll " << *name <<"("<<instrptr->local_pos2<<")"<< ' ' << asAtomHandler::toDebugString(obj) <<"("<<instrptr->local_pos1<<")");
 	asAtom prop=asAtomHandler::invalidAtom;
 	bool canCache=false;
-	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE);
+	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
 	if (checkPropertyException(obj,name,prop,context->worker))
 		return;
 	RUNTIME_STACK_PUSH(context,prop);
@@ -3083,7 +3083,7 @@ void ABCVm::abc_getProperty_constant_constant_localresult(call_context* context)
 	LOG_CALL( "getProperty_ccl " << *name << ' ' << asAtomHandler::toDebugString(obj));
 	asAtom prop=asAtomHandler::invalidAtom;
 	bool canCache=false;
-	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE);
+	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
 	if (checkPropertyException(obj,name,prop,context->worker))
 		return;
 	replacelocalresult(context,instrptr->local3.pos,prop);
@@ -3108,7 +3108,7 @@ void ABCVm::abc_getProperty_local_constant_localresult(call_context* context)
 		multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,nullptr,t,false);
 		LOG_CALL( "getProperty_lcl " << *name << ' ' << asAtomHandler::toDebugString(obj));
 		bool canCache=false;
-		asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE);
+		asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
 		if (checkPropertyException(obj,name,prop,context->worker))
 			return;
 	}
@@ -3124,7 +3124,7 @@ void ABCVm::abc_getProperty_constant_local_localresult(call_context* context)
 	LOG_CALL( "getProperty_cll " << *name << ' ' << asAtomHandler::toDebugString(obj));
 	asAtom prop=asAtomHandler::invalidAtom;
 	bool canCache=false;
-	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE);
+	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
 	if (checkPropertyException(obj,name,prop,context->worker))
 		return;
 	replacelocalresult(context,instrptr->local3.pos,prop);
@@ -3149,7 +3149,7 @@ void ABCVm::abc_getProperty_local_local_localresult(call_context* context)
 		multiname* name=context->mi->context->getMultinameImpl(CONTEXT_GETLOCAL(context,instrptr->local_pos2),nullptr,t,false);
 		LOG_CALL( "getProperty_lll " << *name << ' ' << asAtomHandler::toDebugString(obj));
 		bool canCache=false;
-		asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE);
+		asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
 		if (checkPropertyException(obj,name,prop,context->worker))
 			return;
 	}

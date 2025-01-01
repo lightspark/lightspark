@@ -34,13 +34,13 @@ void Global::sinit(Class_base* c)
 
 void Global::getVariableByMultinameOpportunistic(asAtom& ret, const multiname& name,ASWorker* wrk)
 {
-	ASObject::getVariableByMultinameIntern(ret,name,this->getClass(),NO_INCREF,wrk);
+	ASObject::getVariableByMultinameIntern(ret,name,this->getClass(),(GET_VARIABLE_OPTION)(NO_INCREF|DONT_CHECK_PROTOTYPE),wrk);
 	//Do not attempt to define the variable now in any case
 }
 
 GET_VARIABLE_RESULT Global::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
-	GET_VARIABLE_RESULT res = getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
+	GET_VARIABLE_RESULT res = getVariableByMultinameIntern(ret,name,this->getClass(),(GET_VARIABLE_OPTION)(opt|GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE),wrk);
 	/*
 	 * All properties are registered by now, even if the script init has
 	 * not been run. Thus if ret == NULL, we don't have to run the script init.
@@ -50,7 +50,7 @@ GET_VARIABLE_RESULT Global::getVariableByMultiname(asAtom& ret, const multiname&
 	LOG_CALL("Access to " << name << ", running script init");
 	asAtom v = asAtomHandler::fromObject(this);
 	context->runScriptInit(scriptId,v);
-	return getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
+	return getVariableByMultinameIntern(ret,name,this->getClass(),(GET_VARIABLE_OPTION)(opt|GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE),wrk);
 }
 
 multiname *Global::setVariableByMultiname(multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset,ASWorker* wrk)

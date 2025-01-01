@@ -339,10 +339,7 @@ void LSTimers::pushTimerNoLock(const LSTimer& timer)
 	bool notify = peekTimerNoLock() > timer;
 	timers.insert(timer);
 	if (notify)
-	{
-		LOG(LOG_INFO, "notifying timer");
 		sys->getEngineData()->notifyTimer();
-	}
 }
 
 LSTimer LSTimers::popTimer()

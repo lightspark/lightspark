@@ -279,11 +279,7 @@ void Class_base::initStandardProps()
 	constructorprop = _NR<ObjectConstructor>(new_objectConstructor(this,0));
 	addConstructorGetter();
 
-	ASObject* f = getSystemState()->getBuiltinFunction(Class_base::_toString);
-	f->setRefConstant();
-	setDeclaredMethodByQName("toString","",f,NORMAL_METHOD,false);
 	prototype->setVariableByQName("constructor","",this,DECLARED_TRAIT);
-
 	if(super)
 		prototype->prevPrototype=super->prototype;
 	addPrototypeGetter();
@@ -343,16 +339,6 @@ void Class_base::setSuper(_R<Class_base> super_)
 	assert(!super);
 	super = super_;
 	copyBorrowedTraits(super.getPtr());
-}
-
-ASFUNCTIONBODY_ATOM(Class_base,_toString)
-{
-	Class_base* th = asAtomHandler::as<Class_base>(obj);
-	tiny_string res;
-	res = "[class ";
-	res += wrk->getSystemState()->getStringFromUniqueId(th->class_name.nameId);
-	res += "]";
-	ret = asAtomHandler::fromString(wrk->getSystemState(),res);
 }
 
 void Class_base::addConstructorGetter()

@@ -111,7 +111,7 @@ void ASObject::setProxyProperty(const multiname &name)
 	{
 		this->proxyMultiName->ns.push_back(name.ns[i]);
 	}
-	
+
 }
 
 void ASObject::applyProxyProperty(multiname &name)
@@ -256,7 +256,7 @@ uint32_t ASObject::nextNameIndex(uint32_t cur_index)
 void ASObject::nextName(asAtom& ret, uint32_t index)
 {
 	assert_and_throw(implEnable);
-	
+
 	bool nameIsInteger;
 	uint32_t n = getNameAt(index-1,nameIsInteger);
 	if (nameIsInteger)
@@ -318,6 +318,8 @@ void ASObject::sinit(Class_base* c)
 {
 	c->setDeclaredMethodByQName("hasOwnProperty",AS3,c->getSystemState()->getBuiltinFunction(hasOwnProperty,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true,true,6);
 	c->setDeclaredMethodByQName("setPropertyIsEnumerable",AS3,c->getSystemState()->getBuiltinFunction(setPropertyIsEnumerable),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isPrototypeOf",AS3,c->getSystemState()->getBuiltinFunction(isPrototypeOf,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("propertyIsEnumerable",AS3,c->getSystemState()->getBuiltinFunction(propertyIsEnumerable,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 
 	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("toLocaleString","",c->getSystemState()->getBuiltinFunction(_toLocaleString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
@@ -694,7 +696,7 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom
 		res += asAtomHandler::toString(ret,getInstanceWorker());
 		res += "\"";
 	}
-	else 
+	else
 		res = asAtomHandler::toObject(ret,getInstanceWorker())->toJSON(path,replacer,spaces,filter);
 	ASATOM_DECREF(ret);
 	ok = true;
@@ -821,7 +823,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 			cls = cls->super.getPtr();
 		}
 	}
-	
+
 	obj->isenumerable = isEnumerable;
 	obj->min_swfversion = min_swfversion;
 	switch(type)
@@ -922,7 +924,7 @@ void ASObject::setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind
 bool ASObject::deleteVariableByMultiname_intern(const multiname& name, ASWorker* wrk)
 {
 	variable* obj=Variables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
-	
+
 	if(obj==nullptr)
 	{
 		if (classdef && classdef->isSealed)
@@ -1081,7 +1083,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 				createError<ReferenceError>(getInstanceWorker(), kWriteSealedError, name.normalizedNameUnresolved(getSystemState()), this->getClassName());
 				return nullptr;
 			}
-			
+
 			uint32_t nameID = name.normalizedNameId(getSystemState());
 			variables_map::var_iterator inserted=Variables.Variables.insert(Variables.Variables.cbegin(),
 				make_pair(nameID,variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind(),name.isInteger,nameID)));
@@ -1325,7 +1327,7 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 	Type* type = nullptr;
 	if (typemname->isStatic)
 		type = typemname->cachedType;
-	
+
 	asAtom value=asAtomHandler::invalidAtom;
 	 /* If typename is a builtin type, we coerce obj.
 	  * It it's not it must be a user defined class,
@@ -1356,7 +1358,7 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 	{
 		if (asAtomHandler::isInvalid(obj)) // create dynamic object
 		{
-			if(mainObj->is<Class_base>() 
+			if(mainObj->is<Class_base>()
 				&& mainObj->as<Class_base>()->class_name.nameId == typemname->normalizedNameId(mainObj->getSystemState())
 				&& mainObj->as<Class_base>()->class_name.nsStringId == typemname->ns[0].nsNameId
 				&& typemname->ns[0].kind == NAMESPACE)
@@ -1409,7 +1411,7 @@ ASFUNCTIONBODY_ATOM(ASObject,_toString)
 	{
 		if (asAtomHandler::is<Class_base>(obj))
 		{
-			res="[object ";
+			res="[class ";
 			res+=wrk->getSystemState()->getStringFromUniqueId(asAtomHandler::as<Class_base>(obj)->class_name.nameId);
 			res+="]";
 		}
@@ -1500,7 +1502,7 @@ ASFUNCTIONBODY_ATOM(ASObject,isPrototypeOf)
 	assert_and_throw(argslen==1);
 	bool res =false;
 	Class_base* cls = asAtomHandler::toObject(args[0],wrk)->getClass();
-	
+
 	while (cls != nullptr)
 	{
 		if (cls->getPrototype(wrk)->getObj() == asAtomHandler::getObject(obj))
@@ -1659,7 +1661,7 @@ void ASObject::initAdditionalSlots(std::vector<multiname*>& additionalslots)
 	{
 		uint32_t nameId = (*it)->normalizedNameId(getSystemState());
 		auto ret=Variables.Variables.find(nameId);
-	
+
 		assert_and_throw(ret!=Variables.Variables.end());
 		Variables.initSlot(++n,&(ret->second));
 	}
@@ -1747,7 +1749,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		if (cls)
 		{
 			obj= ASObject::findGettableImpl(getSystemState(), cls->borrowedVariables,name,&nsRealId);
-			if(!obj && name.hasEmptyNS)
+			if(!obj && ((opt & DONT_CHECK_CLASS) == 0) && name.hasEmptyNS)
 			{
 				//Check prototype chain
 				Prototype* proto = cls->getPrototype(wrk);
@@ -2119,7 +2121,7 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 					if (gcstate.stopped)
 						return false;
 				}
-			}	
+			}
 			else if (o != parent && ((uint32_t)o->getRefCount()==o->storedmembercount))
 			{
 				if (o->countAllCylicMemberReferences(gcstate))
@@ -2192,7 +2194,7 @@ void variables_map::insertVar(variable* v,bool prepend)
 void variables_map::removeVar(variable* v)
 {
 	currentnameindex=UINT32_MAX;
-	assert(v->prevVar || v->nextVar);
+	assert(v->prevVar || v->nextVar || (this->firstVar==v && this->lastVar==v));
 	if (v->prevVar)
 		v->prevVar->nextVar = v->nextVar;
 	else
@@ -2419,7 +2421,10 @@ bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = false;
 	for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
-		ret = (*it)->countCylicMemberReferences(gcstate) || ret;
+	{
+		if (gcstate.checkedobjects.find(*it)==gcstate.checkedobjects.end())
+			ret = (*it)->countCylicMemberReferences(gcstate) || ret;
+	}
 	if (gcstate.stopped)
 		return false;
 	ret = Variables.countCylicMemberReferences(gcstate,this) || ret;
@@ -2465,7 +2470,7 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 		if (itc != gcstate.checkedobjects.end())
 			ret = (*itc).second.hasmember;
 	}
-	
+
 	return ret;
 }
 
@@ -2475,7 +2480,7 @@ bool ASObject::destruct()
 }
 
 bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
-{ 
+{
 	if (e->type =="keyDown")
 	{
 		multiname m(nullptr);
@@ -2498,10 +2503,10 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			asAtomHandler::as<AVM1Function>(f)->call(nullptr,nullptr,nullptr,0);
 		ASATOM_DECREF(f);
 	}
-	return false; 
+	return false;
 }
 
-bool ASObject::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e) 
+bool ASObject::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 {
 	return AVM1HandleMouseEventStandard(dispatcher,e);
 }
@@ -2524,7 +2529,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	}
 	else if (e->type == "mouseDown")
 	{
-		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>()) 
+		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>())
 				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONPRESS;
@@ -2542,7 +2547,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	}
 	else if (e->type == "mouseUp")
 	{
-		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>()) 
+		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>())
 				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
@@ -2576,7 +2581,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	}
 	else if (e->type == "rollOver")
 	{
-		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>()) 
+		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>())
 				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOVER;
@@ -2588,7 +2593,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	}
 	else if (e->type == "rollOut")
 	{
-		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>()) 
+		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>())
 				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOUT;
@@ -2739,7 +2744,7 @@ void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, 
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t> traitsMap, ASWorker* wrk, bool usedynamicPropertyWriter, bool forSharedObject)
 {
-	if (usedynamicPropertyWriter && 
+	if (usedynamicPropertyWriter &&
 			!out->getSystemState()->static_ObjectEncoding_dynamicPropertyWriter.isNull() &&
 			!out->getSystemState()->static_ObjectEncoding_dynamicPropertyWriter->is<Null>())
 	{
@@ -2756,7 +2761,7 @@ void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, 
 			ASATOM_DECREF(wr);
 			createError<TypeError>(wrk,kCallOfNonFunctionError, m.normalizedNameUnresolved(out->getSystemState()));
 		}
-	
+
 		asAtom ret=asAtomHandler::invalidAtom;
 		asAtom v =asAtomHandler::fromObject(out->getSystemState()->static_ObjectEncoding_dynamicPropertyWriter.getPtr());
 		ASATOM_INCREF(v);
@@ -3047,8 +3052,6 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 	else
 	{
 		res += "{";
-		
-		// 
 		std::vector<uint32_t> tmp;
 		variables_map::var_iterator beginIt = Variables.Variables.begin();
 		variables_map::var_iterator endIt = Variables.Variables.end();
@@ -3126,7 +3129,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 						if (!spaces.empty())
 							res += " ";
 						asAtom params[2];
-						
+
 						params[0] = asAtomHandler::fromStringID(varIt->first);
 						params[1] = asAtomHandler::fromObject(v);
 						ASATOM_INCREF(params[1]);
@@ -3379,15 +3382,15 @@ void asAtomHandler::getVariableByInteger(asAtom& a, asAtom &ret, int index, ASWo
 	}
 	else if (asAtomHandler::isObject(a))
 		asAtomHandler::getObjectNoCheck(a)->getVariableByInteger(ret,index,GET_VARIABLE_OPTION::NONE,wrk);
-	
+
 }
 bool asAtomHandler::hasPropertyByMultiname(const asAtom& a, const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk)
 {
-	// we use a temporary atom here to avoid converting the source atom into an ASObject if it isn't an ASObject 
+	// we use a temporary atom here to avoid converting the source atom into an ASObject if it isn't an ASObject
 	asAtom tmp = a;
 	bool isobject = asAtomHandler::isObject(tmp);
 	bool found=asAtomHandler::toObject(tmp,wrk)->hasPropertyByMultiname(name, considerDynamic, considerPrototype,wrk);
-	if (!isobject) 
+	if (!isobject)
 		ASATOM_DECREF(tmp);
 	return found;
 }
@@ -3572,7 +3575,7 @@ asAtom asAtomHandler::asTypelate(asAtom& a, asAtom& b, ASWorker* wrk)
 	}
 
 	bool real_ret=objc->isSubClass(c);
-	LOG_CALL("Type " << objc->class_name << " is " << ((real_ret)?" ":"not ") 
+	LOG_CALL("Type " << objc->class_name << " is " << ((real_ret)?" ":"not ")
 			<< "subclass of " << c->class_name);
 	ASATOM_DECREF(b);
 	if(real_ret)
@@ -4274,7 +4277,7 @@ void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 					else
 						out->writeByte(undefined_marker);
 					break;
-				case ATOMTYPE_NULL_BIT: 
+				case ATOMTYPE_NULL_BIT:
 					if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 						out->writeByte(amf0_null_marker);
 					else

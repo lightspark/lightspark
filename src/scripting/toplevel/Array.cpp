@@ -2474,7 +2474,76 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 {
 	if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"serializing Array in AMF0 not implemented");
+		uint32_t dyncount = 0;
+		uint32_t c =0;
+		// count number of dynamic properties of the array
+		while ((c=ASObject::nextNameIndex(c)) > 0)
+		{
+			dyncount++;
+		}
+		if (dyncount)
+		{
+			//Check if the array has been already serialized
+			auto it=objMap.find(this);
+			if(it!=objMap.end())
+			{
+				out->writeByte(amf0_reference_marker);
+				out->writeShort(it->second);
+			}
+			else
+			{
+				out->writeByte(amf0_ecma_array_marker);
+				uint32_t arraycount=out->endianIn((uint32_t)(dyncount+currentsize));
+				out->writeUnsignedInt(arraycount);
+				//Add the array to the map
+				objMap.insert(make_pair(this, objMap.size()));
+				serializeDynamicProperties(out, stringMap, objMap, traitsMap,wrk);
+				for(uint32_t i=0;i<currentsize;i++)
+				{
+					tiny_string name = UInteger::toString(i);
+					out->writeStringAMF0(name);
+					if (i < ARRAY_SIZE_THRESHOLD)
+					{
+						if (asAtomHandler::isInvalid(data_first.at(i)))
+							out->writeByte(undefined_marker);
+						else
+							asAtomHandler::serialize(out,stringMap, objMap, traitsMap,wrk,data_first.at(i));
+					}
+					else
+					{
+						if (data_second.find(i) == data_second.end())
+							out->writeByte(undefined_marker);
+						else
+							asAtomHandler::serialize(out,stringMap, objMap, traitsMap,wrk,data_second.at(i));
+					}
+				}
+				out->writeStringAMF0("");
+				out->writeByte(amf0_object_end_marker);
+			}
+		}
+		else
+		{
+			out->writeByte(amf0_strict_array_marker);
+			uint32_t arraycount=out->endianIn((uint32_t)currentsize);
+			out->writeUnsignedInt(arraycount);
+			for(uint32_t i=0;i<currentsize;i++)
+			{
+				if (i < ARRAY_SIZE_THRESHOLD)
+				{
+					if (asAtomHandler::isInvalid(data_first.at(i)))
+						out->writeByte(undefined_marker);
+					else
+						asAtomHandler::serialize(out,stringMap, objMap, traitsMap,wrk,data_first.at(i));
+				}
+				else
+				{
+					if (data_second.find(i) == data_second.end())
+						out->writeByte(undefined_marker);
+					else
+						asAtomHandler::serialize(out,stringMap, objMap, traitsMap,wrk,data_second.at(i));
+				}
+			}
+		}
 		return;
 	}
 	out->writeByte(array_marker);

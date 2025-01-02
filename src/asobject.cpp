@@ -1165,7 +1165,7 @@ variable* ASObject::setVariableByQName(uint32_t nameId, const nsNameAndKind& ns,
 }
 variable *ASObject::setVariableAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable, uint8_t min_swfversion)
 {
-	return setVariableAtomByQName(getSystemState()->getUniqueStringId(name), ns, o, traitKind,isEnumerable,min_swfversion);
+	return setVariableAtomByQName(getSystemState()->getUniqueStringId(name), ns, o, traitKind,isEnumerable,true,min_swfversion);
 }
 variable *ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable, bool isRefcounted,uint8_t min_swfversion)
 {

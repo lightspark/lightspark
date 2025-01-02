@@ -44,7 +44,8 @@ using namespace lightspark;
 // maybe we should set this smaller
 #define BA_MAX_SIZE 0x40000000
 
-ByteArray::ByteArray(ASWorker* wrk, Class_base* c, uint8_t* b, uint32_t l):ASObject(wrk,c,T_OBJECT,SUBTYPE_BYTEARRAY),littleEndian(false),objectEncoding(OBJECT_ENCODING::AMF3),currentObjectEncoding(OBJECT_ENCODING::AMF3),
+ByteArray::ByteArray(ASWorker* wrk, Class_base* c, uint8_t* b, uint32_t l):ASObject(wrk,c,T_OBJECT,SUBTYPE_BYTEARRAY),littleEndian(false),
+	objectEncoding(OBJECT_ENCODING::AMF3),currentObjectEncoding(OBJECT_ENCODING::AMF3),
 	position(0),bytes(b),real_len(l),len(l),shareable(false)
 {
 #ifdef MEMORY_USAGE_PROFILING
@@ -75,6 +76,7 @@ bool ByteArray::destruct()
 		bytes = nullptr;
 	}
 	currentObjectEncoding = OBJECT_ENCODING::AMF3;
+	objectEncoding = OBJECT_ENCODING::AMF3;
 	position = 0;
 	real_len = 0;
 	len = 0;
@@ -209,6 +211,9 @@ uint8_t* ByteArray::getBufferIntern(unsigned int size, bool enableResize)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_constructor)
 {
+	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
+	th->currentObjectEncoding = wrk->getSystemState()->staticByteArrayDefaultObjectEncoding;
+	th->objectEncoding = wrk->getSystemState()->staticByteArrayDefaultObjectEncoding;
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getPosition)
@@ -267,7 +272,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,_setObjectEncoding)
 
 ASFUNCTIONBODY_ATOM(ByteArray,_getDefaultObjectEncoding)
 {
-	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->staticNetConnectionDefaultObjectEncoding);
+	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->staticByteArrayDefaultObjectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,_setDefaultObjectEncoding)
@@ -314,7 +319,7 @@ void ByteArray::setLength(uint32_t newLen)
 	}
 	len = newLen;
 	if (position > len)
-		position = (len > 0 ? len-1 : 0);
+		position = (len > 0 ? len : 0);
 }
 ASFUNCTIONBODY_ATOM(ByteArray,_getLength)
 {
@@ -481,7 +486,7 @@ asAtom ByteArray::readObject()
 	}
 	catch(LightsparkException& e)
 	{
-		LOG(LOG_ERROR,"Exception caught while parsing AMF3: " << e.cause);
+		LOG(LOG_ERROR,"Exception caught while parsing AMF: " << e.cause);
 		//TODO: throw AS exception
 	}
 	return ret;
@@ -550,13 +555,28 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeMultiByte)
 	tiny_string charset;
 	ARG_CHECK(ARG_UNPACK(value)(charset));
 
-	// TODO: should convert from UTF-8 to charset
-	LOG(LOG_NOT_IMPLEMENTED, "ByteArray.writeMultiByte doesn't convert charset");
-
 	th->lock();
-	th->getBuffer(th->position+value.numBytes(),true);
-	memcpy(th->bytes+th->position,value.raw_buf(),value.numBytes());
-	th->position+=value.numBytes();
+	if (charset != "utf-8")
+	{
+		gsize bytes_read;
+		gsize bytes_written;
+		gchar* v = g_convert(value.raw_buf(),value.numBytes(),charset.raw_buf(),"utf-8",&bytes_read,&bytes_written,nullptr);
+		if (v)
+		{
+			th->getBuffer(th->position+bytes_written,true);
+			memcpy(th->bytes+th->position,v,bytes_written);
+			th->position+=bytes_written;
+			g_free(v);
+		}
+		else
+			LOG(LOG_ERROR,"ByteArray.writeMultiByte charset conversion failed");
+	}
+	else
+	{
+		th->getBuffer(th->position+value.numBytes(),true);
+		memcpy(th->bytes+th->position,value.raw_buf(),value.numBytes());
+		th->position+=value.numBytes();
+	}
 	th->unlock();
 }
 
@@ -989,13 +1009,26 @@ ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
 		return;
 	}
 
-	if (charset != "us-ascii" && charset != "utf-8")
-		LOG(LOG_NOT_IMPLEMENTED, "ByteArray.readMultiByte doesn't convert charset "<<charset);
 	char* s = g_newa(char,strlen+1);
 	// ensure that the resulting string cuts off any zeros at the end
 	strncpy(s,(const char*)th->bytes+th->position,strlen);
 	s[strlen] = 0x0;
-	tiny_string res(s,true);
+	tiny_string res;
+	if (charset != "utf-8" && charset != "utf-8")
+	{
+		gsize bytes_read;
+		gsize bytes_written;
+		gchar* v = g_convert(s,strlen,"utf-8",charset.raw_buf(),&bytes_read,&bytes_written,nullptr);
+		if (v)
+		{
+			res = tiny_string(v,true);
+			g_free(v);
+		}
+		else
+			LOG(LOG_ERROR,"ByteArray.readMultiByte charset conversion failed");
+	}
+	else
+		res = tiny_string(s,true);
 	th->unlock();
 	ret = asAtomHandler::fromObject(abstract_s(wrk,res));
 }
@@ -1168,7 +1201,11 @@ ASFUNCTIONBODY_ATOM(ByteArray,_toString)
 			start = 3;
 	}
 	if (validateUtf8(th->bytes+start,th->len-start))
-		ret = asAtomHandler::fromObject(abstract_s(wrk,(const char*)th->bytes+start,th->len-start));
+	{
+		// use std::string to properly handle \0 inside bytes
+		tiny_string s = std::string((const char*)th->bytes+start,th->len-start);
+		ret = asAtomHandler::fromObject(abstract_s(wrk,s));
+	}
 	else
 		ret = asAtomHandler::fromObject(abstract_s(wrk,parseUtf8(th->bytes+start,th->len-start)));
 }

@@ -979,8 +979,23 @@ ASFUNCTIONBODY_ATOM(lightspark,trace)
 	{
 		if(i > 0)
 			s << " ";
-
-		s << asAtomHandler::toString(args[i],wrk);
+		tiny_string argstr = asAtomHandler::toString(args[i],wrk);
+		if (argstr.hasNullEntries())
+		{
+			// it seems adobe ignores null bytes when printing strings (see test avm2/bytearray_string_null)
+			auto it = argstr.begin();
+			while (it != argstr.end())
+			{
+				if (*it)
+				{
+					tiny_string c = tiny_string::fromChar(*it);
+					s << c;
+				}
+				it++;
+			}
+		}
+		else
+			s << argstr;
 	}
 	wrk->getSystemState()->trace(s.str());
 	ret = asAtomHandler::undefinedAtom;

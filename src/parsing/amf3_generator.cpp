@@ -181,7 +181,7 @@ asAtom Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 	//Add object to the map
 	objMap.push_back(asAtomHandler::fromObject(ret));
 
-	int32_t denseCount = arrayRef >> 1;
+	uint32_t denseCount = arrayRef >> 1;
 
 	//Read name, value pairs
 	while(1)
@@ -190,14 +190,20 @@ asAtom Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 		if(varName=="")
 			break;
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
-		ret->setVariableAtomByQName(varName,nsNameAndKind(),value, DYNAMIC_TRAIT);
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.name_s_id=input->getSystemState()->getUniqueStringId(varName);
+		m.isInteger=Array::isIntegerWithoutLeadingZeros(varName);
+		ret->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED,nullptr,input->getInstanceWorker());
 	}
 
 	//Read the dense portion
-	for(int32_t i=0;i<denseCount;i++)
+	if (ret->size() < denseCount)
+		ret->resize(denseCount);
+	for(uint32_t i=0;i<denseCount;i++)
 	{
 		asAtom value=parseValue(stringMap, objMap, traitsMap);
-		ret->push(value);
+		ret->set(i,value,false,false);
 	}
 	return asAtomHandler::fromObject(ret);
 }
@@ -399,15 +405,16 @@ asAtom Amf3Deserializer::parseByteArray(std::vector<asAtom>& objMap) const
 	//Add object to the map
 	objMap.push_back(asAtomHandler::fromObject(ret));
 
-	int32_t count = bytearrayRef >> 1;
+	uint32_t count = bytearrayRef >> 1;
 
-	for(int32_t i=0;i<count;i++)
+	for(uint32_t i=0;i<count;i++)
 	{
 		uint8_t b;
 		if (!input->readByte(b))
 			throw ParseException("Not enough data to parse AMF3 bytearray");
 		ret->writeByte(b);
 	}
+	ret->setPosition(0);
 	return asAtomHandler::fromObject(ret);
 }
 
@@ -558,7 +565,7 @@ asAtom Amf3Deserializer::parseValue(std::vector<tiny_string>& stringMap,
 	//Read the first byte as it contains the object marker
 	uint8_t marker;
 	if(!input->readByte(marker))
-		throw ParseException("Not enough data to parse AMF3 object");
+		throw ParseException("Not enough data to parse AMF object");
 	if (input->getCurrentObjectEncoding() == OBJECT_ENCODING::AMF3)
 	{
 		switch(marker)
@@ -673,7 +680,7 @@ asAtom Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
 {
 	uint32_t count;
 	if(!input->readUnsignedInt(count))
-		throw ParseException("Not enough data to parse AMF3 array");
+		throw ParseException("Not enough data to parse AMF0 ECMA array");
 
 	Array* ar = Class<Array>::getInstanceS(input->getInstanceWorker());
 	ar->resize(count);
@@ -711,8 +718,6 @@ asAtom Amf3Deserializer::parseStrictArrayAMF0(std::vector<tiny_string>& stringMa
 		throw ParseException("Not enough data to parse AMF3 strict array");
 
 	lightspark::Array* ret=Class<lightspark::Array>::getInstanceS(input->getInstanceWorker());
-	//Add object to the map
-	objMap.push_back(asAtomHandler::fromObject(ret));
 
 	while(count)
 	{

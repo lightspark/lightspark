@@ -21,6 +21,7 @@
 #include "scripting/avm1/avm1sound.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
@@ -34,18 +35,22 @@ void AVM1Sound::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, avm1constructor, CLASS_SEALED);
 	c->isSealed=false;
-	c->setDeclaredMethodByQName("start","",c->getSystemState()->getBuiltinFunction(play),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("stop","",c->getSystemState()->getBuiltinFunction(stop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("attachSound","",c->getSystemState()->getBuiltinFunction(attachSound),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getVolume","",c->getSystemState()->getBuiltinFunction(getVolume),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setVolume","",c->getSystemState()->getBuiltinFunction(setVolume),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getPan","",c->getSystemState()->getBuiltinFunction(getPan),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("setPan","",c->getSystemState()->getBuiltinFunction(setPan),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(getPosition),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(AVM1_IgnoreSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("duration","",c->getSystemState()->getBuiltinFunction(_getter_length),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("duration","",c->getSystemState()->getBuiltinFunction(AVM1_IgnoreSetter),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("loadSound","",c->getSystemState()->getBuiltinFunction(loadSound),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("start","",c->getSystemState()->getBuiltinFunction(play),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("stop","",c->getSystemState()->getBuiltinFunction(stop),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("attachSound","",c->getSystemState()->getBuiltinFunction(attachSound),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getVolume","",c->getSystemState()->getBuiltinFunction(getVolume),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setVolume","",c->getSystemState()->getBuiltinFunction(setVolume),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getPan","",c->getSystemState()->getBuiltinFunction(getPan),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setPan","",c->getSystemState()->getBuiltinFunction(setPan),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getTransform","",c->getSystemState()->getBuiltinFunction(getTransform),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("setTransform","",c->getSystemState()->getBuiltinFunction(setTransform),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getDuration","",c->getSystemState()->getBuiltinFunction(AVM1_duration,0,Class<Number>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("loadSound","",c->getSystemState()->getBuiltinFunction(loadSound),DYNAMIC_TRAIT);
+	c->prototype->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(getPosition,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(AVM1_IgnoreSetter),SETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("duration","",c->getSystemState()->getBuiltinFunction(AVM1_duration,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("duration","",c->getSystemState()->getBuiltinFunction(AVM1_IgnoreSetter),SETTER_METHOD,false,false);
+
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)
 {
@@ -58,6 +63,19 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,avm1constructor)
 	{
 		th->clip = target.getPtr();
 		th->clip->addOwnedObject(th);
+		th->soundChannel = th->clip->getSoundChannel();
+		if (th->soundChannel)
+		{
+			th->soundChannel->incRef();
+			th->soundChannel->addStoredMember();
+		}
+		else
+		{
+			th->soundChannel = Class<SoundChannel>::getInstanceSNoArgs(wrk);
+			th->soundChannel->incRef();
+			th->soundChannel->addStoredMember();
+			th->clip->setSound(th->soundChannel,false);
+		}
 	}
 }
 
@@ -100,42 +118,160 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getVolume)
 		asAtomHandler::setNumber(ret,wrk,th->soundChannel->soundTransform->volume*100);
 	}
 	else
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,wrk,wrk->getSystemState()->static_SoundMixer_soundTransform->volume*100.0);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,setVolume)
 {
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	number_t volume;
-	ARG_CHECK(ARG_UNPACK(volume));
+	ARG_CHECK(ARG_UNPACK(volume,0));
+	if (std::isnan(volume) || volume < INT32_MIN)
+		volume = INT32_MIN;
 	if (th->soundChannel)
 	{
 		if (!th->soundChannel->soundTransform)
 			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
 		th->soundChannel->soundTransform->volume = volume/100.0;
 	}
+	else
+		wrk->getSystemState()->static_SoundMixer_soundTransform->volume = volume/100.0;
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,getPan)
 {
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
+	SoundTransform* st =nullptr;
 	if (th->soundChannel)
 	{
 		if (!th->soundChannel->soundTransform)
 			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
-		asAtomHandler::setNumber(ret,wrk,th->soundChannel->soundTransform->pan*100);
+		st = th->soundChannel->soundTransform.getPtr();
+		asAtomHandler::setNumber(ret,wrk,th->soundChannel->soundTransform->pan*100.0);
 	}
 	else
-		asAtomHandler::setInt(ret,wrk,0);
+		st = wrk->getSystemState()->static_SoundMixer_soundTransform.getPtr();
+	if (st->leftToLeft == 1.0)
+		asAtomHandler::setInt(ret,wrk,(::fabs(st->rightToRight)-1.0)*100.0);
+	else
+		asAtomHandler::setInt(ret,wrk,(1.0-::fabs(st->leftToLeft))*100.0);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,setPan)
 {
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	number_t pan;
 	ARG_CHECK(ARG_UNPACK(pan));
+	SoundTransform* st =nullptr;
+	if (pan < INT32_MIN || pan > INT32_MAX) // it seems everything outside int32 margins is set to INT32_MIN
+		pan = INT32_MIN;
 	if (th->soundChannel)
 	{
 		if (!th->soundChannel->soundTransform)
 			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
-		th->soundChannel->soundTransform->pan = pan/100.0;
+		st = th->soundChannel->soundTransform.getPtr();
+	}
+	else
+		st = wrk->getSystemState()->static_SoundMixer_soundTransform.getPtr();
+	if (pan >= 0)
+	{
+		st->leftToLeft = number_t(100-(int32_t)pan)/100.0;
+		st->rightToRight = 1.0;
+	}
+	else
+	{
+		st->leftToLeft = 1.0;
+		st->rightToRight = number_t(100+(int32_t)pan)/100.0;
+	}
+	st->leftToRight = 0;
+	st->rightToLeft = 0;
+}
+ASFUNCTIONBODY_ATOM(AVM1Sound,getTransform)
+{
+	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
+	ASObject* res = new_asobject(wrk);
+	SoundTransform* st =nullptr;
+	if (th->soundChannel)
+	{
+		if (!th->soundChannel->soundTransform)
+			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
+		st = th->soundChannel->soundTransform.getPtr();
+	}
+	else
+		st = wrk->getSystemState()->static_SoundMixer_soundTransform.getPtr();
+
+	asAtom v;
+	multiname m(nullptr);
+	m.name_type=multiname::NAME_STRING;
+
+	m.name_s_id=wrk->getSystemState()->getUniqueStringId("ll");
+	v = asAtomHandler::fromInt(st->leftToLeft*100.0);
+	res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+
+	m.name_s_id=wrk->getSystemState()->getUniqueStringId("lr");
+	v = asAtomHandler::fromInt(st->leftToRight*100.0);
+	res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+
+	m.name_s_id=wrk->getSystemState()->getUniqueStringId("rl");
+	v = asAtomHandler::fromInt(st->rightToLeft*100.0);
+	res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+
+	m.name_s_id=wrk->getSystemState()->getUniqueStringId("rr");
+	v = asAtomHandler::fromInt(st->rightToRight*100.0);
+	res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+
+	ret = asAtomHandler::fromObjectNoPrimitive(res);
+}
+ASFUNCTIONBODY_ATOM(AVM1Sound,setTransform)
+{
+	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
+	_NR<ASObject> transformObject;
+	ARG_CHECK(ARG_UNPACK(transformObject));
+
+	SoundTransform* st =nullptr;
+	if (th->soundChannel)
+	{
+		if (!th->soundChannel->soundTransform)
+			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
+		st = th->soundChannel->soundTransform.getPtr();
+	}
+	else
+		st = wrk->getSystemState()->static_SoundMixer_soundTransform.getPtr();
+	if (transformObject)
+	{
+		asAtom v = asAtomHandler::invalidAtom;
+		number_t n;
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ll");
+		transformObject->getVariableByMultiname(v,m,NO_INCREF,wrk);
+		if (asAtomHandler::isValid(v))
+		{
+			n = asAtomHandler::toInt(v);
+			st->leftToLeft = n/100.0;
+		}
+		v = asAtomHandler::invalidAtom;
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("lr");
+		transformObject->getVariableByMultiname(v,m,NO_INCREF,wrk);
+		if (asAtomHandler::isValid(v))
+		{
+			n = asAtomHandler::toInt(v);
+			st->leftToRight = n/100.0;
+		}
+		v = asAtomHandler::invalidAtom;
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("rl");
+		transformObject->getVariableByMultiname(v,m,NO_INCREF,wrk);
+		if (asAtomHandler::isValid(v))
+		{
+			n = asAtomHandler::toInt(v);
+			st->rightToLeft = n/100.0;
+		}
+		v = asAtomHandler::invalidAtom;
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("rr");
+		transformObject->getVariableByMultiname(v,m,NO_INCREF,wrk);
+		if (asAtomHandler::isValid(v))
+		{
+			n = asAtomHandler::toInt(v);
+			st->rightToRight = n/100.0;
+		}
 	}
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,stop)
@@ -156,6 +292,15 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getPosition)
 	else
 		asAtomHandler::setInt(ret,wrk,0);
 }
+ASFUNCTIONBODY_ATOM(AVM1Sound,AVM1_duration)
+{
+	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
+	if (th->soundChannel)
+		ret = asAtomHandler::fromNumber(wrk,::round(th->length),false);
+	else
+		ret = asAtomHandler::undefinedAtom;
+}
+
 ASFUNCTIONBODY_ATOM(AVM1Sound,loadSound)
 {
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
@@ -238,4 +383,3 @@ void AVM1Sound::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 		}
 	}
 }
-

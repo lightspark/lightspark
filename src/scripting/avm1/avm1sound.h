@@ -49,8 +49,11 @@ public:
 	ASFUNCTION_ATOM(setVolume);
 	ASFUNCTION_ATOM(getPan);
 	ASFUNCTION_ATOM(setPan);
+	ASFUNCTION_ATOM(getTransform);
+	ASFUNCTION_ATOM(setTransform);
 	ASFUNCTION_ATOM(stop);
 	ASFUNCTION_ATOM(getPosition);
+	ASFUNCTION_ATOM(AVM1_duration);
 	ASFUNCTION_ATOM(loadSound);
 };
 

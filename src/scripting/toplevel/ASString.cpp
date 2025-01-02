@@ -525,7 +525,8 @@ number_t ASString::toNumber()
 
 number_t ASString::toNumber(ASWorker* wrk, const tiny_string& value)
 {
-	if (wrk->AVM1getSwfVersion()<6 && value.empty())
+	auto swfVersion = wrk->AVM1getSwfVersion();
+	if (swfVersion < 6 && value.empty())
 		return numeric_limits<double>::quiet_NaN();
 	const char *s = value.raw_buf();
 	while (*s && isEcmaSpace(g_utf8_get_char(s)))
@@ -540,18 +541,32 @@ number_t ASString::toNumber(ASWorker* wrk, const tiny_string& value)
 	{
 		if (!wrk->needsActionScript3() && value.numBytes()>1)
 		{
+			int radix = 0;
 			if (s[0]=='0' && isdigit(s[1]))
 			{
 				// parse as octal number
-				Integer::fromStringFlashCompatible(s,val,8);
-				return val;
+				radix = 8;
 			}
 
 			if (s[0]=='0' && (s[1] == 'x' || s[1]=='X'))
 			{
 				// parse as hex number
-				Integer::fromStringFlashCompatible(s,val,16);
-				return val;
+				radix = 16;
+			}
+
+			if (radix != 0)
+			{
+				// Radix prefixes are only allowed in SWF 6, and later.
+				if (swfVersion >= 6)
+				{
+					Integer::fromStringFlashCompatible(s, val, radix);
+					return val;
+				}
+				// In SWF 5, and earlier, hex values are treated as an
+				// error, while octal values are treated as if they were
+				// a decimal value.
+				else if (radix == 16)
+					return swfVersion >= 5 ? Number::NaN : 0;
 			}
 		}
 		errno = 0;
@@ -572,11 +587,15 @@ number_t ASString::toNumber(ASWorker* wrk, const tiny_string& value)
 		}
 	}
 
-	// Fail if there is any rubbish after the converted number
-	while(*end) {
-		if(!isEcmaSpace(g_utf8_get_char(end)))
-			return numeric_limits<double>::quiet_NaN();
-		end = g_utf8_next_char(end);
+	// SWF 4 isn't as strict as later versions.
+	if (swfVersion >= 5)
+	{
+		// Fail if there is any rubbish after the converted number
+		while(*end) {
+			if(!isEcmaSpace(g_utf8_get_char(end)))
+				return numeric_limits<double>::quiet_NaN();
+			end = g_utf8_next_char(end);
+		}
 	}
 	return val;
 }

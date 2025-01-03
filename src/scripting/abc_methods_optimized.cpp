@@ -7774,7 +7774,7 @@ void ABCVm::abc_sxi8_constant_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "sxi8_cl");
-	int32_t res=asAtomHandler::toUInt(*instrptr->arg1_constant)&0x1 ? -1 : 0;
+	int32_t res=(int8_t)asAtomHandler::toUInt(*instrptr->arg1_constant);
 	ASATOM_DECREF(*instrptr->arg1_constant);
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::setInt(ret,context->worker,res);

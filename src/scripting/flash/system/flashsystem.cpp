@@ -391,6 +391,12 @@ ASFUNCTIONBODY_GETTER(ApplicationDomain,parentDomain)
 
 void ApplicationDomain::cbDomainMemory(_NR<ByteArray> oldvalue)
 {
+	if (!this->domainMemory.isNull() && this->domainMemory->getLength() < MIN_DOMAIN_MEMORY_LIMIT)
+	{
+		createError<ASError>(this->getInstanceWorker(),kEndOfFileError);
+		domainMemory=oldvalue;
+		return;
+	}
 	checkDomainMemory();
 }
 

@@ -1870,8 +1870,9 @@ FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a, uint32_t swfversion
 			{
 				case ATOMTYPE_BOOL_BIT:
 					return (a.uintval&0x80)>>7;
+				// NOTE: `undefined` in SWF 6, and lower gets converted
+				// to 0.
 				case ATOMTYPE_UNDEFINED_BIT:
-					return numeric_limits<double>::quiet_NaN();
 				case ATOMTYPE_NULL_BIT:
 					return swfversion > 6 && swfversion != UINT8_MAX ? numeric_limits<double>::quiet_NaN() : 0;
 				default:
@@ -1891,8 +1892,6 @@ FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a, uint32_t swfversion
 			assert(getObject(a));
 			return getObjectNoCheck(a)->toNumber();
 		default:
-			if (swfversion < 7)
-				return 0;
 			assert(getObject(a));
 			return getObjectNoCheck(a)->toNumber();
 	}

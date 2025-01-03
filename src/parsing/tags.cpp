@@ -488,6 +488,9 @@ MATRIX DefineEditTextTag::MapToBounds(const MATRIX &mat)
 
 DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root)
 {
+	int dest=in.tellg();
+	dest+=h.getLength();
+
 	soundheadtag=nullptr;
 	soundstartframe=UINT32_MAX;
 	in >> SpriteID >> FrameCount;
@@ -573,6 +576,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 					frames.pop_back();
 				break;
 		}
+		if (in.tellg() >= dest)
+			done = true;
 	}
 	while(!done);
 

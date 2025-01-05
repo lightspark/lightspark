@@ -566,6 +566,7 @@ public:
 	ASPROPERTY_STATIC(bool, XML, ignoreWhitespace);
 	ASPROPERTY_STATIC(int, XML, prettyIndent);
 	ASPROPERTY_STATIC(bool, XML, prettyPrinting);
+	ASPROPERTY_STATIC(bool, AVM1XMLDocument, ignoreWhite);
 
 	ACQUIRE_RELEASE_FLAG(isinitialized);
 	Mutex initializedMutex;

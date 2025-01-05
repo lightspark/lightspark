@@ -36,11 +36,23 @@ public:
 	bool destruct() override;
 	void prepareShutdown() override;
 	static void sinit(Class_base* c);
-	ASFUNCTION_ATOM(createTextNode);
 	ASFUNCTION_ATOM(load);
+	ASFUNCTION_ATOM(getBytesTotal);
+	ASFUNCTION_ATOM(getBytesLoaded);
 	ASFUNCTION_ATOM(_getter_status);
+	ASFUNCTION_ATOM(_get_ignoreWhite);
+	ASFUNCTION_ATOM(_set_ignoreWhite);
+
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
+};
+
+class AVM1XMLNode: public XMLNode
+{
+public:
+	AVM1XMLNode(ASWorker* wrk,Class_base* c);
+	AVM1XMLNode(ASWorker* wrk,Class_base* c, XMLDocument* _r, pugi::xml_node _n, XMLNode* _p);
+	static void sinit(Class_base* c);
 };
 
 }

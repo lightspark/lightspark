@@ -34,21 +34,32 @@ class XMLNode: public ASObject
 {
 friend class XML;
 protected:
-	_NR<XMLDocument> root;
+	XMLDocument* root;
+	XMLNode* parent;
+	Array* children;
 	pugi::xml_node node;
+	pugi::xml_document tmpdoc; // used for temproary copying/moving of nodes
 	tiny_string toString_priv(pugi::xml_node outputNode);
 	pugi::xml_node getParentNode();
-	virtual _NR<XMLDocument> getRootDoc() { return root; }
+	virtual XMLDocument* getRootDoc() { return root; }
+	tiny_string getPrefix();
+	static bool getNamespaceURI(const pugi::xml_node& n, const tiny_string& prefix, tiny_string& uri);
+	static bool getPrefixFromNamespaceURI(const pugi::xml_node& n, const tiny_string& uri, tiny_string& prefix);
+	void removeChild(const pugi::xml_node& child);
+	void fillChildren();
+	void reloadChildren();
+	void refreshChildren();
+	void fillIDMap(ASObject* o);
 public:
-	XMLNode(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLNODE),root(NullRef),node(nullptr){}
-	XMLNode(ASWorker* wrk,Class_base* c, _NR<XMLDocument> _r, pugi::xml_node _n);
-	bool destruct()
-	{
-		root.reset();
-		return destructIntern();
-	}
+	XMLNode(ASWorker* wrk,Class_base* c);
+	XMLNode(ASWorker* wrk,Class_base* c, XMLDocument* _r, pugi::xml_node _n, XMLNode* _p);
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	static void sinit(Class_base*);
 	tiny_string toString();
+	bool isEqual(ASObject* r) override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(firstChild);
 	ASFUNCTION_ATOM(lastChild);
@@ -64,6 +75,14 @@ public:
 	ASFUNCTION_ATOM(previousSibling);
 	ASFUNCTION_ATOM(_toString);
 	ASFUNCTION_ATOM(appendChild);
+	ASFUNCTION_ATOM(cloneNode);
+	ASFUNCTION_ATOM(removeNode);
+	ASFUNCTION_ATOM(hasChildNodes);
+	ASFUNCTION_ATOM(insertBefore);
+	ASFUNCTION_ATOM(prefix);
+	ASFUNCTION_ATOM(namespaceURI);
+	ASFUNCTION_ATOM(getNamespaceForPrefix);
+	ASFUNCTION_ATOM(getPrefixForNamespace);
 };
 
 class XMLDocument: public XMLNode, public XMLBase
@@ -73,23 +92,32 @@ private:
 	pugi::xml_node rootNode;
 protected:
 	int32_t status; // only needed for AVM1
+	ASObject* idmap;
+	tiny_string doctypedecl;
+	tiny_string xmldecl;
 	bool needsActionScript3;
-	_NR<XMLDocument> getRootDoc() override
+	XMLDocument* getRootDoc() override
 	{
-		this->incRef();
-		return _MR(this);
+		return this;
 	}
+	void setDecl();
 public:
 	XMLDocument(ASWorker* wrk,Class_base* c, tiny_string s="");
 	int parseXMLImpl(const std::string& str);
 	static void sinit(Class_base*);
+	void finalize() override;
+	bool destruct() override;
 	tiny_string toString();
 	ASPROPERTY_GETTER_SETTER(bool, ignoreWhite);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(parseXML);
-	ASFUNCTION_ATOM(firstChild);
 	ASFUNCTION_ATOM(_toString);
 	ASFUNCTION_ATOM(createElement);
+	ASFUNCTION_ATOM(createTextNode);
+	ASFUNCTION_ATOM(_idmap);
+	ASFUNCTION_ATOM(_docTypeDecl);
+	ASFUNCTION_ATOM(_xmlDecl);
+
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

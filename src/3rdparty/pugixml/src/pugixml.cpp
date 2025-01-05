@@ -4031,8 +4031,10 @@ PUGI__NS_BEGIN
 	{
 		do
 		{
+#ifndef PUGIXML_LIGHTSPARK_MODE // flash seems to ignore CDATA around output
 			writer.write('<', '!', '[', 'C', 'D');
 			writer.write('A', 'T', 'A', '[');
+#endif
 
 			const char_t* prev = s;
 
@@ -4044,7 +4046,9 @@ PUGI__NS_BEGIN
 
 			writer.write_buffer(prev, static_cast<size_t>(s - prev));
 
+#ifndef PUGIXML_LIGHTSPARK_MODE // flash seems to ignore CDATA around output
 			writer.write(']', ']', '>');
+#endif
 		}
 		while (*s);
 	}
@@ -4189,7 +4193,9 @@ PUGI__NS_BEGIN
 				}
 				else
 				{
-					if ((flags & format_raw) == 0)
+#ifndef PUGIXML_LIGHTSPARK_MODE
+					if ((flags & format_raw) == 0) //lightspark always expects space before closing "/>" on empty node
+#endif
 						writer.write(' ');
 
 					writer.write('/', '>');

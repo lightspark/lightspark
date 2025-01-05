@@ -250,6 +250,7 @@ SystemState::SystemState
 	static_XML_ignoreWhitespace(true),
 	static_XML_prettyIndent(2),
 	static_XML_prettyPrinting(true),
+	static_AVM1XMLDocument_ignoreWhite(false),
 	isinitialized(false)
 {
 	//Forge the builtin strings

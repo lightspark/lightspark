@@ -1508,6 +1508,7 @@ class AVM1MovieClip;
 class AVM1MovieClipLoader;
 class AVM1Sound;
 class AVM1XMLDocument;
+class AVM1XMLNode;
 class BevelFilter;
 class Bitmap;
 class BitmapData;
@@ -1652,6 +1653,7 @@ template<> inline bool ASObject::is<AVM1MovieClip>() const { return subtype == S
 template<> inline bool ASObject::is<AVM1MovieClipLoader>() const { return subtype == SUBTYPE_AVM1MOVIECLIPLOADER; }
 template<> inline bool ASObject::is<AVM1Sound>() const { return subtype == SUBTYPE_AVM1SOUND; }
 template<> inline bool ASObject::is<AVM1XMLDocument>() const { return subtype == SUBTYPE_AVM1XMLDOCUMENT; }
+template<> inline bool ASObject::is<AVM1XMLNode>() const { return subtype == SUBTYPE_AVM1XMLNODE; }
 template<> inline bool ASObject::is<BevelFilter>() const { return subtype==SUBTYPE_BEVELFILTER; }
 template<> inline bool ASObject::is<Bitmap>() const { return subtype==SUBTYPE_BITMAP; }
 template<> inline bool ASObject::is<BitmapData>() const { return subtype==SUBTYPE_BITMAPDATA; }
@@ -1775,7 +1777,7 @@ template<> inline bool ASObject::is<WaitableEvent>() const { return subtype==SUB
 template<> inline bool ASObject::is<WorkerDomain>() const { return subtype==SUBTYPE_WORKERDOMAIN; }
 template<> inline bool ASObject::is<XML>() const { return subtype==SUBTYPE_XML; }
 template<> inline bool ASObject::is<XMLDocument>() const { return subtype==SUBTYPE_XMLDOCUMENT || subtype == SUBTYPE_AVM1XMLDOCUMENT; }
-template<> inline bool ASObject::is<XMLNode>() const { return subtype==SUBTYPE_XMLNODE || subtype==SUBTYPE_XMLDOCUMENT || subtype == SUBTYPE_AVM1XMLDOCUMENT; }
+template<> inline bool ASObject::is<XMLNode>() const { return subtype==SUBTYPE_XMLNODE || subtype==SUBTYPE_XMLDOCUMENT || subtype == SUBTYPE_AVM1XMLDOCUMENT || subtype == SUBTYPE_AVM1XMLNODE; }
 template<> inline bool ASObject::is<XMLList>() const { return subtype==SUBTYPE_XMLLIST; }
 
 

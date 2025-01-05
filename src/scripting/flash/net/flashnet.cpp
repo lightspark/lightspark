@@ -459,7 +459,7 @@ void URLLoaderThread::execute()
 	}
 }
 
-URLLoader::URLLoader(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),dataFormat("text"),data(),job(nullptr),timestamp_last_progress(0)
+URLLoader::URLLoader(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),dataFormat("text"),data(),job(nullptr),timestamp_last_progress(0),bytesLoaded(0),bytesTotal(UINT32_MAX)
 {
 	subtype=SUBTYPE_URLLOADER;
 }

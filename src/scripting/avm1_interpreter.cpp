@@ -2211,11 +2211,16 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			}
 			case 0x65: // ActionBitURShift
 			{
+				auto swfVersion = clip->loadedFrom->version;
 				asAtom count = PopStack(stack);
 				asAtom value = PopStack(stack);
 				asAtom tmp = value;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionBitURShift "<<asAtomHandler::toDebugString(value)<<" >> "<<asAtomHandler::toDebugString(count));
 				asAtomHandler::urshift(value,wrk,count);
+				// NOTE: In SWF 8-9, ActionBitURShift actually returns
+				// a signed value.
+				if (swfVersion == 8 || swfVersion == 9)
+					asAtomHandler::setInt(value, wrk, asAtomHandler::toInt(value));
 				PushStack(stack,value);
 				ASATOM_DECREF(tmp);
 				ASATOM_DECREF(count);

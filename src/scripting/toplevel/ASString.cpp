@@ -526,6 +526,7 @@ number_t ASString::toNumber()
 number_t ASString::toNumber(ASWorker* wrk, const tiny_string& value)
 {
 	auto swfVersion = wrk->AVM1getSwfVersion();
+	bool isAS3 = wrk->needsActionScript3();
 	if (swfVersion < 6 && value.empty())
 		return numeric_limits<double>::quiet_NaN();
 	const char *s = value.raw_buf();
@@ -534,7 +535,7 @@ number_t ASString::toNumber(ASWorker* wrk, const tiny_string& value)
 
 	double val;
 	char *end = nullptr;
-	val = parseStringInfinite(s, &end);
+	val = isAS3 ? parseStringInfinite(s, &end) : 0;
 
 	// If did not parse as infinite, try decimal
 	if (!std::isinf(val))

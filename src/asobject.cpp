@@ -3780,6 +3780,10 @@ tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk, bool fromAVM
 				case ATOMTYPE_UNDEFINED_BIT:
 					return !fromAVM1add2 || wrk->getSystemState()->getSwfVersion() > 6 ? "undefined" : "";
 				case ATOMTYPE_BOOL_BIT:
+					// NOTE: In SWF 4, bool to string conversions return
+					// 1, or 0, rather than true, or false.
+					if (wrk->AVM1getSwfVersion() < 5)
+						return a.uintval&0x80 ? "1" : "0";
 					return a.uintval&0x80 ? "true" : "false";
 				default:
 					return "";

@@ -44,8 +44,12 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	builtin->registerBuiltin("Class","",Class_object::getRef(m_sys));
 	builtin->registerBuiltin("Number","",Class<Number>::getRef(m_sys));
 	builtin->registerBuiltin("Boolean","",Class<Boolean>::getRef(m_sys));
-	builtin->setVariableAtomByQName("NaN",nsNameAndKind(),asAtomHandler::fromNumber(m_sys->worker,numeric_limits<double>::quiet_NaN(),true),CONSTANT_TRAIT);
-	builtin->setVariableAtomByQName("Infinity",nsNameAndKind(),asAtomHandler::fromNumber(m_sys->worker,numeric_limits<double>::infinity(),true),CONSTANT_TRAIT);
+	// NOTE: `NaN`, and `Infinity` were added in SWF 5.
+	if (m_sys->mainClip->needsActionScript3() || m_sys->getSwfVersion() >= 5)
+	{
+		builtin->setVariableAtomByQName("NaN",nsNameAndKind(),asAtomHandler::fromNumber(m_sys->worker,numeric_limits<double>::quiet_NaN(),true),CONSTANT_TRAIT);
+		builtin->setVariableAtomByQName("Infinity",nsNameAndKind(),asAtomHandler::fromNumber(m_sys->worker,numeric_limits<double>::infinity(),true),CONSTANT_TRAIT);
+	}
 	builtin->registerBuiltin("String","",Class<ASString>::getRef(m_sys));
 	builtin->registerBuiltin("Array","",Class<Array>::getRef(m_sys));
 	builtin->registerBuiltin("Function","",Class<IFunction>::getRef(m_sys));

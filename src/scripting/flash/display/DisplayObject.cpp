@@ -1064,6 +1064,12 @@ tiny_string DisplayObject::AVM1GetPath()
 			res += ".";
 		res += getSystemState()->getStringFromUniqueId(this->name);
 	}
+	else if (is<RootMovieClip>())
+	{
+		// TODO: Add a depth member, and return `_level{depth}` if we
+		// don't have a parent.
+		res += "_level0";
+	}
 	return res;
 }
 

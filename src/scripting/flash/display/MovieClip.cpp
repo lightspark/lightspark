@@ -660,11 +660,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	//currentFrame is 1-based and relative to current scene
-	if (th->state.explicit_FP)
-		// if frame is set explicitly, the currentframe property should be set to next_FP, even if it is not displayed yet
-		asAtomHandler::setInt(ret,wrk,th->state.next_FP+1 - th->scenes[th->getCurrentScene()].startframe);
-	else
-		asAtomHandler::setInt(ret,wrk,th->state.FP+1 - th->scenes[th->getCurrentScene()].startframe);
+	asAtomHandler::setInt(ret,wrk,th->state.FP+1 - th->scenes[th->getCurrentScene()].startframe);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrameLabel)

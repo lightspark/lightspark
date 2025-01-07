@@ -44,11 +44,10 @@ using namespace std;
 using namespace lightspark;
 
 URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const tiny_string m, const asAtom d,ApplicationDomain* _appDomain):ASObject(wrk,c,T_OBJECT,SUBTYPE_URLREQUEST),
-	method(m),url(u),data(d),contentType("application/x-www-form-urlencoded"),
-	requestHeaders(Class<Array>::getInstanceSNoArgs(wrk)),
+	method(m),url(u),data(d),requestHeaders(nullptr),contentType("application/x-www-form-urlencoded"),
 	appDomain(_appDomain)
 {
-	ASATOM_INCREF(data);
+	ASATOM_ADDSTOREDMEMBER(data);
 	if (_appDomain==nullptr)
 		appDomain = c->getSystemState()->mainClip->applicationDomain.getPtr();
 }
@@ -65,8 +64,9 @@ void URLRequest::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_getData,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("digest","",c->getSystemState()->getBuiltinFunction(_setDigest),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("digest","",c->getSystemState()->getBuiltinFunction(_getDigest,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("requestHeaders","",c->getSystemState()->getBuiltinFunction(_setRequestHeaders),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("requestHeaders","",c->getSystemState()->getBuiltinFunction(_getRequestHeaders,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,contentType,ASString);
-	REGISTER_GETTER_SETTER_RESULTTYPE(c,requestHeaders,Array);
 }
 
 URLInfo URLRequest::getRequestURL() const
@@ -165,7 +165,7 @@ void URLRequest::validateHeaderName(const tiny_string& headerName) const
 std::list<tiny_string> URLRequest::getHeaders() const
 {
 	list<tiny_string> headers;
-	if (requestHeaders.isNull())
+	if (!requestHeaders)
 		return headers;
 	int headerTotalLen = 0;
 	for (unsigned i=0; i<requestHeaders->size(); i++)
@@ -242,8 +242,11 @@ void URLRequest::getPostData(vector<uint8_t>& outData) const
 void URLRequest::finalize()
 {
 	ASObject::finalize();
-	ASATOM_DECREF(data);
-	requestHeaders.reset();
+	ASATOM_REMOVESTOREDMEMBER(data);
+	data = asAtomHandler::invalidAtom;
+	if (requestHeaders)
+		requestHeaders->removeStoredMember();
+	requestHeaders=nullptr;
 }
 
 bool URLRequest::destruct()
@@ -251,8 +254,11 @@ bool URLRequest::destruct()
 	method="GET";
 	url="";
 	digest="";
-	ASATOM_DECREF(data);
-	requestHeaders.reset();
+	ASATOM_REMOVESTOREDMEMBER(data);
+	data = asAtomHandler::invalidAtom;
+	if (requestHeaders)
+		requestHeaders->removeStoredMember();
+	requestHeaders=nullptr;
 	return ASObject::destruct();
 }
 
@@ -266,12 +272,22 @@ void URLRequest::prepareShutdown()
 	if (requestHeaders)
 		requestHeaders->prepareShutdown();
 }
-
+bool URLRequest::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	if (asAtomHandler::isObject(data))
+		ret = asAtomHandler::getObjectNoCheck(data)->countAllCylicMemberReferences(gcstate) || ret;
+	if (requestHeaders)
+		ret = requestHeaders->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+}
 ASFUNCTIONBODY_ATOM(URLRequest,_constructor)
 {
 	URLRequest* th=asAtomHandler::as<URLRequest>(obj);
 	ARG_CHECK(ARG_UNPACK(th->url, ""));
 }
+
+ASFUNCTIONBODY_GETTER_SETTER(URLRequest,contentType)
 
 ASFUNCTIONBODY_ATOM(URLRequest,_setURL)
 {
@@ -319,9 +335,11 @@ ASFUNCTIONBODY_ATOM(URLRequest,_setData)
 	URLRequest* th=asAtomHandler::as<URLRequest>(obj);
 	assert_and_throw(argslen==1);
 
-	ASATOM_DECREF(th->data);
-	ASATOM_INCREF(args[0]);
+	if (th->data.uintval == args[0].uintval)
+		return;
+	ASATOM_REMOVESTOREDMEMBER(th->data);
 	th->data=args[0];
+	ASATOM_ADDSTOREDMEMBER(th->data);
 }
 
 ASFUNCTIONBODY_ATOM(URLRequest,_getDigest)
@@ -365,8 +383,28 @@ ASFUNCTIONBODY_ATOM(URLRequest,_setDigest)
 	th->digest = value;
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(URLRequest,contentType)
-ASFUNCTIONBODY_GETTER_SETTER(URLRequest,requestHeaders)
+ASFUNCTIONBODY_ATOM(URLRequest,_getRequestHeaders)
+{
+	URLRequest* th = asAtomHandler::as<URLRequest>(obj);
+	if (!th->requestHeaders)
+		th->requestHeaders = Class<Array>::getInstanceSNoArgs(wrk);
+	th->requestHeaders->incRef();
+	ret = asAtomHandler::fromObjectNoPrimitive(th->requestHeaders);
+}
+ASFUNCTIONBODY_ATOM(URLRequest,_setRequestHeaders)
+{
+	URLRequest* th = asAtomHandler::as<URLRequest>(obj);
+	_NR<Array> requestheaders;
+	ARG_CHECK(ARG_UNPACK(requestheaders));
+	if (th->requestHeaders)
+		th->requestHeaders->removeStoredMember();
+	th->requestHeaders = requestheaders.getPtr();
+	if (th->requestHeaders)
+	{
+		th->requestHeaders->incRef();
+		th->requestHeaders->addStoredMember();
+	}
+}
 
 void URLRequestMethod::sinit(Class_base* c)
 {

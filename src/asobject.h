@@ -1102,9 +1102,9 @@ public:
 	FORCE_INLINE bool canHaveCyclicMemberReference()
 	{
 		return type == T_ARRAY || type == T_CLASS || type == T_PROXY || type == T_TEMPLATE || type == T_FUNCTION ||
-				(type == T_OBJECT && 
-				subtype != SUBTYPE_DATE && 
-				subtype != SUBTYPE_URLREQUEST); // TODO check other subtypes
+				(type == T_OBJECT &&
+				subtype != SUBTYPE_DATE
+				); // TODO check other subtypes
 	}
 	bool countAllCylicMemberReferences(garbagecollectorstate& gcstate);
 	

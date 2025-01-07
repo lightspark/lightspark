@@ -43,18 +43,19 @@ private:
 	tiny_string method;
 	tiny_string url;
 	asAtom data;
+	Array* requestHeaders;
 	tiny_string digest;
 	tiny_string validatedContentType() const;
 	tiny_string getContentTypeHeader() const;
 	void validateHeaderName(const tiny_string& headerName) const;
 	ASPROPERTY_GETTER_SETTER(tiny_string,contentType);
-	ASPROPERTY_GETTER_SETTER(_NR<Array>,requestHeaders);
 	ApplicationDomain* appDomain;
 public:
 	URLRequest(ASWorker* wrk,Class_base* c, const tiny_string u="", const tiny_string m="GET", const asAtom d = asAtomHandler::invalidAtom,ApplicationDomain* _appDomain=nullptr);
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getURL);
@@ -65,6 +66,8 @@ public:
 	ASFUNCTION_ATOM(_getData);
 	ASFUNCTION_ATOM(_getDigest);
 	ASFUNCTION_ATOM(_setDigest);
+	ASFUNCTION_ATOM(_getRequestHeaders);
+	ASFUNCTION_ATOM(_setRequestHeaders);
 	URLInfo getRequestURL() const;
 	std::list<tiny_string> getHeaders() const;
 	void getPostData(std::vector<uint8_t>& data) const;

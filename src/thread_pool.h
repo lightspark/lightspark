@@ -60,6 +60,7 @@ public:
 	~ThreadPool();
 	void addJob(IThreadJob* j);
 	void forceStop();
+	void waitAll();
 };
 
 }

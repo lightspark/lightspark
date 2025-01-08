@@ -143,9 +143,11 @@ TestStatus TestRunner::test()
 {
 	if (!remainingTicks || isDone)
 	{
+		if (sys->runSingleThreaded)
+			sys->waitThreadpool();
+		getVm(sys)->handleQueuedEvents();
 		// End of test, check if everything went well.
 		std::string trace = log.traceOutput();
-
 		// Remove any null bytes from the trace output.
 		for (auto it = trace.begin(); it != trace.end(); ++it)
 		{

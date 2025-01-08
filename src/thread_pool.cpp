@@ -92,6 +92,23 @@ void ThreadPool::forceStop()
 	}
 }
 
+void ThreadPool::waitAll()
+{
+	//Signal an event for all the threads
+	for (size_t i = 0; i < threadPool.size(); ++i)
+		num_jobs.signal();
+	// wait for all threads to end
+	for (auto thread : threadPool)
+		SDL_WaitThread(thread.thread, nullptr);
+	threadPool.clear();
+	for (auto pair : additionalThreads)
+	{
+		auto thread = pair.first;
+		SDL_WaitThread(thread, nullptr);
+	}
+	additionalThreads.clear();
+}
+
 ThreadPool::~ThreadPool()
 {
 	forceStop();

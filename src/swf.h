@@ -261,6 +261,7 @@ private:
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	tiny_string getDumpedSWFPath() const { return dumpedSWFPath;}
+	void waitThreadpool();
 
 	//Interative analysis flags
 	bool showProfilingData;

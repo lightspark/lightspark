@@ -555,7 +555,11 @@ _NR<ASObject> SystemState::getParameters() const
 {
 	return parameters;
 }
-
+void SystemState::waitThreadpool()
+{
+	if(threadPool)
+		threadPool->waitAll();
+}
 void SystemState::stopEngines()
 {
 	if (audioManager)

@@ -99,6 +99,10 @@ public:
 			return;
 		flushed.wait();
 	}
+	bool isFlushed() const
+	{
+		return status == FLUSHED;
+	}
 };
 class DefineVideoStreamTag;
 class VideoDecoder: public Decoder, public ITextureUploadable
@@ -450,7 +454,7 @@ public:
 	/*
 	   Specialized decoding used by FFMpegStreamDecoder
 	*/
-	void decodePacket(AVPacket* pkt, uint32_t time);
+	int decodePacket(AVPacket* pkt, uint32_t time);
 	void switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen) override;
 	uint32_t decodeData(uint8_t* data, int32_t datalen, uint32_t time) override;
 };
@@ -459,7 +463,7 @@ public:
 class StreamDecoder
 {
 public:
-	StreamDecoder():audioDecoder(nullptr),videoDecoder(nullptr),valid(false),hasvideo(false){}
+	StreamDecoder():audioDecoder(nullptr),videoDecoder(nullptr),valid(false),hasvideo(false),atend(false){}
 	virtual ~StreamDecoder();
 	virtual bool decodeNextFrame() = 0;
 	virtual void jumpToPosition(number_t position) = 0;
@@ -467,9 +471,11 @@ public:
 	AudioDecoder* audioDecoder;
 	VideoDecoder* videoDecoder;
 	bool hasVideo() const { return hasvideo; }
+	bool atEnd() const  { return atend; }
 protected:
 	bool valid;
 	bool hasvideo;
+	bool atend;
 };
 
 #ifdef ENABLE_LIBAVCODEC

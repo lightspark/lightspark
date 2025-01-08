@@ -93,17 +93,34 @@ public:
 
 class SoundTransform: public ASObject
 {
+private:
+	void setPan(number_t pan);
 public:
 	SoundTransform(ASWorker* wrk,Class_base* c);
-	ASPROPERTY_GETTER_SETTER(number_t,volume);
-	ASPROPERTY_GETTER_SETTER(number_t,pan);
-	ASPROPERTY_GETTER_SETTER(number_t,leftToLeft);
-	ASPROPERTY_GETTER_SETTER(number_t,leftToRight);
-	ASPROPERTY_GETTER_SETTER(number_t,rightToLeft);
-	ASPROPERTY_GETTER_SETTER(number_t,rightToRight);
+
 	static void sinit(Class_base*);
 	bool destruct() override;
+	int32_t volume;
+	// it seems the panning values are stored as integers from -100 to +100
+	int32_t leftToLeft;
+	int32_t leftToRight;
+	int32_t rightToLeft;
+	int32_t rightToRight;
+
+
 	ASFUNCTION_ATOM(_constructor);
+	ASFUNCTION_ATOM(_set_pan);
+	ASFUNCTION_ATOM(_get_pan);
+	ASFUNCTION_ATOM(_set_volume);
+	ASFUNCTION_ATOM(_get_volume);
+	ASFUNCTION_ATOM(_set_leftToLeft);
+	ASFUNCTION_ATOM(_get_leftToLeft);
+	ASFUNCTION_ATOM(_set_leftToRight);
+	ASFUNCTION_ATOM(_get_leftToRight);
+	ASFUNCTION_ATOM(_set_rightToLeft);
+	ASFUNCTION_ATOM(_get_rightToLeft);
+	ASFUNCTION_ATOM(_set_rightToRight);
+	ASFUNCTION_ATOM(_get_rightToRight);
 };
 
 class SoundChannel : public EventDispatcher, public IThreadJob

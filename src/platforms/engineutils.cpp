@@ -21,6 +21,7 @@
 #include "platforms/engineutils.h"
 #include "swf.h"
 #include "backends/audio.h"
+#include "backends/decoder.h"
 #include "backends/input.h"
 #include "backends/lsopengl.h"
 #include "backends/rendering.h"
@@ -2003,7 +2004,7 @@ void audioCallback(void * userdata, uint8_t * stream, int len)
 {
 	AudioManager* manager = (AudioManager*)userdata;
 
-    SDL_memset(stream, 0, len);
+	SDL_memset(stream, 0, len);
 
 	{
 		Locker l(manager->streamMutex);
@@ -2026,19 +2027,22 @@ void audioCallback(void * userdata, uint8_t * stream, int len)
 				float* dst32=(float *)(stream+readcount);
 				readcount += ret;
 
-				float src1, src2;
+				float src1left, src1right, src2;
 				double dst_sample;
 
 				const double max_audioval = 3.402823466e+38F;
 				const double min_audioval = -3.402823466e+38F;
+				float* panning = s->getPanning();
 				int curpanning=0;
 				while (ret)
 				{
-					src1 = *src32 * fvolume * fmaxvolume * s->getPanning()[curpanning];
-					curpanning = 1-curpanning;
+					src1left = *src32 * fvolume * fmaxvolume * panning[curpanning];
+					src1right = *(src32+1) * fvolume * fmaxvolume * panning[curpanning+1];
+					curpanning = 2-curpanning;
+					if (!curpanning)
+						src32+=2;
 					src2 = *dst32;
-					src32++;
-					dst_sample = ((double)src1) + ((double)src2);
+					dst_sample = double(src1left) + double(src1right) + double(src2);
 					if (dst_sample > max_audioval) {
 						dst_sample = max_audioval;
 					} else if (dst_sample < min_audioval) {

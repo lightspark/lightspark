@@ -1958,7 +1958,7 @@ void NetStream::tick()
 		//TODO: use soundTransform->pan
 		if(soundTransform && soundTransform->volume != oldVolume)
 		{
-			audioStream->setVolume(soundTransform->volume);
+			audioStream->setVolume(number_t(soundTransform->volume)/100.0);
 			oldVolume = soundTransform->volume;
 		}
 	}
@@ -2169,7 +2169,7 @@ void NetStream::execute()
 				audioDecoder=streamDecoder->audioDecoder;
 			
 			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid() && getSys()->audioManager)
-				audioStream=getSys()->audioManager->createStream(audioDecoder,streamDecoder->hasVideo(),this,-1,0,soundTransform ? soundTransform->volume : 1.0);
+				audioStream=getSystemState()->audioManager->createStream(audioDecoder,streamDecoder->hasVideo(),this,-1,0,soundTransform ? number_t(soundTransform->volume)/100.0 : 1.0);
 			if(!tickStarted && isReady() && frameRate && ((framesdecoded / frameRate) >= this->bufferTime))
 			{
 				tickStarted=true;

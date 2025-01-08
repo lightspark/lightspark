@@ -22,7 +22,6 @@
 
 
 #include "compat.h"
-#include "backends/decoder.h"
 #include <iostream>
 #include <unordered_set>
 #include <SDL.h>
@@ -31,6 +30,7 @@ namespace lightspark
 {
 class AudioStream;
 class EngineData;
+class AudioDecoder;
 
 class AudioManager
 {
@@ -73,7 +73,7 @@ private:
 	ACQUIRE_RELEASE_FLAG(isdone);
 	double curvolume;
 	double unmutevolume;
-	float panning[2];
+	float panning[4];
 	uint64_t playedtime;
 	struct timeval starttime;
 	int mixer_channel;
@@ -82,10 +82,7 @@ public:
 	bool init(double volume);
 	void deinit();
 	void startMixing();
-	AudioStream(AudioManager* _manager,IThreadJob* _producer, int _grouptag,uint64_t _playedtime):manager(_manager),decoder(nullptr),producer(_producer),grouptag(_grouptag)
-	  ,hasStarted(false),isPaused(true),mixingStarted(false),isdone(false),curvolume(1.0),unmutevolume(1.0),panning{1.0,1.0},playedtime(_playedtime),mixer_channel(-1),audiobuffer(nullptr)
-	{
-	}
+	AudioStream(AudioManager* _manager,IThreadJob* _producer, int _grouptag,uint64_t _playedtime);
 
 	void SetPause(bool pause_on);
 	uint32_t getPlayedTime();
@@ -96,7 +93,8 @@ public:
 	void resume() { SetPause(false); }
 	void setVolume(double volume);
 	void setPlayedTime(uint64_t p) { playedtime = p; }
-	void setPanning(uint16_t left, uint16_t right);
+	// panning values are expected to be in range -100..100
+	void setPanning(int32_t leftToLeft, int32_t leftToRight, int32_t rightToRight, int32_t rightToLeft);
 	void setIsDone();
 	bool getIsDone() const;
 	inline double getVolume() const { return curvolume; }

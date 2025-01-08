@@ -41,7 +41,7 @@
 using namespace lightspark;
 using namespace std;
 
-SoundTransform::SoundTransform(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_SOUNDTRANSFORM),volume(1.0),pan(0.0),leftToLeft(1.0),leftToRight(0),rightToLeft(0),rightToRight(1.0)
+SoundTransform::SoundTransform(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_SOUNDTRANSFORM),volume(100),leftToLeft(100),leftToRight(0),rightToLeft(0),rightToRight(100)
 {
 }
 
@@ -49,36 +49,132 @@ void SoundTransform::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
-	REGISTER_GETTER_SETTER(c,volume);
-	REGISTER_GETTER_SETTER(c,pan);
-	REGISTER_GETTER_SETTER(c,leftToLeft);
-	REGISTER_GETTER_SETTER(c,leftToRight);
-	REGISTER_GETTER_SETTER(c,rightToLeft);
-	REGISTER_GETTER_SETTER(c,rightToRight);
+	c->setDeclaredMethodByQName("pan","",c->getSystemState()->getBuiltinFunction(_get_pan,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("pan","",c->getSystemState()->getBuiltinFunction(_set_pan),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("volume","",c->getSystemState()->getBuiltinFunction(_get_volume,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("volume","",c->getSystemState()->getBuiltinFunction(_set_volume),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("leftToLeft","",c->getSystemState()->getBuiltinFunction(_get_leftToLeft,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("leftToLeft","",c->getSystemState()->getBuiltinFunction(_set_leftToLeft),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("leftToRight","",c->getSystemState()->getBuiltinFunction(_get_leftToRight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("leftToRight","",c->getSystemState()->getBuiltinFunction(_set_leftToRight),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rightToLeft","",c->getSystemState()->getBuiltinFunction(_get_rightToLeft,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rightToLeft","",c->getSystemState()->getBuiltinFunction(_set_rightToLeft),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rightToRight","",c->getSystemState()->getBuiltinFunction(_get_rightToRight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rightToRight","",c->getSystemState()->getBuiltinFunction(_set_rightToRight),SETTER_METHOD,true);
 }
 
 bool SoundTransform::destruct()
 {
-	volume=1.0;
-	pan=0.0;
-	leftToLeft=1.0;
+	volume=100;
+	leftToLeft=100;
 	leftToRight=0;
 	rightToLeft=0;
-	rightToRight=1.0;
+	rightToRight=100;
 	return ASObject::destruct();
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(SoundTransform,volume)
-ASFUNCTIONBODY_GETTER_SETTER(SoundTransform,pan)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(SoundTransform,leftToLeft)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(SoundTransform,leftToRight)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(SoundTransform,rightToLeft)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(SoundTransform,rightToRight)
+void SoundTransform::setPan(number_t pan)
+{
+	if (pan >= 0)
+	{
+		leftToLeft = 100-pan*100.0;
+		rightToRight = 100;
+	}
+	else
+	{
+		leftToLeft = 100;
+		rightToRight = 100+pan*100.0;
+	}
+	leftToRight = 0;
+	rightToLeft = 0;
+}
 
 ASFUNCTIONBODY_ATOM(SoundTransform,_constructor)
 {
 	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
-	ARG_CHECK(ARG_UNPACK(th->volume, 1.0)(th->pan, 0.0));
+	number_t pan;
+	ARG_CHECK(ARG_UNPACK(th->volume, 1.0)(pan, 0.0));
+	th->setPan(pan);
+}
+ASFUNCTIONBODY_ATOM(SoundTransform,_get_pan)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	if (th->leftToRight != 0.0 || th->rightToLeft != 0.0)
+		asAtomHandler::setNumber(ret,wrk,0.0);
+	else
+	{
+		number_t n = number_t(th->leftToLeft/100.0);
+		asAtomHandler::setNumber(ret,wrk,1.0-n*n);
+	}
+}
+ASFUNCTIONBODY_ATOM(SoundTransform,_set_pan)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	number_t pan;
+	ARG_CHECK(ARG_UNPACK(pan));
+	th->setPan(pan);
+}
+ASFUNCTIONBODY_ATOM(SoundTransform,_get_volume)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	number_t n = number_t(th->volume)/100.0;
+	asAtomHandler::setNumber(ret,wrk,n);
+}
+ASFUNCTIONBODY_ATOM(SoundTransform,_set_volume)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	number_t volume;
+	ARG_CHECK(ARG_UNPACK(volume));
+	th->volume = volume*100.0;
+}
+
+ASFUNCTIONBODY_ATOM(SoundTransform,_get_leftToLeft)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	ret = asAtomHandler::fromNumber(wrk,number_t(th->leftToLeft)/100.0,false);
+}
+ASFUNCTIONBODY_ATOM(SoundTransform,_set_leftToLeft)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	number_t leftToLeft;
+	ARG_CHECK(ARG_UNPACK(leftToLeft));
+	th->leftToLeft = leftToLeft*100.0;
+}
+ASFUNCTIONBODY_ATOM(SoundTransform,_get_leftToRight)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	ret = asAtomHandler::fromNumber(wrk,number_t(th->leftToRight)/100.0,false);
+}
+ASFUNCTIONBODY_ATOM(SoundTransform,_set_leftToRight)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	number_t leftToRight;
+	ARG_CHECK(ARG_UNPACK(leftToRight));
+	th->leftToRight = leftToRight*100.0;
+}
+ASFUNCTIONBODY_ATOM(SoundTransform,_get_rightToLeft)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	ret = asAtomHandler::fromNumber(wrk,number_t(th->rightToLeft)/100.0,false);
+}
+ASFUNCTIONBODY_ATOM(SoundTransform,_set_rightToLeft)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	number_t rightToLeft;
+	ARG_CHECK(ARG_UNPACK(rightToLeft));
+	th->rightToLeft = rightToLeft*100.0;
+}
+ASFUNCTIONBODY_ATOM(SoundTransform,_get_rightToRight)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	ret = asAtomHandler::fromNumber(wrk,number_t(th->rightToRight)/100.0,false);
+}
+ASFUNCTIONBODY_ATOM(SoundTransform,_set_rightToRight)
+{
+	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
+	number_t rightToRight;
+	ARG_CHECK(ARG_UNPACK(rightToRight));
+	th->rightToRight = rightToRight*100.0;
 }
 
 void Video::sinit(Class_base* c)
@@ -1236,7 +1332,7 @@ void SoundChannel::playStream()
 				throw JobTerminationException();
 			}
 			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid())
-				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,this->fromSoundTag ? this->fromSoundTag->getId() : -1,startTime,soundTransform ? soundTransform->volume : 1.0);
+				audioStream=getSystemState()->audioManager->createStream(audioDecoder,false,this,this->fromSoundTag ? this->fromSoundTag->getId() : -1,startTime,soundTransform ? number_t(soundTransform->volume)/100.0 : 1.0);
 
 			if(audioStream)
 			{
@@ -1251,16 +1347,22 @@ void SoundChannel::playStream()
 					mutex.unlock();
 					break;
 				}
-				//TODO: use soundTransform->pan
 				if(soundTransform && soundTransform->volume != oldVolume)
 				{
-					audioStream->setVolume(soundTransform->volume);
+					audioStream->setVolume(number_t(soundTransform->volume)/100.0);
 					oldVolume = soundTransform->volume;
 				}
 				checkEnvelope();
+				if (soundTransform)
+					audioStream->setPanning(soundTransform->leftToLeft, soundTransform->leftToRight, soundTransform->rightToRight, soundTransform->rightToLeft);
 			}
 			else if (audioDecoder && audioDecoder->isValid())
 			{
+				if (streamDecoder->atEnd())
+				{
+					audioDecoder->setFlushing();
+					RELEASE_WRITE(stopped,true);
+				}
 				// no audiostream available, consume data anyway
 				if (getSystemState()->getEngineData()->audio_useFloatSampleFormat())
 				{
@@ -1353,13 +1455,14 @@ void SoundChannel::playStreamFromSamples()
 				
 				if(audioStream)
 				{
-					//TODO: use soundTransform->pan
 					if(soundTransform && soundTransform->volume != oldVolume)
 					{
 						audioStream->setVolume(soundTransform->volume);
 						oldVolume = soundTransform->volume;
 					}
 					checkEnvelope();
+					if (soundTransform)
+						audioStream->setPanning(soundTransform->leftToLeft, soundTransform->leftToRight, soundTransform->rightToRight, soundTransform->rightToLeft);
 					if (streamdatafinished && !audioDecoder->hasDecodedFrames())
 						threadAbort();
 				}
@@ -1481,10 +1584,8 @@ void SoundChannel::checkEnvelope()
 		}
 		if (itprev == soundinfo->SoundEnvelope.end())
 			return;
-		leftPeak= number_t(itprev->LeftLevel)/32768.0;
-		rightPeak= number_t(itprev->RightLevel)/32768.0;
-		if (audioStream)
-			audioStream->setPanning(itprev->LeftLevel,itprev->RightLevel);
+		leftPeak= number_t(itprev->LeftLevel)*100.0/32768.0;
+		rightPeak= number_t(itprev->RightLevel)*100.0/32768.0;
 		if (soundTransform.isNull())
 			soundTransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(getInstanceWorker()));
 		soundTransform->leftToLeft=leftPeak;

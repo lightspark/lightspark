@@ -20,6 +20,7 @@
 #include "swf.h"
 #include "backends/audio.h"
 #include "backends/config.h"
+#include "backends/decoder.h"
 #include "platforms/engineutils.h"
 #include <iostream>
 #include "logger.h"
@@ -70,6 +71,13 @@ void AudioStream::startMixing()
 	gettimeofday(&starttime, nullptr);
 }
 
+AudioStream::AudioStream(AudioManager* _manager, IThreadJob* _producer, int _grouptag, uint64_t _playedtime)
+	:manager(_manager),decoder(nullptr),producer(_producer),grouptag(_grouptag)
+	,hasStarted(false),isPaused(true),mixingStarted(false),isdone(false)
+	,curvolume(1.0),unmutevolume(1.0),panning{1.0,1.0},playedtime(_playedtime),mixer_channel(-1),audiobuffer(nullptr)
+{
+}
+
 void AudioStream::SetPause(bool pause_on)
 {
 	if (pause_on)
@@ -104,11 +112,12 @@ void AudioStream::setVolume(double volume)
 	curvolume = volume;
 }
 
-void AudioStream::setPanning(uint16_t left, uint16_t right)
+void AudioStream::setPanning(int32_t leftToLeft, int32_t leftToRight, int32_t rightToRight, int32_t rightToLeft)
 {
-	panning[0]=(float)left/32768.0f;
-	panning[1]=(float)right/32768.0f;
-	curvolume=1.0;
+	panning[0]=(float)leftToLeft/100.0;
+	panning[1]=(float)rightToLeft/100.0f;
+	panning[2]=(float)rightToRight/100.0f;
+	panning[3]=(float)leftToRight/100.0;
 }
 
 void AudioStream::setIsDone()

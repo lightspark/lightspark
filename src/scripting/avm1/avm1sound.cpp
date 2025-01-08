@@ -115,10 +115,10 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getVolume)
 	{
 		if (!th->soundChannel->soundTransform)
 			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
-		asAtomHandler::setNumber(ret,wrk,th->soundChannel->soundTransform->volume*100);
+		asAtomHandler::setNumber(ret,wrk,th->soundChannel->soundTransform->volume);
 	}
 	else
-		asAtomHandler::setInt(ret,wrk,wrk->getSystemState()->static_SoundMixer_soundTransform->volume*100.0);
+		asAtomHandler::setInt(ret,wrk,wrk->getSystemState()->static_SoundMixer_soundTransform->volume);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,setVolume)
 {
@@ -131,10 +131,10 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setVolume)
 	{
 		if (!th->soundChannel->soundTransform)
 			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
-		th->soundChannel->soundTransform->volume = volume/100.0;
+		th->soundChannel->soundTransform->volume = volume;
 	}
 	else
-		wrk->getSystemState()->static_SoundMixer_soundTransform->volume = volume/100.0;
+		wrk->getSystemState()->static_SoundMixer_soundTransform->volume = volume;
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,getPan)
 {
@@ -145,14 +145,13 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getPan)
 		if (!th->soundChannel->soundTransform)
 			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
 		st = th->soundChannel->soundTransform.getPtr();
-		asAtomHandler::setNumber(ret,wrk,th->soundChannel->soundTransform->pan*100.0);
 	}
 	else
 		st = wrk->getSystemState()->static_SoundMixer_soundTransform.getPtr();
-	if (st->leftToLeft == 1.0)
-		asAtomHandler::setInt(ret,wrk,(::fabs(st->rightToRight)-1.0)*100.0);
+	if (st->leftToLeft == 100)
+		asAtomHandler::setInt(ret,wrk,abs(st->rightToRight)-100);
 	else
-		asAtomHandler::setInt(ret,wrk,(1.0-::fabs(st->leftToLeft))*100.0);
+		asAtomHandler::setInt(ret,wrk,100-abs(st->leftToLeft));
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,setPan)
 {
@@ -160,7 +159,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setPan)
 	number_t pan;
 	ARG_CHECK(ARG_UNPACK(pan));
 	SoundTransform* st =nullptr;
-	if (pan < INT32_MIN || pan > INT32_MAX) // it seems everything outside int32 margins is set to INT32_MIN
+	if (std::isnan(pan) || pan < INT32_MIN || pan > INT32_MAX) // it seems everything outside int32 margins is set to INT32_MIN
 		pan = INT32_MIN;
 	if (th->soundChannel)
 	{
@@ -172,13 +171,13 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setPan)
 		st = wrk->getSystemState()->static_SoundMixer_soundTransform.getPtr();
 	if (pan >= 0)
 	{
-		st->leftToLeft = number_t(100-(int32_t)pan)/100.0;
-		st->rightToRight = 1.0;
+		st->leftToLeft = 100-pan;
+		st->rightToRight = 100;
 	}
 	else
 	{
-		st->leftToLeft = 1.0;
-		st->rightToRight = number_t(100+(int32_t)pan)/100.0;
+		st->leftToLeft = 100;
+		st->rightToRight = 100+pan;
 	}
 	st->leftToRight = 0;
 	st->rightToLeft = 0;
@@ -202,19 +201,19 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getTransform)
 	m.name_type=multiname::NAME_STRING;
 
 	m.name_s_id=wrk->getSystemState()->getUniqueStringId("ll");
-	v = asAtomHandler::fromInt(st->leftToLeft*100.0);
+	v = asAtomHandler::fromInt(st->leftToLeft);
 	res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 
 	m.name_s_id=wrk->getSystemState()->getUniqueStringId("lr");
-	v = asAtomHandler::fromInt(st->leftToRight*100.0);
+	v = asAtomHandler::fromInt(st->leftToRight);
 	res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 
 	m.name_s_id=wrk->getSystemState()->getUniqueStringId("rl");
-	v = asAtomHandler::fromInt(st->rightToLeft*100.0);
+	v = asAtomHandler::fromInt(st->rightToLeft);
 	res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 
 	m.name_s_id=wrk->getSystemState()->getUniqueStringId("rr");
-	v = asAtomHandler::fromInt(st->rightToRight*100.0);
+	v = asAtomHandler::fromInt(st->rightToRight);
 	res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 
 	ret = asAtomHandler::fromObjectNoPrimitive(res);
@@ -237,41 +236,28 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setTransform)
 	if (transformObject)
 	{
 		asAtom v = asAtomHandler::invalidAtom;
-		number_t n;
 		multiname m(nullptr);
 		m.name_type=multiname::NAME_STRING;
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ll");
 		transformObject->getVariableByMultiname(v,m,NO_INCREF,wrk);
 		if (asAtomHandler::isValid(v))
-		{
-			n = asAtomHandler::toInt(v);
-			st->leftToLeft = n/100.0;
-		}
+			st->leftToLeft = asAtomHandler::toInt(v);
 		v = asAtomHandler::invalidAtom;
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("lr");
 		transformObject->getVariableByMultiname(v,m,NO_INCREF,wrk);
 		if (asAtomHandler::isValid(v))
-		{
-			n = asAtomHandler::toInt(v);
-			st->leftToRight = n/100.0;
-		}
+			st->leftToRight = asAtomHandler::toInt(v);
 		v = asAtomHandler::invalidAtom;
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("rl");
 		transformObject->getVariableByMultiname(v,m,NO_INCREF,wrk);
 		if (asAtomHandler::isValid(v))
-		{
-			n = asAtomHandler::toInt(v);
-			st->rightToLeft = n/100.0;
-		}
+			st->rightToLeft = asAtomHandler::toInt(v);
 		v = asAtomHandler::invalidAtom;
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("rr");
 		transformObject->getVariableByMultiname(v,m,NO_INCREF,wrk);
 		if (asAtomHandler::isValid(v))
-		{
-			n = asAtomHandler::toInt(v);
-			st->rightToRight = n/100.0;
-		}
+			st->rightToRight = asAtomHandler::toInt(v);
 	}
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,stop)

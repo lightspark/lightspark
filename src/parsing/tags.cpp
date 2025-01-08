@@ -3254,6 +3254,11 @@ VideoFrameTag::~VideoFrameTag()
 		delete[] framedata;
 }
 
+uint32_t VideoFrameTag::getNumBytes()
+{
+	return numbytes+AV_INPUT_BUFFER_PADDING_SIZE;
+}
+
 DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 {
 	int dest=in.tellg();

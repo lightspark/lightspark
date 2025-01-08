@@ -24,7 +24,6 @@
 #include <istream>
 #include <map>
 #include "swftypes.h"
-#include "backends/decoder.h"
 
 namespace lightspark
 {

@@ -1438,7 +1438,7 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 #endif
 }
 
-void FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
+int FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 {
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
 	av_frame_unref(frameIn);
@@ -1628,6 +1628,7 @@ void FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
 		samplesBufferS16.commitLast();
 	}
 #endif
+	return ret;
 }
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
 void FFMpegAudioDecoder::resampleFrame(uint8_t **output, int& outputsize)
@@ -1953,12 +1954,14 @@ void FFMpegStreamDecoder::jumpToPosition(number_t position)
 {
 	int64_t pos = (position* AV_TIME_BASE) / 1000;
 	av_seek_frame(formatCtx,-1,pos,0);
+	atend=false;
 }
 
 bool FFMpegStreamDecoder::decodeNextFrame()
 {
 	AVPacket pkt;
 	int ret=av_read_frame(formatCtx, &pkt);
+	atend=false;
 	if(ret<0)
 		return false;
 	auto time_base=formatCtx->streams[pkt.stream_index]->time_base;
@@ -1967,7 +1970,12 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 	if (pkt.stream_index==(int)audioIndex)
 	{
 		if (customAudioDecoder)
-			customAudioDecoder->decodePacket(&pkt, mtime);
+		{
+			int decoderesult = customAudioDecoder->decodePacket(&pkt, mtime);
+			// check if the last packet is decoded (only if we know the full size of the audio data)
+			if ((decoderesult == AVERROR_EOF || decoderesult == AVERROR(EAGAIN)) && this->fullstreamlength > 0)
+				atend=true;
+		}
 	}
 	else 
 	{

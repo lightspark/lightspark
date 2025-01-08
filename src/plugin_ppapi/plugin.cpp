@@ -30,6 +30,7 @@
 #include "backends/security.h"
 #include "backends/rendering.h"
 #include "backends/audio.h"
+#include "backends/decoder.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/display/NativeMenuItem.h"
 #include "scripting/flash/display/LoaderInfo.h"

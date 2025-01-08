@@ -25,7 +25,6 @@
 #include <iostream>
 #include "swftypes.h"
 #include "backends/geometry.h"
-#include "backends/decoder.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/MovieClip.h"
 
@@ -800,7 +799,7 @@ public:
 	~VideoFrameTag();
 	void execute(DisplayObjectContainer* parent, bool inskipping) override {}
 	uint8_t* getData() { return framedata; }
-	uint32_t getNumBytes() { return numbytes+AV_INPUT_BUFFER_PADDING_SIZE; }
+	uint32_t getNumBytes();
 	uint32_t getFrameNumber() { return FrameNum; }
 };
 

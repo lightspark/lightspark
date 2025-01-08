@@ -29,13 +29,16 @@
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
-#include "backends/decoder.h"
-#include "backends/audio.h"
 #include "backends/netutils.h"
+#include "backends/graphics.h"
 #include "NetStreamInfo.h"
 
 namespace lightspark
 {
+class VideoDecoder;
+class AudioDecoder;
+class AudioStream;
+class StreamDecoder;
 
 class URLRequest: public ASObject
 {

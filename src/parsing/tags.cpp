@@ -3202,8 +3202,7 @@ void AVM1InitActionTag::execute(RootMovieClip *root) const
 		LOG(LOG_ERROR,"sprite not found for InitActionTag:"<<SpriteId);
 		return;
 	}
-	MovieClip* o = sprite->instance(nullptr)->as<MovieClip>();
-	getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) AVM1InitActionEvent(root,_MR(o))));
+	root->AVM1checkInitActions(sprite->instance(nullptr)->as<MovieClip>());
 }
 
 void AVM1InitActionTag::executeDirect(MovieClip* clip) const

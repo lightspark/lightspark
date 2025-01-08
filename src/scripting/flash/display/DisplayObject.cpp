@@ -1998,19 +1998,34 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
 	ROUND_TO_TWIPS(newwidth);
 
 	number_t xmin,xmax,y1,y2;
-	if(!th->boundsRect(xmin,xmax,y1,y2,false))
-		return;
+	bool hasBounds = th->boundsRect(xmin,xmax,y1,y2,false);
 
-	number_t width=xmax-xmin;
-	if(width==0) //Cannot scale, nothing to do (See Reference)
-		return;
-	
-	if(width*th->sx!=newwidth) //If the width is changing, calculate new scale
-	{
-		if(th->useLegacyMatrix)
-			th->useLegacyMatrix=false;
-		th->setScaleX(newwidth/width);
-	}
+	number_t width = hasBounds ? xmax - xmin : 0;
+	number_t height = hasBounds ? y2 - y1 : 0;
+	auto aspectRatio = height / width;
+	Vector2f targetScale;
+
+	if (width != 0)
+		targetScale = Vector2f(newwidth / width, newwidth / height);
+
+	Vector2f prevScale(th->sx, th->sy);
+	auto rotation = th->getRotation() * (M_PI / 180.0);
+	auto cos = std::abs(std::cos(rotation));
+	auto sin = std::abs(std::sin(rotation));
+
+	Vector2f newScale
+	(
+		// x.
+		aspectRatio * (cos * targetScale.x + sin * targetScale.y) /
+		((cos + aspectRatio * sin) * (aspectRatio * cos + sin)),
+		// y.
+		(sin * prevScale.x + aspectRatio * cos * prevScale.y) /
+		(aspectRatio * cos + sin)
+	);
+	if (th->useLegacyMatrix)
+		th->useLegacyMatrix = false;
+	th->setScaleX(std::isfinite(newScale.x) ? newScale.x : 0);
+	th->setScaleY(std::isfinite(newScale.y) ? newScale.y : 0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getHeight)
@@ -2030,19 +2045,34 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setHeight)
 	ROUND_TO_TWIPS(newheight);
 
 	number_t x1,x2,ymin,ymax;
-	if(!th->boundsRect(x1,x2,ymin,ymax,false))
-		return;
+	bool hasBounds = th->boundsRect(x1,x2,ymin,ymax,false);
 
-	number_t height=ymax-ymin;
-	if(height==0) //Cannot scale, nothing to do (See Reference)
-		return;
+	number_t width = hasBounds ? x2 - x1 : 0;
+	number_t height = hasBounds ? ymax - ymin : 0;
+	auto aspectRatio = height / width;
+	Vector2f targetScale;
 
-	if(height*th->sy!=newheight) //If the height is changing, calculate new scale
-	{
-		if(th->useLegacyMatrix)
-			th->useLegacyMatrix=false;
-		th->setScaleY(newheight/height);
-	}
+	if (height != 0)
+		targetScale = Vector2f(newheight / width, newheight / height);
+
+	Vector2f prevScale(th->sx, th->sy);
+	auto rotation = th->getRotation() * (M_PI / 180.0);
+	auto cos = std::abs(std::cos(rotation));
+	auto sin = std::abs(std::sin(rotation));
+
+	Vector2f newScale
+	(
+		// x.
+		(aspectRatio * cos * prevScale.x + sin * prevScale.y) /
+		(aspectRatio * cos + sin),
+		// y.
+		aspectRatio * (sin * targetScale.x + cos * targetScale.y) /
+		((cos + aspectRatio * sin) * (aspectRatio * cos + sin))
+	);
+	if (th->useLegacyMatrix)
+		th->useLegacyMatrix = false;
+	th->setScaleX(std::isfinite(newScale.x) ? newScale.x : 0);
+	th->setScaleY(std::isfinite(newScale.y) ? newScale.y : 0);
 }
 
 Vector2f DisplayObject::getLocalMousePos()

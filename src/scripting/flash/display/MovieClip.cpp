@@ -1050,14 +1050,17 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		return;
 	}
 	toAdd->name = nameId;
+	if (toAdd->is<MovieClip>())
+	{
+		toAdd->as<MovieClip>()->inAVM1Attachment=true;
+		toAdd->as<MovieClip>()->advanceFrame(true);
+	}
 	if (argslen == 4)
 	{
 		ASObject* o = asAtomHandler::getObject(args[3]);
 		if (o)
 			o->copyValues(toAdd,wrk);
 	}
-	if (toAdd->is<MovieClip>())
-		toAdd->as<MovieClip>()->inAVM1Attachment=true;
 	if(th->hasLegacyChildAt(Depth) )
 	{
 		th->deleteLegacyChildAt(Depth,false);

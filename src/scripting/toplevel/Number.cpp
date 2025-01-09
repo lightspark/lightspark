@@ -25,6 +25,7 @@
 #include "scripting/toplevel/Math.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "3rdparty/avmplus/core/d2a.h"
+#include <iomanip>
 
 using namespace std;
 using namespace lightspark;
@@ -208,7 +209,115 @@ ASFUNCTIONBODY_ATOM(Number,generator)
 
 tiny_string Number::toString() const
 {
-	return Number::toString(isfloat ? dval : ival);
+	if (getInstanceWorker()->needsActionScript3())
+		return Number::toString(isfloat ? dval : ival);
+	else
+		return Number::AVM1toString(isfloat ? dval : ival,10);
+}
+
+// AVM1 doubleToString taken from gnash
+std::string Number::AVM1toString(double val, int radix)
+{
+	// Examples:
+	//
+	// e.g. for 9*.1234567890123456789:
+	// 9999.12345678901
+	// 99999.123456789
+	// 999999.123456789
+	// 9999999.12345679
+	// [...]
+	// 999999999999.123
+	// 9999999999999.12
+	// 99999999999999.1
+	// 999999999999999
+	// 1e+16
+	// 1e+17
+	//
+	// For 1*.111111111111111111111111111111111111:
+	// 1111111111111.11
+	// 11111111111111.1
+	// 111111111111111
+	// 1.11111111111111e+15
+	// 1.11111111111111e+16
+	//
+	// For 1.234567890123456789 * 10^-i:
+	// 1.23456789012346
+	// 0.123456789012346
+	// 0.0123456789012346
+	// 0.00123456789012346
+	// 0.000123456789012346
+	// 0.0000123456789012346
+	// 0.00000123456789012346
+	// 1.23456789012346e-6
+	// 1.23456789012346e-7
+
+	// Handle non-numeric values.
+	if (std::isnan(val)) return "NaN";
+
+	if (std::isinf(val)) return val < 0 ? "-Infinity" : "Infinity";
+
+	if (val == 0.0 || val == -0.0) return "0";
+
+	std::ostringstream ostr;
+
+	if (radix == 10) {
+
+		// ActionScript always expects dot as decimal point.
+		ostr.imbue(std::locale::classic());
+
+		// force to decimal notation for this range (because the
+		// reference player does)
+		if (std::abs(val) < 0.0001 && std::abs(val) >= 0.00001) {
+
+			// All nineteen digits (4 zeros + up to 15 significant digits)
+			ostr << std::fixed << std::setprecision(19) << val;
+
+			std::string str = ostr.str();
+
+			// Because 'fixed' also adds trailing zeros, remove them.
+			std::string::size_type pos = str.find_last_not_of('0');
+			if (pos != std::string::npos) {
+				str.erase(pos + 1);
+			}
+			return str;
+		}
+
+		ostr << std::setprecision(15) << val;
+
+		std::string str = ostr.str();
+
+		// Remove a leading zero from 2-digit exponent if any
+		std::string::size_type pos = str.find("e", 0);
+
+		if (pos != std::string::npos && str.at(pos + 2) == '0') {
+			str.erase(pos + 2, 1);
+		}
+
+		return str;
+	}
+
+	// Radix isn't 10
+	bool negative = (val < 0);
+	if (negative) val = -val;
+
+	double left = std::floor(val);
+	if (left < 1) return "0";
+
+	std::string str;
+	const std::string digits = "0123456789abcdefghijklmnopqrstuvwxyz";
+
+	// Construct the string backwards for speed, then reverse.
+	while (left) {
+		double n = left;
+		left = std::floor(left / radix);
+		n -= (left * radix);
+		str.push_back(digits[static_cast<int>(n)]);
+	}
+	if (negative) str.push_back('-');
+
+	std::reverse(str.begin(), str.end());
+
+	return str;
 }
 
 // doubletostring algorithm taken from https://github.com/adobe/avmplus/core/MathUtils.cpp

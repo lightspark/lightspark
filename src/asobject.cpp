@@ -3790,7 +3790,12 @@ tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk, bool fromAVM
 			}
 		}
 		case ATOM_NUMBERPTR:
-			return Number::toString(toNumber(a));
+		{
+			if (wrk->needsActionScript3())
+				return Number::toString(toNumber(a));
+			else
+				return as<Number>(a)->toString();
+		}
 		case ATOM_INTEGER:
 			return Integer::toString(a.intval>>3);
 		case ATOM_UINTEGER:

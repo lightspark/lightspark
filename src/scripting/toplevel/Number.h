@@ -37,6 +37,7 @@ friend class ABCVm;
 private:
 	static tiny_string purgeExponentLeadingZeros(const tiny_string& exponentialForm);
 	static int32_t countSignificantDigits(double v);
+	static std::string AVM1toString(double val, int radix);
 	enum DTOSTRMODE { DTOSTR_NORMAL, DTOSTR_FIXED, DTOSTR_PRECISION, DTOSTR_EXPONENTIAL };
 	static tiny_string toString(number_t value, DTOSTRMODE mode, int32_t precision);
 public:

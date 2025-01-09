@@ -91,6 +91,7 @@ swfFile(test.swfPath)
 		log,
 		true
 	);
+	sys->use_testrunner_date=true;
 	pt = new ParseThread(swfFile, sys->mainClip);
 
 	setTLSSys(getSys());

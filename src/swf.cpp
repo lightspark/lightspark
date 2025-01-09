@@ -251,7 +251,8 @@ SystemState::SystemState
 	static_XML_prettyIndent(2),
 	static_XML_prettyPrinting(true),
 	static_AVM1XMLDocument_ignoreWhite(false),
-	isinitialized(false)
+	isinitialized(false),
+	use_testrunner_date(false)
 {
 	//Forge the builtin strings
 	uniqueStringIDMap.reserve(LAST_BUILTIN_STRING);

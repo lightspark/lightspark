@@ -1470,6 +1470,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom res=asAtomHandler::invalidAtom;
 				if (asAtomHandler::is<MovieClip>(obj))
 					res = asAtomHandler::fromString(clip->getSystemState(),"movieclip");
+				else if (asAtomHandler::is<Date>(obj))
+					res = asAtomHandler::fromStringID(BUILTIN_STRINGS::STRING_STRING);
 				else
 					res = asAtomHandler::typeOf(obj);
 				ASATOM_DECREF(obj);

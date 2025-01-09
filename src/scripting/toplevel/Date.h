@@ -28,14 +28,16 @@ namespace lightspark
 class Date: public ASObject
 {
 private:
-	int64_t milliseconds;
+	number_t milliseconds;
 	int extrayears;
 	bool nan;
 	GDateTime *datetime;
 	GDateTime *datetimeUTC;
-	int64_t getMsSinceEpoch();
+	number_t getMsSinceEpoch();
 	tiny_string toString_priv(bool utc, const char* formatstr) const;
 	static number_t parse(tiny_string str);
+	int64_t getcurrentms();
+	GDateTime* getlocaldatetime(GDateTime* datetimeUTC);
 protected:
 	bool isValid() const { return !nan; }
 	int64_t getMs() const { return milliseconds; }
@@ -57,6 +59,7 @@ public:
 		datetime = nullptr;
 		datetimeUTC = nullptr;
 		extrayears = 0;
+		milliseconds=numeric_limits<double>::quiet_NaN();
 		nan = true;
 		return destructIntern();
 	}
@@ -127,7 +130,7 @@ public:
 	int getUTCYear();
 
 	
-	void MakeDateFromMilliseconds(int64_t ms);
+	void MakeDateFromMilliseconds(number_t ms);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	TRISTATE isLessAtom(asAtom& r);

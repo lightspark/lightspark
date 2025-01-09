@@ -570,6 +570,7 @@ public:
 	ASPROPERTY_STATIC(bool, AVM1XMLDocument, ignoreWhite);
 
 	ACQUIRE_RELEASE_FLAG(isinitialized);
+	bool use_testrunner_date; // ruffle tests use a specific date as "current date"
 	Mutex initializedMutex;
 	Cond initializedCond;
 	void waitInitialized();

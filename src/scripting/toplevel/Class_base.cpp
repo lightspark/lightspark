@@ -1081,7 +1081,7 @@ void Class_base::initializeProtectedNamespace(uint32_t nameId, const namespace_i
 
 variable* Class_base::findBorrowedSettable(const multiname& name, bool* has_getter)
 {
-	return ASObject::findSettableImpl(getSystemState(),borrowedVariables,name,has_getter);
+	return ASObject::findSettableImpl(getInstanceWorker(),borrowedVariables,name,has_getter);
 }
 
 variable* Class_base::findSettableInPrototype(const multiname& name, bool* has_getter)
@@ -1109,9 +1109,9 @@ EARLY_BIND_STATUS Class_base::resolveMultinameStatically(const multiname& name) 
 
 bool Class_base::checkExistingFunction(const multiname &name)
 {
-	variable* v = Variables.findObjVar(getSystemState(),name, DECLARED_TRAIT);
+	variable* v = Variables.findObjVar(getInstanceWorker(),name, DECLARED_TRAIT);
 	if (!v)
-		v = borrowedVariables.findObjVar(getSystemState(),name, DECLARED_TRAIT);
+		v = borrowedVariables.findObjVar(getInstanceWorker(),name, DECLARED_TRAIT);
 	if (v && asAtomHandler::isValid(v->var))
 		return this->isSealed;
 	else if (!this->isBuiltin())
@@ -1136,14 +1136,14 @@ bool Class_base::checkExistingFunction(const multiname &name)
 multiname* Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name, ASWorker* wrk, asAtom& closure)
 {
 	uint32_t nsRealId;
-	variable* obj = ASObject::findGettableImpl(getSystemState(), borrowedVariables,name,&nsRealId);
+	variable* obj = ASObject::findGettableImpl(getInstanceWorker(), borrowedVariables,name,&nsRealId);
 	if(!obj && name.hasEmptyNS)
 	{
 		//Check prototype chain
 		Prototype* proto = prototype.getPtr();
 		while(proto)
 		{
-			obj=proto->getObj()->Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
+			obj=proto->getObj()->Variables.findObjVar(getInstanceWorker(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
 			if(obj)
 			{
 				//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1210,7 +1210,7 @@ bool Class_base::isInterfaceMethod(const multiname& name)
 	const std::vector<Class_base*> interfaces = getInterfaces();
 	for(unsigned int i=0;i<interfaces.size();i++)
 	{
-		variable* v = interfaces[i]->borrowedVariables.findObjVar(getSystemState(),m,DECLARED_TRAIT);
+		variable* v = interfaces[i]->borrowedVariables.findObjVar(getInstanceWorker(),m,DECLARED_TRAIT);
 		if (v)
 			return true;
 	}
@@ -1280,7 +1280,7 @@ EARLY_BIND_STATUS ActivationType::resolveMultinameStatically(const multiname& na
 		multiname* mname=mi->context->getMultiname(t->name,nullptr);
 		std::cerr << "\t in " << *mname << std::endl;
 		assert_and_throw(mname->ns.size()==1 && mname->name_type==multiname::NAME_STRING);
-		if(mname->name_s_id!=name.normalizedNameId(mi->context->applicationDomain->getSystemState()))
+		if(mname->name_s_id!=name.normalizedNameId(mi->context->applicationDomain->getInstanceWorker()))
 			continue;
 		bool found=false;
 		for (auto it = name.ns.begin(); it != name.ns.end(); it++)

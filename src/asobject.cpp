@@ -40,6 +40,9 @@
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/flash/utils/Dictionary.h"
+#include "scripting/toplevel/Undefined.h"
+#include "scripting/toplevel/Null.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 
 using namespace lightspark;
@@ -221,28 +224,44 @@ TRISTATE ASObject::isLessAtom(asAtom& r)
 
 int variables_map::getNextEnumerable(unsigned int start)
 {
-	if(start>=Variables.size())
-		return -1;
-	variable* curvar = currentnameindex<=start ? currentnamevar : this->firstVar;
-	unsigned int i=currentnameindex<=start ? currentnameindex : 0;
-	while (i < start)
+	if((start==currentnameindex) && (currentnamevar == nullptr))
 	{
-		++i;
-		curvar = curvar->nextVar;
-	}
-	if(curvar==nullptr)
+		currentnameindex=UINT32_MAX;
 		return -1;
-	while(curvar->kind!=DYNAMIC_TRAIT || !curvar->isenumerable)
-	{
-		++i;
-		curvar = curvar->nextVar;
-		if(curvar==nullptr)
-			return -1;
 	}
-	currentnameindex=i;
-	currentnamevar=curvar;
-
-	return i;
+	if (start == 0)
+	{
+		currentnamevar = this->firstVar;
+		currentnameindex = 0;
+	}
+	else
+	{
+		if (start != currentnameindex+1)
+		{
+			currentnamevar = this->firstVar;
+			currentnameindex = 0;
+			do
+			{
+				if (currentnamevar->kind==DYNAMIC_TRAIT && currentnamevar->isenumerable)
+					++currentnameindex;
+				currentnamevar = currentnamevar->nextVar;
+			}
+			while (currentnameindex < start-1 && currentnamevar);
+		}
+		currentnamevar = currentnamevar->nextVar;
+		++currentnameindex;
+	}
+	while (currentnamevar && (currentnamevar->kind!=DYNAMIC_TRAIT || !currentnamevar->isenumerable))
+	{
+		currentnamevar = currentnamevar->nextVar;
+		++currentnameindex;
+	}
+	if(currentnamevar==nullptr)
+	{
+		currentnameindex=UINT32_MAX;
+		return -1;
+	}
+	return currentnameindex;
 }
 
 uint32_t ASObject::nextNameIndex(uint32_t cur_index)
@@ -749,10 +768,10 @@ bool ASObject::hasPropertyByMultiname(const multiname& name, bool considerDynami
 	if(considerDynamic)
 		validTraits|=DYNAMIC_TRAIT;
 
-	if(Variables.findObjVar(getSystemState(),name, validTraits)!=nullptr)
+	if(Variables.findObjVar(getInstanceWorker(),name, validTraits)!=nullptr)
 		return true;
 
-	if(classdef && classdef->borrowedVariables.findObjVar(getSystemState(),name, DECLARED_TRAIT)!=nullptr)
+	if(classdef && classdef->borrowedVariables.findObjVar(getInstanceWorker(),name, DECLARED_TRAIT)!=nullptr)
 		return true;
 
 	//Check prototype inheritance chain
@@ -923,13 +942,13 @@ void ASObject::setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind
 
 bool ASObject::deleteVariableByMultiname_intern(const multiname& name, ASWorker* wrk)
 {
-	variable* obj=Variables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
+	variable* obj=Variables.findObjVar(getInstanceWorker(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
 
 	if(obj==nullptr)
 	{
 		if (classdef && classdef->isSealed)
 		{
-			if (classdef->Variables.findObjVar(getSystemState(),name, DECLARED_TRAIT)!=nullptr)
+			if (classdef->Variables.findObjVar(getInstanceWorker(),name, DECLARED_TRAIT)!=nullptr)
 				createError<ReferenceError>(getInstanceWorker(),kDeleteSealedError,name.normalizedNameUnresolved(getSystemState()),classdef->getName());
 			return false;
 		}
@@ -949,7 +968,7 @@ bool ASObject::deleteVariableByMultiname_intern(const multiname& name, ASWorker*
 
 	ASObject* o = asAtomHandler::getObject(obj->var);
 	//Now kill the variable
-	Variables.killObjVar(getSystemState(),name);
+	Variables.killObjVar(getInstanceWorker(),name);
 	//Now dereference the value
 	if (o)
 		o->removeStoredMember();
@@ -965,9 +984,9 @@ void ASObject::setVariableByMultiname_i(multiname& name, int32_t value, ASWorker
 	setVariableByMultiname(name,v,CONST_NOT_ALLOWED,nullptr,wrk);
 }
 
-variable* ASObject::findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter)
+variable* ASObject::findSettableImpl(ASWorker* wrk,variables_map& map, const multiname& name, bool* has_getter)
 {
-	variable* ret=map.findVarOrSetter(sys,name,DECLARED_TRAIT|DYNAMIC_TRAIT);
+	variable* ret=map.findVarOrSetter(wrk,name,DECLARED_TRAIT|DYNAMIC_TRAIT);
 	if(ret)
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
@@ -984,7 +1003,7 @@ variable* ASObject::findSettableImpl(SystemState* sys,variables_map& map, const 
 
 variable* ASObject::findSettable(const multiname& name, bool* has_getter)
 {
-	return findSettableImpl(getSystemState(),Variables, name, has_getter);
+	return findSettableImpl(getInstanceWorker(),Variables, name, has_getter);
 }
 
 multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset, ASWorker* wrk)
@@ -995,7 +1014,6 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualClass)
 	bool has_getter=false;
 	variable* obj=findSettable(name, &has_getter);
-
 	if (obj && (obj->kind == CONSTANT_TRAIT && allowConst==CONST_NOT_ALLOWED))
 	{
 		if (asAtomHandler::isFunction(obj->var) || asAtomHandler::isValid(obj->setter))
@@ -1074,7 +1092,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 			return nullptr;
 		}
 
-		obj=Variables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT);
+		obj=Variables.findObjVar(getInstanceWorker(),name,NO_CREATE_TRAIT,DYNAMIC_TRAIT);
 		//Create a new dynamic variable
 		if(!obj)
 		{
@@ -1084,7 +1102,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 				return nullptr;
 			}
 
-			uint32_t nameID = name.normalizedNameId(getSystemState());
+			uint32_t nameID = name.normalizedNameId(getInstanceWorker());
 			variables_map::var_iterator inserted=Variables.Variables.insert(Variables.Variables.cbegin(),
 				make_pair(nameID,variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind(),name.isInteger,nameID)));
 			Variables.insertVar(&inserted->second);
@@ -1232,9 +1250,9 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 	isrefcounted = _isrefcounted;
 }
 
-void variables_map::killObjVar(SystemState* sys,const multiname& mname)
+void variables_map::killObjVar(ASWorker* wrk,const multiname& mname)
 {
-	uint32_t name=mname.normalizedNameId(sys);
+	uint32_t name=mname.normalizedNameId(wrk);
 	//The namespaces in the multiname are ordered. So it's possible to use lower_bound
 	//to find the first candidate one and move from it
 	assert(!mname.ns.empty());
@@ -1270,9 +1288,9 @@ Class_base* variables_map::getSlotType(unsigned int n)
 	return (Class_base*)(dynamic_cast<const Class_base*>(slots_vars[n-1]->type));
 }
 
-variable* variables_map::findObjVar(SystemState* sys,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
+variable* variables_map::findObjVar(ASWorker* wrk,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
 {
-	uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
+	uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(wrk);
 
 	var_iterator ret=Variables.find(name);
 	bool noNS = mname.ns.empty(); // no Namespace in multiname means we check for the empty Namespace
@@ -1359,7 +1377,7 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 		if (asAtomHandler::isInvalid(obj)) // create dynamic object
 		{
 			if(mainObj->is<Class_base>()
-				&& mainObj->as<Class_base>()->class_name.nameId == typemname->normalizedNameId(mainObj->getSystemState())
+				&& mainObj->as<Class_base>()->class_name.nameId == typemname->normalizedNameId(mainObj->getInstanceWorker())
 				&& mainObj->as<Class_base>()->class_name.nsStringId == typemname->ns[0].nsNameId
 				&& typemname->ns[0].kind == NAMESPACE)
 			{
@@ -1382,7 +1400,7 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 	if (asAtomHandler::getObject(value))
 		cloneable = false;
 
-	uint32_t name=mname.normalizedNameId(mainObj->getSystemState());
+	uint32_t name=mname.normalizedNameId(mainObj->getInstanceWorker());
 	auto it = Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable,mname.isInteger,name)));
 	insertVar(&it->second);
 	if (slot_id)
@@ -1525,22 +1543,39 @@ ASFUNCTIONBODY_ATOM(ASObject,propertyIsEnumerable)
 		asAtomHandler::setBool(ret,false);
 		return;
 	}
-	multiname name(NULL);
-	name.name_type=multiname::NAME_STRING;
-	name.name_s_id=asAtomHandler::toStringId(args[0],wrk);
+	multiname name(nullptr);
+	if ((asAtomHandler::isInteger(args[0]) || asAtomHandler::isUInteger(args[0]))&& asAtomHandler::toInt(args[0])>=0)
+	{
+		name.name_type=multiname::NAME_INT;
+		name.name_i=asAtomHandler::toInt(args[0]);
+		name.isInteger=true;
+	}
+	else
+	{
+		name.name_type=multiname::NAME_STRING;
+		name.name_s_id=asAtomHandler::toStringId(args[0],wrk);
+	}
 	name.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	name.isAttribute=false;
 	if (asAtomHandler::is<Array>(obj)) // propertyIsEnumerable(index) isn't mentioned in the ECMA specs but is tested for
 	{
 		Array* a = asAtomHandler::as<Array>(obj);
 		unsigned int index = 0;
-		if (a->isValidMultiname(wrk->getSystemState(),name,index))
+		if (a->isValidMultiname(wrk,name,index))
 		{
 			asAtomHandler::setBool(ret,index < (unsigned int)a->size());
 			return;
 		}
 	}
-	variable* v = asAtomHandler::toObject(obj,wrk)->Variables.findObjVar(wrk->getSystemState(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
+	else if (asAtomHandler::is<Dictionary>(obj))
+	{
+		if (asAtomHandler::as<Dictionary>(obj)->hasPropertyByMultiname(name,true,false,wrk))
+		{
+			asAtomHandler::setBool(ret,true);
+			return;
+		}
+	}
+	variable* v = asAtomHandler::toObject(obj,wrk)->Variables.findObjVar(wrk,name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
 	if (v)
 		asAtomHandler::setBool(ret,v->isenumerable);
 	else
@@ -1551,6 +1586,8 @@ ASFUNCTIONBODY_ATOM(ASObject,setPropertyIsEnumerable)
 	tiny_string propname;
 	bool isEnum;
 	ARG_CHECK(ARG_UNPACK(propname) (isEnum, true));
+	if (asAtomHandler::is<Dictionary>(obj)) // it seems that all entries in dictionary are always enumerable
+		return;
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=asAtomHandler::toStringId(args[0],wrk);
@@ -1620,7 +1657,7 @@ ASFUNCTIONBODY_ATOM(ASObject,AVM1_IgnoreSetter)
 
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 {
-	variable* v = Variables.findObjVar(getSystemState(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
+	variable* v = Variables.findObjVar(getInstanceWorker(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
 	if (v)
 		v->isenumerable = isEnum;
 }
@@ -1659,7 +1696,7 @@ void ASObject::initAdditionalSlots(std::vector<multiname*>& additionalslots)
 	unsigned int n = Variables.slots_vars.size();
 	for (auto it = additionalslots.begin(); it != additionalslots.end(); it++)
 	{
-		uint32_t nameId = (*it)->normalizedNameId(getSystemState());
+		uint32_t nameId = (*it)->normalizedNameId(getInstanceWorker());
 		auto ret=Variables.Variables.find(nameId);
 
 		assert_and_throw(ret!=Variables.Variables.end());
@@ -1680,7 +1717,7 @@ int32_t ASObject::getVariableByMultiname_i(const multiname& name, ASWorker* wrk)
 variable* ASObject::findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t *nsRealID, bool *isborrowed, bool considerdynamic,ASWorker* wrk)
 {
 	//Get from the current object without considering borrowed properties
-	variable* obj=Variables.findObjVar(getSystemState(),name,name.hasEmptyNS || considerdynamic ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,nsRealID);
+	variable* obj=Variables.findObjVar(getInstanceWorker(),name,name.hasEmptyNS || considerdynamic ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,nsRealID);
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1698,14 +1735,14 @@ variable* ASObject::findVariableByMultiname(const multiname& name, Class_base* c
 		{
 			if (isborrowed)
 				*isborrowed=true;
-			obj= ASObject::findGettableImpl(getSystemState(), cls->borrowedVariables,name,nsRealID);
+			obj= ASObject::findGettableImpl(getInstanceWorker(), cls->borrowedVariables,name,nsRealID);
 			if(!obj && name.hasEmptyNS)
 			{
 				//Check prototype chain
 				Prototype* proto = cls->getPrototype(wrk);
 				while(proto)
 				{
-					obj=proto->getObj()->Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealID);
+					obj=proto->getObj()->Variables.findObjVar(getInstanceWorker(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealID);
 					if(obj)
 					{
 						//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1730,7 +1767,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 	assert(wrk==getWorker());
 	uint32_t nsRealId;
 	GET_VARIABLE_RESULT res = GET_VARIABLE_RESULT::GETVAR_NORMAL;
-	variable* obj=Variables.findObjVar(getSystemState(),name,((opt & FROM_GETLEX) || name.hasEmptyNS || name.hasBuiltinNS || name.ns.empty()) ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId);
+	variable* obj=Variables.findObjVar(getInstanceWorker(),name,((opt & FROM_GETLEX) || name.hasEmptyNS || name.hasBuiltinNS || name.ns.empty()) ? DECLARED_TRAIT|DYNAMIC_TRAIT : DECLARED_TRAIT,&nsRealId);
 	if(obj)
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1748,14 +1785,14 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		//Look for borrowed traits before
 		if (cls)
 		{
-			obj= ASObject::findGettableImpl(getSystemState(), cls->borrowedVariables,name,&nsRealId);
+			obj= ASObject::findGettableImpl(getInstanceWorker(), cls->borrowedVariables,name,&nsRealId);
 			if(!obj && ((opt & DONT_CHECK_CLASS) == 0) && name.hasEmptyNS)
 			{
 				//Check prototype chain
 				Prototype* proto = cls->getPrototype(wrk);
 				while(proto)
 				{
-					obj=proto->getObj()->Variables.findObjVar(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
+					obj=proto->getObj()->Variables.findObjVar(getInstanceWorker(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,&nsRealId);
 					if(obj)
 					{
 						//It seems valid for a class to redefine only the setter, so if we can't find
@@ -2165,8 +2202,6 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 
 void variables_map::insertVar(variable* v,bool prepend)
 {
-	currentnameindex=UINT32_MAX;
-
 	if (v->nameStringID==BUILTIN_STRINGS::STRING_PROTO || v->nameStringID==BUILTIN_STRINGS::PROTOTYPE)
 		v->isenumerable=false;
 	assert(v->prevVar==nullptr && v->nextVar==nullptr);
@@ -2193,8 +2228,9 @@ void variables_map::insertVar(variable* v,bool prepend)
 }
 void variables_map::removeVar(variable* v)
 {
-	currentnameindex=UINT32_MAX;
 	assert(v->prevVar || v->nextVar || (this->firstVar==v && this->lastVar==v));
+	if (currentnamevar == v)
+		currentnamevar = v->nextVar;
 	if (v->prevVar)
 		v->prevVar->nextVar = v->nextVar;
 	else
@@ -2660,9 +2696,9 @@ void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 	}
 }
 
-uint32_t variables_map::findInstanceSlotByMultiname(multiname* name,SystemState* sys)
+uint32_t variables_map::findInstanceSlotByMultiname(multiname* name,ASWorker* wrk)
 {
-	uint32_t nameId = name->normalizedNameId(sys);
+	uint32_t nameId = name->normalizedNameId(wrk);
 	var_iterator it = Variables.find(nameId);
 	while(it!=Variables.end() && it->first == nameId)
 	{
@@ -2677,18 +2713,9 @@ uint32_t variables_map::findInstanceSlotByMultiname(multiname* name,SystemState*
 const variable* variables_map::getValueAt(unsigned int index)
 {
 	//TODO: CHECK behaviour on overridden methods
-	if(index<Variables.size())
+	if(currentnamevar)
 	{
-		variable* curvar =currentnameindex <= index ? currentnamevar : this->firstVar;
-		uint32_t i = currentnameindex <= index ? currentnameindex : 0;
-		while (i < index)
-		{
-			++i;
-			curvar=curvar->nextVar;
-		}
-		currentnameindex=index;
-		currentnamevar=curvar;
-		return curvar;
+		return currentnamevar;
 	}
 	else
 		throw RunTimeException("getValueAt out of bounds");
@@ -2717,19 +2744,10 @@ void ASObject::getValueAt(asAtom &ret,int index)
 uint32_t variables_map::getNameAt(unsigned int index,bool& nameIsInteger)
 {
 	//TODO: CHECK behaviour on overridden methods
-	if(index<Variables.size())
+	if(currentnamevar)
 	{
-		variable* curvar =currentnameindex<=index ? currentnamevar : this->firstVar;
-		uint32_t i = currentnameindex <= index ? currentnameindex : 0;
-		while (i < index)
-		{
-			++i;
-			curvar = curvar->nextVar;
-		}
-		currentnameindex=index;
-		currentnamevar=curvar;
-		nameIsInteger = curvar->nameIsInteger;
-		return curvar->nameStringID;
+		nameIsInteger = currentnamevar->nameIsInteger;
+		return currentnamevar->nameStringID;
 	}
 	else
 		throw RunTimeException("getNameAt out of bounds");
@@ -3215,7 +3233,7 @@ void ASObject::setprop_prototype(_NR<ASObject>& prototype,uint32_t nameID)
 	}
 	if(!ret)
 	{
-		ret = Variables.findObjVar(getSystemState(),prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
+		ret = Variables.findObjVar(getInstanceWorker(),prototypeName,DYNAMIC_TRAIT,DECLARED_TRAIT|DYNAMIC_TRAIT);
 	}
 	ret->isenumerable=false;
 	if(asAtomHandler::isValid(ret->setter))
@@ -3476,16 +3494,32 @@ void asAtomHandler::fillMultiname(asAtom& a, ASWorker* wrk, multiname &name)
 			name.name_d = toNumber(a);
 			break;
 		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
-			name.name_type = multiname::NAME_INT;
-			name.name_i = toInt(a);
+			name.name_type=multiname::NAME_OBJECT;
+			name.name_o=a;
 			break;
 		case ATOM_STRINGID:
 			name.name_type = multiname::NAME_STRING;
 			name.name_s_id = a.uintval>>3;
 			break;
+		case ATOM_STRINGPTR:
+			name.name_type = multiname::NAME_STRING;
+			name.name_s_id = asAtomHandler::toStringId(a,wrk);
+			break;
+		case ATOM_U_INTEGERPTR:
+			if (asAtomHandler::isInteger(a))
+			{
+				name.name_type = multiname::NAME_INT;
+				name.name_i = asAtomHandler::toInt(a);
+			}
+			else
+			{
+				name.name_type = multiname::NAME_UINT;
+				name.name_ui = asAtomHandler::toUInt(a);
+			}
+			break;
 		default:
 			name.name_type=multiname::NAME_OBJECT;
-			name.name_o=toObject(a,wrk);
+			name.name_o=a;
 			break;
 	}
 }

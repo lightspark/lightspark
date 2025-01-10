@@ -306,22 +306,7 @@ enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE
 enum GET_VARIABLE_RESULT {GETVAR_NORMAL=0x00, GETVAR_CACHEABLE=0x01, GETVAR_ISGETTER=0x02, GETVAR_ISCONSTANT=0x04, GETVAR_ISNEWOBJECT=0x08};
 enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, FROM_GETLEX=0x02, DONT_CALL_GETTER=0x04, NO_INCREF=0x08, DONT_CHECK_CLASS=0x10, DONT_CHECK_PROTOTYPE=0x20};
 
-#ifdef LIGHTSPARK_64
-union asAtom
-{
-	int64_t intval;
-	uint64_t uintval;
-};
-#define LIGHTSPARK_ATOM_VALTYPE uint64_t
-#else
-union asAtom
-{
-	int32_t intval;
-	uint32_t uintval;
-};
-#define LIGHTSPARK_ATOM_VALTYPE uint32_t
-#endif
-// atom is a 32bit value (64bit on 64bit architecture):
+// asAtom is a 32bit value (64bit on 64bit architecture):
 // malloc guarantees that the returned pointer is always a multiple of eight
 // so we can use the lower 3 bits to indicate the type
 // layout of the least significant byte:
@@ -697,7 +682,6 @@ public:
 	variable* lastVar;
 
 	// these keep track of the index when wandering through the dynamic entries by nextNameIndex
-	// they will be reset whenever a new variable is added or en entry is deleted or currentnameindex is greater than the requested index (by getNameAt/getValueAt)
 	uint32_t currentnameindex;
 	variable* currentnamevar;
 	
@@ -714,17 +698,17 @@ public:
 	   @param traitKinds Bitwise OR of accepted trait kinds
 	*/
 	variable* findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
-	variable* findObjVar(SystemState* sys,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
+	variable* findObjVar(ASWorker* wrk, const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
 	// adds a dynamic variable without checking if a variable with this name already exists
 	void setDynamicVarNoCheck(uint32_t nameID,asAtom& v, bool nameIsInteger,bool prepend);
 	/**
 	 * Const version of findObjVar, useful when looking for getters
 	 */
-	FORCE_INLINE const variable* findObjVarConst(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = nullptr) const
+	FORCE_INLINE const variable* findObjVarConst(ASWorker* wrk,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = nullptr) const
 	{
 		if (mname.isEmpty())
 			return nullptr;
-		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
+		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(wrk);
 		bool noNS = mname.ns.empty(); // no Namespace in multiname means we don't care about the namespace and take the first match
 		const_var_iterator ret=Variables.find(name);
 		auto nsIt=mname.ns.cbegin();
@@ -759,11 +743,11 @@ public:
 	}
 
 	//
-	FORCE_INLINE variable* findObjVar(SystemState* sys,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = nullptr)
+	FORCE_INLINE variable* findObjVar(ASWorker* wrk,const multiname& mname, uint32_t traitKinds, uint32_t* nsRealId = nullptr)
 	{
 		if (mname.isEmpty())
 			return nullptr;
-		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
+		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(wrk);
 		bool noNS = mname.ns.empty(); // no Namespace in multiname means we don't care about the namespace and take the first match
 
 		var_iterator ret=Variables.find(name);
@@ -798,9 +782,9 @@ public:
 		return nullptr;
 	}
 	
-	FORCE_INLINE variable* findVarOrSetter(SystemState* sys,const multiname& mname, uint32_t traitKinds)
+	FORCE_INLINE variable* findVarOrSetter(ASWorker* wrk,const multiname& mname, uint32_t traitKinds)
 	{
-		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(sys);
+		uint32_t name=mname.name_type == multiname::NAME_STRING ? mname.name_s_id : mname.normalizedNameId(wrk);
 		
 		var_iterator ret=Variables.find(name);
 		bool noNS = mname.ns.empty(); // no Namespace in multiname means we check for the empty Namespace
@@ -856,7 +840,7 @@ public:
 	
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(multiname &mname, asAtom &obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
-	void killObjVar(SystemState* sys, const multiname& mname);
+	void killObjVar(ASWorker* wrk, const multiname& mname);
 	FORCE_INLINE asAtom getSlot(unsigned int n)
 	{
 		assert_and_throw(n > 0 && n <= slotcount);
@@ -877,7 +861,7 @@ public:
 	}
 	Class_base* getSlotType(unsigned int n);
 	
-	uint32_t findInstanceSlotByMultiname(multiname* name, SystemState *sys);
+	uint32_t findInstanceSlotByMultiname(multiname* name, ASWorker* wrk);
 	FORCE_INLINE bool setSlot(ASWorker* wrk, unsigned int n, asAtom &o);
 	/*
 	 * This version of the call is guarantee to require no type conversion
@@ -950,7 +934,7 @@ private:
 	Class_base* classdef;
 	inline const variable* findGettable(const multiname& name, uint32_t* nsRealId = nullptr) const DLL_LOCAL
 	{
-		const variable* ret=Variables.findObjVarConst(getSystemState(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
+		const variable* ret=Variables.findObjVarConst(getInstanceWorker(),name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
 		if(ret)
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
@@ -984,10 +968,10 @@ protected:
 	bool preparedforshutdown:1;
 	bool markedforgarbagecollection:1;
 	bool deletedingarbagecollection:1;
-	static variable* findSettableImpl(SystemState* sys,variables_map& map, const multiname& name, bool* has_getter);
-	static FORCE_INLINE const variable* findGettableImplConst(SystemState* sys, const variables_map& map, const multiname& name, uint32_t* nsRealId = nullptr)
+	static variable* findSettableImpl(ASWorker* wrk, variables_map& map, const multiname& name, bool* has_getter);
+	static FORCE_INLINE const variable* findGettableImplConst(ASWorker* wrk, const variables_map& map, const multiname& name, uint32_t* nsRealId = nullptr)
 	{
-		const variable* ret=map.findObjVarConst(sys,name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
+		const variable* ret=map.findObjVarConst(wrk,name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
 		if(ret)
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
@@ -997,9 +981,9 @@ protected:
 		}
 		return ret;
 	}
-	static FORCE_INLINE variable* findGettableImpl(SystemState* sys, variables_map& map, const multiname& name, uint32_t* nsRealId = nullptr)
+	static FORCE_INLINE variable* findGettableImpl(ASWorker* wrk, variables_map& map, const multiname& name, uint32_t* nsRealId = nullptr)
 	{
-		variable* ret=map.findObjVar(sys,name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
+		variable* ret=map.findObjVar(wrk,name,DECLARED_TRAIT|DYNAMIC_TRAIT,nsRealId);
 		if(ret)
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
@@ -1215,6 +1199,7 @@ public:
 		multiname m(nullptr);
 		m.name_type = multiname::NAME_INT;
 		m.name_i = index;
+		m.isInteger=index>=0;
 		setVariableByMultiname(m,o,allowConst,alreadyset,wrk);
 	}
 	
@@ -1277,7 +1262,7 @@ public:
 	}
 	uint32_t findInstanceSlotByMultiname(multiname* name)
 	{
-		return Variables.findInstanceSlotByMultiname(name,getSystemState());
+		return Variables.findInstanceSlotByMultiname(name,getInstanceWorker());
 	}
 	unsigned int numSlots() const
 	{

@@ -377,7 +377,7 @@ asAtom Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringMap,
 		else
 		{
 			name.name_type=multiname::NAME_OBJECT;
-			name.name_o = asAtomHandler::getObject(key);
+			name.name_o = key;
 		}
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		ret->setVariableByMultiname(name,value,ASObject::CONST_ALLOWED,nullptr,input->getInstanceWorker());

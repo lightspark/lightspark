@@ -31,10 +31,13 @@ class Dictionary: public ASObject
 {
 friend class ABCVm;
 private:
-	typedef std::map<ASObject*, asAtom> dictType;
+	typedef std::map<asAtom, asAtom> dictType;
 	dictType data;
-	dictType::iterator findKey(ASObject *);
+	dictType::iterator findKey(asAtom o);
+	dictType::iterator currentnameiterator;
+	uint32_t currentnameindex;
 	bool weakkeys;
+	void getKeyFromMultiname(const multiname& name, lightspark::asAtom& key);
 public:
 	Dictionary(ASWorker* wrk,Class_base* c);
 	void finalize() override;

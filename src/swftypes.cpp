@@ -77,7 +77,7 @@ const tiny_string multiname::qualifiedString(SystemState* sys, bool forDescribeT
 	}
 }
 
-const tiny_string multiname::normalizedName(SystemState* sys) const
+const tiny_string multiname::normalizedName(ASWorker* wrk) const
 {
 	switch(name_type)
 	{
@@ -88,9 +88,9 @@ const tiny_string multiname::normalizedName(SystemState* sys) const
 		case multiname::NAME_NUMBER:
 			return Number::toString(name_d);
 		case multiname::NAME_STRING:
-			return sys->getStringFromUniqueId(name_s_id);
+			return wrk->getSystemState()->getStringFromUniqueId(name_s_id);
 		case multiname::NAME_OBJECT:
-			return name_o ? name_o->toString() : "*";
+			return asAtomHandler::isValid(name_o) ? asAtomHandler::toString(name_o,wrk) : "*";
 		default:
 			assert("Unexpected name kind" && false);
 			//Should never reach this
@@ -98,7 +98,7 @@ const tiny_string multiname::normalizedName(SystemState* sys) const
 	}
 }
 
-uint32_t multiname::normalizedNameId(SystemState* sys) const
+uint32_t multiname::normalizedNameId(ASWorker* wrk) const
 {
 	switch(name_type)
 	{
@@ -111,7 +111,7 @@ uint32_t multiname::normalizedNameId(SystemState* sys) const
 			if (name_s_id != UINT32_MAX)
 				return name_s_id;
 			else
-				return sys->getUniqueStringId(normalizedName(sys));
+				return wrk->getSystemState()->getUniqueStringId(normalizedName(wrk));
 		default:
 			assert("Unexpected name kind" && false);
 			//Should never reach this
@@ -132,7 +132,7 @@ const tiny_string multiname::normalizedNameUnresolved(SystemState* sys) const
 		case multiname::NAME_STRING:
 			return sys->getStringFromUniqueId(name_s_id);
 		case multiname::NAME_OBJECT:
-			return name_o ? name_o->getClassName() : "*";
+			return asAtomHandler::isValid(name_o) ? asAtomHandler::getObjectNoCheck(name_o)->getClassName() : "*";
 		default:
 			assert("Unexpected name kind" && false);
 			//Should never reach this
@@ -142,9 +142,9 @@ const tiny_string multiname::normalizedNameUnresolved(SystemState* sys) const
 
 void multiname::setName(asAtom& n,ASWorker* w)
 {
-	if (name_type==NAME_OBJECT && name_o!=nullptr) {
-		name_o->decRef();
-		name_o = nullptr;
+	if (name_type==NAME_OBJECT) {
+		ASATOM_DECREF(name_o);
+		name_o = asAtomHandler::invalidAtom;
 	}
 
 	switch(asAtomHandler::getObjectType(n))
@@ -168,10 +168,10 @@ void multiname::setName(asAtom& n,ASWorker* w)
 		isInteger=false;
 		break;
 	case T_BOOLEAN:
-		name_i=asAtomHandler::toInt(n);
-		name_type = NAME_INT;
+		name_o=n;
+		name_type = NAME_OBJECT;
 		name_s_id = UINT32_MAX;
-		isInteger=true;
+		isInteger=false;
 		break;
 	case T_QNAME:
 		{
@@ -189,20 +189,20 @@ void multiname::setName(asAtom& n,ASWorker* w)
 		}
 		break;
 	case T_NULL:
-		name_o=w->getSystemState()->getNullRef();
+		name_o=asAtomHandler::nullAtom;
 		name_type = NAME_OBJECT;
 		name_s_id = UINT32_MAX;
 		isInteger=false;
 		break;
 	case T_UNDEFINED:
-		name_o=w->getSystemState()->getUndefinedRef();
+		name_o=asAtomHandler::undefinedAtom;
 		name_type = NAME_OBJECT;
 		name_s_id = UINT32_MAX;
 		isInteger=false;
 		break;
 	default:
 		ASATOM_INCREF(n);
-		name_o=asAtomHandler::getObject(n);
+		name_o=n;
 		name_type = NAME_OBJECT;
 		name_s_id = UINT32_MAX;
 		isInteger=false;
@@ -212,14 +212,14 @@ void multiname::setName(asAtom& n,ASWorker* w)
 
 void multiname::resetNameIfObject()
 {
-	if(name_type==NAME_OBJECT && name_o)
+	if(name_type==NAME_OBJECT)
 	{
-		name_o->decRef();
-		name_o=nullptr;
+		ASATOM_DECREF(name_o);
+		name_o = asAtomHandler::invalidAtom;
 	}
 }
 
-bool multiname::toUInt(SystemState* sys, uint32_t& index, bool acceptStringFractions, bool *isNumber, bool forAVM1) const
+bool multiname::toUInt(ASWorker* wrk, uint32_t& index, bool acceptStringFractions, bool *isNumber, bool forAVM1) const
 {
 	if (isNumber)
 		*isNumber = false;
@@ -233,12 +233,12 @@ bool multiname::toUInt(SystemState* sys, uint32_t& index, bool acceptStringFract
 			if(name_type==multiname::NAME_STRING)
 			{
 				if (name_s_id < BUILTIN_STRINGS::LAST_BUILTIN_STRING &&
-					(name_s_id < 0x30 || name_s_id > 0x39)) // char 0-9
+					((name_s_id < 0x30) || (name_s_id > 0x39))) // char 0-9
 					return false;
-				str=sys->getStringFromUniqueId(name_s_id);
+				str=wrk->getSystemState()->getStringFromUniqueId(name_s_id);
 			}
 			else
-				str=name_o->toString();
+				str=asAtomHandler::toString(name_o,wrk);
 
 			if(str.empty())
 				return false;
@@ -371,7 +371,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const multiname& r)
 	else if(r.name_type==multiname::NAME_STRING)
 		s << getSys()->getStringFromUniqueId(r.name_s_id);
 	else
-		s << r.name_o; //We print the hexadecimal value
+		s << asAtomHandler::toDebugString(r.name_o);
 	return s;
 }
 

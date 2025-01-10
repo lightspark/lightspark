@@ -479,7 +479,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 				{
 					//Create a new array
 					asAtom* proxyArgs=g_newa(asAtom, m+1);
-					ASObject* namearg = abstract_s(th->worker,name->normalizedName(th->sys));
+					ASObject* namearg = abstract_s(th->worker,name->normalizedName(th->worker));
 					namearg->setProxyProperty(*name);
 					proxyArgs[0]=asAtomHandler::fromObject(namearg);
 					for(int i=0;i<m;i++)
@@ -2368,10 +2368,10 @@ bool ABCVm::in(ASObject* val2, ASObject* val1)
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_OBJECT;
 	//Acquire the reference
-	name.name_o=val1;
+	name.name_o=asAtomHandler::fromObject(val1);
 	name.ns.emplace_back(val2->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	bool ret=val2->hasPropertyByMultiname(name, true, true,val2->getInstanceWorker());
-	name.name_o=nullptr;
+	name.name_o=asAtomHandler::invalidAtom;
 	val1->decRef();
 	val2->decRef();
 	return ret;
@@ -2538,7 +2538,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 			
 			//Create a new array
 			asAtom* proxyArgs=g_newa(asAtom, 1);
-			ASObject* namearg = abstract_s(th->worker, name->normalizedName(th->sys));
+			ASObject* namearg = abstract_s(th->worker, name->normalizedName(th->worker));
 			namearg->setProxyProperty(*name);
 			proxyArgs[0]=asAtomHandler::fromObject(namearg);
 
@@ -3010,11 +3010,11 @@ void ABCVm::callImpl(call_context* th, asAtom& f, asAtom& obj, asAtom* args, int
 bool ABCVm::deleteProperty(ASObject* obj, multiname* name)
 {
 	LOG_CALL("deleteProperty " << *name<<" "<<obj->toDebugString());
-	if (name->name_type == multiname::NAME_OBJECT && name->name_o)
+	if (name->name_type == multiname::NAME_OBJECT && asAtomHandler::isValid(name->name_o))
 	{
-		if (name->name_o->is<XMLList>())
+		if (asAtomHandler::is<XMLList>(name->name_o))
 		{
-			createError<TypeError>(getWorker(),kDeleteTypeError,name->name_o->getClassName());
+			createError<TypeError>(getWorker(),kDeleteTypeError,asAtomHandler::getObjectNoCheck(name->name_o)->getClassName());
 			name->resetNameIfObject();
 			return false;
 		}

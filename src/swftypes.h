@@ -53,7 +53,7 @@ enum BUILTIN_STRINGS { EMPTY=0, STRING_WILDCARD='*', ANY=BUILTIN_STRINGS_CHAR_MA
 					   ,STRING_PROTO,STRING_TARGET,STRING_FLASH_EVENTS_IEVENTDISPATCHER,STRING_ADDEVENTLISTENER,STRING_REMOVEEVENTLISTENER,STRING_DISPATCHEVENT,STRING_HASEVENTLISTENER
 					   ,STRING_ONCONNECT,STRING_ONDATA,STRING_ONCLOSE,STRING_ONSELECT
 					   ,STRING_ADD,STRING_ALPHA,STRING_DARKEN,STRING_DIFFERENCE,STRING_ERASE,STRING_HARDLIGHT,STRING_INVERT,STRING_LAYER,STRING_LIGHTEN,STRING_MULTIPLY,STRING_OVERLAY,STRING_SCREEN,STRING_SUBTRACT
-					   ,STRING_TEXT
+					   ,STRING_TEXT,STRING_NULL,STRING_TRUE,STRING_FALSE
 					   ,LAST_BUILTIN_STRING };
 enum BUILTIN_NAMESPACES { EMPTY_NS=0, AS3_NS };
 
@@ -437,6 +437,26 @@ struct nsNameAndKind
 	}
 };
 
+#ifdef LIGHTSPARK_64
+union asAtom
+{
+	int64_t intval;
+	uint64_t uintval;
+	bool operator<(const asAtom& r) const
+	{
+		return uintval < r.uintval;
+	}
+};
+#define LIGHTSPARK_ATOM_VALTYPE uint64_t
+#else
+union asAtom
+{
+	int32_t intval;
+	uint32_t uintval;
+};
+#define LIGHTSPARK_ATOM_VALTYPE uint32_t
+#endif
+
 struct multiname: public memory_reporter
 {
 	uint32_t name_s_id;
@@ -445,7 +465,7 @@ struct multiname: public memory_reporter
 		int32_t name_i;
 		uint32_t name_ui;
 		number_t name_d;
-		ASObject* name_o;
+		asAtom name_o;
 	};
 	std::vector<nsNameAndKind, reporter_allocator<nsNameAndKind>> ns;
 	Type* cachedType;
@@ -458,18 +478,19 @@ struct multiname: public memory_reporter
 	bool hasBuiltinNS:1;
 	bool hasGlobalNS:1;
 	bool isInteger:1;
-	multiname(MemoryAccount* m):name_s_id(UINT32_MAX),name_o(nullptr),ns(reporter_allocator<nsNameAndKind>(m)),cachedType(nullptr),name_type(NAME_OBJECT),isAttribute(false),isStatic(true),hasEmptyNS(true),hasBuiltinNS(false),hasGlobalNS(true),isInteger(false)
+	multiname(MemoryAccount* m):name_s_id(UINT32_MAX),ns(reporter_allocator<nsNameAndKind>(m)),cachedType(nullptr),name_type(NAME_OBJECT),isAttribute(false),isStatic(true),hasEmptyNS(true),hasBuiltinNS(false),hasGlobalNS(true),isInteger(false)
 	{
+		name_o.uintval=0;
 	}
 	
 	/*
 		Returns a string name whatever is the name type
 	*/
-	const tiny_string normalizedName(SystemState *sys) const;
+	const tiny_string normalizedName(ASWorker* wrk) const;
 	/*
 	 * 	Return a string id whatever is the name type
 	 */
-	uint32_t normalizedNameId(SystemState *sys) const;
+	uint32_t normalizedNameId(ASWorker* wrk) const;
 	/*
 		Returns a string name whatever is the name type, but does not resolve NAME_OBJECT names
 		this should be used for exception or debug messages to avoid calling 
@@ -482,8 +503,8 @@ struct multiname: public memory_reporter
 	void setName(union asAtom &n, ASWorker* w);
 	void resetNameIfObject();
 	inline bool isQName() const { return ns.size() == 1; }
-	bool toUInt(SystemState *sys, uint32_t& out, bool acceptStringFractions=false, bool* isNumber=nullptr, bool forAVM1=false) const;
-	inline bool isEmpty() const { return name_type == NAME_OBJECT && name_o == nullptr;}
+	bool toUInt(ASWorker* wrk, uint32_t& out, bool acceptStringFractions=false, bool* isNumber=nullptr, bool forAVM1=false) const;
+	inline bool isEmpty() const { return name_type == NAME_OBJECT && name_o.uintval == 0;}
 };
 
 class FLOAT 

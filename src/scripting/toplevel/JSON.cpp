@@ -239,7 +239,7 @@ bool JSON::parse(const tiny_string &jsonstring, CharIterator& it, asAtom& parent
 		
 		if (haskey)
 		{
-			params[0] = asAtomHandler::fromObject(abstract_s(wrk,key.normalizedName(wrk->getSystemState())));
+			params[0] = asAtomHandler::fromObject(abstract_s(wrk,key.normalizedName(wrk)));
 			if (asAtomHandler::isObject(parent) && asAtomHandler::getObjectNoCheck(parent)->hasPropertyByMultiname(key,true,false,wrk))
 			{
 				asAtomHandler::getObjectNoCheck(parent)->getVariableByMultiname(params[1],key,GET_VARIABLE_OPTION::NONE,wrk);

@@ -96,12 +96,12 @@ void setCallException(const asAtom& obj, multiname* name, ASWorker* wrk)
 	else if (pobj && pobj->hasPropertyByMultiname(*name,true,true,wrk))
 	{
 		tiny_string clsname = pobj->getClass()->getQualifiedClassName();
-		createError<ReferenceError>(wrk,kWriteOnlyError, name->normalizedName(wrk->getSystemState()), clsname);
+		createError<ReferenceError>(wrk,kWriteOnlyError, name->normalizedName(wrk), clsname);
 	}
 	else if (cls && cls->isSealed)
 	{
 		tiny_string clsname = cls->getQualifiedClassName();
-		createError<ReferenceError>(wrk,kReadSealedError, name->normalizedName(wrk->getSystemState()), clsname);
+		createError<ReferenceError>(wrk,kReadSealedError, name->normalizedName(wrk), clsname);
 	}
 	else if (pobj && pobj->is<Class_base>())
 	{
@@ -1435,7 +1435,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 				{
 					//Create a new array
 					asAtom* proxyArgs=g_newa(asAtom,argsnum+1);
-					ASObject* namearg = abstract_s(context->worker,name->normalizedName(context->sys));
+					ASObject* namearg = abstract_s(context->worker,name->normalizedName(context->worker));
 					namearg->setProxyProperty(*name);
 					proxyArgs[0]=asAtomHandler::fromObject(namearg);
 					for(uint32_t i=0;i<argsnum;i++)

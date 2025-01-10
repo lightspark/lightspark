@@ -872,7 +872,7 @@ ASFUNCTIONBODY_ATOM(XML,child)
 	mname.name_type=multiname::NAME_STRING;
 	mname.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	mname.isAttribute=false;
-	if(XML::isValidMultiname(wrk->getSystemState(),mname, index))
+	if(XML::isValidMultiname(wrk,mname, index))
 		th->childrenImplIndex(res, index);
 	else
 		th->childrenImpl(res, arg0);
@@ -1394,7 +1394,7 @@ void XML::getDescendantsByQName(const multiname& name, XMLVector& ret) const
 {
 	if (!constructed)
 		return;
-	uint32_t nodenameID = name.normalizedNameId(getSystemState());
+	uint32_t nodenameID = name.normalizedNameId(getInstanceWorker());
 	if (name.isAttribute && !attributelist.isNull())
 	{
 		for (uint32_t i = 0; i < attributelist->nodes.size(); i++)
@@ -1556,8 +1556,8 @@ XML::XMLVector XML::getValuesByMultiname(_NR<XMLList> nodelist, const multiname&
 		defns = nodenamespace_uri;
 	else
 		defns = getInstanceWorker()->getDefaultXMLNamespaceID();
-	tiny_string normalizedName=name.normalizedName(getSystemState());
-	uint32_t normalizedNameID = name.normalizedNameId(getSystemState());
+	tiny_string normalizedName=name.normalizedName(getInstanceWorker());
+	uint32_t normalizedNameID = name.normalizedNameId(getInstanceWorker());
 	if (normalizedName.startsWith("@"))
 		normalizedNameID = getSystemState()->getUniqueStringId(normalizedName.substr(1,normalizedName.end()));
 
@@ -1666,8 +1666,8 @@ GET_VARIABLE_RESULT XML::getVariableByMultiname(asAtom& ret, const multiname& na
 	bool isAttr=name.isAttribute;
 	unsigned int index=0;
 
-	uint32_t normalizedNameID=name.normalizedNameId(getSystemState());
-	tiny_string normalizedName = name.normalizedName(getSystemState());
+	uint32_t normalizedNameID=name.normalizedNameId(getInstanceWorker());
+	tiny_string normalizedName = name.normalizedName(getInstanceWorker());
 	if(normalizedNameID!=BUILTIN_STRINGS::EMPTY && normalizedName.charAt(0)=='@')
 	{
 		normalizedNameID = getSystemState()->getUniqueStringId(normalizedName.substr(1,normalizedName.end()));
@@ -1680,7 +1680,7 @@ GET_VARIABLE_RESULT XML::getVariableByMultiname(asAtom& ret, const multiname& na
 		ret = asAtomHandler::fromObject(XMLList::create(getInstanceWorker(),attributes,attributelist.getPtr(),name));
 		return GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT;
 	}
-	else if(XML::isValidMultiname(getSystemState(),name,index))
+	else if(XML::isValidMultiname(getInstanceWorker(),name,index))
 	{
 		// If the multiname is a valid array property, the XML
 		// object is treated as a single-item XMLList.
@@ -1772,8 +1772,8 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 		ns_uri = getInstanceWorker()->getDefaultXMLNamespaceID();
 	}
 
-	uint32_t normalizedNameID = name.normalizedNameId(getSystemState());
-	const tiny_string normalizedName=name.normalizedName(getSystemState());
+	uint32_t normalizedNameID = name.normalizedNameId(getInstanceWorker());
+	const tiny_string normalizedName=name.normalizedName(getInstanceWorker());
 	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
 	{
 		isAttr=true;
@@ -1831,7 +1831,7 @@ multiname* XML::setVariableByMultinameIntern(multiname& name, asAtom& o, CONST_A
 		}
 		ASATOM_DECREF(o);
 	}
-	else if(XML::isValidMultiname(getSystemState(),name,index))
+	else if(XML::isValidMultiname(getInstanceWorker(),name,index))
 	{
 		if (!this->parentNode)
 		{
@@ -2014,8 +2014,8 @@ bool XML::hasProperty(const multiname& name, bool checkXMLPropsOnly, bool consid
 
 	bool isAttr=name.isAttribute;
 	unsigned int index=0;
-	const tiny_string normalizedName=name.normalizedName(getSystemState());
-	uint32_t normalizedNameID=name.normalizedNameId(getSystemState());
+	const tiny_string normalizedName=name.normalizedName(getInstanceWorker());
+	uint32_t normalizedNameID=name.normalizedNameId(getInstanceWorker());
 	if(!normalizedName.empty() && normalizedName.charAt(0)=='@')
 	{
 		isAttr=true;
@@ -2034,7 +2034,7 @@ bool XML::hasProperty(const multiname& name, bool checkXMLPropsOnly, bool consid
 			}
 		}
 	}
-	else if(XML::isValidMultiname(getSystemState(),name,index))
+	else if(XML::isValidMultiname(getInstanceWorker(),name,index))
 	{
 		// If the multiname is a valid array property, the XML
 		// object is treated as a single-item XMLList.
@@ -2065,7 +2065,7 @@ bool XML::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bo
 bool XML::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
 	unsigned int index=0;
-	uint32_t normalizedNameID = name.normalizedNameId(getSystemState());
+	uint32_t normalizedNameID = name.normalizedNameId(getInstanceWorker());
 	if(name.isAttribute)
 	{
 		//Only the first namespace is used, is this right?
@@ -2100,7 +2100,7 @@ bool XML::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 			}
 		}
 	}
-	else if(XML::isValidMultiname(getSystemState(),name,index))
+	else if(XML::isValidMultiname(getInstanceWorker(),name,index))
 	{
 		if (!childrenlist.isNull())
 			childrenlist->nodes.erase(childrenlist->nodes.begin() + index);
@@ -2134,7 +2134,7 @@ bool XML::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 	}
 	return true;
 }
-bool XML::isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index)
+bool XML::isValidMultiname(ASWorker* wrk,const multiname& name, uint32_t& index)
 {
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
@@ -2143,11 +2143,11 @@ bool XML::isValidMultiname(SystemState* sys,const multiname& name, uint32_t& ind
 
 	if (name.isEmpty())
 		return false;
-	bool validIndex=name.toUInt(sys,index, true);
+	bool validIndex=name.toUInt(wrk,index, true);
 	// Don't throw for non-numeric NAME_STRING or NAME_OBJECT
 	// because they can still be valid built-in property names.
 	if(!validIndex && (name.name_type==multiname::NAME_INT || name.name_type == multiname::NAME_INT ||name.name_type==multiname::NAME_NUMBER))
-		createError<RangeError>(getWorker(),kOutOfRangeError, name.normalizedNameUnresolved(sys), "?");
+		createError<RangeError>(wrk,kOutOfRangeError, name.normalizedNameUnresolved(wrk->getSystemState()), "?");
 
 	return validIndex;
 }
@@ -3268,7 +3268,7 @@ ASFUNCTIONBODY_ATOM(XML,_replace)
 		name.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 	}
 	uint32_t index=0;
-	if(XML::isValidMultiname(wrk->getSystemState(),name,index))
+	if(XML::isValidMultiname(wrk,name,index))
 	{
 		bool alreadyset=false;
 		ASATOM_INCREF(value);

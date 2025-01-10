@@ -161,7 +161,7 @@ public:
 	void setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk) override;
 	multiname *setVariableByMultinameIntern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext, bool* alreadyset, ASWorker* wrk);
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
-	static bool isValidMultiname(SystemState *sys, const multiname& name, uint32_t& index);
+	static bool isValidMultiname(ASWorker* wrk, const multiname& name, uint32_t& index);
 
 	void setTextContent(const tiny_string& content);
 	tiny_string toString();

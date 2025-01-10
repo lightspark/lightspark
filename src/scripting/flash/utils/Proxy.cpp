@@ -70,7 +70,7 @@ multiname *Proxy::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOW
 	assert_and_throw(asAtomHandler::isFunction(proxySetter));
 
 
-	ASObject* namearg = abstract_s(wrk,name.normalizedName(getSystemState()));
+	ASObject* namearg = abstract_s(wrk,name.normalizedName(wrk));
 	namearg->setProxyProperty(name);
 	asAtom args[2];
 	args[0]=asAtomHandler::fromObject(namearg);
@@ -114,7 +114,7 @@ GET_VARIABLE_RESULT Proxy::getVariableByMultiname(asAtom& ret, const multiname& 
 	}
 	assert_and_throw(asAtomHandler::isFunction(o));
 
-	ASObject* namearg = abstract_s(getInstanceWorker(),name.normalizedName(getSystemState()));
+	ASObject* namearg = abstract_s(getInstanceWorker(),name.normalizedName(wrk));
 	namearg->setProxyProperty(name);
 	asAtom arg = asAtomHandler::fromObject(namearg);
 	//We now suppress special handling
@@ -131,7 +131,7 @@ GET_VARIABLE_RESULT Proxy::getVariableByMultiname(asAtom& ret, const multiname& 
 
 bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk)
 {
-	if (name.normalizedName(getSystemState()) == "isAttribute")
+	if (name.normalizedName(getInstanceWorker()) == "isAttribute")
 		return true;
 	//If a variable named like this already exist, use that
 	bool asobject_has_property=ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype,wrk);
@@ -154,7 +154,7 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 
 	assert_and_throw(asAtomHandler::isFunction(proxyHasProperty));
 
-	ASObject* namearg = abstract_s(getInstanceWorker(),name.normalizedName(getSystemState()));
+	ASObject* namearg = abstract_s(getInstanceWorker(),name.normalizedName(getInstanceWorker()));
 	namearg->setProxyProperty(name);
 	asAtom arg = asAtomHandler::fromObject(namearg);
 	//We now suppress special handling
@@ -192,7 +192,7 @@ bool Proxy::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 
 	assert_and_throw(asAtomHandler::isFunction(proxyDeleter));
 
-	ASObject* namearg = abstract_s(getInstanceWorker(),name.normalizedName(getSystemState()));
+	ASObject* namearg = abstract_s(getInstanceWorker(),name.normalizedName(getInstanceWorker()));
 	namearg->setProxyProperty(name);
 	asAtom arg = asAtomHandler::fromObject(namearg);
 	//We now suppress special handling

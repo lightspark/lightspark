@@ -1389,7 +1389,7 @@ bool Vector::hasPropertyByMultiname(const multiname& name, bool considerDynamic,
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype,wrk);
 
 	unsigned int index=0;
-	if(!Vector::isValidMultiname(getSystemState(),name,index))
+	if(!Vector::isValidMultiname(getInstanceWorker(),name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype,wrk);
 
 	if(index < vec.size())
@@ -1413,34 +1413,34 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 
 	unsigned int index=0;
 	bool isNumber =false;
-	if(!Vector::isValidMultiname(getSystemState(),name,index,&isNumber) || index > vec.size())
+	if(!Vector::isValidMultiname(getInstanceWorker(),name,index,&isNumber) || index > vec.size())
 	{
 		switch(name.name_type) 
 		{
 			case multiname::NAME_NUMBER:
 				if (getSystemState()->getSwfVersion() >= 11 
 						|| (uint32_t(name.name_d) == name.name_d && name.name_d < UINT32_MAX))
-					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getInstanceWorker()),Integer::toString(vec.size()));
 				else
-					createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+					createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getInstanceWorker()), this->getClass()->getQualifiedClassName());
 				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 			case multiname::NAME_INT:
 				if (getSystemState()->getSwfVersion() >= 11
 						|| name.name_i >= (int32_t)vec.size())
-					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getInstanceWorker()),Integer::toString(vec.size()));
 				else
-					createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+					createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getInstanceWorker()), this->getClass()->getQualifiedClassName());
 				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 			case multiname::NAME_UINT:
-				createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+				createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getInstanceWorker()),Integer::toString(vec.size()));
 				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 			case multiname::NAME_STRING:
 				if (isNumber)
 				{
 					if (getSystemState()->getSwfVersion() >= 11 )
-						createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+						createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getInstanceWorker()),Integer::toString(vec.size()));
 					else
-						createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+						createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getInstanceWorker()), this->getClass()->getQualifiedClassName());
 					return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 				}
 				break;
@@ -1450,7 +1450,7 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 
 		GET_VARIABLE_RESULT res = getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 		if (asAtomHandler::isInvalid(ret))
-			createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+			createError<ReferenceError>(getInstanceWorker(),kReadSealedError, name.normalizedName(getInstanceWorker()), this->getClass()->getQualifiedClassName());
 		return res;
 	}
 	if(index < vec.size())
@@ -1486,26 +1486,26 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset,wrk);
 
 	unsigned int index=0;
-	if(!Vector::isValidMultiname(getSystemState(),name,index))
+	if(!Vector::isValidMultiname(getInstanceWorker(),name,index))
 	{
 		switch(name.name_type) 
 		{
 			case multiname::NAME_NUMBER:
 				if (getSystemState()->getSwfVersion() >= 11 
 						|| (this->fixed && ((int32_t(name.name_d) != name.name_d) || name.name_d >= (int32_t)vec.size() || name.name_d < 0)))
-					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getInstanceWorker()),Integer::toString(vec.size()));
 				else
-					createError<ReferenceError>(getInstanceWorker(),kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+					createError<ReferenceError>(getInstanceWorker(),kWriteSealedError, name.normalizedName(getInstanceWorker()), this->getClass()->getQualifiedClassName());
 				return nullptr;
 			case multiname::NAME_INT:
 				if (getSystemState()->getSwfVersion() >= 11
 						|| (this->fixed && (name.name_i >= (int32_t)vec.size() || name.name_i < 0)))
-					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+					createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getInstanceWorker()),Integer::toString(vec.size()));
 				else
-					createError<ReferenceError>(getInstanceWorker(),kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+					createError<ReferenceError>(getInstanceWorker(),kWriteSealedError, name.normalizedName(getInstanceWorker()), this->getClass()->getQualifiedClassName());
 				return nullptr;
 			case multiname::NAME_UINT:
-				createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getSystemState()),Integer::toString(vec.size()));
+				createError<RangeError>(getInstanceWorker(),kOutOfRangeError,name.normalizedName(getInstanceWorker()),Integer::toString(vec.size()));
 				return nullptr;
 			default:
 				break;
@@ -1513,7 +1513,7 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 		
 		if (!ASObject::hasPropertyByMultiname(name,false,true,wrk))
 		{
-			createError<ReferenceError>(getInstanceWorker(),kWriteSealedError, name.normalizedName(getSystemState()), this->getClass()->getQualifiedClassName());
+			createError<ReferenceError>(getInstanceWorker(),kWriteSealedError, name.normalizedName(getInstanceWorker()), this->getClass()->getQualifiedClassName());
 			return nullptr;
 		}
 		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset,wrk);
@@ -1663,14 +1663,14 @@ bool Vector::ensureLength(uint32_t len)
 	return true;
 }
 
-bool Vector::isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index, bool* isNumber)
+bool Vector::isValidMultiname(ASWorker* wrk,const multiname& name, uint32_t& index, bool* isNumber)
 {
 	//First of all the multiname has to contain the null namespace
 	//As the namespace vector is sorted, we check only the first one
 	if(!name.hasEmptyNS)
 		return false;
 
-	bool validIndex=name.toUInt(sys,index, true,isNumber) && (index != UINT32_MAX);
+	bool validIndex=name.toUInt(wrk,index, true,isNumber) && (index != UINT32_MAX);
 
 	return validIndex;
 }

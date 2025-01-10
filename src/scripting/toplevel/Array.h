@@ -109,7 +109,7 @@ public:
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	
 	//These utility methods are also used by ByteArray
-	static bool isValidMultiname(SystemState* sys,const multiname& name, uint32_t& index);
+	static bool isValidMultiname(ASWorker* wrk, const multiname& name, uint32_t& index);
 	static bool isValidQName(const tiny_string& name, const tiny_string& ns, unsigned int& index);
 
 	static void sinit(Class_base*);

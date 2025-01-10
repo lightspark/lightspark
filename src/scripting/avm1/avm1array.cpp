@@ -102,7 +102,7 @@ multiname* AVM1Array::setVariableByMultiname(multiname& name, asAtom& o, CONST_A
 		default:
 			{
 				uint32_t idx=0;
-				valid = name.toUInt(getSystemState(),idx,false,nullptr,true);
+				valid = name.toUInt(getInstanceWorker(),idx,false,nullptr,true);
 				if (valid)
 					index = (int32_t)idx;
 			}
@@ -127,7 +127,7 @@ multiname* AVM1Array::setVariableByMultiname(multiname& name, asAtom& o, CONST_A
 	{
 		if (!ASObject::hasPropertyByMultiname(name,true,true,getInstanceWorker()))
 		{
-			uint32_t nameid = name.normalizedNameId(getSystemState());
+			uint32_t nameid = name.normalizedNameId(getInstanceWorker());
 			name_enumeration.push_back(make_pair(nameid,false));
 		}
 		return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
@@ -145,7 +145,7 @@ multiname* AVM1Array::setVariableByMultiname(multiname& name, asAtom& o, CONST_A
 bool AVM1Array::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
 	unsigned int index=0;
-	bool validindex = isValidMultiname(getSystemState(),name,index);
+	bool validindex = isValidMultiname(getInstanceWorker(),name,index);
 	validindex = validindex && index < size();
 	for (auto it = name_enumeration.begin(); it != name_enumeration.end(); it++)
 	{

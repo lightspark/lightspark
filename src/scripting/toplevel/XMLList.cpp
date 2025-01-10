@@ -699,7 +699,7 @@ ASFUNCTIONBODY_ATOM(XMLList,_hasOwnProperty)
 	name.isAttribute=false;
 
 	unsigned int index=0;
-	if(XML::isValidMultiname(wrk->getSystemState(),name,index))
+	if(XML::isValidMultiname(wrk,name,index))
 	{
 		asAtomHandler::setBool(ret,index<th->nodes.size());
 		return;
@@ -783,13 +783,13 @@ void XMLList::removeNode(XML *node)
 void XMLList::getTargetVariables(const multiname& name,XML::XMLVector& retnodes)
 {
 	unsigned int index=0;
-	if(XML::isValidMultiname(getSystemState(),name,index))
+	if(XML::isValidMultiname(getInstanceWorker(),name,index))
 	{
 		retnodes.push_back(nodes[index]);
 	}
 	else
 	{
-		uint32_t normalizedNameID=name.normalizedNameId(getSystemState());
+		uint32_t normalizedNameID=name.normalizedNameId(getInstanceWorker());
 		
 		//Only the first namespace is used, is this right?
 		uint32_t namespace_uri = BUILTIN_STRINGS::EMPTY;
@@ -858,7 +858,7 @@ GET_VARIABLE_RESULT XMLList::getVariableByMultiname(asAtom& ret, const multiname
 		return GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT;
 	}
 	unsigned int index=0;
-	if(XML::isValidMultiname(getSystemState(),name,index))
+	if(XML::isValidMultiname(getInstanceWorker(),name,index))
 	{
 		if(index<nodes.size())
 		{
@@ -913,7 +913,7 @@ bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic
 		return false;
 
 	unsigned int index=0;
-	if(XML::isValidMultiname(getSystemState(),name,index))
+	if(XML::isValidMultiname(getInstanceWorker(),name,index))
 		return index<nodes.size();
 	else
 	{
@@ -991,7 +991,7 @@ multiname* XMLList::setVariableByMultinameIntern(multiname& name, asAtom& o, CON
 			tmplist->getTargetVariables(tmpprop,retnodes);
 		}
 	}
-	if(XML::isValidMultiname(getSystemState(),name,index))
+	if(XML::isValidMultiname(getInstanceWorker(),name,index))
 	{
 		if (index >= nodes.size())
 		{
@@ -1016,11 +1016,11 @@ multiname* XMLList::setVariableByMultinameIntern(multiname& name, asAtom& o, CON
 			{
 				XML* tmp = Class<XML>::getInstanceSNoArgs(getInstanceWorker());
 				tmp->nodetype = pugi::node_element;
-				tmp->nodenameID = targetproperty.normalizedNameId(getSystemState());
+				tmp->nodenameID = targetproperty.normalizedNameId(getInstanceWorker());
 				tmp->attributelist = _MNR(Class<XMLList>::getInstanceSNoArgs(getInstanceWorker()));
 				tmp->constructed = true;
 				tmp->setVariableByMultiname(name,o,allowConst,nullptr,wrk);
-				uint32_t tmpnameID = tmpprop.normalizedNameId(getSystemState());
+				uint32_t tmpnameID = tmpprop.normalizedNameId(getInstanceWorker());
 				if (retnodes.empty() && tmpnameID != BUILTIN_STRINGS::EMPTY && tmpnameID != BUILTIN_STRINGS::STRING_WILDCARD)
 				{
 					XML* tmp2 = Class<XML>::getInstanceSNoArgs(getInstanceWorker());
@@ -1072,7 +1072,7 @@ bool XMLList::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 	unsigned int index=0;
 	bool bdeleted = false;
 	
-	if(XML::isValidMultiname(getSystemState(),name,index))
+	if(XML::isValidMultiname(getInstanceWorker(),name,index))
 	{
 		if (index >= nodes.size())
 			return true;

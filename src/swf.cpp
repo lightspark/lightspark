@@ -210,7 +210,7 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 									   "__proto__","target","flash.events:IEventDispatcher","addEventListener","removeEventListener","dispatchEvent","hasEventListener",
 									   "onConnect","onData","onClose","onSelect",
 									   "add","alpha","darken","difference","erase","hardlight","invert","layer","lighten","multiply","overlay","screen","subtract",
-									   "text"
+									   "text","null","true","false"
 									  };
 
 extern uint32_t asClassCount;
@@ -343,7 +343,7 @@ SystemState::SystemState
 	trueRef->setRefConstant();
 	falseRef=Class<Boolean>::getInstanceS(this->worker,false);
 	falseRef->setRefConstant();
-	
+
 	nanAtom = asAtomHandler::fromNumber(this->worker,Number::NaN,true);
 
 	systemDomain = Class<ApplicationDomain>::getInstanceS(this->worker);
@@ -390,7 +390,7 @@ SystemState::SystemState
 	worker->stage=stage;
 	//Get starting time
 	startTime=getCurrentTime_ms();
-	
+
 	renderThread=new RenderThread(this);
 	inputThread=new InputThread(this);
 
@@ -672,7 +672,6 @@ void SystemState::systemFinalize()
 		font->decRef();
 	});
 	globalEmbeddedFontList.clear();
-	frameListeners.clear();
 	auto it = sharedobjectmap.begin();
 	while (it != sharedobjectmap.end())
 	{
@@ -809,7 +808,7 @@ void SystemState::destroy()
 		delete frameTimerThread;
 		frameTimerThread= nullptr;
 	}
-	
+
 	delete renderThread;
 	renderThread=nullptr;
 	delete inputThread;
@@ -953,7 +952,7 @@ void SystemState::addEventToBackgroundWorkers(_NR<EventDispatcher> obj, _R<Event
 {
 	if(obj.isNull())
 		return;
-	
+
 	if (ev->is<WaitableEvent>())
 		return;
 	Locker l(workerMutex);
@@ -1270,7 +1269,7 @@ void SystemState::setParamsAndEngine(EngineData* e, bool s)
 		static_NativeApplication_nativeApplication=_MNR(Class<NativeApplication>::getInstanceS(this->worker));
 		static_NativeApplication_nativeApplication->setRefConstant();
 	}
-	
+
 	if (EngineData::needinit && !runSingleThreaded && !isEventLoopThread())
 		pushEvent(LSInitEvent(this));
 	if(vmVersion)
@@ -1282,7 +1281,7 @@ void SystemState::setRenderRate(float rate)
 	Locker l(rootMutex);
 	if(renderRate==rate)
 		return;
-	
+
 	//The requested rate is different than the current rate, let's reschedule the job
 	if (rate > 0)
 	{
@@ -1520,7 +1519,7 @@ void ThreadProfile::setTag(const std::string& t)
 	Locker locker(mutex);
 	if(data.empty())
 		data.push_back(ProfilingData(tickCount,0));
-	
+
 	data.back().tag=t;
 }
 
@@ -1555,14 +1554,14 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 	RECT size=getSys()->mainClip->applicationDomain->getFrameSize();
 	int width=(size.Xmax-size.Xmin)/20;
 	int height=(size.Ymax-size.Ymin)/20;
-	
+
 	float *vertex_coords = new float[data.size()*2];
 	float *color_coords = new float[data.size()*4];
 
 	int32_t start=tickCount-len;
 	if(int32_t(data[0].index-start)>0)
 		start=data[0].index;
-	
+
 	for(unsigned int i=0;i<data.size();i++)
 	{
 		vertex_coords[i*2] = int32_t(data[i].index-start)*width/len;
@@ -1844,7 +1843,7 @@ void ParseThread::parseSWF(UI8 ver)
 			LoaderInfo* li=loader->getContentLoaderInfo();
 			li->swfVersion = root->applicationDomain->version;
 		}
-		
+
 		int usegnash = 0;
 		char *envvar = getenv("LIGHTSPARK_USE_GNASH");
 		if (envvar)
@@ -1878,7 +1877,7 @@ void ParseThread::parseSWF(UI8 ver)
 				root->getSystemState()->needsAVM2(!usegnash || root->applicationDomain->usesActionScript3);
 				if (!usegnash || root->applicationDomain->usesActionScript3)
 					parseExtensions(root);
-				
+
 				if(usegnash && fat && !fat->ActionScript3)
 				{
 					delete fat;
@@ -1977,7 +1976,7 @@ void ParseThread::parseSWF(UI8 ver)
 				case ACTION_TAG:
 				case DEFINESCALINGGRID_TAG:
 				{
-					// Add symbol class tags or action to the queue, to be executed when the rest of the 
+					// Add symbol class tags or action to the queue, to be executed when the rest of the
 					// frame has been parsed. This is to handle invalid SWF files that define ID's
 					// used in the SymbolClass tag only after the tag, which would otherwise result
 					// in "undefined dictionary ID" errors.
@@ -2243,7 +2242,7 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 		innerClip->skipFrame = true;
 		return;
 	}
-	
+
 	++innerGotoCount;
 	// according to http://www.senocular.com/flash/tutorials/orderofoperations/
 	// a subset of the normal events are added when navigation commands are executed when changing to a new frame by actionscript
@@ -2432,12 +2431,12 @@ void SystemState::resizeCompleted()
 {
 	stage->hasChanged=true;
 	stage->requestInvalidation(this,true);
-	
+
 	if(currentVm && scaleMode==NO_SCALE)
 	{
 		stage->incRef();
 		currentVm->addEvent(_MR(stage),_MR(Class<Event>::getInstanceS(this->worker,"resize",false)));
-		
+
 		stage->incRef();
 		currentVm->addEvent(_MR(stage),_MR(Class<StageVideoAvailabilityEvent>::getInstanceS(this->worker)));
 	}

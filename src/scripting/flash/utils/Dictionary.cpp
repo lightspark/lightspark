@@ -26,6 +26,9 @@
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/utils/Dictionary.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/UInteger.h"
+#include "scripting/toplevel/Number.h"
 
 using namespace std;
 using namespace lightspark;
@@ -33,6 +36,8 @@ using namespace lightspark;
 Dictionary::Dictionary(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_DICTIONARY),
 	data(std::less<dictType::key_type>(), reporter_allocator<dictType::value_type>(c->memoryAccount)),weakkeys(false)
 {
+	currentnameiterator = data.end();
+	currentnameindex=UINT32_MAX;
 }
 
 void Dictionary::finalize()
@@ -40,10 +45,10 @@ void Dictionary::finalize()
 	auto it=data.begin();
 	while (it != data.end())
 	{
-		ASObject* key = it->first;
+		asAtom key = it->first;
 		ASObject* obj = asAtomHandler::getObject(it->second);
 		it = data.erase(it);
-		key->removeStoredMember();
+		ASATOM_REMOVESTOREDMEMBER(key);
 		if (obj)
 			obj->removeStoredMember();
 	}
@@ -54,13 +59,15 @@ bool Dictionary::destruct()
 	auto it=data.begin();
 	while (it != data.end())
 	{
-		ASObject* key = it->first;
+		asAtom key = it->first;
 		ASObject* obj = asAtomHandler::getObject(it->second);
 		it = data.erase(it);
-		key->removeStoredMember();
+		ASATOM_REMOVESTOREDMEMBER(key);
 		if (obj)
 			obj->removeStoredMember();
 	}
+	currentnameiterator = data.end();
+	currentnameindex=UINT32_MAX;
 	weakkeys=false;
 	return destructIntern();
 }
@@ -71,7 +78,9 @@ void Dictionary::prepareShutdown()
 	ASObject::prepareShutdown();
 	for (auto it=data.begin() ; it != data.end(); ++it)
 	{
-		it->first->prepareShutdown();
+		ASObject* k = asAtomHandler::getObject(it->first);
+		if (k)
+			k->prepareShutdown();
 		ASObject* o = asAtomHandler::getObject(it->second);
 		if (o)
 			o->prepareShutdown();
@@ -96,12 +105,13 @@ ASFUNCTIONBODY_ATOM(Dictionary,_toJSON)
 	ret = asAtomHandler::fromString(wrk->getSystemState(),"Dictionary");
 }
 
-Dictionary::dictType::iterator Dictionary::findKey(ASObject *o)
+Dictionary::dictType::iterator Dictionary::findKey(asAtom o)
 {
 	Dictionary::dictType::iterator it = data.begin();
 	for(; it!=data.end(); ++it)
 	{
-		if (it->first->isEqualStrict(o))
+		asAtom key = it->first;
+		if (asAtomHandler::isEqualStrict(key,getInstanceWorker(),o))
 			return it;
 	}
 
@@ -115,72 +125,95 @@ void Dictionary::setVariableByMultiname_i(multiname& name, int32_t value,ASWorke
 	Dictionary::setVariableByMultiname(name,v,CONST_NOT_ALLOWED,nullptr,wrk);
 }
 
+void Dictionary::getKeyFromMultiname(const multiname& name,asAtom& key)
+{
+	switch (name.name_type)
+	{
+		case multiname::NAME_STRING:
+			if (name.isInteger)
+			{
+				number_t  ret;
+				Integer::fromStringFlashCompatible(getSystemState()->getStringFromUniqueId(name.name_s_id).raw_buf(),ret,10);
+				if (ret >= 0)
+				{
+					key = asAtomHandler::fromInt(ret);
+					break;
+				}
+			}
+			key = asAtomHandler::fromStringID(name.name_s_id);
+			break;
+		case multiname::NAME_INT:
+			if (name.name_i >= 0)
+				key = asAtomHandler::fromInt(name.name_i);
+			else
+			{
+				uint32_t id = getSystemState()->getUniqueStringId(Integer::toString(name.name_i));
+				key = asAtomHandler::fromStringID(id);
+			}
+			break;
+		case multiname::NAME_UINT:
+			key = asAtomHandler::fromUInt(name.name_i);
+			break;
+		case multiname::NAME_NUMBER:
+		{
+			uint32_t id = getSystemState()->getUniqueStringId(Number::toString(name.name_d));
+			key = asAtomHandler::fromStringID(id);
+			break;
+		}
+		case multiname::NAME_OBJECT:
+		{
+			if (asAtomHandler::isUndefined(name.name_o))
+				key = asAtomHandler::fromStringID(BUILTIN_STRINGS::STRING_UNDEFINED);
+			else if (asAtomHandler::isNull(name.name_o))
+				key = asAtomHandler::fromStringID(BUILTIN_STRINGS::STRING_NULL);
+			else if (name.name_o.uintval == asAtomHandler::trueAtom.uintval)
+				key = asAtomHandler::fromStringID(BUILTIN_STRINGS::STRING_TRUE);
+			else if (name.name_o.uintval == asAtomHandler::falseAtom.uintval)
+				key = asAtomHandler::fromStringID(BUILTIN_STRINGS::STRING_FALSE);
+			else
+				key = name.name_o;
+			break;
+		}
+	}
+}
 multiname *Dictionary::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
 	assert_and_throw(implEnable);
-	if(name.name_type==multiname::NAME_OBJECT)
+	asAtom key=asAtomHandler::invalidAtom;
+	getKeyFromMultiname(name,key);
+	dictType::iterator it=findKey(key);
+	if(it!=data.end())
 	{
-		multiname tmpname(nullptr);
-		tmpname.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
-		switch (name.name_o->getObjectType())
-		{
-			case T_BOOLEAN:
-			case T_INTEGER:
-				tmpname.name_type=multiname::NAME_INT;
-				tmpname.name_i = name.name_o->toInt();
-				return ASObject::setVariableByMultiname(tmpname, o, allowConst,alreadyset,wrk);
-			case T_UINTEGER:
-				tmpname.name_type=multiname::NAME_UINT;
-				tmpname.name_ui = name.name_o->toUInt();
-				return ASObject::setVariableByMultiname(tmpname, o, allowConst,alreadyset,wrk);
-			case T_NUMBER:
-				tmpname.name_type=multiname::NAME_NUMBER;
-				tmpname.name_d = name.name_o->toNumber();
-				return ASObject::setVariableByMultiname(tmpname, o, allowConst,alreadyset,wrk);
-			case T_STRING:
-				tmpname.name_type=multiname::NAME_STRING;
-				tmpname.name_s_id = name.name_o->toStringId();
-				return ASObject::setVariableByMultiname(tmpname, o, allowConst,alreadyset,wrk);
-			default:
-				break;
-		}
-
-		Dictionary::dictType::iterator it=findKey(name.name_o);
-		if(it!=data.end())
-		{
-			if (alreadyset && it->second.uintval == o.uintval)
-				*alreadyset=true;
-			else
-			{
-				asAtom oldvar = it->second;
-				ASObject* obj = asAtomHandler::getObject(oldvar);
-				if (obj)
-					obj->removeStoredMember();
-				it->second=o;
-				obj = asAtomHandler::getObject(o);
-				if (obj)
-					obj->addStoredMember();
-			}
-		}
+		if (alreadyset && it->second.uintval == o.uintval)
+			*alreadyset=true;
 		else
 		{
-			name.name_o->incRef();
-			name.name_o->addStoredMember();
-			ASObject* obj = asAtomHandler::getObject(o);
+			asAtom oldvar = it->second;
+			ASObject* obj = asAtomHandler::getObject(oldvar);
+			if (obj)
+				obj->removeStoredMember();
+			it->second=o;
+			obj = asAtomHandler::getObject(o);
 			if (obj)
 				obj->addStoredMember();
-			data.insert(make_pair(name.name_o,o));
 		}
 	}
 	else
 	{
-		//Primitive types _must_ be handled by the normal ASObject path
-		//REFERENCE: Dictionary Object on AS3 reference
-		assert(name.name_type==multiname::NAME_STRING ||
-			name.name_type==multiname::NAME_INT ||
-			name.name_type==multiname::NAME_UINT ||
-			name.name_type==multiname::NAME_NUMBER);
-		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset,wrk);
+		// Derived classes may be sealed!
+		if (name.name_type==multiname::NAME_STRING && getClass() && getClass()->isSealed )
+		{
+			createError<ReferenceError>(getInstanceWorker(),kWriteSealedError,
+										name.normalizedNameUnresolved(getSystemState()),
+										getClass()->getQualifiedClassName());
+			return nullptr;
+		}
+
+		ASATOM_ADDSTOREDMEMBER(key);
+		ASObject* obj = asAtomHandler::getObject(o);
+		if (obj)
+			obj->addStoredMember();
+		data.insert(make_pair(key,o));
 	}
 	return nullptr;
 }
@@ -188,114 +221,54 @@ multiname *Dictionary::setVariableByMultiname(multiname& name, asAtom& o, CONST_
 bool Dictionary::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
 	assert_and_throw(implEnable);
+	asAtom key=asAtomHandler::invalidAtom;
+	getKeyFromMultiname(name,key);
 
-	if(name.name_type==multiname::NAME_OBJECT)
+	Dictionary::dictType::iterator it=findKey(key);
+	if(it != data.end())
 	{
-		multiname tmpname(nullptr);
-		tmpname.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
-		switch (name.name_o->getObjectType())
-		{
-			case T_BOOLEAN:
-			case T_INTEGER:
-				tmpname.name_type=multiname::NAME_INT;
-				tmpname.name_i = name.name_o->toInt();
-				return ASObject::deleteVariableByMultiname(tmpname,wrk);
-			case T_UINTEGER:
-				tmpname.name_type=multiname::NAME_UINT;
-				tmpname.name_ui = name.name_o->toUInt();
-				return ASObject::deleteVariableByMultiname(tmpname,wrk);
-			case T_NUMBER:
-				tmpname.name_type=multiname::NAME_NUMBER;
-				tmpname.name_d = name.name_o->toNumber();
-				return ASObject::deleteVariableByMultiname(tmpname,wrk);
-			case T_STRING:
-				tmpname.name_type=multiname::NAME_STRING;
-				tmpname.name_s_id = name.name_o->toStringId();
-				return ASObject::deleteVariableByMultiname(tmpname,wrk);
-			default:
-				break;
-		}
-
-		Dictionary::dictType::iterator it=findKey(name.name_o);
-		if(it != data.end())
-		{
-			ASObject* obj = asAtomHandler::getObject(it->second);
-			if (obj)
-				obj->removeStoredMember();
+		ASObject* obj = asAtomHandler::getObject(it->second);
+		if (obj)
+			obj->removeStoredMember();
+		if (currentnameiterator == it)
+			currentnameiterator = data.erase(it);
+		else
 			data.erase(it);
-			name.name_o->removeStoredMember();
-			return true;
-		}
+		ASATOM_REMOVESTOREDMEMBER(it->first);
+	}
+	else if (name.name_type==multiname::NAME_STRING && getClass() && getClass()->isSealed)
 		return false;
-	}
-	else
-	{
-		//Primitive types _must_ be handled by the normal ASObject path
-		//REFERENCE: Dictionary Object on AS3 reference
-		assert(name.name_type==multiname::NAME_STRING ||
-			name.name_type==multiname::NAME_INT ||
-			name.name_type==multiname::NAME_UINT ||
-			name.name_type==multiname::NAME_NUMBER);
-		return ASObject::deleteVariableByMultiname(name,wrk);
-	}
+	return true;
 }
 GET_VARIABLE_RESULT Dictionary::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt,ASWorker* wrk)
 {
 	if((opt & GET_VARIABLE_OPTION::SKIP_IMPL)==0 && implEnable)
 	{
-		if(name.name_type==multiname::NAME_OBJECT)
+		asAtom key=asAtomHandler::invalidAtom;
+		getKeyFromMultiname(name,key);
+		bool islastref = name.name_type==multiname::NAME_OBJECT && asAtomHandler::isObject(name.name_o) && asAtomHandler::getObjectNoCheck(name.name_o)->isLastRef();
+		Dictionary::dictType::iterator it=findKey(key);
+		if(it != data.end())
 		{
-			multiname tmpname(nullptr);
-			tmpname.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
-			switch (name.name_o->getObjectType())
+			ret = it->second;
+			if (islastref && weakkeys)
 			{
-				case T_BOOLEAN:
-				case T_INTEGER:
-					tmpname.name_type=multiname::NAME_INT;
-					tmpname.name_i = name.name_o->toInt();
-					return getVariableByMultinameIntern(ret,tmpname,this->getClass(),opt,wrk);
-				case T_UINTEGER:
-					tmpname.name_type=multiname::NAME_UINT;
-					tmpname.name_ui = name.name_o->toUInt();
-					return getVariableByMultinameIntern(ret,tmpname,this->getClass(),opt,wrk);
-				case T_NUMBER:
-					tmpname.name_type=multiname::NAME_NUMBER;
-					tmpname.name_d = name.name_o->toNumber();
-					return getVariableByMultinameIntern(ret,tmpname,this->getClass(),opt,wrk);
-				case T_STRING:
-					tmpname.name_type=multiname::NAME_STRING;
-					tmpname.name_s_id = name.name_o->toStringId();
-					return getVariableByMultinameIntern(ret,tmpname,this->getClass(),opt,wrk);
-				default:
-					break;
-			}
-			bool islastref = name.name_o->isLastRef();
-
-			Dictionary::dictType::iterator it=findKey(name.name_o);
-			if(it != data.end())
-			{
-				ret = it->second;
-				if (islastref && weakkeys)
-				{
-					name.name_o->removeStoredMember();
-					data.erase(it);
-				}
-				else
-					ASATOM_INCREF(ret);
-				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+				ASATOM_REMOVESTOREDMEMBER(name.name_o);
+				data.erase(it);
 			}
 			else
-				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+				ASATOM_INCREF(ret);
+			return GET_VARIABLE_RESULT::GETVAR_NORMAL;
+		}
+		if (asAtomHandler::isPrimitive(key))
+		{
+			// primitive key, fallback to base implementation
+			return getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 		}
 		else
 		{
-			//Primitive types _must_ be handled by the normal ASObject path
-			//REFERENCE: Dictionary Object on AS3 reference
-			assert(name.name_type==multiname::NAME_STRING ||
-				name.name_type==multiname::NAME_INT ||
-				name.name_type==multiname::NAME_UINT ||
-				name.name_type==multiname::NAME_NUMBER);
-			return getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
+			ret = asAtomHandler::undefinedAtom;
+			return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 		}
 	}
 	//Try with the base implementation
@@ -313,98 +286,69 @@ bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDyna
 	if (!isConstructed())
 		return false;
 
-	if(name.name_type==multiname::NAME_OBJECT)
-	{
-		multiname tmpname(nullptr);
-		tmpname.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
-		switch (name.name_o->getObjectType())
-		{
-			case T_BOOLEAN:
-			case T_INTEGER:
-				tmpname.name_type=multiname::NAME_INT;
-				tmpname.name_i = name.name_o->toInt();
-				return ASObject::hasPropertyByMultiname(tmpname, considerDynamic, considerPrototype,wrk);
-			case T_UINTEGER:
-				tmpname.name_type=multiname::NAME_UINT;
-				tmpname.name_ui = name.name_o->toUInt();
-				return ASObject::hasPropertyByMultiname(tmpname, considerDynamic, considerPrototype,wrk);
-			case T_NUMBER:
-				tmpname.name_type=multiname::NAME_NUMBER;
-				tmpname.name_d = name.name_o->toNumber();
-				return ASObject::hasPropertyByMultiname(tmpname, considerDynamic, considerPrototype,wrk);
-			case T_STRING:
-				tmpname.name_type=multiname::NAME_STRING;
-				tmpname.name_s_id = name.name_o->toStringId();
-				return ASObject::hasPropertyByMultiname(tmpname, considerDynamic, considerPrototype,wrk);
-			default:
-				break;
-		}
-		Dictionary::dictType::iterator it=findKey(name.name_o);
-		return it != data.end();
-	}
-	else
-	{
-		//Primitive types _must_ be handled by the normal ASObject path
-		//REFERENCE: Dictionary Object on AS3 reference
-		assert(name.name_type==multiname::NAME_STRING ||
-			name.name_type==multiname::NAME_INT ||
-			name.name_type==multiname::NAME_UINT ||
-			name.name_type==multiname::NAME_NUMBER);
-		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype,wrk);
-	}
+	asAtom key=asAtomHandler::invalidAtom;
+	getKeyFromMultiname(name,key);
+	Dictionary::dictType::iterator it=findKey(key);
+	return it != data.end();
 }
 
 uint32_t Dictionary::nextNameIndex(uint32_t cur_index)
 {
 	assert_and_throw(implEnable);
-	if(cur_index<data.size())
-		return cur_index+1;
+	if (data.empty() || (cur_index == currentnameindex && currentnameiterator == data.end()))
+	{
+		currentnameindex=UINT32_MAX;
+	 	return 0;
+	}
+	if (cur_index == 0)
+	{
+		currentnameiterator = data.begin();
+		currentnameindex = 0;
+	}
 	else
 	{
-		//Fall back on object properties
-		uint32_t ret=ASObject::nextNameIndex(cur_index-data.size());
-		if(ret==0)
-			return 0;
-		else
-			return ret+data.size();
-
+		if (cur_index != currentnameindex+1)
+		{
+			currentnameiterator = data.begin();
+			currentnameindex = 0;
+			while (currentnameindex < cur_index-1)
+			{
+				++currentnameiterator;
+				++currentnameindex;
+			}
+		}
+		++currentnameiterator;
+		++currentnameindex;
 	}
+	if (currentnameiterator == data.end())
+	{
+		currentnameindex=UINT32_MAX;
+		return 0;
+	}
+	return cur_index+1;
 }
 
 void Dictionary::nextName(asAtom& ret,uint32_t index)
 {
 	assert_and_throw(implEnable);
-	if(index<=data.size())
-	{
-		auto it=data.begin();
-		for(unsigned int i=1;i<index;i++)
-			++it;
-		it->first->incRef();
-		ret = asAtomHandler::fromObject(it->first);
-	}
+	if (currentnameiterator == data.end())
+		ret = asAtomHandler::undefinedAtom;
 	else
 	{
-		//Fall back on object properties
-		ASObject::nextName(ret,index-data.size());
+		ASATOM_INCREF(currentnameiterator->first);
+		ret = currentnameiterator->first;
 	}
 }
 
 void Dictionary::nextValue(asAtom& ret,uint32_t index)
 {
 	assert_and_throw(implEnable);
-	if(index<=data.size())
-	{
-		auto it=data.begin();
-		for(unsigned int i=1;i<index;i++)
-			++it;
-
-		ASATOM_INCREF(it->second);
-		ret = it->second;
-	}
+	if (currentnameiterator == data.end())
+		ret = asAtomHandler::undefinedAtom;
 	else
 	{
-		//Fall back on object properties
-		ASObject::nextValue(ret,index-data.size());
+		ASATOM_INCREF(currentnameiterator->second);
+		ret = currentnameiterator->second;
 	}
 }
 
@@ -413,7 +357,8 @@ bool Dictionary::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	for (auto it = data.begin(); it != data.end(); it++)
 	{
-		ret = it->first->countAllCylicMemberReferences(gcstate) || ret;
+		if (asAtomHandler::isObject(it->first))
+			ret = asAtomHandler::getObjectNoCheck(it->first)->countAllCylicMemberReferences(gcstate) || ret;
 		if (asAtomHandler::isObject(it->second))
 			ret = asAtomHandler::getObjectNoCheck(it->second)->countAllCylicMemberReferences(gcstate) || ret;
 	}
@@ -429,7 +374,7 @@ tiny_string Dictionary::toString()
 	{
 		if(it != data.begin())
 			retstr << ", ";
-		retstr << "{" << it->first->toString() << ", " << asAtomHandler::toString(it->second,getInstanceWorker()) << "}";
+		retstr << "{" << asAtomHandler::toString(it->first,getInstanceWorker()) << ", " << asAtomHandler::toString(it->second,getInstanceWorker()) << "}";
 		++it;
 	}
 	retstr << "}";

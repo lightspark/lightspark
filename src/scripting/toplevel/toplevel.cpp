@@ -1020,7 +1020,8 @@ ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 	std::list<uint32_t> nameIDlist;
 	if (asAtomHandler::isNull(args[1]))
 	{
-		for (uint32_t i = 0; i < o->numVariables(); i++)
+		uint32_t i = 0;
+		while (i=o->nextNameIndex(i))
 		{
 			bool dummy;
 			nameIDlist.push_back(o->getNameAt(i,dummy));
@@ -1392,12 +1393,12 @@ multiname *ArrayPrototype::setVariableByMultiname(multiname &name, asAtom& o, AS
 
 GET_VARIABLE_RESULT ObjectConstructor::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
-	if (name.normalizedName(getSystemState()) == "prototype")
+	if (name.normalizedName(getInstanceWorker()) == "prototype")
 	{
 		prototype->getObj()->incRef();
 		ret = asAtomHandler::fromObject(prototype->getObj());
 	}
-	else if (name.normalizedName(getSystemState()) == "length")
+	else if (name.normalizedName(getInstanceWorker()) == "length")
 		asAtomHandler::setUInt(ret,getInstanceWorker(),_length);
 	else
 		return getClass()->getVariableByMultiname(ret,name, opt,wrk);

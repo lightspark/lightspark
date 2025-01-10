@@ -1217,7 +1217,7 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 	if (!isConstructed())
 		return false;
 	unsigned int index=0;
-	if(!Array::isValidMultiname(getSystemState(),name,index))
+	if(!Array::isValidMultiname(getInstanceWorker(),name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype,wrk);
 
 	return index<len;
@@ -1226,7 +1226,7 @@ bool ByteArray::hasPropertyByMultiname(const multiname& name, bool considerDynam
 GET_VARIABLE_RESULT ByteArray::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
 	unsigned int index=0;
-	if((opt & GET_VARIABLE_OPTION::SKIP_IMPL)!=0  || !implEnable || !Array::isValidMultiname(getSystemState(),name,index))
+	if((opt & GET_VARIABLE_OPTION::SKIP_IMPL)!=0  || !implEnable || !Array::isValidMultiname(getInstanceWorker(),name,index))
 	{
 		return getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 	}
@@ -1261,7 +1261,7 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name, ASWorker* wrk
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
-	if(!Array::isValidMultiname(getSystemState(),name,index))
+	if(!Array::isValidMultiname(getInstanceWorker(),name,index))
 		return ASObject::getVariableByMultiname_i(name,wrk);
 
 	if(index<len)
@@ -1279,7 +1279,7 @@ multiname *ByteArray::setVariableByMultiname(multiname& name, asAtom& o, CONST_A
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
-	if(!Array::isValidMultiname(getSystemState(),name,index))
+	if(!Array::isValidMultiname(getInstanceWorker(),name,index))
 		return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 	if (index > BA_MAX_SIZE) 
 	{

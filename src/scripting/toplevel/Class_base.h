@@ -231,7 +231,7 @@ public:
 	void setSuper(_R<Class_base> super_);
 	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = nullptr) const
 	{
-		return ASObject::findGettableImplConst(getSystemState(), borrowedVariables,name,nsRealId);
+		return ASObject::findGettableImplConst(getInstanceWorker(), borrowedVariables,name,nsRealId);
 	}
 	
 	variable* findBorrowedSettable(const multiname& name, bool* has_getter=nullptr);
@@ -242,7 +242,7 @@ public:
 	multiname* getClassVariableByMultiname(asAtom& ret, const multiname& name, ASWorker* wrk, asAtom& closure);
 	variable* getBorrowedVariableByMultiname(const multiname& name)
 	{
-		return borrowedVariables.findObjVar(getSystemState(),name,NO_CREATE_TRAIT,DECLARED_TRAIT);
+		return borrowedVariables.findObjVar(getInstanceWorker(),name,NO_CREATE_TRAIT,DECLARED_TRAIT);
 	}
 	bool isBuiltin() const override { return true; }
 	Global* getGlobalScope() const override { return global; }

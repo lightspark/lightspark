@@ -1947,7 +1947,7 @@ int32_t Array::getVariableByMultiname_i(const multiname& name, ASWorker* wrk)
 {
 	assert_and_throw(implEnable);
 	uint32_t index=0;
-	if(!isValidMultiname(getSystemState(),name,index))
+	if(!isValidMultiname(getInstanceWorker(),name,index))
 		return ASObject::getVariableByMultiname_i(name,wrk);
 
 	if(index<size())
@@ -1978,7 +1978,7 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 	}
 
 	uint32_t index=0;
-	if(!isValidMultiname(getSystemState(),name,index))
+	if(!isValidMultiname(getInstanceWorker(),name,index))
 	{
 		return getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 	}
@@ -2079,7 +2079,7 @@ void Array::setVariableByMultiname_i(multiname& name, int32_t value, ASWorker* w
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
-	if(!isValidMultiname(getSystemState(),name,index))
+	if(!isValidMultiname(getInstanceWorker(),name,index))
 	{
 		ASObject::setVariableByMultiname_i(name,value,wrk);
 		return;
@@ -2099,7 +2099,7 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 		return false;
 
 	uint32_t index=0;
-	if(!isValidMultiname(getSystemState(),name,index))
+	if(!isValidMultiname(getInstanceWorker(),name,index))
 		return ASObject::hasPropertyByMultiname(name, considerDynamic, considerPrototype,wrk);
 
 	// Derived classes may be sealed!
@@ -2113,7 +2113,7 @@ bool Array::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 	return (data_second.find(index) != data_second.end());
 }
 
-bool Array::isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index)
+bool Array::isValidMultiname(ASWorker* wrk, const multiname& name, uint32_t& index)
 {
 	switch (name.name_type)
 	{
@@ -2145,7 +2145,7 @@ bool Array::isValidMultiname(SystemState* sys, const multiname& name, uint32_t& 
 	if(!name.hasEmptyNS)
 		return false;
 	
-	return name.toUInt(sys,index);
+	return name.toUInt(wrk,index);
 }
 
 bool Array::isIntegerWithoutLeadingZeros(const tiny_string& value)
@@ -2165,7 +2165,7 @@ multiname *Array::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOW
 {
 	assert_and_throw(implEnable);
 	uint32_t index=0;
-	if(!isValidMultiname(getSystemState(),name,index))
+	if(!isValidMultiname(getInstanceWorker(),name,index))
 		return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 	// Derived classes may be sealed!
 	if (getClass() && getClass()->isSealed)
@@ -2213,7 +2213,7 @@ bool Array::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
 	assert_and_throw(implEnable);
 	unsigned int index=0;
-	if(!isValidMultiname(getSystemState(),name,index))
+	if(!isValidMultiname(getInstanceWorker(),name,index))
 		return ASObject::deleteVariableByMultiname(name,wrk);
 	if (getClass() && getClass()->isSealed)
 		return false;

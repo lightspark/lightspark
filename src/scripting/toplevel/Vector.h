@@ -323,7 +323,7 @@ public:
 		else
 			getVariableByIntegerIntern(ret,index,GET_VARIABLE_OPTION::NONE,wrk);
 	}
-	static bool isValidMultiname(SystemState* sys, const multiname& name, uint32_t& index, bool *isNumber = nullptr);
+	static bool isValidMultiname(ASWorker* wrk, const multiname& name, uint32_t& index, bool *isNumber = nullptr);
 
 	tiny_string toJSON(std::vector<ASObject *> &path, asAtom replacer, const tiny_string &spaces,const tiny_string& filter) override;
 

@@ -1303,7 +1303,7 @@ int64_t Date::getcurrentms()
 	if (getSystemState()->use_testrunner_date)
 	{
 		// ruffle tests expect a specific date in specific timezone as "current date"
-#if GLIB_VERSION_2_28
+#if GLIB_VERSION_2_68
 		GTimeZone* tmtz = g_time_zone_new_identifier("+05:45");
 #else
 		GTimeZone* tmtz = g_time_zone_new("+05:45");
@@ -1326,7 +1326,7 @@ GDateTime* Date::getlocaldatetime(GDateTime* datetimeUTC)
 	GDateTime* ret = nullptr;
 	if (getSystemState()->use_testrunner_date)
 	{
-#if GLIB_VERSION_2_28
+#if GLIB_VERSION_2_68
 		GTimeZone* tmtz = g_time_zone_new_identifier("+05:45");
 #else
 		GTimeZone* tmtz = g_time_zone_new("+05:45");

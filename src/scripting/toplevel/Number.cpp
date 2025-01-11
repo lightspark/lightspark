@@ -319,11 +319,11 @@ std::string Number::AVM1toString(double val, int radix)
 	strreversed.reserve(str.size());
 	for (auto it = str.rbegin(); it != str.rend();it++)
 		strreversed.push_back(*it);
+	return strreversed;
 
 	// not available in c++14
 	// std::reverse(str.begin(), str.end());
-
-	return str;
+	//return str;
 }
 
 // doubletostring algorithm taken from https://github.com/adobe/avmplus/core/MathUtils.cpp

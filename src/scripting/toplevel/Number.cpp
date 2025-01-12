@@ -315,9 +315,15 @@ std::string Number::AVM1toString(double val, int radix)
 	}
 	if (negative) str.push_back('-');
 
-	std::reverse(str.begin(), str.end());
+	std::string strreversed;
+	strreversed.reserve(str.size());
+	for (auto it = str.rbegin(); it != str.rend();it++)
+		strreversed.push_back(*it);
+	return strreversed;
 
-	return str;
+	// not available in c++14
+	// std::reverse(str.begin(), str.end());
+	//return str;
 }
 
 // doubletostring algorithm taken from https://github.com/adobe/avmplus/core/MathUtils.cpp

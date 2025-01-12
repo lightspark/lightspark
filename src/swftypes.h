@@ -453,6 +453,10 @@ union asAtom
 {
 	int32_t intval;
 	uint32_t uintval;
+	bool operator<(const asAtom& r) const
+	{
+		return uintval < r.uintval;
+	}
 };
 #define LIGHTSPARK_ATOM_VALTYPE uint32_t
 #endif

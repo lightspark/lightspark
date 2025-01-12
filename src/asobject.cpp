@@ -248,6 +248,11 @@ int variables_map::getNextEnumerable(unsigned int start)
 			}
 			while (currentnameindex < start-1 && currentnamevar);
 		}
+		if(currentnamevar==nullptr)
+		{
+			currentnameindex=UINT32_MAX;
+			return -1;
+		}
 		currentnamevar = currentnamevar->nextVar;
 		++currentnameindex;
 	}

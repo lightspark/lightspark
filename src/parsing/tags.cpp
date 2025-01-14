@@ -1872,7 +1872,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	{
 		currchar = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth);
 		nameID = currchar->name;
-		if (parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth) && currchar->getTagID() != CharacterId)
+		if (parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth))
 		{
 			parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
 			exists = false;

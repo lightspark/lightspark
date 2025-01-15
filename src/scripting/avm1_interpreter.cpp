@@ -160,7 +160,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" no super class found for "<<asAtomHandler::toDebugString(scopestack[0]));
 		ASATOM_INCREF(super);
 		if (preloadSuper)
-			registers[currRegister++] = super;
+		{
+			// NOTE: The `super` register is set to `undefined`, if both
+			// flags are set.
+			registers[currRegister++] = (!suppressSuper) ? super : asAtomHandler::undefinedAtom;
+		}
 		else
 		{
 			auto superStr = clip->getSystemState()->getUniqueStringId("super");

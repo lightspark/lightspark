@@ -177,9 +177,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	}
 	if (preloadParent)
 	{
-		if (clip->getParent())
+		// NOTE: If `_parent` is `undefined` (because it's a root clip),
+		// it actually doesn't get pushed, with `_global` taking it's
+		// place instead.
+		if (clip->getParent() != nullptr)
+		{
 			clip->getParent()->incRef();
-		registers[currRegister++] = asAtomHandler::fromObject(clip->getParent());
+			registers[currRegister++] = asAtomHandler::fromObject(clip->getParent());
+		}
 	}
 	if (preloadGlobal)
 	{

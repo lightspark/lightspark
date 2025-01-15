@@ -302,6 +302,8 @@ struct asfreelist
 
 extern SystemState* getSys();
 extern ASWorker* getWorker();
+//for toPrimitive
+enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
 enum GET_VARIABLE_RESULT {GETVAR_NORMAL=0x00, GETVAR_CACHEABLE=0x01, GETVAR_ISGETTER=0x02, GETVAR_ISCONSTANT=0x04, GETVAR_ISNEWOBJECT=0x08};
 enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, FROM_GETLEX=0x02, DONT_CALL_GETTER=0x04, NO_INCREF=0x08, DONT_CHECK_CLASS=0x10, DONT_CHECK_PROTOTYPE=0x20};
@@ -504,8 +506,9 @@ public:
 	static asAtom asTypelate(asAtom& a, asAtom& b, ASWorker* wrk);
 	static bool isTypelate(asAtom& a,ASObject* type);
 	static bool isTypelate(asAtom& a,asAtom& t);
+	static bool AVM1toPrimitive(asAtom& ret, ASWorker* wrk, bool& isRefCounted, const TP_HINT& hint = NO_HINT);
 	static FORCE_INLINE number_t toNumber(const asAtom& a);
-	static FORCE_INLINE number_t AVM1toNumber(asAtom& a, uint32_t swfversion);
+	static FORCE_INLINE number_t AVM1toNumber(asAtom& a, uint32_t swfversion, bool primitiveHint = false);
 	static FORCE_INLINE bool AVM1toBool(asAtom& a, ASWorker* wrk, uint32_t swfversion);
 	static FORCE_INLINE int32_t toInt(const asAtom& a);
 	static FORCE_INLINE int32_t toIntStrict(const asAtom& a);
@@ -513,6 +516,7 @@ public:
 	static FORCE_INLINE uint32_t toUInt(asAtom& a);
 	static void getStringView(tiny_string& res, const asAtom &a, ASWorker* wrk); // this doesn't deep copy the data buffer if parameter a is an ASString
 	static tiny_string toString(const asAtom &a, ASWorker* wrk, bool fromAVM1add2=false);
+	static tiny_string AVM1toString(const asAtom &a, ASWorker* wrk);
 	static tiny_string toLocaleString(const asAtom &a, ASWorker* wrk);
 	static uint32_t toStringId(asAtom &a, ASWorker* wrk);
 	static FORCE_INLINE asAtom typeOf(asAtom& a);
@@ -904,8 +908,6 @@ public:
 };
 
 enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
-//for toPrimitive
-enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 class ASWorker;
 
 extern ASWorker* getWorker();
@@ -1843,7 +1845,7 @@ FORCE_INLINE number_t asAtomHandler::toNumber(const asAtom& a)
 			return getObjectNoCheck(a)->toNumber();
 	}
 }
-FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a, uint32_t swfversion)
+FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a, uint32_t swfversion, bool primitiveHint)
 {
 	switch(a.uintval&0x7)
 	{
@@ -1879,8 +1881,20 @@ FORCE_INLINE number_t asAtomHandler::AVM1toNumber(asAtom& a, uint32_t swfversion
 			assert(getObject(a));
 			return getObjectNoCheck(a)->toNumber();
 		default:
+		{
 			assert(getObject(a));
-			return getObjectNoCheck(a)->toNumber();
+			if (primitiveHint)
+				return std::numeric_limits<double>::quiet_NaN();
+			asAtom atom = a;
+			bool isRefCounted = false;
+
+			AVM1toPrimitive(atom, getWorker(), isRefCounted, NUMBER_HINT);
+			auto ret = AVM1toNumber(atom, swfversion, true);
+
+			if (isRefCounted)
+				ASATOM_DECREF(atom);
+			return ret;
+		}
 	}
 }
 FORCE_INLINE bool asAtomHandler::AVM1toBool(asAtom& a, ASWorker* wrk, uint32_t swfversion)

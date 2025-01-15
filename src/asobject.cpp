@@ -3903,6 +3903,113 @@ uint32_t asAtomHandler::toStringId(asAtom& a, ASWorker* wrk)
 	return ret;
 }
 
+bool asAtomHandler::AVM1toPrimitive(asAtom& ret, ASWorker* wrk, bool& isRefCounted, const TP_HINT& hint)
+{
+	assert(!wrk->needsActionScript3());
+
+	auto swfVersion = wrk->AVM1getSwfVersion();
+	isRefCounted = false;
+
+	if (isPrimitive(ret))
+		return true;
+
+	assert(getObject(ret) != nullptr);
+
+	auto obj = getObjectNoCheck(ret);
+
+	// NOTE: `toString()` is never called, when using a number hint.
+	if (hint != NUMBER_HINT && (swfVersion > 5 && obj->is<Date>()))
+	{
+		// NOTE: In SWF 6, and later, `Date` objects call `toString()`.
+		obj->call_toString(ret);
+	}
+	// NOTE: `valueOf()` is never called on `DisplayObject`s, when using
+	// a number hint.
+	else if (hint != NUMBER_HINT || !obj->is<DisplayObject>())
+	{
+		// Most objects call `valueOf()`.
+		obj->call_valueOf(ret);
+	}
+
+	if (isPrimitive(ret))
+	{
+		isRefCounted = true;
+		return true;
+	}
+
+	// If the above conversion returns an object, then the conversion
+	// failed, so fall back to the original object.
+	ASATOM_DECREF(ret);
+	ret = fromObject(obj);
+	return false;
+}
+
+tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk)
+{
+	auto swfVersion = wrk->AVM1getSwfVersion();
+	switch (a.uintval & 0x7)
+	{
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		{
+			switch (a.uintval & 0x70)
+			{
+				case ATOMTYPE_NULL_BIT:
+					return "null";
+				case ATOMTYPE_UNDEFINED_BIT:
+					return swfVersion < 7 ? "" : "undefined";
+				case ATOMTYPE_BOOL_BIT:
+					// NOTE: In SWF 4, bool to string conversions return
+					// 1, or 0, rather than true, or false.
+					if (swfVersion < 5)
+						return a.uintval & 0x80 ? "1" : "0";
+					return a.uintval & 0x80 ? "true" : "false";
+				default:
+					return "";
+			}
+		}
+		case ATOM_NUMBERPTR:
+			return as<Number>(a)->toString();
+		case ATOM_INTEGER:
+			return Integer::toString(a.intval >> 3);
+		case ATOM_UINTEGER:
+			return UInteger::toString(a.uintval >> 3);
+		case ATOM_STRINGID:
+		{
+			auto stringId = a.uintval >> 3;
+			if (!stringId)
+				return "";
+			if (stringId < BUILTIN_STRINGS_CHAR_MAX)
+				return tiny_string::fromChar(stringId);
+			return wrk->getSystemState()->getStringFromUniqueId(stringId);
+		}
+		default:
+		{
+			assert(getObject(a) != nullptr);
+			auto obj = getObject(a);
+
+			if (isString(a))
+				return obj->toString();
+			else if (obj->is<DisplayObject>())
+			{
+				// Special case for `DisplayObject`s.
+				return obj->as<DisplayObject>()->AVM1GetPath();
+			}
+
+			tiny_string ret = "[type Object]";
+			asAtom atom = asAtomHandler::invalidAtom;
+			obj->call_toString(atom);
+
+
+			if (isString(atom))
+				ret = toString(atom, wrk, true);
+			else if (obj->is<IFunction>())
+				ret = "[type Function]";
+
+			ASATOM_DECREF(atom);
+			return ret;
+		}
+	}
+}
 
 bool asAtomHandler::Boolean_concrete_string(asAtom &a)
 {
@@ -4194,116 +4301,53 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 bool asAtomHandler::AVM1add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 {
 	//Implement AVM1 add algorithm for ActionAdd2 opcode
+	bool ret = true;
+	bool isRefCounted1 = false;
+	bool isRefCounted2 = false;
+	asAtom val1 = a;
+	asAtom val2 = v2;
 
-	// if both values are Integers or UIntegers the result is also an int Number
-	if( (isInteger(a) || isUInteger(a) || isBool(a)) &&
-		(isInteger(v2) || isUInteger(v2) || isBool(v2)))
+	// NOTE: These calls to `toPrimitve()` have to be done in reverse
+	// order because they're supposed to be called in the order they
+	// were popped.
+	//
+	// TODO: Move these `toPrimitive()` calls into the AVM1 interpreter.
+	AVM1toPrimitive(val2, wrk, isRefCounted2, NO_HINT);
+	AVM1toPrimitive(val1, wrk, isRefCounted1, NO_HINT);
+
+	if(isString(val1) || isString(val2))
 	{
-		int64_t num1=toInt64(a);
-		int64_t num2=toInt64(v2);
-		int64_t res = num1+num2;
-		LOG_CALL("addI " << num1 << '+' << num2 <<"="<<res);
-		if (forceint || (res >= -(1<<28) && res < (1<<28)))
-			setInt(a,wrk,int32_t(res));
-		else if (res >= 0 && res < (1<<29))
-			setUInt(a,wrk,res);
-		else
-			return replaceNumber(a,wrk,res);
-	}
-	else if((isInteger(a) || isUInteger(a) || isNumber(a)) &&
-			   (isNumber(v2) || isInteger(v2) || isUInteger(v2)))
-	{
-		double num1=toNumber(a);
-		double num2=toNumber(v2);
-		LOG_CALL("addN " << num1 << '+' << num2<<" "<<toDebugString(a)<<" "<<toDebugString(v2));
+		auto str1 = AVM1toString(val1, wrk);
+		auto str2 = AVM1toString(val2, wrk);
+		auto str = str1 + str2;
+		LOG_CALL("add " << toDebugString(val1) << '+' << toDebugString(val2));
 		if (forceint)
-			setInt(a,wrk,num1+num2);
+			setInt(a, wrk, Integer::stringToASInteger(str.raw_buf(), 0));
 		else
-			return replaceNumber(a,wrk,num1+num2);
-	}
-	else if(isString(a) || isString(v2))
-	{
-		bool isRefCounted1=false;
-		bool isRefCounted2=false;
-		// order of toprimitive calls is important to match adobe behaviour
-		asAtom val2 =  v2;
-		if (!isString(val2) && isObject(val2))
-		{
-			bool fromValueOf;
-			getObjectNoCheck(val2)->AVM1toPrimitive(val2,isRefCounted2,fromValueOf,true);
-		}
-		asAtom val1 =  a;
-		if (!isString(val1) && isObject(val1))
-		{
-			bool fromValueOf;
-			getObjectNoCheck(val1)->AVM1toPrimitive(val1,isRefCounted1,fromValueOf,true);
-		}
-		tiny_string sa =  toString(val1,wrk,true);
-		sa += toString(val2,wrk,true);
-		LOG_CALL("add " << toDebugString(a) << '+' << toDebugString(v2));
-		if (forceint)
-			setInt(a,wrk,Integer::stringToASInteger(sa.raw_buf(),0));
-		else
-			a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(wrk,sa))|ATOM_STRINGPTR;
-		if (isRefCounted1)
-			ASATOM_DECREF(val1);
-		if (isRefCounted2)
-			ASATOM_DECREF(val2);
+			replace(a, abstract_s(wrk, str));
 	}
 	else
 	{
-		ASObject* val1 = toObject(a,wrk);
-		ASObject* val2 = toObject(v2,wrk);
-		// order of toprimitive calls is important to match adobe behaviour
-		asAtom val2p=asAtomHandler::invalidAtom;
-		bool isrefcounted2;
-		bool fromValueOf2;
-		val2->AVM1toPrimitive(val2p,isrefcounted2,fromValueOf2,true);
-		asAtom val1p=asAtomHandler::invalidAtom;
-		bool isrefcounted1;
-		bool fromValueOf1;
-		val1->AVM1toPrimitive(val1p,isrefcounted1,fromValueOf1,true);
-		if((fromValueOf1 && isString(val1p)) || (fromValueOf2 && isString(val2p)))
-		{
-			tiny_string sa = toString(val1p,wrk);
-			sa += toString(val2p,wrk);
-			LOG_CALL("add sp " << toDebugString(a) << '+' << toDebugString(v2));
-			if (forceint)
-				setInt(a,wrk,Integer::stringToASInteger(sa.raw_buf(),0));
-			else
-				a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(wrk,sa))|ATOM_STRINGPTR;
-		}
+		double num1 = AVM1toNumber(val1, wrk->AVM1getSwfVersion());
+		double num2 = AVM1toNumber(val2, wrk->AVM1getSwfVersion());
+		auto ret = num1 + num2;
+		LOG_CALL("addN " << num1 << '+' << num2<<" "<<toDebugString(val1)<<" "<<toDebugString(val2));
+
+		// NOTE: Returning an integer here is an optimization.
+		if (forceint || (ret >= -(1 << 28) && ret < (1 << 28)))
+			setInt(a, wrk, ret);
+		else if (ret >= 0 && ret < (1 << 29))
+			setUInt(a, wrk, ret);
 		else
-		if (asAtomHandler::isNumeric(val1p) || asAtomHandler::isNumeric(val2p) || asAtomHandler::isBool(val1p)  || asAtomHandler::isBool(val2p))
-		{
-			double num1=AVM1toNumber(val1p,wrk->AVM1getSwfVersion());
-			double num2=AVM1toNumber(val2p,wrk->AVM1getSwfVersion());
-			if (isrefcounted1)
-				ASATOM_DECREF(val1p);
-			if (isrefcounted2)
-				ASATOM_DECREF(val2p);
-			LOG_CALL("add np " << num1 << '+' << num2);
-			return replaceNumber(a,wrk,num1+num2);
-		}
-		else
-		{
-			string as(toString(val1p,wrk).raw_buf());
-			string bs(toString(val2p,wrk).raw_buf());
-			LOG_CALL("add p " << as << '+' << bs);
-			if (isrefcounted1)
-				ASATOM_DECREF(val1p);
-			if (isrefcounted2)
-				ASATOM_DECREF(val2p);
-			tiny_string s = as+bs;
-			number_t res = ASString::toNumber(val1->getInstanceWorker(),s);
-			return replaceNumber(a,wrk,res);
-		}
-		if (isrefcounted1)
-			ASATOM_DECREF(val1p);
-		if (isrefcounted2)
-			ASATOM_DECREF(val2p);
+			ret = replaceNumber(a, wrk, ret);
 	}
-	return true;
+
+	if (isRefCounted1)
+		ASATOM_DECREF(val1);
+	if (isRefCounted2)
+		ASATOM_DECREF(val2);
+
+	return ret;
 }
 
 void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap, std::map<const ASObject*, uint32_t>& objMap, std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk, asAtom& a)

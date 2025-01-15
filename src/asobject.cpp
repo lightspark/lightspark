@@ -625,6 +625,14 @@ void ASObject::call_valueOf(asAtom& ret)
 		ASObject* pr = this->getprop_prototype();
 		if (pr)
 			pr->getVariableByMultiname(o,valueOfName,SKIP_IMPL,getInstanceWorker());
+
+		// NOTE: Special case for `_global`, since it doesn't have a
+		// prototype, and returns `undefined` instead.
+		if (is<Global>())
+		{
+			ret = asAtomHandler::undefinedAtom;
+			return;
+		}
 	}
 	if (asAtomHandler::isInvalid(o))
 		getVariableByMultiname(o,valueOfName,SKIP_IMPL,getInstanceWorker());
@@ -672,6 +680,14 @@ void ASObject::call_toString(asAtom &ret)
 		ASObject* pr = this->getprop_prototype();
 		if (pr)
 			pr->getVariableByMultiname(o,toStringName,SKIP_IMPL,getInstanceWorker());
+
+		// NOTE: Special case for `_global`, since it doesn't have a
+		// prototype, and returns `undefined` instead.
+		if (is<Global>())
+		{
+			ret = asAtomHandler::undefinedAtom;
+			return;
+		}
 	}
 	if (asAtomHandler::isInvalid(o))
 		getVariableByMultiname(o,toStringName,SKIP_IMPL,getInstanceWorker());

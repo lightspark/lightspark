@@ -1486,7 +1486,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEnumerate "<<s<<" "<<asAtomHandler::toDebugString(obj));
 				if (asAtomHandler::isObject(obj) && !asAtomHandler::isNumeric(obj))
 				{
-					ACTIONRECORD::PushStack(stack,asAtomHandler::nullAtom);
+					ACTIONRECORD::PushStack(stack,asAtomHandler::undefinedAtom);
 					ASObject* o = asAtomHandler::toObject(obj,wrk);
 					o->AVM1enumerate(stack);
 				}
@@ -2142,7 +2142,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEnumerate2 "<<asAtomHandler::toDebugString(obj));
 				if (asAtomHandler::isObject(obj) && !asAtomHandler::isNumeric(obj))
 				{
-					ACTIONRECORD::PushStack(stack,asAtomHandler::nullAtom);
+					ACTIONRECORD::PushStack(stack,asAtomHandler::undefinedAtom);
 					ASObject* o = asAtomHandler::toObject(obj,wrk);
 					o->AVM1enumerate(stack);
 				}

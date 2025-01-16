@@ -120,6 +120,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
 				regargs->push(args[i]);
 			}
+			auto proto = _MNR(regargs->getClass()->prototype->getObj());
+			regargs->setprop_prototype(proto, BUILTIN_STRINGS::STRING_PROTO);
 			nsNameAndKind tmpns(clip->getSystemState(), "", NAMESPACE);
 			asAtom c = caller ? asAtomHandler::fromObject(caller) : asAtomHandler::nullAtom;
 			if (caller)
@@ -538,6 +540,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							argarray->push(args[i]);
 						}
 					}
+					auto proto = _MNR(argarray->getClass()->prototype->getObj());
+					argarray->setprop_prototype(proto, BUILTIN_STRINGS::STRING_PROTO);
 					argarray->incRef();
 					res = asAtomHandler::fromObjectNoPrimitive(argarray);
 				}

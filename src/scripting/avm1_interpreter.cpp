@@ -113,7 +113,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	{
 		if (preloadArguments)
 		{
-			Array* regargs = Class<Array>::getInstanceS(wrk);
+			AVM1Array* regargs = Class<AVM1Array>::getInstanceS(wrk);
 			for (uint32_t i = 0; i < num_args; i++)
 			{
 				ASATOM_INCREF(args[i]);
@@ -217,7 +217,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	std::vector<tryCatchBlock> trycatchblocks;
 	bool inCatchBlock = false;
 
-	Array* argarray = nullptr;
+	AVM1Array* argarray = nullptr;
 	DisplayObject *originalclip = clip;
 	auto it = actionlist.begin()+startactionpos;
 	auto tryblockstart = actionlist.end();
@@ -535,7 +535,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				{
 					if (argarray == nullptr)
 					{
-						argarray = Class<Array>::getInstanceS(wrk);
+						argarray = Class<AVM1Array>::getInstanceS(wrk);
 						for (uint32_t i = 0; i < num_args; i++)
 						{
 							ASATOM_INCREF(args[i]);

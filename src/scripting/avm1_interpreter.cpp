@@ -82,6 +82,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		);
 	}
 	context->swfversion=clip->loadedFrom->version;
+	context->callee = callee;
 	wrk->AVM1callStack.push_back(context);
 	context->callDepth++;
 	Log::calls_indent++;

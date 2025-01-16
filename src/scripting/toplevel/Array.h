@@ -42,7 +42,8 @@ struct sort_value
 	std::vector<asAtom> sortvalues;
 	asAtom dataAtom;
 	int originalindex;
-	sort_value(asAtom _dataAtom,int _originalindex):dataAtom(_dataAtom),originalindex(_originalindex) {}
+	bool fromprototype;
+	sort_value(asAtom _dataAtom,int _originalindex,bool _fromprototype):dataAtom(_dataAtom),originalindex(_originalindex),fromprototype(_fromprototype) {}
 };
 
 class Array: public ASObject
@@ -72,6 +73,8 @@ private:
 	};
 	tiny_string toString_priv(bool localized=false);
 	int capIndex(int i);
+	asAtom getMemberFromPrototypeChain(int index);
+	void fillFromPrototypeChain(uint32_t startindex, uint32_t count);
 public:
 	void constructorImpl(asAtom *args, const unsigned int argslen);
 	class ISortComparator
@@ -142,7 +145,7 @@ public:
 	ASFUNCTION_ATOM(insertAt);
 	ASFUNCTION_ATOM(removeAt);
 
-	asAtom at(unsigned int index);
+	asAtom at(unsigned int index, bool checkinvalid=false);
 	FORCE_INLINE void at_nocheck(asAtom& ret,unsigned int index)
 	{
 		if (index < ARRAY_SIZE_THRESHOLD)

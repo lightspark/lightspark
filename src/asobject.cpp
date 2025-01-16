@@ -3344,7 +3344,9 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 	}
 	if (getObjectNoCheck(caller)->is<AVM1Function>())
 	{
-		getObjectNoCheck(caller)->as<AVM1Function>()->call(&ret,&c, args, num_args);
+		// The caller is just the previous callee.
+		auto argCaller = wrk->AVM1getCallee();
+		getObjectNoCheck(caller)->as<AVM1Function>()->call(&ret,&c, args, num_args, argCaller);
 	}
 	else
 	{

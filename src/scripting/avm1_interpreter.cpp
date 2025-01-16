@@ -110,38 +110,46 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			ASATOM_INCREF(scopestack[0]);
 		registers[currRegister++] = !suppressThis ? scopestack[0] : asAtomHandler::undefinedAtom;
 	}
-	if (!suppressArguments)
+	if (!suppressArguments || preloadArguments)
 	{
-		if (preloadArguments)
+		AVM1Array* argsArray = Class<AVM1Array>::getInstanceS(wrk);
+		argsArray->resize(num_args);
+		for (uint32_t i = 0; i < num_args; i++)
 		{
-			AVM1Array* regargs = Class<AVM1Array>::getInstanceS(wrk);
-			for (uint32_t i = 0; i < num_args; i++)
-			{
-				ASATOM_INCREF(args[i]);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
-				regargs->push(args[i]);
-			}
-			auto proto = _MNR(regargs->getClass()->prototype->getObj());
-			regargs->setprop_prototype(proto, BUILTIN_STRINGS::STRING_PROTO);
-			nsNameAndKind tmpns(clip->getSystemState(), "", NAMESPACE);
-			asAtom c = caller ? asAtomHandler::fromObject(caller) : asAtomHandler::nullAtom;
-			if (caller)
-				caller->incRef();
-			regargs->setVariableAtomByQName("caller", tmpns, c, DYNAMIC_TRAIT, false, 5);
-			if (callee)
-			{
-				callee->incRef();
-				asAtom c = asAtomHandler::fromObject(callee);
-				regargs->setVariableAtomByQName("callee", tmpns, c, DYNAMIC_TRAIT, false, 5);
-			}
-			registers[currRegister++] = asAtomHandler::fromObject(regargs);
+			ASATOM_INCREF(args[i]);
+			LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
+			argsArray->set(i,args[i],false,false);
+			argsArray->addEnumerationValue(i,true);
 		}
+
+		auto proto = _MNR(argsArray->getClass()->prototype->getObj());
+		argsArray->setprop_prototype(proto, BUILTIN_STRINGS::STRING_PROTO);
+
+		nsNameAndKind tmpns(clip->getSystemState(), "", NAMESPACE);
+		asAtom c = caller ? asAtomHandler::fromObject(caller) : asAtomHandler::nullAtom;
+
+		if (caller)
+			caller->incRef();
+
+		argsArray->setVariableAtomByQName("caller", tmpns, c, DYNAMIC_TRAIT, false, 5);
+
+		if (callee)
+		{
+			callee->incRef();
+			asAtom c = asAtomHandler::fromObject(callee);
+			argsArray->setVariableAtomByQName("callee", tmpns, c, DYNAMIC_TRAIT, false, 5);
+		}
+
+		if (preloadArguments)
+			registers[currRegister++] = asAtomHandler::fromObject(argsArray);
 		else
 		{
+			auto argumentsStr = clip->getSystemState()->getUniqueStringId("arguments");
+			locals[argumentsStr] = asAtomHandler::fromObject(argsArray);
+
 			for (uint32_t i = 0; i < paramnames.size() && i < num_args; i++)
 			{
 				ASATOM_INCREF(args[i]);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
 				ASATOM_DECREF(locals[paramnames[i]]);
 				locals[paramnames[i]] = args[i];
 			}
@@ -529,22 +537,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					else
 						res = asAtomHandler::fromObject(clip);
 					ASATOM_INCREF(res);
-				}
-				else if (s=="arguments")
-				{
-					if (argarray == nullptr)
-					{
-						argarray = Class<AVM1Array>::getInstanceS(wrk);
-						for (uint32_t i = 0; i < num_args; i++)
-						{
-							ASATOM_INCREF(args[i]);
-							argarray->push(args[i]);
-						}
-					}
-					auto proto = _MNR(argarray->getClass()->prototype->getObj());
-					argarray->setprop_prototype(proto, BUILTIN_STRINGS::STRING_PROTO);
-					argarray->incRef();
-					res = asAtomHandler::fromObjectNoPrimitive(argarray);
 				}
 				else if (s == "_global")
 				{

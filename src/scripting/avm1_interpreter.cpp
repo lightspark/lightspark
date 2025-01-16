@@ -120,20 +120,16 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
 				regargs->push(args[i]);
 			}
-			multiname m(nullptr);
-			m.name_type=multiname::NAME_STRING;
-			m.isAttribute = false;
-			m.name_s_id=clip->getSystemState()->getUniqueStringId("caller");
+			nsNameAndKind tmpns(clip->getSystemState(), "", NAMESPACE);
 			asAtom c = caller ? asAtomHandler::fromObject(caller) : asAtomHandler::nullAtom;
 			if (caller)
 				caller->incRef();
-			regargs->setVariableByMultiname(m,c,ASObject::CONST_ALLOWED,nullptr,wrk);
+			regargs->setVariableAtomByQName("caller", tmpns, c, DYNAMIC_TRAIT, false, 5);
 			if (callee)
 			{
 				callee->incRef();
-				m.name_s_id=clip->getSystemState()->getUniqueStringId("callee");
 				asAtom c = asAtomHandler::fromObject(callee);
-				regargs->setVariableByMultiname(m,c,ASObject::CONST_ALLOWED,nullptr,wrk);
+				regargs->setVariableAtomByQName("callee", tmpns, c, DYNAMIC_TRAIT, false, 5);
 			}
 			registers[currRegister++] = asAtomHandler::fromObject(regargs);
 		}

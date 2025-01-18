@@ -628,7 +628,7 @@ void ASObject::call_valueOf(asAtom& ret)
 
 		// NOTE: Special case for `_global`, since it doesn't have a
 		// prototype, and returns `undefined` instead.
-		if (is<Global>())
+		if (is<Global>() || (hasprop_prototype() && pr == nullptr))
 		{
 			ret = asAtomHandler::undefinedAtom;
 			return;
@@ -683,7 +683,7 @@ void ASObject::call_toString(asAtom &ret)
 
 		// NOTE: Special case for `_global`, since it doesn't have a
 		// prototype, and returns `undefined` instead.
-		if (is<Global>())
+		if (is<Global>() || (hasprop_prototype() && pr == nullptr))
 		{
 			ret = asAtomHandler::undefinedAtom;
 			return;

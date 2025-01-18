@@ -1528,15 +1528,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom arg1 = PopStack(stack);
 				asAtom arg2 = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEquals2 "<<asAtomHandler::toDebugString(arg2)<<" == "<<asAtomHandler::toDebugString(arg1));
-				if (clip->loadedFrom->version <= 5)
-				{
-					// equals works different on SWF5: Objects without valueOf property are treated as undefined
-					if (asAtomHandler::getObject(arg1) && (asAtomHandler::isFunction(arg1) || !asAtomHandler::getObject(arg1)->has_valueOf()))
-						asAtomHandler::setUndefined(arg1);
-					if (asAtomHandler::getObject(arg2) && (asAtomHandler::isFunction(arg2) || !asAtomHandler::getObject(arg2)->has_valueOf()))
-						asAtomHandler::setUndefined(arg2);
-				}
-				PushStack(stack,asAtomHandler::fromBool(asAtomHandler::isEqual(arg2,wrk,arg1)));
+				PushStack(stack,asAtomHandler::fromBool(asAtomHandler::AVM1isEqual(arg2, arg1, wrk)));
 				ASATOM_DECREF(arg1);
 				ASATOM_DECREF(arg2);
 				break;

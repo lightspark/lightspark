@@ -2227,7 +2227,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom arg1 = PopStack(stack);
 				asAtom arg2 = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStrictEquals "<<asAtomHandler::toDebugString(arg2)<<" === "<<asAtomHandler::toDebugString(arg1));
-				PushStack(stack,asAtomHandler::fromBool(asAtomHandler::isEqualStrict(arg1,wrk,arg2) == TTRUE));
+				PushStack(stack,asAtomHandler::fromBool(asAtomHandler::AVM1isEqualStrict(arg2, arg1, wrk)));
 				ASATOM_DECREF(arg1);
 				ASATOM_DECREF(arg2);
 				break;

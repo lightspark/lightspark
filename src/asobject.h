@@ -480,6 +480,7 @@ public:
 	static FORCE_INLINE bool isEqual(asAtom& a, ASWorker* wrk, asAtom& v2);
 	static bool AVM1isEqual(asAtom& v1, asAtom& v2, ASWorker* wrk);
 	static FORCE_INLINE bool isEqualStrict(asAtom& a, ASWorker* wrk, asAtom& v2);
+	static bool AVM1isEqualStrict(asAtom& a, asAtom& b, ASWorker* wrk);
 	static FORCE_INLINE LIGHTSPARK_ATOM_VALTYPE getType(const asAtom& a)
 	{
 		return

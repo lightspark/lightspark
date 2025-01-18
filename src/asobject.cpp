@@ -5096,6 +5096,68 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 	return getObject(a)->isEqual(getObject(v2));
 }
 
+bool asAtomHandler::AVM1isEqualStrict(asAtom& a, asAtom& b, ASWorker* wrk)
+{
+	if (!isSameType(a, b) && (!isNumeric(a) || !isNumeric(b)))
+		return false;
+
+	switch (getType(a))
+	{
+		case ATOMTYPE_BOOL_BIT:
+			return (a.uintval & 0x80) == (b.uintval & 0x80);
+			break;
+		case ATOM_INTEGER:
+		case ATOM_UINTEGER:
+		case ATOM_NUMBERPTR:
+		{
+			auto swfVersion = wrk->AVM1getSwfVersion();
+			auto num1 = AVM1toNumber(a, swfVersion, true);
+			auto num2 = AVM1toNumber(b, swfVersion, true);
+			// NOTE, PLAYER-SPECIFIC: In Flash Player 7, and later,
+			// `NaN == NaN` returns true, while in Flash Player 6, and
+			// earlier, `NaN == NaN` returns false. Let's do what Flash
+			// Player 7, and later does, and return true.
+			//
+			// TODO: Allow for using either, once support for
+			// mimicking different player versions is added.
+			return
+			(
+				num1 == num2 ||
+				(std::isnan(num1) && std::isnan(num2))
+			);
+			break;
+		}
+		case ATOM_STRINGID:
+		case ATOM_STRINGPTR:
+			return AVM1toString(a, wrk) == AVM1toString(b, wrk);
+			break;
+		case ATOM_OBJECTPTR:
+		{
+			if (is<DisplayObject>(a) && is<DisplayObject>(b))
+			{
+				// Special case for `DisplayObject`.
+				auto clip1 = as<DisplayObject>(a);
+				auto clip2 = as<DisplayObject>(b);
+				return clip1->AVM1GetPath() == clip2->AVM1GetPath();
+			}
+			else if (is<XMLNode>(a) && is<XMLNode>(b))
+			{
+				// Special case for `XMLNode`.
+				// TODO: This is a hack, and should be removed once a
+				// proper refactor of the `flash.xml` code is done.
+				return getObject(a)->isEqual(getObject(b));
+			}
+
+			return getObject(a) == getObject(b);
+			break;
+		}
+		// `undefined`, `null`, and invalid.
+		default:
+			return true;
+			break;
+	}
+}
+
 // Implements ECMA-262 2nd edition, section 11.9.3. The abstract equality
 // comparison algorithm.
 bool asAtomHandler::AVM1isEqual(asAtom& v1, asAtom &v2, ASWorker* wrk)
@@ -5121,56 +5183,7 @@ bool asAtomHandler::AVM1isEqual(asAtom& v1, asAtom &v2, ASWorker* wrk)
 	bool ret = false;
 
 	if (isSameType(a, b))
-	{
-		switch (getType(a))
-		{
-			case ATOMTYPE_BOOL_BIT:
-				ret = (a.uintval & 0x80) == (b.uintval & 0x80);
-				break;
-			case ATOM_INTEGER:
-			case ATOM_UINTEGER:
-			case ATOM_NUMBERPTR:
-			{
-				auto num1 = AVM1toNumber(a, swfVersion, true);
-				auto num2 = AVM1toNumber(b, swfVersion, true);
-				// NOTE, PLAYER-SPECIFIC: In Flash Player 7, and later,
-				// `NaN == NaN` returns true, while in Flash Player 6,
-				// and earlier, `NaN == NaN` returns false. Let's do what
-				// Flash Player 7, and later does, and return true.
-				//
-				// TODO: Allow for using either, once support for
-				// mimicking different player versions is added.
-				ret =
-				(
-					num1 == num2 ||
-					(std::isnan(num1) && std::isnan(num2))
-				);
-				break;
-			}
-			case ATOM_STRINGID:
-			case ATOM_STRINGPTR:
-				ret = AVM1toString(a, wrk) == AVM1toString(b, wrk);
-				break;
-			case ATOM_OBJECTPTR:
-			{
-				if (is<DisplayObject>(a) && is<DisplayObject>(b))
-				{
-					// Special case for `DisplayObject`.
-					auto clip1 = as<DisplayObject>(a);
-					auto clip2 = as<DisplayObject>(b);
-					ret = clip1->AVM1GetPath() == clip2->AVM1GetPath();
-					break;
-				}
-
-				ret = getObject(a) == getObject(b);
-				break;
-			}
-			// `undefined`, `null`, and invalid.
-			default:
-				ret = true;
-				break;
-		}
-	}
+		ret = AVM1isEqualStrict(a, b, wrk);
 	else if ((isNullOrUndefined(a) || isInvalid(a)) && (isNullOrUndefined(b) || isInvalid(b)))
 		ret = true;
 	// `bool` to atom/value comparision. Convert `bool` to 0/1, and

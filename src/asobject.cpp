@@ -3227,7 +3227,9 @@ ASObject* ASObject::getprop_prototype()
 	if (!getSystemState()->mainClip->needsActionScript3())
 		var=Variables.findObjVar(BUILTIN_STRINGS::STRING_PROTO,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
-	return var ? asAtomHandler::toObject(var->var,getInstanceWorker()) : nullptr;
+	if (var != nullptr && asAtomHandler::isObjectPtr(var->var))
+		return asAtomHandler::getObjectNoCheck(var->var);
+	return nullptr;
 }
 
 /*

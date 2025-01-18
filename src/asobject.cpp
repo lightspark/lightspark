@@ -1451,7 +1451,7 @@ ASFUNCTIONBODY_ATOM(ASObject,_toString)
 		if (asAtomHandler::is<Class_base>(obj))
 		{
 			res="[class ";
-			res+=wrk->getSystemState()->getStringFromUniqueId(asAtomHandler::as<Class_base>(obj)->class_name.nameId);
+			res+=asAtomHandler::as<Class_base>(obj)->as<Class_base>()->class_name.getQualifiedName(wrk->getSystemState(),false);
 			res+="]";
 		}
 		else if(asAtomHandler::is<IFunction>(obj))

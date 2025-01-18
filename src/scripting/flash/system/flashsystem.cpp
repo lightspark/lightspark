@@ -996,21 +996,14 @@ void ApplicationDomain::getVariableAndTargetByMultinameIncludeTemplatedClasses(a
 		{
 			tiny_string vtype = s.substr_bytes(8,s.numBytes()-9);
 
+			tiny_string tname;
+			tiny_string tns;
+			stringToQName(vtype,tname,tns);
 			multiname tn(nullptr);
 			tn.name_type=multiname::NAME_STRING;
-
-			uint32_t lastpos = vtype.rfind("::");
-			if (lastpos == tiny_string::npos)
-			{
-				tn.name_s_id=getSystemState()->getUniqueStringId(vtype);
-				tn.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
-			}
-			else
-			{
-				tn.name_s_id=getSystemState()->getUniqueStringId(vtype.substr_bytes(lastpos+2,vtype.numBytes()-(lastpos+2)));
-				tn.ns.push_back(nsNameAndKind(getSystemState(),vtype.substr_bytes(0,lastpos),NAMESPACE));
-				tn.hasEmptyNS=false;
-			}
+			tn.name_s_id=getSystemState()->getUniqueStringId(tname);
+			tn.ns.push_back(nsNameAndKind(getSystemState(),tns,NAMESPACE));
+			tn.hasEmptyNS=tns.empty();
 			ASObject* tntarget;
 			asAtom typeobj=asAtomHandler::invalidAtom;
 			getVariableAndTargetByMultiname(typeobj,tn, tntarget,wrk);

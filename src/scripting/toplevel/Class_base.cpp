@@ -675,19 +675,19 @@ bool Class_base::isSubClass(Class_base* cls, bool considerInterfaces)
 	return false;
 }
 
-const tiny_string Class_base::getQualifiedClassName(bool forDescribeType) const
+const tiny_string Class_base::getQualifiedClassName(bool fullName) const
 {
-	if (qualifiedClassnameID != UINT32_MAX && !forDescribeType)
+	if (qualifiedClassnameID != UINT32_MAX && fullName)
 		return getSystemState()->getStringFromUniqueId(qualifiedClassnameID);
 	if(class_index==-1)
-		return class_name.getQualifiedName(getSystemState(),forDescribeType);
+		return class_name.getQualifiedName(getSystemState(),fullName);
 	else
 	{
 		assert_and_throw(context);
 		int name_index=context->instances[class_index].name;
 		assert_and_throw(name_index);
 		const multiname* mname=context->getMultiname(name_index,nullptr);
-		return mname->qualifiedString(getSystemState(),forDescribeType);
+		return mname->qualifiedString(getSystemState(),fullName);
 	}
 }
 uint32_t Class_base::getQualifiedClassNameID()

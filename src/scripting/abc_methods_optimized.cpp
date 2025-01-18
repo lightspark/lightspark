@@ -105,7 +105,7 @@ void setCallException(const asAtom& obj, multiname* name, ASWorker* wrk)
 	}
 	else if (pobj && pobj->is<Class_base>())
 	{
-		tiny_string clsname = pobj->as<Class_base>()->class_name.getQualifiedName(wrk->getSystemState());
+		tiny_string clsname = pobj->as<Class_base>()->class_name.getQualifiedName(wrk->getSystemState(),true);
 		createError<TypeError>(wrk,kCallOfNonFunctionError, name->qualifiedString(wrk->getSystemState()), clsname);
 	}
 	else

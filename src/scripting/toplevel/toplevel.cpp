@@ -1021,7 +1021,7 @@ ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 	if (asAtomHandler::isNull(args[1]))
 	{
 		uint32_t i = 0;
-		while (i=o->nextNameIndex(i))
+		while ((i=o->nextNameIndex(i)) != 0)
 		{
 			bool dummy;
 			nameIDlist.push_back(o->getNameAt(i,dummy));

@@ -214,7 +214,7 @@ public:
 	 * If considerInterfaces is true, check interfaces, too.
 	 */
 	bool isSubClass(Class_base* cls, bool considerInterfaces=true);
-	const tiny_string getQualifiedClassName(bool forDescribeType = false) const;
+	const tiny_string getQualifiedClassName(bool fullName = false) const;
 	uint32_t getQualifiedClassNameID();
 	tiny_string getName() const override;
 	tiny_string toString();

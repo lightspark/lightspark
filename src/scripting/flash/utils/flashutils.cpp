@@ -169,11 +169,8 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 	tiny_string tmpName;
 	stringToQName(tmp,tmpName,nsName);
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId(tmpName);
-	if (nsName != "")
-	{
-		name.ns.push_back(nsNameAndKind(wrk->getSystemState(),nsName,NAMESPACE));
-		name.hasEmptyNS=false;
-	}
+	name.ns.push_back(nsNameAndKind(wrk->getSystemState(),nsName,NAMESPACE));
+	name.hasEmptyNS=nsName.empty();
 
 	LOG(LOG_CALLS,"Looking for definition of " << name);
 	ASObject* target;
@@ -186,7 +183,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 	if(asAtomHandler::isInvalid(ret))
 	{
 		ret = asAtomHandler::undefinedAtom;
-		createError<ReferenceError>(wrk,kClassNotFoundError, tmp);
+		createError<ReferenceError>(wrk,kUndefinedVarError, tmp);
 		return;
 	}
 	

@@ -66,13 +66,6 @@ const tiny_string multiname::qualifiedString(SystemState* sys, bool forDescribeT
 		tiny_string ret=nsName;
 		ret+="::";
 		ret+=name;
-		if (forDescribeType && ret.startsWith("__AS3__.vec::Vector$"))
-		{
-			tiny_string ret2 = "__AS3__.vec::Vector.<";
-			ret2 += ret.substr(strlen("__AS3__.vec::Vector$"),ret.numChars());
-			ret2 += ">";
-			return ret2;
-		}
 		return ret;
 	}
 }
@@ -1699,14 +1692,24 @@ void lightspark::stringToQName(const tiny_string& tmp, tiny_string& name, tiny_s
 		name = tmp.substr_bytes(collon_offset+2,tmp.numBytes()-collon_offset-2);
 		return;
 	}
-	// No namespace, look for a package name
-	char* dot = tmp.strchrr('.');
-	if(dot)
+	if (tmp.startsWith("Vector."))
 	{
-		uint32_t dot_offset = dot-tmp.raw_buf();
-		ns = tmp.substr_bytes(0,dot_offset);
-		name = tmp.substr_bytes(dot_offset+1,tmp.numBytes()-dot_offset-1);
+		// name is a Vector template name, add missing ns
+		ns="__AS3__.vec";
+		name=tmp;
 		return;
+	}
+	else
+	{
+		// No namespace, look for a package name
+		char* dot = tmp.strchrr('.');
+		if(dot)
+		{
+			uint32_t dot_offset = dot-tmp.raw_buf();
+			ns = tmp.substr_bytes(0,dot_offset);
+			name = tmp.substr_bytes(dot_offset+1,tmp.numBytes()-dot_offset-1);
+			return;
+		}
 	}
 	//No namespace or package in the string
 	name=tmp;
@@ -1717,36 +1720,31 @@ RunState::RunState():last_FP(-1),FP(0),next_FP(0),stop_FP(false),explicit_FP(fal
 {
 }
 
-tiny_string QName::getQualifiedName(SystemState *sys,bool forDescribeType) const
+tiny_string QName::getQualifiedName(SystemState *sys,bool fullName) const
 {
 	tiny_string ret;
-	if(nsStringId != BUILTIN_STRINGS::EMPTY)
+	if (nsStringId == BUILTIN_STRINGS::STRING_AS3VECTOR)
 	{
-		ret+=sys->getStringFromUniqueId(nsStringId);
-		ret+="::";
-	}
-	ret+=sys->getStringFromUniqueId(nameId);
-	if (forDescribeType && ret.startsWith("__AS3__.vec::Vector$"))
-	{
-		tiny_string ret2 = "__AS3__.vec::Vector.<";
-		tiny_string t = ret.substr(strlen("__AS3__.vec::Vector$"),ret.numChars());
-		uint32_t nsub = t.find("$");
+		ret = fullName ? "__AS3__.vec::" : "" ;
+		tiny_string t = sys->getStringFromUniqueId(nameId);
+		uint32_t nsub = t.rfind("$");
 		if (nsub != tiny_string::npos)
 		{
+			uint32_t ns = sys->getUniqueStringId(t.substr_bytes(0,nsub));
 			t = t.substr(nsub+1,t.numChars());
-			uint32_t ns = BUILTIN_STRINGS::EMPTY;
-			uint32_t n = t.find("::");
-			if (n!= tiny_string::npos)
-			{
-				ns = sys->getUniqueStringId(t.substr_bytes(0,n));
-				t = t.substr(n,t.numChars());
-			}
 			QName qn(sys->getUniqueStringId(t),ns);
-			t = qn.getQualifiedName(sys,forDescribeType);
+			t = qn.getQualifiedName(sys,true);
 		}
-		ret2 += t=="any" ? "*" : t;
-		ret2 += ">";
-		return ret2;
+		ret += t;
+	}
+	else
+	{
+		if(nsStringId != BUILTIN_STRINGS::EMPTY)
+		{
+			ret+=sys->getStringFromUniqueId(nsStringId);
+			ret+=fullName ? "::" : ".";
+		}
+		ret+=sys->getStringFromUniqueId(nameId);
 	}
 	return ret;
 }

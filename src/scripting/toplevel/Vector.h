@@ -98,9 +98,18 @@ public:
 		}
 		else
 		{
-			tiny_string clsname = asAtomHandler::getObject(o) ? asAtomHandler::getObject(o)->getClassName() : "";
-			createError<TypeError>(wrk,kCheckTypeFailedError, clsname,
-								  Class<T>::getQualifiedClassName());
+			tiny_string clsname;
+			if (asAtomHandler::getObject(o))
+			{
+				clsname = asAtomHandler::getObject(o)->getClass()->getQualifiedClassName(true);
+				// it seems adobe for some reason adds the object pointer to the class name
+				char buf[300];
+				sprintf(buf,"@%lx",o.uintval);
+				clsname += buf;
+			}
+			tiny_string tname = "__AS3__.vec.";
+			tname += Class<T>::getQualifiedClassName();
+			createError<TypeError>(wrk,kCheckTypeFailedError, clsname,tname);
 		}
 		return false;
 	}
@@ -120,8 +129,9 @@ public:
 		tiny_string name = ClassName<T>::name;
 		for(size_t i=0;i<types.size();++i)
 		{
-			name += "$";
+			name += ".<";
 			name += types[i]->getName();
+			name += ">";
 		}
 		QName ret(sys->getUniqueStringId(name),sys->getUniqueStringId(ClassName<T>::ns));
 		return ret;

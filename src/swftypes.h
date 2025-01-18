@@ -174,7 +174,7 @@ public:
 	{
 		return nameId==r.nameId && nsStringId==r.nsStringId;
 	}
-	tiny_string getQualifiedName(SystemState* sys, bool forDescribeType = false) const;
+	tiny_string getQualifiedName(SystemState* sys, bool fullName = false) const;
 	operator multiname() const;
 };
 

@@ -3215,6 +3215,18 @@ bool ASObject::hasprop_prototype()
 {
 	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
+	if (var != nullptr)
+		return asAtomHandler::isValid(var->var);
+	if (!sys->mainClip->needsActionScript3())
+	{
+		var = Variables.findObjVar
+		(
+			BUILTIN_STRINGS::STRING_PROTO,
+			nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
+			NO_CREATE_TRAIT,
+			(DECLARED_TRAIT|DYNAMIC_TRAIT)
+		);
+	}
 	return (var && asAtomHandler::isValid(var->var));
 }
 

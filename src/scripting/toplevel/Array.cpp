@@ -1281,9 +1281,9 @@ number_t Array::sortComparatorWrapper::compare(const sort_value& d1, const sort_
 	objs[1]=d2.dataAtom;
 	// undefined entries are always put at the end
 	if (asAtomHandler::isUndefined(d1.dataAtom))
-		return false;
+		return 1;
 	if (asAtomHandler::isUndefined(d2.dataAtom))
-		return true;
+		return -1;
 
 	asAtom ret=asAtomHandler::asAtomHandler::fromInt(0);
 	asAtom obj = asAtomHandler::getClosureAtom(comparator,asAtomHandler::nullAtom);

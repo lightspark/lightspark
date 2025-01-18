@@ -348,9 +348,12 @@ public:
 	{
 		ASObject::buildTraits(o);
 	}
+	void AVM1generator(ASWorker* wrk,asAtom& ret, asAtom* args, const unsigned int argslen);
 	void generator(ASWorker* wrk,asAtom& ret, asAtom* args, const unsigned int argslen)
 	{
-		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
+		if (!wrk->needsActionScript3())
+			AVM1generator(wrk, ret, args, argslen);
+		else if (argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
 			ret=asAtomHandler::fromObject(new_asobject(wrk));
 		else
 		{

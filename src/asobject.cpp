@@ -3971,7 +3971,6 @@ bool asAtomHandler::AVM1toPrimitive(asAtom& ret, ASWorker* wrk, bool& isRefCount
 
 	// If the above conversion returns an object, then the conversion
 	// failed, so fall back to the original object.
-	ASATOM_DECREF(ret);
 	ret = fromObject(obj);
 	return false;
 }

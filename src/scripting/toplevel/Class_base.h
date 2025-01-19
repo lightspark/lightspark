@@ -73,8 +73,9 @@ public:
 	 * returns true if the atom is really converted into another instance
 	 */
 	virtual bool coerce(ASWorker* wrk, asAtom& o)=0;
+	virtual bool coerceArgument(ASWorker* wrk, asAtom& o) { return coerce(wrk,o);}
 
-	bool coerceForTemplate(ASWorker* wrk, asAtom& o);
+	bool coerceForTemplate(ASWorker* wrk, asAtom& o,bool allowconversion);
 	
 	/* Return "any" for anyType, "void" for voidType and class_name.name for Class_base */
 	virtual tiny_string getName() const=0;

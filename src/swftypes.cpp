@@ -237,8 +237,14 @@ bool multiname::toUInt(ASWorker* wrk, uint32_t& index, bool acceptStringFraction
 				return false;
 			index=0;
 			uint64_t parsed = 0;
+			bool isnegative=false;
 			for(auto i=str.begin(); i!=str.end(); ++i)
 			{
+				if (*i == '-')
+				{
+					isnegative=true;
+					continue;
+				}
 				if (*i == '.' && acceptStringFractions)
 				{
 					if (i==str.begin())
@@ -268,6 +274,10 @@ bool multiname::toUInt(ASWorker* wrk, uint32_t& index, bool acceptStringFraction
 				return false;
 
 			index = (uint32_t)parsed;
+			if (isNumber)
+				*isNumber = true;
+			if (isnegative)
+				return false;
 			break;
 		}
 		//This is already an int, so its good enough
@@ -1735,11 +1745,13 @@ tiny_string QName::getQualifiedName(SystemState *sys,bool fullName) const
 			QName qn(sys->getUniqueStringId(t),ns);
 			t = qn.getQualifiedName(sys,true);
 		}
+		if (t=="Vector.<any>")
+			t = "Vector.<*>";
 		ret += t;
 	}
 	else
 	{
-		if(nsStringId != BUILTIN_STRINGS::EMPTY)
+		if(fullName && nsStringId != BUILTIN_STRINGS::EMPTY)
 		{
 			ret+=sys->getStringFromUniqueId(nsStringId);
 			ret+=fullName ? "::" : ".";

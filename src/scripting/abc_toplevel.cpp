@@ -76,7 +76,25 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	builtin->registerBuiltin("VerifyError","",Class<VerifyError>::getRef(m_sys));
 	if (m_sys->mainClip->needsActionScript3())
 	{
-		builtin->registerBuiltin("Vector","__AS3__.vec",_MR(Template<Vector>::getTemplate(m_sys->mainClip->applicationDomain.getPtr())));
+		auto v = Template<Vector>::getTemplate(m_sys->systemDomain);
+		builtin->registerBuiltin("Vector","__AS3__.vec",_MR(v));
+		std::vector<Type*> types;
+		types.push_back(Class<Integer>::getRef(m_sys).getPtr());
+		Class_base* vcls = v->applyType(types,m_sys->systemDomain);
+		builtin->registerBuiltin("Vector$int","__AS3__.vec",_MR(vcls),NS_KIND::PACKAGE_INTERNAL_NAMESPACE);
+		types.clear();
+		types.push_back(Class<UInteger>::getRef(m_sys).getPtr());
+		vcls = v->applyType(types,m_sys->systemDomain);
+		builtin->registerBuiltin("Vector$uint","__AS3__.vec",_MR(vcls),NS_KIND::PACKAGE_INTERNAL_NAMESPACE);
+		types.clear();
+		types.push_back(Class<Number>::getRef(m_sys).getPtr());
+		vcls = v->applyType(types,m_sys->systemDomain);
+		builtin->registerBuiltin("Vector$double","__AS3__.vec",_MR(vcls),NS_KIND::PACKAGE_INTERNAL_NAMESPACE);
+		types.clear();
+		types.push_back(Type::anyType);
+		vcls = v->applyType(types,m_sys->systemDomain);
+		builtin->registerBuiltin("Vector$object","__AS3__.vec",_MR(vcls),NS_KIND::PACKAGE_INTERNAL_NAMESPACE);
+
 		builtin->registerBuiltin("XML","",Class<XML>::getRef(m_sys));
 		builtin->registerBuiltin("XMLList","",Class<XMLList>::getRef(m_sys));
 	}

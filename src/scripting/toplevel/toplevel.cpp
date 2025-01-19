@@ -311,7 +311,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				itpartype++;
 				continue;
 			}
-			if ((*itpartype++)->coerce(getInstanceWorker(),*i))
+			if ((*itpartype++)->coerceArgument(getInstanceWorker(),*i))
 				ASATOM_DECREF_POINTER(argp);
 			argp++;
 		}

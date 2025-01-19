@@ -82,7 +82,16 @@ public:
 	{
 		types.push_back(type);
 	}
-
+	bool coerceArgument(ASWorker* wrk,asAtom& o) override
+	{
+		if (!asAtomHandler::isUndefined(o) &&
+			(this->types.empty() || this->types.front() == Type::anyType))
+		{
+			// call argument coercion also allowed if argument type is Vector.<any>
+			return false;
+		}
+		return true;
+	}
 	bool coerce(ASWorker* wrk,asAtom& o) override
 	{
 		if (asAtomHandler::isUndefined(o))
@@ -90,7 +99,7 @@ public:
 			asAtomHandler::setNull(o);
 			return true;
 		}
-		else if (asAtomHandler::isNull(o) || (asAtomHandler::isObject(o) && asAtomHandler::is<T>(o) && asAtomHandler::getObjectNoCheck(o)->as<T>()->sameType(this)))
+		else if (asAtomHandler::isNull(o)  || (asAtomHandler::isObject(o) && asAtomHandler::is<T>(o) && asAtomHandler::getObjectNoCheck(o)->as<T>()->sameType(this)))
 		{
 			// Vector.<x> can be coerced to Vector.<y>
 			// only if x and y are the same type
@@ -245,6 +254,7 @@ class Vector: public ASObject
 {
 	Type* vec_type;
 	bool fixed;
+	bool hasDuplicates;
 	std::vector<asAtom, reporter_allocator<asAtom>> vec;
 	int capIndex(int i) const;
 	class sortComparatorDefault
@@ -253,19 +263,21 @@ class Vector: public ASObject
 		bool isNumeric;
 		bool isCaseInsensitive;
 		bool isDescending;
+		Vector* src;
 	public:
-		sortComparatorDefault(bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d){}
+		sortComparatorDefault(bool n, bool ci, bool d,Vector* s):isNumeric(n),isCaseInsensitive(ci),isDescending(d),src(s){}
 		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
 	asAtom getDefaultValue();
-	bool checkValue(asAtom& o);
+	bool checkValue(asAtom& o, bool allowconversion);
 public:
 	class sortComparatorWrapper
 	{
 	private:
 		asAtom comparator;
+	Vector* src;
 	public:
-		sortComparatorWrapper(asAtom c):comparator(c){}
+		sortComparatorWrapper(asAtom c,Vector* s):comparator(c),src(s){}
 		number_t compare(const asAtom& d1, const asAtom& d2);
 	};
 	Vector(ASWorker* wrk,Class_base* c, Type *vtype=nullptr);
@@ -324,6 +336,7 @@ public:
 	void throwRangeError(int index);
 	
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk) override;
+	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt,ASWorker* wrk) override;
 	FORCE_INLINE void getVariableByIntegerDirect(asAtom& ret, int index, ASWorker* wrk)
@@ -399,6 +412,7 @@ public:
 	ASFUNCTION_ATOM(lastIndexOf);
 	ASFUNCTION_ATOM(_map);
 	ASFUNCTION_ATOM(_toString);
+	ASFUNCTION_ATOM(_toLocaleString);
 	ASFUNCTION_ATOM(slice);
 	ASFUNCTION_ATOM(every);
 	ASFUNCTION_ATOM(some);

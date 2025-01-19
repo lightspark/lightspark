@@ -66,7 +66,7 @@ Type* Type::getBuiltinType(ASWorker* wrk, multiname* mn)
 		return nullptr;
 }
 
-bool Type::coerceForTemplate(ASWorker* wrk, asAtom& o)
+bool Type::coerceForTemplate(ASWorker* wrk, asAtom& o, bool allowconversion)
 {
 	switch (asAtomHandler::getObjectType(o))
 	{
@@ -88,9 +88,7 @@ bool Type::coerceForTemplate(ASWorker* wrk, asAtom& o)
 				return true;
 			break;
 		case T_NUMBER:
-			if(this == Class<Integer>::getRef(wrk->getSystemState()).getPtr()
-				|| this == Class<UInteger>::getRef(wrk->getSystemState()).getPtr()
-				|| this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
+			if(this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
 				return true;
 			break;
 		case T_STRING:
@@ -115,9 +113,14 @@ bool Type::coerceForTemplate(ASWorker* wrk, asAtom& o)
 		asAtomHandler::setNumber(o,wrk,asAtomHandler::toNumber(o));
 		return true;
 	}
-	if(this == Class<ASString>::getRef(wrk->getSystemState()).getPtr())
+	if(allowconversion && this == Class<ASString>::getRef(wrk->getSystemState()).getPtr())
 	{
 		o = asAtomHandler::fromObject(abstract_s(wrk,asAtomHandler::toString(o,wrk)));
+		return true;
+	}
+	if(this == Class<Boolean>::getRef(wrk->getSystemState()).getPtr())
+	{
+		asAtomHandler::setBool(o,asAtomHandler::isString(o) || asAtomHandler::toInt(o));
 		return true;
 	}
 	if (asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<ObjectConstructor>())
@@ -401,7 +404,7 @@ void Class_base::_getter_prototype(asAtom& ret, ASWorker* wrk,asAtom& obj, asAto
 		createError<ArgumentError>(wrk,0,"Arguments provided in getter");
 		return;
 	}
-	
+
 	ret = asAtomHandler::fromObject(th->getPrototype(wrk)->getObj());
 	ASATOM_INCREF(ret);
 }
@@ -455,7 +458,7 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 		if (buildAndLink)
 			asAtomHandler::getObjectNoCheck(target)->beforeConstruction(_explicit);
 	}
-	
+
 	if(constructor)
 	{
 		LOG_CALL("handleConstruction for "<<asAtomHandler::toDebugString(target));
@@ -642,7 +645,6 @@ void Class_base::linkInterface(Class_base* c) const
 
 bool Class_base::isSubClass(Class_base* cls, bool considerInterfaces)
 {
-//	check();
 	if(cls==this || cls==cls->getSystemState()->getObjectClassRef())
 		return true;
 	auto it = subclasses_map.find(cls);
@@ -1231,7 +1233,7 @@ multiname* Class_base::setVariableByMultiname(multiname& name, asAtom& o, CONST_
 	{
 		if (ASObject::hasPropertyByMultiname(name,false,false,wrk))
 			return setVariableByMultiname_intern(name,o,allowConst,this->getClass(),alreadyset,wrk);
-		else 
+		else
 			return dynvars->setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
 	}
 	return ASObject::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);

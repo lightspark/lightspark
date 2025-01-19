@@ -439,6 +439,10 @@ public:
 			--cur_recursion; //decrement current recursion depth
 	}
 	std::vector<AVM1context*> AVM1callStack;
+	AVM1Function* AVM1getCallee() const
+	{
+		return AVM1callStack.empty() ? nullptr : AVM1callStack.back()->callee;
+	}
 	uint8_t AVM1getSwfVersion() const
 	{
 		return AVM1callStack.empty() ? UINT8_MAX : AVM1callStack.back()->swfversion;

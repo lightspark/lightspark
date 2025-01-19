@@ -478,7 +478,19 @@ public:
 	static FORCE_INLINE void applyProxyProperty(asAtom& a,SystemState *sys, multiname& name);
 	static FORCE_INLINE TRISTATE isLess(asAtom& a, ASWorker* wrk, asAtom& v2);
 	static FORCE_INLINE bool isEqual(asAtom& a, ASWorker* wrk, asAtom& v2);
+	static bool AVM1isEqual(asAtom& v1, asAtom& v2, ASWorker* wrk);
 	static FORCE_INLINE bool isEqualStrict(asAtom& a, ASWorker* wrk, asAtom& v2);
+	static bool AVM1isEqualStrict(asAtom& a, asAtom& b, ASWorker* wrk);
+	static FORCE_INLINE LIGHTSPARK_ATOM_VALTYPE getType(const asAtom& a)
+	{
+		return
+		(
+			(a.uintval & 0x7) == ATOM_INVALID_UNDEFINED_NULL_BOOL ?
+			a.uintval & 0x70 :
+			a.uintval & 0x7
+		);
+	}
+	static FORCE_INLINE bool isSameType(const asAtom& a, const asAtom& b) { return getType(a) == getType(b); }
 	static FORCE_INLINE bool isConstructed(const asAtom& a);
 	static FORCE_INLINE bool isPrimitive(const asAtom& a);
 	static FORCE_INLINE bool isNumeric(const asAtom& a);
@@ -487,10 +499,12 @@ public:
 	static FORCE_INLINE bool isInvalid(const asAtom& a) { return !a.uintval; }
 	static FORCE_INLINE bool isNull(const asAtom& a) { return (a.uintval&0x7f) == ATOMTYPE_NULL_BIT; }
 	static FORCE_INLINE bool isUndefined(const asAtom& a) { return (a.uintval&0x7f) == ATOMTYPE_UNDEFINED_BIT; }
+	static FORCE_INLINE bool isNullOrUndefined(const asAtom& a) { return isNull(a) || isUndefined(a); }
 	static FORCE_INLINE bool isBool(const asAtom& a) { return (a.uintval&0x7f) == ATOMTYPE_BOOL_BIT; }
 	static FORCE_INLINE bool isInteger(const asAtom& a);
 	static FORCE_INLINE bool isUInteger(const asAtom& a);
 	static FORCE_INLINE bool isObject(const asAtom& a) { return a.uintval & ATOMTYPE_OBJECT_BIT; }
+	static FORCE_INLINE bool isObjectPtr(const asAtom& a) { return (a.uintval & 0x7) == ATOM_OBJECTPTR; }
 	static FORCE_INLINE bool isFunction(const asAtom& a);
 	static FORCE_INLINE bool isString(const asAtom& a);
 	static FORCE_INLINE bool isStringID(const asAtom& a) { return (a.uintval&0x7) == ATOM_STRINGID; }

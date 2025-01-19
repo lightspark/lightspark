@@ -82,6 +82,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		);
 	}
 	context->swfversion=clip->loadedFrom->version;
+	context->callee = callee;
 	wrk->AVM1callStack.push_back(context);
 	context->callDepth++;
 	Log::calls_indent++;
@@ -109,40 +110,46 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			ASATOM_INCREF(scopestack[0]);
 		registers[currRegister++] = !suppressThis ? scopestack[0] : asAtomHandler::undefinedAtom;
 	}
-	if (!suppressArguments)
+	if (!suppressArguments || preloadArguments)
 	{
-		if (preloadArguments)
+		AVM1Array* argsArray = Class<AVM1Array>::getInstanceS(wrk);
+		argsArray->resize(num_args);
+		for (uint32_t i = 0; i < num_args; i++)
 		{
-			Array* regargs = Class<Array>::getInstanceS(wrk);
-			for (uint32_t i = 0; i < num_args; i++)
-			{
-				ASATOM_INCREF(args[i]);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
-				regargs->push(args[i]);
-			}
-			multiname m(nullptr);
-			m.name_type=multiname::NAME_STRING;
-			m.isAttribute = false;
-			m.name_s_id=clip->getSystemState()->getUniqueStringId("caller");
-			asAtom c = caller ? asAtomHandler::fromObject(caller) : asAtomHandler::nullAtom;
-			if (caller)
-				caller->incRef();
-			regargs->setVariableByMultiname(m,c,ASObject::CONST_ALLOWED,nullptr,wrk);
-			if (callee)
-			{
-				callee->incRef();
-				m.name_s_id=clip->getSystemState()->getUniqueStringId("callee");
-				asAtom c = asAtomHandler::fromObject(callee);
-				regargs->setVariableByMultiname(m,c,ASObject::CONST_ALLOWED,nullptr,wrk);
-			}
-			registers[currRegister++] = asAtomHandler::fromObject(regargs);
+			ASATOM_INCREF(args[i]);
+			LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
+			argsArray->set(i,args[i],false,false);
+			argsArray->addEnumerationValue(i,true);
 		}
+
+		auto proto = _MNR(argsArray->getClass()->prototype->getObj());
+		argsArray->setprop_prototype(proto, BUILTIN_STRINGS::STRING_PROTO);
+
+		nsNameAndKind tmpns(clip->getSystemState(), "", NAMESPACE);
+		asAtom c = caller ? asAtomHandler::fromObject(caller) : asAtomHandler::nullAtom;
+
+		if (caller)
+			caller->incRef();
+
+		argsArray->setVariableAtomByQName("caller", tmpns, c, DYNAMIC_TRAIT, false, 5);
+
+		if (callee)
+		{
+			callee->incRef();
+			asAtom c = asAtomHandler::fromObject(callee);
+			argsArray->setVariableAtomByQName("callee", tmpns, c, DYNAMIC_TRAIT, false, 5);
+		}
+
+		if (preloadArguments)
+			registers[currRegister++] = asAtomHandler::fromObject(argsArray);
 		else
 		{
+			auto argumentsStr = clip->getSystemState()->getUniqueStringId("arguments");
+			locals[argumentsStr] = asAtomHandler::fromObject(argsArray);
+
 			for (uint32_t i = 0; i < paramnames.size() && i < num_args; i++)
 			{
 				ASATOM_INCREF(args[i]);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" parameter "<<i<<" "<<(paramnames.size() >= num_args ? clip->getSystemState()->getStringFromUniqueId(paramnames[i]):"")<<" "<<asAtomHandler::toDebugString(args[i]));
 				ASATOM_DECREF(locals[paramnames[i]]);
 				locals[paramnames[i]] = args[i];
 			}
@@ -217,7 +224,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	std::vector<tryCatchBlock> trycatchblocks;
 	bool inCatchBlock = false;
 
-	Array* argarray = nullptr;
+	AVM1Array* argarray = nullptr;
 	DisplayObject *originalclip = clip;
 	auto it = actionlist.begin()+startactionpos;
 	auto tryblockstart = actionlist.end();
@@ -530,20 +537,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					else
 						res = asAtomHandler::fromObject(clip);
 					ASATOM_INCREF(res);
-				}
-				else if (s=="arguments")
-				{
-					if (argarray == nullptr)
-					{
-						argarray = Class<Array>::getInstanceS(wrk);
-						for (uint32_t i = 0; i < num_args; i++)
-						{
-							ASATOM_INCREF(args[i]);
-							argarray->push(args[i]);
-						}
-					}
-					argarray->incRef();
-					res = asAtomHandler::fromObjectNoPrimitive(argarray);
 				}
 				else if (s == "_global")
 				{
@@ -1535,15 +1528,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom arg1 = PopStack(stack);
 				asAtom arg2 = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEquals2 "<<asAtomHandler::toDebugString(arg2)<<" == "<<asAtomHandler::toDebugString(arg1));
-				if (clip->loadedFrom->version <= 5)
-				{
-					// equals works different on SWF5: Objects without valueOf property are treated as undefined
-					if (asAtomHandler::getObject(arg1) && (asAtomHandler::isFunction(arg1) || !asAtomHandler::getObject(arg1)->has_valueOf()))
-						asAtomHandler::setUndefined(arg1);
-					if (asAtomHandler::getObject(arg2) && (asAtomHandler::isFunction(arg2) || !asAtomHandler::getObject(arg2)->has_valueOf()))
-						asAtomHandler::setUndefined(arg2);
-				}
-				PushStack(stack,asAtomHandler::fromBool(asAtomHandler::isEqual(arg2,wrk,arg1)));
+				PushStack(stack,asAtomHandler::fromBool(asAtomHandler::AVM1isEqual(arg2, arg1, wrk)));
 				ASATOM_DECREF(arg1);
 				ASATOM_DECREF(arg2);
 				break;
@@ -2242,7 +2227,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom arg1 = PopStack(stack);
 				asAtom arg2 = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStrictEquals "<<asAtomHandler::toDebugString(arg2)<<" === "<<asAtomHandler::toDebugString(arg1));
-				PushStack(stack,asAtomHandler::fromBool(asAtomHandler::isEqualStrict(arg1,wrk,arg2) == TTRUE));
+				PushStack(stack,asAtomHandler::fromBool(asAtomHandler::AVM1isEqualStrict(arg2, arg1, wrk)));
 				ASATOM_DECREF(arg1);
 				ASATOM_DECREF(arg2);
 				break;

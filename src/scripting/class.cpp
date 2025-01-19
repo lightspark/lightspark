@@ -360,6 +360,67 @@ void lightspark::lookupAndLink(Class_base* c, uint32_t nameID, uint32_t interfac
 	}
 }
 
+void Class<ASObject>::AVM1generator(ASWorker* wrk, asAtom& ret, asAtom* args, const unsigned int argslen)
+{
+	bool canConvert =
+	(
+		argslen != 0 &&
+		asAtomHandler::isValid(args[0]) &&
+		!asAtomHandler::isNullOrUndefined(args[0])
+	);
+
+	if (!canConvert)
+	{
+		ret = asAtomHandler::fromObject(new_asobject(wrk));
+		return;
+	}
+
+	// NOTE: For a non null/undefined argument, AVM1's `Object`
+	// constructor converts the argument into an `Object`, rather than
+	// returning the argument itself.
+	ASObject* obj = nullptr;
+
+	switch (asAtomHandler::getObjectType(args[0]))
+	{
+		case T_BOOLEAN:
+			obj = abstract_b
+			(
+				getSystemState(),
+				args[0].uintval & 0x80
+			);
+			break;
+		case T_NUMBER:
+		{
+			auto num = asAtomHandler::toNumber(args[0]);
+			obj = abstract_d(wrk, num);
+			break;
+		}
+		case T_INTEGER:
+		case T_UINTEGER:
+		{
+			auto _int = asAtomHandler::toInt64(args[0]);
+			obj = abstract_di(wrk, _int);
+			break;
+		}
+		case T_STRING:
+		{
+			auto str = asAtomHandler::toString(args[0], wrk);
+			obj = abstract_s(wrk, str);
+			break;
+		}
+		default:
+			ASATOM_INCREF(args[0]);
+			if (asAtomHandler::isObject(args[0]))
+				obj = asAtomHandler::getObjectNoCheck(args[0]);
+			else
+				ret = args[0];
+			break;
+	}
+
+	if (obj != nullptr)
+		ret.uintval = (LIGHTSPARK_ATOM_VALTYPE)obj | ATOM_OBJECTPTR;
+}
+
 void Class<ASObject>::getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
 {
 	if (construct && args && argslen == 1 && this == Class<ASObject>::getClass(this->getSystemState()))

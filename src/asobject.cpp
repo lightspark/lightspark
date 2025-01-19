@@ -628,7 +628,7 @@ void ASObject::call_valueOf(asAtom& ret)
 
 		// NOTE: Special case for `_global`, since it doesn't have a
 		// prototype, and returns `undefined` instead.
-		if (is<Global>())
+		if (is<Global>() || (hasprop_prototype() && pr == nullptr))
 		{
 			ret = asAtomHandler::undefinedAtom;
 			return;
@@ -683,7 +683,7 @@ void ASObject::call_toString(asAtom &ret)
 
 		// NOTE: Special case for `_global`, since it doesn't have a
 		// prototype, and returns `undefined` instead.
-		if (is<Global>())
+		if (is<Global>() || (hasprop_prototype() && pr == nullptr))
 		{
 			ret = asAtomHandler::undefinedAtom;
 			return;
@@ -3215,6 +3215,18 @@ bool ASObject::hasprop_prototype()
 {
 	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
+	if (var != nullptr)
+		return asAtomHandler::isValid(var->var);
+	if (!sys->mainClip->needsActionScript3())
+	{
+		var = Variables.findObjVar
+		(
+			BUILTIN_STRINGS::STRING_PROTO,
+			nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
+			NO_CREATE_TRAIT,
+			(DECLARED_TRAIT|DYNAMIC_TRAIT)
+		);
+	}
 	return (var && asAtomHandler::isValid(var->var));
 }
 
@@ -3227,7 +3239,9 @@ ASObject* ASObject::getprop_prototype()
 	if (!getSystemState()->mainClip->needsActionScript3())
 		var=Variables.findObjVar(BUILTIN_STRINGS::STRING_PROTO,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
-	return var ? asAtomHandler::toObject(var->var,getInstanceWorker()) : nullptr;
+	if (var != nullptr && asAtomHandler::isObjectPtr(var->var))
+		return asAtomHandler::getObjectNoCheck(var->var);
+	return nullptr;
 }
 
 /*
@@ -3344,7 +3358,9 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 	}
 	if (getObjectNoCheck(caller)->is<AVM1Function>())
 	{
-		getObjectNoCheck(caller)->as<AVM1Function>()->call(&ret,&c, args, num_args);
+		// The caller is just the previous callee.
+		auto argCaller = wrk->AVM1getCallee();
+		getObjectNoCheck(caller)->as<AVM1Function>()->call(&ret,&c, args, num_args, argCaller);
 	}
 	else
 	{
@@ -3955,7 +3971,6 @@ bool asAtomHandler::AVM1toPrimitive(asAtom& ret, ASWorker* wrk, bool& isRefCount
 
 	// If the above conversion returns an object, then the conversion
 	// failed, so fall back to the original object.
-	ASATOM_DECREF(ret);
 	ret = fromObject(obj);
 	return false;
 }
@@ -5079,6 +5094,134 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 	assert(getObject(a));
 	assert(getObject(v2));
 	return getObject(a)->isEqual(getObject(v2));
+}
+
+bool asAtomHandler::AVM1isEqualStrict(asAtom& a, asAtom& b, ASWorker* wrk)
+{
+	if (!isSameType(a, b) && (!isNumeric(a) || !isNumeric(b)))
+		return false;
+
+	switch (getType(a))
+	{
+		case ATOMTYPE_BOOL_BIT:
+			return (a.uintval & 0x80) == (b.uintval & 0x80);
+			break;
+		case ATOM_INTEGER:
+		case ATOM_UINTEGER:
+		case ATOM_NUMBERPTR:
+		{
+			auto swfVersion = wrk->AVM1getSwfVersion();
+			auto num1 = AVM1toNumber(a, swfVersion, true);
+			auto num2 = AVM1toNumber(b, swfVersion, true);
+			// NOTE, PLAYER-SPECIFIC: In Flash Player 7, and later,
+			// `NaN == NaN` returns true, while in Flash Player 6, and
+			// earlier, `NaN == NaN` returns false. Let's do what Flash
+			// Player 7, and later does, and return true.
+			//
+			// TODO: Allow for using either, once support for
+			// mimicking different player versions is added.
+			return
+			(
+				num1 == num2 ||
+				(std::isnan(num1) && std::isnan(num2))
+			);
+			break;
+		}
+		case ATOM_STRINGID:
+		case ATOM_STRINGPTR:
+			return AVM1toString(a, wrk) == AVM1toString(b, wrk);
+			break;
+		case ATOM_OBJECTPTR:
+		{
+			if (is<DisplayObject>(a) && is<DisplayObject>(b))
+			{
+				// Special case for `DisplayObject`.
+				auto clip1 = as<DisplayObject>(a);
+				auto clip2 = as<DisplayObject>(b);
+				return clip1->AVM1GetPath() == clip2->AVM1GetPath();
+			}
+			else if (is<XMLNode>(a) && is<XMLNode>(b))
+			{
+				// Special case for `XMLNode`.
+				// TODO: This is a hack, and should be removed once a
+				// proper refactor of the `flash.xml` code is done.
+				return getObject(a)->isEqual(getObject(b));
+			}
+
+			return getObject(a) == getObject(b);
+			break;
+		}
+		// `undefined`, `null`, and invalid.
+		default:
+			return true;
+			break;
+	}
+}
+
+// Implements ECMA-262 2nd edition, section 11.9.3. The abstract equality
+// comparison algorithm.
+bool asAtomHandler::AVM1isEqual(asAtom& v1, asAtom &v2, ASWorker* wrk)
+{
+	auto swfVersion = wrk->AVM1getSwfVersion();
+
+	bool isRefCounted1 = false;
+	bool isRefCounted2 = false;
+	asAtom a = v2;
+	asAtom b = v1;
+
+	if (swfVersion < 6)
+	{
+		// NOTE: In SWF 5, `valueOf()` is always called, even in `Object`
+		// to `Object` comparisons. Since `Object.prototype.valueOf()`
+		// returns `this`, it'll do a pointer comparison. For `Object`
+		// to atom/value comparisons, `valueOf` will be called a second
+		// time.
+		AVM1toPrimitive(a, wrk, isRefCounted1, NUMBER_HINT);
+		AVM1toPrimitive(b, wrk, isRefCounted2, NUMBER_HINT);
+	}
+
+	bool ret = false;
+
+	if (isSameType(a, b))
+		ret = AVM1isEqualStrict(a, b, wrk);
+	else if ((isNullOrUndefined(a) || isInvalid(a)) && (isNullOrUndefined(b) || isInvalid(b)))
+		ret = true;
+	// `bool` to atom/value comparision. Convert `bool` to 0/1, and
+	// compare.
+	else if (isBool(a) || isBool(b))
+	{
+		bool flag = (isBool(a) ? a : b).uintval & 0x80;
+		auto flagVal = fromNumber(wrk, flag, false);
+		auto val = isBool(a) ? b : a;
+		ret = AVM1isEqual(flagVal, val, wrk);
+		ASATOM_DECREF(flagVal);
+	}
+	// `Number` to atom/value comparison. Convert value to `Number`, and
+	// compare.
+	else if ((isNumeric(a) || isString(a)) && (isNumeric(b) || isString(b)))
+	{
+		auto num1 = AVM1toNumber(isNumeric(a) ? a : b, swfVersion, true);
+		auto num2 = AVM1toNumber(isString(a) ? a : b, swfVersion, true);
+		ret = num1 == num2;
+	}
+	// `Object` to atom/value comparison. Call `object.valueOf()`, and
+	// compare.
+	else if (isObjectPtr(a) || isObjectPtr(b))
+	{
+		bool isRefCounted = false;
+		auto objVal = isObjectPtr(a) ? a : b;
+		auto val = isObjectPtr(a) ? b : a;
+		AVM1toPrimitive(objVal, wrk, isRefCounted, NUMBER_HINT);
+		ret = isPrimitive(objVal) && AVM1isEqual(val, objVal, wrk);
+		if (isRefCounted)
+			ASATOM_DECREF(objVal);
+	}
+
+	if (isRefCounted1)
+		ASATOM_DECREF(a);
+	if (isRefCounted2)
+		ASATOM_DECREF(b);
+	return ret;
 }
 
 ASObject *asAtomHandler::toObject(asAtom& a, ASWorker* wrk, bool isconstant)

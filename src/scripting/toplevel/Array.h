@@ -73,7 +73,8 @@ private:
 	};
 	tiny_string toString_priv(bool localized=false);
 	int capIndex(int i);
-	asAtom getMemberFromPrototypeChain(int index);
+	void getIntegerNameListFromPrototypeChain(std::map<int32_t, asAtom>& members);
+	asAtom getMemberFromPrototypeChain(int index, std::map<int32_t, asAtom>& members);
 	void fillFromPrototypeChain(uint32_t startindex, uint32_t count);
 public:
 	void constructorImpl(asAtom *args, const unsigned int argslen);

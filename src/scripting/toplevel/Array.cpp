@@ -776,7 +776,9 @@ ASFUNCTIONBODY_ATOM(Array,slice)
 	endIndex=th->capIndex(endIndex);
 
 	Array* res=th->createInstance();
-	for(uint32_t i=startIndex; i<endIndex && i< th->currentsize; i++) 
+	std::map<int32_t,asAtom> protomembers;
+	th->getIntegerNameListFromPrototypeChain(protomembers);
+	for(uint32_t i=startIndex; i<endIndex && i< th->currentsize; i++)
 	{
 		asAtom a = th->at((uint32_t)i,true);
 		ASATOM_INCREF(a);
@@ -784,7 +786,7 @@ ASFUNCTIONBODY_ATOM(Array,slice)
 			res->push(a);
 		else
 		{
-			a = th->getMemberFromPrototypeChain(i);
+			a = th->getMemberFromPrototypeChain(i,protomembers);
 			if(asAtomHandler::isValid(a))
 				res->push(a);
 		}
@@ -812,6 +814,8 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 		deleteCount=totalSize-startIndex;
 
 	res->resize(deleteCount);
+	std::map<int32_t,asAtom> protomembers;
+	th->getIntegerNameListFromPrototypeChain(protomembers);
 	if(deleteCount)
 	{
 		// Derived classes may be sealed!
@@ -828,7 +832,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 				res->set(i,a,false,false,false);
 			else
 			{
-				a = th->getMemberFromPrototypeChain(startIndex+i);
+				a = th->getMemberFromPrototypeChain(startIndex+i,protomembers);
 				if (asAtomHandler::isValid(a))
 					res->set(i,a,false);
 			}
@@ -851,6 +855,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 			}
 		}
 	}
+
 	// remember items in current array that have to be moved to new position
 	vector<asAtom> tmp = vector<asAtom>(totalSize- (startIndex+deleteCount));
 	for (uint32_t i = (uint32_t)startIndex+deleteCount; i < totalSize ; i++)
@@ -862,7 +867,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 				asAtom a = th->data_first[(uint32_t)startIndex];
 				if (!asAtomHandler::isValid(a))
 				{
-					a = th->getMemberFromPrototypeChain(i);
+					a = th->getMemberFromPrototypeChain(i,protomembers);
 					ASATOM_ADDSTOREDMEMBER(a);
 				}
 				tmp[i-(startIndex+deleteCount)] = a;
@@ -880,7 +885,7 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 			}
 			else
 			{
-				asAtom a = th->getMemberFromPrototypeChain(i);
+				asAtom a = th->getMemberFromPrototypeChain(i,protomembers);
 				tmp[i-(startIndex+deleteCount)] = a;
 				ASATOM_ADDSTOREDMEMBER(a);
 			}
@@ -1301,31 +1306,44 @@ number_t Array::sortComparatorWrapper::compare(const sort_value& d1, const sort_
 	ASATOM_DECREF(ret);
 	return r;
 }
-asAtom Array::getMemberFromPrototypeChain(int index)
+void Array::getIntegerNameListFromPrototypeChain(std::map<int32_t,asAtom>& members)
 {
-	//Check prototype chain
-	asAtom a = asAtomHandler::invalidAtom;
-	multiname m(nullptr);
-	m.name_type = multiname::NAME_INT;
-	m.name_i = index;
+	std::stack<asAtom> stack;
 	Prototype* proto = getClass()->prototype.getPtr();
 	while(proto && proto->getObj() != this)
 	{
-		proto->getObj()->getVariableByMultiname(a,m, NONE,getInstanceWorker());
-		if(asAtomHandler::isValid(a))
-			return a;
+		if (proto->getObj()->is<Array>())
+		{
+			Array* ar = proto->getObj()->as<Array>();
+			for (uint32_t i = 0; i < (int32_t)ar->size(); i++)
+			{
+				asAtom v = asAtomHandler::invalidAtom;
+				ar->at_nocheck(v,i);
+				if (asAtomHandler::isValid(v))
+					members.insert(make_pair((int32_t)i,v));
+			}
+		}
 		proto = proto->prevPrototype.getPtr();
 	}
+}
+
+asAtom Array::getMemberFromPrototypeChain(int index,std::map<int32_t,asAtom>& members)
+{
+	auto it = members.find(index);
+	if (it != members.end())
+		return it->second;
 	return asAtomHandler::invalidAtom;
 }
 void Array::fillFromPrototypeChain(uint32_t startindex, uint32_t count)
 {
+	std::map<int32_t,asAtom> protomembers;
+	getIntegerNameListFromPrototypeChain(protomembers);
 	for (uint32_t i = startindex; i < startindex+count && i < size(); i++)
 	{
 		asAtom a = this->at(i,true);
 		if (asAtomHandler::isInvalid(a))
 		{
-			a = getMemberFromPrototypeChain(i);
+			a = getMemberFromPrototypeChain(i,protomembers);
 			if (asAtomHandler::isValid(a))
 			{
 				this->set(i,a,false,true,true);
@@ -1336,6 +1354,8 @@ void Array::fillFromPrototypeChain(uint32_t startindex, uint32_t count)
 
 void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_field>& sortfields)
 {
+	std::map<int32_t,asAtom> protomembers;
+	getIntegerNameListFromPrototypeChain(protomembers);
 	int currindex=0;
 	auto it1=data_first.begin();
 	for(;it1 != data_first.end();++it1)
@@ -1344,7 +1364,7 @@ void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_f
 		bool fromprototype=false;
 		if (asAtomHandler::isInvalid(a))
 		{
-			a = getMemberFromPrototypeChain(currindex);
+			a = getMemberFromPrototypeChain(currindex,protomembers);
 			ASATOM_ADDSTOREDMEMBER(a);
 			fromprototype=true;
 		}
@@ -1382,7 +1402,7 @@ void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_f
 		{
 			hole = true;
 			previndex++;
-			a = getMemberFromPrototypeChain(previndex);
+			a = getMemberFromPrototypeChain(previndex,protomembers);
 		}
 		if (asAtomHandler::isInvalid(a))
 		{
@@ -1417,7 +1437,7 @@ void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_f
 	{
 		for (int32_t i = currindex; i < (int32_t)currentsize; i++)
 		{
-			asAtom a = getMemberFromPrototypeChain(i);
+			asAtom a = getMemberFromPrototypeChain(i,protomembers);
 			if (asAtomHandler::isValid(a))
 			{
 				// ensure ASObjects are created

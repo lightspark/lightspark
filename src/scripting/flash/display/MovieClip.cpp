@@ -464,7 +464,15 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		sceneName = asAtomHandler::toString(args[1],getInstanceWorker());
 	}
 	uint32_t dest=FRAME_NOT_FOUND;
-	if(asAtomHandler::isString(args[0]))
+	if (asAtomHandler::isInteger(args[0]) || asAtomHandler::isUInteger(args[0]))
+	{
+		uint32_t inFrameNo = asAtomHandler::toInt(args[0]);
+		if(inFrameNo == 0)
+			inFrameNo = 1;
+
+		dest = getFrameIdByNumber(inFrameNo-1, sceneName);
+	}
+	else
 	{
 		tiny_string label = asAtomHandler::toString(args[0],getInstanceWorker());
 		dest=getFrameIdByLabel(label, sceneName);
@@ -482,14 +490,6 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 				LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getInstanceWorker())<<" in scene "<<sceneName<<" at movieclip "<<getTagID()<<" "<<this->state.FP);
 			}
 		}
-	}
-	else
-	{
-		uint32_t inFrameNo = asAtomHandler::toInt(args[0]);
-		if(inFrameNo == 0)
-			inFrameNo = 1;
-
-		dest = getFrameIdByNumber(inFrameNo-1, sceneName);
 	}
 	if (dest!=FRAME_NOT_FOUND)
 	{

@@ -4367,16 +4367,18 @@ bool asAtomHandler::AVM1add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 	{
 		double num1 = AVM1toNumber(val1, wrk->AVM1getSwfVersion());
 		double num2 = AVM1toNumber(val2, wrk->AVM1getSwfVersion());
-		auto ret = num1 + num2;
+		auto val = num1 + num2;
+		bool isInt = (val - std::floor(val)) == 0;
 		LOG_CALL("addN " << num1 << '+' << num2<<" "<<toDebugString(val1)<<" "<<toDebugString(val2));
 
+
 		// NOTE: Returning an integer here is an optimization.
-		if (forceint || (ret >= -(1 << 28) && ret < (1 << 28)))
-			setInt(a, wrk, ret);
-		else if (ret >= 0 && ret < (1 << 29))
-			setUInt(a, wrk, ret);
+		if (forceint || (isInt && val >= -(1 << 28) && val < (1 << 28)))
+			setInt(a, wrk, val);
+		else if (isInt && val >= 0 && val < (1 << 29))
+			setUInt(a, wrk, val);
 		else
-			ret = replaceNumber(a, wrk, ret);
+			ret = replaceNumber(a, wrk, val);
 	}
 
 	if (isRefCounted1)

@@ -1575,7 +1575,7 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 				break;
 		}
 		
-		if (!ASObject::hasPropertyByMultiname(name,false,true,wrk))
+		if (!ASObject::hasPropertyByMultiname(name,false,false,wrk))
 		{
 			createError<ReferenceError>(getInstanceWorker(),kWriteSealedError, name.normalizedName(getInstanceWorker()), this->getClass()->getQualifiedClassName());
 			return nullptr;

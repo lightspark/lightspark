@@ -269,13 +269,12 @@ bool multiname::toUInt(ASWorker* wrk, uint32_t& index, bool acceptStringFraction
 				if (parsed > UINT32_MAX && !forAVM1)
 					break;
 			}
-
+			if (isNumber)
+				*isNumber = true;
 			if (parsed > UINT32_MAX && !forAVM1)
 				return false;
 
 			index = (uint32_t)parsed;
-			if (isNumber)
-				*isNumber = true;
 			if (isnegative)
 				return false;
 			break;

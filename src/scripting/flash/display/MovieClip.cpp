@@ -387,8 +387,12 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 	for(uint32_t i=0;i<argslen;i+=2)
 	{
 		uint32_t frame=asAtomHandler::toInt(args[i]);
-		if (asAtomHandler::isNull(args[i+1])) // argument null seems to imply that the script currently attached to the frame is removed
+		// NOTE: `addFrameScript()` will remove the script asscociated
+		// with this frame, if the argument isn't a function.
+		if (!asAtomHandler::isFunction(args[i+1]))
 		{
+			LOG(LOG_ERROR,"Not a function");
+
 			auto it = th->frameScripts.find(frame);
 			if (it != th->frameScripts.end())
 			{
@@ -397,11 +401,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 			}
 			continue;
 		}
-		else if(!asAtomHandler::isFunction(args[i+1]))
-		{
-			LOG(LOG_ERROR,"Not a function");
-			return;
-		}
+
 		IFunction* func = asAtomHandler::as<IFunction>(args[i+1]);
 		func->incRef();
 		func->addStoredMember();

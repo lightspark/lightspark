@@ -475,20 +475,17 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	else
 	{
 		tiny_string label = asAtomHandler::toString(args[0],getInstanceWorker());
-		dest=getFrameIdByLabel(label, sceneName);
+		number_t ret=0;
+
+		if (Integer::fromStringFlashCompatible(label.raw_buf(),ret,10,true))
+			dest = getFrameIdByNumber(ret-1, sceneName);
+		else
+			dest = getFrameIdByLabel(label, sceneName);
+
 		if(dest==FRAME_NOT_FOUND)
 		{
-			number_t ret=0;
-			if (Integer::fromStringFlashCompatible(label.raw_buf(),ret,10,true))
-			{
-				// it seems that at least for AVM1 Adobe treats number strings as frame numbers
-				dest = getFrameIdByNumber(ret-1, sceneName);
-			}
-			if(dest==FRAME_NOT_FOUND)
-			{
-				dest=0;
-				LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getInstanceWorker())<<" in scene "<<sceneName<<" at movieclip "<<getTagID()<<" "<<this->state.FP);
-			}
+			dest=0;
+			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getInstanceWorker())<<" in scene "<<sceneName<<" at movieclip "<<getTagID()<<" "<<this->state.FP);
 		}
 	}
 	if (dest!=FRAME_NOT_FOUND)

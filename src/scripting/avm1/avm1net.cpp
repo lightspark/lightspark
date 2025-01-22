@@ -123,7 +123,10 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::fromObject(this);
 				asAtom args[1];
-				args[0] = asAtomHandler::fromObject(loader->getData());
+				if (loader->getData())
+					args[0] = asAtomHandler::fromObject(loader->getData());
+				else
+					args[0] = asAtomHandler::nullAtom;
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
 				asAtomHandler::as<AVM1Function>(func)->decRef();
 			}

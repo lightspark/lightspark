@@ -243,20 +243,17 @@ asAtom Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& s
 			break;
 		case vector_object_marker:
 		{
-			tiny_string vectypename;
-			vectypename = parseStringVR(stringMap);
-			if (vectypename.empty()) // empty string indicates type "Object"
-				vectypename="Object";
-			multiname m(nullptr);
-			m.name_type=multiname::NAME_STRING;
-			m.name_s_id=input->getSystemState()->getUniqueStringId(vectypename);
-			m.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
-			m.isAttribute = false;
-			type = Type::getTypeFromMultiname(&m,input->getInstanceWorker()->currentCallContext->mi->context);
-			if (type == nullptr)
+			tiny_string aliasname;
+			aliasname = parseStringVR(stringMap);
+			type = input->getSystemState()->getObjectClassRef();
+			if (!aliasname.empty())
 			{
-				LOG(LOG_ERROR,"unknown vector type during deserialization:"<<m);
-				type = input->getSystemState()->getObjectClassRef();
+				ApplicationDomain* appdomain = input->getInstanceWorker()->rootClip->applicationDomain.getPtr();
+				auto it=appdomain->aliasMap.find(aliasname);
+				if(it==appdomain->aliasMap.end())
+					LOG(LOG_ERROR,"unknown  vector alias when parsing vector:"<<aliasname);
+				else
+					type = it->second;
 			}
 			break;
 		}
@@ -307,6 +304,7 @@ asAtom Amf3Deserializer::parseVector(uint8_t marker, std::vector<tiny_string>& s
 			case vector_object_marker:
 			{
 				asAtom value=parseValue(stringMap, objMap, traitsMap);
+				ret->checkValue(value,true);
 				ret->append(value);
 				break;
 			}
@@ -444,7 +442,7 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		const auto it=appdomain->aliasMap.find(className);
 		assert_and_throw(it!=appdomain->aliasMap.end());
 
-		Class_base* type=it->second.getPtr();
+		Class_base* type=it->second;
 		traitsMap.push_back(TraitsRef(type));
 
 		asAtom ret=asAtomHandler::invalidAtom;
@@ -486,13 +484,22 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		ApplicationDomain* appdomain = input->getInstanceWorker()->rootClip->applicationDomain.getPtr();
 		const auto it=appdomain->aliasMap.find(className);
 		if(it!=appdomain->aliasMap.end())
-			traits.type=it->second.getPtr();
+			traits.type=it->second;
 		traitsMap.emplace_back(traits);
 	}
 
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (traits.type)
-		traits.type->getInstance(input->getInstanceWorker(),ret,true, nullptr, 0);
+	{
+		traits.type->getInstance(input->getInstanceWorker(),ret,true, nullptr, 0,nullptr,false);
+		if (input->getInstanceWorker()->currentCallContext->exceptionthrown)
+		{
+			// exception thrown during construction
+			// adobe seems to just trace the error and continue;
+			input->getSystemState()->trace(input->getInstanceWorker()->currentCallContext->exceptionthrown->toString());
+			input->getInstanceWorker()->currentCallContext->exceptionthrown=nullptr;
+		}
+	}
 	else
 		ret =asAtomHandler::fromObject(new_asobject(input->getInstanceWorker()));
 	//Add object to the map
@@ -508,6 +515,13 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		name.isAttribute=false;
 		asAtomHandler::getObject(ret)->setVariableByMultiname_intern(name,value,ASObject::CONST_ALLOWED,traits.type,nullptr,input->getInstanceWorker());
+		if (input->getInstanceWorker()->currentCallContext->exceptionthrown)
+		{
+			// exception thrown during setter call
+			// adobe seems to just trace the error and continue;
+			input->getSystemState()->trace(input->getInstanceWorker()->currentCallContext->exceptionthrown->toString());
+			input->getInstanceWorker()->currentCallContext->exceptionthrown=nullptr;
+		}
 	}
 
 	//Read dynamic name, value pairs

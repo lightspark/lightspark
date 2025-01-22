@@ -222,59 +222,23 @@ TRISTATE ASObject::isLessAtom(asAtom& r)
 	return res;
 }
 
-int variables_map::getNextEnumerable(unsigned int start)
-{
-	if((start==currentnameindex) && (currentnamevar == nullptr))
-	{
-		currentnameindex=UINT32_MAX;
-		return -1;
-	}
-	if (start == 0)
-	{
-		currentnamevar = this->firstVar;
-		currentnameindex = 0;
-	}
-	else
-	{
-		if (start != currentnameindex+1)
-		{
-			currentnamevar = this->firstVar;
-			currentnameindex = 0;
-			do
-			{
-				if (currentnamevar->kind==DYNAMIC_TRAIT && currentnamevar->isenumerable)
-					++currentnameindex;
-				currentnamevar = currentnamevar->nextVar;
-			}
-			while (currentnameindex < start-1 && currentnamevar);
-		}
-		if(currentnamevar==nullptr)
-		{
-			currentnameindex=UINT32_MAX;
-			return -1;
-		}
-		currentnamevar = currentnamevar->nextVar;
-		++currentnameindex;
-	}
-	while (currentnamevar && (currentnamevar->kind!=DYNAMIC_TRAIT || !currentnamevar->isenumerable))
-	{
-		currentnamevar = currentnamevar->nextVar;
-		++currentnameindex;
-	}
-	if(currentnamevar==nullptr)
-	{
-		currentnameindex=UINT32_MAX;
-		return -1;
-	}
-	return currentnameindex;
-}
-
 uint32_t ASObject::nextNameIndex(uint32_t cur_index)
 {
-	// First -1 converts one-base cur_index to zero-based, +1
-	// moves to the next position (first position to be
-	// considered). Final +1 converts back to one-based.
-	return Variables.getNextEnumerable(cur_index-1+1)+1;
+	while (cur_index < Variables.dynamic_vars.size())
+	{
+		// skip deleted vars
+		if (Variables.dynamic_vars[cur_index]==nullptr)
+			++cur_index;
+		else
+			return cur_index+1;
+	}
+	if (getClass()->prototype->getObj() != this)
+	{
+		uint32_t res = getClass()->prototype->getObj()->nextNameIndex(cur_index-Variables.dynamic_vars.size());
+		if (res > 0)
+			return res+Variables.dynamic_vars.size();
+	}
+	return 0;
 }
 
 void ASObject::nextName(asAtom& ret, uint32_t index)
@@ -308,26 +272,20 @@ void ASObject::AVM1enumerate(std::stack<asAtom>& stack)
 		pr = this->getClass()->prototype->getObj();
 	if (pr)
 	{
-		variable* v = pr->Variables.firstVar;
-		while (v)
+		for (auto it = pr->Variables.dynamic_vars.begin(); it != pr->Variables.dynamic_vars.end(); it++)
 		{
-			if (v->isenumerable)
-			{
-				asAtom name = asAtomHandler::fromStringID(v->nameStringID);
-				ACTIONRECORD::PushStack(stack, name);
-			}
-			v = v->nextVar;
-		}
-	}
-	variable* v = this->Variables.firstVar;
-	while (v)
-	{
-		if (v->isenumerable)
-		{
-			asAtom name = asAtomHandler::fromStringID(v->nameStringID);
+			if (*it == nullptr)
+				continue;
+			asAtom name = asAtomHandler::fromStringID((*it)->nameStringID);
 			ACTIONRECORD::PushStack(stack, name);
 		}
-		v = v->nextVar;
+	}
+	for (auto it = Variables.dynamic_vars.begin(); it != Variables.dynamic_vars.end(); it++)
+	{
+		if (*it == nullptr)
+			continue;
+		asAtom name = asAtomHandler::fromStringID((*it)->nameStringID);
+		ACTIONRECORD::PushStack(stack, name);
 	}
 }
 
@@ -756,7 +714,7 @@ bool ASObject::isConstructed() const
 	return traitsInitialized && constructIndicator;
 }
 
-variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds)
+variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds, bool isEnumerable)
 {
 	var_iterator ret=Variables.find(nameId);
 	while(ret!=Variables.end() && ret->first==nameId)
@@ -778,6 +736,7 @@ variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TR
 		return nullptr;
 
 	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(nameId, variable(createKind,ns,false,nameId)) );
+	inserted->second.isenumerable = isEnumerable;
 	insertVar(&inserted->second);
 	return &inserted->second;
 }
@@ -1208,9 +1167,8 @@ variable *ASObject::setVariableAtomByQName(const tiny_string& name, const nsName
 }
 variable *ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom o, TRAIT_KIND traitKind, bool isEnumerable, bool isRefcounted,uint8_t min_swfversion)
 {
-	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind);
+	variable* obj=Variables.findObjVar(nameId,ns,traitKind,traitKind,isEnumerable);
 	obj->setVar(this->getInstanceWorker(),o,isRefcounted && asAtomHandler::isObject(o) && !asAtomHandler::getObjectNoCheck(o)->getConstant());
-	obj->isenumerable=isEnumerable;
 	obj->min_swfversion=min_swfversion;
 	return obj;
 }
@@ -1224,7 +1182,6 @@ void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multina
 
 variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const nsNameAndKind& _ns, bool _isenumerable, bool _nameIsInteger, uint32_t nameID)
 		: var(_v),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom)
-		,prevVar(nullptr),nextVar(nullptr)
 		,nameStringID(nameID),ns(_ns),slotid(0),kind(_k)
 		,isResolved(false),isenumerable(_isenumerable),issealed(false),isrefcounted(true),nameIsInteger(_nameIsInteger),min_swfversion(0)
 {
@@ -1679,8 +1636,14 @@ ASFUNCTIONBODY_ATOM(ASObject,AVM1_IgnoreSetter)
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 {
 	variable* v = Variables.findObjVar(getInstanceWorker(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
-	if (v)
+	if (v && v->isenumerable != isEnum)
+	{
 		v->isenumerable = isEnum;
+		if (isEnum)
+			Variables.insertVar(v);
+		else
+			Variables.removeVar(v);
+	}
 }
 
 bool ASObject::cloneInstance(ASObject *target)
@@ -2051,7 +2014,7 @@ void variables_map::dumpVariables()
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<< hex<<it->first<<dec<<" "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
-			asAtomHandler::toDebugString(it->second.var) << ' ' << asAtomHandler::toDebugString(it->second.setter) << ' ' << asAtomHandler::toDebugString(it->second.getter) << ' ' <<it->second.slotid << ' ' );//<<dynamic_cast<const Class_base*>(it->second.type));
+			asAtomHandler::toDebugString(it->second.var) << ' ' << asAtomHandler::toDebugString(it->second.setter) << ' ' << asAtomHandler::toDebugString(it->second.getter) << ' ' <<it->second.slotid << ' ');//<<dynamic_cast<const Class_base*>(it->second.type));
 	}
 }
 
@@ -2084,11 +2047,8 @@ void variables_map::destroyContents()
 			Variables.erase(it);
 	}
 	slots_vars.clear();
+	dynamic_vars.clear();
 	slotcount=0;
-	this->firstVar=nullptr;
-	this->lastVar=nullptr;
-	currentnameindex=UINT32_MAX;
-	currentnamevar=nullptr;
 }
 void variables_map::prepareShutdown()
 {
@@ -2225,43 +2185,26 @@ void variables_map::insertVar(variable* v,bool prepend)
 {
 	if (v->nameStringID==BUILTIN_STRINGS::STRING_PROTO || v->nameStringID==BUILTIN_STRINGS::PROTOTYPE)
 		v->isenumerable=false;
-	assert(v->prevVar==nullptr && v->nextVar==nullptr);
-	if (!this->firstVar)
-	{
-		this->firstVar=v;
-		this->lastVar=v;
-	}
+	if (!v->isenumerable || v->kind != DYNAMIC_TRAIT)
+		return;
+	if (prepend)
+		dynamic_vars.insert(dynamic_vars.begin(),v);
 	else
-	{
-		if (prepend)
-		{
-			this->firstVar->prevVar=v;
-			v->nextVar=this->firstVar;
-			this->firstVar=v;
-		}
-		else
-		{
-			this->lastVar->nextVar=v;
-			v->prevVar=this->lastVar;
-			this->lastVar=v;
-		}
-	}
+		dynamic_vars.push_back(v);
 }
 void variables_map::removeVar(variable* v)
 {
-	assert(v->prevVar || v->nextVar || (this->firstVar==v && this->lastVar==v));
-	if (currentnamevar == v)
-		currentnamevar = v->nextVar;
-	if (v->prevVar)
-		v->prevVar->nextVar = v->nextVar;
-	else
-		this->firstVar=v->nextVar; // remove first element
-	if (v->nextVar)
-		v->nextVar->prevVar = v->prevVar;
-	else
-		this->lastVar=v->prevVar; // remove last element
-	v->prevVar=nullptr;
-	v->nextVar=nullptr;
+	if (!v->isenumerable)
+		return;
+	for (auto it = dynamic_vars.begin(); it != dynamic_vars.end(); it++)
+	{
+		if (*it == v)
+		{
+			// don't erase, as we might be inside a "hasnext" loop and have to keep the index valid
+			*it=nullptr;
+			break;
+		}
+	}
 }
 
 #ifndef NDEBUG
@@ -2733,19 +2676,19 @@ uint32_t variables_map::findInstanceSlotByMultiname(multiname* name,ASWorker* wr
 
 const variable* variables_map::getValueAt(unsigned int index)
 {
-	//TODO: CHECK behaviour on overridden methods
-	if(currentnamevar)
-	{
-		return currentnamevar;
-	}
-	else
-		throw RunTimeException("getValueAt out of bounds");
+	assert(index < dynamic_vars.size());
+	return dynamic_vars[index];
 }
 
 void ASObject::getValueAt(asAtom &ret,int index)
 {
-	const variable* obj=Variables.getValueAt(index);
+	variable* obj=nullptr;
+	if ((uint32_t)index >= Variables.dynamic_vars.size() && getClass()->prototype->getObj() != this)
+		obj = getClass()->prototype->getObj()->Variables.dynamic_vars[index - Variables.dynamic_vars.size()];
+	else
+		obj = Variables.dynamic_vars[index];
 	assert_and_throw(obj);
+
 	if(asAtomHandler::isValid(obj->getter))
 	{
 		//Call the getter
@@ -2764,19 +2707,22 @@ void ASObject::getValueAt(asAtom &ret,int index)
 
 uint32_t variables_map::getNameAt(unsigned int index,bool& nameIsInteger)
 {
-	//TODO: CHECK behaviour on overridden methods
-	if(currentnamevar)
-	{
-		nameIsInteger = currentnamevar->nameIsInteger;
-		return currentnamevar->nameStringID;
-	}
-	else
-		throw RunTimeException("getNameAt out of bounds");
+	assert(index < dynamic_vars.size());
+	variable* v = dynamic_vars[index];
+	nameIsInteger = v->nameIsInteger;
+	return v->nameStringID;
 }
 
 unsigned int ASObject::numVariables() const
 {
 	return Variables.size();
+}
+
+uint32_t ASObject::getNameAt(int i, bool &nameIsInteger)
+{
+	if ((uint32_t)i >= Variables.dynamic_vars.size() && getClass()->prototype->getObj() != this)
+		return getClass()->prototype->getObj()->getNameAt(i - Variables.dynamic_vars.size(),nameIsInteger);
+	return Variables.getNameAt(i,nameIsInteger);
 }
 
 void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -2814,7 +2760,12 @@ void ASObject::serializeDynamicProperties(ByteArray* out, std::map<tiny_string, 
 		ASATOM_DECREF(v);
 	}
 	else
+	{
 		Variables.serialize(out, stringMap, objMap, traitsMap,forSharedObject,wrk);
+		//The empty string closes the object
+		if(!getClass()->isSealed && out->getObjectEncoding() != OBJECT_ENCODING::AMF0 && !forSharedObject)
+			out->writeStringVR(stringMap, "");
+	}
 }
 
 void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -2828,8 +2779,8 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 	{
 		if(it->second.kind!=DYNAMIC_TRAIT)
 			continue;
-		//Dynamic traits always have empty namespace
-		assert(it->second.ns.hasEmptyName());
+		if(!it->second.ns.hasEmptyName())
+			continue;
 		if (amf0)
 			out->writeStringAMF0(out->getSystemState()->getStringFromUniqueId(it->first));
 		else
@@ -2841,9 +2792,6 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 			out->writeByte(0);
 		}
 	}
-	//The empty string closes the object
-	if (!amf0 && !forsharedobject)
-		out->writeStringVR(stringMap, "");
 }
 
 void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -2876,19 +2824,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	assert_and_throw(type);
 
 	//Check if an alias is registered
-	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
-	auto aliasIt=appdomain->aliasMap.begin();
-	const auto aliasEnd=appdomain->aliasMap.end();
-	//Linear search for alias
-	tiny_string alias;
-	for(;aliasIt!=aliasEnd;++aliasIt)
-	{
-		if(aliasIt->second==type)
-		{
-			alias=aliasIt->first;
-			break;
-		}
-	}
+	tiny_string alias=wrk->rootClip->applicationDomain->findClassAlias(type);
 	bool serializeTraits = alias.empty()==false;
 
 	if(type->isSubClass(InterfaceClass<IExternalizable>::getClass(getSystemState())))
@@ -2969,6 +2905,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 	else
 	{
 		traitsMap.insert(make_pair(type, traitsMap.size()));
+		// count serializable traits in variables
 		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
@@ -2981,9 +2918,41 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 				traitsCount++;
 			}
 		}
+		// count serializable traits with getter _and_ setter in borrowed variables
+		for(auto varIt=getClass()->borrowedVariables.Variables.begin(); varIt != getClass()->borrowedVariables.Variables.end(); ++varIt)
+		{
+			if(varIt->second.kind==DECLARED_TRAIT)
+			{
+				if(!varIt->second.ns.hasEmptyName())
+				{
+					//Skip variable with a namespace, like protected ones
+					continue;
+				}
+				if(asAtomHandler::isInvalid(varIt->second.getter) || asAtomHandler::isInvalid(varIt->second.setter))
+					continue;
+				traitsCount++;
+			}
+		}
 		uint32_t dynamicFlag=(type->isSealed)?0:(1 << 3);
 		out->writeU29((traitsCount << 4) | dynamicFlag | 0x03);
 		out->writeStringVR(stringMap, alias);
+		// write borrowed trait names with getter _and_ setter
+		for(auto varIt=getClass()->borrowedVariables.Variables.begin(); varIt != getClass()->borrowedVariables.Variables.end(); ++varIt)
+		{
+			if(varIt->second.kind==DECLARED_TRAIT)
+			{
+				if(!varIt->second.ns.hasEmptyName())
+				{
+					//Skip variable with a namespace, like protected ones
+					continue;
+				}
+				if(asAtomHandler::isInvalid(varIt->second.getter) || asAtomHandler::isInvalid(varIt->second.setter))
+					continue;
+
+				out->writeStringVR(stringMap, getSystemState()->getStringFromUniqueId(varIt->first));
+			}
+		}
+		// write trait names
 		for(variables_map::const_var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 		{
 			if(varIt->second.kind==DECLARED_TRAIT)
@@ -2997,6 +2966,24 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 			}
 		}
 	}
+	// serialize declared borrowed properties that have getters _and_ setters
+	for(auto itbor=getClass()->borrowedVariables.Variables.begin();itbor!=getClass()->borrowedVariables.Variables.end();itbor++)
+	{
+		if(itbor->second.kind!=DECLARED_TRAIT)
+			continue;
+		if(!itbor->second.ns.hasEmptyName())
+			continue;
+		if(asAtomHandler::isInvalid(itbor->second.getter) || asAtomHandler::isInvalid(itbor->second.setter))
+			continue;
+		asAtom closure = asAtomHandler::getClosureAtom(itbor->second.getter,asAtomHandler::fromObject(this));
+		asAtom ret = asAtomHandler::invalidAtom;
+		asAtomHandler::as<IFunction>(itbor->second.getter)->callGetter(ret,closure,wrk);
+		if (!asAtomHandler::isValid(ret))
+			continue;
+		asAtomHandler::serialize(out,stringMap,objMap,traitsMap,wrk,ret);
+		ASATOM_DECREF(ret);
+	}
+	// serialize declared properties
 	for(variables_map::var_iterator varIt=beginIt; varIt != endIt; ++varIt)
 	{
 		if(varIt->second.kind==DECLARED_TRAIT)
@@ -3009,8 +2996,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 			asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,varIt->second.var);
 		}
 	}
-	if(!type->isSealed)
-		serializeDynamicProperties(out, stringMap, objMap, traitsMap,wrk);
+	serializeDynamicProperties(out, stringMap, objMap, traitsMap,wrk);
 }
 
 ASObject *ASObject::describeType(ASWorker* wrk) const
@@ -3882,6 +3868,26 @@ tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk, bool fromAVM
 			return getObject(a)->toString();
 	}
 }
+
+tiny_string asAtomHandler::toErrorString(const asAtom& a, ASWorker* wrk)
+{
+	tiny_string s = toString(a,wrk);
+	if (asAtomHandler::isString(a))
+	{
+		tiny_string ret("\"");
+		ret += s;
+		ret += "\"";
+		return ret;
+	}
+	else if (asAtomHandler::isObject(a))
+	{
+		s = asAtomHandler::getObjectNoCheck(a)->getClassName();
+		s += "@00000000000"; //TODO check what's the meaning of this
+		return s;
+	}
+	return s;
+}
+
 tiny_string asAtomHandler::toLocaleString(const asAtom& a, ASWorker* wrk)
 {
 	switch(a.uintval&0x7)

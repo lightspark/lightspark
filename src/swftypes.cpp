@@ -64,7 +64,7 @@ const tiny_string multiname::qualifiedString(SystemState* sys, bool forDescribeT
 	else
 	{
 		tiny_string ret=nsName;
-		ret+="::";
+		ret+= forDescribeType ? "::" : ".";
 		ret+=name;
 		return ret;
 	}

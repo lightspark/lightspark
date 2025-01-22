@@ -30,6 +30,10 @@
 using namespace std;
 using namespace lightspark;
 
+tiny_string lightspark::createErrorMessage(ASWorker* wrk, int errorID, asAtom arg1, const tiny_string& arg2, const tiny_string& arg3)
+{
+	return createErrorMessage(errorID,asAtomHandler::toErrorString(arg1,wrk),arg2,arg3);
+}
 tiny_string lightspark::createErrorMessage(int errorID, const tiny_string& arg1, const tiny_string& arg2, const tiny_string& arg3)
 {
 	auto found = errorMessages.find(errorID);

@@ -140,7 +140,7 @@ void Class_inherit::prepareShutdown()
 	}
 }
 
-void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass, bool callSyntheticConstructor)
 {
 	checkScriptInit();
 	//We override the classdef
@@ -175,7 +175,7 @@ void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, a
 		}
 	}
 	if(construct)
-		handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed());
+		handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed(), callSyntheticConstructor);
 }
 void Class_inherit::recursiveBuild(ASObject* target) const
 {
@@ -289,7 +289,7 @@ string Class_inherit::toDebugString() const
 	return res;
 }
 template<>
-void Class<Global>::getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+void Class<Global>::getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass, bool callSyntheticConstructor)
 {
 	createError<TypeError>(worker,kConstructOfNonFunctionError);
 }
@@ -421,7 +421,7 @@ void Class<ASObject>::AVM1generator(ASWorker* wrk, asAtom& ret, asAtom* args, co
 		ret.uintval = (LIGHTSPARK_ATOM_VALTYPE)obj | ATOM_OBJECTPTR;
 }
 
-void Class<ASObject>::getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+void Class<ASObject>::getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass, bool callSyntheticConstructor)
 {
 	if (construct && args && argslen == 1 && this == Class<ASObject>::getClass(this->getSystemState()))
 	{
@@ -447,7 +447,7 @@ void Class<ASObject>::getInstance(ASWorker* worker, asAtom& ret, bool construct,
 		realClass=this;
 	ret=asAtomHandler::fromObjectNoPrimitive(new (realClass->memoryAccount) ASObject(worker,realClass));
 	if(construct)
-		handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed());
+		handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed(),callSyntheticConstructor);
 }
 Class<ASObject>* Class<ASObject>::getClass(SystemState* sys)
 {

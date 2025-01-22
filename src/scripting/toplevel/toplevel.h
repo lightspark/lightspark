@@ -318,7 +318,7 @@ class Class<IFunction>: public Class_base
 {
 private:
 	Class(MemoryAccount* m, uint32_t classID):Class_base(QName(BUILTIN_STRINGS::STRING_FUNCTION,BUILTIN_STRINGS::EMPTY),classID ,m){}
-	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass) override;
+	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr, bool callSyntheticConstructor=true) override;
 	IFunction* getNopFunction();
 public:
 	static Class<IFunction>* getClass(SystemState* sys);

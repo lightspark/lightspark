@@ -115,7 +115,7 @@ public:
 	/*
 	 * Support for class aliases in AMF3 serialization
 	 */
-	std::map<tiny_string, _R<Class_base> > aliasMap;
+	std::map<tiny_string, Class_base*> aliasMap;
 	std::map<QName, Template_base*> templates;
 
 	uint32_t version;
@@ -154,7 +154,7 @@ public:
 	void setFrameRate(float f);
 	void setBaseURL(const tiny_string& url);
 	const URLInfo& getBaseURL();
-	
+	tiny_string findClassAlias(Class_base* cls);
 
 	static void sinit(Class_base* c);
 	void registerGlobalScope(Global* scope);

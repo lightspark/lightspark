@@ -201,15 +201,25 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 		{
 			asAtom o = a->at(i);
 			res->checkValue(o,false);
-			ASObject* obj = asAtomHandler::getObject(o);
-			if (obj)
-			{
-				obj->incRef();
-				obj->addStoredMember();
-			}
+			ASATOM_ADDSTOREDMEMBER(o);
 			res->vec.push_back(o);
 		}
 		res->setIsInitialized(true);
+	}
+	else if(asAtomHandler::is<ByteArray>(args[0]))
+	{
+		//create object without calling _constructor
+		asAtomHandler::as<TemplatedClass<Vector>>(o_class)->getInstance(wrk,ret,false,nullptr,0);
+		Vector* res = asAtomHandler::as<Vector>(ret);
+
+		ByteArray* ba = asAtomHandler::as<ByteArray>(args[0]);
+		for(unsigned int i=0;i<ba->getLength();++i)
+		{
+			asAtom o = asAtomHandler::fromInt(ba->getBufferNoCheck()[i]);
+			res->checkValue(o,false);
+			ASATOM_ADDSTOREDMEMBER(o);
+			res->vec.push_back(o);
+		}
 	}
 	else if(asAtomHandler::is<Vector>(args[0]))
 	{
@@ -1845,9 +1855,10 @@ void Vector::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMa
 		out->writeByte(fixed ? 0x01 : 0x00);
 		if (marker == vector_object_marker)
 		{
-			tiny_string s = vec_type->getName();
-			if (s=="Object" || s=="any")
-				s.clear(); //vector types "Object"/"any" are stored as empty string
+			Class_base* cls = dynamic_cast<Class_base*>(vec_type);
+			tiny_string s;
+			if (cls)
+				s = out->getInstanceWorker()->rootClip->applicationDomain->findClassAlias(cls);
 			out->writeStringVR(stringMap,s);
 		}
 		for(uint32_t i=0;i<count;i++)

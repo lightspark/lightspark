@@ -1315,7 +1315,7 @@ void Array::getIntegerNameListFromPrototypeChain(std::map<int32_t,asAtom>& membe
 		if (proto->getObj()->is<Array>())
 		{
 			Array* ar = proto->getObj()->as<Array>();
-			for (uint32_t i = 0; i < (int32_t)ar->size(); i++)
+			for (uint32_t i = 0; i < ar->size(); i++)
 			{
 				asAtom v = asAtomHandler::invalidAtom;
 				ar->at_nocheck(v,i);
@@ -2744,7 +2744,32 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 		//Add the array to the map
 		objMap.insert(make_pair(this, objMap.size()));
 
-		uint32_t denseCount = currentsize;
+		uint32_t denseCount = 0;
+		// compute upper border for densecount
+		for (uint32_t i = currentsize; i > 0 && denseCount==0 ; --i)
+		{
+			asAtom a = asAtomHandler::invalidAtom;
+			at_nocheck(a,i-1);
+			if (asAtomHandler::isValid(a))
+			{
+				// ignore non-serializable types
+				switch (asAtomHandler::getObjectType(a))
+				{
+					case T_FUNCTION:
+					case T_CLASS:
+					case T_UNDEFINED:
+					case T_NAMESPACE:
+					case T_QNAME:
+					case T_PROXY:
+					case T_TEMPLATE:
+					case T_INVALID:
+						break;
+					default:
+						denseCount=i;
+						break;
+				}
+			}
+		}
 		assert_and_throw(denseCount<0x20000000);
 		uint32_t value = (denseCount << 1) | 1;
 		out->writeU29(value);

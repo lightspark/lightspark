@@ -47,7 +47,7 @@ public:
 	}
 
 	void getInstance(ASWorker* wrk,asAtom& ret, bool construct, asAtom* args,
-			const unsigned int argslen, Class_base* realClass=nullptr) override
+			const unsigned int argslen, Class_base* realClass=nullptr, bool callSyntheticConstructor=true) override
 	{
 		if(realClass==nullptr)
 			realClass=this;
@@ -269,8 +269,8 @@ class Vector: public ASObject
 		bool operator()(const asAtom& d1, const asAtom& d2);
 	};
 	asAtom getDefaultValue();
-	bool checkValue(asAtom& o, bool allowconversion);
 public:
+	bool checkValue(asAtom& o, bool allowconversion);
 	class sortComparatorWrapper
 	{
 	private:

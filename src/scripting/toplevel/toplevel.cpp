@@ -752,7 +752,7 @@ IFunction* Class<IFunction>::getNopFunction()
 	return ret;
 }
 
-void Class<IFunction>::getInstance(ASWorker* worker,asAtom& ret,bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+void Class<IFunction>::getInstance(ASWorker* worker,asAtom& ret,bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass, bool callSyntheticConstructor)
 {
 	if (argslen > 0)
 		createError<EvalError>(worker,kFunctionConstructorError);
@@ -1024,7 +1024,7 @@ ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 		while ((i=o->nextNameIndex(i)) != 0)
 		{
 			bool dummy;
-			nameIDlist.push_back(o->getNameAt(i,dummy));
+			nameIDlist.push_back(o->getNameAt(i-1,dummy));
 		}
 	}
 	else

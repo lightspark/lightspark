@@ -273,7 +273,6 @@ void Class_base::copyBorrowedTraits(Class_base* src)
 		ASATOM_INCREF(v.getter);
 		ASATOM_INCREF(v.setter);
 		borrowedVariables.Variables.insert(make_pair(i->first,v));
-		borrowedVariables.currentnameindex=UINT32_MAX;
 	}
 }
 
@@ -323,7 +322,7 @@ bool Class_base::coerce(ASWorker* wrk, asAtom& o)
 			return false; /* 'this' is the type of a class */
 		else
 		{
-			createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(o,wrk)->getClassName(), getQualifiedClassName());
+			createError<TypeError>(wrk,kCheckTypeFailedError, o, getQualifiedClassName());
 			return false;
 		}
 	}
@@ -333,7 +332,7 @@ bool Class_base::coerce(ASWorker* wrk, asAtom& o)
 	//o->getClass() == NULL for primitive types
 	//those are handled in overloads Class<Number>::coerce etc.
 	if(!asAtomHandler::getObject(o) ||  !asAtomHandler::getObject(o)->getClass() || !asAtomHandler::getObject(o)->getClass()->isSubClass(this))
-		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(o,wrk)->getClassName(), getQualifiedClassName());
+		createError<TypeError>(wrk,kCheckTypeFailedError, o, getQualifiedClassName());
 	return false;
 }
 
@@ -412,7 +411,19 @@ ASFUNCTIONBODY_GETTER(Class_base, length)
 
 void Class_base::generator(ASWorker* wrk, asAtom& ret, asAtom* args, const unsigned int argslen)
 {
-	ASObject::generator(ret,wrk,asAtomHandler::invalidAtom, args, argslen);
+	if (argslen==1)
+	{
+		ASObject* o = asAtomHandler::getObject(args[0]);
+		if (o && o->getClass()->isSubClass(this))
+		{
+			ASATOM_INCREF(args[0]);
+			ret = args[0];
+		}
+		else
+			ret = asAtomHandler::nullAtom;
+	}
+	else
+		createError<ArgumentError>(wrk,kCoerceArgumentCountError,Integer::toString(argslen));
 }
 
 void Class_base::addImplementedInterface(const multiname& i)
@@ -443,7 +454,7 @@ void Class_base::setConstructor(ASObject* c)
 		constructor=c->as<IFunction>();
 	}
 }
-void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int argslen, bool buildAndLink, bool _explicit)
+void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int argslen, bool buildAndLink, bool _explicit, bool callSyntheticConstructor)
 {
 	if (!asAtomHandler::isObject(target) || asAtomHandler::is<Class_base>(target))
 		return;
@@ -459,7 +470,8 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 			asAtomHandler::getObjectNoCheck(target)->beforeConstruction(_explicit);
 	}
 
-	if(constructor)
+	if(constructor && (callSyntheticConstructor ||
+						(constructor->getMethodInfo() && constructor->getMethodInfo()->numArgs()-constructor->getMethodInfo()->numOptions()==0)))
 	{
 		LOG_CALL("handleConstruction for "<<asAtomHandler::toDebugString(target));
 		t->incRef();

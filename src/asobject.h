@@ -530,6 +530,7 @@ public:
 	static FORCE_INLINE uint32_t toUInt(asAtom& a);
 	static void getStringView(tiny_string& res, const asAtom &a, ASWorker* wrk); // this doesn't deep copy the data buffer if parameter a is an ASString
 	static tiny_string toString(const asAtom &a, ASWorker* wrk, bool fromAVM1add2=false);
+	static tiny_string toErrorString(const asAtom& a, ASWorker* wrk); // returns string in format needed as argument in error messages
 	static tiny_string AVM1toString(const asAtom &a, ASWorker* wrk);
 	static tiny_string toLocaleString(const asAtom &a, ASWorker* wrk);
 	static uint32_t toStringId(asAtom &a, ASWorker* wrk);
@@ -605,10 +606,6 @@ struct variable
 	};
 	asAtom setter;
 	asAtom getter;
-	// these are used to keep track of the order of insertion of variables into the map
-	// this is needed because Adobe (at least in AVM1) returns the variables by order of insertion during enumeration
-	variable* prevVar;
-	variable* nextVar;
 	uint32_t nameStringID;
 	nsNameAndKind ns;
 	uint32_t slotid;
@@ -621,7 +618,6 @@ struct variable
 	uint8_t min_swfversion;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns,bool _nameIsInteger,uint32_t nameID)
 		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom)
-		,prevVar(nullptr),nextVar(nullptr)
 		,nameStringID(nameID),ns(_ns),slotid(0),kind(_k)
 		,isResolved(false),isenumerable(true),issealed(false),isrefcounted(true)
 		,nameIsInteger(_nameIsInteger),min_swfversion(0)
@@ -695,17 +691,11 @@ public:
 	typedef std::unordered_multimap<uint32_t,variable>::iterator var_iterator;
 	typedef std::unordered_multimap<uint32_t,variable>::const_iterator const_var_iterator;
 	std::vector<variable*> slots_vars;
+	std::vector<variable*> dynamic_vars;
 	uint32_t slotcount;
-	variable* firstVar;
-	variable* lastVar;
-
-	// these keep track of the index when wandering through the dynamic entries by nextNameIndex
-	uint32_t currentnameindex;
-	variable* currentnamevar;
-
 	// indicates if this map was initialized with no variables with non-primitive values
 	bool cloneable;
-	variables_map():slotcount(0),firstVar(nullptr),lastVar(nullptr),currentnameindex(UINT32_MAX),currentnamevar(nullptr),cloneable(true)
+	variables_map():slotcount(0),cloneable(true)
 	{
 	}
 	/**
@@ -715,7 +705,7 @@ public:
 				a new one is created with the given kind
 	   @param traitKinds Bitwise OR of accepted trait kinds
 	*/
-	variable* findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds);
+	variable* findObjVar(uint32_t nameId, const nsNameAndKind& ns, TRAIT_KIND createKind, uint32_t traitKinds, bool isEnumerable=true);
 	variable* findObjVar(ASWorker* wrk, const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds);
 	// adds a dynamic variable without checking if a variable with this name already exists
 	void setDynamicVarNoCheck(uint32_t nameID,asAtom& v, bool nameIsInteger,bool prepend);
@@ -905,7 +895,6 @@ public:
 	}
 	uint32_t getNameAt(unsigned int i, bool& nameIsInteger);
 	const variable* getValueAt(unsigned int i);
-	int getNextEnumerable(unsigned int i);
 	~variables_map();
 	void check() const;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -1290,10 +1279,7 @@ public:
 	void initAdditionalSlots(std::vector<multiname *> &additionalslots);
 	virtual void AVM1enumerate(std::stack<asAtom>& stack);
 	unsigned int numVariables() const;
-	inline uint32_t getNameAt(int i, bool& nameIsInteger)
-	{
-		return Variables.getNameAt(i,nameIsInteger);
-	}
+	uint32_t getNameAt(int i, bool& nameIsInteger);
 	void getValueAt(asAtom &ret, int i);
 	inline SWFOBJECT_TYPE getObjectType() const
 	{

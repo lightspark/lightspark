@@ -2771,9 +2771,9 @@ ASFUNCTIONBODY_ATOM(lightspark,registerClassAlias)
 	assert_and_throw(argslen==2 && asAtomHandler::isString(args[0]) && asAtomHandler::isClass(args[1]));
 	const tiny_string& arg0 = asAtomHandler::toString(args[0],wrk);
 	ASATOM_INCREF(args[1]);
-	_R<Class_base> c=_MR(asAtomHandler::as<Class_base>(args[1]));
+	Class_base* c=asAtomHandler::as<Class_base>(args[1]);
 	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
-	appdomain->aliasMap.insert(make_pair(arg0, c));
+	appdomain->aliasMap[arg0] = c;
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,getClassByAlias)
@@ -2788,5 +2788,5 @@ ASFUNCTIONBODY_ATOM(lightspark,getClassByAlias)
 		return;
 	}
 	it->second->incRef();
-	ret = asAtomHandler::fromObject(it->second.getPtr());
+	ret = asAtomHandler::fromObject(it->second);
 }

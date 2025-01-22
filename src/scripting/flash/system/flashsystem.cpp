@@ -813,6 +813,22 @@ const URLInfo& ApplicationDomain::getBaseURL()
 	else
 		return getOrigin();
 }
+
+tiny_string ApplicationDomain::findClassAlias(Class_base* cls)
+{
+	auto aliasIt=aliasMap.begin();
+	const auto aliasEnd=aliasMap.end();
+	//Linear search for alias
+	tiny_string alias;
+	for(;aliasIt!=aliasEnd;++aliasIt)
+	{
+		if(aliasIt->second==cls)
+		{
+			return aliasIt->first;
+		}
+	}
+	return "";
+}
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 {
 	ApplicationDomain* th = asAtomHandler::as<ApplicationDomain>(obj);
@@ -897,7 +913,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 	if(asAtomHandler::isInvalid(ret))
 	{
 		ret = asAtomHandler::undefinedAtom;
-		createError<ReferenceError>(wrk,kClassNotFoundError,name.normalizedNameUnresolved(wrk->getSystemState()));
+		createError<ReferenceError>(wrk,kUndefinedVarError,name.normalizedNameUnresolved(wrk->getSystemState()));
 		return;
 	}
 

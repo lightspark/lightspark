@@ -26,6 +26,7 @@
 namespace lightspark
 {
 
+tiny_string createErrorMessage(ASWorker* wrk, int errorID, asAtom arg1, const tiny_string& arg2, const tiny_string& arg3);
 tiny_string createErrorMessage(int errorID, const tiny_string& arg1, const tiny_string& arg2, const tiny_string& arg3);
 void setError(ASObject* error);
 /*
@@ -37,6 +38,12 @@ template<class T>
 void createError(ASWorker* wrk, int errorID, const tiny_string& arg1="", const tiny_string& arg2="", const tiny_string& arg3="")
 {
 	tiny_string message = createErrorMessage(errorID, arg1, arg2, arg3);
+	setError(Class<T>::getInstanceS(wrk,message, errorID));
+}
+template<class T>
+void createError(ASWorker* wrk, int errorID, asAtom arg1, const tiny_string& arg2, const tiny_string& arg3="")
+{
+	tiny_string message = createErrorMessage(wrk, errorID, arg1, arg2, arg3);
 	setError(Class<T>::getInstanceS(wrk,message, errorID));
 }
 

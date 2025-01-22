@@ -47,7 +47,7 @@ public:
 class Class_inherit:public Class_base
 {
 private:
-	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom *args, const unsigned int argslen, Class_base* realClass) override;
+	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom *args, const unsigned int argslen, Class_base* realClass=nullptr, bool callSyntheticConstructor=true) override;
 	DictionaryTag* tag;
 	bool bindedToRoot;
 	bool bindingchecked;
@@ -159,7 +159,7 @@ class Class: public Class_base
 protected:
 	Class(const QName& name,uint32_t classID, MemoryAccount* m):Class_base(name, classID,m){}
 	//This function is instantiated always because of inheritance
-	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr) override
+	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr, bool callSyntheticConstructor=true) override
 	{
 		if(realClass==nullptr)
 			realClass=this;
@@ -171,7 +171,7 @@ protected:
 		ret = asAtomHandler::fromObject(o);
 		asAtomHandler::resetCached(ret);
 		if(construct)
-			handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed());
+			handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed(), callSyntheticConstructor);
 	}
 public:
 	template<typename... Args>
@@ -261,7 +261,7 @@ public:
 };
 
 template<>
-void Class<Global>::getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass);
+void Class<Global>::getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass, bool callSyntheticConstructor);
 
 template<>
 inline bool Class<Number>::coerce(ASWorker* wrk,asAtom& o)
@@ -303,7 +303,7 @@ inline bool Class<Boolean>::coerce(ASWorker* wrk,asAtom& o)
 	return true;
 }
 template<>
-inline void Class<Boolean>::getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass)
+inline void Class<Boolean>::getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass, bool callSyntheticConstructor)
 {
 	if (argslen> 0)
 		ret = asAtomHandler::fromObject(abstract_b(worker->getSystemState(),asAtomHandler::Boolean_concrete(args[0])));
@@ -317,7 +317,7 @@ class Class<ASObject>: public Class_base
 private:
 	Class(const QName& name,uint32_t classID, MemoryAccount* m):Class_base(name, classID,m){}
 	//This function is instantiated always because of inheritance
-	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr);
+	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr, bool callSyntheticConstructor=true) override;
 public:
 	static ASObject* getInstanceS(ASWorker* wrk)
 	{
@@ -378,7 +378,7 @@ class InterfaceClass: public Class_base
 {
 	virtual ~InterfaceClass() { }
 	void buildInstanceTraits(ASObject*) const {}
-	void getInstance(ASWorker* worker,asAtom&, bool, asAtom*, unsigned int, Class_base* realClass)
+	void getInstance(ASWorker* worker,asAtom&, bool, asAtom*, unsigned int, Class_base* realClass=nullptr, bool callSyntheticConstructor=true)
 	{
 		assert(false);
 	}

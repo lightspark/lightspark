@@ -193,7 +193,7 @@ public:
 	void addPrototypeGetter();
 	void addLengthGetter();
 	inline virtual void setupDeclaredTraits(ASObject *target, bool checkclone=true) { target->traitsInitialized = true; }
-	void handleConstruction(asAtom &target, asAtom *args, unsigned int argslen, bool buildAndLink, bool _explicit = false);
+	void handleConstruction(asAtom &target, asAtom *args, unsigned int argslen, bool buildAndLink, bool _explicit = false, bool callSyntheticConstructor = true);
 	void setConstructor(ASObject* c);
 	bool hasConstructor() { return constructor != nullptr; }
 	IFunction* getConstructor() { return constructor; }
@@ -203,7 +203,7 @@ public:
 	~Class_base();
 	void finalize() override;
 	void prepareShutdown() override;
-	virtual void getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr)=0;
+	virtual void getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr, bool callSyntheticConstructor=true)=0;
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
@@ -291,7 +291,7 @@ class Class_object: public Class_base
 private:
 	//Invoke the special constructor that will set the super to Object
 	Class_object():Class_base(this){}
-	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass) override
+	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr, bool callSyntheticConstructor=true) override
 	{
 		throw RunTimeException("Class_object::getInstance");
 	}

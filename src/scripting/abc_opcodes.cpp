@@ -36,6 +36,7 @@
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Undefined.h"
+#include "scripting/toplevel/Vector.h"
 #include "scripting/flash/utils/Proxy.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/display/RootMovieClip.h"
@@ -3187,6 +3188,12 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 	if(value->is<Null>())
 		return false;
 
+	if(value->is<Vector>() && type->is<TemplatedClass<Vector>>()
+		&& !type->as<TemplatedClass<Vector>>()->getTypes().empty()
+		&& type->as<TemplatedClass<Vector>>()->getTypes()[0] == Type::anyType)
+	{
+		return true;
+	}
 
 	if(value->is<Class_base>())
 		// Classes are instance of Class and Object but not

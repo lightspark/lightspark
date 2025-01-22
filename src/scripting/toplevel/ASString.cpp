@@ -639,7 +639,7 @@ int32_t ASString::toIntStrict()
 	if (!isvalid)
 	{
 		number_t n = toNumber();
-		if (!std::isnan(n))
+		if (!std::isnan(n) && !std::isinf(n))
 			return n;
 	}
 	return ret;
@@ -655,7 +655,7 @@ int64_t ASString::toInt64()
 uint32_t ASString::toUInt()
 {
 	assert_and_throw(implEnable);
-	return static_cast<uint32_t>(toInt());
+	return static_cast<uint32_t>(toIntStrict());
 }
 
 bool ASString::isEqual(ASObject* r)

@@ -84,37 +84,38 @@ ASFUNCTIONBODY_ATOM(RegExp,_constructor)
 	else if(argslen > 0)
 		th->source=asAtomHandler::toString(args[0],wrk).raw_buf();
 	if(argslen>1 && !asAtomHandler::is<Undefined>(args[1]))
+		th->setFlagsFromAtom(args[1]);
+}
+
+void RegExp::setFlagsFromAtom(asAtom& a)
+{
+	const tiny_string& flags=asAtomHandler::toString(a,getInstanceWorker());
+	for(auto i=flags.begin();i!=flags.end();++i)
 	{
-		const tiny_string& flags=asAtomHandler::toString(args[1],wrk);
-		for(auto i=flags.begin();i!=flags.end();++i)
+		switch(*i)
 		{
-			switch(*i)
-			{
-				case 'g':
-					th->global=true;
-					break;
-				case 'i':
-					th->ignoreCase=true;
-					break;
-				case 'x':
-					th->extended=true;
-					break;
-				case 'm':
-					th->multiline=true;
-					break;
-				case 's':
-					// Defined in the Adobe online
-					// help but not in ECMA
-					th->dotall=true;
-					break;
-				default:
-					break;
-			}
+			case 'g':
+				global=true;
+				break;
+			case 'i':
+				ignoreCase=true;
+				break;
+			case 'x':
+				extended=true;
+				break;
+			case 'm':
+				multiline=true;
+				break;
+			case 's':
+				// Defined in the Adobe online
+				// help but not in ECMA
+				dotall=true;
+				break;
+			default:
+				break;
 		}
 	}
 }
-
-
 ASFUNCTIONBODY_ATOM(RegExp,generator)
 {
 	if(argslen == 0)
@@ -128,9 +129,10 @@ ASFUNCTIONBODY_ATOM(RegExp,generator)
 	}
 	else
 	{
-		if (argslen > 1)
-			LOG(LOG_NOT_IMPLEMENTED, "RegExp generator: flags argument not implemented");
-		ret = asAtomHandler::fromObject(Class<RegExp>::getInstanceS(wrk,asAtomHandler::toString(args[0],wrk)));
+		RegExp* re = Class<RegExp>::getInstanceS(wrk,asAtomHandler::toString(args[0],wrk));
+		if(argslen>1 && !asAtomHandler::is<Undefined>(args[1]))
+			re->setFlagsFromAtom(args[1]);
+		ret = asAtomHandler::fromObject(re);
 	}
 }
 

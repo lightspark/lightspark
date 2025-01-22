@@ -28,6 +28,8 @@ namespace lightspark
 
 class RegExp: public ASObject
 {
+private:
+	void setFlagsFromAtom(asAtom& a);
 public:
 	RegExp(ASWorker* wrk,Class_base* c);
 	RegExp(ASWorker* wrk, Class_base* c, const tiny_string& _re);

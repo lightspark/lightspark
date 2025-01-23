@@ -93,7 +93,9 @@ ASFUNCTIONBODY_ATOM(SoundTransform,_constructor)
 {
 	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
 	number_t pan;
-	ARG_CHECK(ARG_UNPACK(th->volume, 1.0)(pan, 0.0));
+	number_t volume;
+	ARG_CHECK(ARG_UNPACK(volume, 1.0)(pan, 0.0));
+	th->volume = volume*100.0;
 	th->setPan(pan);
 }
 ASFUNCTIONBODY_ATOM(SoundTransform,_get_pan)
@@ -1457,7 +1459,7 @@ void SoundChannel::playStreamFromSamples()
 				{
 					if(soundTransform && soundTransform->volume != oldVolume)
 					{
-						audioStream->setVolume(soundTransform->volume);
+						audioStream->setVolume(number_t(soundTransform->volume)/100.0);
 						oldVolume = soundTransform->volume;
 					}
 					checkEnvelope();

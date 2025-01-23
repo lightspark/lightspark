@@ -74,7 +74,7 @@ void AudioStream::startMixing()
 AudioStream::AudioStream(AudioManager* _manager, IThreadJob* _producer, int _grouptag, uint64_t _playedtime)
 	:manager(_manager),decoder(nullptr),producer(_producer),grouptag(_grouptag)
 	,hasStarted(false),isPaused(true),mixingStarted(false),isdone(false)
-	,curvolume(1.0),unmutevolume(1.0),panning{1.0,1.0},playedtime(_playedtime),mixer_channel(-1),audiobuffer(nullptr)
+	,curvolume(1.0),unmutevolume(1.0),panning{1.0,0.0,1.0,0.0},playedtime(_playedtime),mixer_channel(-1),audiobuffer(nullptr)
 {
 }
 
@@ -114,10 +114,10 @@ void AudioStream::setVolume(double volume)
 
 void AudioStream::setPanning(int32_t leftToLeft, int32_t leftToRight, int32_t rightToRight, int32_t rightToLeft)
 {
-	panning[0]=(float)leftToLeft/100.0;
+	panning[0]=(float)leftToLeft/100.0f;
 	panning[1]=(float)rightToLeft/100.0f;
 	panning[2]=(float)rightToRight/100.0f;
-	panning[3]=(float)leftToRight/100.0;
+	panning[3]=(float)leftToRight/100.0f;
 }
 
 void AudioStream::setIsDone()

@@ -811,7 +811,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		list<listener>& listeners=th->handlers[eventName];
 		const listener newListener(args[1], priority, useCapture, wrk);
 		//Ordered insertion
-		list<listener>::iterator insertionPoint=lower_bound(listeners.begin(),listeners.end(),newListener);
+		list<listener>::iterator insertionPoint=upper_bound(listeners.begin(),listeners.end(),newListener);
 		IFunction* newfunc = asAtomHandler::as<IFunction>(args[1]);
 		if (useWeakReference && !newfunc->inClass)
 			LOG(LOG_NOT_IMPLEMENTED,"EventDispatcher::addEventListener parameter useWeakReference is ignored");

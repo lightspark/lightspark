@@ -862,13 +862,17 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 		}
 
 		const listener ls(args[1],0,useCapture,wrk);
-		std::list<listener>::iterator it=find(h->second.begin(),h->second.end(),ls);
-		if(it!=h->second.end())
+		for (auto it = h->second.begin(); it != h->second.end();)
 		{
-			ASObject* listenerfunc = asAtomHandler::getObject(it->f);
-			assert(listenerfunc);
-			h->second.erase(it);
-			listenerfunc->removeStoredMember();
+			if (*it == ls)
+			{
+				ASObject* listenerfunc = asAtomHandler::getObject(it->f);
+				assert(listenerfunc != nullptr);
+				it = h->second.erase(it);
+				listenerfunc->removeStoredMember();
+			}
+			else
+				++it;
 		}
 		if(h->second.empty()) //Remove the entry from the map
 			th->handlers.erase(h);

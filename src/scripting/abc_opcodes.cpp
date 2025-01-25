@@ -1919,7 +1919,7 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 	LOG_CALL( "findPropStrictCache " << *name );
 
 	vector<scope_entry>::reverse_iterator it;
-	bool hasdynamic=false;
+	bool hasdynamic=!name->isStatic;
 	bool found=false;
 
 	for(uint32_t i = th->curr_scope_stack; i > 0; i--)

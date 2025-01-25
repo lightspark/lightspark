@@ -1669,7 +1669,7 @@ void MovieClip::advanceFrame(bool implicit)
 			lastFrameScriptExecuted=UINT32_MAX;
 		state.FP=state.next_FP;
 	}
-	if(!state.stop_FP && getFramesLoaded()>0)
+	if(implicit && !state.stop_FP && getFramesLoaded()>0)
 	{
 		if (hasFinishedLoading())
 			state.next_FP=imin(state.FP+1,getFramesLoaded()-1);

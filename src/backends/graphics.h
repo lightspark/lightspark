@@ -407,13 +407,15 @@ CairoTokenRenderer(_NR<tokenListRef> _filltokens,_NR<tokenListRef> _stroketokens
 	static bool hitTest(NullableRef<tokenListRef> tokens, float scaleFactor, const Vector2f& point);
 };
 
+enum ALIGNMENT {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
+
 struct FormatText
 {
 	bool bullet {false};
 	bool bold {false};
 	bool italic {false};
 	bool underline {false};
-	enum ALIGNMENT {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
+	bool paragraph {false};
 	ALIGNMENT align {AS_NONE};
 	RGB fontColor {0x000000};
 	uint32_t fontSize;
@@ -422,6 +424,7 @@ struct FormatText
 	tiny_string target;
 	number_t kerning {0};
 	number_t letterspacing {0};
+	bool needsNewLine(const FormatText* f) const;
 };
 
 struct textline
@@ -466,15 +469,16 @@ public:
 	bool caretblinkstate:1;
 	bool isPassword:1;
 	RGB textColor;
-	enum ALIGNMENT {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
 	ALIGNMENT autoSize;
 	ALIGNMENT align;
 	uint32_t fontSize;
 	FontTag* embeddedFont;
 	tiny_string getText(uint32_t line=UINT32_MAX) const;
 	void setText(const char* text, bool firstlineonly=false);
-	void appendText(const char* text, bool firstlineonly=false, const FormatText* format = nullptr);
-	void appendFormatText(const char* text, const FormatText& format, bool firstlineonly=false);
+	void appendText(const char* text, bool firstlineonly=false, const FormatText* format = nullptr, uint32_t swfversion=UINT32_MAX, bool condensewhite=false);
+	void appendFormatText(const char* text, const FormatText& format, uint32_t swfversion, bool condensewhite);
+	void clear();
+	bool isWhitespaceOnly(bool multiline) const;
 	void getTextSizes(const tiny_string& text, number_t& tw, number_t& th);
 	bool TextIsEqual(const std::vector<tiny_string>& lines) const;
 	uint32_t getLineCount() const { return textlines.size(); }

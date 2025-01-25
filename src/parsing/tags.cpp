@@ -403,19 +403,19 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 		switch(Align)
 		{
 			case 0:
-				textData.align = TextData::AS_NONE;
+				textData.align = ALIGNMENT::AS_NONE;
 				if (AutoSize)
-					textData.autoSize = TextData::AS_LEFT;
+					textData.autoSize = ALIGNMENT::AS_LEFT;
 				break;
 			case 1:
-				textData.autoSize = TextData::AS_RIGHT;
+				textData.autoSize = ALIGNMENT::AS_RIGHT;
 				if (AutoSize)
-					textData.autoSize = TextData::AS_RIGHT;
+					textData.autoSize = ALIGNMENT::AS_RIGHT;
 				break;
 			case 2:
-				textData.autoSize = TextData::AS_CENTER;
+				textData.autoSize = ALIGNMENT::AS_CENTER;
 				if (AutoSize)
-					textData.autoSize = TextData::AS_CENTER;
+					textData.autoSize = ALIGNMENT::AS_CENTER;
 				break;
 			case 3:
 				LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Align justify on ID "<<CharacterID);
@@ -429,8 +429,8 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 			LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag:Indent on ID "<<CharacterID);
 	}
 	in >> VariableName;
-	if (AutoSize && textData.autoSize == TextData::AS_NONE)
-		textData.autoSize = TextData::AS_LEFT;
+	if (AutoSize && textData.autoSize == ALIGNMENT::AS_NONE)
+		textData.autoSize = ALIGNMENT::AS_LEFT;
 	if(HasText)
 	{
 		in >> InitialText;

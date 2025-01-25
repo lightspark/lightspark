@@ -1332,55 +1332,79 @@ tiny_string TextField::toHtmlText()
 
 	Locker l(*linemutex);
 	//Split text into paragraphs and wraps them into <p> tags
+	bool inParagraph=false;
+	pugi::xml_node node;
+	FormatText prevformat;
 	for (auto it = textlines.begin(); it != textlines.end(); it++)
 	{
 		FormatText& format = (*it).format;
-		pugi::xml_node node;
 		if (format.bullet)
 			node = doc.append_child("LI");
 		else
 		{
-			if (condenseWhite && (*it).text.empty() && textlines.size()>1)
+			if ((!this->multiline || !format.paragraph) && condenseWhite && (*it).text.empty() && textlines.size()>1)
 				continue;
-			node = doc.append_child("P");
-			switch (format.align)
+			if (!inParagraph || format.paragraph)
 			{
-				case FormatText::AS_NONE:
-				case FormatText::AS_LEFT:
-					node.append_attribute("ALIGN").set_value("LEFT");
-					break;
-				case FormatText::AS_CENTER:
-					node.append_attribute("ALIGN").set_value("CENTER");
-					break;
-				case FormatText::AS_RIGHT:
-					node.append_attribute("ALIGN").set_value("RIGHT");
-					break;
-				default:
-					break;
+				inParagraph=true;
+				node = doc.append_child("P");
+				switch (format.align)
+				{
+					case ALIGNMENT::AS_NONE:
+					case ALIGNMENT::AS_LEFT:
+						node.append_attribute("ALIGN").set_value("LEFT");
+						break;
+					case ALIGNMENT::AS_CENTER:
+						node.append_attribute("ALIGN").set_value("CENTER");
+						break;
+					case ALIGNMENT::AS_RIGHT:
+						node.append_attribute("ALIGN").set_value("RIGHT");
+						break;
+					default:
+						break;
+				}
 			}
 		}
-		node = node.append_child("FONT");
-		ostringstream ss;
-		ss << fontSize;
-		node.append_attribute("FACE").set_value(font.raw_buf());
-		node.append_attribute("SIZE").set_value(ss.str().c_str());
-		node.append_attribute("COLOR").set_value(textColor.toString().raw_buf());
-		node.append_attribute("LETTERSPACING").set_value(format.letterspacing);
-		node.append_attribute("KERNING").set_value(format.kerning);
-		if (format.bold)
-			node = node.append_child("B");
-		if (format.italic)
-			node = node.append_child("I");
-		if (format.underline)
-			node = node.append_child("U");
-		node.text().set((*it).text.raw_buf());
+		if (format.paragraph || (format.font != prevformat.font && !format.font.empty()))
+		{
+			node = node.append_child("FONT");
+			ostringstream ss;
+			ss << fontSize;
+			node.append_attribute("FACE").set_value(font.raw_buf());
+			node.append_attribute("SIZE").set_value(ss.str().c_str());
+			node.append_attribute("COLOR").set_value(textColor.toString().raw_buf());
+			node.append_attribute("LETTERSPACING").set_value(format.letterspacing);
+			node.append_attribute("KERNING").set_value(format.kerning);
+		}
+		if (format.bold != prevformat.bold)
+		{
+			if (format.bold)
+				node = node.append_child("B");
+			else
+				node = node.parent();
+		}
+		if (format.italic != prevformat.italic)
+		{
+			if (format.italic)
+				node = node.append_child("I");
+			else
+				node = node.parent();
+		}
+		if (format.underline != prevformat.underline)
+		{
+			if (format.underline)
+				node = node.append_child("U");
+			else
+				node = node.parent();
+		}
+		prevformat = format;
+		tiny_string t = node.text().as_string();
+		t += (*it).text;
+		node.text().set(t.raw_buf());
 	}
 
 	ostringstream buf;
-	if (condenseWhite)
-		doc.print(buf,"\t",pugi::format_raw);
-	else
-		doc.print(buf);
+	doc.print(buf,"\t",pugi::format_raw|pugi::format_no_escapes);
 	tiny_string ret = tiny_string(buf.str());
 	return ret;
 }
@@ -1397,17 +1421,12 @@ void TextField::setHtmlText(const tiny_string& html)
 			oldtext.push_back(textlines[i].text);
 		}
 	}
-	HtmlTextParser parser;
-	if (condenseWhite)
-	{
-		tiny_string processedHtml = compactHTMLWhiteSpace(html);
-		parser.parseTextAndFormating(processedHtml, this);
-	}
-	else
-	{
-		parser.parseTextAndFormating(html, this);
-	}
-	if (getLineCount()>1 && this->textlines.back().text.empty())
+	uint32_t swfversion = this->loadedFrom->version;
+	HtmlTextParser parser(swfversion,condenseWhite,multiline);
+	parser.parseTextAndFormating(html, this);
+	if(swfversion >= 8 && condenseWhite && isWhitespaceOnly(multiline))
+		clear();
+	if (!multiline && getLineCount()>1 && this->textlines.back().text.empty())
 	{
 		//more than one line and last line is empty => remove last line
 		this->textlines.pop_back();
@@ -1432,28 +1451,6 @@ std::string TextField::toDebugString() const
 	sprintf(buf,"%dx%d %5.2f %d/%d %s",textWidth,textHeight,autosizeposition,autoSize,align,font.raw_buf());
 	res += buf;
 	return res;
-}
-
-tiny_string TextField::compactHTMLWhiteSpace(const tiny_string& html)
-{
-	tiny_string compacted;
-	bool previousWasSpace = false;
-	for (CharIterator ch=html.begin(); ch!=html.end(); ++ch)
-	{
-		if (g_unichar_isspace(*ch))
-		{
-			if (!previousWasSpace)
-				compacted += ' ';
-			previousWasSpace = true;
-		}
-		else
-		{
-			compacted += *ch;
-			previousWasSpace = false;
-		}
-	}
-
-	return compacted;
 }
 
 void TextField::updateText(const tiny_string& new_text)
@@ -1908,13 +1905,27 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 	if (!textdata)
 		return;
 
-	tiny_string rooted = tiny_string("<root>") + html + tiny_string("</root>");
+	tiny_string rooted = html;
+	if (condenseWhite)
+	{
+		// according to ruffle swf >= 8 condenses whitespace across html tags, so we condense whitspace later
+		rooted = swfversion < 8 ? html.compactHTMLWhiteSpace(false) : html.trimLeft();
+	}
+	if (rooted.isWhiteSpaceOnly())
+	 	return;
 	uint32_t pos=0;
 	// ensure <br> tags are properly parsed
 	while ((pos = rooted.find("<br>",pos)) != tiny_string::npos)
 		rooted.replace_bytes(pos,4,"<br />");
 	pugi::xml_document doc;
-	pugi::xml_parse_result result = doc.load_buffer(rooted.raw_buf(),rooted.numBytes(), pugi::parse_default & ~pugi::parse_validate_closing_tags);
+	unsigned int options = pugi::parse_cdata | pugi::parse_escapes | pugi::parse_wconv_attribute | pugi::parse_eol | pugi::parse_fragment;
+	if (dest->multiline || swfversion>=8)
+	{
+		options |= pugi::parse_ws_pcdata;
+		if (swfversion<8)
+			options |= pugi::parse_ws_pcdata_single;
+	}
+	pugi::xml_parse_result result = doc.load_buffer(rooted.raw_buf(),rooted.numBytes(), options);
 	if (result.status == pugi::status_ok)
 	{
 		textdata->setText("");
@@ -1946,14 +1957,20 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	name = name.lowercase();
 	tiny_string v = node.value();
 	tiny_string newtext;
-	FormatText format = !formatStack.empty() ? formatStack.back() : FormatText {};
-	prevDepth = currentDepth;
-	prevName = name;
-	if (currentDepth < prevDepth && !skipFormatStackPushPop(prevName))
+	if (currentDepth < prevDepth)
 	{
 		for (int i = currentDepth; i < prevDepth; ++i)
 			formatStack.pop_back();
 	}
+	FormatText format;
+	if (formatStack.empty())
+	{
+		format.font = textdata->font;
+		format.fontColor = textdata->textColor;
+		format.align = textdata->align;
+		formatStack.push_back(format);
+	}
+	format = formatStack.back();
 	uint32_t index =v.find("&nbsp;");
 	while (index != tiny_string::npos)
 	{
@@ -1967,15 +1984,32 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			newtext += "\n";
 			
 	}
+	bool emptycontent=node.children().begin() == node.children().end();
 	if (name == "p")
 	{
+		format.paragraph=true;
 		if (textdata->multiline)
 		{
-			if (textdata->getLineCount() &&
+			if (swfversion < 8 &&  textdata->getLineCount() &&
 				!newtext.endsWith("\n"))
 				newtext += "\n";
-			if (node.children().begin() ==node.children().end()) // empty paragraph
+			if (swfversion >= 8 )
+			{
+				emptycontent=true;
+				for (auto it = node.children().begin(); it != node.children().end(); it++)
+				{
+					tiny_string val = it->value();
+					if (it->type()!= pugi::node_pcdata || !val.isWhiteSpaceOnly())
+					{
+						emptycontent=false;
+						break;
+					}
+				}
+			}
+			if (emptycontent) // empty paragraph
+			{
 				newtext += "\n";
+			}
 		}
 		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
 		{
@@ -1986,18 +2020,18 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			{
 				if (value == "left")
 				{
-					textdata->align = TextData::AS_LEFT;
-					format.align = FormatText::AS_LEFT;
+					textdata->align = ALIGNMENT::AS_LEFT;
+					format.align = ALIGNMENT::AS_LEFT;
 				}
 				if (value == "center")
 				{
-					textdata->align = TextData::AS_CENTER;
-					format.align = FormatText::AS_CENTER;
+					textdata->align = ALIGNMENT::AS_CENTER;
+					format.align = ALIGNMENT::AS_CENTER;
 				}
 				if (value == "right")
 				{
-					textdata->align = TextData::AS_RIGHT;
-					format.align = FormatText::AS_RIGHT;
+					textdata->align = ALIGNMENT::AS_RIGHT;
+					format.align = ALIGNMENT::AS_RIGHT;
 				}
 			}
 			else
@@ -2005,7 +2039,6 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 				LOG(LOG_NOT_IMPLEMENTED,"TextField html tag <"<<name<<">: unsupported attribute:"<<attrname);
 			}
 		}
-
 	}
 	else if (name == "font")
 	{
@@ -2057,30 +2090,31 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 		}
 	}
 	else if (name == "b")
-	{
 		format.bold = true;
-	}
 	else if (name == "i")
-	{
 		format.italic = true;
-	}
 	else if (name == "u")
-	{
 		format.underline = true;
-	}
 	else if (name == "li")
-	{
 		format.bullet = true;
-	}
 	else if (name == "img" || name == "span" || name == "textformat" ||
 		 name == "tab")
 	{
 		LOG(LOG_NOT_IMPLEMENTED, "Unsupported tag in TextField: " << name);
 	}
-	if (!skipFormatStackPushPop(name))
+	if ((swfversion < 8 || !emptycontent) && !skipFormatStackPushPop(name))
 		formatStack.push_back(format);
-	if (!newtext.empty() || textdata->multiline)
-		textdata->appendFormatText(newtext.raw_buf(), format);
+	if (swfversion < 8  && condenseWhite && newtext.removeWhitespace().empty())
+		newtext="";
+	if (!newtext.empty()
+		|| ((textdata->multiline || swfversion>=8)
+			&& (emptycontent
+				|| (name != "p" && name != "li"))))
+	{
+		textdata->appendFormatText(newtext.raw_buf(), format,swfversion,condenseWhite);
+	}
+	prevDepth = currentDepth;
+	prevName = name;
 	return true;
 }
 

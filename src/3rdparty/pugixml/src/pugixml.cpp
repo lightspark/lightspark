@@ -3281,6 +3281,9 @@ PUGI__NS_BEGIN
 
 			while (*s != 0)
 			{
+#ifdef PUGIXML_LIGHTSPARK_MODE
+				if (cursor == nullptr) PUGI__THROW_ERROR(status_end_element_mismatch, s);
+#endif
 				if (*s == '<')
 				{
 					++s;

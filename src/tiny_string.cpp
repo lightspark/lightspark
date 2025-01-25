@@ -1457,11 +1457,49 @@ tiny_string tiny_string::removeWhitespace() const
 	getTrimPositions(start,end);
 	return substr_bytes(start,end-start);
 }
+tiny_string tiny_string::trimLeft() const
+{
+	uint32_t start,end;
+	getTrimPositions(start,end);
+	return substr_bytes(start,UINT32_MAX);
+}
 bool tiny_string::isWhiteSpaceOnly() const
 {
 	uint32_t start,end;
 	getTrimPositions(start,end);
 	return start == end;
+}
+
+tiny_string tiny_string::compactHTMLWhiteSpace(bool trimleft, bool* hasNewline) const
+{
+	tiny_string compacted;
+	bool previousWasSpace = trimleft;
+
+	for (CharIterator ch=this->begin(); ch!=this->end(); ++ch)
+	{
+		if (*ch == ' ' || *ch =='\n' || *ch =='\t' || *ch =='\r')
+		{
+			if (hasNewline && (*ch =='\n' || *ch =='\r'))
+				*hasNewline=true;
+			if (!previousWasSpace)
+				compacted += ' ';
+			previousWasSpace = true;
+		}
+		else
+		{
+			compacted += *ch;
+			previousWasSpace = false;
+		}
+	}
+	return compacted;
+}
+
+bool tiny_string::endsWithHTMLWhitespace() const
+{
+	if (this->empty())
+		return false;
+	char ch = this->buf[this->numBytes()-1];
+	return ch == ' ' || ch =='\n' || ch =='\t' || ch =='\r';
 }
 
 tiny_string tiny_string::encodeNull() const

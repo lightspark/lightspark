@@ -850,10 +850,10 @@ void CairoPangoRenderer::executeDraw(cairo_t* cr)
 	int xpos=0;
 	switch(textData.autoSize)
 	{
-		case TextData::ALIGNMENT::AS_RIGHT:
+		case ALIGNMENT::AS_RIGHT:
 			xpos = textData.width-textData.textWidth;
 			break;
-		case TextData::ALIGNMENT::AS_CENTER:
+		case ALIGNMENT::AS_CENTER:
 			xpos = (textData.width-textData.textWidth)/2;
 			break;
 		default:
@@ -1178,9 +1178,9 @@ tiny_string TextData::getText(uint32_t line) const
 	{
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{
-			if (!text.empty())
-				text += "\n";
 			text += (*it).text;
+			if (this->multiline && (it->format.bullet || it->format.paragraph))
+				text += "\r";
 		}
 	}
 	else if (textlines.size() > line)
@@ -1193,15 +1193,54 @@ void TextData::setText(const char* text, bool firstlineonly)
 	textlines.clear();
 	appendText(text,firstlineonly);
 }
-void TextData::appendText(const char *text,bool firstlineonly,const FormatText* format)
+void TextData::appendText(const char *text,bool firstlineonly,const FormatText* format, uint32_t swfversion, bool condenseWhite)
 {
-	if (*text == 0x00)
+	if (!this->multiline &&  *text == 0x00)
 		return;
 	tiny_string t = text;
+	FormatText newformat;
+	if (format)
+		newformat=*format;
+	bool mergeline = false;
 	if (getLineCount() && !textlines.back().text.empty())
 	{
-		t = textlines.back().text + t;
-		textlines.pop_back();
+		mergeline=true;
+		if (format)
+		{
+			if (swfversion < 8)
+			{
+				mergeline = condenseWhite && !(
+					(this->multiline && (format->paragraph || format->bullet))
+					|| textlines.back().format.needsNewLine(format));
+			}
+			else
+			{
+				mergeline = (textlines.back().text.endsWithHTMLWhitespace() && t.isWhiteSpaceOnly())
+							|| !(this->multiline && (textlines.back().format.paragraph || textlines.back().format.bullet));
+				if ((!t.isWhiteSpaceOnly() || t.endsWith("\n"))  && !(textlines.back().format.paragraph || textlines.back().format.bullet))
+					mergeline &= !textlines.back().format.needsNewLine(format);
+			}
+		}
+		if (mergeline)
+		{
+			t = textlines.back().text + t;
+			newformat = textlines.back().format;
+			textlines.pop_back();
+		}
+	}
+	bool hasnewline=false;
+	if (swfversion >= 8 && condenseWhite)
+	{
+		tiny_string s = t.compactHTMLWhiteSpace(true,this->multiline ? &hasnewline : nullptr);
+		if (!t.isWhiteSpaceOnly())
+			t = s;
+		else if (this->multiline)
+		{
+			if (mergeline || newformat.bullet)
+				t = s;
+			else if (!hasnewline && !(newformat.paragraph || newformat.bullet))
+				return;
+		}
 	}
 	number_t w,h;
 	if (embeddedFont)
@@ -1213,8 +1252,7 @@ void TextData::appendText(const char *text,bool firstlineonly,const FormatText* 
 	do
 	{
 		textline line;
-		if (format != nullptr)
-			line.format = *format;
+		line.format = newformat;
 		line.autosizeposition=0;
 		line.textwidth=UINT32_MAX;
 		bool haslineterminator = t.getLine(index,line.text);
@@ -1223,19 +1261,34 @@ void TextData::appendText(const char *text,bool firstlineonly,const FormatText* 
 		{
 			// add an empty line if text ends with line terminator
 			textline line;
-			if (format != nullptr)
-				line.format = *format;
 			line.autosizeposition=0;
 			line.textwidth=UINT32_MAX;
 			textlines.push_back(line);
 		}
 	}
-	while (index != tiny_string::npos && !firstlineonly);
+	while (!condenseWhite && index != tiny_string::npos && !firstlineonly);
 }
 
-void TextData::appendFormatText(const char *text, const FormatText& format, bool firstlineonly)
+void TextData::appendFormatText(const char *text, const FormatText& format, uint32_t swfversion, bool condensewhite)
 {
-	appendText(text, firstlineonly, &format);
+	appendText(text, false, &format, swfversion, condensewhite);
+}
+
+void TextData::clear()
+{
+	textlines.clear();
+}
+
+bool TextData::isWhitespaceOnly(bool multiline) const
+{
+	for (auto it = textlines.begin(); it != textlines.end(); it++)
+	{
+		if (!it->text.isWhiteSpaceOnly())
+			return false;
+		if (multiline && (it->format.paragraph || it->format.bullet))
+		  	return false;
+	}
+	return true;
 }
 
 void TextData::getTextSizes(const tiny_string& text, number_t& tw, number_t& th)
@@ -1364,4 +1417,17 @@ InvalidateQueue::~InvalidateQueue()
 _NR<DisplayObject> InvalidateQueue::getCacheAsBitmapObject() const
 {
 	return cacheAsBitmapObject;
+}
+
+bool FormatText::needsNewLine(const FormatText* f) const
+{
+	return
+		bold!=f->bold ||
+		italic!=f->italic ||
+		underline!=f->underline ||
+		fontColor.toUInt()!=f->fontColor.toUInt() ||
+		fontSize!=f->fontSize ||
+		font!=f->font ||
+		kerning!=f->kerning ||
+		letterspacing!=f->letterspacing;
 }

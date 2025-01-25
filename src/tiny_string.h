@@ -340,10 +340,16 @@ public:
 		}
 	}
 	tiny_string toQuotedString() const;
-	// returns string that has whitespace characters removed at begin and end 
+	// returns string that has whitespace characters removed at begin and end
 	tiny_string removeWhitespace() const;
+	// returns string that has whitespace characters removed at begin
+	tiny_string trimLeft() const;
 	// returns true if the string is empty or only contains whitespace characters
 	bool isWhiteSpaceOnly() const;
+	// returns string that has consecutive whitespace characters compacted to one space only
+	tiny_string compactHTMLWhiteSpace(bool trimleft, bool* hasNewline=nullptr) const;
+	bool endsWithHTMLWhitespace() const;
+
 	// encodes all null bytes instring to xml notation ("&#x0;")
 	tiny_string encodeNull() const;
 };

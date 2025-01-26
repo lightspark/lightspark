@@ -5111,7 +5111,7 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 
 bool asAtomHandler::AVM1isEqualStrict(asAtom& a, asAtom& b, ASWorker* wrk)
 {
-	if (!isSameType(a, b) && (!isNumeric(a) || !isNumeric(b)))
+	if (!isSameType(a, b))
 		return false;
 
 	switch (getType(a))

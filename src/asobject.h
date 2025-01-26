@@ -490,7 +490,16 @@ public:
 			a.uintval & 0x7
 		);
 	}
-	static FORCE_INLINE bool isSameType(const asAtom& a, const asAtom& b) { return getType(a) == getType(b); }
+	static FORCE_INLINE bool isSameType(const asAtom& a, const asAtom& b)
+	{
+		return
+		(
+			isExactSameType(a, b) ||
+			(isNumeric(a) && isNumeric(b)) ||
+			(isString(a) && isString(b))
+		);
+	}
+	static FORCE_INLINE bool isExactSameType(const asAtom& a, const asAtom& b) { return getType(a) == getType(b); }
 	static FORCE_INLINE bool isConstructed(const asAtom& a);
 	static FORCE_INLINE bool isPrimitive(const asAtom& a);
 	static FORCE_INLINE bool isNumeric(const asAtom& a);

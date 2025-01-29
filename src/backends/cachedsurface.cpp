@@ -406,14 +406,14 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 		
 		ctxt.transformStack().push(Transform2D(maskstate->matrix, ColorTransformBase(),AS_BLENDMODE::BLENDMODE_NORMAL));
 		ctxt.pushMask();
-		state->mask->renderImpl(sys,ctxt);
+		state->mask->renderImpl(sys, ctxt, container);
 		ctxt.transformStack().pop();
 		ctxt.activateMask();
 		
 		// re-add maskee matrix
 		ctxt.transformStack().push(currenttransform);
 	}
-	renderImpl(sys,ctxt);
+	renderImpl(sys, ctxt, container);
 	if (maskstate)
 	{
 		ctxt.deactivateMask();
@@ -421,7 +421,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 	}
 	ctxt.transformStack().pop();
 }
-void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
+void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisplayObjectToBitmapContainer* container)
 {
 	if (state->scrollRect.Xmin || state->scrollRect.Xmax || state->scrollRect.Ymin || state->scrollRect.Ymax)
 	{
@@ -476,8 +476,11 @@ void CachedSurface::renderImpl(SystemState* sys,RenderContext& ctxt)
 					nvgTranslate(nvgctxt,0,sys->getRenderThread()->currentframebufferHeight);
 					nvgScale(nvgctxt,1.0,-1.0);
 				}
-				Vector2f offset = sys->getRenderThread()->getOffset();
-				nvgTranslate(nvgctxt,offset.x,offset.y);
+				if (container == nullptr)
+				{
+					Vector2f offset = sys->getRenderThread()->getOffset();
+					nvgTranslate(nvgctxt,offset.x,offset.y);
+				}
 			}
 			MATRIX m = ctxt.transformStack().transform().matrix;
 			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
@@ -882,7 +885,7 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	fe.filterborderx=(-state->bounds.min.x+state->maxfilterborder)*scale.x;
 	fe.filterbordery=(-state->bounds.min.y+state->maxfilterborder)*scale.y;
 	sys->getRenderThread()->filterframebufferstack.push_back(fe);
-	renderImpl(sys,ctxt);
+	renderImpl(sys, ctxt, nullptr);
 	// bind rendered filter source to g_tex_filter1
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
 	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(filterrenderbuffer);

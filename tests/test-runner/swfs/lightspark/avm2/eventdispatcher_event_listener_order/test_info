@@ -1,0 +1,5 @@
+#test
+name = "EventDispatcher event listener execution order";
+desc = "Tests the execution order of event listeners.";
+author = "mr b0nk 500";
+frames = 1;

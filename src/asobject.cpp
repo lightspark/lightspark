@@ -991,6 +991,11 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	multiname *retval = nullptr;
 	check();
 	assert(!cls || classdef->isSubClass(cls));
+	bool isAS3 = is<DisplayObject>() ? as<DisplayObject>()->needsActionScript3() :
+	(
+		sys->mainClip->needsActionScript3() &&
+		worker->needsActionScript3()
+	);
 	//NOTE: we assume that [gs]etSuper and [sg]etProperty correctly manipulate the cur_level (for getActualClass)
 	bool has_getter=false;
 	variable* obj=findSettable(name, &has_getter);
@@ -1018,7 +1023,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		if (obj && asAtomHandler::isInvalid(obj->setter))
 			obj=nullptr;
 	}
-	if (!obj && cls &&!getInstanceWorker()->needsActionScript3())
+	if (!obj && cls && !isAS3)
 	{
 		// we are in AVM1, look for setter in prototype
 		bool has_getter=false;
@@ -1051,7 +1056,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	{
 		if(has_getter)  // Is this a read-only property?
 		{
-			if (getInstanceWorker()->needsActionScript3())
+			if (isAS3)
 				createError<ReferenceError>(getInstanceWorker(), kConstWriteError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
 			else
 				ASATOM_DECREF(o);
@@ -1059,8 +1064,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		}
 
 		// Properties can not be added to a sealed class
-		if (cls && cls->isSealed &&
-				getInstanceWorker()->needsActionScript3()) // treat all AVM1 classes as dynamic
+		// NOTE: In AVM1, all classes are treated as if they were dynamic.
+		if (cls && cls->isSealed && isAS3)
 		{
 			ABCContext* c = nullptr;
 			c = wrk->currentCallContext ? wrk->currentCallContext->mi->context : nullptr;
@@ -4367,16 +4372,18 @@ bool asAtomHandler::AVM1add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 	{
 		double num1 = AVM1toNumber(val1, wrk->AVM1getSwfVersion());
 		double num2 = AVM1toNumber(val2, wrk->AVM1getSwfVersion());
-		auto ret = num1 + num2;
+		auto val = num1 + num2;
+		bool isInt = (val - std::floor(val)) == 0;
 		LOG_CALL("addN " << num1 << '+' << num2<<" "<<toDebugString(val1)<<" "<<toDebugString(val2));
 
+
 		// NOTE: Returning an integer here is an optimization.
-		if (forceint || (ret >= -(1 << 28) && ret < (1 << 28)))
-			setInt(a, wrk, ret);
-		else if (ret >= 0 && ret < (1 << 29))
-			setUInt(a, wrk, ret);
+		if (forceint || (isInt && val >= -(1 << 28) && val < (1 << 28)))
+			setInt(a, wrk, val);
+		else if (isInt && val >= 0 && val < (1 << 29))
+			setUInt(a, wrk, val);
 		else
-			ret = replaceNumber(a, wrk, ret);
+			ret = replaceNumber(a, wrk, val);
 	}
 
 	if (isRefCounted1)

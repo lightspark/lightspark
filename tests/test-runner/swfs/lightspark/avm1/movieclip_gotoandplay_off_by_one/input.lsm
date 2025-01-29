@@ -1,0 +1,18 @@
+#lsm
+#version 0
+
+header
+{
+	name = "AVM1 MovieClip gotoAndPlay off by one";
+	desc = "Tests that `gotoAndPlay` isn't off by a frame.";
+	author = "mr b0nk 500";
+	file = "test.swf";
+	md5 = "b043877ffc8ad389ed37fdc95ceed220";
+	sha1 = "b1fac798ff333921a96a17edfe3076d8b2cf507b";
+	frames = 4;
+	rerecords = 0;
+};
+
+// NOTE: The `MouseMove` event is needed here, because the traces would
+// never get printed if they weren't there.
+frame { Mmc { [320px, 180px], l }; };

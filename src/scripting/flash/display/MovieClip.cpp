@@ -387,8 +387,12 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 	for(uint32_t i=0;i<argslen;i+=2)
 	{
 		uint32_t frame=asAtomHandler::toInt(args[i]);
-		if (asAtomHandler::isNull(args[i+1])) // argument null seems to imply that the script currently attached to the frame is removed
+		// NOTE: `addFrameScript()` will remove the script asscociated
+		// with this frame, if the argument isn't a function.
+		if (!asAtomHandler::isFunction(args[i+1]))
 		{
+			LOG(LOG_ERROR,"Not a function");
+
 			auto it = th->frameScripts.find(frame);
 			if (it != th->frameScripts.end())
 			{
@@ -397,11 +401,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 			}
 			continue;
 		}
-		else if(!asAtomHandler::isFunction(args[i+1]))
-		{
-			LOG(LOG_ERROR,"Not a function");
-			return;
-		}
+
 		IFunction* func = asAtomHandler::as<IFunction>(args[i+1]);
 		func->incRef();
 		func->addStoredMember();
@@ -464,32 +464,29 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		sceneName = asAtomHandler::toString(args[1],getInstanceWorker());
 	}
 	uint32_t dest=FRAME_NOT_FOUND;
-	if(asAtomHandler::isString(args[0]))
-	{
-		tiny_string label = asAtomHandler::toString(args[0],getInstanceWorker());
-		dest=getFrameIdByLabel(label, sceneName);
-		if(dest==FRAME_NOT_FOUND)
-		{
-			number_t ret=0;
-			if (Integer::fromStringFlashCompatible(label.raw_buf(),ret,10,true))
-			{
-				// it seems that at least for AVM1 Adobe treats number strings as frame numbers
-				dest = getFrameIdByNumber(ret-1, sceneName);
-			}
-			if(dest==FRAME_NOT_FOUND)
-			{
-				dest=0;
-				LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getInstanceWorker())<<" in scene "<<sceneName<<" at movieclip "<<getTagID()<<" "<<this->state.FP);
-			}
-		}
-	}
-	else
+	if (asAtomHandler::isInteger(args[0]) || asAtomHandler::isUInteger(args[0]))
 	{
 		uint32_t inFrameNo = asAtomHandler::toInt(args[0]);
 		if(inFrameNo == 0)
 			inFrameNo = 1;
 
 		dest = getFrameIdByNumber(inFrameNo-1, sceneName);
+	}
+	else
+	{
+		tiny_string label = asAtomHandler::toString(args[0],getInstanceWorker());
+		number_t ret=0;
+
+		if (Integer::fromStringFlashCompatible(label.raw_buf(),ret,10,true))
+			dest = getFrameIdByNumber(ret-1, sceneName);
+		else
+			dest = getFrameIdByLabel(label, sceneName);
+
+		if(dest==FRAME_NOT_FOUND)
+		{
+			dest=0;
+			LOG(LOG_ERROR, (stop ? "gotoAndStop: label not found:" : "gotoAndPlay: label not found:") <<asAtomHandler::toString(args[0],getInstanceWorker())<<" in scene "<<sceneName<<" at movieclip "<<getTagID()<<" "<<this->state.FP);
+		}
 	}
 	if (dest!=FRAME_NOT_FOUND)
 	{
@@ -1672,7 +1669,7 @@ void MovieClip::advanceFrame(bool implicit)
 			lastFrameScriptExecuted=UINT32_MAX;
 		state.FP=state.next_FP;
 	}
-	if(!state.stop_FP && getFramesLoaded()>0)
+	if(implicit && !state.stop_FP && getFramesLoaded()>0)
 	{
 		if (hasFinishedLoading())
 			state.next_FP=imin(state.FP+1,getFramesLoaded()-1);

@@ -91,7 +91,7 @@ class CachedSurface: public RefCountable
 {
 private:
 	SurfaceState* state;
-	void renderImpl(SystemState* sys,RenderContext& ctxt);
+	void renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisplayObjectToBitmapContainer* container);
 	void defaultRender(RenderContext& ctxt);
 public:
 	CachedSurface():state(nullptr),tex(nullptr),isChunkOwner(true),isValid(false),isInitialized(false),wasUpdated(false),cachedFilterTextureID(UINT32_MAX)

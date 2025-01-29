@@ -811,7 +811,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		list<listener>& listeners=th->handlers[eventName];
 		const listener newListener(args[1], priority, useCapture, wrk);
 		//Ordered insertion
-		list<listener>::iterator insertionPoint=upper_bound(listeners.begin(),listeners.end(),newListener);
+		list<listener>::iterator insertionPoint=find(listeners.begin(),listeners.end(),newListener);
 		IFunction* newfunc = asAtomHandler::as<IFunction>(args[1]);
 		if (useWeakReference && !newfunc->inClass)
 			LOG(LOG_NOT_IMPLEMENTED,"EventDispatcher::addEventListener parameter useWeakReference is ignored");
@@ -825,7 +825,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		}
 		newfunc->incRef();
 		newfunc->addStoredMember();
-		listeners.insert(insertionPoint,newListener);
+		listeners.push_back(newListener);
 	}
 	th->eventListenerAdded(eventName);
 }
@@ -870,9 +870,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 				assert(listenerfunc != nullptr);
 				it = h->second.erase(it);
 				listenerfunc->removeStoredMember();
+				break;
 			}
-			else
-				++it;
 		}
 		if(h->second.empty()) //Remove the entry from the map
 			th->handlers.erase(h);

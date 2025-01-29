@@ -1306,7 +1306,7 @@ public:
 class CXFORMWITHALPHA
 {
 	friend std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v);
-private:
+protected:
 	int16_t RedMultTerm;
 	int16_t GreenMultTerm;
 	int16_t BlueMultTerm;
@@ -1326,6 +1326,16 @@ public:
 			   number_t& alphaOffset) const;
 	float transformedAlpha(float alpha) const;
 	bool isIdentity() const;
+	CXFORMWITHALPHA():
+		RedMultTerm(256),GreenMultTerm(256),BlueMultTerm(256),AlphaMultTerm(256),
+		RedAddTerm(0),GreenAddTerm(0),BlueAddTerm(0),AlphaAddTerm(0)
+	{
+	}
+};
+
+class CXFORM : public CXFORMWITHALPHA
+{
+	friend std::istream& operator>>(std::istream& stream, CXFORM& v);
 };
 
 class DROPSHADOWFILTER
@@ -1722,6 +1732,7 @@ std::istream& operator>>(std::istream& stream, SHAPERECORD& v);
 std::istream& operator>>(std::istream& stream, TEXTRECORD& v);
 std::istream& operator>>(std::istream& stream, MATRIX& v);
 std::istream& operator>>(std::istream& stream, CXFORMWITHALPHA& v);
+std::istream& operator>>(std::istream& stream, CXFORM& v);
 std::istream& operator>>(std::istream& stream, GLYPHENTRY& v);
 std::istream& operator>>(std::istream& stream, STRING& v);
 std::istream& operator>>(std::istream& stream, BUTTONRECORD& v);

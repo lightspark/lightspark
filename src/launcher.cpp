@@ -1391,13 +1391,13 @@ bool Launcher::start()
 			ImGui::SameLine();
 			if (ImGui::Button("\uE067")) // folder icon
 			{
-				char const * lFilterPatterns[1] = { "*.swf" };
+				char const * lFilterPatterns[2] = { "*.swf", "*.spl" };
 				char* lTheOpenFileName = tinyfd_openFileDialog(
-					"load swf file",
+					"load flash file",
 					nullptr,
-					1,
+					2,
 					lFilterPatterns,
-					"swf files",
+					"flash files",
 					0);
 				if (lTheOpenFileName)
 				{

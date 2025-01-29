@@ -1197,6 +1197,43 @@ std::istream& lightspark::operator>>(std::istream& stream, CXFORMWITHALPHA& v)
 	return stream;
 }
 
+std::istream& lightspark::operator>>(std::istream& stream, CXFORM& v)
+{
+	BitStream bs(stream);
+	bool HasAddTerms=UB(1,bs);
+	bool HasMultTerms=UB(1,bs);
+	uint8_t NBits=UB(4,bs);
+	if(HasMultTerms)
+	{
+		v.RedMultTerm=SB(NBits,bs);
+		v.GreenMultTerm=SB(NBits,bs);
+		v.BlueMultTerm=SB(NBits,bs);
+		v.AlphaMultTerm=256;
+	}
+	else
+	{
+		v.RedMultTerm = 256;
+		v.GreenMultTerm = 256;
+		v.BlueMultTerm = 256;
+		v.AlphaMultTerm = 256;
+	}
+	if(HasAddTerms)
+	{
+		v.RedAddTerm=SB(NBits,bs);
+		v.GreenAddTerm=SB(NBits,bs);
+		v.BlueAddTerm=SB(NBits,bs);
+		v.AlphaAddTerm=0;
+	}
+	else
+	{
+		v.RedAddTerm=0;
+		v.GreenAddTerm=0;
+		v.BlueAddTerm=0;
+		v.AlphaAddTerm=0;
+	}
+	return stream;
+}
+
 std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 {
 	BitStream bs(stream);

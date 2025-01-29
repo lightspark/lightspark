@@ -323,16 +323,27 @@ public:
 	TAGTYPE getType() const override { return SHOW_TAG; }
 };
 
-/*class PlaceObjectTag: public Tag
+class PlaceObjectTag: public DisplayListTag
 {
 private:
 	UI16_SWF CharacterId;
 	UI16_SWF Depth;
 	MATRIX Matrix;
-	CXFORM ColorTransform;
+	CXFORM colorTransform;
+	bool hasColorTransform;
 public:
 	PlaceObjectTag(RECORDHEADER h, std::istream& in);
-};*/
+	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+};
+
+class RemoveObjectTag: public DisplayListTag
+{
+private:
+	UI16_SWF Depth;
+public:
+	RemoveObjectTag(RECORDHEADER h, std::istream& in);
+	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+};
 
 class RemoveObject2Tag: public DisplayListTag
 {

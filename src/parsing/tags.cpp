@@ -107,8 +107,12 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 			case 2:
 				ret=new DefineShapeTag(h,f,root);
 				break;
-				//	case 4:
-				//		ret=new PlaceObjectTag(h,f);
+			case 4:
+				ret=new PlaceObjectTag(h,f);
+				break;
+			case 5:
+				ret=new RemoveObjectTag(h,f);
+				break;
 			case 6:
 				ret=new DefineBitsTag(h,f,root);
 				break;
@@ -332,6 +336,18 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 	}
 
 	return ret;
+}
+
+RemoveObjectTag::RemoveObjectTag(RECORDHEADER h, istream &in):DisplayListTag(h)
+{
+	UI16_SWF CharacterID;
+	in >> CharacterID >> Depth;
+	LOG(LOG_TRACE,"RemoveObject Depth: " << Depth<<" char:"<<CharacterID);
+}
+void RemoveObjectTag::execute(DisplayObjectContainer *parent, bool inskipping)
+{
+	parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
+	parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
 }
 
 RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
@@ -1822,6 +1838,69 @@ DefineMorphShape2Tag::DefineMorphShape2Tag(RECORDHEADER h, std::istream& in, Roo
 ShowFrameTag::ShowFrameTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,"ShowFrame");
+}
+
+PlaceObjectTag::PlaceObjectTag(RECORDHEADER h, istream &in):DisplayListTag(h)
+{
+	uint32_t startpos = in.tellg();
+	in >> CharacterId;
+	LOG(LOG_TRACE,"PlaceObject "<<CharacterId);
+	in >> Depth;
+	in >> Matrix;
+	hasColorTransform = in.tellg() < startpos+h.getLength();
+	if (hasColorTransform)
+		in >> colorTransform;
+}
+void PlaceObjectTag::execute(DisplayObjectContainer *parent, bool inskipping)
+{
+	if (parent->hasLegacyChildAt(LEGACY_DEPTH_START+Depth))
+	{
+		parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
+		parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
+	}
+	LOG(LOG_TRACE,"Placing ID " << CharacterId);
+	DictionaryTag* placedTag = nullptr;
+	ApplicationDomain* appDomain = parent->loadedFrom;
+	if (appDomain)
+		placedTag=appDomain->dictionaryLookup(CharacterId);
+	if(placedTag==nullptr)
+	{
+		LOG(LOG_ERROR,"no tag to place:"<<CharacterId);
+		return;
+	}
+	placedTag->loadedFrom->checkBinding(placedTag);
+	DisplayObject *toAdd = nullptr;
+	// check if we can reuse the DisplayObject from the last declared frame (only relevant if we are moving backwards in the timeline)
+	toAdd = parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth);
+	if (toAdd)
+		toAdd->incRef();
+	if (!toAdd)
+	{
+		//We can create the object right away
+		ASObject* instance = placedTag->instance();
+		if (!placedTag->bindedTo)
+			instance->setIsInitialized();
+		if (instance->is<BitmapData>())
+			toAdd = parent->loadedFrom->usesActionScript3 ?
+						Class<Bitmap>::getInstanceS(instance->getInstanceWorker(),_R<BitmapData>(instance->as<BitmapData>())) :
+						Class<AVM1Bitmap>::getInstanceS(instance->getInstanceWorker(),_R<AVM1BitmapData>(instance->as<AVM1BitmapData>()));
+		else
+			toAdd=dynamic_cast<DisplayObject*>(instance);
+		if(!toAdd && instance)
+		{
+			LOG(LOG_NOT_IMPLEMENTED, "Adding non-DisplayObject to display list");
+			instance->decRef();
+			return;
+		}
+	}
+	toAdd->loadedFrom=placedTag->loadedFrom;
+	toAdd->setLegacyMatrix(this->Matrix);
+	toAdd->legacy = true;
+	if (toAdd->placeFrame == UINT32_MAX && parent->is<MovieClip>())
+		toAdd->placeFrame = parent->as<MovieClip>()->state.FP;
+	if (hasColorTransform)
+		toAdd->colorTransform= _MR(Class<ColorTransform>::getInstanceS(parent->getInstanceWorker(),colorTransform));
+	parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd,inskipping);
 }
 
 void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const

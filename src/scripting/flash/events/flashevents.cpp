@@ -872,6 +872,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 				listenerfunc->removeStoredMember();
 				break;
 			}
+			else
+				++it;
 		}
 		if(h->second.empty()) //Remove the entry from the map
 			th->handlers.erase(h);

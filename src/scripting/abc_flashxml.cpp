@@ -28,4 +28,5 @@ void ABCVm::registerClassesFlashXML(Global* builtin)
 {
 	builtin->registerBuiltin("XMLDocument","flash.xml",Class<XMLDocument>::getRef(m_sys));
 	builtin->registerBuiltin("XMLNode","flash.xml",Class<XMLNode>::getRef(m_sys));
+	builtin->registerBuiltin("XMLNodeType","flash.xml",Class<XMLNodeType>::getRef(m_sys));
 }

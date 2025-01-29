@@ -56,7 +56,8 @@ void XMLNode::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
 	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("attributes","",c->getSystemState()->getBuiltinFunction(attributes,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attributes","",c->getSystemState()->getBuiltinFunction(get_attributes,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("attributes","",c->getSystemState()->getBuiltinFunction(set_attributes),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("childNodes","",c->getSystemState()->getBuiltinFunction(XMLNode::childNodes,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("firstChild","",c->getSystemState()->getBuiltinFunction(XMLNode::firstChild,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("lastChild","",c->getSystemState()->getBuiltinFunction(lastChild,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
@@ -145,15 +146,20 @@ ASFUNCTIONBODY_ATOM(XMLNode,_constructor)
 	else
 		th->root = Class<AVM1XMLDocument>::getInstanceS(wrk);
 	th->root->addStoredMember();
-	if(type==1 || type==3)
+	switch (type)
 	{
-		if (!value.empty() || type==3)
-		{
-			th->node = th->root->xmldoc.root().append_child(value.raw_buf());
-		}
+		case 1:
+			if (!value.empty())
+				th->node = th->root->xmldoc.root().append_child(value.raw_buf());
+			break;
+		case 3:
+			th->node = th->root->xmldoc.root().append_child(pugi::node_pcdata);
+			th->node.set_value(value.raw_buf());
+			break;
+		default:
+			LOG(LOG_ERROR,"invalid type for XMLNode constructor:"<<type);
+			break;
 	}
-	else
-		LOG(LOG_ERROR,"invalid type for XMLNode constructor:"<<type);
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,firstChild)
@@ -215,7 +221,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,childNodes)
 }
 
 
-ASFUNCTIONBODY_ATOM(XMLNode,attributes)
+ASFUNCTIONBODY_ATOM(XMLNode,get_attributes)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
 	assert_and_throw(argslen==0);
@@ -230,6 +236,29 @@ ASFUNCTIONBODY_ATOM(XMLNode,attributes)
 		uint32_t attrName = wrk->getSystemState()->getUniqueStringId(it->name());
 		asAtom  attrValue = asAtomHandler::fromString(wrk->getSystemState(),it->value());
 		res->setDynamicVariableNoCheck(attrName,attrValue,false,!wrk->needsActionScript3());
+	}
+}
+ASFUNCTIONBODY_ATOM(XMLNode,set_attributes)
+{
+	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
+	_NR<ASObject> attributes;
+	ARG_CHECK(ARG_UNPACK(attributes));
+	if(th->node.type()==pugi::node_null)
+		return;
+	if (attributes.isNull())
+		th->node.remove_attributes();
+	else
+	{
+		uint32_t i = 0;
+		while ((i=attributes->nextNameIndex(i)) != 0)
+		{
+			bool dummy;
+			uint32_t nameID = attributes->getNameAt(i-1,dummy);
+			asAtom v = asAtomHandler::invalidAtom;
+			attributes->getValueAt(v,i-1);
+			pugi::xml_attribute attr = th->node.append_attribute(wrk->getSystemState()->getStringFromUniqueId(nameID).raw_buf());
+			attr.set_value(asAtomHandler::toString(v,wrk).raw_buf());
+		}
 	}
 }
 
@@ -432,6 +461,8 @@ ASFUNCTIONBODY_ATOM(XMLNode,nextSibling)
 		sibling = th->node.next_sibling();
 	if (sibling.type()!=pugi::node_null)
 		ret = asAtomHandler::fromObject(wrk->needsActionScript3() ? Class<XMLNode>::getInstanceS(wrk,th->root, sibling,th->parent) : Class<AVM1XMLNode>::getInstanceS(wrk,th->root, sibling,th->parent));
+	else
+		ret = asAtomHandler::nullAtom;
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,previousSibling)
@@ -445,6 +476,8 @@ ASFUNCTIONBODY_ATOM(XMLNode,previousSibling)
 		sibling = th->node.previous_sibling();
 	if (sibling.type()!=pugi::node_null)
 		ret = asAtomHandler::fromObject(wrk->needsActionScript3() ? Class<XMLNode>::getInstanceS(wrk,th->root, sibling,th->parent) : Class<AVM1XMLNode>::getInstanceS(wrk,th->root, sibling,th->parent));
+	else
+		ret = asAtomHandler::nullAtom;
 }
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeType)
 {
@@ -525,7 +558,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,_getLocalName)
 	{
 		localname = localname.substr(pos+1,UINT32_MAX);
 	}
-	else if (!wrk->needsActionScript3() && localname.empty())
+	else if (localname.empty())
 	{
 		ret = asAtomHandler::nullAtom;
 		return;
@@ -670,7 +703,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,prefix)
 
 	tiny_string prefix = th->getPrefix();
 	tiny_string name = th->node.name();
-	if (!wrk->needsActionScript3() && name.empty())
+	if (name.empty())
 	{
 		ret = asAtomHandler::nullAtom;
 		return;
@@ -688,6 +721,9 @@ ASFUNCTIONBODY_ATOM(XMLNode,namespaceURI)
 	tiny_string uri;
 	if (th->getNamespaceURI(th->node,prefix,uri))
 		ret = asAtomHandler::fromString(wrk->getSystemState(),uri);
+	else
+		asAtomHandler::setNull(ret);
+
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,getNamespaceForPrefix)
@@ -968,4 +1004,10 @@ ASFUNCTIONBODY_ATOM(XMLDocument,_xmlDecl)
 		ret = asAtomHandler::undefinedAtom;
 	else
 		ret = asAtomHandler::fromString(wrk->getSystemState(),th->xmldecl);
+}
+void XMLNodeType::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
+	c->setVariableAtomByQName("ELEMENT_NODE",nsNameAndKind(),asAtomHandler::fromUInt(1),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("TEXT_NODE",nsNameAndKind(),asAtomHandler::fromUInt(3),CONSTANT_TRAIT);
 }

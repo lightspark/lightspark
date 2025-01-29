@@ -1876,7 +1876,12 @@ PUGI__NS_BEGIN
 	{
 		3,  3,  3,  3,  3,  3,  3,  3,     3,  2,  2,  3,  3,  2,  3,  3,     // 0-15
 		3,  3,  3,  3,  3,  3,  3,  3,     3,  3,  3,  3,  3,  3,  3,  3,     // 16-31
+// flash xml needs escaped single/double quotes in pcdata
+#ifdef PUGIXML_LIGHTSPARK_MODE
+		0,  0,  3,  0,  0,  0,  3,  3,     0,  0,  0,  0,  0, 16, 16,  0,     // 32-47
+#else
 		0,  0,  2,  0,  0,  0,  3,  2,     0,  0,  0,  0,  0, 16, 16,  0,     // 32-47
+#endif
 		24, 24, 24, 24, 24, 24, 24, 24,    24, 24, 0,  0,  3,  0,  1,  0,     // 48-63
 
 		0,  20, 20, 20, 20, 20, 20, 20,    20, 20, 20, 20, 20, 20, 20, 20,    // 64-79
@@ -3997,17 +4002,25 @@ PUGI__NS_BEGIN
 					++s;
 					break;
 				case '"':
+#ifdef PUGIXML_LIGHTSPARK_MODE // flash always escapes single/double quotes
+					writer.write('&', 'q', 'u', 'o', 't', ';');
+#else
 					if (flags & format_attribute_single_quote)
 						writer.write('"');
 					else
 						writer.write('&', 'q', 'u', 'o', 't', ';');
+#endif
 					++s;
 					break;
 				case '\'':
+#ifdef PUGIXML_LIGHTSPARK_MODE // flash always escapes single/double quotes
+					writer.write('&', 'a', 'p', 'o', 's', ';');
+#else
 					if (flags & format_attribute_single_quote)
 						writer.write('&', 'a', 'p', 'o', 's', ';');
 					else
 						writer.write('\'');
+#endif
 					++s;
 					break;
 				default: // s is not a usual symbol

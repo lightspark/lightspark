@@ -442,6 +442,7 @@ REGISTER_CLASS_NAME(GameInputDevice,"flash.ui")
 //XML
 REGISTER_CLASS_NAME(XMLDocument,"flash.xml")
 REGISTER_CLASS_NAME(XMLNode,"flash.xml")
+REGISTER_CLASS_NAME(XMLNodeType,"flash.xml")
 
 //avmplus
 REGISTER_CLASS_NAME(avmplusFile,"avmplus")

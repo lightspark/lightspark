@@ -204,7 +204,8 @@ void AVM1XMLNode::sinit(Class_base* c)
 	CLASS_SETUP(c, XMLNode, _constructor, CLASS_SEALED);
 	c->isReusable = true;
 	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setDeclaredMethodByQName("attributes","",c->getSystemState()->getBuiltinFunction(attributes,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("attributes","",c->getSystemState()->getBuiltinFunction(get_attributes,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("attributes","",c->getSystemState()->getBuiltinFunction(set_attributes),SETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("childNodes","",c->getSystemState()->getBuiltinFunction(XMLNode::childNodes,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("firstChild","",c->getSystemState()->getBuiltinFunction(XMLNode::firstChild,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("lastChild","",c->getSystemState()->getBuiltinFunction(lastChild,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);

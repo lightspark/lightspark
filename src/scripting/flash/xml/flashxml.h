@@ -64,7 +64,8 @@ public:
 	ASFUNCTION_ATOM(firstChild);
 	ASFUNCTION_ATOM(lastChild);
 	ASFUNCTION_ATOM(childNodes);
-	ASFUNCTION_ATOM(attributes);
+	ASFUNCTION_ATOM(get_attributes);
+	ASFUNCTION_ATOM(set_attributes);
 	ASFUNCTION_ATOM(_getNodeType);
 	ASFUNCTION_ATOM(_getNodeName);
 	ASFUNCTION_ATOM(_setNodeName);
@@ -122,6 +123,12 @@ public:
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk) override;
+};
+class XMLNodeType: public ASObject
+{
+public:
+	XMLNodeType(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
+	static void sinit(Class_base* c);
 };
 
 }

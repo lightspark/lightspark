@@ -1334,8 +1334,17 @@ bool Launcher::start()
 		ImGui_ImplOpenGL2_NewFrame();
 		ImGui_ImplSDL2_NewFrame();
 		ImGui::NewFrame();
-		ImGui::SetNextWindowSize(io.DisplaySize);
-		ImGui::SetNextWindowPos(ImVec2(0,0));
+		if (inentryediting)
+		{
+			ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x-20,io.DisplaySize.y-20));
+			ImGui::SetNextWindowPos(ImVec2(10,10));
+		}
+		else
+		{
+			ImGui::SetNextWindowSize(io.DisplaySize);
+			ImGui::SetNextWindowPos(ImVec2(0,0));
+		}
+
 		ImGui::Begin("Lightspark Launcher",nullptr,ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize);
 		
 		int entrycount=0;
@@ -1379,9 +1388,6 @@ bool Launcher::start()
 		else
 		{
 			// edit entry
-			ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x-20,io.DisplaySize.y-20));
-			ImGui::SetNextWindowPos(ImVec2(10,10));
-			ImGui::Begin("edit entry",nullptr,ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize);
 			ImGui::Text("Name");
 			ImGui::SameLine();
 			ImGui::InputText("##name",entryname,PATH_MAX);
@@ -1418,33 +1424,34 @@ bool Launcher::start()
 			if (ImGui::Button("save"))
 			{
 				tiny_string fname(swfpath);
-				if (fname.empty()) // empty swfpath is not allowed
-					continue;
-				fname =itcurrent->attribute("file").as_string();
-				bool bNeedsNewEntry = fname.empty();
-				itcurrent->remove_attributes();
-				itcurrent->append_attribute("name").set_value(entryname);
-				itcurrent->append_attribute("file").set_value(swfpath);
-				itcurrent->append_attribute("url").set_value(url);
-				itcurrent->append_attribute("air").set_value(bAIR);
-				itcurrent->append_attribute("network").set_value(bNetwork);
-				itcurrent->append_attribute("filesystem").set_value(bFilesystem);
-				inentryediting=false;
-				fname =entrylistnode.last_child().attribute("file").as_string();
-				if (fname.empty())
+				if (!fname.empty()) // empty swfpath is not allowed
 				{
-					// remove last child (it is the empty entry)
-					entrylistnode.remove_child(entrylistnode.last_child());
-					bNeedsNewEntry=true;
-				}
-				// save changed list
-				settingsdoc.save_file(settingsfile.c_str());
-				if (bNeedsNewEntry)
-				{
-					// add new entry at end after saving the current list
-					pugi::xml_node newentry = entrylistnode.append_child("entry");
-					pugi::xml_attribute	attr = newentry.append_attribute("name");
-					attr.set_value("<empty>");
+					fname =itcurrent->attribute("file").as_string();
+					bool bNeedsNewEntry = fname.empty();
+					itcurrent->remove_attributes();
+					itcurrent->append_attribute("name").set_value(entryname);
+					itcurrent->append_attribute("file").set_value(swfpath);
+					itcurrent->append_attribute("url").set_value(url);
+					itcurrent->append_attribute("air").set_value(bAIR);
+					itcurrent->append_attribute("network").set_value(bNetwork);
+					itcurrent->append_attribute("filesystem").set_value(bFilesystem);
+					inentryediting=false;
+					fname =entrylistnode.last_child().attribute("file").as_string();
+					if (fname.empty())
+					{
+						// remove last child (it is the empty entry)
+						entrylistnode.remove_child(entrylistnode.last_child());
+						bNeedsNewEntry=true;
+					}
+					// save changed list
+					settingsdoc.save_file(settingsfile.c_str());
+					if (bNeedsNewEntry)
+					{
+						// add new entry at end after saving the current list
+						pugi::xml_node newentry = entrylistnode.append_child("entry");
+						pugi::xml_attribute	attr = newentry.append_attribute("name");
+						attr.set_value("<empty>");
+					}
 				}
 			}
 			ImGui::SameLine();
@@ -1470,14 +1477,13 @@ bool Launcher::start()
 			{
 				inentryediting=false;
 			}
-			ImGui::End();
 		}
 		ImGui::End();
-	
+
 		// Rendering
 		ImGui::Render();
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-		glClearColor(1.0,1.0,1.0,1.0);
+		glClearColor(0.0,0.0,0.0,1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
 		SDL_GL_SwapWindow(window);

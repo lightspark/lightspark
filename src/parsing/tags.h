@@ -506,6 +506,7 @@ public:
 	virtual int32_t getLeading() const =0;
 	virtual int32_t getAscent() const =0;
 	virtual int32_t getDescent() const =0;
+	virtual bool hasKerning() const =0;
 };
 
 class DefineFontTag: public FontTag
@@ -522,6 +523,7 @@ public:
 	int32_t getLeading() const override { return 1024; }
 	int32_t getAscent() const override { return 1024; }
 	int32_t getDescent() const override { return 1024; }
+	bool hasKerning() const override { return false; }
 };
 
 class DefineFontInfoTag: public Tag
@@ -558,6 +560,7 @@ public:
 	int32_t getLeading() const override { return FontLeading; }
 	int32_t getAscent() const override { return FontAscent; }
 	int32_t getDescent() const override { return FontDescent; }
+	bool hasKerning() const override { return KerningCount; }
 };
 
 class DefineFont3Tag: public FontTag
@@ -587,6 +590,7 @@ public:
 	int32_t getLeading() const override { return FontLeading/20; }
 	int32_t getAscent() const override { return FontAscent/20; }
 	int32_t getDescent() const override { return FontDescent/20; }
+	bool hasKerning() const override { return KerningCount; }
 };
 
 class DefineFont4Tag : public DictionaryTag

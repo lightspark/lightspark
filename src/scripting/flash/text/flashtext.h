@@ -88,13 +88,14 @@ private:
 		uint32_t swfversion;
 		bool condenseWhite;
 		bool multiline;
+		ApplicationDomain* appdomain;
 
 		uint32_t parseFontSize(const char *s, uint32_t currentFontSize);
 		bool for_each(pugi::xml_node& node);
 	public:
-		HtmlTextParser(uint32_t _swfversion, bool _condenseWhite,bool _multiline)
+		HtmlTextParser(uint32_t _swfversion, bool _condenseWhite,bool _multiline, ApplicationDomain* _appdomain)
 			: textdata(nullptr), formatStack(), prevDepth(-1)
-		,swfversion(_swfversion),condenseWhite(_condenseWhite),multiline(_multiline)
+		,swfversion(_swfversion),condenseWhite(_condenseWhite),multiline(_multiline),appdomain(_appdomain)
 		{}
 		//Stores the text and formating into a TextData object
 		void parseTextAndFormating(const tiny_string& html, TextData *dest);

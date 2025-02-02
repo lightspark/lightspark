@@ -1998,6 +1998,20 @@ tiny_string RGB::toString() const
 	return ss.str();
 }
 
+tiny_string RGBA::toString(bool includeAlpha) const
+{
+	ostringstream ss;
+	ss << "#" << std::hex << std::setfill('0') <<
+		std::setw(2) << (int)Red <<
+		std::setw(2) << (int)Green <<
+		std::setw(2) << (int)Blue;
+	if (includeAlpha)
+		ss <<std::setw(2) << (int)Alpha;
+
+	return ss.str();
+}
+
+
 std::istream& lightspark::operator>>(std::istream& stream, SOUNDINFO& v)
 {
 	BitStream bs(stream);

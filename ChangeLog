@@ -2,6 +2,8 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* improved support for html code in TextFields
+	* implement support for PlaceObjectTag/RemoveObjectTag (needed for SWF version 1 and 2)
 	* remove command line flag --avmplus
 	* implement support for nellymoser audio codec
 	* use user data directory instead of cache directory to store user data (like savegames or settings)

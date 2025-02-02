@@ -417,23 +417,31 @@ struct FormatText
 	bool underline {false};
 	bool paragraph {false};
 	ALIGNMENT align {AS_NONE};
-	RGB fontColor {0x000000};
-	uint32_t fontSize;
+	RGBA fontColor {0x000000,0}; // use alpha 0 as "not set" indicator
+	uint32_t fontSize {0};
 	tiny_string font;
 	tiny_string url;
 	tiny_string target;
 	number_t kerning {0};
 	number_t letterspacing {0};
+	tiny_string blockindent;
+	tiny_string indent;
+	tiny_string leading;
+	tiny_string leftmargin;
+	tiny_string rightmargin;
+	tiny_string tabstops;
+	uint32_t level {0};
 	bool needsNewLine(const FormatText* f) const;
 };
 
 struct textline
 {
 	tiny_string text;
-	number_t autosizeposition;
-	uint32_t textwidth;
-	uint32_t height;
+	number_t autosizeposition {0};
+	uint32_t textwidth {0};
+	uint32_t height {0};
 	FormatText format;
+	bool needsnewline {false};
 };
 
 class FontTag;
@@ -444,11 +452,12 @@ protected:
 	std::vector<textline> textlines;
 public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
-	TextData() : width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), backgroundColor(0xFFFFFF),borderColor(0x000000),
+	TextData() : swfversion(0), width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), backgroundColor(0xFFFFFF),borderColor(0x000000),
 		background(false),border(false), multiline(false),isBold(false),isItalic(false),wordWrap(false),caretblinkstate(false),isPassword(false),
 		autoSize(AS_NONE),align(AS_NONE), fontSize(12),
 		embeddedFont(nullptr)
 	{}
+	uint32_t swfversion;
 	uint32_t width;
 	uint32_t height;
 	int32_t leading;
@@ -483,6 +492,7 @@ public:
 	bool TextIsEqual(const std::vector<tiny_string>& lines) const;
 	uint32_t getLineCount() const { return textlines.size(); }
 	FontTag* checkEmbeddedFont(DisplayObject* d);
+	void checklastline(bool needsadditionalline);
 };
 
 class LineData {

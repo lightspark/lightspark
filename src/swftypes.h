@@ -677,6 +677,7 @@ public:
 		ret/=255;
 		return ret;
 	}
+	tiny_string toString(bool includeAlpha) const;
 };
 
 typedef UI8 LANGCODE;

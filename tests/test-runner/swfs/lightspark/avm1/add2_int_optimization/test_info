@@ -1,0 +1,5 @@
+#test
+name = "ActionAdd2 int optimization";
+desc = "Tests that `ActionAdd2`'s int optimization works properly.";
+author = "mr b0nk 500";
+frames = 1;

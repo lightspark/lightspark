@@ -1,0 +1,5 @@
+#test
+name = "ActionEquals2 with similar types";
+desc = "Tests `ActionEquals2`'s handling of types that are similar, but not exactly the same.";
+author = "mr b0nk 500";
+frames = 1;

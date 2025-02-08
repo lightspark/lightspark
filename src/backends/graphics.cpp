@@ -1179,7 +1179,12 @@ tiny_string TextData::getText(uint32_t line) const
 		for (auto it = textlines.begin(); it != textlines.end(); it++)
 		{
 			text += (*it).text;
-			if ((this->swfversion < 7 && it->needsnewline)
+			if (it->linebreaks)
+			{
+				for (uint32_t i = 0; i < it->linebreaks; i++)
+					text += "\r";
+			}
+			else if ((this->swfversion < 7 && it->needsnewline)
 				|| (this->swfversion >= 7 && this->multiline && it->needsnewline))
 				text += "\r";
 		}
@@ -1194,7 +1199,7 @@ void TextData::setText(const char* text, bool firstlineonly)
 	textlines.clear();
 	appendText(text,firstlineonly);
 }
-void TextData::appendText(const char *text,bool firstlineonly,const FormatText* format, uint32_t swfversion, bool condenseWhite)
+void TextData::appendText(const char *text, bool firstlineonly, const FormatText* format, uint32_t swfversion, bool condenseWhite)
 {
 	if (!this->multiline && (swfversion >= 7) && *text == 0x00)
 		return;
@@ -1203,7 +1208,7 @@ void TextData::appendText(const char *text,bool firstlineonly,const FormatText* 
 	if (format)
 		newformat=*format;
 	bool mergeline = false;
-	if (getLineCount() && !textlines.back().text.empty())
+	if (getLineCount())
 	{
 		mergeline=true;
 		if (format)
@@ -1212,14 +1217,14 @@ void TextData::appendText(const char *text,bool firstlineonly,const FormatText* 
 			{
 				mergeline = condenseWhite && !(
 								(this->multiline && (format->paragraph || format->bullet))
-								|| textlines.back().format.needsNewLine(format));
+								|| textlines.back().format.paramsChanged(format));
 			}
 			else
 			{
 				mergeline = (textlines.back().text.endsWithHTMLWhitespace() && t.isWhiteSpaceOnly())
 							|| !(this->multiline && (textlines.back().format.paragraph || textlines.back().format.bullet));
 				if ((!t.isWhiteSpaceOnly() || t.endsWith("\n")) && !(textlines.back().format.paragraph || textlines.back().format.bullet))
-					mergeline &= !textlines.back().format.needsNewLine(format);
+					mergeline &= !textlines.back().format.paramsChanged(format);
 			}
 		}
 		if (mergeline)
@@ -1267,6 +1272,32 @@ void TextData::appendText(const char *text,bool firstlineonly,const FormatText* 
 void TextData::appendFormatText(const char *text, const FormatText& format, uint32_t swfversion, bool condensewhite)
 {
 	appendText(text, false, &format, swfversion, condensewhite);
+}
+
+void TextData::appendLineBreak(bool needsadditionalbreak, bool emptyline,FormatText format)
+{
+	if (!emptyline)
+	{
+		if (!textlines.empty())
+		{
+			textlines.back().linebreaks++;
+			needsadditionalbreak &= (textlines.back().format.paragraph);
+			format = textlines.back().format;
+		}
+		else
+			needsadditionalbreak=true;
+	}
+	if (needsadditionalbreak || emptyline)
+	{
+		if (format.bullet && !textlines.empty() && !textlines.back().format.paragraph && !textlines.back().format.bullet)
+			textlines.back().needsnewline=true;
+		textline line;
+		line.format = format;
+		line.autosizeposition=0;
+		line.textwidth=UINT32_MAX;
+		line.linebreaks=1;
+		textlines.push_back(line);
+	}
 }
 
 void TextData::clear()
@@ -1329,7 +1360,7 @@ FontTag* TextData::checkEmbeddedFont(DisplayObject* d)
 
 void TextData::checklastline(bool needsadditionalline)
 {
-	if (!textlines.empty() && (textlines.back().text.empty() || textlines.back().format.paragraph || textlines.back().format.bullet))
+	if (!textlines.empty() && ((textlines.back().text.empty() && !textlines.back().linebreaks) || textlines.back().format.paragraph || textlines.back().format.bullet))
 		textlines.back().needsnewline=true;
 	if (needsadditionalline && swfversion < 8)
 	{
@@ -1355,13 +1386,13 @@ void TextData::checklastline(bool needsadditionalline)
 	}
 	if (!textlines.empty())
 	{
-		if (textlines.back().text.empty() || textlines.back().format.paragraph)
+		if ((textlines.back().text.empty() && !textlines.back().linebreaks) || textlines.back().format.paragraph)
 			textlines.back().needsnewline=true;
 		else if (!textlines.back().text.isWhiteSpaceOnly())
 		{
-			bool canhaveparagraph = !(textlines.back().format.bold || textlines.back().format.underline || textlines.back().format.italic || textlines.back().format.bullet);
+			bool canhaveparagraph = !textlines.back().needsnewline;
 			if (textlines.size() > 1 && !((textlines.end()-2)->needsnewline))
-			 	canhaveparagraph =textlines.back().format.needsNewLine(&(textlines.end()-1)->format);
+			 	canhaveparagraph =textlines.back().format.paramsChanged(&(textlines.end()-1)->format);
 			if (canhaveparagraph)
 				textlines.back().format.paragraph=true;
 		}
@@ -1455,7 +1486,7 @@ _NR<DisplayObject> InvalidateQueue::getCacheAsBitmapObject() const
 	return cacheAsBitmapObject;
 }
 
-bool FormatText::needsNewLine(const FormatText* f) const
+bool FormatText::paramsChanged(const FormatText* f) const
 {
 	return
 		bold!=f->bold ||

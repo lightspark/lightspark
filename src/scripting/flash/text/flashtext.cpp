@@ -1333,20 +1333,33 @@ tiny_string TextField::toHtmlText()
 
 	Locker l(*linemutex);
 	//Split text into paragraphs and wraps them into <p> tags
-	bool inParagraph=false;
-	pugi::xml_node node;
+	int openParagraph=0;
+	pugi::xml_node node=doc;
 	std::stack<FormatText> formatstack;
 	FormatText prevformat;
+	FormatText lastformat;
 	bool firstline=true;
+	uint32_t prevlinebreaks=0;
 	for (auto it = textlines.begin(); it != textlines.end(); it++)
 	{
-		if (!formatstack.empty())
+		bool mergetext=true;
+		bool ignoretext=false;
+		FormatText& format = (*it).format;
+		pugi::xml_node prevnode = node;
+		while (!formatstack.empty())
+		{
 			prevformat = formatstack.top();
-		formatstack.push(it->format);
+			if (format.level < prevformat.level)
+			{
+				formatstack.pop();
+				prevnode = prevnode.parent();
+			}
+			else
+				break;
+		}
 		pugi::xml_node startnode = doc;
 		bool islastline = it == textlines.end()-1;
-		FormatText& format = (*it).format;
-		if ((firstline || it->needsnewline) && (
+		if ((firstline || it->needsnewline || it->linebreaks) && (
 			!format.blockindent.empty()
 			|| !format.blockindent.empty()
 			|| !format.indent.empty()
@@ -1354,19 +1367,20 @@ tiny_string TextField::toHtmlText()
 			|| !format.leftmargin.empty()
 			|| !format.rightmargin.empty()
 			|| !format.tabstops.empty()
-			))
+																  ))
 		{
 			startnode = node = doc.append_child("TEXTFORMAT");
+			formatstack.push(format);
 			if (!format.blockindent.empty())
 				node.append_attribute("BLOCKINDENT").set_value(format.blockindent.raw_buf());
+			if (!format.rightmargin.empty())
+				node.append_attribute("RIGHTMARGIN").set_value(format.rightmargin.raw_buf());
 			if (!format.indent.empty())
 				node.append_attribute("INDENT").set_value(format.indent.raw_buf());
 			if (!format.leading.empty())
 				node.append_attribute("LEADING").set_value(format.leading.raw_buf());
 			if (!format.leftmargin.empty())
 				node.append_attribute("LEFTMARGIN").set_value(format.leftmargin.raw_buf());
-			if (!format.rightmargin.empty())
-				node.append_attribute("RIGHTMARGIN").set_value(format.rightmargin.raw_buf());
 			if (!format.tabstops.empty())
 				node.append_attribute("TABSTOPS").set_value(format.tabstops.raw_buf());
 		}
@@ -1374,104 +1388,188 @@ tiny_string TextField::toHtmlText()
 		if (format.bullet)
 		{
 			setfont=true;
-			node = startnode.append_child("LI");
+			node = doc.append_child("LI");
+			formatstack.push(format);
 		}
 		else
 		{
 			if ((!this->multiline || !format.paragraph) && condenseWhite && (*it).text.empty())
 				continue;
-			if (!inParagraph || it->needsnewline || format.paragraph || (swfversion < 7 && !format.bullet))
+			if (openParagraph==0 || it->needsnewline || format.paragraph || (prevlinebreaks && !it->text.empty()))// || (swfversion < 7 && !format.bullet))
 			{
-				bool needsnewline = format.needsNewLine(&prevformat);
-				if ((!islastline && !inParagraph)
+				if ((!islastline && openParagraph==0)
 					|| (format.paragraph)
 					|| (it->needsnewline)
-					|| (format.bold && needsnewline)
-					|| (format.underline && needsnewline)
-					|| (format.italic && needsnewline)
+					|| (prevlinebreaks && !it->text.empty())
 					)
 				{
-					inParagraph=true;
+					openParagraph++;
 					setfont=true;
-					node = startnode.append_child("P");
-					switch (format.align)
+					tiny_string parentname = node.parent().name();
+					if (format.paragraph && parentname=="FONT")
 					{
-						case ALIGNMENT::AS_NONE:
-						case ALIGNMENT::AS_LEFT:
-							node.append_attribute("ALIGN").set_value("LEFT");
-							break;
-						case ALIGNMENT::AS_CENTER:
-							node.append_attribute("ALIGN").set_value("CENTER");
-							break;
-						case ALIGNMENT::AS_RIGHT:
-							node.append_attribute("ALIGN").set_value("RIGHT");
-							break;
-						default:
-							break;
+						// it seems adobe merges text when adding paragraph inside font tag, but still closes the current paragraph?!?
+						tiny_string t = node.text().as_string();
+						t += (*it).text;
+						node.text().set(t.raw_buf());
+						ignoretext=true;
+						setfont=false;
+						node=startnode;
+					}
+					else
+					{
+						node = startnode.append_child("P");
+						formatstack.push(format);
+						switch (format.align)
+						{
+							case ALIGNMENT::AS_NONE:
+							case ALIGNMENT::AS_LEFT:
+								node.append_attribute("ALIGN").set_value("LEFT");
+								break;
+							case ALIGNMENT::AS_CENTER:
+								node.append_attribute("ALIGN").set_value("CENTER");
+								break;
+							case ALIGNMENT::AS_RIGHT:
+								node.append_attribute("ALIGN").set_value("RIGHT");
+								break;
+							default:
+								break;
+						}
 					}
 				}
 			}
 		}
 		bool fontchanged = !format.font.empty() && (format.font != prevformat.font || !(format.fontColor == prevformat.fontColor) || format.fontSize != prevformat.fontSize);
+		bool needsbold=false;
+		bool needsitalic=false;
+		bool needsunderline=false;
+		bool needsurl=false;
 		if (setfont || fontchanged)
 		{
+			bool addFontTag = true;
 			if (!setfont && fontchanged)
 			{
-				if (format.level>prevformat.level)
-				  	node = node.parent();
+				if (format.level==prevformat.level)
+				{
+					if (formatstack.size() > 1)
+					{
+						formatstack.pop();
+						FormatText tmpformat = formatstack.top();
+						addFontTag = format.font != tmpformat.font || !(format.fontColor == tmpformat.fontColor) || format.fontSize != tmpformat.fontSize;
+						formatstack.push(tmpformat);
+						if (!addFontTag)
+							node = prevnode.parent().append_child(pugi::node_pcdata);
+					}
+				}
 			}
-			formatstack.push(format);
-			node = node.append_child("FONT");
-			ostringstream ss;
-			ss << format.fontSize;
-			if (setfont || format.font != prevformat.font)
-				node.append_attribute("FACE").set_value(format.font.raw_buf());
-			if (setfont || format.fontSize != prevformat.fontSize)
-				node.append_attribute("SIZE").set_value(ss.str().c_str());
-			if (setfont || !(format.fontColor == prevformat.fontColor))
-				node.append_attribute("COLOR").set_value(format.fontColor.toString(false).uppercase().raw_buf());
-			if (setfont || format.letterspacing != prevformat.letterspacing)
-				node.append_attribute("LETTERSPACING").set_value(format.letterspacing);
-			if (setfont || format.kerning != prevformat.kerning)
-				node.append_attribute("KERNING").set_value(format.kerning);
+			if (addFontTag)
+			{
+				if (!it->needsnewline && !format.paragraph && !format.bullet &&
+					(prevformat.bold || prevformat.italic || prevformat.underline || !prevformat.url.empty() || !prevformat.target.empty()))
+				{
+					if (format.level>=prevformat.level)
+					{
+						if (prevformat.bold == lastformat.bold)
+							needsbold=prevformat.bold;
+						if (prevformat.italic == lastformat.italic)
+							needsitalic=prevformat.italic;
+						if (prevformat.underline == lastformat.underline)
+							needsunderline=prevformat.underline;
+						if (prevformat.url == lastformat.url && prevformat.target == lastformat.target)
+							needsurl=!prevformat.url.empty() || !prevformat.target.empty();
+					}
+					if (!prevlinebreaks)
+						node = node.parent();
+				}
+				node = node.append_child("FONT");
+				formatstack.push(format);
+				ostringstream ss;
+				ss << format.fontSize;
+				if (setfont || format.font != lastformat.font)
+					node.append_attribute("FACE").set_value(format.font.raw_buf());
+				if (setfont || format.fontSize != lastformat.fontSize)
+					node.append_attribute("SIZE").set_value(ss.str().c_str());
+				if (setfont || !(format.fontColor == lastformat.fontColor))
+					node.append_attribute("COLOR").set_value(format.fontColor.toString(false).uppercase().raw_buf());
+				if (setfont || format.letterspacing != lastformat.letterspacing)
+					node.append_attribute("LETTERSPACING").set_value(format.letterspacing);
+				if (setfont || format.kerning != lastformat.kerning)
+					node.append_attribute("KERNING").set_value(format.kerning);
+			}
 		}
-		if (format.url != prevformat.url || format.target != prevformat.target)
+		if (format.url != prevformat.url || format.target != prevformat.target || needsurl)
 		{
-			if (!prevformat.url.empty())
+			if (!needsurl && !prevformat.url.empty())
 				node = node.parent();
-			if (!format.url.empty())
+			if (!format.url.empty() || needsurl)
 			{
 				node = node.append_child("A");
+				formatstack.push(format);
 				node.append_attribute("HREF").set_value(format.url.raw_buf());
 				node.append_attribute("TARGET").set_value(format.target.raw_buf());
 			}
-			else if (prevformat.url.empty() && swfversion >= 7)
-				formatstack.pop();
+			else if (!firstline && node.type() != pugi::node_null)
+			{
+				node = node.parent();
+				mergetext=false;
+			}
 		}
-		if (format.bold != prevformat.bold || (it->needsnewline && format.bold))
+		if (format.bold != prevformat.bold || (it->needsnewline && format.bold) || needsbold)
 		{
-			if (format.bold)
+			if (format.bold || needsbold)
+			{
 				node = node.append_child("B");
+				formatstack.push(format);
+			}
 			else if (!firstline && node.type() != pugi::node_null)
-				node = node.parent();
+			{
+				if (!needsbold && lastformat.bold && !prevlinebreaks)
+					node = node.parent();
+				mergetext=false;
+			}
 		}
-		if (format.italic != prevformat.italic || (it->needsnewline && format.italic))
+		if (format.italic != prevformat.italic || (it->needsnewline && format.italic) || needsitalic)
 		{
-			if (format.italic)
+			if (format.italic || needsitalic)
+			{
 				node = node.append_child("I");
+				formatstack.push(format);
+			}
 			else if (!firstline && node.type() != pugi::node_null)
-				node = node.parent();
+			{
+				if (!needsitalic && lastformat.italic && !prevlinebreaks)
+					node = node.parent();
+				mergetext=false;
+			}
 		}
-		if (format.underline != prevformat.underline || (it->needsnewline && format.underline))
+		if (format.underline != prevformat.underline || (it->needsnewline && format.underline) || needsunderline)
 		{
-			if (format.underline)
+			if (format.underline || needsunderline)
+			{
 				node = node.append_child("U");
+				formatstack.push(format);
+			}
 			else if (!firstline && node.type() != pugi::node_null)
-				node = node.parent();
+			{
+				if (!needsunderline && lastformat.underline && !prevlinebreaks)
+					node = node.parent();
+				mergetext=false;
+			}
 		}
-		tiny_string t = node.text().as_string();
-		t += (*it).text;
-		node.text().set(t.raw_buf());
+		if (!ignoretext)
+		{
+			tiny_string t = node.text().as_string();
+			if (mergetext)
+				t += (*it).text;
+			else
+			{
+				node = node.append_child(pugi::node_pcdata);
+				t = (*it).text;
+			}
+			node.text().set(t.raw_buf());
+		}
+		lastformat=format;
+		prevlinebreaks=it->linebreaks;
 		firstline=false;
 	}
 
@@ -2002,6 +2100,8 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 	{
 		textdata->clear();
 		doc.traverse(*this);
+		if (textdata->getLineCount() == 0 && !formatStack.empty() && formatStack.back().paragraph)
+			textdata->appendFormatText("",formatStack.back(),swfversion,condenseWhite);
 		formatStack.erase(formatStack.begin(), formatStack.end());
 		textdata->checklastline(rooted.endsWith("\n</p>") || rooted.endsWith("\n</li>"));
 	}
@@ -2015,11 +2115,6 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 	}
 }
 
-FORCE_INLINE bool skipFormatStackPushPop(const tiny_string& name)
-{
-	return name.empty() || name == "br" || name == "sbr";
-}
-
 bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 {
 	if (!textdata)
@@ -2030,6 +2125,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	name = name.lowercase();
 	tiny_string v = node.value();
 	tiny_string newtext;
+	tiny_string parentname = node.parent().name();
 	if (currentDepth < prevDepth)
 	{
 		for (int i = currentDepth; i < prevDepth; ++i)
@@ -2053,12 +2149,15 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 		index =v.find("&nbsp;",index);
 	}
 	newtext += v;
+	bool emptycontent= node.children().begin() == node.children().end();
 	if (name == "br" || name == "sbr") // adobe seems to interpret the unknown tag <sbr /> as <br> ?
 	{
-		if (textdata->multiline)
-			newtext += "\n";
+		if (parentname=="textformat" && !format.bullet)
+			format.paragraph = true;
+		textdata->appendLineBreak(currentDepth == prevDepth
+								  ,((parentname=="textformat" || format.bullet) && strlen(node.parent().value())==0) || (node.previous_sibling().type() == pugi::node_null && node.next_sibling().type() == pugi::node_null)
+								  ,format);
 	}
-	bool emptycontent= node.children().begin() == node.children().end();
 	if (name == "p")
 	{
 		format.paragraph=true;
@@ -2093,6 +2192,8 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	}
 	else if (name == "font")
 	{
+		if (format.paragraph)
+			emptycontent=false;
 		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
 		{
 			tiny_string attrname = it->name();
@@ -2142,27 +2243,36 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 		format.underline = true;
 	else if (name == "li")
 		format.bullet = true;
-	else if (name == "textformat" && currentDepth==0)
+	else if (name == "textformat")
 	{
-		for (auto it : node.attributes())
+		// Adobe seems to ignore textformat tags not on root level except if it is the child of a textformat tag
+		if (currentDepth==0 || parentname=="textformat")
 		{
-			tiny_string attrname = it.name();
-			tiny_string attrvalue = it.value();
-			if (attrvalue=="0")
-				continue;
-			attrname = attrname.lowercase();
-			if (attrname == "blockindent")
-				format.blockindent = attrvalue;
-			else if (attrname == "indent")
-				format.indent = attrvalue;
-			else if (attrname == "leading")
-				format.leading = attrvalue;
-			else if (attrname == "leftmargin")
-				format.leftmargin = attrvalue;
-			else if (attrname == "rightmargin")
-				format.rightmargin = attrvalue;
-			else if (attrname == "tabstops")
-				format.tabstops = attrvalue;
+			for (auto it : node.attributes())
+			{
+				tiny_string attrname = it.name();
+				tiny_string attrvalue = it.value();
+				if (attrvalue=="0")
+					continue;
+				attrname = attrname.lowercase();
+				if (attrname == "blockindent")
+					format.blockindent = attrvalue;
+				else if (attrname == "indent")
+					format.indent = attrvalue;
+				else if (attrname == "leading")
+					format.leading = attrvalue;
+				else if (attrname == "leftmargin")
+					format.leftmargin = attrvalue;
+				else if (attrname == "rightmargin")
+					format.rightmargin = attrvalue;
+				else if (attrname == "tabstops")
+					format.tabstops = attrvalue;
+			}
+		}
+		else
+		{
+			if (emptycontent && newtext.empty())
+				textdata->appendLineBreak(false,true,format);
 		}
 	}
 	else if (name == "img" || name == "span" ||  name == "tab")

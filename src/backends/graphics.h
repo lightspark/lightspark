@@ -431,7 +431,7 @@ struct FormatText
 	tiny_string rightmargin;
 	tiny_string tabstops;
 	uint32_t level {0};
-	bool needsNewLine(const FormatText* f) const;
+	bool paramsChanged(const FormatText* f) const;
 };
 
 struct textline
@@ -442,6 +442,7 @@ struct textline
 	uint32_t height {0};
 	FormatText format;
 	bool needsnewline {false};
+	uint32_t linebreaks {0};
 };
 
 class FontTag;
@@ -486,6 +487,7 @@ public:
 	void setText(const char* text, bool firstlineonly=false);
 	void appendText(const char* text, bool firstlineonly=false, const FormatText* format = nullptr, uint32_t swfversion=UINT32_MAX, bool condensewhite=false);
 	void appendFormatText(const char* text, const FormatText& format, uint32_t swfversion, bool condensewhite);
+	void appendLineBreak(bool needsadditionalbreak, bool emptyline, FormatText format);
 	void clear();
 	bool isWhitespaceOnly(bool multiline) const;
 	void getTextSizes(const tiny_string& text, number_t& tw, number_t& th);

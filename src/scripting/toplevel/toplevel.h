@@ -373,10 +373,10 @@ public:
 		c->handleConstruction(obj,nullptr,0,true);
 		return ret;
 	}
-	static AVM1Function* getAVM1Function(ASWorker* wrk,DisplayObject* clip,Activation_object* act, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<uint8_t>& actions, std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)
+	static AVM1Function* getAVM1Function(ASWorker* wrk,DisplayObject* clip,Activation_object* act, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<uint8_t>& actions, const _R<AVM1Scope>& scope, std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(wrk->getSystemState());
-		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(wrk,c, clip, act,ctx, params,actions,paramregisternumbers,preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
+		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(wrk,c, clip, act,ctx, params,actions,scope,paramregisternumbers,preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);
 		ret->objfreelist = nullptr;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;

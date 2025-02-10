@@ -20,6 +20,7 @@
 #ifndef SCRIPTING_TOPLEVEL_AVM1FUNCTION_H
 #define SCRIPTING_TOPLEVEL_AVM1FUNCTION_H 1
 
+#include "scripting/avm1/scope.h"
 #include "scripting/toplevel/IFunction.h"
 
 
@@ -38,7 +39,7 @@ protected:
 	std::vector<uint8_t> actionlist;
 	std::vector<uint32_t> paramnames;
 	std::vector<uint8_t> paramregisternumbers;
-	std::map<uint32_t, asAtom> scopevariables;
+	_R<AVM1Scope> scope;
 	bool preloadParent;
 	bool preloadRoot;
 	bool suppressSuper;
@@ -48,7 +49,7 @@ protected:
 	bool suppressThis;
 	bool preloadThis;
 	bool preloadGlobal;
-	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,Activation_object* act,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false);
+	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,Activation_object* act,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,const _R<AVM1Scope>& _scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false);
 	~AVM1Function();
 	method_info* getMethodInfo() const override { return nullptr; }
 	IFunction* clone(ASWorker* wrk) override
@@ -62,28 +63,34 @@ public:
 	bool destruct() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
-	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller=nullptr, std::map<uint32_t,asAtom>* locals=nullptr)
+	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller = nullptr)
 	{
-		if (locals)
-			this->setscopevariables(*locals);
+		// NOTE: This `incRef()` is necessary since `executeActions()`
+		// will `decRef()` the scope chain the end, eventually leading
+		// to a premature `free()`.
+		scope->incRef();
 		if (needsSuper())
 		{
 			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,&newsuper);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,&newsuper);
 		}
 		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject);
 	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target, ASWorker* wrk) override
 	{
+		// NOTE: This `incRef()` is necessary since `executeActions()`
+		// will `decRef()` the scope chain the end, eventually leading
+		// to a premature `free()`.
+		scope->incRef();
 		asAtom obj = target;
 		if (needsSuper())
 		{
 			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,&newsuper);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,&newsuper);
 		}
 		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,this->scopevariables,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject);
 		return nullptr;
 	}
 	FORCE_INLINE Class_base* getReturnType(bool opportunistic=false) override
@@ -111,8 +118,6 @@ public:
 	{
 		return superobj;
 	}
-	void filllocals(std::map<uint32_t,asAtom>& locals);
-	void setscopevariables(std::map<uint32_t,asAtom>& locals);
 };
 
 }

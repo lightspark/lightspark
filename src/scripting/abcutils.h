@@ -23,6 +23,7 @@
 #include "asobject.h"
 #include "smartrefs.h"
 #include "errorconstants.h"
+#include "scripting/avm1/scope.h"
 #include "utils/timespec.h"
 
 namespace lightspark
@@ -127,6 +128,8 @@ public:
 	uint8_t swfversion;
 	ASObject* exceptionthrown;
 	AVM1Function* callee;
+	_NR<AVM1Scope> scope;
+	_NR<AVM1Scope> globalScope;
 };
 
 

@@ -821,8 +821,7 @@ bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			}
 			if (exec)
 			{
-				std::map<uint32_t,asAtom> m;
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
 			}
 		}
 	}
@@ -858,8 +857,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 					|| (e->type == "mouseMove" && it->EventFlags.ClipEventMouseMove)
 					)
 				{
-					std::map<uint32_t,asAtom> m;
-					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
 				}
 				if( dispobj &&
 					((e->type == "mouseUp" && it->EventFlags.ClipEventRelease)
@@ -869,8 +867,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 					|| (e->type == "releaseOutside" && it->EventFlags.ClipEventReleaseOutside)
 					))
 				{
-					std::map<uint32_t,asAtom> m;
-					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
 				}
 			}
 		}
@@ -880,7 +877,6 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 }
 void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
-	std::map<uint32_t,asAtom> m;
 	if (dispatcher == this)
 	{
 		if (this->actions)
@@ -889,7 +885,7 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			{
 				if (e->type == "complete" && it->EventFlags.ClipEventLoad)
 				{
-					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
 				}
 			}
 		}

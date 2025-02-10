@@ -26,8 +26,8 @@
 using namespace std;
 using namespace lightspark;
 
-AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, Activation_object* act, AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a, std::vector<uint8_t> _registernumbers, bool _preloadParent, bool _preloadRoot, bool _suppressSuper, bool _preloadSuper, bool _suppressArguments, bool _preloadArguments, bool _suppressThis, bool _preloadThis, bool _preloadGlobal)
-	:IFunction(wrk,c,SUBTYPE_AVM1FUNCTION),clip(cl),activationobject(act),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers),
+AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, Activation_object* act, AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a, const _R<AVM1Scope>& _scope, std::vector<uint8_t> _registernumbers, bool _preloadParent, bool _preloadRoot, bool _suppressSuper, bool _preloadSuper, bool _suppressArguments, bool _preloadArguments, bool _suppressThis, bool _preloadThis, bool _preloadGlobal)
+	:IFunction(wrk,c,SUBTYPE_AVM1FUNCTION),clip(cl),activationobject(act),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers), scope(_scope),
 	  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal)
 {
 	if (ctx)
@@ -46,11 +46,6 @@ AVM1Function::~AVM1Function()
 		activationobject->removeStoredMember();
 	if (clip)
 		clip->removeStoredMember();
-	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
-	{
-		ASATOM_REMOVESTOREDMEMBER(it->second);
-	}
-	scopevariables.clear();
 }
 
 asAtom AVM1Function::computeSuper()
@@ -83,11 +78,6 @@ void AVM1Function::finalize()
 	if (clip)
 		clip->removeStoredMember();
 	clip=nullptr;
-	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
-	{
-		ASATOM_REMOVESTOREDMEMBER(it->second);
-	}
-	scopevariables.clear();
 	ASATOM_REMOVESTOREDMEMBER(superobj);
 	IFunction::finalize();
 }
@@ -100,11 +90,6 @@ bool AVM1Function::destruct()
 	if (clip)
 		clip->removeStoredMember();
 	clip=nullptr;
-	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
-	{
-		ASATOM_REMOVESTOREDMEMBER(it->second);
-	}
-	scopevariables.clear();
 	ASATOM_REMOVESTOREDMEMBER(superobj);
 	superobj=asAtomHandler::invalidAtom;
 	return IFunction::destruct();
@@ -119,12 +104,7 @@ void AVM1Function::prepareShutdown()
 		activationobject->prepareShutdown();
 	if (clip)
 		clip->prepareShutdown();
-	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
-	{
-		ASObject* o = asAtomHandler::getObject(it->second);
-		if (o)
-			o->prepareShutdown();
-	}
+	scope->prepareShutdown();
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
 		su->prepareShutdown();
@@ -137,33 +117,9 @@ bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		ret = activationobject->countAllCylicMemberReferences(gcstate) || ret;
 	if (clip)
 		ret = clip->countAllCylicMemberReferences(gcstate) || ret;
-	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
-	{
-		ASObject* o = asAtomHandler::getObject(it->second);
-		if (o)
-			ret = o->countAllCylicMemberReferences(gcstate) || ret;
-	}
+	ret |= scope->countAllCyclicMemberReferences(gcstate);
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
 		ret = su->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
-}
-
-void AVM1Function::filllocals(std::map<uint32_t, asAtom>& locals)
-{
-	for (auto it = scopevariables.begin(); it != scopevariables.end(); it++)
-	{
-		ASATOM_INCREF(it->second);
-		locals[it->first]=it->second;
-	}
-}
-
-void AVM1Function::setscopevariables(std::map<uint32_t, asAtom>& locals)
-{
-	for (auto it = locals.begin(); it != locals.end(); it++)
-	{
-		ASATOM_REMOVESTOREDMEMBER(scopevariables [it->first]);
-		ASATOM_ADDSTOREDMEMBER(it->second);
-		scopevariables [it->first]=it->second;
-	}
 }

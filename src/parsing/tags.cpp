@@ -2101,7 +2101,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			if (it->EventFlags.ClipEventConstruct)
 			{
 				AVM1context context;
-				ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
+				ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos);
 			}
 		}
 	}
@@ -2114,7 +2114,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			if (it->EventFlags.ClipEventInitialize)
 			{
 				AVM1context context;
-				ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos,m);
+				ACTIONRECORD::executeActions(currchar ,&context,it->actions,it->startactionpos);
 			}
 		}
 	}
@@ -3292,9 +3292,8 @@ void AVM1InitActionTag::executeDirect(MovieClip* clip) const
 		LOG(LOG_ERROR,"sprite not found for InitActionTag:"<<SpriteId);
 		return;
 	}
-	std::map<uint32_t,asAtom> m;
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString()<<" "<<sprite->getId());
-	ACTIONRECORD::executeActions(clip,sprite->getAVM1Context(),actions,startactionpos,m,true);
+	ACTIONRECORD::executeActions(clip,sprite->getAVM1Context(),actions,startactionpos,NullRef,true);
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions done "<< clip->toDebugString()<<" "<<sprite->getId());
 }
 

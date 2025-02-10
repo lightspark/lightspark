@@ -2227,9 +2227,8 @@ void ActionScriptVersion::sinit(Class_base* c)
 
 void AVM1scriptToExecute::execute()
 {
-	std::map<uint32_t, asAtom> scopevariables;
 	if (actions)
-		ACTIONRECORD::executeActions(clip,avm1context,*actions, startactionpos,scopevariables);
+		ACTIONRECORD::executeActions(clip,avm1context,*actions, startactionpos);
 	if (this->event_name_id != UINT32_MAX)
 	{
 		asAtom func=asAtomHandler::invalidAtom;

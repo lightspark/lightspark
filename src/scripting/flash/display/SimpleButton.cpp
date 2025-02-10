@@ -141,8 +141,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 					c = c->getParent();
 				if (c)
 				{
-					std::map<uint32_t,asAtom> m;
-					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
 					handled = true;
 				}
 				
@@ -315,8 +314,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			DisplayObjectContainer* c = getParent();
 			while (c && !c->is<MovieClip>())
 				c = c->getParent();
-			std::map<uint32_t,asAtom> m;
-			ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,m);
+			ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
 			handled=true;
 		}
 	}

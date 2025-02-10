@@ -446,6 +446,10 @@ public:
 	{
 		return AVM1callStack.empty() ? nullptr : AVM1callStack.back()->callee;
 	}
+	_NR<AVM1Scope> AVM1getScope() const
+	{
+		return AVM1callStack.empty() ? NullRef : AVM1callStack.back()->scope;
+	}
 	uint8_t AVM1getSwfVersion() const
 	{
 		return AVM1callStack.empty() ? UINT8_MAX : AVM1callStack.back()->swfversion;

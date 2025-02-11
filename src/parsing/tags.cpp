@@ -3361,7 +3361,10 @@ void DoABCTag::execute(RootMovieClip* root) const
 	if (root->getInstanceWorker()->isPrimordial)
 	{
 		if (root == root->getSystemState()->mainClip)
+		{
+			context->declareScripts();
 			getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
+		}
 		else
 			context->exec(false);
 	}
@@ -3401,7 +3404,10 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 	if (root->getInstanceWorker()->isPrimordial)
 	{
 		if (root == root->getSystemState()->mainClip)
+		{
+			context->declareScripts();
 			getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,lazy)));
+		}
 		else
 			context->exec(lazy);
 	}

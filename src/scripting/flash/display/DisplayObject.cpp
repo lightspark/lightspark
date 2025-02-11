@@ -893,23 +893,26 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 	if (this->filterlistHasChanged)
 	{
 		state->filters.clear();
-		state->filters.reserve(this->filters->size()*2);
-		for (uint32_t i = 0; i < this->filters->size(); i++)
+		if (this->filters)
 		{
-			asAtom f = asAtomHandler::invalidAtom;
-			this->filters->at_nocheck(f,i);
-			if (asAtomHandler::is<BitmapFilter>(f))
+			state->filters.reserve(this->filters->size()*2);
+			for (uint32_t i = 0; i < this->filters->size(); i++)
 			{
-				FilterData fdata;
-				asAtomHandler::as<BitmapFilter>(f)->getRenderFilterGradientColors(fdata.gradientcolors);
-				uint32_t step = 0;
-				while (true)
+				asAtom f = asAtomHandler::invalidAtom;
+				this->filters->at_nocheck(f,i);
+				if (asAtomHandler::is<BitmapFilter>(f))
 				{
-					asAtomHandler::as<BitmapFilter>(f)->getRenderFilterArgs(step,fdata.filterdata);
-					state->filters.push_back(fdata);
-					if (fdata.filterdata[0] == 0)
-						break;
-					step++;
+					FilterData fdata;
+					asAtomHandler::as<BitmapFilter>(f)->getRenderFilterGradientColors(fdata.gradientcolors);
+					uint32_t step = 0;
+					while (true)
+					{
+						asAtomHandler::as<BitmapFilter>(f)->getRenderFilterArgs(step,fdata.filterdata);
+						state->filters.push_back(fdata);
+						if (fdata.filterdata[0] == 0)
+							break;
+						step++;
+					}
 				}
 			}
 		}

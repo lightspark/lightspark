@@ -39,7 +39,7 @@ jobs:
 
   mxe32:
     name: Release 32-bit Windows Installer
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     continue-on-error: false
     needs: draft_release
     env:
@@ -62,6 +62,8 @@ jobs:
             lzip
             p7zip-full
             intltool
+            libgtk2.0-dev
+            libssl1.1
             mxe-i686-w64-mingw32.static-cc
             mxe-i686-w64-mingw32.static-cairo
             mxe-i686-w64-mingw32.static-pango
@@ -103,7 +105,7 @@ jobs:
 
   mxe64:
     name: Release 64-bit Windows Installer
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     continue-on-error: false
     needs: draft_release
     env:
@@ -126,6 +128,8 @@ jobs:
             lzip
             p7zip-full
             intltool
+            libgtk2.0-dev
+            libssl1.1
             mxe-x86-64-w64-mingw32.static-cc
             mxe-x86-64-w64-mingw32.static-cairo
             mxe-x86-64-w64-mingw32.static-pango

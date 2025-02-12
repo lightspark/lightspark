@@ -88,6 +88,7 @@ class Function;
 
 enum class FramePhase
 {
+	NO_PHASE,
 	ADVANCE_FRAME,
 	INIT_FRAME,
 	EXECUTE_FRAMESCRIPT,

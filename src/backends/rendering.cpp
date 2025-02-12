@@ -365,16 +365,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		{
 			// stage3d rendering is always needed, so we ignore canrender
 			coreRendering();
-			if (inSettings)
-				renderSettingsPage();
 			engineData->exec_glFlush();
-			if (screenshotneeded)
-				generateScreenshot();
-			engineData->DoSwapBuffers();
-			if (profile && chronometer)
-				profile->accountTime(chronometer->checkpoint());
-			renderNeeded=false;
-			return true;
 		}
 		else
 		{

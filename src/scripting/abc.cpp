@@ -1042,6 +1042,8 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	event->setTarget(asAtomHandler::invalidAtom);
 	if (event->is<ProgressEvent>())
 		event->as<ProgressEvent>()->accesmutex.unlock();
+	if (event->type == "exitFrame")
+		event->getSystemState()->setFramePhase(FramePhase::NO_PHASE);
 }
 
 template<typename F, typename F2>
@@ -1222,6 +1224,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				LOG(LOG_CALLS,"INIT_FRAME");
 				assert(!ev->clip.isNull());
 				ev->clip->initFrame();
+				m_sys->setFramePhase(FramePhase::NO_PHASE);
 				break;
 			}
 			case EXECUTE_FRAMESCRIPT:
@@ -1231,6 +1234,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				LOG(LOG_CALLS,"EXECUTE_FRAMESCRIPT");
 				assert(!ev->clip.isNull());
 				ev->clip->executeFrameScript();
+				m_sys->setFramePhase(FramePhase::NO_PHASE);
 				break;
 			}
 			case RENDER_FRAME:
@@ -1246,6 +1250,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					clip->enterFrame(true);
 				else
 					clip->advanceFrame(true);
+				m_sys->setFramePhase(FramePhase::NO_PHASE);
 				break;
 			}
 			case SET_LOADER_CONTENT_EVENT:
@@ -1294,6 +1299,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 //						ASObject::dumpObjectCounters(100);
 #endif
 				}
+				m_sys->setFramePhase(FramePhase::NO_PHASE);
 				break;
 			}
 			case GETMOUSETARGET_EVENT:

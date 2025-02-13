@@ -1448,13 +1448,13 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 		if(it==dynamicDisplayList.end())
 			return getSystemState()->isInResetParentList(child);
 	}
+	child->setMask(NullRef);
+	_removeFromDisplayList(child);
+	handleRemovedEvent(child, keeponstage, inskipping);
 	if (!direct && !inskipping && !isVmThread())
 		getSystemState()->addDisplayObjectToResetParentList(child);
 	else
 		child->setParent(nullptr);
-	child->setMask(NullRef);
-	_removeFromDisplayList(child);
-	handleRemovedEvent(child, keeponstage, inskipping);
 	this->hasChanged=true;
 	this->requestInvalidation(getSystemState());
 	getSystemState()->stage->prepareForRemoval(child);

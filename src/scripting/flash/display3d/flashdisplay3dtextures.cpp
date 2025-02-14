@@ -724,13 +724,16 @@ void TextureBase::sinit(Class_base *c)
 
 bool TextureBase::destruct()
 {
-	renderaction action;
-	action.action =RENDER_ACTION::RENDER_DELETETEXTURE;
-	action.udata1 = textureID;
-	action.udata2 = textureframebuffer;
-	action.udata3 = depthRenderBuffer;
-	action.fdata[0] = stencilRenderBuffer;
-	context->addAction(action);
+	if (!getSystemState()->isShuttingDown())
+	{
+		renderaction action;
+		action.action =RENDER_ACTION::RENDER_DELETETEXTURE;
+		action.udata1 = textureID;
+		action.udata2 = textureframebuffer;
+		action.udata3 = depthRenderBuffer;
+		action.fdata[0] = stencilRenderBuffer;
+		context->addAction(action);
+	}
 	textureID=UINT32_MAX;
 	depthRenderBuffer = UINT32_MAX;
 	textureframebuffer = UINT32_MAX;

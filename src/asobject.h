@@ -651,11 +651,23 @@ struct cyclicmembercount
 	bool hasmember:1; // indicates if the member object has any references to the main object in its members
 	bool ignore:1; // indicates if the member object doesn't have to be checked for cyclic member count and its count should be ignored
 	bool isAncestor:1;
+	bool ischecked:1;
+	FORCE_INLINE void reset()
+	{
+		count=0;
+		hasmember=false;
+		ignore=false;
+		isAncestor=false;
+		ischecked=false;
+	}
+	cyclicmembercount() : count(0),hasmember(false),ignore(false),isAncestor(false),ischecked(false)
+	{
+	}
 };
 // struct used to keep track of entries when executing garbage collection
 struct garbagecollectorstate
 {
-	std::map<ASObject*,cyclicmembercount> checkedobjects;
+	std::list<ASObject*> checkedobjects;
 	ASObject* startobj;
 	bool stopped; // indicates that an object has a member and should be ignored, so we can stop gc for the startobject immediately
 	bool incCount(ASObject* o, bool hasMember);
@@ -663,6 +675,7 @@ struct garbagecollectorstate
 	bool isIgnored(ASObject* o);
 	bool hasMember(ASObject* o);
 	void setAncestor(ASObject* o);
+	void reset();
 	garbagecollectorstate(ASObject* _startobj):startobj(_startobj),stopped(false)
 	{
 	}
@@ -1039,6 +1052,7 @@ protected:
 		bool keep = removefromGarbageCollection();
 		implEnable = true;
 		storedmembercount=0;
+		gccounter.reset();
 #ifndef NDEBUG
 		//Stuff only used in debugging
 		initialized=false;
@@ -1440,6 +1454,8 @@ public:
 
 	// copies all dynamic values to the target
 	void copyValues(ASObject* target, ASWorker* wrk);
+
+	cyclicmembercount gccounter;
 };
 
 

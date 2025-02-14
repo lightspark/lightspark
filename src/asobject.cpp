@@ -2124,8 +2124,7 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 				gcstate.incCount(o,false);
 				if (gcstate.stopped)
 					return false;
-				auto itp = gcstate.checkedobjects.find(parent);
-				(*itp).second.hasmember=true;
+				parent->gccounter.hasmember=true;
 				ret = true;
 			}
 			else if (o == parent)
@@ -2135,8 +2134,7 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 					gcstate.ignoreCount(o);
 					if (gcstate.stopped)
 						return false;
-					auto itc = gcstate.checkedobjects.find(o);
-					ret = (*itc).second.hasmember;
+					ret = o->gccounter.hasmember;
 				}
 				else
 				{
@@ -2149,11 +2147,10 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 			{
 				if (o->countAllCylicMemberReferences(gcstate))
 				{
-					auto itc = gcstate.checkedobjects.find(o);
-					(*itc).second.hasmember=true;
-					if (!(*itc).second.ignore && gcstate.isIgnored(parent))
+					o->gccounter.hasmember=true;
+					if (!o->gccounter.ignore && gcstate.isIgnored(parent))
 					{
-						(*itc).second.ignore=true;
+						o->gccounter.ignore=true;
 						gcstate.stopped=true;
 						return false;
 					}
@@ -2161,22 +2158,14 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 				}
 				else
 				{
-					auto itc = gcstate.checkedobjects.find(o);
-					if (itc != gcstate.checkedobjects.end())
-					{
-						ret = (*itc).second.hasmember || ret;
-//						if ((*itc).second.isAncestor)
-							(*itc).second.hasmember=ret;
-					}
+					ret = o->gccounter.hasmember || ret;
 					if (gcstate.stopped)
 						return false;
 				}
 			}
 			else
 			{
-				auto itc = gcstate.checkedobjects.find(o);
-				if (itc != gcstate.checkedobjects.end())
-					ret = (*itc).second.hasmember || ret;
+				ret = o->gccounter.hasmember || ret;
 				if (gcstate.stopped)
 					return false;
 			}
@@ -2347,7 +2336,8 @@ void ASObject::removeStoredMember()
 	assert(storedmembercount);
 	assert(storedmembercount<=uint32_t(this->getRefCount()));
 	storedmembercount--;
-	if (storedmembercount && ((uint32_t)this->getRefCount() == storedmembercount+1))
+	if (storedmembercount
+		&& ((uint32_t)this->getRefCount() == storedmembercount+1))
 	{
 		getInstanceWorker()->addObjectToGarbageCollector(this);
 		this->markedforgarbagecollection=true;
@@ -2367,21 +2357,22 @@ bool ASObject::handleGarbageCollection()
 		markedforgarbagecollection=false;
 		if (gcstate.stopped)
 		{
+			gcstate.reset();
 			decRef();
 			return false;
 		}
 		uint32_t c =0;
 		for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 		{
-			if ((*it).first == this)
+			if ((*it) == this)
 			{
 				if (c != UINT32_MAX)
-					c = (*it).second.count;
+					c = (*it)->gccounter.count;
 			}
-			else if (((*it).second.ignore || (*it).first->getConstant() || (*it).second.count!=(uint32_t)(*it).first->getRefCount()) && (*it).second.hasmember)
+			else if (((*it)->gccounter.ignore || (*it)->getConstant() || (*it)->gccounter.count!=(uint32_t)(*it)->getRefCount()) && (*it)->gccounter.hasmember)
 			{
 				c = UINT32_MAX;
-				if (!(*it).second.ignore && (*it).first->isMarkedForGarbageCollection() && !deletedingarbagecollection)
+				if (!(*it)->gccounter.ignore && (*it)->isMarkedForGarbageCollection() && !deletedingarbagecollection)
 				{
 					getInstanceWorker()->addObjectToGarbageCollector(this);
 				}
@@ -2394,20 +2385,20 @@ bool ASObject::handleGarbageCollection()
 			this->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
 			for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 			{
-				if ((*it).first != this && !(*it).second.ignore && (*it).second.count==(uint32_t)(*it).first->getRefCount() && (*it).second.hasmember)
+				if ((*it) != this && !(*it)->gccounter.ignore && (*it)->gccounter.count==(uint32_t)(*it)->getRefCount() && (*it)->gccounter.hasmember)
 				{
-					(*it).first->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
+					(*it)->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
 				}
 			}
 			for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 			{
-				if ((*it).first != this && !(*it).second.ignore && (*it).second.count==(uint32_t)(*it).first->getRefCount() && (*it).second.hasmember)
+				if ((*it) != this && !(*it)->gccounter.ignore && (*it)->gccounter.count==(uint32_t)(*it)->getRefCount() && (*it)->gccounter.hasmember)
 				{
-					getInstanceWorker()->addObjectToGarbageCollector((*it).first);
-					(*it).first->deletedingarbagecollection=true;
-					(*it).first->markedforgarbagecollection=true;
-					(*it).first->destruct();
-					(*it).first->finalize();
+					getInstanceWorker()->addObjectToGarbageCollector((*it));
+					(*it)->deletedingarbagecollection=true;
+					(*it)->markedforgarbagecollection=true;
+					(*it)->destruct();
+					(*it)->finalize();
 				}
 			}
 			getInstanceWorker()->addObjectToGarbageCollector(this);
@@ -2415,8 +2406,10 @@ bool ASObject::handleGarbageCollection()
 			this->finalize();
 			this->deletedingarbagecollection=true;
 			this->markedforgarbagecollection=true;
+			gcstate.reset();
 			return true;
 		}
+		gcstate.reset();
 	}
 	decRef();
 	return false;
@@ -2427,7 +2420,7 @@ bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	bool ret = false;
 	for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
 	{
-		if (gcstate.checkedobjects.find(*it)==gcstate.checkedobjects.end())
+		if (!(*it)->gccounter.ischecked)
 			ret = (*it)->countCylicMemberReferences(gcstate) || ret;
 	}
 	if (gcstate.stopped)
@@ -2449,31 +2442,27 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 	else if (getConstant())
 	{
 		gcstate.ignoreCount(this);
-		auto itc = gcstate.checkedobjects.find(this);
-		ret = (*itc).second.hasmember;
+		ret = this->gccounter.hasmember;
 	}
 	else if (!getInDestruction() && !getCached() && canHaveCyclicMemberReference() && !markedforgarbagecollection && !deletedingarbagecollection)
 	{
-		if (gcstate.checkedobjects.find(this)==gcstate.checkedobjects.end())
+		if (!this->gccounter.ischecked)
 		{
 			gcstate.incCount(this,false);
-			auto itc = gcstate.checkedobjects.find(this);
-			if ((*itc).second.isAncestor)
-				return (*itc).second.hasmember;
+			if (this->gccounter.isAncestor)
+				return this->gccounter.hasmember;
 			ret = countCylicMemberReferences(gcstate);
 			if (ret)
-				(*itc).second.hasmember=true;
+				this->gccounter.hasmember=true;
 			else
-				ret=(*itc).second.hasmember;
+				ret=this->gccounter.hasmember;
 		}
 		else
 			ret = gcstate.incCount(this,false);
 	}
 	else
 	{
-		auto itc = gcstate.checkedobjects.find(this);
-		if (itc != gcstate.checkedobjects.end())
-			ret = (*itc).second.hasmember;
+		ret = this->gccounter.hasmember;
 	}
 
 	return ret;
@@ -5281,51 +5270,50 @@ ASObject *asAtomHandler::toObject(asAtom& a, ASWorker* wrk, bool isconstant)
 
 bool garbagecollectorstate::incCount(ASObject* o, bool hasMember)
 {
-	auto itc = checkedobjects.find(o);
-	if (itc == checkedobjects.end())
-		itc = checkedobjects.insert(make_pair(o,cyclicmembercount{1,hasMember,false,false})).first;
-	else
+	o->gccounter.count++;
+	o->gccounter.hasmember=o->gccounter.hasmember||hasMember;
+	if (!o->gccounter.ischecked)
 	{
-		(*itc).second.count++;
-		(*itc).second.hasmember=(*itc).second.hasmember||hasMember;
+		this->checkedobjects.push_back(o);
+		o->gccounter.ischecked=true;
 	}
-	if ((*itc).second.hasmember && (*itc).second.ignore)
+	if (o->gccounter.hasmember && o->gccounter.ignore)
 		this->stopped=true;
-	assert((int)(*itc).second.count <= o->getRefCount());
-	return (*itc).second.hasmember;
+	assert((int)o->gccounter.count <= o->getRefCount());
+	return o->gccounter.hasmember;
 }
 
 void garbagecollectorstate::ignoreCount(ASObject* o)
 {
-	auto itc = checkedobjects.find(o);
-	if (itc == checkedobjects.end())
-		itc = checkedobjects.insert(make_pair(o,cyclicmembercount{0,false,true,false})).first;
-	else
-		(*itc).second.ignore=true;
-	if ((*itc).second.hasmember)
+	o->gccounter.ignore=true;
+	if (!o->gccounter.ischecked)
+	{
+		this->checkedobjects.push_back(o);
+		o->gccounter.ischecked=true;
+	}
+	if (o->gccounter.hasmember)
 		this->stopped=true;
 }
 void garbagecollectorstate::setAncestor(ASObject* o)
 {
-	auto itc = checkedobjects.find(o);
-	if (itc == checkedobjects.end())
-		itc = checkedobjects.insert(make_pair(o,cyclicmembercount{0,false,false,true})).first;
-	else
-		(*itc).second.isAncestor=true;
+	o->gccounter.isAncestor=true;
+	if (!o->gccounter.ischecked)
+	{
+		this->checkedobjects.push_back(o);
+		o->gccounter.ischecked=true;
+	}
+}
+void garbagecollectorstate::reset()
+{
+	startobj->gccounter.reset();
+	for (auto it = checkedobjects.begin(); it != checkedobjects.end(); it++)
+		(*it)->gccounter.reset();
 }
 bool garbagecollectorstate::isIgnored(ASObject* o)
 {
-	auto itc = checkedobjects.find(o);
-	if (itc == checkedobjects.end())
-		return false;
-	else
-		return (*itc).second.ignore;
+	return o->gccounter.ischecked && o->gccounter.ignore;
 }
 bool garbagecollectorstate::hasMember(ASObject* o)
 {
-	auto itc = checkedobjects.find(o);
-	if (itc == checkedobjects.end())
-		return false;
-	else
-		return (*itc).second.hasmember;
+	return o->gccounter.ischecked && o->gccounter.hasmember;
 }

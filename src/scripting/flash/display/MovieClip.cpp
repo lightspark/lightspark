@@ -206,6 +206,7 @@ void MovieClip::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("currentLabels","",c->getSystemState()->getBuiltinFunction(_getCurrentLabels,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scenes","",c->getSystemState()->getBuiltinFunction(_getScenes,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("currentScene","",c->getSystemState()->getBuiltinFunction(_getCurrentScene,0,Class<Scene>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("isPlaying","",c->getSystemState()->getBuiltinFunction(_getIsPlaying,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stop","",c->getSystemState()->getBuiltinFunction(stop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("play","",c->getSystemState()->getBuiltinFunction(play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("gotoAndStop","",c->getSystemState()->getBuiltinFunction(gotoAndStop),NORMAL_METHOD,true);
@@ -451,7 +452,9 @@ void MovieClip::setStopped()
 	if (!state.stop_FP)
 	{
 		state.stop_FP=true;
-		state.next_FP=state.FP;
+		// if we reset state.next_FP when in framescript, we get into an infinite loop (see ruffle test avm2/goto_framescript_queued)
+		if (!this->inExecuteFramescript)
+			state.next_FP=state.FP;
 	}
 }
 void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
@@ -711,6 +714,12 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabels)
 		res->set(i, v,false,false);
 	}
 	ret = asAtomHandler::fromObject(res);
+}
+
+ASFUNCTIONBODY_ATOM(MovieClip,_getIsPlaying)
+{
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	asAtomHandler::setBool(ret,!th->state.stop_FP);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_constructor)

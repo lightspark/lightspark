@@ -180,6 +180,7 @@ public:
 	ASFUNCTION_ATOM(_getFramesLoaded);
 	ASFUNCTION_ATOM(_getScenes);
 	ASFUNCTION_ATOM(_getCurrentScene);
+	ASFUNCTION_ATOM(_getIsPlaying);
 
 	void enterFrame(bool implicit) override;
 	void advanceFrame(bool implicit) override;

@@ -1869,7 +1869,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getParent)
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	if(!th->parent)
 	{
-		asAtomHandler::setUndefined(ret);
+		asAtomHandler::setNull(ret);
 		return;
 	}
 

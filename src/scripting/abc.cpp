@@ -560,6 +560,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 	return ret;
 }
 ABCContext::ABCContext(ApplicationDomain* appDomain,SecurityDomain* secDomain, istream& in, ABCVm* vm):scriptsdeclared(false),
+	lastGlobalScope(nullptr),
 	applicationDomain(appDomain),
 	securityDomain(secDomain),
 	constant_pool(vm->vmDataMemory),
@@ -1728,6 +1729,7 @@ void ABCContext::declareScripts()
 #endif
 		//Register it as one of the global scopes
 		applicationDomain->registerGlobalScope(global);
+		lastGlobalScope = global;
 	}
 	scriptsdeclared=true;
 }
@@ -1741,14 +1743,13 @@ void ABCContext::exec(bool lazy)
 	declareScripts();
 	//The last script entry has to be run
 	LOG(LOG_CALLS, "Last script (Entry Point)");
-	//Creating a new global for the last script
-	Global* global=applicationDomain->getLastGlobalScope();
 
 	//the script init of the last script is the main entry point
-	if(!lazy)
+	int lastscript = scripts.size()-1;
+	if(!lazy && !hasRunScriptInit[lastscript])
 	{
-		int lastscript = scripts.size()-1;
-		asAtom g = asAtomHandler::fromObject(global);
+		assert_and_throw(lastGlobalScope);
+		asAtom g = asAtomHandler::fromObject(lastGlobalScope);
 		runScriptInit(lastscript, g);
 	}
 	LOG(LOG_CALLS, "End of Entry Point");

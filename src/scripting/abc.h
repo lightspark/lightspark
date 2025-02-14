@@ -211,6 +211,7 @@ friend class ABCVm;
 friend class method_info;
 private:
 	bool scriptsdeclared;
+	Global* lastGlobalScope;
 public:
 	ApplicationDomain* applicationDomain;
 	SecurityDomain* securityDomain;

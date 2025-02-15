@@ -5480,7 +5480,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					int32_t tslot =code.readu30();
 					assert_and_throw(tslot);
 					if (asAtomHandler::is<Activation_object>(a))
-						resulttype = asAtomHandler::as<Activation_object>(a)->getSlotType(tslot);
+						resulttype = asAtomHandler::as<Activation_object>(a)->getSlotType(tslot,state.mi->context);
 					if (checkForLocalResult(state,code,0,resulttype))
 						state.preloadedcode.at(state.preloadedcode.size()-1).opcode = (uint32_t)ABC_OP_OPTIMZED_GETSLOTFROMSCOPEOBJECT+1;
 					else
@@ -5530,7 +5530,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							it->removeArg(state);
 							state.operandlist.pop_back();
 							if (isactivationobj)
-								resulttype = it->instance->getSlotType(t);
+								resulttype = it->instance->getSlotType(t,state.mi->context);
 							else if (it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
 							{
 								if (it->objtype->is<Class_inherit>())
@@ -5542,7 +5542,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								ASObject* obj =asAtomHandler::getObject(o);
 								if (obj)
 								{
-									resulttype = obj->getSlotType(t);
+									resulttype = obj->getSlotType(t,state.mi->context);
 									obj->decRef();
 								}
 							}
@@ -5569,7 +5569,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								it->removeArg(state);
 								state.operandlist.pop_back();
 								addCachedConstant(state,mi, cval,code);
-								resulttype = asAtomHandler::getObject(*o)->getSlotType(t);
+								resulttype = asAtomHandler::getObject(*o)->getSlotType(t,state.mi->context);
 								typestack.push_back(typestackentry(resulttype,false));
 								break;
 							}
@@ -5577,7 +5577,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					}
 					if (isactivationobj)
 					{
-						resulttype = it->instance->getSlotType(t);
+						resulttype = it->instance->getSlotType(t,state.mi->context);
 					}
 					else if (it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
 					{
@@ -5590,7 +5590,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						ASObject* obj =asAtomHandler::getObject(o);
 						if (obj)
 						{
-							resulttype = obj->getSlotType(t);
+							resulttype = obj->getSlotType(t,state.mi->context);
 							obj->decRef();
 						}
 					}

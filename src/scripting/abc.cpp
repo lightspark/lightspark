@@ -1729,7 +1729,8 @@ void ABCContext::declareScripts()
 #endif
 		//Register it as one of the global scopes
 		applicationDomain->registerGlobalScope(global);
-		lastGlobalScope = global;
+		if (i==scripts.size()-1)
+			lastGlobalScope = global;
 	}
 	scriptsdeclared=true;
 }

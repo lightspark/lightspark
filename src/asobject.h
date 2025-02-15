@@ -889,7 +889,7 @@ public:
 		assert_and_throw(n > 0 && n <= slotcount);
 		return slots_vars[n-1]->kind;
 	}
-	Class_base* getSlotType(unsigned int n);
+	Class_base* getSlotType(unsigned int n, lightspark::ABCContext* context);
 
 	uint32_t findInstanceSlotByMultiname(multiname* name, ASWorker* wrk);
 	FORCE_INLINE bool setSlot(ASWorker* wrk, unsigned int n, asAtom &o);
@@ -1284,9 +1284,9 @@ public:
 	{
 		Variables.setSlotNoCoerce(n,o);
 	}
-	FORCE_INLINE Class_base* getSlotType(unsigned int n)
+	FORCE_INLINE Class_base* getSlotType(unsigned int n,ABCContext* context)
 	{
-		return Variables.getSlotType(n);
+		return Variables.getSlotType(n,context);
 	}
 	uint32_t findInstanceSlotByMultiname(multiname* name)
 	{

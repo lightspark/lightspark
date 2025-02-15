@@ -1043,7 +1043,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	if(!obj && cls && cls->isSealed)
 	{
 		variable *protoObj = cls->findSettableInPrototype(name,nullptr);
-		if (protoObj && 
+		if (protoObj &&
 			((asAtomHandler::isFunction(protoObj->var)) ||
 			 asAtomHandler::isValid(protoObj->setter)))
 		{
@@ -1266,9 +1266,16 @@ void variables_map::killObjVar(ASWorker* wrk,const multiname& mname)
 	throw RunTimeException("Variable to kill not found");
 }
 
-Class_base* variables_map::getSlotType(unsigned int n)
+Class_base* variables_map::getSlotType(unsigned int n,ABCContext* context)
 {
-	return (Class_base*)(dynamic_cast<const Class_base*>(slots_vars[n-1]->type));
+	variable* v = slots_vars[n-1];
+	if (!v->isResolved && v->traitTypemname)
+	{
+		v->type = Type::getTypeFromMultiname(v->traitTypemname,context);
+		assert_and_throw(v->type);
+		v->isResolved=true;
+	}
+	return v->isResolved ? dynamic_cast<Class_base*>(v->type) : nullptr;
 }
 
 variable* variables_map::findObjVar(ASWorker* wrk,const multiname& mname, TRAIT_KIND createKind, uint32_t traitKinds)
@@ -1336,7 +1343,7 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 	if (type == nullptr)
 		type = Type::getBuiltinType(mainObj->getInstanceWorker(),typemname);
 	if (type == nullptr)
-		type = Type::getTypeFromMultiname(typemname,context);
+		type = Type::getTypeFromMultiname(typemname,context,true);
 	if(type==nullptr)
 	{
 		if (asAtomHandler::isInvalid(obj)) // create dynamic object
@@ -1345,7 +1352,6 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 		}
 		else
 		{
-			assert_and_throw(asAtomHandler::is<Null>(obj) || asAtomHandler::is<Undefined>(obj));
 			value = obj;
 			if(asAtomHandler::is<Undefined>(obj))
 			{

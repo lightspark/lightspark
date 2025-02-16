@@ -119,7 +119,7 @@ bool AVM1Scope::setVariableByMultiname
 	);
 
 	bool alreadySet = false;
-	if (!removed)
+	if (!removed && (isTargetScope() || values->hasPropertyByMultiname(name, true, true, wrk)))
 	{
 		// Found the variable on this object, overwrite it.
 		// Or, we've hit the currently running clip, so create it here.

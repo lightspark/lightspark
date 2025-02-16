@@ -228,16 +228,17 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		clip->getSystemState()->avm1global->incRef();
 		registers[currRegister++] = asAtomHandler::fromObject(clip->getSystemState()->avm1global);
 	}
-	for (uint32_t i = 0; i < paramregisternumbers.size() && i < num_args; i++)
+	for (uint32_t i = 0; i < paramnames.size() && i < num_args; i++)
 	{
-		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" set argument "<<i<<" "<<(int)paramregisternumbers[i]<<" "<<clip->getSystemState()->getStringFromUniqueId(paramnames[i])<<" "<<asAtomHandler::toDebugString(args[i]));
+		auto reg = i < paramregisternumbers.size() ? paramregisternumbers[i] : 0;
+		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" set argument "<<i<<" "<<(int)reg<<" "<<clip->getSystemState()->getStringFromUniqueId(paramnames[i])<<" "<<asAtomHandler::toDebugString(args[i]));
 		ASATOM_INCREF(args[i]);
 
-		if (paramregisternumbers[i] != 0)
+		if (reg != 0)
 		{
 			ASATOM_INCREF(args[i]);
-			ASATOM_DECREF(registers[paramregisternumbers[i]]);
-			registers[paramregisternumbers[i]] = args[i];
+			ASATOM_DECREF(registers[reg]);
+			registers[reg] = args[i];
 		}
 		else
 		{

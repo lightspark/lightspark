@@ -2673,17 +2673,17 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionCall "<<clip->toDebugString());
 					break;
 				}
-				if (asAtomHandler::isString(a))
-				{
-					tiny_string s = asAtomHandler::toString(a,wrk);
-					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCall label "<<s);
-					clip->as<MovieClip>()->AVM1ExecuteFrameActionsFromLabel(s);
-				}
-				else
+				if (asAtomHandler::isNumeric(a))
 				{
 					uint32_t frame = asAtomHandler::toUInt(a);
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCall frame "<<frame);
 					clip->as<MovieClip>()->AVM1ExecuteFrameActions(frame);
+				}
+				else
+				{
+					tiny_string s = asAtomHandler::AVM1toString(a,wrk);
+					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCall label "<<s);
+					clip->as<MovieClip>()->AVM1ExecuteFrameActionsFromLabel(s);
 				}
 				ASATOM_DECREF(a);
 				break;

@@ -1568,8 +1568,8 @@ void ABCVm::abc_callpropertyStaticNameCached_localResult(call_context* context)
 	}
 	else
 		callprop_intern(context,ret,*obj,args,argcount,name,instrptr,false,true,(instrptr->local2.flags&ABC_OP_COERCED)==0);
-	ASATOM_DECREF(*obj);
 	replacelocalresult(context,context->exec_pos->local3.pos,ret);
+	ASATOM_DECREF(*obj);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callpropertyStaticNameCached_constant(call_context* context)
@@ -3232,7 +3232,6 @@ void ABCVm::abc_getPropertyInteger_constant_constant_localresult(call_context* c
 	asAtomHandler::getVariableByInteger(obj,prop,index,context->worker);
 	if (checkPropertyExceptionInteger(obj,index,prop,context->worker))
 		return;
-	ASATOM_INCREF(prop);
 	replacelocalresult(context,instrptr->local3.pos,prop);
 	++(context->exec_pos);
 }
@@ -7697,9 +7696,13 @@ void ABCVm::abc_coerce_local_localresult(call_context* context)
 		return;
 	}
 
-	if (!type->coerce(context->worker,res))
-		ASATOM_INCREF(res);
-	replacelocalresult(context,context->exec_pos->local3.pos,res);
+	bool coerced = !type->coerce(context->worker,res);
+	if (context->exec_pos->local_pos1!=context->exec_pos->local3.pos)
+	{
+		if (coerced)
+			ASATOM_INCREF(res);
+		replacelocalresult(context,context->exec_pos->local3.pos,res);
+	}
 	++(context->exec_pos);
 }
 
@@ -7858,7 +7861,6 @@ void ABCVm::abc_nextvalue_constant_local(call_context* context)
 	LOG_CALL("nextvalue_cl");
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker)->nextValue(ret,asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
-	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -7875,7 +7877,6 @@ void ABCVm::abc_nextvalue_constant_constant_localresult(call_context* context)
 	LOG_CALL("nextvalue_ccl");
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker)->nextValue(ret,asAtomHandler::toUInt(*context->exec_pos->arg2_constant));
-	ASATOM_INCREF(ret);
 	replacelocalresult(context,context->exec_pos->local3.pos,ret);
 	++(context->exec_pos);
 }
@@ -7972,7 +7973,6 @@ void ABCVm::abc_nextname_constant_local(call_context* context)
 	LOG_CALL("nextname_cl");
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker)->nextName(ret,asAtomHandler::toUInt(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
-	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 	++(context->exec_pos);
 }
@@ -7989,7 +7989,6 @@ void ABCVm::abc_nextname_constant_constant_localresult(call_context* context)
 	LOG_CALL("nextname_ccl");
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker)->nextName(ret,asAtomHandler::toUInt(*context->exec_pos->arg2_constant));
-	ASATOM_INCREF(ret);
 	replacelocalresult(context,context->exec_pos->local3.pos,ret);
 	++(context->exec_pos);
 }

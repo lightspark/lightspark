@@ -1049,7 +1049,7 @@ protected:
 		traitsInitialized =false;
 		constructIndicator = false;
 		constructorCallComplete = false;
-		bool keep = removefromGarbageCollection();
+		bool keep = removefromGarbageCollection()  && canHaveCyclicMemberReference();
 		implEnable = true;
 		storedmembercount=0;
 		gccounter.reset();
@@ -1058,7 +1058,7 @@ protected:
 		initialized=false;
 #endif
 		bool dodestruct = true;
-		if (objfreelist)
+		if (!keep && objfreelist)
 		{
 			if (!getCached())
 			{
@@ -1070,7 +1070,7 @@ protected:
 		}
 		if (dodestruct)
 		{
-			if (keep && canHaveCyclicMemberReference())
+			if (keep)
 			{
 				setConstant();
 				deletedingarbagecollection=true;

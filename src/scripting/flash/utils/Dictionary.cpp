@@ -253,8 +253,14 @@ GET_VARIABLE_RESULT Dictionary::getVariableByMultiname(asAtom& ret, const multin
 			ret = it->second;
 			if (islastref && weakkeys)
 			{
-				ASATOM_REMOVESTOREDMEMBER(name.name_o);
+				ASObject* o = asAtomHandler::getObject(ret);
+				if (o)
+				{
+					o->incRef();
+					o->removeStoredMember();
+				}
 				data.erase(it);
+				ASATOM_REMOVESTOREDMEMBER(name.name_o);
 			}
 			else
 				ASATOM_INCREF(ret);
@@ -347,8 +353,8 @@ void Dictionary::nextValue(asAtom& ret,uint32_t index)
 		ret = asAtomHandler::undefinedAtom;
 	else
 	{
-		ASATOM_INCREF(currentnameiterator->second);
 		ret = currentnameiterator->second;
+		ASATOM_INCREF(ret);
 	}
 }
 

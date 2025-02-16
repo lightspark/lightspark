@@ -287,8 +287,8 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 					this->addLoaderEvent(progressEvent);
 					this->incRef();
 					progressEvent->incRef();
-					spinlock.unlock();
 					getVm(getSystemState())->addIdleEvent(_MR(this),_MR(progressEvent));
+					spinlock.unlock();
 				}
 				else
 					spinlock.unlock();

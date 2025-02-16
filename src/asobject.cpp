@@ -2117,6 +2117,8 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 	auto it=Variables.cbegin();
 	while(it!=Variables.cend())
 	{
+		if (gcstate.stopped)
+			return false;
 		if (!asAtomHandler::isAccessible(it->second.var))
 		{
 			it++;
@@ -2151,7 +2153,9 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 			}
 			else if (o != parent && ((uint32_t)o->getRefCount()==o->storedmembercount))
 			{
-				if (o->countAllCylicMemberReferences(gcstate))
+				if(o->gccounter.ischecked)
+					ret = o->gccounter.hasmember || ret;
+				else if (o->countAllCylicMemberReferences(gcstate))
 				{
 					o->gccounter.hasmember=true;
 					if (!o->gccounter.ignore && gcstate.isIgnored(parent))
@@ -2388,14 +2392,16 @@ bool ASObject::handleGarbageCollection()
 		assert(c == UINT32_MAX || c <= storedmembercount || this->preparedforshutdown);
 		if (c == storedmembercount)
 		{
-			this->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
 			for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 			{
 				if ((*it) != this && !(*it)->gccounter.ignore && (*it)->gccounter.count==(uint32_t)(*it)->getRefCount() && (*it)->gccounter.hasmember)
 				{
+					assert (!(*it)->getCached());
 					(*it)->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
 				}
 			}
+			this->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
+			assert (!this->getCached());
 			for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 			{
 				if ((*it) != this && !(*it)->gccounter.ignore && (*it)->gccounter.count==(uint32_t)(*it)->getRefCount() && (*it)->gccounter.hasmember)
@@ -2423,6 +2429,8 @@ bool ASObject::handleGarbageCollection()
 
 bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
+	if(this->gccounter.ischecked)
+		return this->gccounter.hasmember;
 	bool ret = false;
 	for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
 	{
@@ -2695,7 +2703,7 @@ void ASObject::getValueAt(asAtom &ret,int index)
 		LOG_CALL("Calling the getter");
 		asAtom v=asAtomHandler::fromObject(this);
 		asAtom caller = obj->getter;
-		asAtomHandler::callFunction(caller,getInstanceWorker(),ret, v,NULL,0,false);
+		asAtomHandler::callFunction(caller,getInstanceWorker(),ret, v,nullptr,0,false);
 		LOG_CALL("End of getter at index "<<index<<":"<< asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
 	}
 	else

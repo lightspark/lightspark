@@ -12,38 +12,42 @@ import os
 import pickle
 
 #These regexp are used for finding important pieces in the source
-sinit = re.compile('.*void\s*(\w*)::sinit\(.*')
-rconstructor = re.compile('[^/]*ASFUNCTIONBODY[\_ATOM]*\( *([^,]*), *\_constructor\)')
+sinit = re.compile(r'.*void\s*(\w*)::sinit\(.*')
+rconstructor = re.compile(r'[^/]*ASFUNCTIONBODY[\_ATOM]*\( *([^,]*), *\_constructor\)')
 #looks like builtin->registerBuiltin("Capabilities","flash.system",Class<Capabilities>::getRef(m_sys));
-rclass          = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(m\_sys\)\)')
-rtemplateclass  = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *_MR\(Template<([^>]*)>::getTemplate\(m\_sys\-\>mainClip\)\)\)')
-rinterfaceclass = re.compile('.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *InterfaceClass<([^>]*)>::getRef\(m\_sys\)\)')
-rclassavm1      = re.compile('.*builtinavm1->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(m\_sys\)\)')
+rclass          = re.compile(r'.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(m\_sys\)\)')
+rtemplateclass  = re.compile(r'.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *_MR\(v\)\)')
+rinterfaceclass = re.compile(r'.*builtin->registerBuiltin\( *"([^"]*)", *"([^"]*)", *InterfaceClass<([^>]*)>::getRef\(m\_sys\)\)')
+rclassavm1      = re.compile(r'.*builtinavm1->registerBuiltin\( *"([^"]*)", *"([^"]*)", *Class<([^>]*)>::getRef\(m\_sys\)\)')
 #the line may start with anything but a comment character
-rget = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *GETTER_METHOD, *([^ ]*)')
-rset = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *SETTER_METHOD, *([^ ]*)')
-rmet = re.compile('[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *NORMAL_METHOD, *([^ ]*)')
-rmet2 = re.compile('[^/]*->prototype->setVariable[Atom]*ByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)* *[A-Z]*\_TRAIT')
-rmet3 = re.compile('[^/]*->prototype->setVariable[Atom]*ByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *[A-Z]*\_TRAIT')
-rget2 = re.compile('.*REGISTER_GETTER\([^,]*, *(.*)\)')
-rget3 = re.compile('.*REGISTER_GETTER_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
-rget4 = re.compile('.*REGISTER_GETTER_STATIC_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
-rset2 = re.compile('.*REGISTER_SETTER\([^,]*, *(.*)\)')
-rgetset2 = re.compile('.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
-rgetset3 = re.compile('.*REGISTER_GETTER_SETTER_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
-rgetsetstatic2 = re.compile('.*REGISTER_GETTER_SETTER_STATIC\([^,]*, *(.*)\)')
-rgetsetstatic3 = re.compile('.*REGISTER_GETTER_SETTER_STATIC_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
+rget = re.compile(r'[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *GETTER_METHOD, *([^ ]*)')
+rset = re.compile(r'[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *SETTER_METHOD, *([^ ]*)')
+rmet = re.compile(r'[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *NORMAL_METHOD, *([^ ]*)')
+rmet2 = re.compile(r'[^/]*->prototype->setVariable[Atom]*ByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)* *[A-Z]*\_TRAIT')
+rmet3 = re.compile(r'[^/]*->prototype->setVariable[Atom]*ByQName\( *"([^"]*)", *([^,]*),[^,]*,[^,]*,(\w\),)*([^,]*,)* *[A-Z]*\_TRAIT')
+rmet4 = re.compile(r'[^/]*->prototype->setVariable[Atom]*ByQName\( *"([^"]*)", *([^,]*),[^,]*, *[A-Z]*\_TRAIT')
+rmet5 = re.compile(r'[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *NORMAL_METHOD, *([^ ]*)')
+rget2 = re.compile(r'.*REGISTER_GETTER\([^,]*, *(.*)\)')
+rget3 = re.compile(r'.*REGISTER_GETTER_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
+rget4 = re.compile(r'.*REGISTER_GETTER_STATIC_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
+rget5 = re.compile(r'[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *GETTER_METHOD, *([^ ]*)')
+rset2 = re.compile(r'.*REGISTER_SETTER\([^,]*, *(.*)\)')
+rset3 = re.compile(r'[^/]*->setDeclaredMethodByQName\( *"([^"]*)", *([^,]*),[^,]*, *SETTER_METHOD, *([^ ]*)')
+rgetset2 = re.compile(r'.*REGISTER_GETTER_SETTER\([^,]*, *(.*)\)')
+rgetset3 = re.compile(r'.*REGISTER_GETTER_SETTER_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
+rgetsetstatic2 = re.compile(r'.*REGISTER_GETTER_SETTER_STATIC\([^,]*, *(.*)\)')
+rgetsetstatic3 = re.compile(r'.*REGISTER_GETTER_SETTER_STATIC_RESULTTYPE\([^,]*, *(.*), *([^ ]*)\)')
 #take c->setVariableAtomByQName(..) but not c->prototype->setVariableByQName(..)
-rconst = re.compile('[^/]*[^prtoye]->setVariable[Atom]*ByQName\( *"([^"]*)",.*[A-Z]*\_TRAIT');
+rconst = re.compile(r'[^/]*[^prtoye]->setVariable[Atom]*ByQName\( *"([^"]*)",.*[A-Z]*\_TRAIT');
 #looks like Event *IOErrorEvent::cloneImpl() const
-rclone = re.compile('[^/]* *\* *([^\:]*)\:\:cloneImpl\(\)')
+rclone = re.compile(r'[^/]* *\* *([^\:]*)\:\:cloneImpl\(\)')
 
-rcomment = re.compile('[ \t]*/')
+rcomment = re.compile(r'[ \t]*/')
 
 #looks like IDataInput::linkTraits(Class_base* c)
-linkTraits = re.compile('.*void\s*(\w*)::linkTraits\(.*')
+linkTraits = re.compile(r'.*void\s*(\w*)::linkTraits\(.*')
 #looks like lookupAndLink(c,"bytesAvailable","flash.utils:IDataInput");
-lookupAndLink = re.compile('[^/]*lookupAndLink\(c,*"([^"]*)", *([^ ]*)')
+lookupAndLink = re.compile(r'[^/]*lookupAndLink\(c,*"([^"]*)", *([^ ]*)')
 
 def getFullname(cls,name):
 	if cls != "":
@@ -107,7 +111,7 @@ for fname in [
 		m = rtemplateclass.match(line)
 		if m:
 			fullname = getFullname("",m.group(1))
-			internalToExternal[m.group(3)] = fullname
+			internalToExternal[m.group(1)] = fullname
 			classes.add(fullname)
 		m = rinterfaceclass.match(line)
 		if m:
@@ -132,13 +136,14 @@ p1 = Popen(["find", "..", "-name",'*.cpp'], stdout=PIPE)
 p2 = Popen(["xargs","cat"], stdin=p1.stdout, stdout=PIPE);
 p1.stdout.close() 
 
-ptmp =""
+parr = []
 for line in p2.communicate()[0].decode("UTF-8","ignore").split("\n"):
 	m = rcomment.match(line)
 	if m:
 		continue
-	ptmp = ptmp + line
-	
+	parr.append(line)
+ptmp = ''.join(parr)
+print ("lines done *****")
 for line in ptmp.split(";"):
 	line = line.replace("\n","").rstrip().rstrip();
 	m = sinit.match(line)
@@ -176,11 +181,19 @@ for line in ptmp.split(";"):
 	if m:
 		getters.add((curClass, m.group(1)))
 		continue
+	m = rget5.match(line)
+	if m:
+		getters.add((curClass, m.group(1)))
+		continue
 	m = rset.match(line)
 	if m:
 		setters.add((curClass, m.group(1)))
 		continue
 	m = rset2.match(line)
+	if m:
+		setters.add((curClass, m.group(1)))
+		continue
+	m = rset3.match(line)
 	if m:
 		setters.add((curClass, m.group(1)))
 		continue
@@ -213,6 +226,14 @@ for line in ptmp.split(";"):
 		methods.add((curClass, m.group(1)))
 		continue
 	m = rmet3.match(line)
+	if m:
+		methods.add((curClass, m.group(1)))
+		continue
+	m = rmet4.match(line)
+	if m:
+		methods.add((curClass, m.group(1)))
+		continue
+	m = rmet5.match(line)
 	if m:
 		methods.add((curClass, m.group(1)))
 		continue

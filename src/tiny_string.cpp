@@ -1314,6 +1314,19 @@ int tiny_string::strcasecmp(tiny_string& s2) const
 	return ret;
 }
 
+bool tiny_string::caselessEquals(const tiny_string& str) const
+{
+	if (numChars() != str.numChars())
+		return false;
+
+	for (size_t i = 0; i < numChars(); ++i)
+	{
+		if (unicharToLower(charAt(i)) != unicharToLower(str[i]))
+			return false;
+	}
+	return true;
+}
+
 uint32_t tiny_string::bytePosToIndex(uint32_t bytepos) const
 {
 	if (bytepos >= numBytes())

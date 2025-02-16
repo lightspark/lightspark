@@ -304,6 +304,9 @@ public:
 	tiny_string uppercase() const;
 	/* like strcasecmp(s1.raw_buf(),s2.raw_buf()) but for unicode */
 	int strcasecmp(tiny_string& s2) const;
+	// Compares two strings for equality, ignoring case, done in a way
+	// that matches Flash Player's behaviour.
+	bool caselessEquals(const tiny_string& str) const;
 	/* split string at each occurrence of delimiter character */
 	std::list<tiny_string> split(uint32_t delimiter) const;
 	/* Convert from byte offset to UTF-8 character index */

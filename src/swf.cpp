@@ -20,6 +20,7 @@
 #include <string>
 #include <algorithm>
 #include <numeric>
+#include "case_string.h"
 #include "backends/event_loop.h"
 #include "backends/security.h"
 #include "scripting/abc.h"
@@ -2483,9 +2484,21 @@ const tiny_string& SystemState::getStringFromUniqueId(uint32_t id) const
 
 uint32_t SystemState::getUniqueStringId(const tiny_string& s)
 {
+	// NOTE: In SWF 6, and earlier (when used as property keys), string
+	// IDs are case insensitive.
+	bool caseSensitive =
+	(
+		worker->needsActionScript3() ||
+		worker->AVM1getSwfVersion() > 6
+	);
+	return getUniqueStringId(s, caseSensitive);
+}
+
+uint32_t SystemState::getUniqueStringId(const tiny_string& s, bool caseSensitive)
+{
 	Locker l(poolMutex);
-	auto it=uniqueStringMap.find(s);
-	if(it==uniqueStringMap.end())
+	auto it = uniqueStringMap.find(CaseString(s, caseSensitive));
+	if (it == uniqueStringMap.end())
 	{
 		tiny_string s2;
 		s2 += s; // ensure that a deep copy of the string is stored in the map, as s might be type READONLY/DYNAMIC and be deleted later

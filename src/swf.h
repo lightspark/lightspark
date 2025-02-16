@@ -85,6 +85,7 @@ class TimerThread;
 class LocalConnectionEvent;
 class ABCVm;
 class Function;
+struct CaseString;
 
 enum class FramePhase
 {
@@ -243,7 +244,7 @@ private:
 	 * Pooling support
 	 */
 	mutable Mutex poolMutex;
-	unordered_map<tiny_string, uint32_t> uniqueStringMap;
+	unordered_map<CaseString, uint32_t> uniqueStringMap;
 	vector<tiny_string> uniqueStringIDMap;
 	uint32_t lastUsedStringId;
 	map<nsNameAndKindImpl, uint32_t> uniqueNamespaceImplMap;
@@ -524,6 +525,7 @@ public:
 	 * Pooling support
 	 */
 	uint32_t getUniqueStringId(const tiny_string& s);
+	uint32_t getUniqueStringId(const tiny_string& s, bool caseSensitive);
 	const tiny_string& getStringFromUniqueId(uint32_t id) const;
 	/*
 	 * Looks for the given nsNameAndKindImpl in the map.

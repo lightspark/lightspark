@@ -1327,6 +1327,13 @@ bool tiny_string::caselessEquals(const tiny_string& str) const
 	return true;
 }
 
+bool tiny_string::equalsWithCase(const tiny_string& str, bool caseSensitive) const
+{
+	if (caseSensitive)
+		return *this == str;
+	return caselessEquals(str);
+}
+
 uint32_t tiny_string::bytePosToIndex(uint32_t bytepos) const
 {
 	if (bytepos >= numBytes())

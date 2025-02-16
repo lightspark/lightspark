@@ -101,6 +101,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ needs.draft_release.outputs.version }}
+          draft: true
           files: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win32.exe
 
   mxe64:
@@ -167,4 +168,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ needs.draft_release.outputs.version }}
+          draft: true
           files: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win64.exe

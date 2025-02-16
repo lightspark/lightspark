@@ -65,7 +65,7 @@ void AVM1XMLDocument::sinit(Class_base* c)
 	c->prototype->setVariableByQName("createElement","",c->getSystemState()->getBuiltinFunction(createElement,1,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("createTextNode","",c->getSystemState()->getBuiltinFunction(createTextNode,1,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("load","",c->getSystemState()->getBuiltinFunction(load),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("idmap","",c->getSystemState()->getBuiltinFunction(_idmap,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("idMap","",c->getSystemState()->getBuiltinFunction(_idmap,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("docTypeDecl	","",c->getSystemState()->getBuiltinFunction(_docTypeDecl,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("xmlDecl","",c->getSystemState()->getBuiltinFunction(_xmlDecl,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("getBytesTotal","",c->getSystemState()->getBuiltinFunction(getBytesTotal),DYNAMIC_TRAIT);

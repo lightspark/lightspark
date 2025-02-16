@@ -121,6 +121,11 @@ public:
 		LOG(LOG_ERROR,"AVM1:constant not found in pool:"<<index<<" "<<avm1strings.size());
 		return asAtomHandler::undefinedAtom;
 	}
+
+	// Returns whether property keys are case sensitive, based on the
+	// current SWF version.
+	bool isCaseSensitive() const { return swfversion > 6; }
+
 	bool keepLocals;
 	size_t callDepth;
 	size_t actionsExecuted;

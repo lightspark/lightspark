@@ -828,7 +828,7 @@ void XMLDocument::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createElement","",c->getSystemState()->getBuiltinFunction(createElement,1,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createTextNode","",c->getSystemState()->getBuiltinFunction(createTextNode,1,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("idmap","",c->getSystemState()->getBuiltinFunction(_idmap,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("idMap","",c->getSystemState()->getBuiltinFunction(_idmap,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("docTypeDecl","",c->getSystemState()->getBuiltinFunction(_docTypeDecl,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("xmlDecl","",c->getSystemState()->getBuiltinFunction(_xmlDecl,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, ignoreWhite,Boolean);

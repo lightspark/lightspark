@@ -3122,6 +3122,7 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path, asAtom* mem
 
 void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 {
+	bool caseSensitive = loadedFrom->version > 6;
 	if (name.empty())
 		return;
 	if (name.startsWith("/"))
@@ -3138,10 +3139,14 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 	if (pos == tiny_string::npos)
 	{
 		ASATOM_INCREF(v); // ensure value is not destructed during binding
-		tiny_string localname = name.lowercase();
-		uint32_t nameIdOriginal = getSystemState()->getUniqueStringId(name);
-		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
-		auto it = avm1variables.find(nameId);
+		auto nameID = getSystemState()->getUniqueStringId
+		(
+			name,
+			// NOTE: Internal property keys are always case insensitive
+			// (e.g. `_x`, `_y`, etc).
+			caseSensitive && !name.startsWith("_")
+		);
+		auto it = avm1variables.find(nameID);
 		if (it != avm1variables.end())
 		{
 			ASObject* o = asAtomHandler::getObject(it->second);
@@ -3149,19 +3154,19 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 				o->removeStoredMember();
 		}
 		if (asAtomHandler::isUndefined(v))
-			avm1variables.erase(nameId);
+			avm1variables.erase(nameID);
 		else
 		{
 			ASObject* o = asAtomHandler::getObject(v);
 			if (o)
 				o->addStoredMember();
-			avm1variables[nameId] = v;
+			avm1variables[nameID] = v;
 		}
 		if (setMember)
 		{
 			multiname objName(nullptr);
 			objName.name_type=multiname::NAME_STRING;
-			objName.name_s_id=nameIdOriginal;
+			objName.name_s_id=nameID;
 			ASObject* o = this;
 			while (o && !o->hasPropertyByMultiname(objName,true,true,loadedFrom->getInstanceWorker()))
 			{
@@ -3176,13 +3181,13 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 			if (alreadyset)
 				ASATOM_DECREF(v);
 		}
-		AVM1UpdateVariableBindings(nameId,v);
+		AVM1UpdateVariableBindings(nameID,v);
 		ASATOM_DECREF(v);
 	}
 	else if (pos == 0)
 	{
-		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1).lowercase();
-		uint32_t nameId = getSystemState()->getUniqueStringId(localname);
+		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
+		uint32_t nameId = getSystemState()->getUniqueStringId(localname, caseSensitive);
 		auto it = avm1variables.find(nameId);
 		if (it != avm1variables.end())
 		{
@@ -3247,22 +3252,24 @@ void DisplayObject::AVM1SetVariableDirect(uint32_t nameId, asAtom v)
 
 asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvars)
 {
+	bool caseSensitive = loadedFrom->version > 6;
 	uint32_t pos = name.find(":");
 	if (pos == tiny_string::npos)
 	{
+		auto nameID = getSystemState()->getUniqueStringId(name, caseSensitive);
 		if (loadedFrom->version > 4 && getSystemState()->avm1global)
 		{
 			// first check for class names
 			asAtom ret=asAtomHandler::invalidAtom;
 			multiname m(nullptr);
 			m.name_type=multiname::NAME_STRING;
-			m.name_s_id=getSystemState()->getUniqueStringId(name);
+			m.name_s_id=nameID;
 			m.isAttribute = false;
 			getSystemState()->avm1global->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 			if(!asAtomHandler::isInvalid(ret))
 				return ret;
 		}
-		auto it = avm1variables.find(getSystemState()->getUniqueStringId(name.lowercase()));
+		auto it = avm1variables.find(nameID);
 		if (it != avm1variables.end())
 		{
 			ASATOM_INCREF(it->second);
@@ -3272,7 +3279,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 	else if (pos == 0)
 	{
 		tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-		return AVM1GetVariable(localname.lowercase());
+		return AVM1GetVariable(localname);
 	}
 	else
 	{
@@ -3281,7 +3288,7 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 		if (clip)
 		{
 			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-			return clip->AVM1GetVariable(localname.lowercase());
+			return clip->AVM1GetVariable(localname);
 		}
 	}
 	asAtom ret=asAtomHandler::invalidAtom;
@@ -3353,7 +3360,8 @@ asAtom DisplayObject::getVariableBindingValue(const tiny_string &name)
 }
 void DisplayObject::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj)
 {
-	uint32_t key = getSystemState()->getUniqueStringId(name);
+	bool caseSensitive = loadedFrom->version > 6;
+	uint32_t key = getSystemState()->getUniqueStringId(name, caseSensitive);
 	if (obj)
 	{
 		obj->incRef();
@@ -3375,10 +3383,10 @@ void DisplayObject::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj
 }
 void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> obj)
 {
-	uint32_t nameID = getSystemState()->getUniqueStringId(name);
-	uint32_t nameIDlower = getSystemState()->getUniqueStringId(name.lowercase());
+	bool caseSensitive = getInstanceWorker()->AVM1callStack.back()->isCaseSensitive();
+	uint32_t nameID = getSystemState()->getUniqueStringId(name, caseSensitive);
 	
-	auto it = avm1variables.find(nameIDlower);
+	auto it = avm1variables.find(nameID);
 	if (it != avm1variables.end())
 	{
 		if (obj && asAtomHandler::isObject(it->second) && asAtomHandler::getObjectNoCheck(it->second) == obj.getPtr())
@@ -3392,7 +3400,7 @@ void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> o
 		asAtom v = asAtomHandler::fromObjectNoPrimitive(obj.getPtr());
 		obj->incRef();
 		obj->addStoredMember();
-		avm1variables[nameIDlower] = v;
+		avm1variables[nameID] = v;
 		
 		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
@@ -3405,7 +3413,7 @@ void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> o
 	}
 	else
 	{
-		avm1variables.erase(nameIDlower);
+		avm1variables.erase(nameID);
 	}
 }
 AVM1Function* DisplayObject::AVM1GetFunction(uint32_t nameID)

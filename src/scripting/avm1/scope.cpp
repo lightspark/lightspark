@@ -193,7 +193,7 @@ bool AVM1Scope::forceDefineLocal
 {
 	return forceDefineLocal
 	(
-		wrk->getSystemState()->getUniqueStringId(name),
+		wrk->getSystemState()->getUniqueStringId(name, true),
 		value,
 		allowConst,
 		wrk

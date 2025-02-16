@@ -4,7 +4,9 @@
     push:
       branches:
         - master
-  
+      tags-ignore:
+        - '**'
+
   jobs:
 
     delete_previous_release:

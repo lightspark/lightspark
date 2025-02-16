@@ -5,6 +5,8 @@ on:
     branches:
       - master
       - test-runner-ci
+    tags-ignore:
+      - '**'
   pull_request:
     branches:
       - master

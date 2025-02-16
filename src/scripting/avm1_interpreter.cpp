@@ -102,7 +102,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		context->globalScope,
 		_MR(clip)
 	));
-	context->scope = _MNR(new AVM1Scope(parentScope, wrk));
+
+	// Local scopes are only created for function calls.
+	context->scope = scope.isNull() ? parentScope : _MNR
+	(
+		new AVM1Scope(parentScope, wrk)
+	);
 
 	wrk->AVM1callStack.push_back(context);
 	context->callDepth++;
@@ -2841,8 +2846,16 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		++context->actionsExecuted;
 	}
 
-	context->scope.reset();
-	context->globalScope.reset();
+	if (!scope.isNull() && isClosure)
+	{
+		scope->incRef();
+		context->scope = scope;
+	}
+	else
+	{
+		context->scope.reset();
+		context->globalScope.reset();
+	}
 
 	for (uint32_t i = 0; i < 256; i++)
 	{

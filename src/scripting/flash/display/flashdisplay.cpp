@@ -728,6 +728,40 @@ DisplayObject* DisplayObjectContainer::getLegacyChildAt(int32_t depth)
 	return mapDepthToLegacyChild.at(depth);
 }
 
+bool DisplayObjectContainer::hasLegacyChildByName
+(
+	const tiny_string& name,
+	bool caseSensitive
+)
+{
+	auto nameID = getSystemState()->getUniqueStringId(name, caseSensitive);
+
+	for (const auto& pair : mapDepthToLegacyChild)
+	{
+		auto child = pair.second;
+		if (nameID == child->name)
+			return true;
+	}
+	return false;
+};
+
+DisplayObject* DisplayObjectContainer::getLegacyChildByName
+(
+	const tiny_string& name,
+	bool caseSensitive
+)
+{
+	auto nameID = getSystemState()->getUniqueStringId(name, caseSensitive);
+
+	for (const auto& pair : mapDepthToLegacyChild)
+	{
+		auto child = pair.second;
+		if (nameID == child->name)
+			return child;
+	}
+	return nullptr;
+}
+
 
 void DisplayObjectContainer::setupClipActionsAt(int32_t depth,const CLIPACTIONS& actions)
 {

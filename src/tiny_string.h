@@ -279,6 +279,8 @@ public:
 		numchars = 1;
 	}
 	
+	bool contains(const tiny_string& str) const;
+	bool contains(uint32_t ch) const;
 	bool startsWith(const tiny_string& str) const;
 	bool endsWith(const tiny_string& str) const;
 	bool startsWith(const char* o) const;
@@ -294,6 +296,10 @@ public:
 	 * returns index of character */
 	uint32_t find(const tiny_string& needle, uint32_t start = 0) const;
 	uint32_t rfind(const tiny_string& needle, uint32_t start = npos) const;
+	uint32_t findFirst(const tiny_string& str, uint32_t start = 0) const;
+	uint32_t findFirstInv(const tiny_string& str, uint32_t start = 0) const;
+	uint32_t findLast(const tiny_string& str, uint32_t start = npos) const;
+	uint32_t findLastInv(const tiny_string& str, uint32_t start = npos) const;
 	// fills line with the text from byteindex up to the next line terminator
 	// upon return byteindex will be set to the index after the next line terminator
 	// returns true if a line terminator was found
@@ -348,6 +354,12 @@ public:
 	tiny_string toQuotedString() const;
 	// returns string that has whitespace characters removed at begin and end
 	tiny_string removeWhitespace() const;
+	// Returns a string with all repeated instances of `ch` removed from
+	// the beginning of the string.
+	tiny_string trimStartMatches(uint32_t ch) const;
+	// Returns a string with all repeated instances of `str` removed from
+	// the beginning of the string.
+	tiny_string trimStartMatches(const tiny_string& str) const;
 	// returns string that has whitespace characters removed at begin
 	tiny_string trimLeft() const;
 	// returns true if the string is empty or only contains whitespace characters

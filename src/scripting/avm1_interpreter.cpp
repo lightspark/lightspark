@@ -53,6 +53,434 @@ asAtom ACTIONRECORD::PeekStack(std::stack<asAtom>& stack)
 		throw RunTimeException("AVM1: empty stack");
 	return stack.top();
 }
+
+// Based on Ruffle's `avm1::activation::Activation::resolve_target_path()`.
+ASObject* AVM1context::resolveTargetPath
+(
+	const asAtom& thisObj,
+	DisplayObject* baseClip,
+	DisplayObject* root,
+	const _R<ASObject>& start,
+	const tiny_string& _path,
+	bool hasSlash,
+	bool first
+) const
+{
+	auto path = _path;
+	// An empty path resolves to the starting clip.
+	if (path.empty())
+	{
+		start->incRef();
+		return start.getPtr();
+	}
+
+	ASObject* obj = start.getPtr();
+	bool isSlashPath;
+	// A starting `/` means we have an absolute path, starting from the
+	// root. e.g. `/foo` == `_root.foo`.
+	if ((isSlashPath = path.startsWith("/")))
+	{
+		path = path.substr(1, UINT32_MAX);
+		obj = root;
+	}
+
+	while (!path.empty())
+	{
+		// Skip over any leading `:`s.
+		// e.g. `:foo`, and `::foo` are the same as `foo`.
+		path = path.trimStartMatches(':');
+
+		asAtom val = asAtomHandler::invalidAtom;
+		auto clip = obj->is<DisplayObject>() ? obj->as<DisplayObject>() : nullptr;
+
+		uint32_t ch = path.numChars() >= 3 ? path[2] : '\0';
+		// Check for an SWF 4 `_parent` path (`..[/:]`).
+		if (path.startsWith("..") && (ch == '\0' || ch == '/' || ch == ':'))
+		{
+			// SWF 4 style `_parent` path.
+			isSlashPath = ch == '/';
+			path = path.stripPrefix("..", ch != '\0');
+
+			if (clip == nullptr || clip->getParent() == nullptr)
+			{
+				// Tried to get the parent of a root clip, bail early.
+				return nullptr;
+			}
+
+			bool isStage = clip->getParent()->is<Stage>();
+			auto parent = isStage ? clip->AVM1getRoot() : clip->getParent();
+
+			val = asAtomHandler::fromObject(parent);
+		}
+		else
+		{
+			// Find the next delimiter.
+			// `:`, `.`, and `/` are all valid path delimiters, with the
+			// only restriction being that a `.` isn't considered a valid
+			// delimiter after a `/` appears.
+			size_t i;
+			bool done;
+			for (i = 0, done = false; i < path.numChars(); ++i)
+			{
+				switch (path[i])
+				{
+					case '/': isSlashPath = true;
+					// Falls through.
+					case ':': done = true; break;
+					case '.': done = !isSlashPath; break;
+					default: done = false; break;
+				}
+				if (done)
+					break;
+			}
+
+			auto name = path.substr(0, i);
+			path = path.substr(std::min(uint32_t(i + 1), path.numChars()), UINT32_MAX);
+
+			if (first && name == "this")
+				val = thisObj;
+			else if (first && name == "_root")
+				val = asAtomHandler::fromObject(baseClip->AVM1getRoot());
+			else
+			{
+				// Try to get the value from the object.
+				// NOTE: This resolves `DisplayObject`s first, and then
+				// locals, which is the opposite of what `ActionGetMember`'s
+				// property access does.
+				auto child =
+				(
+					obj->is<DisplayObjectContainer>() ?
+					obj->as<DisplayObjectContainer>()->getLegacyChildByName
+					(
+						name,
+						isCaseSensitive()
+					) : nullptr
+				);
+
+				if (child != nullptr)
+				{
+					// NOTE: If the object can't be represented as an
+					// AVM1 object, such as `Shape`, then any attempt to
+					// access it will return the parent instead.
+					if (!hasSlash && child->is<Shape>())
+						val = asAtomHandler::fromObject(child->getParent());
+					else
+						val = asAtomHandler::fromObject(child);
+				}
+				else
+				{
+					auto sys = baseClip->getSystemState();
+					multiname objName(nullptr);
+					objName.name_type = multiname::NAME_STRING;
+					objName.name_s_id = sys->getUniqueStringId(name, isCaseSensitive());
+					obj->AVM1getVariableByMultiname
+					(
+						val,
+						objName,
+						GET_VARIABLE_OPTION::NO_INCREF,
+						// TODO: Uncomment this, once this is `virtual`,
+						// and an overload for `DisplayObject`s is added.
+						//hasSlash,
+						baseClip->getInstanceWorker()
+					);
+				}
+			}
+		}
+
+		// NOTE: `this`, and `_root` are only allowed at the start of
+		// the path.
+		first = false;
+
+		// Convert the atom into an object, while we're traversing the path.
+		if (asAtomHandler::isObjectPtr(val))
+			obj = asAtomHandler::getObjectNoCheck(val);
+		else
+			return nullptr;
+	}
+
+	obj->incRef();
+	return obj;
+}
+
+// Based on Ruffle's `avm1::activation::Activation::get_variable()`.
+asAtom AVM1context::getVariable
+(
+	const asAtom& thisObj,
+	DisplayObject* baseClip,
+	DisplayObject* clip,
+	const tiny_string& path
+) const
+{
+	// Try to resolve a variable path for `ActionGetVariable`.
+	if (clip == nullptr)
+		clip = baseClip->AVM1getRoot();
+
+	auto sys = clip->getSystemState();
+	auto wrk = clip->getInstanceWorker();
+
+	bool pathHasSlash = path.contains('/');
+
+	// Find the last `:`, or `.` in the path.
+	// If we've got one, then it must be resolved as a target path.
+	auto pos = path.findLast(":.");
+	if (pos != tiny_string::npos)
+	{
+		// We've got a `:`, or `.`, meaning it's an object path, and a
+		// variable name. Which has to be resolved directly on the target
+		// object.
+		auto varPath = path.substr(0, pos);
+		auto varName = path.substr(pos + 1, UINT32_MAX);
+		auto root = clip->AVM1getRoot();
+
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_STRING;
+		m.isAttribute = false;
+		m.name_s_id = sys->getUniqueStringId(varName, isCaseSensitive());
+
+		asAtom ret = asAtomHandler::invalidAtom;
+		scope->forEachScope([&](const AVM1Scope& scope)
+		{
+			auto obj = resolveTargetPath
+			(
+				thisObj,
+				baseClip,
+				root,
+				scope.getLocals(),
+				varPath,
+				pathHasSlash
+			);
+
+			if (obj == nullptr || !obj->hasPropertyByMultiname(m, true, true, wrk))
+				return true;
+
+			obj->AVM1getVariableByMultiname
+			(
+				ret,
+				m,
+				GET_VARIABLE_OPTION::NONE,
+				wrk
+			);
+			return false;
+		});
+		if (asAtomHandler::isValid(ret))
+			return ret;
+		return asAtomHandler::undefinedAtom;
+	}
+
+	// If the path doesn't have a trailing variable, it could still be a
+	// slash path.
+	if (pathHasSlash)
+	{
+		auto root = clip->AVM1getRoot();
+
+		asAtom ret = asAtomHandler::invalidAtom;
+		scope->forEachScope([&](const AVM1Scope& scope)
+		{
+			auto obj = resolveTargetPath
+			(
+				thisObj,
+				baseClip,
+				root,
+				scope.getLocals(),
+				path,
+				true,
+				pathHasSlash
+			);
+
+			if (obj == nullptr)
+				return true;
+
+			obj->incRef();
+			ret = asAtomHandler::fromObject(obj);
+			return false;
+		});
+
+		if (asAtomHandler::isValid(ret))
+			return ret;
+	}
+
+	if (path == "this")
+	{
+		ASATOM_INCREF(thisObj);
+		return thisObj;
+	}
+	else if (path == "_global")
+	{
+		sys->avm1global->incRef();
+		return asAtomHandler::fromObject(sys->avm1global);
+	}
+
+	// Check for level names (`_level<depth>`).
+	auto prefix = path.substr(0, 6);
+	bool isLevelName =
+	(
+		prefix.equalsWithCase("_level", isCaseSensitive()) ||
+		prefix.equalsWithCase("_flash", isCaseSensitive())
+	);
+	if (isLevelName)
+	{
+		if (path.numBytes() == 7 && path[6] == '0')
+		{
+			auto root = baseClip->AVM1getRoot();
+			root->incRef();
+			return asAtomHandler::fromObject(root);
+		}
+
+		// TODO: Support level names other than `_level0`.
+		LOG
+		(
+			LOG_NOT_IMPLEMENTED,
+			"getVariable: level names other than `" << prefix <<
+			"0`. Got " << path
+		);
+		return asAtomHandler::undefinedAtom;
+	}
+
+	multiname m(nullptr);
+	m.name_type = multiname::NAME_STRING;
+	m.isAttribute = false;
+	m.name_s_id = sys->getUniqueStringId
+	(
+		path,
+		// NOTE: Internal property keys are always case insensitive
+		// (e.g. `_x`, `_y`, etc).
+		isCaseSensitive() && !path.startsWith("_")
+	);
+
+	// It's a normal variable name.
+	// Resolve it using the scope chain.
+	auto atom = scope->getVariableByMultiname
+	(
+		baseClip,
+		m,
+		GET_VARIABLE_OPTION::NONE,
+		wrk
+	);
+
+	if (asAtomHandler::isValid(atom))
+		return atom;
+
+	// If variable resolution on the scope chain failed, then fallback
+	// to looking in either the target, or root clip.
+	if (!clip->hasPropertyByMultiname(m, true, true, wrk))
+		return asAtomHandler::undefinedAtom;
+
+	clip->AVM1getVariableByMultiname
+	(
+		atom,
+		m,
+		GET_VARIABLE_OPTION::NONE,
+		wrk
+	);
+
+	if (asAtomHandler::isValid(atom))
+		return atom;
+	return asAtomHandler::undefinedAtom;
+}
+
+// Based on Ruffle's `avm1::activation::Activation::set_variable()`.
+void AVM1context::setVariable
+(
+	asAtom& thisObj,
+	DisplayObject* baseClip,
+	DisplayObject* clip,
+	const tiny_string& path,
+	const asAtom& value
+)
+{
+	// Try to resolve a variable path for `ActionSetVariable`.
+	if (clip == nullptr)
+		clip = baseClip->AVM1getRoot();
+
+	auto sys = clip->getSystemState();
+	auto wrk = clip->getInstanceWorker();
+
+	bool pathHasSlash = path.contains('/');
+
+	// If the path is empty, default to using the root clip for the
+	// variable path.
+	if (path.empty())
+		return;
+
+	// Special case for mutating `this`.
+	if (path == "this")
+	{
+		ASATOM_DECREF(thisObj);
+		ASATOM_INCREF(value);
+		thisObj = value;
+		return;
+	}
+
+	// Find the last `:`, or `.` in the path.
+	// If we've got one, then it must be resolved as a target path.
+	auto pos = path.findLast(":.");
+	if (pos != tiny_string::npos)
+	{
+		// We've got a `:`, or `.`, meaning it's an object path, and a
+		// variable name. Which has to be resolved directly on the target
+		// object.
+		auto varPath = path.substr(0, pos);
+		auto varName = path.substr(pos + 1, UINT32_MAX);
+		auto root = clip->AVM1getRoot();
+
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_STRING;
+		m.isAttribute = false;
+		m.name_s_id = sys->getUniqueStringId(varName, isCaseSensitive());
+
+		scope->forEachScope([&](const AVM1Scope& scope)
+		{
+			auto obj = resolveTargetPath
+			(
+				thisObj,
+				baseClip,
+				root,
+				scope.getLocals(),
+				varPath,
+				true,
+				pathHasSlash
+			);
+
+			if (obj == nullptr || !obj->hasPropertyByMultiname(m, true, true, wrk))
+				return true;
+
+			bool alreadySet = false;
+			obj->setVariableByMultiname
+			(
+				m,
+				(asAtom&)value,
+				ASObject::CONST_ALLOWED,
+				&alreadySet,
+				wrk
+			);
+			if (alreadySet)
+				ASATOM_DECREF(value)
+			return false;
+		});
+
+		return;
+	}
+
+	multiname m(nullptr);
+	m.name_type = multiname::NAME_STRING;
+	m.isAttribute = false;
+	m.name_s_id = sys->getUniqueStringId(path, isCaseSensitive());
+
+	// It's a normal variable name. Set it using the scope chain.
+	// This will overwrite the value, if the property already exists in
+	// the scope chain, otherwise, it's created on the top level object.
+	bool alreadySet = scope->setVariableByMultiname
+	(
+		m,
+		(asAtom&)value,
+		ASObject::CONST_ALLOWED,
+		wrk
+	);
+
+	if (alreadySet)
+		ASATOM_DECREF(value)
+}
+
 struct tryCatchBlock
 {
 	uint16_t trysize;
@@ -283,7 +711,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				it = tryblockstart + trycatchblock.trysize;
 				if (!trycatchblock.name.empty())
 				{
-					uint32_t nameID = clip->getSystemState()->getUniqueStringId(trycatchblock.name.lowercase());
+					uint32_t nameID = sys->getUniqueStringId
+					(
+						trycatchblock.name,
+						context->isCaseSensitive()
+					);
 					auto e = asAtomHandler::fromObject(context->exceptionthrown);
 					multiname m(nullptr);
 					m.name_type = multiname::NAME_STRING;
@@ -568,127 +1000,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			{
 				asAtom name = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetVariable "<<asAtomHandler::toDebugString(name));
-				tiny_string s = asAtomHandler::toString(name,wrk);
-				auto nameID = sys->getUniqueStringId(s, context->isCaseSensitive());
-				asAtom res=asAtomHandler::invalidAtom;
-				if (s=="this")
-				{
-					res = thisObj;
-					ASATOM_INCREF(res);
-				}
-				else if (s == "_global")
-				{
-					res = asAtomHandler::fromObjectNoPrimitive(clip->getSystemState()->avm1global);
-					ASATOM_INCREF(res);
-				}
-				else if (s.numBytes()>6 && s.startsWith("_level"))
-				{
-					if (s.numBytes() == 7 && s.charAt(6)=='0')
-						res = asAtomHandler::fromObjectNoPrimitive(clip->loadedFrom);
-					else
-						LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetVariable for "<<s);
-					ASATOM_INCREF(res);
-				}
-				else if (s.find(".") == tiny_string::npos)
-				{
-					multiname m(nullptr);
-					m.name_type = multiname::NAME_STRING;
-					m.isAttribute = false;
-					m.name_s_id = nameID;
-
-					res = context->scope->getVariableByMultiname
-					(
-						originalclip,
-						m,
-						GET_VARIABLE_OPTION::NONE,
-						wrk
-					);
-				}
-				if (asAtomHandler::isInvalid(res) && !clip_isTarget)
-				{
-					if (actobj)
-					{
-						multiname m(nullptr);
-						m.name_type=multiname::NAME_STRING;
-						m.isAttribute = false;
-						m.name_s_id=asAtomHandler::toStringId(name,wrk);
-						actobj->getVariableByMultiname(res,m,GET_VARIABLE_OPTION::NONE,wrk);
-					}
-				}
-				if (asAtomHandler::isInvalid(res) && !clip_isTarget)
-				{
-					if (asAtomHandler::isObject(thisObj))
-					{
-						ASObject* o =asAtomHandler::getObjectNoCheck(thisObj);
-						multiname m(nullptr);
-						m.name_type=multiname::NAME_STRING;
-						m.isAttribute = false;
-						// NOTE: Internal property keys are always case
-						// insensitive (e.g. `_x`, `_y`, etc).
-						if (s.startsWith("_"))
-							m.name_s_id = sys->getUniqueStringId(s, false);
-						else
-							m.name_s_id = nameID;
-						o->getVariableByMultiname(res,m,GET_VARIABLE_OPTION::NONE,wrk);
-					}
-				}
-				if (asAtomHandler::isInvalid(res))
-				{
-					if (!curdepth && !s.startsWith("/") && !s.startsWith(":"))
-					{
-						// first look for member of clip
-						multiname m(nullptr);
-						m.name_type=multiname::NAME_STRING;
-						m.name_s_id = nameID;
-						m.isAttribute = false;
-						if (clip_isTarget)
-						{
-							clip->getVariableByMultiname(res,m,GET_VARIABLE_OPTION::NONE,wrk);
-							if (asAtomHandler::isInvalid(res))
-								res = clip->AVM1GetVariable(s,false);
-						}
-						else
-						{
-							originalclip->getVariableByMultiname(res,m,GET_VARIABLE_OPTION::NONE,wrk);
-							if (asAtomHandler::isInvalid(res))
-								res = originalclip->AVM1GetVariable(s,false);
-						}
-					}
-					else
-						res = clip->AVM1GetVariable(s,false);
-				}
-				if (asAtomHandler::isInvalid(res))
-				{
-					// it seems adobe allows paths in form of "x.y.z" that point to objects in global object
-					tiny_string s1 = s;
-					ASObject* o = clip->getSystemState()->avm1global;
-					multiname m(nullptr);
-					m.name_type=multiname::NAME_STRING;
-					m.isAttribute = false;
-					while (true)
-					{
-						uint32_t pos = s1.find(".");
-						if (pos == tiny_string::npos)
-						{
-							m.name_s_id = sys->getUniqueStringId(s1, context->isCaseSensitive());
-							o->getVariableByMultiname(res,m,GET_VARIABLE_OPTION::NONE,wrk);
-							break;
-						}
-						else
-						{
-							tiny_string s2 = s1.substr_bytes(0,pos);
-							s1 = s1.substr_bytes(pos+1,s1.numBytes()-(pos+1));
-							asAtom r = asAtomHandler::invalidAtom;
-							m.name_s_id = sys->getUniqueStringId(s2, context->isCaseSensitive());
-							o->getVariableByMultiname(r,m,GET_VARIABLE_OPTION::NONE,wrk);
-							if (asAtomHandler::isInvalid(r))
-								break;
-							o = asAtomHandler::toObject(r,wrk);
-						}
-					}
-				}
-				if (asAtomHandler::isInvalid(res))
-					asAtomHandler::setUndefined(res);
+				auto s = asAtomHandler::AVM1toString(name, wrk);
+				auto res = context->getVariable(thisObj, originalclip, clip, s);
 				ASATOM_DECREF(name);
 				PushStack(stack,res);
 				break;
@@ -698,30 +1011,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom value = PopStack(stack);
 				asAtom name = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetVariable "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(value));
-				tiny_string s = asAtomHandler::toString(name,wrk);
+				auto s = asAtomHandler::AVM1toString(name, wrk);
 				ASATOM_DECREF(name);
-				if (s.rfind(".") != tiny_string::npos || s.rfind(":") != tiny_string::npos)
-				{
-					if (!curdepth && !s.startsWith("/") && !s.startsWith(":") && !clip_isTarget)
-						originalclip->AVM1SetVariable(s,value);
-					else
-						clip->AVM1SetVariable(s,value);
-				}
-				else
-				{
-					uint32_t nameID = sys->getUniqueStringId(s, context->isCaseSensitive());
-					multiname m(nullptr);
-					m.name_type = multiname::NAME_STRING;
-					m.name_s_id = nameID;
-
-					context->scope->setVariableByMultiname
-					(
-						m,
-						value,
-						ASObject::CONST_ALLOWED,
-						wrk
-					);
-				}
+				context->setVariable(thisObj, originalclip, clip, s, value);
 				break;
 			}
 			case 0x20: // ActionSetTarget2
@@ -1251,98 +1543,29 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				for (uint32_t i = 0; i < numargs; i++)
 					args[i] = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
+
+				asAtom ret = asAtomHandler::undefinedAtom;
 				auto s = asAtomHandler::AVM1toString(name, wrk);
-				auto nameID = sys->getUniqueStringId(s, context->isCaseSensitive());
-				asAtom ret=asAtomHandler::invalidAtom;
-				AVM1Function* f =nullptr;
-				if (asAtomHandler::isUndefined(name)|| asAtomHandler::toStringId(name,wrk) == BUILTIN_STRINGS::EMPTY)
-					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction without name "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
-				else
+				auto func = context->getVariable(thisObj, originalclip, clip, s);
+
+				if (asAtomHandler::is<AVM1Function>(func))
 				{
-					tiny_string s = asAtomHandler::toString(name,wrk).lowercase();
-					asAtom func = clip->AVM1GetVariable(s.lowercase());
-					if (asAtomHandler::isInvalid(func) && clip != originalclip)
-						func = originalclip->AVM1GetVariable(s.lowercase());
-					if (asAtomHandler::is<AVM1Function>(func))
-					{
-						asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
-						f = asAtomHandler::as<AVM1Function>(func);
-						f->call(&ret,&obj,args,numargs,caller);
-						f->decRef();
-					}
-					else if (asAtomHandler::is<Function>(func))
-					{
-						asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
-						asAtomHandler::as<Function>(func)->call(ret,wrk,obj,args,numargs);
-						asAtomHandler::as<Function>(func)->decRef();
-					}
-					else if (asAtomHandler::is<Class_base>(func))
-					{
-						asAtomHandler::as<Class_base>(func)->generator(wrk,ret,args,numargs);
-					}
-					else
-					{
-						if (clip->loadedFrom->version > 4)
-						{
-							func = asAtomHandler::invalidAtom;
-							multiname m(nullptr);
-							m.name_type=multiname::NAME_STRING;
-							m.name_s_id=nameID;
-							m.isAttribute = false;
-							clip->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
-							if (asAtomHandler::isInvalid(func))// get Variable from root movie
-								clip->loadedFrom->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
-							if (asAtomHandler::isInvalid(func))// get Variable from global object
-								clip->getSystemState()->avm1global->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
-						}
-						if (asAtomHandler::isInvalid(func))
-						{
-							multiname m(nullptr);
-							m.name_type=multiname::NAME_STRING;
-							m.name_s_id=nameID;
-							func = context->scope->getVariableByMultiname
-							(
-								originalclip,
-								m,
-								GET_VARIABLE_OPTION::NONE,
-								wrk
-							);
-						}
-						if (asAtomHandler::isInvalid(func))
-						{
-							f =clip->AVM1GetFunction(nameID);
-							if (f)
-								f->call(&ret,nullptr, args,numargs,caller);
-							else
-							{
-								LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction function not found "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func)<<" "<<numargs);
-								ret = asAtomHandler::undefinedAtom;
-							}
-						}
-						else if (asAtomHandler::is<AVM1Function>(func))
-						{
-							asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
-							f = asAtomHandler::as<AVM1Function>(func);
-							f->call(&ret,&obj,args,numargs,caller);
-							f->decRef();
-						}
-						else if (asAtomHandler::is<Function>(func))
-						{
-							asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
-							asAtomHandler::as<Function>(func)->call(ret,wrk,obj,args,numargs);
-							asAtomHandler::as<Function>(func)->decRef();
-						}
-						else if (asAtomHandler::is<Class_base>(func))
-						{
-							asAtomHandler::as<Class_base>(func)->generator(wrk,ret,args,numargs);
-						}
-						else
-						{
-							LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction function not found "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func)<<" "<<numargs);
-							ret = asAtomHandler::undefinedAtom;
-						}
-					}
+					asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
+					auto f = asAtomHandler::as<AVM1Function>(func);
+					f->call(&ret,&obj,args,numargs,caller);
+					f->decRef();
 				}
+				else if (asAtomHandler::is<Function>(func))
+				{
+					asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
+					asAtomHandler::as<Function>(func)->call(ret,wrk,obj,args,numargs);
+					asAtomHandler::as<Function>(func)->decRef();
+				}
+				else if (asAtomHandler::is<Class_base>(func))
+					asAtomHandler::as<Class_base>(func)->generator(wrk,ret,args,numargs);
+				else
+					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction function not found "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func)<<" "<<numargs);
+
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction done "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				for (uint32_t i = 0; i < numargs; i++)
 					ASATOM_DECREF(args[i]);
@@ -1381,11 +1604,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				for (size_t i = 0; i < numargs; i++)
 					args[i] = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
-				AVM1Function* f =nullptr;
 				auto s = asAtomHandler::AVM1toString(name, wrk);
 				auto nameID = sys->getUniqueStringId(s, context->isCaseSensitive());
 				asAtom ret=asAtomHandler::invalidAtom;
-				if (asAtomHandler::isUndefined(name) || asAtomHandler::toStringId(name,wrk) == BUILTIN_STRINGS::EMPTY)
+				if (asAtomHandler::isUndefined(name) || s.empty())
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject without name "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				else
 				{
@@ -1393,8 +1615,15 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					m.name_type=multiname::NAME_STRING;
 					m.name_s_id=nameID;
 					m.isAttribute = false;
-					asAtom cls=asAtomHandler::invalidAtom;
-					clip->getSystemState()->avm1global->getVariableByMultiname(cls,m,GET_VARIABLE_OPTION::NONE,wrk);
+
+					auto cls = context->scope->getVariableByMultiname
+					(
+						originalclip,
+						m,
+						GET_VARIABLE_OPTION::NONE,
+						wrk
+					);
+
 					if (asAtomHandler::is<Class_base>(cls))
 					{
 						asAtomHandler::as<Class_base>(cls)->getInstance(wrk,ret,true,args,numargs);
@@ -1409,31 +1638,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						func->call(nullptr,&ret, args,numargs,caller);
 						func->decRef();
 					}
-					else
-						f = clip->AVM1GetFunction(nameID);
 				}
-				if (f)
-				{
-					ASObject* pr = f->getprop_prototype();
-					ASObject* o = nullptr;
-					if (pr)
-					{
-						pr->incRef();
-						_NR<ASObject> proto = _MR(pr);
-						o = new_functionObject(proto);
-						o->setprop_prototype(proto);
-						o->setprop_prototype(proto,BUILTIN_STRINGS::STRING_PROTO);
-					}
-					else
-					{
-						o = new_functionObject(f->prototype);
-						o->setprop_prototype(f->prototype);
-						o->setprop_prototype(f->prototype,BUILTIN_STRINGS::STRING_PROTO);
-					}
-					ret = asAtomHandler::fromObject(o);
-					f->call(nullptr,&ret, args,numargs,caller);
-				}
-				else if (asAtomHandler::isInvalid(ret))
+				if (asAtomHandler::isInvalid(ret))
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject class not found "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				ASATOM_DECREF(name);
 				ASATOM_DECREF(na);
@@ -1513,7 +1719,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			{
 				asAtom path = PopStack(stack);
 				tiny_string s = asAtomHandler::AVM1toString(path, wrk);
-				asAtom obj = clip->AVM1GetVariable(s);
+				asAtom obj = context->getVariable(thisObj, originalclip, clip, s);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEnumerate "<<s<<" "<<asAtomHandler::toDebugString(obj));
 				if (asAtomHandler::isObject(obj) && !asAtomHandler::isNumeric(obj))
 				{
@@ -2786,7 +2992,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			}
 			case 0x33: // ActionAsciiToChar
 			{
-				SystemState* sys = clip->getSystemState();
 				asAtom a = PopStack(stack);
 				uint16_t c = asAtomHandler::toUInt(a);
 				auto id = sys->getUniqueStringId(tiny_string::fromChar(c), true);

@@ -2499,6 +2499,11 @@ multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CON
 			avm1mouselistenercount++;
 			setIsEnumerable(name, false);
 		}
+		// Make sure that the value isn't `free()`'d while updating the
+		// bindings.
+		ASATOM_INCREF(o);
+		AVM1UpdateVariableBindings(name.normalizedNameId(wrk), o);
+		ASATOM_DECREF(o);
 	}
 	return res;
 }

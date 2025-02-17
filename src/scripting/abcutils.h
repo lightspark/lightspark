@@ -122,6 +122,90 @@ public:
 		return asAtomHandler::undefinedAtom;
 	}
 
+	// Resolves a target path string to an object.
+	// This only returns `ASObject`s, non-object values return `nullptr`.
+	//
+	// This can be either a `/` path, `.`, or a weird combination of the
+	// two. e.g. `_root/clip`, `clip.child._parent`, `clip:child`, etc.
+	// See Ruffle's `avm1/target_path` test for many different examples.
+	//
+	// A target path always resolves on the display list. It can also
+	// look in the prototype chain, but not the scope chain.
+	ASObject* resolveTargetPath
+	(
+		const asAtom& thisObj,
+		DisplayObject* baseClip,
+		DisplayObject* root,
+		const _R<ASObject>& start,
+		const tiny_string& _path,
+		bool hasSlash,
+		bool first = true
+	) const;
+
+	// Gets the value, referenced by a target path string.
+	//
+	// This can either be a normal variable name, `/` path, `.` path,
+	// or a weird combination thereof.
+	// e.g. `_root/clip.foo`, `clip:child:_parent`, and `bar`.
+	// See Ruffle's `avm1/target_path` test for many different examples.
+	//
+	// It first tries to resolve the string as a target path, with a
+	// variable name, such as `foo/bar/baz:biz`. The last `:`, or `.`
+	// denotes the variable name, with everything before it denoting the
+	// path of the target object. Note that the variable name on the
+	// right can contain a `/` in this case. This path (minus the
+	// variable name) is recursively resolved on the scope chain.
+	// If the path doesn't resolve on any scope, then `undefined` is
+	// returned.
+	//
+	// If there's no variable name, but the path contains `/`s, it'll
+	// try to resolve on the scope chain. If that fails, then it's
+	// treated as a variable name, and falls back to the variable case
+	// (i.e. `a/b` would be treated as a variable called `a/b`, rather
+	// than as a path).
+	//
+	// And finally, if none of the above it's a normal variable name,
+	// resolved on the scope chain.
+	asAtom getVariable
+	(
+		const asAtom& thisObj,
+		DisplayObject* baseClip,
+		DisplayObject* clip,
+		const tiny_string& path
+	) const;
+
+	// Sets the value, referenced by a target path string.
+	//
+	// This can either be a normal variable name, `/` path, `.` path,
+	// or a weird combination thereof.
+	// e.g. `_root/clip.foo`, `clip:child:_parent`, and `bar`.
+	// See Ruffle's `avm1/target_path` test for many different examples.
+	//
+	// It first tries to resolve the string as a target path, with a
+	// variable name, such as `foo/bar/baz:biz`. The last `:`, or `.`
+	// denotes the variable name, with everything before it denoting the
+	// path of the target object. Note that the variable name on the
+	// right can contain a `/` in this case. This path (minus the
+	// variable name) is recursively resolved on the scope chain.
+	// If the path doesn't resolve on any scope, then the set fails, and
+	// returns early. Otherwise, the variable name is either created, or
+	// overwritten on the target scope.
+	//
+	// This differs from `getVariable()` because `/` paths that have no
+	// variable segment are invalid. e.g. `a/b` sets a property called `a/b` on the
+	// stack frame, rather than traversing the display list.
+	//
+	// If the string couldn't resolve to a path, it's considered a normal
+	// variable name, and is set on the scope chain.
+	void setVariable
+	(
+		asAtom& thisObj,
+		DisplayObject* baseClip,
+		DisplayObject* clip,
+		const tiny_string& path,
+		const asAtom& value
+	);
+
 	// Returns whether property keys are case sensitive, based on the
 	// current SWF version.
 	bool isCaseSensitive() const { return swfversion > 6; }

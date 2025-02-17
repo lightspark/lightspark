@@ -277,6 +277,21 @@ tiny_string::operator std::string() const
 	return std::string(buf,stringSize-1);
 }
 
+bool tiny_string::contains(const tiny_string& str) const
+{
+	return find(str) != npos;
+}
+
+bool tiny_string::contains(uint32_t ch) const
+{
+	for (size_t i = 0; i < numChars(); ++i)
+	{
+		if (charAt(i) == ch)
+			return true;
+	}
+	return false;
+}
+
 bool tiny_string::startsWith(const tiny_string& str) const
 {
 	auto strSize = str.numBytes();
@@ -437,6 +452,66 @@ uint32_t tiny_string::rfind(const tiny_string& needle, uint32_t start) const
 		return npos;
 	else
 		return g_utf8_pointer_to_offset(buf,buf+bytepos);
+}
+
+uint32_t tiny_string::findFirst(const tiny_string& str, uint32_t start) const
+{
+	for (auto i = start; i < numChars(); ++i)
+	{
+		auto ch = charAt(i);
+		for (auto ch2 : str)
+		{
+			if (ch == ch2)
+				return i;
+		}
+	}
+
+	return npos;
+}
+
+uint32_t tiny_string::findFirstInv(const tiny_string& str, uint32_t start) const
+{
+	for (auto i = start; i < numChars(); ++i)
+	{
+		auto ch = charAt(i);
+		for (auto ch2 : str)
+		{
+			if (ch != ch2)
+				break;
+		}
+	}
+
+	return npos;
+}
+
+uint32_t tiny_string::findLast(const tiny_string& str, uint32_t start) const
+{
+	for (auto i = std::min(start, numChars() - 1); i != npos; --i)
+	{
+		auto ch = charAt(i);
+		for (auto ch2 : str)
+		{
+			if (ch == ch2)
+				return i;
+		}
+	}
+
+	return npos;
+}
+
+uint32_t tiny_string::findLastInv(const tiny_string& str, uint32_t start) const
+{
+	for (auto i = std::min(start, numChars() - 1); i != npos; --i)
+	{
+		auto ch = charAt(i);
+		for (auto ch2 : str)
+		{
+			if (ch != ch2)
+				return i;
+		}
+	}
+
+	return npos;
 }
 
 void tiny_string::makePrivateCopy(const char* s)
@@ -1477,12 +1552,30 @@ tiny_string tiny_string::removeWhitespace() const
 	getTrimPositions(start,end);
 	return substr_bytes(start,end-start);
 }
+
+tiny_string tiny_string::trimStartMatches(uint32_t ch) const
+{
+	size_t i;
+	for (i = 0; i < numChars() && charAt(i) == ch; ++i);
+
+	return substr(i, UINT32_MAX);
+}
+
+tiny_string tiny_string::trimStartMatches(const tiny_string& str) const
+{
+	size_t i;
+	for (i = 0; i < numChars() && find(str, i) == i; i += str.numChars());
+
+	return substr(i, UINT32_MAX);
+}
+
 tiny_string tiny_string::trimLeft() const
 {
 	uint32_t start,end;
 	getTrimPositions(start,end);
 	return substr_bytes(start,UINT32_MAX);
 }
+
 bool tiny_string::isWhiteSpaceOnly() const
 {
 	uint32_t start,end;

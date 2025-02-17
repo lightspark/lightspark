@@ -181,6 +181,8 @@ public:
 	bool hasLegacyChildAt(int32_t depth);
 	// this does not test if a DisplayObject exists at the provided depth
 	DisplayObject* getLegacyChildAt(int32_t depth);
+	bool hasLegacyChildByName(const tiny_string& name, bool caseSensitive);
+	DisplayObject* getLegacyChildByName(const tiny_string& name, bool caseSensitive);
 	void setupClipActionsAt(int32_t depth, const CLIPACTIONS& actions);
 	void checkRatioForLegacyChildAt(int32_t depth, uint32_t ratio, bool inskipping);
 	void checkColorTransformForLegacyChildAt(int32_t depth, const CXFORMWITHALPHA& colortransform);

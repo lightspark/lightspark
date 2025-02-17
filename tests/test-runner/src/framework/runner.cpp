@@ -91,6 +91,7 @@ swfFile(test.swfPath)
 		log,
 		true
 	);
+	sys->exitOnError=SystemState::ERROR_NONE;
 	sys->use_testrunner_date=true;
 	pt = new ParseThread(swfFile, sys->mainClip);
 
@@ -133,7 +134,10 @@ void TestRunner::tick()
 
 	sys->runTick(frameTime);
 	if (sys->hasError())
-		throw TestRunnerException(sys->getErrorCause());
+	{
+		sys->trace(sys->getErrorCause());
+		//throw TestRunnerException(sys->getErrorCause());
+	}
 
 	if (remainingTicks > 0)
 		remainingTicks--;

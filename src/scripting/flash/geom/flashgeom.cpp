@@ -21,11 +21,13 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Matrix3D.h"
 #include "scripting/flash/geom/Point.h"
+#include "scripting/flash/geom/Rectangle.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/flash/display/BitmapContainer.h"
+#include "scripting/flash/display/Stage.h"
 
 using namespace lightspark;
 using namespace std;
@@ -351,6 +353,8 @@ void Transform::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("matrix","",c->getSystemState()->getBuiltinFunction(_setMatrix),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("matrix","",c->getSystemState()->getBuiltinFunction(_getMatrix,0,Class<Matrix>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("concatenatedMatrix","",c->getSystemState()->getBuiltinFunction(_getConcatenatedMatrix,0,Class<Matrix>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("pixelBounds","",c->getSystemState()->getBuiltinFunction(_getPixelBounds,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getRelativeMatrix3D","",c->getSystemState()->getBuiltinFunction(getRelativeMatrix3D,1,Class<Matrix3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, perspectiveProjection, PerspectiveProjection);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, matrix3D, Matrix3D);
 }
@@ -424,7 +428,47 @@ ASFUNCTIONBODY_ATOM(Transform,_setColorTransform)
 ASFUNCTIONBODY_ATOM(Transform,_getConcatenatedMatrix)
 {
 	Transform* th=asAtomHandler::as<Transform>(obj);
-	ret = asAtomHandler::fromObject(Class<Matrix>::getInstanceS(wrk,th->owner->getConcatenatedMatrix()));
+	ret = asAtomHandler::fromObject(Class<Matrix>::getInstanceS(wrk,th->getConcatenatedMatrix()));
+}
+MATRIX Transform::getConcatenatedMatrix()
+{
+	MATRIX m = owner->getConcatenatedMatrix(true);
+	if (!owner->isOnStage() || owner->is<Stage>())
+	{
+		// for some strange reason the stage quality seems to affect the concatenated matrix if we are not on stage
+		// see https://stackoverflow.com/questions/72766754/flash-stage-quality-affects-displayobject-transform-concatenatedmatrix-scali
+		MATRIX sm;
+		tiny_string s= getSystemState()->stage->quality;
+		if (s == "low")
+			sm.scale(20.0,20.0);
+		else if (s == "medium")
+			sm.scale(10.0,10.0);
+		else if (s == "best" || s=="high")
+			sm.scale(5.0,5.0);
+		else if (s == "8x8" || s=="8x8linear")
+			sm.scale(2.5,2.5);
+		else if (s == "16x16" || s=="16x16linear")
+			sm.scale(1.25,1.25);
+		m = m.multiplyMatrix(sm);
+	}
+	return m;
+}
+ASFUNCTIONBODY_ATOM(Transform,_getPixelBounds)
+{
+	Transform* th=asAtomHandler::as<Transform>(obj);
+	assert_and_throw(argslen==0);
+	Rectangle* rc = Class<Rectangle>::getInstanceSNoArgs(wrk);
+	number_t xmax,ymax;
+	MATRIX m = th->getConcatenatedMatrix();
+	th->owner->getBounds(rc->x,xmax,rc->y,ymax,m);
+	rc->width=xmax-rc->x;
+	rc->height=ymax-rc->y;
+	ret = asAtomHandler::fromObject(rc);
+}
+ASFUNCTIONBODY_ATOM(Transform,getRelativeMatrix3D)
+{
+	//Transform* th=asAtomHandler::as<Transform>(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"Transform.getRelativeMatrix3D");
 }
 
 Matrix::Matrix(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_MATRIX)

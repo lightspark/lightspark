@@ -973,7 +973,7 @@ void ABCVm::abc_setslot(call_context* context)
 	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,v2);
 
 	LOG_CALL("setSlot " << t << " "<< v2->toDebugString() << " "<< asAtomHandler::toDebugString(*v1));
-	if (!v2->setSlot(context->worker,t,*v1))
+	if (v2->setSlot(context->worker,t,*v1) == TFALSE)
 		ASATOM_DECREF_POINTER(v1);
 	v2->decRef();
 	++(context->exec_pos);
@@ -994,7 +994,9 @@ void ABCVm::abc_setglobalSlot(call_context* context)
 
 	Global* globalscope = getGlobalScope(context);
 	RUNTIME_STACK_POP_CREATE(context,o);
-	globalscope->setSlot(context->worker,t-1,*o);
+	LOG_CALL( "setGlobalSlot "<<t<<" "<<asAtomHandler::toDebugString(*o) );
+	if (globalscope->setSlot(context->worker,t-1,*o) == TFALSE)
+		ASATOM_DECREF(*o);
 	++(context->exec_pos);
 }
 void ABCVm::abc_convert_s(call_context* context)

@@ -801,6 +801,9 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	if(isBorrowed && o->as<IFunction>()->inClass == nullptr)
 		o->as<IFunction>()->inClass = this->as<Class_base>();
 	o->as<IFunction>()->isStatic = !isBorrowed;
+	o->as<IFunction>()->isGetter = type==METHOD_TYPE::GETTER_METHOD;
+	o->as<IFunction>()->isSetter = type==METHOD_TYPE::SETTER_METHOD;
+	o->as<IFunction>()->namespaceNameID=ns.kind == NAMESPACE  ? ns.nsNameId : (uint32_t)BUILTIN_STRINGS::EMPTY;
 
 	variable* obj=nullptr;
 	if(isBorrowed)
@@ -2385,6 +2388,8 @@ bool ASObject::handleGarbageCollection()
 				if (!(*it)->gccounter.ignore && (*it)->isMarkedForGarbageCollection() && !deletedingarbagecollection)
 				{
 					getInstanceWorker()->addObjectToGarbageCollector(this);
+					gcstate.reset();
+					return false;
 				}
 				break;
 			}
@@ -2462,16 +2467,19 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 	{
 		if (!this->gccounter.ischecked)
 		{
-			gcstate.incCount(this,false);
 			if (this->gccounter.isAncestor)
+			{
+				ret = gcstate.incCount(this,false);
 				return this->gccounter.hasmember;
+			}
 			ret = countCylicMemberReferences(gcstate);
+			gcstate.incCount(this,false);
 			if (ret)
 				this->gccounter.hasmember=true;
 			else
 				ret=this->gccounter.hasmember;
 		}
-		else
+		else if (!this->gccounter.isAncestor)
 			ret = gcstate.incCount(this,false);
 	}
 	else

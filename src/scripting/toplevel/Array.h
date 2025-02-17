@@ -36,6 +36,10 @@ struct sorton_field
 	bool isDescending;
 	multiname fieldname;
 	sorton_field(const multiname& sortfieldname):isNumeric(false),isCaseInsensitive(false),isDescending(false),fieldname(sortfieldname){}
+	~sorton_field()
+	{
+		fieldname.resetNameIfObject();
+	}
 };
 struct sort_value
 {

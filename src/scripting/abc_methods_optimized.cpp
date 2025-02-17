@@ -4404,7 +4404,7 @@ void ABCVm::abc_setslot_constant_constant(call_context* context)
 	asAtom v2 = *context->exec_pos->arg2_constant;
 	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlot_cc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	if (asAtomHandler::getObject(v1)->setSlot(context->worker,t,v2))
+	if (asAtomHandler::getObject(v1)->setSlot(context->worker,t,v2)==TTRUE)
 		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }
@@ -4414,7 +4414,7 @@ void ABCVm::abc_setslot_local_constant(call_context* context)
 	asAtom v2 = *context->exec_pos->arg2_constant;
 	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlot_lc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	if (asAtomHandler::getObject(v1)->setSlot(context->worker,t,v2))
+	if (asAtomHandler::getObject(v1)->setSlot(context->worker,t,v2)==TTRUE)
 		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }
@@ -4424,7 +4424,7 @@ void ABCVm::abc_setslot_constant_local(call_context* context)
 	asAtom v2 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2);
 	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlot_cl " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	if (asAtomHandler::getObject(v1)->setSlot(context->worker,t,v2))
+	if (asAtomHandler::getObject(v1)->setSlot(context->worker,t,v2)==TTRUE)
 		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }
@@ -4434,7 +4434,7 @@ void ABCVm::abc_setslot_local_local(call_context* context)
 	asAtom v2 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2);
 	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlot_ll " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	if (asAtomHandler::getObject(v1)->setSlot(context->worker,t,v2))
+	if (asAtomHandler::getObject(v1)->setSlot(context->worker,t,v2)==TTRUE)
 		ASATOM_INCREF(v2);
 	++(context->exec_pos);
 }

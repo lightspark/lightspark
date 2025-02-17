@@ -262,7 +262,10 @@ private:
 	synt_function val;
 	/* Pointer to multiname, if this function is a simple getter or setter */
 	multiname* simpleGetterOrSetterName;
-	bool fromNewFunction;
+	uint32_t methodnumber; // position in the method_info list of the ABCContext, currently only valid in methods created from newfunction tag
+	bool fromNewFunction:1;
+	bool classInit:1;
+	bool scriptInit:1;
 	SyntheticFunction(ASWorker* wrk,Class_base* c,method_info* m);
 protected:
 	IFunction* clone(ASWorker* wrk) override;
@@ -308,6 +311,9 @@ public:
 	void checkParamTypes(bool opportunistic=false);
 	bool canSkipCoercion(int param, Class_base* cls);
 	inline bool isFromNewFunction() { return fromNewFunction; }
+	inline bool isClassInit() { return classInit; }
+	inline bool isScriptInit() { return scriptInit; }
+	inline uint32_t getMethodNumber() { return methodnumber; }
 };
 
 /*

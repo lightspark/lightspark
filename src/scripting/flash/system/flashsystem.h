@@ -373,6 +373,7 @@ public:
 class WorkerDomain;
 class ParseThread;
 class Prototype;
+
 class ASWorker: public EventDispatcher, public IThreadJob
 {
 friend class WorkerDomain;
@@ -421,7 +422,9 @@ public:
 	 * each return from a call decreases this. */
 	uint32_t cur_recursion;
 	stacktrace_entry* stacktrace;
-	FORCE_INLINE call_context* incStack(asAtom o, uint32_t f)
+	void fillStackTrace(StackTraceList& strace);
+	static tiny_string getStackTraceString(SystemState* sys, const StackTraceList& strace, ASObject* error);
+	FORCE_INLINE call_context* incStack(asAtom o, SyntheticFunction* f)
 	{
 		if(USUALLY_FALSE(cur_recursion == limits.max_recursion))
 		{
@@ -479,7 +482,6 @@ public:
 	FORCE_INLINE bool isInGarbageCollection() const { return inGarbageCollection; }
 	inline bool inFinalization() const { return inFinalize; }
 	void registerConstantRef(ASObject* obj);
-	
 	// these are needed keep track of native extension calls
 	std::list<asAtom> nativeExtensionAtomlist;
 	std::list<uint8_t*> nativeExtensionStringlist;

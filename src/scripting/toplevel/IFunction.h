@@ -48,7 +48,12 @@ public:
 	 */
 	Class_base* inClass;
 	// if this is a class method, this indicates if it is a static or instance method
-	bool isStatic;
+	bool isStatic:1;
+	bool isGetter:1;
+	bool isSetter:1;
+	uint32_t namespaceNameID;
+
+
 	IFunction* clonedFrom;
 	/* returns whether this is this a method of a function */
 	bool isMethod() const { return inClass != nullptr; }
@@ -57,6 +62,10 @@ public:
 	{
 		inClass=nullptr;
 		isStatic=false;
+		isGetter=false;
+		isSetter=false;
+		namespaceNameID = BUILTIN_STRINGS::EMPTY;
+
 		clonedFrom=nullptr;
 		functionname=0;
 		length=0;
@@ -89,6 +98,9 @@ public:
 		ASATOM_ADDSTOREDMEMBER(ret->closure_this);
 		ret->clonedFrom=this;
 		ret->isStatic=isStatic;
+		ret->isGetter=isGetter;
+		ret->isSetter=isSetter;
+		ret->namespaceNameID=namespaceNameID;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		ret->prototype=this->prototype;

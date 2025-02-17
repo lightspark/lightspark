@@ -132,6 +132,7 @@ friend class DisplayObject;
 private:
 	_NR<DisplayObject> owner;
 	void onSetMatrix3D(_NR<Matrix3D> oldValue);
+	MATRIX getConcatenatedMatrix();
 public:
 	Transform(ASWorker* wrk,Class_base* c);
 	Transform(ASWorker* wrk, Class_base* c, _R<DisplayObject> o);
@@ -146,6 +147,8 @@ public:
 	ASFUNCTION_ATOM(_getMatrix);
 	ASFUNCTION_ATOM(_setMatrix);
 	ASFUNCTION_ATOM(_getConcatenatedMatrix);
+	ASFUNCTION_ATOM(_getPixelBounds);
+	ASFUNCTION_ATOM(getRelativeMatrix3D);
 	ASPROPERTY_GETTER_SETTER(_NR<PerspectiveProjection>, perspectiveProjection);
 	ASPROPERTY_GETTER_SETTER(_NR<Matrix3D>, matrix3D);
 

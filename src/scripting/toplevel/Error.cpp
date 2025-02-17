@@ -124,11 +124,7 @@ void lightspark::setError(ASObject* error)
 ASError::ASError(ASWorker* wrk, Class_base* c, const tiny_string& error_message, int id, const tiny_string& error_name, CLASS_SUBTYPE subtype):
 	ASObject(wrk,c,T_OBJECT,subtype),errorID(id),name(error_name),message(error_message)
 {
-	for (uint32_t i = wrk->cur_recursion; i > 0; i--)
-	{
-		ASObject* o = asAtomHandler::toObject(wrk->stacktrace[i-1].object,wrk);
-		stacktrace.push_back(make_pair(o->getClass() ? o->getClass()->getQualifiedClassNameID() : (uint32_t)BUILTIN_STRINGS::EMPTY,wrk->stacktrace[i-1].name));
-	}
+	wrk->fillStackTrace(stacktrace);
 }
 
 ASFUNCTIONBODY_ATOM(ASError,_getStackTrace)
@@ -138,25 +134,13 @@ ASFUNCTIONBODY_ATOM(ASError,_getStackTrace)
 }
 tiny_string ASError::getStackTraceString()
 {
-	tiny_string ret = toString();
-	ret += "\n";
-	for (auto it = stacktrace.begin(); it != stacktrace.end(); it++)
-	{
-		ret += "    at ";
-		ret += getSystemState()->getStringFromUniqueId((*it).first);
-		ret += "/";
-		ret += getSystemState()->getStringFromUniqueId((*it).second);
-		ret += "()\n";
-	}
-	return ret;
+	return ASWorker::getStackTraceString(getSystemState(),stacktrace,this);
 }
 
 tiny_string ASError::toString()
 {
 	tiny_string ret;
 	ret = name;
-	if(errorID != 0 && !message.startsWith("Error #"))
-		ret += tiny_string(": Error #") + Integer::toString(errorID);
 	if (!message.empty())
 		ret += tiny_string(": ") + message;
 	return ret;

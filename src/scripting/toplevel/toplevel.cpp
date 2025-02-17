@@ -62,7 +62,11 @@ void Class<IFunction>::generator(ASWorker* wrk, asAtom& ret,asAtom* args, const 
 	ret = asAtomHandler::fromObject(getNopFunction());
 }
 
-SyntheticFunction::SyntheticFunction(ASWorker* wrk, Class_base* c, method_info* m):IFunction(wrk,c,SUBTYPE_SYNTHETICFUNCTION),mi(m),val(nullptr),simpleGetterOrSetterName(nullptr),fromNewFunction(false),func_scope(NullRef)
+SyntheticFunction::SyntheticFunction(ASWorker* wrk, Class_base* c, method_info* m):IFunction(wrk,c,SUBTYPE_SYNTHETICFUNCTION),
+	mi(m),val(nullptr),simpleGetterOrSetterName(nullptr),
+	methodnumber(UINT32_MAX),
+	fromNewFunction(false),classInit(false),scriptInit(false),
+	func_scope(NullRef)
 {
 	if(mi)
 		length = mi->numArgs();
@@ -86,7 +90,10 @@ IFunction* SyntheticFunction::clone(ASWorker* wrk)
 	ret->inClass = inClass;
 	ret->func_scope = func_scope;
 	ret->functionname = functionname;
+	ret->methodnumber = methodnumber;
 	ret->fromNewFunction = fromNewFunction;
+	ret->classInit = classInit;
+	ret->scriptInit = scriptInit;
 	ret->setWorker(wrk);
 	ret->objfreelist = &wrk->freelist_syntheticfunction;
 	ret->subtype = this->subtype;
@@ -149,7 +156,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	}
 	assert(wrk == getWorker());
 	auto prev_cur_recursion = wrk->cur_recursion;
-	call_context* saved_cc = wrk->incStack(obj,this->functionname);
+	call_context* saved_cc = wrk->incStack(obj,this);
 	if (codeStatus != method_body_info::PRELOADED && codeStatus != method_body_info::USED)
 	{
 		mi->body->codeStatus = method_body_info::PRELOADING;
@@ -478,7 +485,27 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				if (saved_cc)
 					saved_cc->exceptionthrown=excobj;
 				else
+				{
+					if (!isMethod() && this->fromNewFunction)
+					{
+						//free local ref
+						if (hasstoredmember)
+							this->removeStoredMember();
+						else
+							this->decRef();
+					}
+					for(asAtom* i=cc->locals+1;i< cc->lastlocal;++i)
+					{
+						LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
+						ASATOM_DECREF_POINTER(i);
+					}
+					if (cc->locals[0].uintval != obj.uintval)
+					{
+						LOG_CALL("locals0:"<<asAtomHandler::toDebugString(cc->locals[0]));
+						ASATOM_DECREF_POINTER(cc->locals);
+					}
 					throw excobj;
+				}
 				break;
 			}
 			continue;
@@ -575,7 +602,10 @@ bool SyntheticFunction::destruct()
 	func_scope.reset();
 	val = nullptr;
 	mi = nullptr;
+	methodnumber = UINT32_MAX;
 	fromNewFunction = false;
+	classInit = false;
+	scriptInit = false;
 	return IFunction::destruct();
 }
 

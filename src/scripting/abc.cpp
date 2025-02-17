@@ -1072,6 +1072,8 @@ void ABCVm::tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e)
 	catch(ASObject*& e)
 	{
 		ASWorker* wrk = e->getInstanceWorker();
+		StackTraceList stacktrace;
+		wrk->fillStackTrace(stacktrace);
 		if (!wrk->callStack.empty())
 		{
 			call_context* saved_cc = wrk->callStack.back();
@@ -1090,12 +1092,18 @@ void ABCVm::tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e)
 			m_sys->setError(e->as<ASError>()->getStackTraceString());
 		}
 		else
-			m_sys->setError("Unhandled ActionScript exception");
+		{
+			if (!m_sys->isShuttingDown())
+			{
+				/* do not allow any more event to be enqueued */
+				m_sys->setShutdownFlag();
+			}
+			m_sys->setError(ASWorker::getStackTraceString(m_sys,stacktrace,e));
+		}
 		if (!m_sys->isShuttingDown())
 		{
 			/* do not allow any more event to be enqueued */
-			shuttingdown = true;
-			signalEventWaiters();
+			m_sys->setShutdownFlag();
 		}
 	}
 }
@@ -1766,12 +1774,21 @@ void ABCContext::runScriptInit(unsigned int i, asAtom &g)
 	method_info* m=get_method(scripts[i].init);
 	SyntheticFunction* entry=Class<IFunction>::getSyntheticFunction(this->applicationDomain->getInstanceWorker(),m,m->numArgs());
 	entry->fromNewFunction=true;
-
+	entry->scriptInit = true;
 	entry->addToScope(scope_entry(g,false));
 
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtom f =asAtomHandler::fromObject(entry);
-	asAtomHandler::callFunction(f,this->applicationDomain->getInstanceWorker(),ret,g,nullptr,0,false,false,false);
+	try
+	{
+		asAtomHandler::callFunction(f,this->applicationDomain->getInstanceWorker(),ret,g,nullptr,0,false,false,false);
+	}
+	catch(ASObject*& e)
+	{
+		ASATOM_DECREF(ret);
+		entry->setRefConstant(); // ensure function is kept alive for stacktrace in uncaught exception handling
+		throw e;
+	}
 
 	ASATOM_DECREF(ret);
 

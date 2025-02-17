@@ -30,7 +30,10 @@
 using namespace std;
 using namespace lightspark;
 
-IFunction::IFunction(ASWorker* wrk,Class_base* c,CLASS_SUBTYPE st):ASObject(wrk,c,T_FUNCTION,st),length(0),closure_this(asAtomHandler::invalidAtom),inClass(nullptr),isStatic(false),clonedFrom(nullptr),functionname(0)
+IFunction::IFunction(ASWorker* wrk,Class_base* c,CLASS_SUBTYPE st):ASObject(wrk,c,T_FUNCTION,st),length(0),
+	closure_this(asAtomHandler::invalidAtom),
+	inClass(nullptr),isStatic(false),isGetter(false),isSetter(false),namespaceNameID(BUILTIN_STRINGS::EMPTY),
+	clonedFrom(nullptr),functionname(0)
 {
 }
 

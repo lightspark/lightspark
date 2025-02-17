@@ -56,7 +56,7 @@ void createErrorWithMessage(ASWorker* wrk, int errorID, const tiny_string& messa
 class ASError: public ASObject
 {
 private:
-	std::vector<std::pair<uint32_t,uint32_t>> stacktrace;
+	StackTraceList stacktrace;
 	ASPROPERTY_GETTER(int32_t, errorID);
 	ASPROPERTY_GETTER_SETTER(tiny_string, name);
 protected:

@@ -36,6 +36,7 @@
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/toplevel/Undefined.h"
+#include "scripting/toplevel/toplevel.h"
 #include "parsing/streams.h"
 #include "platforms/engineutils.h"
 #ifdef __APPLE__
@@ -388,12 +389,13 @@ void ApplicationDomain::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER_CB(ApplicationDomain,domainMemory,cbDomainMemory)
 ASFUNCTIONBODY_GETTER(ApplicationDomain,parentDomain)
-
 void ApplicationDomain::cbDomainMemory(_NR<ByteArray> oldvalue)
 {
 	if (!this->domainMemory.isNull() && this->domainMemory->getLength() < MIN_DOMAIN_MEMORY_LIMIT)
 	{
 		createError<ASError>(this->getInstanceWorker(),kEndOfFileError);
+		if (domainMemory)
+			domainMemory->incRef(); //  will be decreffed when handling exception after setter call
 		domainMemory=oldvalue;
 		return;
 	}
@@ -1540,6 +1542,84 @@ void ASWorker::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("terminate","",c->getSystemState()->getBuiltinFunction(terminate,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 }
 
+void ASWorker::fillStackTrace(StackTraceList& strace)
+{
+	for (uint32_t i = cur_recursion; i > 0; i--)
+	{
+		Class_base* c = asAtomHandler::getClass(stacktrace[i-1].object,getSystemState());
+		SyntheticFunction* f = stacktrace[i-1].function;
+		stacktrace_string_entry e;
+		e.clsname = c ? c->getQualifiedClassNameID() : (uint32_t)BUILTIN_STRINGS::EMPTY;
+		e.function = f->functionname;
+		e.init = (uint32_t)BUILTIN_STRINGS::EMPTY;
+		if (f->isScriptInit() && !f->inClass)
+			e.init = BUILTIN_STRINGS::STRING_INIT;
+		else if (f->isClassInit())
+			e.init = getSystemState()->getUniqueStringId("cinit");
+		else if (f->inClass && f->isStatic && f->functionname != BUILTIN_STRINGS::EMPTY)
+			e.init = UINT32_MAX; // indicates static class method
+		else if (f->isFromNewFunction())
+			e.clsname=BUILTIN_STRINGS::EMPTY;
+		e.isGetter=f->isGetter;
+		e.isSetter=f->isSetter;
+		e.ns = f->namespaceNameID;
+		e.methodnumber = f->getMethodNumber();
+		strace.push_back(e);
+	}
+}
+
+tiny_string ASWorker::getStackTraceString(SystemState* sys,const StackTraceList& strace, ASObject* error)
+{
+	tiny_string ret;
+	if (error)
+	{
+		ret = error->toString();
+	}
+	for (auto it = strace.begin(); it != strace.end(); it++)
+	{
+		ret += "\n\tat ";
+		ret += sys->getStringFromUniqueId((*it).clsname);
+		if ((*it).init != BUILTIN_STRINGS::EMPTY)
+		{
+			ret += "$";
+			if ((*it).init != UINT32_MAX)
+				ret += sys->getStringFromUniqueId((*it).init);
+		}
+		if ((*it).function != BUILTIN_STRINGS::EMPTY)
+		{
+			if ((*it).clsname != BUILTIN_STRINGS::EMPTY)
+				ret += "/";
+			if ((it)->isGetter)
+				ret +="get ";
+			if ((it)->isSetter)
+				ret += "set ";
+			if ((it)->ns != BUILTIN_STRINGS::EMPTY)
+			{
+				ret += sys->getStringFromUniqueId((*it).ns);
+				ret +="::";
+			}
+			ret += sys->getStringFromUniqueId((*it).function);
+		}
+		else if((*it).methodnumber != UINT32_MAX)
+		{
+			char buf[100];
+			sprintf(buf,"MethodInfo-%i",(*it).methodnumber);
+			ret += buf;
+		}
+
+		ret += "()";
+		if (sys->use_testrunner_date && !sys->isShuttingDown()
+			&& (*it).clsname==BUILTIN_STRINGS::STRING_GLOBAL
+			&& (*it).init==BUILTIN_STRINGS::STRING_INIT)
+		{
+			// for some reason ruffle adds this (adobe doesn't) when we are at a scriptinit function.
+			// So we do the same if we are in the testrunner
+			ret +=" [TU=]";
+		}
+	}
+	return ret;
+}
+
 void ASWorker::throwStackOverflow()
 {
 	createError<StackOverflowError>(this,kStackOverflowError);
@@ -1608,6 +1688,9 @@ void ASWorker::execute()
 		}
 		catch(ASObject*& e)
 		{
+			StackTraceList stacktrace;
+			fillStackTrace(stacktrace);
+
 			if(e->getClass())
 				LOG(LOG_ERROR,"Unhandled ActionScript exception in worker " << e->toString());
 			else
@@ -1620,7 +1703,7 @@ void ASWorker::execute()
 				getSystemState()->setError(e->as<ASError>()->getStackTraceString());
 			}
 			else
-				getSystemState()->setError("Unhandled ActionScript exception");
+				getSystemState()->setError(getStackTraceString(getSystemState(),stacktrace,e));
 			threadAborting = true;
 		}
 		if (threadAborting)
@@ -1688,16 +1771,11 @@ uint32_t ASWorker::getDefaultXMLNamespaceID() const
 
 void ASWorker::dumpStacktrace()
 {
-	tiny_string strace;
-	for (uint32_t i = cur_recursion; i > 0; i--)
-	{
-		strace += "    at ";
-		strace += asAtomHandler::toObject(stacktrace[i-1].object,this)->getClassName();
-		strace += "/";
-		strace += this->getSystemState()->getStringFromUniqueId(stacktrace[i-1].name);
-		strace += "()\n";
-	}
-	LOG(LOG_INFO,"current stacktrace:\n" << strace);
+	StackTraceList l;
+	fillStackTrace(l);
+
+	tiny_string strace = getStackTraceString(getSystemState(),l,nullptr);
+	LOG(LOG_INFO,"current stacktrace:" << strace);
 }
 
 void ASWorker::addObjectToGarbageCollector(ASObject* o)
@@ -1750,6 +1828,7 @@ void ASWorker::processGarbageCollection(bool force)
 	inGarbageCollection=true;
 	bool hasEntries=this->gcNext && this->gcNext != this;
 	// use two loops to make sure objects added during inner loop are handled _after_ the inner loop is complete
+	LOG(LOG_CALLS,"start garbage collection");
 	while (hasEntries)
 	{
 		ASObject* ogc = this->gcNext;
@@ -1788,6 +1867,7 @@ void ASWorker::processGarbageCollection(bool force)
 	}
 	if (force && this->gcNext && this->gcNext != this)
 		processGarbageCollection(true);
+	LOG(LOG_CALLS,"garbage collection done");
 }
 
 void ASWorker::registerConstantRef(ASObject* obj)

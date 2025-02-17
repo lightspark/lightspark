@@ -2830,6 +2830,7 @@ void ABCVm::newClass(call_context* th, int n)
 	SyntheticFunction* cinit=Class<IFunction>::getSyntheticFunction(th->worker,m,m->numArgs()-m->numOptions());
 	cinit->fromNewFunction=true;
 	cinit->inClass = ret;
+	cinit->classInit = true;
 	cinit->setRefConstant();
 	//cinit must inherit the current scope
 	if (th->parent_scope_stack)
@@ -3029,12 +3030,13 @@ bool ABCVm::deleteProperty(ASObject* obj, multiname* name)
 
 ASObject* ABCVm::newFunction(call_context* th, int n)
 {
-	LOG_CALL("newFunction " << n);
 
 	method_info* m=&th->mi->context->methods[n];
 	SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(th->worker,m,m->numArgs()-m->numOptions());
 	f->func_scope = _R<scope_entry_list>(new scope_entry_list());
 	f->fromNewFunction=true;
+	f->methodnumber=n;
+	LOG_CALL("newFunction " << n<<" "<<f->toDebugString());
 	if (th->parent_scope_stack)
 	{
 		f->func_scope->scope=th->parent_scope_stack->scope;

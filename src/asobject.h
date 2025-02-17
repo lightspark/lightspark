@@ -892,7 +892,7 @@ public:
 	Class_base* getSlotType(unsigned int n, lightspark::ABCContext* context);
 
 	uint32_t findInstanceSlotByMultiname(multiname* name, ASWorker* wrk);
-	FORCE_INLINE bool setSlot(ASWorker* wrk, unsigned int n, asAtom &o);
+	FORCE_INLINE TRISTATE setSlot(ASWorker* wrk, unsigned int n, asAtom &o);
 	/*
 	 * This version of the call is guarantee to require no type conversion
 	 * this is verified at optimization time
@@ -1276,7 +1276,11 @@ public:
 	{
 		return Variables.getSlotKind(n);
 	}
-	FORCE_INLINE bool setSlot(ASWorker* wrk,unsigned int n,asAtom o)
+	// return value:
+	// TTRUE: slot is updated, no new object created
+	// TFALSE: slot is updated, new object was created through coercion
+	// TUNDEFINED: slot was already set to new value, no changes necessary
+	FORCE_INLINE TRISTATE setSlot(ASWorker* wrk,unsigned int n,asAtom o)
 	{
 		return Variables.setSlot(wrk,n,o);
 	}
@@ -1459,15 +1463,15 @@ public:
 };
 
 
-FORCE_INLINE bool variables_map::setSlot(ASWorker* wrk,unsigned int n, asAtom &o)
+FORCE_INLINE TRISTATE variables_map::setSlot(ASWorker* wrk,unsigned int n, asAtom &o)
 {
 	assert_and_throw(n < slotcount);
 	if (slots_vars[n]->var.uintval != o.uintval)
 	{
 		slots_vars[n]->setVar(wrk,o);
-		return slots_vars[n]->var.uintval == o.uintval; // setVar may coerce the object into a new instance, so we need to check if incRef is necessary
+		return slots_vars[n]->var.uintval == o.uintval ? TTRUE : TFALSE; // setVar may coerce the object into a new instance, so we need to check if incRef is necessary
 	}
-	return false;
+	return TUNDEFINED;
 }
 
 FORCE_INLINE void variables_map::setSlotNoCoerce(unsigned int n, asAtom o)
@@ -2891,9 +2895,20 @@ struct abc_limits {
 struct stacktrace_entry
 {
 	asAtom object;
-	uint32_t name;
-	void set(asAtom o, uint32_t n) { object=o; name=n; }
+	SyntheticFunction* function;
+	void set(asAtom o, SyntheticFunction*f) { object=o; function=f; }
 };
 
+struct stacktrace_string_entry
+{
+	uint32_t clsname;
+	uint32_t init;
+	uint32_t function;
+	uint32_t ns;
+	uint32_t methodnumber;
+	bool isGetter:1;
+	bool isSetter:1;
+};
+typedef std::vector<stacktrace_string_entry> StackTraceList;
 }
 #endif /* ASOBJECT_H */

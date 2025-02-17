@@ -1403,6 +1403,7 @@ void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_f
 			hole = true;
 			previndex++;
 			a = getMemberFromPrototypeChain(previndex,protomembers);
+			ASATOM_ADDSTOREDMEMBER(a);
 		}
 		if (asAtomHandler::isInvalid(a))
 		{
@@ -1499,6 +1500,8 @@ void Array::fillSortedArray(asAtom& ret, std::vector<sort_value>& tmp, bool isUn
 		for(;ittmp != tmp.end();++ittmp)
 		{
 			arrayRet->push(asAtomHandler::fromInt(ittmp->originalindex));
+			if (ittmp->fromprototype)
+				ASATOM_REMOVESTOREDMEMBER(ittmp->dataAtom);
 			if (!isUniqueSort) // sortvalues are already decreffed if isUniqueSort is set
 			{
 				for (auto itsv = ittmp->sortvalues.begin(); itsv != ittmp->sortvalues.end(); itsv++)

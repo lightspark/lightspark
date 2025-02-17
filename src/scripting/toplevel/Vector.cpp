@@ -200,8 +200,15 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 		for(unsigned int i=0;i<a->size();++i)
 		{
 			asAtom o = a->at(i);
+			asAtom old = a->at(i);
 			res->checkValue(o,false);
-			ASATOM_ADDSTOREDMEMBER(o);
+			ASObject* obj = asAtomHandler::getObject(o);
+			if (obj)
+			{
+				if (o.uintval == old.uintval)
+					obj->incRef();
+				obj->addStoredMember();
+			}
 			res->vec.push_back(o);
 		}
 		res->setIsInitialized(true);

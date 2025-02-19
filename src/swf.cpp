@@ -20,7 +20,6 @@
 #include <string>
 #include <algorithm>
 #include <numeric>
-#include "case_string.h"
 #include "backends/event_loop.h"
 #include "backends/security.h"
 #include "scripting/abc.h"

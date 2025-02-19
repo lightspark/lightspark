@@ -21,6 +21,7 @@
 #define SWF_H 1
 
 #include "asobject.h"
+#include "case_string.h"
 #include "forwards/events.h"
 #include "forwards/scripting/flash/text/flashtext.h"
 #include "interfaces/logger.h"
@@ -85,7 +86,6 @@ class TimerThread;
 class LocalConnectionEvent;
 class ABCVm;
 class Function;
-struct CaseString;
 
 enum class FramePhase
 {

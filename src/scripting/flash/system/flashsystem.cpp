@@ -1470,7 +1470,7 @@ void ASWorker::finalize()
 	{
 		ASObject* o = (*it);
 		if (o->is<ASWorker>()
-				|| o == getSystemState()->stage 
+				|| o == getSystemState()->stage
 				|| o == getSystemState()->workerDomain
 				|| o == getSystemState()->mainClip
 				|| o == getSystemState()->systemDomain
@@ -1820,7 +1820,7 @@ void ASWorker::processGarbageCollection(bool force)
 {
 	uint64_t currtime = compat_msectiming();
 	int64_t diff =  currtime-last_garbagecollection;
-	if (!force && diff < 10000) // ony execute garbagecollection every 10 seconds
+	if (!force && !getSystemState()->use_testrunner_date && diff < 10000) // ony execute garbagecollection every 10 seconds
 		return;
 	last_garbagecollection = currtime;
 	if (this->stage)

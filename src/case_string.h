@@ -53,8 +53,7 @@ struct hash<lightspark::CaseString>
 {
 	size_t operator()(const lightspark::CaseString& str) const
 	{
-		auto s = str.caseSensitive ? str.str : str.str.lowercase();
-		return hash<lightspark::tiny_string>{}(s);
+		return hash<lightspark::tiny_string>{}(str.str.lowercase());
 	}
 };
 

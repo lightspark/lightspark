@@ -2501,7 +2501,7 @@ uint32_t SystemState::getUniqueStringId(const tiny_string& s, bool caseSensitive
 	{
 		tiny_string s2;
 		s2 += s; // ensure that a deep copy of the string is stored in the map, as s might be type READONLY/DYNAMIC and be deleted later
-		auto ret=uniqueStringMap.insert(make_pair(CaseString(s2, caseSensitive),lastUsedStringId));
+		auto ret=uniqueStringMap.insert(make_pair(s2,lastUsedStringId));
 		uniqueStringIDMap.push_back(s2);
 		assert(ret.second);
 		it=ret.first;

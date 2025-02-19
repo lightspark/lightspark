@@ -251,7 +251,11 @@ asAtom AVM1context::getVariable
 			);
 
 			if (obj == nullptr || !obj->hasPropertyByMultiname(m, true, true, wrk))
+			{
+				if (obj != nullptr)
+					obj->decRef();
 				return true;
+			}
 
 			obj->AVM1getVariableByMultiname
 			(

@@ -448,13 +448,11 @@ void AVM1context::setVariable
 			if (obj == nullptr || !obj->hasPropertyByMultiname(m, true, true, wrk))
 				return true;
 
-			bool alreadySet = false;
-			obj->setVariableByMultiname
+			bool alreadySet = obj->AVM1setVariableByMultiname
 			(
 				m,
 				(asAtom&)value,
 				ASObject::CONST_ALLOWED,
-				&alreadySet,
 				wrk
 			);
 			if (alreadySet)
@@ -1729,38 +1727,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					}
 					if (o != nullptr)
 					{
-						o->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CHECK_CLASS,wrk);
-						if (!asAtomHandler::isValid(ret))
-						{
-							ASObject* pr = o->is<Class_base>() && o->as<Class_base>()->getPrototype(wrk) ? o->as<Class_base>()->getPrototype(wrk)->getObj() : o->getprop_prototype();
-							size_t depth = 0;
-							// search the prototype before searching the AS3 class
-							while (pr != nullptr)
-							{
-								if (depth >= 255)
-								{
-									throw ScriptLimitException
-									(
-										"Reached maximum prototype recursion limit",
-										ScriptLimitException::MaxPrototypeRecursion
-									);
-								}
-								bool isGetter = pr->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CALL_GETTER,wrk) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
-								if (isGetter) // getter from prototype has to be called with o as target
-								{
-									IFunction* f = asAtomHandler::as<IFunction>(ret);
-									ret = asAtom();
-									asAtom closure = asAtomHandler::fromObject(o);
-									f->callGetter(ret,closure,wrk);
-									break;
-								}
-								else if (!asAtomHandler::isInvalid(ret))
-									break;
-								pr = pr->getprop_prototype();
-								depth++;
-							}
-						}
-						if (!asAtomHandler::isValid(ret))
+						o->AVM1getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CHECK_CLASS,wrk);
+						if (asAtomHandler::isInvalid(ret))
 							o->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk);
 					}
 					if (asAtomHandler::isInvalid(ret))
@@ -1803,28 +1771,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 										break;
 									default:
 									{
-										multiname m(nullptr);
-										m.isAttribute = false;
-										switch (asAtomHandler::getObjectType(name))
-										{
-											case T_INTEGER:
-												m.name_type=multiname::NAME_INT;
-												m.name_i=asAtomHandler::getInt(name);
-												break;
-											case T_UINTEGER:
-												m.name_type=multiname::NAME_UINT;
-												m.name_ui=asAtomHandler::getUInt(name);
-												break;
-											case T_NUMBER:
-												m.name_type=multiname::NAME_NUMBER;
-												m.name_d=asAtomHandler::toNumber(name);
-												break;
-											default:
-												m.name_type=multiname::NAME_STRING;
-												m.name_s_id=nameID;
-												break;
-										}
-										o->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk);
+										o->AVM1getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk);
 										break;
 									}
 								}
@@ -1918,28 +1865,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 								}
 							}
 						}
-						bool hassetter=false;
-						if (!fromInitAction)
-						{
-							ASObject* pr = o->getprop_prototype();
-							while (pr)
-							{
-								variable* var = pr->findVariableByMultiname(m,nullptr,nullptr,nullptr,false,wrk);
-								if (var && asAtomHandler::is<AVM1Function>(var->setter))
-								{
-									ASATOM_INCREF(value);
-									auto f = asAtomHandler::as<AVM1Function>(var->setter);
-									f->call(nullptr,&scriptobject,&value,1,caller);
-									hassetter=true;
-									break;
-								}
-								pr = pr->getprop_prototype();
-							}
-						}
-						if (!hassetter)
-						{
-							o->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED,nullptr,wrk);
-						}
+						(void)o->AVM1setVariableByMultiname(m,value,ASObject::CONST_ALLOWED,wrk);
 					}
 					if (o->is<DisplayObject>())
 					{

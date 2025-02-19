@@ -552,6 +552,63 @@ bool ASObject::AVM1toPrimitive(asAtom& ret, bool& isrefcounted, bool& fromValueO
 	return true;
 }
 
+asAtom ASObject::callResolveMethod(const tiny_string& name, ASWorker* wrk)
+{
+	auto pr = getprop_prototype();
+	asAtom ret = asAtomHandler::invalidAtom;
+
+	multiname m(nullptr);
+	m.name_type = multiname::NAME_STRING;
+	m.name_s_id = sys->getUniqueStringId("__resolve", wrk->AVM1isCaseSensitive());
+	m.isAttribute = false;
+
+	for (uint8_t depth = 0; pr != nullptr; pr = pr->getprop_prototype(), ++depth)
+	{
+		if (depth == UINT8_MAX)
+		{
+			throw ScriptLimitException
+			(
+				"Reached maximum prototype recursion limit",
+				ScriptLimitException::MaxPrototypeRecursion
+			);
+		}
+
+		auto func = asAtomHandler::invalidAtom;
+
+		pr->AVM1getVariableByMultiname
+		(
+			func,
+			m,
+			GET_VARIABLE_OPTION
+			(
+				GET_VARIABLE_OPTION::DONT_CALL_GETTER |
+				GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE
+			),
+			wrk
+		);
+
+		if (asAtomHandler::isInvalid(func))
+			continue;
+
+		auto thisObj = asAtomHandler::fromObject(this);
+		auto strAtom = asAtomHandler::fromString(sys, name);
+		asAtomHandler::callFunction
+		(
+			func,
+			wrk,
+			ret,
+			thisObj,
+			&strAtom,
+			1,
+			false
+		);
+		ASATOM_DECREF(func);
+		break;
+	}
+
+	return ret;
+}
+
 bool ASObject::has_valueOf()
 {
 	multiname valueOfName(nullptr);
@@ -1937,32 +1994,121 @@ void ASObject::setRefConstant()
 	getInstanceWorker()->registerConstantRef(this);
 	setConstant();
 }
-GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt,ASWorker* wrk)
+
+std::pair<asAtom, uint8_t> ASObject::AVM1searchPrototypeByMultiname
+(
+	const multiname& name,
+	ASWorker* wrk
+)
+{
+	ASObject* pr;
+	if (is<Class_base>())
+	{
+		auto _class = as<Class_base>();
+		auto proto = _class->getPrototype(wrk);
+		pr = proto != nullptr ? proto->getObj() : getprop_prototype();
+	}
+	else
+		pr = getprop_prototype();
+
+	asAtom ret = asAtomHandler::invalidAtom;
+	for (uint8_t depth = 0; pr != nullptr; pr = pr->getprop_prototype(), ++depth)
+	{
+		if (depth == UINT8_MAX)
+		{
+			throw ScriptLimitException
+			(
+				"Reached maximum prototype recursion limit",
+				ScriptLimitException::MaxPrototypeRecursion
+			);
+		}
+
+		bool isGetter = pr->AVM1getVariableByMultiname
+		(
+			ret,
+			name,
+			GET_VARIABLE_OPTION
+			(
+				GET_VARIABLE_OPTION::DONT_CALL_GETTER |
+				GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE
+			),
+			wrk
+		) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+
+		if (isGetter)
+		{
+			IFunction* f = asAtomHandler::as<IFunction>(ret);
+			auto thisObj = asAtomHandler::fromObject(this);
+			ret = asAtomHandler::invalidAtom;
+			f->callGetter(ret, thisObj, wrk);
+			return std::make_pair(ret, depth);
+		}
+		else if (asAtomHandler::isValid(ret))
+			return std::make_pair(ret, depth);
+	}
+
+	return std::make_pair(callResolveMethod(name.normalizedName(wrk), wrk), 0);
+}
+
+GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
 	GET_VARIABLE_RESULT res = getVariableByMultiname(ret,name,opt,wrk);
-	if (asAtomHandler::isInvalid(ret))
+	if (asAtomHandler::isInvalid(ret) && !(opt & DONT_CHECK_PROTOTYPE))
 	{
-		ASObject* pr = getprop_prototype();
-		size_t depth = 0;
-		while (pr)
-		{
-			if (depth >= 255)
-			{
-				throw ScriptLimitException
-				(
-					"Reached maximum prototype recursion limit",
-
-					ScriptLimitException::MaxPrototypeRecursion
-				);
-			}
-			res = pr->getVariableByMultiname(ret,name,opt,wrk);
-			if (asAtomHandler::isValid(ret))
-				break;
-			pr = pr->getprop_prototype();
-			depth++;
-		}
+		auto pair = AVM1searchPrototypeByMultiname(name, wrk);
+		ret = pair.first;
 	}
 	return res;
+}
+
+bool ASObject::AVM1setLocalByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk)
+{
+	bool alreadySet = false;
+	setVariableByMultiname(name, value, allowConst, &alreadySet, wrk);
+	return alreadySet;
+}
+
+bool ASObject::AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk)
+{
+	auto s = name.normalizedName(wrk);
+
+	if (s.empty())
+		return false;
+
+	// TODO: Support watchers.
+
+	if (!hasPropertyByMultiname(name, true, false, wrk))
+	{
+		// We have to check the prototype chain for virtual setters,
+		// before inserting a new property.
+		for (auto pr = getprop_prototype(); pr != nullptr; pr = pr->getprop_prototype())
+		{
+			bool hasVirtual = false;
+			auto var = findSettable(name, &hasVirtual);
+			if (var == nullptr || !hasVirtual)
+				continue;
+
+			if (asAtomHandler::isInvalid(var->setter))
+				continue;
+
+			auto thisObj = asAtomHandler::fromObject(this);
+			auto res = asAtomHandler::invalidAtom;
+
+			asAtomHandler::callFunction
+			(
+				var->setter,
+				wrk,
+				res,
+				thisObj,
+				&value,
+				1,
+				false
+			);
+			return false;
+		}
+	}
+
+	return AVM1setLocalByMultiname(name, value, allowConst, wrk);
 }
 
 void variables_map::check() const

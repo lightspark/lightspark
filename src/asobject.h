@@ -1169,8 +1169,19 @@ public:
 	{
 		return getVariableByIntegerIntern(ret,index,opt,wrk);
 	}
+
+	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
+
+	std::pair<asAtom, uint8_t> AVM1searchPrototypeByMultiname
+	(
+		const multiname& name,
+		ASWorker* wrk
+	);
 	// AVM1 needs to check the "protoype" variable in addition to the normal behaviour
-	GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk);
+	virtual GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk);
+	virtual bool AVM1setLocalByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
+	bool AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
+
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.
 	 * It is used by getVariableByMultiname and by early binding code
@@ -1200,7 +1211,6 @@ public:
 	 */
 	void executeASMethod(asAtom &ret, const tiny_string& methodName, std::list<tiny_string> namespaces, asAtom *args, uint32_t num_args);
 	virtual void setVariableByMultiname_i(multiname &name, int32_t value, ASWorker* wrk);
-	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
 	/*
 	 * If alreadyset is not null, it has to be initialized to false by the caller.
 	 * It will be set to true if the old and new value are the same.
@@ -1350,6 +1360,7 @@ public:
 	bool isInitialized() const {return traitsInitialized;}
 	virtual bool isConstructed() const;
 
+	asAtom callResolveMethod(const tiny_string& name, ASWorker* wrk);
 	/* helper functions for calling the "valueOf" and
 	 * "toString" AS-functions which may be members of this
 	 *  object */

@@ -118,27 +118,23 @@ bool AVM1Scope::setVariableByMultiname
 		!values->as<DisplayObject>()->isOnStage()
 	);
 
-	bool alreadySet = false;
 	if (!removed && (isTargetScope() || values->hasPropertyByMultiname(name, true, true, wrk)))
 	{
 		// Found the variable on this object, overwrite it.
 		// Or, we've hit the currently running clip, so create it here.
-		values->setVariableByMultiname(name, value, allowConst, &alreadySet, wrk);
+		return values->AVM1setVariableByMultiname(name, value, allowConst, wrk);
 	}
 	else if (!parent.isNull())
 	{
 		// Couldn't find the variable, traverse the scope chain.
 		return parent->setVariableByMultiname(name, value, allowConst, wrk);
 	}
-	else
-	{
-		// This probably shouldn't happen, since all AVM1 code runs in
-		// reference to a `MovieClip`, so we should always have a
-		// `MovieClip` scope. Define it on the top level scope.
-		LOG(LOG_ERROR, "AVM1Scope::setVariableByMultiname: No top level `MovieClip` scope.");
-		values->setVariableByMultiname(name, value, allowConst, &alreadySet, wrk);
-	}
-	return alreadySet;
+
+	// This probably shouldn't happen, since all AVM1 code runs in
+	// reference to a `MovieClip`, so we should always have a `MovieClip`
+	// scope. Define it on the top level scope.
+	LOG(LOG_ERROR, "AVM1Scope::setVariableByMultiname: No top level `MovieClip` scope.");
+	return values->AVM1setVariableByMultiname(name, value, allowConst, wrk);
 }
 
 bool AVM1Scope::defineLocalByMultiname
@@ -149,25 +145,19 @@ bool AVM1Scope::defineLocalByMultiname
 	ASWorker* wrk
 )
 {
-	bool alreadySet = false;
-
+	if (!isWithScope() || !parent.isNull())
+		return values->AVM1setVariableByMultiname(name, value, allowConst, wrk);
 	// When defining a local in a `with` scope, we also need to check if
 	// that local exists on the `with` target. If it does, the variable
 	// of the target should be modified. If not, the property should be
 	// defined in the first non-`with` parent scope.
-	if (isWithScope() && !parent.isNull())
-	{
-		// Does this variable already exist on the target?
-		if (values->hasPropertyByMultiname(name, true, true, wrk))
-			values->setVariableByMultiname(name, value, allowConst, &alreadySet, wrk);
-		// If not, go up the scope chain.
-		else
-			return parent->defineLocalByMultiname(name, value, allowConst, wrk);
-	}
-	else
-		values->setVariableByMultiname(name, value, allowConst, &alreadySet, wrk);
 
-	return alreadySet;
+	// Does this variable already exist on the target?
+	if (values->hasPropertyByMultiname(name, true, true, wrk))
+		return values->AVM1setVariableByMultiname(name, value, allowConst, wrk);
+
+	// If not, go up the scope chain.
+	return parent->defineLocalByMultiname(name, value, allowConst, wrk);
 }
 
 bool AVM1Scope::forceDefineLocalByMultiname

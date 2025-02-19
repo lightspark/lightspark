@@ -2461,6 +2461,141 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	}
 }
 
+asAtom DisplayObject::getPropertyByIndex(size_t idx, ASWorker* wrk)
+{
+	auto sys = getSystemState();
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtom obj = asAtomHandler::fromObject(this);
+	switch (idx)
+	{
+		case 0:// x
+			_getX(ret,wrk,obj,nullptr,0);
+			break;
+		case 1:// y
+			_getY(ret,wrk,obj,nullptr,0);
+			break;
+		case 2:// xscale
+			AVM1_getScaleX(ret,wrk,obj,nullptr,0);
+			break;
+		case 3:// xscale
+			AVM1_getScaleY(ret,wrk,obj,nullptr,0);
+			break;
+		case 4:// currentframe
+			if (is<MovieClip>())
+				MovieClip::_getCurrentFrame(ret,wrk,obj,nullptr,0);
+			break;
+		case 5:// totalframes
+			if (is<MovieClip>())
+				MovieClip::_getTotalFrames(ret,wrk,obj,nullptr,0);
+			break;
+		case 6:// alpha
+			AVM1_getAlpha(ret,wrk,obj,nullptr,0);
+			break;
+		case 7:// visible
+			_getVisible(ret,wrk,obj,nullptr,0);
+			break;
+		case 8:// width
+			_getWidth(ret,wrk,obj,nullptr,0);
+			break;
+		case 9:// height
+			_getHeight(ret,wrk,obj,nullptr,0);
+			break;
+		case 10:// rotation
+			_getRotation(ret,wrk,obj,nullptr,0);
+			break;
+		case 11:// target
+			ret = asAtomHandler::fromString(sys, AVM1GetPath());
+			break;
+		case 12:// framesloaded
+			if (is<MovieClip>())
+				MovieClip::_getFramesLoaded(ret,wrk,obj,nullptr,0);
+			break;
+		case 13:// name
+			_getter_name(ret,wrk,obj,nullptr,0);
+			break;
+		case 15:// url
+			return asAtomHandler::fromString(sys, sys->mainClip->getOrigin().getURL());
+			break;
+		case 17:// focusrect
+			if (is<InteractiveObject>())
+				InteractiveObject::AVM1_getfocusrect(ret,wrk,obj,nullptr,0);
+			break;
+		case 19:// quality
+			AVM1_getQuality(ret,wrk,obj,nullptr,0);
+			break;
+		case 20:// xmouse
+			_getMouseX(ret,wrk,obj,nullptr,0);
+			break;
+		case 21:// ymouse
+			_getMouseY(ret,wrk,obj,nullptr,0);
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED, "getPropertyByIndex: Unknown property index " << idx);
+			break;
+	}
+	return ret;
+}
+
+void DisplayObject::setPropertyByIndex(size_t idx, const asAtom& val, ASWorker* wrk)
+{
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtom obj = asAtomHandler::fromObject(this);
+
+	asAtom value = val;
+	switch (idx)
+	{
+		case 0:// x
+			_setX(ret,wrk,obj,&value,1);
+			ASATOM_DECREF(value);
+			break;
+		case 1:// y
+			_setY(ret,wrk,obj,&value,1);
+			ASATOM_DECREF(value);
+			break;
+		case 2:// xscale
+			AVM1_setScaleX(ret,wrk,obj,&value,1);
+			ASATOM_DECREF(value);
+			break;
+		case 3:// xscale
+			AVM1_setScaleY(ret,wrk,obj,&value,1);
+			ASATOM_DECREF(value);
+			break;
+		case 6:// alpha
+			AVM1_setAlpha(ret,wrk,obj,&value,1);
+			ASATOM_DECREF(value);
+			break;
+		case 7:// visible
+			_setVisible(ret,wrk,obj,&value,1);
+			ASATOM_DECREF(value);
+			break;
+		case 8:// width
+			_setWidth(ret,wrk,obj,&value,1);
+			ASATOM_DECREF(value);
+			break;
+		case 9:// height
+			_setHeight(ret,wrk,obj,&value,1);
+			ASATOM_DECREF(value);
+			break;
+		case 10:// rotation
+			_setRotation(ret,wrk,obj,&value,1);
+			ASATOM_DECREF(value);
+			break;
+		case 13:// name
+			_setter_name(ret,wrk,obj,&value,1);
+			break;
+		case 17:// focusrect
+			if (is<InteractiveObject>())
+				InteractiveObject::AVM1_setfocusrect(ret,wrk,obj,&value,1);
+			break;
+		case 19:// quality
+			AVM1_setQuality(ret,wrk,obj,&value,1);
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED, "setPropertyByIndex: Unknown property index " << idx);
+			break;
+	}
+}
+
 multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk)
 {
 	multiname* res = EventDispatcher::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);

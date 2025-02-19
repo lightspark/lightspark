@@ -228,6 +228,10 @@ public:
 	float getConcatenatedAlpha() const;
 	virtual float getScaleFactor() const;
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
+
+	asAtom getPropertyByIndex(size_t idx, ASWorker* wrk);
+	void setPropertyByIndex(size_t idx, const asAtom& value, ASWorker* wrk);
+
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	virtual void removeAVM1Listeners();
 	void AVM1registerPrototypeListeners();

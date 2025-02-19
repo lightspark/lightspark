@@ -1083,75 +1083,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					tiny_string s = asAtomHandler::toString(target,wrk);
 					o = clip->AVM1GetClipFromPath(s);
 				}
-				asAtom ret = asAtomHandler::undefinedAtom;
-				if (o)
+				asAtom ret = asAtomHandler::invalidAtom;
+				if (o != nullptr)
 				{
-					asAtom obj = asAtomHandler::fromObject(o);
-					switch (asAtomHandler::toInt(index))
-					{
-						case 0:// x
-							DisplayObject::_getX(ret,wrk,obj,nullptr,0);
-							break;
-						case 1:// y
-							DisplayObject::_getY(ret,wrk,obj,nullptr,0);
-							break;
-						case 2:// xscale
-							DisplayObject::AVM1_getScaleX(ret,wrk,obj,nullptr,0);
-							break;
-						case 3:// xscale
-							DisplayObject::AVM1_getScaleY(ret,wrk,obj,nullptr,0);
-							break;
-						case 4:// currentframe
-							if (o->is<MovieClip>())
-								MovieClip::_getCurrentFrame(ret,wrk,obj,nullptr,0);
-							break;
-						case 5:// totalframes
-							if (o->is<MovieClip>())
-								MovieClip::_getTotalFrames(ret,wrk,obj,nullptr,0);
-							break;
-						case 6:// alpha
-							DisplayObject::AVM1_getAlpha(ret,wrk,obj,nullptr,0);
-							break;
-						case 7:// visible
-							DisplayObject::_getVisible(ret,wrk,obj,nullptr,0);
-							break;
-						case 8:// width
-							DisplayObject::_getWidth(ret,wrk,obj,nullptr,0);
-							break;
-						case 9:// height
-							DisplayObject::_getHeight(ret,wrk,obj,nullptr,0);
-							break;
-						case 10:// rotation
-							DisplayObject::_getRotation(ret,wrk,obj,nullptr,0);
-							break;
-						case 12:// framesloaded
-							if (o->is<MovieClip>())
-								MovieClip::_getFramesLoaded(ret,wrk,obj,nullptr,0);
-							break;
-						case 13:// name
-							DisplayObject::_getter_name(ret,wrk,obj,nullptr,0);
-							break;
-						case 15:// url
-							ret = asAtomHandler::fromString(clip->getSystemState(),clip->getSystemState()->mainClip->getOrigin().getURL());
-							break;
-						case 17:// focusrect
-							if (asAtomHandler::is<InteractiveObject>(obj))
-								InteractiveObject::AVM1_getfocusrect(ret,wrk,obj,nullptr,0);
-							break;
-						case 19:// quality
-							DisplayObject::AVM1_getQuality(ret,wrk,obj,nullptr,0);
-							break;
-						case 20:// xmouse
-							DisplayObject::_getMouseX(ret,wrk,obj,nullptr,0);
-							break;
-						case 21:// ymouse
-							DisplayObject::_getMouseY(ret,wrk,obj,nullptr,0);
-							break;
-						default:
-							LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" GetProperty type:"<<asAtomHandler::toInt(index));
-							break;
-					}
+					size_t idx = asAtomHandler::toInt(index);
+					ret = o->getPropertyByIndex(idx, wrk);
 				}
+				if (asAtomHandler::isInvalid(ret))
+					ret = asAtomHandler::undefinedAtom;
 				ASATOM_DECREF(index);
 				ASATOM_DECREF(target);
 				PushStack(stack,ret);
@@ -1175,62 +1114,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (!o) // it seems that Adobe falls back to the current clip if the path is invalid
 						o = clip;
 				}
-				if (o)
+				if (o != nullptr)
 				{
-					asAtom obj = asAtomHandler::fromObject(o);
-					asAtom ret=asAtomHandler::invalidAtom;
-					switch (asAtomHandler::toInt(index))
-					{
-						case 0:// x
-							DisplayObject::_setX(ret,wrk,obj,&value,1);
-							ASATOM_DECREF(value);
-							break;
-						case 1:// y
-							DisplayObject::_setY(ret,wrk,obj,&value,1);
-							ASATOM_DECREF(value);
-							break;
-						case 2:// xscale
-							DisplayObject::AVM1_setScaleX(ret,wrk,obj,&value,1);
-							ASATOM_DECREF(value);
-							break;
-						case 3:// xscale
-							DisplayObject::AVM1_setScaleY(ret,wrk,obj,&value,1);
-							ASATOM_DECREF(value);
-							break;
-						case 6:// alpha
-							DisplayObject::AVM1_setAlpha(ret,wrk,obj,&value,1);
-							ASATOM_DECREF(value);
-							break;
-						case 7:// visible
-							DisplayObject::_setVisible(ret,wrk,obj,&value,1);
-							ASATOM_DECREF(value);
-							break;
-						case 8:// width
-							DisplayObject::_setWidth(ret,wrk,obj,&value,1);
-							ASATOM_DECREF(value);
-							break;
-						case 9:// height
-							DisplayObject::_setHeight(ret,wrk,obj,&value,1);
-							ASATOM_DECREF(value);
-							break;
-						case 10:// rotation
-							DisplayObject::_setRotation(ret,wrk,obj,&value,1);
-							ASATOM_DECREF(value);
-							break;
-						case 13:// name
-							DisplayObject::_setter_name(ret,wrk,obj,&value,1);
-							break;
-						case 17:// focusrect
-							if (asAtomHandler::is<InteractiveObject>(obj))
-								InteractiveObject::AVM1_setfocusrect(ret,wrk,obj,&value,1);
-							break;
-						case 19:// quality
-							DisplayObject::AVM1_setQuality(ret,wrk,obj,&value,1);
-							break;
-						default:
-							LOG(LOG_NOT_IMPLEMENTED,"AVM1: SetProperty type:"<<asAtomHandler::toInt(index));
-							break;
-					}
+					size_t idx = asAtomHandler::toInt(index);
+					o->setPropertyByIndex(idx, value, wrk);
 				}
 				else
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetProperty target clip not found:"<<asAtomHandler::toDebugString(target)<<" "<<asAtomHandler::toDebugString(index)<<" "<<asAtomHandler::toDebugString(value));

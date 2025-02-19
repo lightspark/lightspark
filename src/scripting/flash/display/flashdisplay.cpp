@@ -739,6 +739,8 @@ bool DisplayObjectContainer::hasLegacyChildByName
 	for (const auto& pair : mapDepthToLegacyChild)
 	{
 		auto child = pair.second;
+		if (child->name == BUILTIN_STRINGS::EMPTY)
+			continue;
 		if (nameID == child->name)
 			return true;
 	}
@@ -756,6 +758,8 @@ DisplayObject* DisplayObjectContainer::getLegacyChildByName
 	for (const auto& pair : mapDepthToLegacyChild)
 	{
 		auto child = pair.second;
+		if (child->name == BUILTIN_STRINGS::EMPTY)
+			continue;
 		if (nameID == child->name)
 			return child;
 	}

@@ -2677,43 +2677,271 @@ void DisplayObject::setPropertyByName(const tiny_string& name, const asAtom& val
 	setPropertyByIndex(getPropertyIndex(name), value, wrk);
 }
 
-multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk)
+static int parseLevelId(const tiny_string& digits)
 {
-	multiname* res = EventDispatcher::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
-	if (!needsActionScript3())
+	bool isNegative = digits.startsWith("-");
+
+	int levelID = 0;
+	for (size_t i = isNegative; i < digits.numChars() && isdigit(digits[i]); ++i)
+		levelID = (levelID * 10) + (digits[i] - '0');
+
+	return isNegative ? -levelID : levelID;
+}
+
+// TODO: Move this into `AVM1context`, once `originalclip` is moved into
+// there.
+DisplayObject* DisplayObject::getLevel(int levelID) const
+{
+	auto stage = AVM1getStage();
+	if (stage == nullptr)
+		return nullptr;
+	if (!stage->is<DisplayObjectContainer>())
+		return nullptr;
+	auto stageContainer = stage->as<DisplayObjectContainer>();
+	levelID -= 16384;
+	if (!stageContainer->hasLegacyChildAt(levelID))
+		return nullptr;
+	return stageContainer->getLegacyChildAt(levelID);
+}
+
+asAtom DisplayObject::resolvePathProperty(const tiny_string& name, ASWorker* wrk)
+{
+	auto sys = getSystemState();
+	bool caseSensitive = wrk->AVM1isCaseSensitive();
+
+	if (name.equalsWithCase("_root", caseSensitive))
+		return asAtomHandler::fromObject(AVM1getRoot());
+	else if (name.equalsWithCase("_parent", caseSensitive))
 	{
-		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
+		if (parent != nullptr)
+			return asAtomHandler::fromObject(parent);
+		return asAtomHandler::undefinedAtom;
+	}
+	else if (name.equalsWithCase("_global", caseSensitive))
+		return asAtomHandler::fromObject(sys->avm1global);
+
+	// Resolve level names (`_level<depth>`).
+	auto prefix = name.substr(0, 6);
+	bool isLevelName =
+	(
+		prefix.equalsWithCase("_level", caseSensitive) ||
+		// NOTE: `_flash` is an alias for `_level`, which is a relic of
+		// the earliest versions of Flash Player.
+		prefix.equalsWithCase("_flash", caseSensitive)
+	);
+
+	if (!isLevelName)
+		return asAtomHandler::invalidAtom;
+
+	auto levelClip = getLevel(parseLevelId(name.substr(6, UINT32_MAX)));
+	if (levelClip != nullptr)
+		return asAtomHandler::fromObject(levelClip);
+	return asAtomHandler::undefinedAtom;
+
+}
+
+GET_VARIABLE_RESULT DisplayObject::AVM1getVariableByMultiname
+(
+	asAtom& ret,
+	const multiname& name,
+	GET_VARIABLE_OPTION opt,
+	ASWorker* wrk,
+	bool isSlashPath
+)
+{
+	auto s = name.normalizedName(wrk);
+	bool caseSensitive = wrk->AVM1isCaseSensitive();
+
+	// Property search order for `DisplayObject`s.
+	// 1. Expandos (user defined properties on the underlying object).
+	auto result = ASObject::AVM1getVariableByMultiname
+	(
+		ret,
+		name,
+		opt,
+		wrk,
+		isSlashPath
+	);
+
+	if (asAtomHandler::isValid(ret))
+		return result;
+
+	result = GETVAR_NORMAL;
+
+	bool isInternalProp = s.startsWith("_");
+	// 2. Path properties. i.e. `_root`, `_parent`, `_level<depth>`
+	// (honours case sensitivity).
+	if (isInternalProp)
+		ret = resolvePathProperty(name.normalizedName(wrk), wrk);
+
+	if (asAtomHandler::isValid(ret))
+	{
+		ASATOM_INCREF(ret);
+		return result;
+	}
+
+	// 3. Child `DisplayObject`s with the supplied instance name.
+	auto child =
+	(
+		is<DisplayObjectContainer>() ?
+		as<DisplayObjectContainer>()->getLegacyChildByName
+		(
+			name.normalizedName(wrk),
+			caseSensitive
+		) : nullptr
+	);
+	if (child != nullptr)
+	{
+		// NOTE: If the object can't be represented as an AVM1 object,
+		// such as `Shape`, then any attempt to access it'll return the
+		// parent instead.
+		if (!isSlashPath && child->is<Shape>())
+			ret = asAtomHandler::fromObject(child->getParent());
+		else
+			ret = asAtomHandler::fromObject(child);
+		ASATOM_INCREF(ret);
+		return result;
+	}
+
+	// 4. Internal properties, such as `_x`, and `_y` (always case
+	// insensitive).
+	if (isInternalProp)
+		ret = getPropertyByName(s, wrk);
+
+	ASATOM_INCREF(ret);
+	return result;
+}
+
+bool DisplayObject::AVM1setLocalByMultiname
+(
+	multiname& name,
+	asAtom& value,
+	CONST_ALLOWED_FLAG allowConst,
+	ASWorker* wrk
+)
+{
+	assert(!needsActionScript3());
+	auto sys = getSystemState();
+
+	bool alreadySet = false;
+	bool caseSensitive = wrk->AVM1isCaseSensitive();
+	auto s = name.normalizedName(wrk);
+	auto nameID = sys->getUniqueStringId(s, caseSensitive);
+
+	// If a `TextField` was bound to this property, update it's text.
+	AVM1UpdateVariableBindings(nameID, value);
+
+	// Property search order for `DisplayObject`s.
+	// 1. Expandos (user defined properties on the underlying object).
+	if (ASObject::hasPropertyByMultiname(name, true, false, wrk))
+	{
+		EventDispatcher::setVariableByMultiname
+		(
+			name,
+			value,
+			allowConst,
+			&alreadySet,
+			wrk
+		);
+	}
+	// 2. Internal properties, such as `_x`, and `_y`.
+	else if (hasPropertyName(s))
+		setPropertyByName(s, value, wrk);
+	// 3. Prototype.
+	else if (hasprop_prototype())
+	{
+		auto proto = getprop_prototype();
+		alreadySet = proto->AVM1setLocalByMultiname(name, value, allowConst, wrk);
+	}
+	else
+	{
+		EventDispatcher::setVariableByMultiname
+		(
+			name,
+			value,
+			allowConst,
+			&alreadySet,
+			wrk
+		);
+	}
+
+	bool isFrameEvent =
+	(
+		name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
+		name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD
+	);
+
+	if (isFrameEvent)
+	{
+		if (asAtomHandler::isFunction(value))
 		{
-			if (asAtomHandler::isFunction(o))
-			{
-				getSystemState()->registerFrameListener(this);
-				getSystemState()->stage->AVM1AddEventListener(this);
-				avm1framelistenercount++;
-				setIsEnumerable(name, false);
-			}
-			else // value is not a function, we remove the FrameListener
-			{
-				avm1framelistenercount--;
-				if (avm1framelistenercount==0)
-					getSystemState()->unregisterFrameListener(this);
-			}
-		}
-		if (isMouseEvent(name.name_s_id))
-		{
-			this->as<InteractiveObject>()->setMouseEnabled(true);
-			getSystemState()->stage->AVM1AddMouseListener(this);
-			avm1mouselistenercount++;
+			sys->registerFrameListener(this);
+			sys->stage->AVM1AddEventListener(this);
+			avm1framelistenercount++;
 			setIsEnumerable(name, false);
 		}
-		// Make sure that the value isn't `free()`'d while updating the
-		// bindings.
-		ASATOM_INCREF(o);
-		AVM1UpdateVariableBindings(name.normalizedNameId(wrk), o);
-		ASATOM_DECREF(o);
+		else // value is not a function, we remove the FrameListener
+		{
+			avm1framelistenercount--;
+			if (avm1framelistenercount==0)
+				sys->unregisterFrameListener(this);
+		}
 	}
-	return res;
+	else if (isMouseEvent(name.name_s_id))
+	{
+		as<InteractiveObject>()->setMouseEnabled(true);
+		sys->stage->AVM1AddMouseListener(this);
+		avm1mouselistenercount++;
+		setIsEnumerable(name, false);
+	}
+	return alreadySet;
 }
+
+bool DisplayObject::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk)
+{
+	if (needsActionScript3())
+	{
+		return ASObject::hasPropertyByMultiname
+		(
+			name,
+			considerDynamic,
+			considerPrototype,
+			wrk
+		);
+	}
+
+	auto s = name.normalizedName(wrk);
+	bool caseSensitive = wrk->AVM1isCaseSensitive();
+
+	bool isExpando = isOnStage() && ASObject::hasPropertyByMultiname
+	(
+		name,
+		considerDynamic,
+		considerPrototype,
+		wrk
+	);
+
+	if (isExpando)
+		return true;
+
+	bool isInternalProp = s.startsWith("_");
+	if (isInternalProp && hasPropertyName(s))
+		return true;
+
+	if (isOnStage() && is<DisplayObjectContainer>())
+	{
+		auto container = as<DisplayObjectContainer>();
+		if (container->hasLegacyChildByName(s, caseSensitive))
+			return true;
+	}
+
+	return
+	(
+		isInternalProp &&
+		asAtomHandler::isValid(resolvePathProperty(s, wrk))
+	);
+}
+
 void DisplayObject::AVM1registerPrototypeListeners()
 {
 	assert(!needsActionScript3());
@@ -3146,80 +3374,30 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	
 	c->destroyContents();
 	c->borrowedVariables.destroyContents();
-	c->setDeclaredMethodByQName("_x","",c->getSystemState()->getBuiltinFunction(_getX),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_x","",c->getSystemState()->getBuiltinFunction(_setX),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_y","",c->getSystemState()->getBuiltinFunction(_getY),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_y","",c->getSystemState()->getBuiltinFunction(_setY),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_visible","",c->getSystemState()->getBuiltinFunction(_getVisible),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_visible","",c->getSystemState()->getBuiltinFunction(_setVisible),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_xscale","",c->getSystemState()->getBuiltinFunction(AVM1_getScaleX),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_xscale","",c->getSystemState()->getBuiltinFunction(AVM1_setScaleX),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_yscale","",c->getSystemState()->getBuiltinFunction(AVM1_getScaleY),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_yscale","",c->getSystemState()->getBuiltinFunction(AVM1_setScaleY),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_width","",c->getSystemState()->getBuiltinFunction(_getWidth),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_width","",c->getSystemState()->getBuiltinFunction(_setWidth),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_height","",c->getSystemState()->getBuiltinFunction(_getHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_height","",c->getSystemState()->getBuiltinFunction(_setHeight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_parent","",c->getSystemState()->getBuiltinFunction(AVM1_getParent),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_root","",c->getSystemState()->getBuiltinFunction(AVM1_getRoot),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_url","",c->getSystemState()->getBuiltinFunction(AVM1_getURL),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("hitTest","",c->getSystemState()->getBuiltinFunction(AVM1_hitTest),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("localToGlobal","",c->getSystemState()->getBuiltinFunction(AVM1_localToGlobal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("globalToLocal","",c->getSystemState()->getBuiltinFunction(AVM1_globalToLocal),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getBytesLoaded","",c->getSystemState()->getBuiltinFunction(AVM1_getBytesLoaded),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getBytesTotal","",c->getSystemState()->getBuiltinFunction(AVM1_getBytesTotal),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("_xmouse","",c->getSystemState()->getBuiltinFunction(_getMouseX),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_ymouse","",c->getSystemState()->getBuiltinFunction(_getMouseY),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_quality","",c->getSystemState()->getBuiltinFunction(AVM1_getQuality),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_quality","",c->getSystemState()->getBuiltinFunction(AVM1_setQuality),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_alpha","",c->getSystemState()->getBuiltinFunction(AVM1_getAlpha),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_alpha","",c->getSystemState()->getBuiltinFunction(AVM1_setAlpha),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("getBounds","",c->getSystemState()->getBuiltinFunction(AVM1_getBounds),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapDepths","",c->getSystemState()->getBuiltinFunction(AVM1_swapDepths),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getDepth","",c->getSystemState()->getBuiltinFunction(AVM1_getDepth),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setMask","",c->getSystemState()->getBuiltinFunction(_setMask),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("transform","",c->getSystemState()->getBuiltinFunction(_getTransform),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("transform","",c->getSystemState()->getBuiltinFunction(_setTransform),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_rotation","",c->getSystemState()->getBuiltinFunction(_getRotation),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("_rotation","",c->getSystemState()->getBuiltinFunction(_setRotation),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(AVM1_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,scrollRect,Rectangle);
-	c->prototype->setDeclaredMethodByQName("_x","",c->getSystemState()->getBuiltinFunction(_getX),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_x","",c->getSystemState()->getBuiltinFunction(_setX),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_y","",c->getSystemState()->getBuiltinFunction(_getY),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_y","",c->getSystemState()->getBuiltinFunction(_setY),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_visible","",c->getSystemState()->getBuiltinFunction(_getVisible),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_visible","",c->getSystemState()->getBuiltinFunction(_setVisible),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_xscale","",c->getSystemState()->getBuiltinFunction(AVM1_getScaleX),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_xscale","",c->getSystemState()->getBuiltinFunction(AVM1_setScaleX),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_yscale","",c->getSystemState()->getBuiltinFunction(AVM1_getScaleY),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_yscale","",c->getSystemState()->getBuiltinFunction(AVM1_setScaleY),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_width","",c->getSystemState()->getBuiltinFunction(_getWidth),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_width","",c->getSystemState()->getBuiltinFunction(_setWidth),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_height","",c->getSystemState()->getBuiltinFunction(_getHeight),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_height","",c->getSystemState()->getBuiltinFunction(_setHeight),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_parent","",c->getSystemState()->getBuiltinFunction(AVM1_getParent),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_root","",c->getSystemState()->getBuiltinFunction(AVM1_getRoot),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_url","",c->getSystemState()->getBuiltinFunction(AVM1_getURL),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("hitTest","",c->getSystemState()->getBuiltinFunction(AVM1_hitTest),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("localToGlobal","",c->getSystemState()->getBuiltinFunction(AVM1_localToGlobal),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("globalToLocal","",c->getSystemState()->getBuiltinFunction(AVM1_globalToLocal),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("getBytesLoaded","",c->getSystemState()->getBuiltinFunction(AVM1_getBytesLoaded),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("getBytesTotal","",c->getSystemState()->getBuiltinFunction(AVM1_getBytesTotal),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_xmouse","",c->getSystemState()->getBuiltinFunction(_getMouseX),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_ymouse","",c->getSystemState()->getBuiltinFunction(_getMouseY),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_quality","",c->getSystemState()->getBuiltinFunction(AVM1_getQuality),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_quality","",c->getSystemState()->getBuiltinFunction(AVM1_setQuality),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_alpha","",c->getSystemState()->getBuiltinFunction(AVM1_getAlpha),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_alpha","",c->getSystemState()->getBuiltinFunction(AVM1_setAlpha),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("getBounds","",c->getSystemState()->getBuiltinFunction(AVM1_getBounds),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("swapDepths","",c->getSystemState()->getBuiltinFunction(AVM1_swapDepths),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("getDepth","",c->getSystemState()->getBuiltinFunction(AVM1_getDepth),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("setMask","",c->getSystemState()->getBuiltinFunction(_setMask),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("transform","",c->getSystemState()->getBuiltinFunction(_getTransform),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("transform","",c->getSystemState()->getBuiltinFunction(_setTransform),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_rotation","",c->getSystemState()->getBuiltinFunction(_getRotation),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_rotation","",c->getSystemState()->getBuiltinFunction(_setRotation),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(AVM1_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
 }
 DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path, asAtom* member)

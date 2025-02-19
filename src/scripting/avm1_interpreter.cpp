@@ -306,37 +306,6 @@ asAtom AVM1context::getVariable
 		ASATOM_INCREF(thisObj);
 		return thisObj;
 	}
-	else if (path == "_global")
-	{
-		sys->avm1global->incRef();
-		return asAtomHandler::fromObject(sys->avm1global);
-	}
-
-	// Check for level names (`_level<depth>`).
-	auto prefix = path.substr(0, 6);
-	bool isLevelName =
-	(
-		prefix.equalsWithCase("_level", isCaseSensitive()) ||
-		prefix.equalsWithCase("_flash", isCaseSensitive())
-	);
-	if (isLevelName)
-	{
-		if (path.numBytes() == 7 && path[6] == '0')
-		{
-			auto root = baseClip->AVM1getRoot();
-			root->incRef();
-			return asAtomHandler::fromObject(root);
-		}
-
-		// TODO: Support level names other than `_level0`.
-		LOG
-		(
-			LOG_NOT_IMPLEMENTED,
-			"getVariable: level names other than `" << prefix <<
-			"0`. Got " << path
-		);
-		return asAtomHandler::undefinedAtom;
-	}
 
 	multiname m(nullptr);
 	m.name_type = multiname::NAME_STRING;
@@ -344,9 +313,7 @@ asAtom AVM1context::getVariable
 	m.name_s_id = sys->getUniqueStringId
 	(
 		path,
-		// NOTE: Internal property keys are always case insensitive
-		// (e.g. `_x`, `_y`, etc).
-		isCaseSensitive() && !path.startsWith("_")
+		isCaseSensitive()
 	);
 
 	// It's a normal variable name.
@@ -1761,12 +1728,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 											LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember for scriptobject without class "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
 										break;
 									}
-									case BUILTIN_STRINGS::STRING_AVM1_TARGET:
-										if (o->is<DisplayObject>())
-											ret = asAtomHandler::fromString(clip->getSystemState(),o->as<DisplayObject>()->AVM1GetPath());
-										else
-											asAtomHandler::setUndefined(ret);
-										break;
 									default:
 									{
 										o->AVM1getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk,false);
@@ -1778,11 +1739,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 								LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember for scriptobject type "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
 								break;
 						}
-					}
-					if (asAtomHandler::isInvalid(ret))
-					{
-						if (o && o->is<DisplayObject>())
-							ret = o->as<DisplayObject>()->AVM1GetVariable(asAtomHandler::toString(name,wrk),false);
 					}
 					if (context->exceptionthrown)
 					{
@@ -1809,8 +1765,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					auto s = asAtomHandler::AVM1toString(name, wrk);
 					auto nameID = sys->getUniqueStringId(s, context->isCaseSensitive());
 					ASObject* o = asAtomHandler::getObject(scriptobject);
-					if (o->is<DisplayObject>())
-						ASATOM_INCREF(value);// incref here to make sure value is not destructed when setting value, reference is consumed in AVM1SetVariableDirect
 					multiname m(nullptr);
 					switch (asAtomHandler::getObjectType(name))
 					{
@@ -1864,11 +1818,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							}
 						}
 						(void)o->AVM1setVariableByMultiname(m,value,ASObject::CONST_ALLOWED,wrk);
-					}
-					if (o->is<DisplayObject>())
-					{
-						o->as<DisplayObject>()->AVM1UpdateVariableBindings(nameID, value);
-						o->as<DisplayObject>()->AVM1SetVariableDirect(nameID, value);
 					}
 				}
 				else

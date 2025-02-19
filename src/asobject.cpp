@@ -232,6 +232,8 @@ uint32_t ASObject::nextNameIndex(uint32_t cur_index)
 		else
 			return cur_index+1;
 	}
+	if (getClass() == nullptr || getClass()->prototype.isNull())
+		return 0;
 	if (getClass()->prototype->getObj() != this)
 	{
 		uint32_t res = getClass()->prototype->getObj()->nextNameIndex(cur_index-Variables.dynamic_vars.size());
@@ -2819,7 +2821,11 @@ void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 			{
 				ASATOM_INCREF(v);
 			}
-			target->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+
+			if (needsactionscript3)
+				target->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+			else
+				(void)target->AVM1setVariableByMultiname(m, v, CONST_ALLOWED, wrk);
 		}
 		it++;
 	}

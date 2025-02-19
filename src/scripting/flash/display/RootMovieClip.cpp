@@ -167,7 +167,7 @@ void RootMovieClip::constructionComplete(bool _explicit)
 	}
 	// add to stage before continuing construction to make sure stage is available from AS code
 	incRef();
-	getSystemState()->stage->_addChildAt(this,0);
+	getSystemState()->stage->insertLegacyChildAt(-16384, this, false, false);
 
 	MovieClip::constructionComplete(_explicit);
 

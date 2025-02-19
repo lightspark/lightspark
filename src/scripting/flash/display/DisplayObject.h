@@ -227,7 +227,6 @@ public:
 	void globalToLocal(number_t xin, number_t yin, number_t& xout, number_t& yout, bool fromcurrentrendering=true) const;
 	float getConcatenatedAlpha() const;
 	virtual float getScaleFactor() const;
-	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	bool isMouseEvent(uint32_t nameID) const;
 
 	asAtom getPropertyByIndex(size_t idx, ASWorker* wrk);
@@ -236,6 +235,12 @@ public:
 	size_t getPropertyIndex(const tiny_string& name) const;
 	asAtom getPropertyByName(const tiny_string& name, ASWorker* wrk);
 	void setPropertyByName(const tiny_string& name, const asAtom& value, ASWorker* wrk);
+	DisplayObject* getLevel(int levelID) const;
+	asAtom resolvePathProperty(const tiny_string& name, ASWorker* wrk);
+
+	GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath = true) override;
+	bool AVM1setLocalByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk) override;
+	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk) override;
 
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	virtual void removeAVM1Listeners();

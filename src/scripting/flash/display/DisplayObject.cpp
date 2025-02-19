@@ -3466,12 +3466,13 @@ asAtom DisplayObject::AVM1GetVariable(const tiny_string &name, bool checkrootvar
 }
 void DisplayObject::AVM1UpdateVariableBindings(uint32_t nameID, asAtom& value)
 {
-	auto it = variablebindings.find(nameID);
-	while (it != variablebindings.end() && it->first == nameID)
+	auto pair = variablebindings.equal_range(nameID);
+	for (auto it = pair.first; it != pair.second; ++it)
 	{
-		ASATOM_INCREF(value); // ensure value is not destructed during binding
-		(*it).second->UpdateVariableBinding(value);
-		it++;
+		// Make sure that the value isn't `free()`'d while updating the
+		// bindings.
+		ASATOM_INCREF(value);
+		it->second->UpdateVariableBinding(value);
 		ASATOM_DECREF(value);
 	}
 }

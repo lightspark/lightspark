@@ -3719,25 +3719,52 @@ void DisplayObject::AVM1UpdateVariableBindings(uint32_t nameID, asAtom& value)
 		ASATOM_DECREF(value);
 	}
 }
+
 asAtom DisplayObject::getVariableBindingValue(const tiny_string &name)
 {
-	uint32_t pos = name.find(".");
-	asAtom ret=asAtomHandler::invalidAtom;
-	if (pos == tiny_string::npos)
-	{
-		ret = AVM1GetVariable(name);
-	}
-	else
-	{
-		tiny_string firstpart = name.substr_bytes(0,pos);
-		asAtom obj = AVM1GetVariable(firstpart);
-		if (asAtomHandler::isValid(obj))
-		{
-			tiny_string localname = name.substr_bytes(pos+1,name.numBytes()-pos-1);
-			ret = asAtomHandler::toObject(obj,getInstanceWorker())->getVariableBindingValue(localname);
-			ASATOM_DECREF(obj);
-		}
-	}
+	auto sys = getSystemState();
+	auto wrk = getInstanceWorker();
+
+	if (needsActionScript3())
+		return asAtomHandler::invalidAtom;
+
+	AVM1context fallback(_MR(this), sys);
+	const auto& ctx =
+	(
+		!wrk->AVM1callStack.empty() ?
+		*wrk->AVM1callStack.back() :
+		fallback
+	);
+
+	auto pair = ctx.resolveVariablePath
+	(
+		asAtomHandler::fromObject(this),
+		this,
+		_MR(this),
+		name
+	);
+
+	if (pair.first == nullptr)
+		return asAtomHandler::invalidAtom;
+
+	multiname m(nullptr);
+	m.name_type = multiname::NAME_STRING;
+	m.name_s_id = sys->getUniqueStringId
+	(
+		pair.second,
+		wrk->AVM1isCaseSensitive()
+	);
+
+	asAtom ret = asAtomHandler::invalidAtom;
+	pair.first->AVM1getVariableByMultiname
+	(
+		ret,
+		m,
+		GET_VARIABLE_OPTION::NONE,
+		wrk,
+		name.contains('/')
+	);
+	pair.first->decRef();
 	return ret;
 }
 void DisplayObject::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj)

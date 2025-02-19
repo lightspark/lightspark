@@ -54,6 +54,19 @@ asAtom ACTIONRECORD::PeekStack(std::stack<asAtom>& stack)
 	return stack.top();
 }
 
+AVM1context::AVM1context(const _R<DisplayObject>& target, SystemState* sys) :
+keepLocals(true),
+callDepth(0),
+actionsExecuted(0),
+swfversion(target->loadedFrom->version),
+exceptionthrown(nullptr),
+callee(nullptr),
+globalScope(_MNR(new AVM1Scope(_MR(sys->avm1global))))
+{
+	target->incRef();
+	scope = _MNR(new AVM1Scope(globalScope, target));
+}
+
 // Based on Ruffle's `avm1::activation::Activation::resolve_target_path()`.
 ASObject* AVM1context::resolveTargetPath
 (
@@ -198,6 +211,71 @@ ASObject* AVM1context::resolveTargetPath
 
 	obj->incRef();
 	return obj;
+}
+
+// Based on Ruffle's `avm1::activation::Activation::resolve_variable_path()`.
+std::pair<ASObject*, tiny_string> AVM1context::resolveVariablePath
+(
+	const asAtom& thisObj,
+	DisplayObject* baseClip,
+	const _R<DisplayObject>& clip,
+	const tiny_string& path
+) const
+{
+	auto sys = clip->getSystemState();
+	auto wrk = clip->getInstanceWorker();
+
+	bool pathHasSlash = path.contains('/');
+
+	// Find the last `:`, or `.` in the path.
+	// If we've got one, then it must be resolved as a target path.
+	auto pos = path.findLast(":.");
+	if (pos != tiny_string::npos)
+	{
+		// We've got a `:`, or `.`, meaning it's an object path, and a
+		// variable name. Which has to be resolved directly on the target
+		// object.
+		auto varPath = path.substr(0, pos);
+		auto varName = path.substr(pos + 1, UINT32_MAX);
+		auto root = clip->AVM1getRoot();
+
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_STRING;
+		m.isAttribute = false;
+		m.name_s_id = sys->getUniqueStringId(varName, isCaseSensitive());
+
+		ASObject* obj = nullptr;
+		scope->forEachScope([&](const AVM1Scope& scope)
+		{
+			obj = resolveTargetPath
+			(
+				thisObj,
+				baseClip,
+				root,
+				scope.getLocals(),
+				varPath,
+				pathHasSlash
+			);
+
+			if (obj == nullptr || !obj->hasPropertyByMultiname(m, true, true, wrk))
+			{
+				if (obj != nullptr)
+					obj->decRef();
+				obj = nullptr;
+				return true;
+			}
+
+			return false;
+		});
+		if (obj != nullptr)
+			return std::make_pair(obj, varName);
+		return std::make_pair(nullptr, "");
+	}
+
+	// It's a normal variable name.
+	// Return the starting clip, and path.
+	clip->incRef();
+	return std::make_pair(clip.getPtr(), path);
 }
 
 // Based on Ruffle's `avm1::activation::Activation::get_variable()`.

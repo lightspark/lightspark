@@ -106,6 +106,8 @@ private:
 	std::vector<uint32_t> avm1strings;
 public:
 	AVM1context():keepLocals(true), callDepth(0), actionsExecuted(0),swfversion(0),exceptionthrown(nullptr), callee(nullptr) {}
+	AVM1context(const _R<DisplayObject>& target, SystemState* sys);
+
 	void AVM1ClearConstants()
 	{
 		avm1strings.clear();
@@ -140,6 +142,17 @@ public:
 		const tiny_string& _path,
 		bool hasSlash,
 		bool first = true
+	) const;
+
+	// Resolves a path for variable bindings.
+	// Returns both the parent object that this variable belongs to, and
+	// the variable name.
+	std::pair<ASObject*, tiny_string> resolveVariablePath
+	(
+		const asAtom& thisObj,
+		DisplayObject* baseClip,
+		const _R<DisplayObject>& clip,
+		const tiny_string& path
 	) const;
 
 	// Gets the value, referenced by a target path string.

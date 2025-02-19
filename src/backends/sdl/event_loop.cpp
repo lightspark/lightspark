@@ -214,7 +214,7 @@ Optional<LSEventStorage> SDLEventLoop::waitEventImpl(SystemState* sys)
 
 	auto getNewDeadline = [&]
 	{
-		return time->now() + sys->timeUntilNextTick().valueOr(TimeSpec());
+		return time->now() + sys->timeUntilNextFrame();
 	};
 
 	deadline = deadline.orElseIf(hasSys, [&]
@@ -238,7 +238,7 @@ Optional<LSEventStorage> SDLEventLoop::waitEventImpl(SystemState* sys)
 			{
 				auto delta = endTime.absDiff(startTime);
 				startTime = time->now();
-				sys->updateTimers(delta, true);
+				sys->runTick(delta);
 				deadline = getNewDeadline();
 			}
 		}

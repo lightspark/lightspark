@@ -2646,6 +2646,11 @@ static constexpr auto propTable = makeArray<const char*>
 	"_ymouse"
 );
 
+bool DisplayObject::hasPropertyName(const tiny_string& name) const
+{
+	return getPropertyIndex(name) != size_t(-1);
+}
+
 size_t DisplayObject::getPropertyIndex(const tiny_string& name) const
 {
 	auto it = std::find_if

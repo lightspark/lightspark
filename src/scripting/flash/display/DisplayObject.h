@@ -375,6 +375,7 @@ public:
 	void AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> obj);
 	AVM1Function *AVM1GetFunction(uint32_t nameID);
 	virtual void AVM1AfterAdvance() {}
+	DisplayObject* AVM1getStage() const;
 	DisplayObject* AVM1getRoot();
 	std::string toDebugString() const override;
 };

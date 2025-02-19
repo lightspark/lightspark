@@ -3429,6 +3429,16 @@ AVM1Function* DisplayObject::AVM1GetFunction(uint32_t nameID)
 	return nullptr;
 }
 
+DisplayObject* DisplayObject::AVM1getStage() const
+{
+	if (parent == nullptr)
+		return const_cast<DisplayObject*>(this);
+
+	if (parent->is<Loader>() || parent->is<Stage>())
+		return parent;
+	return parent->AVM1getStage();
+}
+
 DisplayObject* DisplayObject::AVM1getRoot()
 {
 	if (this->needsActionScript3())

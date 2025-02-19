@@ -450,6 +450,14 @@ public:
 	{
 		return AVM1callStack.empty() ? NullRef : AVM1callStack.back()->scope;
 	}
+	bool AVM1isCaseSensitive() const
+	{
+		return
+		(
+			AVM1callStack.empty() ||
+			AVM1callStack.back()->isCaseSensitive()
+		);
+	}
 	uint8_t AVM1getSwfVersion() const
 	{
 		return AVM1callStack.empty() ? UINT8_MAX : AVM1callStack.back()->swfversion;

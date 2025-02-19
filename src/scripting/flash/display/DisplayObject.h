@@ -234,6 +234,8 @@ public:
 	void setPropertyByIndex(size_t idx, const asAtom& value, ASWorker* wrk);
 	bool hasPropertyName(const tiny_string& name) const;
 	size_t getPropertyIndex(const tiny_string& name) const;
+	asAtom getPropertyByName(const tiny_string& name, ASWorker* wrk);
+	void setPropertyByName(const tiny_string& name, const asAtom& value, ASWorker* wrk);
 
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	virtual void removeAVM1Listeners();

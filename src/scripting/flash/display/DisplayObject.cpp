@@ -2667,6 +2667,16 @@ size_t DisplayObject::getPropertyIndex(const tiny_string& name) const
 	return std::distance(propTable.begin(), it);
 }
 
+asAtom DisplayObject::getPropertyByName(const tiny_string& name, ASWorker* wrk)
+{
+	return getPropertyByIndex(getPropertyIndex(name), wrk);
+}
+
+void DisplayObject::setPropertyByName(const tiny_string& name, const asAtom& value, ASWorker* wrk)
+{
+	setPropertyByIndex(getPropertyIndex(name), value, wrk);
+}
+
 multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk)
 {
 	multiname* res = EventDispatcher::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);

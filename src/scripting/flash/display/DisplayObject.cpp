@@ -2461,6 +2461,22 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	}
 }
 
+bool DisplayObject::isMouseEvent(uint32_t nameID) const
+{
+	return is<InteractiveObject>() &&
+	(
+		nameID == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
+		nameID == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
+		nameID == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
+		nameID == BUILTIN_STRINGS::STRING_ONPRESS ||
+		nameID == BUILTIN_STRINGS::STRING_ONMOUSEWHEEL ||
+		nameID == BUILTIN_STRINGS::STRING_ONROLLOVER ||
+		nameID == BUILTIN_STRINGS::STRING_ONROLLOUT ||
+		nameID == BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE ||
+		nameID == BUILTIN_STRINGS::STRING_ONRELEASE
+	);
+}
+
 asAtom DisplayObject::getPropertyByIndex(size_t idx, ASWorker* wrk)
 {
 	auto sys = getSystemState();
@@ -2618,16 +2634,7 @@ multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CON
 					getSystemState()->unregisterFrameListener(this);
 			}
 		}
-		if (this->is<InteractiveObject>() && (
-			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
-			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
-			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
-			name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
-			name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEWHEEL ||
-			name.name_s_id == BUILTIN_STRINGS::STRING_ONROLLOVER ||
-			name.name_s_id == BUILTIN_STRINGS::STRING_ONROLLOUT ||
-			name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE ||
-			name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE))
+		if (isMouseEvent(name.name_s_id))
 		{
 			this->as<InteractiveObject>()->setMouseEnabled(true);
 			getSystemState()->stage->AVM1AddMouseListener(this);
@@ -2745,16 +2752,7 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* w
 			if (avm1framelistenercount==0)
 				getSystemState()->unregisterFrameListener(this);
 		}
-		if (this->is<InteractiveObject>() && (
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEMOVE ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEDOWN ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEUP ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONPRESS ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONMOUSEWHEEL ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONROLLOVER ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONROLLOUT ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE ||
-				name.name_s_id == BUILTIN_STRINGS::STRING_ONRELEASE))
+		if (isMouseEvent(name.name_s_id))
 		{
 			this->as<InteractiveObject>()->setMouseEnabled(false);
 			avm1mouselistenercount--;

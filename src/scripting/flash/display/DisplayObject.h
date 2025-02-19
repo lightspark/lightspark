@@ -228,6 +228,7 @@ public:
 	float getConcatenatedAlpha() const;
 	virtual float getScaleFactor() const;
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
+	bool isMouseEvent(uint32_t nameID) const;
 
 	asAtom getPropertyByIndex(size_t idx, ASWorker* wrk);
 	void setPropertyByIndex(size_t idx, const asAtom& value, ASWorker* wrk);

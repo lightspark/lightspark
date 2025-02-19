@@ -51,6 +51,7 @@
 #include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Number.h"
 #include <algorithm>
+#include <array>
 
 // adobe seems to use twips as the base of the internal coordinate system, so we have to "round" coordinates to twips
 // TODO I think we should also use a twips-based coordinate system
@@ -2610,6 +2611,55 @@ void DisplayObject::setPropertyByIndex(size_t idx, const asAtom& val, ASWorker* 
 			LOG(LOG_NOT_IMPLEMENTED, "setPropertyByIndex: Unknown property index " << idx);
 			break;
 	}
+}
+
+template<typename T, typename... Args>
+constexpr std::array<T, sizeof...(Args) + 1> makeArray(const T& arg, Args&&... args)
+{
+	return std::array<T, sizeof...(Args) + 1> { arg, args... };
+}
+
+// NOTE: Can't use `tiny_string` here because it isn't `constexpr`.
+static constexpr auto propTable = makeArray<const char*>
+(
+	"_x",
+	"_y",
+	"_xscale",
+	"_yscale",
+	"_currentframe",
+	"_totalframes",
+	"_alpha",
+	"_visible",
+	"_width",
+	"_height",
+	"_rotation",
+	"_target",
+	"_framesloaded",
+	"_name",
+	"_droptarget",
+	"_url",
+	"_highquality",
+	"_focusrect",
+	"_soundbuftime",
+	"_quality",
+	"_xmouse",
+	"_ymouse"
+);
+
+size_t DisplayObject::getPropertyIndex(const tiny_string& name) const
+{
+	auto it = std::find_if
+	(
+		propTable.begin(),
+		propTable.end(),
+		[&](const char* prop)
+		{
+			return name.caselessEquals(prop);
+		}
+	);
+	if (it == propTable.end())
+		return size_t(-1);
+	return std::distance(propTable.begin(), it);
 }
 
 multiname* DisplayObject::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk)

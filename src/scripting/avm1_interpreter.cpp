@@ -178,10 +178,8 @@ ASObject* AVM1context::resolveTargetPath
 						val,
 						objName,
 						GET_VARIABLE_OPTION::NO_INCREF,
-						// TODO: Uncomment this, once this is `virtual`,
-						// and an overload for `DisplayObject`s is added.
-						//hasSlash,
-						baseClip->getInstanceWorker()
+						baseClip->getInstanceWorker(),
+						hasSlash
 					);
 				}
 			}
@@ -1727,7 +1725,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					}
 					if (o != nullptr)
 					{
-						o->AVM1getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CHECK_CLASS,wrk);
+						o->AVM1getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::DONT_CHECK_CLASS,wrk,false);
 						if (asAtomHandler::isInvalid(ret))
 							o->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk);
 					}
@@ -1771,7 +1769,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 										break;
 									default:
 									{
-										o->AVM1getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk);
+										o->AVM1getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk,false);
 										break;
 									}
 								}

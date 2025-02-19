@@ -584,7 +584,8 @@ asAtom ASObject::callResolveMethod(const tiny_string& name, ASWorker* wrk)
 				GET_VARIABLE_OPTION::DONT_CALL_GETTER |
 				GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE
 			),
-			wrk
+			wrk,
+			false
 		);
 
 		if (asAtomHandler::isInvalid(func))
@@ -1998,6 +1999,7 @@ void ASObject::setRefConstant()
 std::pair<asAtom, uint8_t> ASObject::AVM1searchPrototypeByMultiname
 (
 	const multiname& name,
+	bool isSlashPath,
 	ASWorker* wrk
 )
 {
@@ -2032,7 +2034,8 @@ std::pair<asAtom, uint8_t> ASObject::AVM1searchPrototypeByMultiname
 				GET_VARIABLE_OPTION::DONT_CALL_GETTER |
 				GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE
 			),
-			wrk
+			wrk,
+			isSlashPath
 		) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
 
 		if (isGetter)
@@ -2050,12 +2053,12 @@ std::pair<asAtom, uint8_t> ASObject::AVM1searchPrototypeByMultiname
 	return std::make_pair(callResolveMethod(name.normalizedName(wrk), wrk), 0);
 }
 
-GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
+GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath)
 {
 	GET_VARIABLE_RESULT res = getVariableByMultiname(ret,name,opt,wrk);
 	if (asAtomHandler::isInvalid(ret) && !(opt & DONT_CHECK_PROTOTYPE))
 	{
-		auto pair = AVM1searchPrototypeByMultiname(name, wrk);
+		auto pair = AVM1searchPrototypeByMultiname(name, isSlashPath, wrk);
 		ret = pair.first;
 	}
 	return res;

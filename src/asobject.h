@@ -1175,10 +1175,11 @@ public:
 	std::pair<asAtom, uint8_t> AVM1searchPrototypeByMultiname
 	(
 		const multiname& name,
+		bool isSlashPath,
 		ASWorker* wrk
 	);
 	// AVM1 needs to check the "protoype" variable in addition to the normal behaviour
-	virtual GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk);
+	virtual GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath = true);
 	virtual bool AVM1setLocalByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
 	bool AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
 

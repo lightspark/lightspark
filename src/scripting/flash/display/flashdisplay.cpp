@@ -2270,7 +2270,7 @@ void AVM1scriptToExecute::execute()
 		m.name_type=multiname::NAME_STRING;
 		m.isAttribute = false;
 		m.name_s_id= this->event_name_id;
-		clip->AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,clip->getInstanceWorker());
+		clip->AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,clip->getInstanceWorker(), false);
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
 			asAtom ret=asAtomHandler::invalidAtom;

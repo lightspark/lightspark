@@ -79,7 +79,7 @@ asAtom AVM1Scope::resolveRecursiveByMultiname
 	asAtom ret = asAtomHandler::invalidAtom;
 	if (values->hasPropertyByMultiname(name, true, true, wrk))
 	{
-		values->AVM1getVariableByMultiname(ret, name, options, wrk);
+		values->AVM1getVariableByMultiname(ret, name, options, wrk, false);
 		return ret;
 	}
 
@@ -100,7 +100,7 @@ asAtom AVM1Scope::resolveRecursiveByMultiname
 	// it in the root clip instead.
 	auto root = baseClip->AVM1getRoot();
 	ret = asAtomHandler::invalidAtom;
-	root->AVM1getVariableByMultiname(ret, name, options, wrk);
+	root->AVM1getVariableByMultiname(ret, name, options, wrk, false);
 	return ret;
 }
 

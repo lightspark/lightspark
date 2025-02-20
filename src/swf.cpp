@@ -2496,18 +2496,27 @@ uint32_t SystemState::getUniqueStringId(const tiny_string& s)
 uint32_t SystemState::getUniqueStringId(const tiny_string& s, bool caseSensitive)
 {
 	Locker l(poolMutex);
-	auto it = uniqueStringMap.find(CaseString(s, caseSensitive));
-	if (it == uniqueStringMap.end())
+	uint32_t res = UINT32_MAX;
+	auto range = uniqueStringMap.equal_range(CaseString(s, caseSensitive));
+	if (range.first == uniqueStringMap.end())
 	{
 		tiny_string s2;
 		s2 += s; // ensure that a deep copy of the string is stored in the map, as s might be type READONLY/DYNAMIC and be deleted later
 		auto ret=uniqueStringMap.insert(make_pair(s2,lastUsedStringId));
 		uniqueStringIDMap.push_back(s2);
 		assert(ret.second);
-		it=ret.first;
+		res=lastUsedStringId;
 		lastUsedStringId++;
 	}
-	return it->second;
+	else
+	{
+		for (auto itr = range.first; itr != range.second; ++itr)
+		{
+			if (itr->second < res)
+				res = itr->second;
+		}
+	}
+	return res;
 }
 
 const nsNameAndKindImpl& SystemState::getNamespaceFromUniqueId(uint32_t id) const

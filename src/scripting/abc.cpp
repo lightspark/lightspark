@@ -1709,6 +1709,8 @@ void ABCContext::declareScripts()
 {
 	if (scriptsdeclared)
 		return;
+	while (!getVm(applicationDomain->getSystemState())->hasEverStarted()) // ensure that all builtin classes are defined
+		applicationDomain->getSystemState()->sleep_ms(10);
 	//Take script entries and declare their traits
 	unsigned int i=0;
 

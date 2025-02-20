@@ -3412,7 +3412,7 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path, asAtom* mem
 	{
 		if (member)
 			*member=asAtomHandler::invalidAtom;
-		return this->getRoot().getPtr();
+		return this->AVM1getRoot();
 	}
 	if (path =="_parent")
 	{

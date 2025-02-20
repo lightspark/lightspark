@@ -757,6 +757,7 @@ void MovieClip::afterLegacyDelete(bool inskipping)
 {
 	getSystemState()->stage->AVM1RemoveMouseListener(this);
 	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
+	Sprite::afterLegacyDelete(inskipping);
 }
 bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 {

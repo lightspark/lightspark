@@ -2410,7 +2410,7 @@ void URLVariables::decode(const tiny_string& s)
 			nameStart=cur;
 		if(*cur == '=')
 		{
-			if(nameStart==nullptr || valueStart!=nullptr) //Skip this
+			if(nameStart==nullptr) //Skip this
 			{
 				nameStart=nullptr;
 				nameEnd=nullptr;
@@ -2419,8 +2419,11 @@ void URLVariables::decode(const tiny_string& s)
 				cur++;
 				continue;
 			}
-			nameEnd=cur;
-			valueStart=cur+1;
+			if (nameEnd==nullptr)
+			{
+				nameEnd=cur;
+				valueStart=cur+1;
+			}
 		}
 		else if(*cur == '&' || *cur==0)
 		{
@@ -2430,6 +2433,8 @@ void URLVariables::decode(const tiny_string& s)
 				nameEnd=nullptr;
 				valueStart=nullptr;
 				valueEnd=nullptr;
+				if (*cur==0)
+					break;
 				cur++;
 				continue;
 			}
@@ -2444,6 +2449,8 @@ void URLVariables::decode(const tiny_string& s)
 			{
 				g_free(name);
 				g_free(value);
+				if (*cur==0)
+					break;
 				cur++;
 				continue;
 			}
@@ -2455,7 +2462,7 @@ void URLVariables::decode(const tiny_string& s)
 			propName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 			asAtom curValue=asAtomHandler::invalidAtom;
 			getVariableByMultiname(curValue,propName,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
-			if(asAtomHandler::isValid(curValue))
+			if(asAtomHandler::isValid(curValue) && !asAtomHandler::isNull(curValue))
 			{
 				//If the variable already exists we have to create an Array of values
 				Array* arr=nullptr;

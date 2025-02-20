@@ -131,31 +131,6 @@ public:
 
 	~AVM1Scope() { values->removeStoredMember(); }
 
-	// An overload of `incRef()` that recursively `incRef()`s the scope
-	// chain.
-	void incRef()
-	{
-		RefCountable::incRef();
-		if (!parent.isNull())
-			parent->incRef();
-	}
-
-	// An overload of `decRef()` that recursively `decRef()`s the scope
-	// chain.
-	void decRef()
-	{
-		// Don't recursively `decRef()`, if this is the last reference
-		// to our parent.
-		//
-		// This is because `parent` is an `_NR<AVM1Scope>`, which does
-		// an automatic `decRef()` on destruction, leading to a double
-		// free, if done on the last reference, due to a second round
-		// of recursive `decRef()`ing.
-		if (!parent.isNull() && !parent->isLastRef())
-			parent->decRef();
-		RefCountable::decRef();
-	}
-
 	// Creates a global scope (A parentless scope).
 	static AVM1Scope makeGlobalScope(const _R<Global>& globals)
 	{

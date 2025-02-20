@@ -643,13 +643,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			registers[currRegister++] = argsAtom;
 		else
 		{
-			context->scope->forceDefineLocal
+			if (context->scope->forceDefineLocal
 			(
 				"arguments",
 				argsAtom,
 				ASObject::CONST_ALLOWED,
 				wrk
-			);
+			))
+				argsArray->decRef();
 		}
 	}
 	asAtom super = asAtomHandler::invalidAtom;
@@ -662,22 +663,25 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		}
 		if (asAtomHandler::isInvalid(super))
 			LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" no super class found for "<<asAtomHandler::toDebugString(thisObj));
-		ASATOM_INCREF(super);
 		if (preloadSuper)
 		{
 			// NOTE: The `super` register is set to `undefined`, if both
 			// flags are set.
+			if (!suppressSuper)
+				ASATOM_INCREF(super);
 			registers[currRegister++] = (!suppressSuper) ? super : asAtomHandler::undefinedAtom;
 		}
 		else
 		{
-			context->scope->forceDefineLocal
+			ASATOM_INCREF(super);
+			if (context->scope->forceDefineLocal
 			(
 				BUILTIN_STRINGS::STRING_SUPER,
 				super,
 				ASObject::CONST_ALLOWED,
 				wrk
-			);
+			))
+				ASATOM_DECREF(super);
 		}
 	}
 	if (preloadRoot)
@@ -706,7 +710,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	{
 		auto reg = i < paramregisternumbers.size() ? paramregisternumbers[i] : 0;
 		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" set argument "<<i<<" "<<(int)reg<<" "<<clip->getSystemState()->getStringFromUniqueId(paramnames[i])<<" "<<asAtomHandler::toDebugString(args[i]));
-		ASATOM_INCREF(args[i]);
 
 		if (reg != 0)
 		{
@@ -716,13 +719,15 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		}
 		else
 		{
-			context->scope->forceDefineLocal
+			ASATOM_INCREF(args[i]);
+			if (context->scope->forceDefineLocal
 			(
 				paramnames[i],
 				args[i],
 				ASObject::CONST_ALLOWED,
 				wrk
-			);
+			))
+				ASATOM_DECREF(args[i]);
 		}
 	}
 	std::vector<tryCatchBlock> trycatchblocks;

@@ -432,7 +432,6 @@ ENDIF(ENABLE_MEMORY_USAGE_PROFILING)
 # Compiler defaults flags for different profiles
 IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   IF(MINGW)
-    set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
     SET(CMAKE_CXX_FLAGS
           "${CMAKE_CXX_FLAGS} -mms-bitfields -mthreads -fexceptions -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -std=c++14 -Wdisabled-optimization -Wextra -Wno-unused-parameter -Wno-invalid-offsetof")
   ELSE()
@@ -517,6 +516,25 @@ if (ENABLE_TEST_RUNNER)
 	ADD_SUBDIRECTORY(tests/test-runner EXCLUDE_FROM_ALL)
 endif()
 
+if(MINGW)
+	install(CODE [[
+	  file(GET_RUNTIME_DEPENDENCIES
+		RESOLVED_DEPENDENCIES_VAR _r_deps
+		UNRESOLVED_DEPENDENCIES_VAR _u_deps
+	  )
+	  foreach(_file ${_r_deps})
+		file(INSTALL
+		  DESTINATION "."
+		  TYPE SHARED_LIBRARY
+		  FILES "${_file}"
+		)
+	  endforeach()
+	  list(LENGTH _u_deps _u_length)
+	  if("${_u_length}" GREATER 0)
+		message(WARNING "Unresolved dependencies detected!")
+	  endif()
+	]])
+endif(MINGW)
 #-- CPack setup - use 'make package' to build
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Lightspark is an LGPLv3 licensed cross-platform Flash player and browser plugin")
 SET(CPACK_PACKAGE_VENDOR "Lightspark Team")
@@ -537,6 +555,7 @@ SET(CPACK_NSIS_HELP_LINK "http:////www.lightspark.org")
 SET(CPACK_NSIS_URL_INFO_ABOUT "http:////www.lightspark.org")
 #-- SET(CPACK_PACKAGE_ICON ${PROJECT_SOURCE_DIR}/media/lightspark-logo.svg)
 IF(WIN32)
+
   SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Lightspark")
   SET(CPACK_PACKAGE_EXECUTABLES "lightspark" "Lightspark")
   SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "

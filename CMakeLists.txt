@@ -163,7 +163,7 @@ ELSE()
 ENDIF()
 
 #On mingw-cross-env, all depedencies are static libs
-IF(CROSSCOMPILING AND MINGW)
+IF(MINGW)
   SET(STATICDEPS TRUE)
 ELSE()
   SET(STATICDEPS FALSE)

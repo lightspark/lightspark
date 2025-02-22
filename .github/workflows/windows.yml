@@ -40,59 +40,31 @@
             draft: false
             prerelease: true    
   
-    mxe64:
+    msys2_64:
       name: Windows 64-bit (MXE Cross Build)
-      runs-on: ubuntu-20.04
+      runs-on: windows-latest
       continue-on-error: false
       needs: draft_release
       env:
         CFLAGS: -std=c11
         CXXFLAGS: -std=c++14
       steps:
-        - uses: actions/checkout@v4
-
-        - name: Add MXE Repository to Apt
-          uses: myci-actions/add-deb-repo@11
-          with:
-            repo: deb http://pkg.mxe.cc/repos/apt focal main
-            repo-name: mxe
-            keys-asc: https://pkg.mxe.cc/repos/apt/client-conf/mxeapt.gpg
-            install:
-              nasm
-              libtool
-              libtool-bin
-              gperf
-              lzip
-              p7zip-full
-              intltool
-              libgtk2.0-dev
-              libssl1.1
-              mxe-x86-64-w64-mingw32.static-cc
-              mxe-x86-64-w64-mingw32.static-cairo
-              mxe-x86-64-w64-mingw32.static-pango
-              mxe-x86-64-w64-mingw32.static-jpeg
-              mxe-x86-64-w64-mingw32.static-glew
-              mxe-x86-64-w64-mingw32.static-freetype
-              mxe-x86-64-w64-mingw32.static-curl
-              mxe-x86-64-w64-mingw32.static-librtmp
-              mxe-x86-64-w64-mingw32.static-ffmpeg
-              mxe-x86-64-w64-mingw32.static-sdl2
-
-        - name: Install MXE Build Environment
+        - name: Install msys2 packages
           run: |
-            echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
+            $env:PATH = "C:\msys64\usr\bin;$env:PATH"
+            pacman -S mingw-w64-x86_64-cairo
+            pacman -S mingw-w64-x86_64-pango
+            pacman -S mingw-w64-x86_64-jpeg
+            pacman -S mingw-w64-x86_64-glew
+            pacman -S mingw-w64-x86_64-freetype
+            pacman -S mingw-w64-x86_64-curl
+            pacman -S mingw-w64-x86_64-rtmpdump
+            pacman -S mingw-w64-x86_64-ffmpeg
+            pacman -S mingw-w64-x86_64-SDL2
 
-        - name: Configure MXE for NSIS Installer Builds
+        - name: Run msys2 Build
           run: |
-            (cd /usr/lib/mxe/ \
-            && sudo make settings.mk \
-            && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
-            && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := x86_64-w64-mingw32.static/" settings.mk \
-            && sudo make nsis)
-
-        - name: Run MXE Build
-          run: |
-            x86_64-w64-mingw32.static-cmake -DMXE=YES .
+            cmake .
             make
             sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
             make package

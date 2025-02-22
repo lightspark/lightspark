@@ -939,8 +939,9 @@ ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 ASFUNCTIONBODY_ATOM(ASString,toLowerCase)
 {
 	tiny_string data = asAtomHandler::toString(obj,wrk);
-	if (asAtomHandler::is<ASString>(obj) && asAtomHandler::toStringId(obj,wrk) != UINT32_MAX)
-		ret = asAtomHandler::fromStringID(wrk->getSystemState()->getUniqueStringId(data.lowercase()));
+	auto strID = wrk->getSystemState()->getUniqueStringId(data, true);
+	if (asAtomHandler::is<ASString>(obj) && strID != UINT32_MAX)
+		ret = asAtomHandler::fromStringID(wrk->getSystemState()->getUniqueStringId(data.lowercase(), true));
 	else
 		ret = asAtomHandler::fromObject(abstract_s(wrk,data.lowercase()));
 }
@@ -948,8 +949,9 @@ ASFUNCTIONBODY_ATOM(ASString,toLowerCase)
 ASFUNCTIONBODY_ATOM(ASString,toUpperCase)
 {
 	tiny_string data = asAtomHandler::toString(obj,wrk);
-	if (asAtomHandler::is<ASString>(obj) && asAtomHandler::toStringId(obj,wrk) != UINT32_MAX)
-		ret = asAtomHandler::fromStringID(wrk->getSystemState()->getUniqueStringId(data.uppercase()));
+	auto strID = wrk->getSystemState()->getUniqueStringId(data, true);
+	if (asAtomHandler::is<ASString>(obj) && strID != UINT32_MAX)
+		ret = asAtomHandler::fromStringID(wrk->getSystemState()->getUniqueStringId(data.uppercase(), true));
 	else
 		ret = asAtomHandler::fromObject(abstract_s(wrk,data.uppercase()));
 }

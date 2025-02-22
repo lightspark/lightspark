@@ -59,6 +59,7 @@
         - name: Run msys2 Build
           run: |
             $env:PATH = "C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH"
+            cmake .
             cmake --build .
             sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
             cmake --build . --target package
@@ -72,9 +73,9 @@
             tag_name: latest
             files: Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win64.exe
 
-    mxe32:
-      name: Windows 32-bit (MXE Cross Build)
-      runs-on: ubuntu-20.04
+    msys2_32:
+      name: Windows 32-bit (msys2 Build)
+      runs-on: windows-latest
       continue-on-error: false
       needs: draft_release
       env:
@@ -83,51 +84,22 @@
       steps:
         - uses: actions/checkout@v4
 
-        - name: Add MXE Repository to Apt
-          uses: myci-actions/add-deb-repo@11
-          with:
-            repo: deb http://pkg.mxe.cc/repos/apt focal main
-            repo-name: mxe
-            keys-asc: https://pkg.mxe.cc/repos/apt/client-conf/mxeapt.gpg
-            install:
-              nasm
-              libtool
-              libtool-bin
-              gperf
-              lzip
-              p7zip-full
-              intltool
-              libgtk2.0-dev
-              libssl1.1
-              mxe-i686-w64-mingw32.static-cc
-              mxe-i686-w64-mingw32.static-cairo
-              mxe-i686-w64-mingw32.static-pango
-              mxe-i686-w64-mingw32.static-jpeg
-              mxe-i686-w64-mingw32.static-glew
-              mxe-i686-w64-mingw32.static-freetype
-              mxe-i686-w64-mingw32.static-curl
-              mxe-i686-w64-mingw32.static-librtmp
-              mxe-i686-w64-mingw32.static-ffmpeg
-              mxe-i686-w64-mingw32.static-sdl2
+        - name: Install msys2 packages
+          run: |
+            $env:PATH = "C:\msys64\usr\bin;$env:PATH"
+            pacman -S --noconfirm mingw-w64-i686-cmake mingw-w64-i686-cairo mingw-w64-i686-pango mingw-w64-i686-libjpeg-turbo mingw-w64-i686-glew mingw-w64-i686-freetype mingw-w64-i686-curl mingw-w64-i686-rtmpdump mingw-w64-i686-ffmpeg mingw-w64-i686-SDL2
 
         - name: Install MXE Build Environment
           run: |
             echo /usr/lib/mxe/usr/bin >> $GITHUB_PATH  # exposes it to all future steps
 
-        - name: Configure MXE for NSIS Installer Builds
+        - name: Run msys2 Build
           run: |
-            (cd /usr/lib/mxe/ \
-            && sudo make settings.mk \
-            && sudo sed -i -e "s/SKIPPLUGINS='System'/SKIPPLUGINS=''/" src/nsis.mk \
-            && sudo sed -i -e "s/.*MXE_TARGETS.*/MXE_TARGETS := i686-w64-mingw32.static/" settings.mk \
-            && sudo make nsis)
-
-        - name: Run MXE Build
-          run: |
-            i686-w64-mingw32.static-cmake -DMXE=YES .
-            make
+            $env:PATH = "C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH"
+            cmake .
+            cmake --build .
             sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
-            make package
+            cmake --build . --target package
             mv -v Lightspark*exe Lightspark-v${{ needs.draft_release.outputs.version }}-Installer-win32.exe
 
         - name: Upload Installer Release Asset

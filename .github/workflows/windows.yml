@@ -41,7 +41,7 @@
             prerelease: true    
   
     msys2_64:
-      name: Windows 64-bit (MXE Cross Build)
+      name: Windows 64-bit (msys2 Build)
       runs-on: windows-latest
       continue-on-error: false
       needs: draft_release
@@ -52,15 +52,7 @@
         - name: Install msys2 packages
           run: |
             $env:PATH = "C:\msys64\usr\bin;$env:PATH"
-            pacman -S mingw-w64-x86_64-cairo
-            pacman -S mingw-w64-x86_64-pango
-            pacman -S mingw-w64-x86_64-jpeg
-            pacman -S mingw-w64-x86_64-glew
-            pacman -S mingw-w64-x86_64-freetype
-            pacman -S mingw-w64-x86_64-curl
-            pacman -S mingw-w64-x86_64-rtmpdump
-            pacman -S mingw-w64-x86_64-ffmpeg
-            pacman -S mingw-w64-x86_64-SDL2
+            pacman -S --noconfirm mingw-w64-x86_64-cairo mingw-w64-x86_64-pango mingw-w64-x86_64-jpeg mingw-w64-x86_64-glew mingw-w64-x86_64-freetype mingw-w64-x86_64-curl mingw-w64-x86_64-rtmpdump mingw-w64-x86_64-ffmpeg mingw-w64-x86_64-SDL2
 
         - name: Run msys2 Build
           run: |

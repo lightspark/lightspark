@@ -56,6 +56,14 @@
           with:
             msystem: mingw64
             install: mingw-w64-x86_64-cmake mingw-w64-x86_64-cairo mingw-w64-x86_64-pango mingw-w64-x86_64-libjpeg-turbo mingw-w64-x86_64-glew mingw-w64-x86_64-freetype mingw-w64-x86_64-curl mingw-w64-x86_64-rtmpdump mingw-w64-x86_64-ffmpeg mingw-w64-x86_64-SDL2
+            update: true
+            install: >-
+              git
+              make
+            pacboy: >-
+              toolchain:p
+              cmake:p
+              ninja:p
         - uses: actions/checkout@v4
 
         - name: Run msys2 Build
@@ -90,6 +98,14 @@
           with:
             msystem: mingw32
             install: mingw-w64-i686-cmake mingw-w64-i686-cairo mingw-w64-i686-pango mingw-w64-i686-libjpeg-turbo mingw-w64-i686-glew mingw-w64-i686-freetype mingw-w64-i686-curl mingw-w64-i686-rtmpdump mingw-w64-i686-ffmpeg mingw-w64-i686-SDL2
+            update: true
+            install: >-
+              git
+              make
+            pacboy: >-
+              toolchain:p
+              cmake:p
+              ninja:p
         - uses: actions/checkout@v4
 
         - name: Install MXE Build Environment

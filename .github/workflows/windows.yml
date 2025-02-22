@@ -49,6 +49,8 @@
         CFLAGS: -std=c11
         CXXFLAGS: -std=c++14
       steps:
+        - uses: actions/checkout@v4
+
         - name: Install msys2 packages
           run: |
             $env:PATH = "C:\msys64\usr\bin;$env:PATH"

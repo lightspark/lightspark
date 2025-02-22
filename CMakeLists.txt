@@ -432,6 +432,7 @@ ENDIF(ENABLE_MEMORY_USAGE_PROFILING)
 # Compiler defaults flags for different profiles
 IF(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   IF(MINGW)
+    set(CMAKE_EXE_LINKER_FLAGS "-static-libgcc -static-libstdc++ -static")
     SET(CMAKE_CXX_FLAGS
           "${CMAKE_CXX_FLAGS} -mms-bitfields -mthreads -fexceptions -Wall -Wnon-virtual-dtor -Woverloaded-virtual -pipe -std=c++14 -Wdisabled-optimization -Wextra -Wno-unused-parameter -Wno-invalid-offsetof")
   ELSE()

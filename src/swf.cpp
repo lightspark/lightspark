@@ -238,7 +238,7 @@ SystemState::SystemState
 	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
-	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedStringId(0),lastUsedNamespaceId(0x7fffffff),framePhase(FramePhase::IDLE),
+	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedNamespaceId(0x7fffffff),framePhase(FramePhase::IDLE),
 	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),instanceCounter(0),avm1global(nullptr),
 	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),runSingleThreaded(_runSingleThreaded),exitOnError(ERROR_NONE),
 	systemDomain(nullptr),worker(nullptr),workerDomain(nullptr),singleworker(true),
@@ -255,25 +255,18 @@ SystemState::SystemState
 	use_testrunner_date(false)
 {
 	//Forge the builtin strings
-	uniqueStringIDMap.reserve(LAST_BUILTIN_STRING);
 	tiny_string sempty;
-	uniqueStringMap.emplace(make_pair(sempty,lastUsedStringId));
-	uniqueStringIDMap.push_back(sempty);
-	lastUsedStringId++;
-	for(uint32_t i=1;i<BUILTIN_STRINGS_CHAR_MAX;i++)
-	{
-		tiny_string s = tiny_string::fromChar(i);
-		uniqueStringMap.emplace(make_pair(s,lastUsedStringId));
-		uniqueStringIDMap.push_back(s);
-		lastUsedStringId++;
-	}
-	for(uint32_t i=BUILTIN_STRINGS_CHAR_MAX;i<LAST_BUILTIN_STRING;i++)
-	{
-		tiny_string s(builtinStrings[i-BUILTIN_STRINGS_CHAR_MAX]);
-		uniqueStringMap.emplace(make_pair(s,lastUsedStringId));
-		uniqueStringIDMap.push_back(s);
-		lastUsedStringId++;
-	}
+	uniqueStringMap.emplace(sempty);
+	for(size_t i = 1; i < BUILTIN_STRINGS_CHAR_MAX; i++)
+		uniqueStringMap.emplace(tiny_string::fromChar(i));
+
+	constexpr size_t builtinSize =
+	(
+		LAST_BUILTIN_STRING -
+		BUILTIN_STRINGS_CHAR_MAX
+	);
+	for (size_t i = 0; i < builtinSize; i++)
+		uniqueStringMap.emplace(builtinStrings[i]);
 	//Forge the empty namespace and make sure it gets id 0
 	nsNameAndKindImpl emptyNs(BUILTIN_STRINGS::EMPTY, NAMESPACE);
 	uint32_t nsId;
@@ -2477,8 +2470,8 @@ void SystemState::registerGlobalFont(ASFont* font)
 const tiny_string& SystemState::getStringFromUniqueId(uint32_t id) const
 {
 	Locker l(poolMutex);
-	assert(uniqueStringIDMap.size() > id);
-	return uniqueStringIDMap[id];
+	assert(uniqueStringMap.size() > id);
+	return *uniqueStringMap.nth(id);
 }
 
 uint32_t SystemState::getUniqueStringId(const tiny_string& s)
@@ -2496,27 +2489,22 @@ uint32_t SystemState::getUniqueStringId(const tiny_string& s)
 uint32_t SystemState::getUniqueStringId(const tiny_string& s, bool caseSensitive)
 {
 	Locker l(poolMutex);
-	uint32_t res = UINT32_MAX;
-	auto range = uniqueStringMap.equal_range(CaseString(s, caseSensitive));
-	if (range.first == uniqueStringMap.end())
+
+	auto it = !caseSensitive ? uniqueStringMap.find
+	(
+		CaselessString(s)
+	) : uniqueStringMap.find(s);
+
+	if (it == uniqueStringMap.end())
 	{
 		tiny_string s2;
 		s2 += s; // ensure that a deep copy of the string is stored in the map, as s might be type READONLY/DYNAMIC and be deleted later
-		auto ret=uniqueStringMap.insert(make_pair(s2,lastUsedStringId));
-		uniqueStringIDMap.push_back(s2);
+		auto ret=uniqueStringMap.insert(s2);
 		assert(ret.second);
-		res=lastUsedStringId;
-		lastUsedStringId++;
+		it = ret.first;
 	}
-	else
-	{
-		for (auto itr = range.first; itr != range.second; ++itr)
-		{
-			if (itr->second < res)
-				res = itr->second;
-		}
-	}
-	return res;
+
+	return std::distance(uniqueStringMap.begin(), it);
 }
 
 const nsNameAndKindImpl& SystemState::getNamespaceFromUniqueId(uint32_t id) const

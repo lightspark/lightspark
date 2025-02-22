@@ -21,7 +21,7 @@
 #define SWF_H 1
 
 #include "asobject.h"
-#include "case_string.h"
+#include "caseless_string.h"
 #include "forwards/events.h"
 #include "forwards/scripting/flash/text/flashtext.h"
 #include "interfaces/logger.h"
@@ -41,6 +41,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <string>
+#include <tsl/ordered_set.h>
 #include "swftypes.h"
 #include "memory_support.h"
 #include "scripting/abcutils.h"
@@ -244,9 +245,7 @@ private:
 	 * Pooling support
 	 */
 	mutable Mutex poolMutex;
-	unordered_map<CaseString, uint32_t> uniqueStringMap;
-	vector<tiny_string> uniqueStringIDMap;
-	uint32_t lastUsedStringId;
+	tsl::ordered_set<tiny_string, CaselessHash, std::equal_to<>> uniqueStringMap;
 	map<nsNameAndKindImpl, uint32_t> uniqueNamespaceImplMap;
 	unordered_map<uint32_t,nsNameAndKindImpl> uniqueNamespaceIDMap;
 	//This needs to be atomic because it's decremented without the mutex held

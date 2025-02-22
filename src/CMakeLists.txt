@@ -416,6 +416,7 @@ TARGET_INCLUDE_DIRECTORIES(
 	PRIVATE ${PROJECT_SOURCE_DIR}/src/3rdparty/avmplus/pcre
 	PRIVATE ${PROJECT_SOURCE_DIR}/src/3rdparty/imgui
 	PRIVATE ${PROJECT_SOURCE_DIR}/src/3rdparty/imgui/backends
+	PUBLIC ${PROJECT_SOURCE_DIR}/src/3rdparty/ordered-map/include
 )
 
 TARGET_INCLUDE_DIRECTORIES(

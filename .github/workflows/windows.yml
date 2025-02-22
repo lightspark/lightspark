@@ -50,15 +50,13 @@
         CXXFLAGS: -std=c++14
       defaults:
         run:
-          shell: msys2
+          shell: msys2 {0}
       steps:
         - uses: msys2/setup-msys2@v2
+          with:
+            msystem: mingw64
+            install: mingw-w64-x86_64-cmake mingw-w64-x86_64-cairo mingw-w64-x86_64-pango mingw-w64-x86_64-libjpeg-turbo mingw-w64-x86_64-glew mingw-w64-x86_64-freetype mingw-w64-x86_64-curl mingw-w64-x86_64-rtmpdump mingw-w64-x86_64-ffmpeg mingw-w64-x86_64-SDL2
         - uses: actions/checkout@v4
-
-        - name: Install msys2 packages
-          run: |
-            $env:PATH = "C:\msys64\usr\bin;$env:PATH"
-            pacman -S --noconfirm mingw-w64-x86_64-cmake mingw-w64-x86_64-cairo mingw-w64-x86_64-pango mingw-w64-x86_64-libjpeg-turbo mingw-w64-x86_64-glew mingw-w64-x86_64-freetype mingw-w64-x86_64-curl mingw-w64-x86_64-rtmpdump mingw-w64-x86_64-ffmpeg mingw-w64-x86_64-SDL2
 
         - name: Run msys2 Build
           run: |
@@ -90,12 +88,10 @@
           shell: msys2 {0}
       steps:
         - uses: msys2/setup-msys2@v2
+          with:
+            msystem: mingw32
+            install: mingw-w64-i686-cmake mingw-w64-i686-cairo mingw-w64-i686-pango mingw-w64-i686-libjpeg-turbo mingw-w64-i686-glew mingw-w64-i686-freetype mingw-w64-i686-curl mingw-w64-i686-rtmpdump mingw-w64-i686-ffmpeg mingw-w64-i686-SDL2
         - uses: actions/checkout@v4
-
-        - name: Install msys2 packages
-          run: |
-            $env:PATH = "C:\msys64\usr\bin;$env:PATH"
-            pacman -S --noconfirm mingw-w64-i686-cmake mingw-w64-i686-cairo mingw-w64-i686-pango mingw-w64-i686-libjpeg-turbo mingw-w64-i686-glew mingw-w64-i686-freetype mingw-w64-i686-curl mingw-w64-i686-rtmpdump mingw-w64-i686-ffmpeg mingw-w64-i686-SDL2
 
         - name: Install MXE Build Environment
           run: |

@@ -42,7 +42,7 @@
   
     msys2_64:
       name: Windows 64-bit (msys2 Build)
-      runs-on: windows-latest
+      runs-on: ubuntu-latest
       continue-on-error: false
       needs: draft_release
       env:
@@ -84,7 +84,7 @@
 
     msys2_32:
       name: Windows 32-bit (msys2 Build)
-      runs-on: windows-latest
+      runs-on: ubuntu-latest
       continue-on-error: false
       needs: draft_release
       env:

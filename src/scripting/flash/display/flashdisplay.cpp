@@ -734,14 +734,13 @@ bool DisplayObjectContainer::hasLegacyChildByName
 	bool caseSensitive
 )
 {
-	auto nameID = getSystemState()->getUniqueStringId(name, caseSensitive);
-
 	for (const auto& pair : mapDepthToLegacyChild)
 	{
 		auto child = pair.second;
 		if (child->name == BUILTIN_STRINGS::EMPTY)
 			continue;
-		if (nameID == child->name)
+		const auto& childName = getSystemState()->getStringFromUniqueId(child->name);
+		if (name.equalsWithCase(childName, caseSensitive))
 			return true;
 	}
 	return false;
@@ -753,14 +752,13 @@ DisplayObject* DisplayObjectContainer::getLegacyChildByName
 	bool caseSensitive
 )
 {
-	auto nameID = getSystemState()->getUniqueStringId(name, caseSensitive);
-
 	for (const auto& pair : mapDepthToLegacyChild)
 	{
 		auto child = pair.second;
 		if (child->name == BUILTIN_STRINGS::EMPTY)
 			continue;
-		if (nameID == child->name)
+		const auto& childName = getSystemState()->getStringFromUniqueId(child->name);
+		if (name.equalsWithCase(childName, caseSensitive))
 			return child;
 	}
 	return nullptr;

@@ -60,7 +60,6 @@
 
         - name: Run msys2 Build
           run: |
-            $env:PATH = "C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH"
             cmake .
             cmake --build .
             sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
@@ -99,7 +98,6 @@
 
         - name: Run msys2 Build
           run: |
-            $env:PATH = "C:\msys64\mingw64\bin;C:\msys64\usr\bin;$env:PATH"
             cmake .
             cmake --build .
             sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake

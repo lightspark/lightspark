@@ -35,11 +35,6 @@ public:
 		return str.caselessEquals(other);
 	}
 
-	bool operator<(const tiny_string& other) const
-	{
-		return str.caselessLess(other);
-	}
-
 	operator const tiny_string&() const { return str; }
 	const tiny_string& getStr() const { return str; }
 private:
@@ -49,11 +44,6 @@ private:
 FORCE_INLINE bool operator==(const tiny_string& str, const CaselessString& other)
 {
 	return str.caselessEquals(other);
-}
-
-FORCE_INLINE bool operator<(const tiny_string& str, const CaselessString& other)
-{
-	return str.caselessLess(other);
 }
 
 struct CaselessHash

@@ -516,25 +516,6 @@ if (ENABLE_TEST_RUNNER)
 	ADD_SUBDIRECTORY(tests/test-runner EXCLUDE_FROM_ALL)
 endif()
 
-if(MINGW)
-	install(CODE [[
-	  file(GET_RUNTIME_DEPENDENCIES
-		RESOLVED_DEPENDENCIES_VAR _r_deps
-		UNRESOLVED_DEPENDENCIES_VAR _u_deps
-	  )
-	  foreach(_file ${_r_deps})
-		file(INSTALL
-		  DESTINATION "."
-		  TYPE SHARED_LIBRARY
-		  FILES "${_file}"
-		)
-	  endforeach()
-	  list(LENGTH _u_deps _u_length)
-	  if("${_u_length}" GREATER 0)
-		message(WARNING "Unresolved dependencies detected!")
-	  endif()
-	]])
-endif(MINGW)
 #-- CPack setup - use 'make package' to build
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Lightspark is an LGPLv3 licensed cross-platform Flash player and browser plugin")
 SET(CPACK_PACKAGE_VENDOR "Lightspark Team")

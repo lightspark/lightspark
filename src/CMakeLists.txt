@@ -460,6 +460,12 @@ INSTALL(TARGETS nativeextension RUNTIME DESTINATION ${PRIVATELIBDIR} LIBRARY DES
 IF(COMPILE_LIGHTSPARK)
   ADD_EXECUTABLE(lightspark main.cpp)
   TARGET_LINK_LIBRARIES(lightspark spark)
+  if(MINGW)
+    add_custom_command(TARGET lightspark POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:lightspark> $<TARGET_FILE_DIR:lightspark>
+      COMMAND_EXPAND_LISTS
+    )
+  endif(MINGW)
 
   PACK_EXECUTABLE(lightspark $<TARGET_FILE:lightspark>)
   INSTALL(TARGETS lightspark RUNTIME DESTINATION ${BINDIR})

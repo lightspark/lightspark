@@ -48,6 +48,9 @@
       env:
         CFLAGS: -std=c11
         CXXFLAGS: -std=c++14
+      defaults:
+        run:
+          shell: msys2 mingw64
       steps:
         - uses: actions/checkout@v4
 
@@ -81,6 +84,9 @@
       env:
         CFLAGS: -std=c11
         CXXFLAGS: -std=c++14
+      defaults:
+        run:
+          shell: msys2 mingw32
       steps:
         - uses: actions/checkout@v4
 

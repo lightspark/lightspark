@@ -50,8 +50,9 @@
         CXXFLAGS: -std=c++14
       defaults:
         run:
-          shell: msys2bash.cmd
+          shell: msys2
       steps:
+        - uses: msys2/setup-msys2@v2
         - uses: actions/checkout@v4
 
         - name: Install msys2 packages
@@ -86,8 +87,9 @@
         CXXFLAGS: -std=c++14
       defaults:
         run:
-          shell: msys2bash.cmd
+          shell: msys2 {0}
       steps:
+        - uses: msys2/setup-msys2@v2
         - uses: actions/checkout@v4
 
         - name: Install msys2 packages

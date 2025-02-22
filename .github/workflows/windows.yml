@@ -50,7 +50,7 @@
         CXXFLAGS: -std=c++14
       defaults:
         run:
-          shell: msys2 mingw64
+          shell: msys2bash.cmd
       steps:
         - uses: actions/checkout@v4
 
@@ -86,7 +86,7 @@
         CXXFLAGS: -std=c++14
       defaults:
         run:
-          shell: msys2 mingw32
+          shell: msys2bash.cmd
       steps:
         - uses: actions/checkout@v4
 

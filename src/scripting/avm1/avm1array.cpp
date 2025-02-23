@@ -219,6 +219,12 @@ void AVM1Array::nextValue(asAtom& ret, uint32_t index)
 	}
 }
 
+void AVM1Array::resize(uint64_t n, bool removeMember)
+{
+	avm1_currentsize = n;
+	Array::resize(n, removeMember);
+}
+
 void AVM1Array::AVM1enumerate(std::stack<asAtom>& stack)
 {
 	for (auto it = name_enumeration.begin(); it != name_enumeration.end(); it++)

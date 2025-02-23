@@ -201,7 +201,7 @@ void Array::constructorImpl(asAtom* args, const unsigned int argslen)
 		else if (this->isAVM1Array())
 			static_cast<AVM1Array*>(this)->setCurrentSize(asAtomHandler::toNumber(args[0]));
 		LOG_CALL("Creating array of length " << size);
-		resize(size);
+		Array::resize(size);
 		for (uint32_t i=0; i <size && i < ARRAY_SIZE_THRESHOLD; i++)
 		{
 			set(i,asAtomHandler::invalidAtom,false);

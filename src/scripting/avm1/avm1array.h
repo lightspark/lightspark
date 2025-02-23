@@ -60,6 +60,7 @@ public:
 	uint32_t nextNameIndex(uint32_t cur_index) override;
 	void nextName(asAtom &ret, uint32_t index) override;
 	void nextValue(asAtom &ret, uint32_t index) override;
+	void resize(uint64_t n, bool removeMember = true) override;
 	void AVM1enumerate(std::stack<asAtom>& stack) override;
 };
 

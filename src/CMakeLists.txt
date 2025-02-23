@@ -483,7 +483,7 @@ if(WIN32)
   foreach(entry IN LISTS prefixPaths)
     cmake_path(GET entry PARENT_PATH libraryPath)
     cmake_path(GET libraryPath FILENAME libraryName)
-    list(APPEND extraDirectories "${entry}")
+    list(APPEND extraDirectories "${entry}/bin")
   endforeach()
   unset(prefixPaths)
   unset(libraryPath)
@@ -495,6 +495,7 @@ if(WIN32)
     install(RUNTIME_DEPENDENCY_SET spark_dependencies
       DIRECTORIES
         ${extraDirectories}
+      DESTINATION ${BINDIR}
       PRE_EXCLUDE_REGEXES
         [[api-ms-win-.*]]
         [[ext-ms-.*]]
@@ -526,6 +527,7 @@ if(WIN32)
     install(RUNTIME_DEPENDENCY_SET spark_dependencies
       DIRECTORIES
         ${extraDirectories}
+      DESTINATION ${BINDIR}
       PRE_EXCLUDE_REGEXES
         [[api-ms-win-.*]]
         [[ext-ms-.*]]

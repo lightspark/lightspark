@@ -78,7 +78,7 @@
 
         - name: Run msys2 Build
           run: |
-            cmake .
+            cmake -DCMAKE_BUILD_TYPE=Release .
             cmake --build .
             sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
             cmake --install . --strip
@@ -131,7 +131,7 @@
 
         - name: Run msys2 Build
           run: |
-            cmake .
+            cmake -DCMAKE_BUILD_TYPE=Release .
             cmake --build .
             sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
             cmake --install . --strip

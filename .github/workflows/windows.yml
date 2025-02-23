@@ -80,6 +80,7 @@
             cmake .
             cmake --build .
             sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
+            cmake --install . --strip
             cmake --build . --target package
             mv -v Lightspark*exe Lightspark-latest-Installer-win64.exe
 
@@ -108,20 +109,20 @@
             msystem: mingw32
             update: true
             install: >-
-              mingw-w64-x86_64-toolchain
-              mingw-w64-x86_64-cmake
-              mingw-w64-x86_64-gcc
-              mingw-w64-x86_64-ninja
-              mingw-w64-x86_64-make
-              mingw-w64-x86_64-cairo
-              mingw-w64-x86_64-pango
-              mingw-w64-x86_64-libjpeg-turbo
-              mingw-w64-x86_64-glew
-              mingw-w64-x86_64-freetype
-              mingw-w64-x86_64-curl
-              mingw-w64-x86_64-rtmpdump
-              mingw-w64-x86_64-ffmpeg
-              mingw-w64-x86_64-SDL2
+              mingw-w64-i686-toolchain
+              mingw-w64-i686-cmake
+              mingw-w64-i686-gcc
+              mingw-w64-i686-ninja
+              mingw-w64-i686-make
+              mingw-w64-i686-cairo
+              mingw-w64-i686-pango
+              mingw-w64-i686-libjpeg-turbo
+              mingw-w64-i686-glew
+              mingw-w64-i686-freetype
+              mingw-w64-i686-curl
+              mingw-w64-i686-rtmpdump
+              mingw-w64-i686-ffmpeg
+              mingw-w64-i686-SDL2
               git
               base-devel
         - uses: actions/checkout@v4
@@ -131,6 +132,7 @@
             cmake .
             cmake --build .
             sed -i -e "s/Lightspark Team/The Lightspark Developers/g" CPackConfig.cmake
+            cmake --install . --strip
             cmake --build . --target package
             mv -v Lightspark*exe Lightspark-latest-Installer-win32.exe
 

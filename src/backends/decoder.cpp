@@ -30,6 +30,7 @@
 #include "scripting/flash/media/flashmedia.h"
 #include "parsing/tags.h"
 
+#ifdef ENABLE_LIBAVCODEC
 #if LIBAVUTIL_VERSION_MAJOR < 51
 #define AVMEDIA_TYPE_VIDEO CODEC_TYPE_VIDEO
 #define AVMEDIA_TYPE_AUDIO CODEC_TYPE_AUDIO
@@ -41,6 +42,7 @@
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,45,101)
 #define av_frame_unref avcodec_get_frame_defaults
+#endif
 #endif
 
 using namespace lightspark;

@@ -4127,12 +4127,14 @@ bool asAtomHandler::AVM1toPrimitive(asAtom& ret, ASWorker* wrk, bool& isRefCount
 	assert(getObject(ret) != nullptr);
 
 	auto obj = getObjectNoCheck(ret);
+	bool called=false;
 
 	// NOTE: `toString()` is never called, when using a number hint.
 	if (hint != NUMBER_HINT && (swfVersion > 5 && obj->is<Date>()))
 	{
 		// NOTE: In SWF 6, and later, `Date` objects call `toString()`.
 		obj->call_toString(ret);
+		called=true;
 	}
 	// NOTE: `valueOf()` is never called on `DisplayObject`s, when using
 	// a number hint.
@@ -4140,6 +4142,7 @@ bool asAtomHandler::AVM1toPrimitive(asAtom& ret, ASWorker* wrk, bool& isRefCount
 	{
 		// Most objects call `valueOf()`.
 		obj->call_valueOf(ret);
+		called=true;
 	}
 
 	if (isPrimitive(ret))
@@ -4147,6 +4150,8 @@ bool asAtomHandler::AVM1toPrimitive(asAtom& ret, ASWorker* wrk, bool& isRefCount
 		isRefCounted = true;
 		return true;
 	}
+	if (called)
+		ASATOM_DECREF(ret);
 
 	// If the above conversion returns an object, then the conversion
 	// failed, so fall back to the original object.

@@ -302,6 +302,7 @@ SystemState::SystemState
 
 	worker = new (unaccountedMemory) ASWorker(this);
 	worker->setRefConstant();
+	setTLSWorker(worker); // needed for 32bit class initialization
 	Class<ASWorker>::getClass(this)->setupDeclaredTraits(worker);
 	worker->setClass(Class<ASWorker>::getClass(this));
 	worker->constructionComplete();

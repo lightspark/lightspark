@@ -5,6 +5,6 @@ TryExec=lightspark
 Exec=lightspark
 Icon=lightspark
 Type=Application
-Categories=Multimedia;Game;AudioVideo;Video;Player;Viewer;
+Categories=Game;AudioVideo;Video;Player;Viewer;
 MimeType=application/x-shockwave-flash;
 StartupNotify=true

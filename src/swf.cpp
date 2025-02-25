@@ -1458,7 +1458,7 @@ void SystemState::flushInvalidationQueue()
 					addJob(j);
 					drawjobLock.unlock();
 				}
-				else if (renderThread != nullptr)
+				else if (EngineData::enablerendering && renderThread != nullptr)
 					renderThread->addRefreshableSurface(d,drawobj);
 				if (renderThread != nullptr && renderThread->isStarted())
 					drawobj->resetNeedsTextureRecalculation();
@@ -1470,7 +1470,7 @@ void SystemState::flushInvalidationQueue()
 		cur=next;
 	}
 	influshing=false;
-	if (renderThread != nullptr)
+	if (EngineData::enablerendering && renderThread != nullptr)
 		renderThread->signalSurfaceRefresh();
 	invalidateQueueHead=NullRef;
 	invalidateQueueTail=NullRef;
@@ -2317,7 +2317,7 @@ void SystemState::runTick(const TimeSpec& delta)
 
 	// Only run the renderer once, if we ran `SystemState::tick()`
 	// multiple times.
-	if (numFrames > 0)
+	if (numFrames > 0 && EngineData::enablerendering)
 		renderThread->runTick();
 
 	// In order to prevent running at max speed, reset the accumulator

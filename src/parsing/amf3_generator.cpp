@@ -497,6 +497,7 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 			// exception thrown during construction
 			// adobe seems to just trace the error and continue;
 			input->getSystemState()->trace(input->getInstanceWorker()->currentCallContext->exceptionthrown->toString());
+			input->getInstanceWorker()->currentCallContext->exceptionthrown->decRef();
 			input->getInstanceWorker()->currentCallContext->exceptionthrown=nullptr;
 		}
 	}
@@ -520,7 +521,9 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 			// exception thrown during setter call
 			// adobe seems to just trace the error and continue;
 			input->getSystemState()->trace(input->getInstanceWorker()->currentCallContext->exceptionthrown->toString());
+			input->getInstanceWorker()->currentCallContext->exceptionthrown->decRef();
 			input->getInstanceWorker()->currentCallContext->exceptionthrown=nullptr;
+			ASATOM_DECREF(value);
 		}
 	}
 

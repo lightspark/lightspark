@@ -310,11 +310,13 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 				if (asAtomHandler::isValid(*it))
 				{
 					res->vec[index]= *it;
-					res->checkValue(res->vec[index],false);
+					bool isNewObject=false;
+					res->checkValue(res->vec[index],false,&isNewObject);
 					ASObject* obj = asAtomHandler::getObject(res->vec[index]);
 					if (obj)
 					{
-						obj->incRef();
+						if (!isNewObject)
+							obj->incRef();
 						obj->addStoredMember();
 					}
 				}
@@ -560,8 +562,12 @@ ASFUNCTIONBODY_ATOM(Vector,push)
 		//The proprietary player violates the specification and allows elements of any type to be pushed;
 		//they are converted to the vec_type
 		asAtom v = args[i];
-		th->checkValue(v,true);
-		ASATOM_ADDSTOREDMEMBER(v);
+		bool isNewObject= false;
+		th->checkValue(v,true,&isNewObject);
+		if(isNewObject)
+			asAtomHandler::getObjectNoCheck(v)->addStoredMember();
+		else
+			ASATOM_ADDSTOREDMEMBER(v);
 		th->vec.push_back(v);
 	}
 	asAtomHandler::setUInt(ret,wrk,(uint32_t)th->vec.size());
@@ -815,15 +821,20 @@ asAtom Vector::getDefaultValue()
 		return asAtomHandler::nullAtom;
 }
 
-bool Vector::checkValue(asAtom& o, bool allowconversion)
+bool Vector::checkValue(asAtom& o, bool allowconversion,bool* isNewObject)
 {
+	asAtom oldValue = o;
 	if (!vec_type->coerceForTemplate(getInstanceWorker(),o,allowconversion))
 	{
 		Class_base* cls = dynamic_cast<Class_base*>(vec_type);
 		if(cls && cls != Class<ASObject>::getRef(getSystemState()).getPtr() && (!asAtomHandler::getObject(o) || !asAtomHandler::getObject(o)->getClass() || !asAtomHandler::getObject(o)->getClass()->isSubClass(cls)))
 			createError<TypeError>(getInstanceWorker(),kCheckTypeFailedError, asAtomHandler::toObject(o,getInstanceWorker())->getClassName(), cls->getQualifiedClassName());
+		if (isNewObject)
+			*isNewObject=false;
 		return false;
 	}
+	if (isNewObject && asAtomHandler::isObject(o) && oldValue.uintval != o.uintval)
+		*isNewObject=true; // value was coerced to a new object
 	return true;
 }
 
@@ -846,8 +857,15 @@ ASFUNCTIONBODY_ATOM(Vector,slice)
 		if (asAtomHandler::isValid(th->vec[i]))
 		{
 			res->vec[j] =th->vec[i];
-			th->vec_type->coerceForTemplate(wrk,res->vec[j],false);
-			ASATOM_ADDSTOREDMEMBER(res->vec[j]);
+			bool isNewObject = false;
+			res->checkValue(res->vec[j],true,&isNewObject);
+			ASObject* obj = asAtomHandler::getObject(res->vec[j]);
+			if (obj)
+			{
+				if (!isNewObject)
+					obj->incRef();
+				obj->addStoredMember();
+			}
 		}
 		j++;
 	}
@@ -904,11 +922,13 @@ ASFUNCTIONBODY_ATOM(Vector,splice)
 	for(unsigned int i=2;i<argslen;i++)
 	{
 		asAtom o = args[i];
-		th->checkValue(o,true);
+		bool isNewObject=false;
+		th->checkValue(o,true,&isNewObject);
 		ASObject* obj = asAtomHandler::getObject(o);
 		if (obj)
 		{
-			obj->incRef();
+			if (!isNewObject)
+				obj->incRef();
 			obj->addStoredMember();
 		}
 		th->vec.push_back(o);
@@ -1281,12 +1301,13 @@ ASFUNCTIONBODY_ATOM(Vector,unshift)
 		for(uint32_t i=0;i<argslen;i++)
 		{
 			th->vec[i] = args[i];
-			if (!th->vec_type->coerce(th->getInstanceWorker(),th->vec[i]))
-				ASATOM_INCREF(th->vec[i]);
+			bool isNewObject=false;
+			th->checkValue(th->vec[i],true,&isNewObject);
 			ASObject* obj = asAtomHandler::getObject(th->vec[i]);
 			if (obj)
 			{
-				obj->incRef();
+				if (!isNewObject)
+					obj->incRef();
 				obj->addStoredMember();
 			}
 		}
@@ -1323,8 +1344,10 @@ ASFUNCTIONBODY_ATOM(Vector,_map)
 			res->decRef();
 			return;
 		}
-		res->vec_type->coerce(wrk,funcRet);
-		ASATOM_ADDSTOREDMEMBER(funcRet);
+		res->checkValue(funcRet,true);
+		ASObject* ob = asAtomHandler::getObject(funcRet);
+		if(ob)
+			ob->addStoredMember();
 		res->vec.push_back(funcRet);
 	}
 
@@ -1388,7 +1411,8 @@ ASFUNCTIONBODY_ATOM(Vector,insertAt)
 	int32_t index;
 	asAtom o=asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(index)(o));
-	th->checkValue(o,true);
+	bool isNewObject=false;
+	th->checkValue(o,true,&isNewObject);
 	if (index < 0 && th->vec.size() >= (uint32_t)(-index))
 		index = th->vec.size()+(index);
 	if (index < 0)
@@ -1396,7 +1420,8 @@ ASFUNCTIONBODY_ATOM(Vector,insertAt)
 	ASObject* ob = asAtomHandler::getObject(o);
 	if (ob)
 	{
-		ob->incRef();
+		if (!isNewObject)
+			ob->incRef();
 		ob->addStoredMember();
 	}
 	if ((uint32_t)index >= th->vec.size())

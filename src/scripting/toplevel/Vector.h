@@ -270,7 +270,7 @@ class Vector: public ASObject
 	};
 	asAtom getDefaultValue();
 public:
-	bool checkValue(asAtom& o, bool allowconversion);
+	bool checkValue(asAtom& o, bool allowconversion, bool *isNewObject=nullptr);
 	class sortComparatorWrapper
 	{
 	private:

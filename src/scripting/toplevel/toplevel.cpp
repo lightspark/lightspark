@@ -51,6 +51,7 @@
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/toplevel/XML.h"
+#include "scripting/toplevel/Global.h"
 
 using namespace std;
 using namespace lightspark;
@@ -532,7 +533,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	//The stack may be not clean, is this a programmer/compiler error?
 	if(cc->stackp != cc->stack)
 	{
-		LOG(LOG_ERROR,"Stack not clean at the end of function:"<<getSystemState()->getStringFromUniqueId(this->functionname));
+		LOG(LOG_INFO,"Stack not clean at the end of function:"<<getSystemState()->getStringFromUniqueId(this->functionname));
 		while(cc->stackp != cc->stack)
 		{
 			--cc->stackp;
@@ -779,6 +780,7 @@ IFunction* Class<IFunction>::getNopFunction()
 	ret->prototype->addStoredMember();
 	ret->incRef();
 	ret->prototype->setVariableByQName("constructor","",ret,DECLARED_TRAIT);
+	this->global->addOwnedObject(ret);
 	return ret;
 }
 

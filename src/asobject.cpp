@@ -195,7 +195,9 @@ tiny_string ASObject::toLocaleString()
 	executeASMethod(str,"toLocaleString", {""}, nullptr, 0);
 	if (asAtomHandler::isInvalid(str))
 		return "";
-	return asAtomHandler::toString(str,getInstanceWorker());
+	tiny_string ret = asAtomHandler::toString(str,getInstanceWorker());
+	ASATOM_DECREF(str);
+	return ret;
 }
 
 TRISTATE ASObject::isLess(ASObject* r)
@@ -4304,8 +4306,13 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 	}
 	else
 	{
-		ASObject* val1 = toObject(a,wrk);
-		ASObject* val2 = toObject(v2,wrk);
+		bool ret = true;
+		bool isObject_a = asAtomHandler::isObject(a);
+		bool isObject_v2 = asAtomHandler::isObject(v2);
+		asAtom atmp = a;
+		asAtom v2tmp = v2;
+		ASObject* val1 = toObject(atmp,wrk);
+		ASObject* val2 = toObject(v2tmp,wrk);
 		if( (val1->is<XML>() || val1->is<XMLList>()) && (val2->is<XML>() || val2->is<XMLList>()) )
 		{
 			//Check if the objects are both XML or XMLLists
@@ -4372,9 +4379,15 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 				if (forceint)
 					setInt(a,wrk,result);
 				else
-					return replaceNumber(a,wrk,result);
+					ret = replaceNumber(a,wrk,result);
 			}
 		}
+		// cleanup new objects created in toObject() calls
+		if (!isObject_a)
+			ASATOM_DECREF(atmp);
+		if (!isObject_v2)
+			ASATOM_DECREF(v2tmp);
+		return ret;
 	}
 	return true;
 }
@@ -4427,8 +4440,10 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 	}
 	else
 	{
-		ASObject* val1 = toObject(v1,wrk);
-		ASObject* val2 = toObject(v2,wrk);
+		asAtom v1tmp = v1;
+		asAtom v2tmp = v2;
+		ASObject* val1 = toObject(v1tmp,wrk);
+		ASObject* val2 = toObject(v2tmp,wrk);
 		if( (val1->is<XML>() || val1->is<XMLList>()) && (val2->is<XML>() || val2->is<XMLList>()) )
 		{
 			//Check if the objects are both XML or XMLLists
@@ -4503,6 +4518,11 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 					o->decRef();
 			}
 		}
+		// cleanup new objects created in toObject() calls
+		if (!asAtomHandler::isObject(v1))
+			ASATOM_DECREF(v1tmp);
+		if (!asAtomHandler::isObject(v2))
+			ASATOM_DECREF(v2tmp);
 	}
 }
 

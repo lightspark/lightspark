@@ -919,6 +919,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 		//Clone always exists since it's implemented in Event itself
 		if(!asAtomHandler::getObject(cloned) || !asAtomHandler::getObject(cloned)->is<Event>())
 		{
+			ASATOM_DECREF(cloned);
 			asAtomHandler::setBool(ret,false);
 			return;
 		}

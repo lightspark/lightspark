@@ -147,7 +147,14 @@ namespace cereal
 	{
 		TypeName type;
 		archive(CEREAL_NVP(type));
+#ifdef NDEBUG
 		loadVariant(archive, variant, fromVariantName(variant, type));
+#else
+		// HACK for some reason the string_view "type" is made invalid during fromVariantName() when in debug mode,
+		// so we work on a string copy instead.
+		std::string s(type);
+		loadVariant(archive, variant, fromVariantName(variant, s));
+#endif
 	}
 
 	template<class Archive, typename T>

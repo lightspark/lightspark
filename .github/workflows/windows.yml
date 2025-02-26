@@ -34,7 +34,7 @@
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           with:
-            body: This is based on the latest commit.
+            bodyFile: ./.github/latest.md
             tag: latest
             name: "Development release"
             draft: false
@@ -71,7 +71,7 @@
               mingw-w64-x86_64-rtmpdump
               mingw-w64-x86_64-ffmpeg
               mingw-w64-x86_64-SDL2
-              mingw-w64-x86_64-upx
+              upx
               git
               base-devel
         - uses: actions/checkout@v4
@@ -124,7 +124,7 @@
               mingw-w64-i686-rtmpdump
               mingw-w64-i686-ffmpeg
               mingw-w64-i686-SDL2
-              mingw-w64-i686-upx
+              upx
               git
               base-devel
         - uses: actions/checkout@v4

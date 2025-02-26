@@ -65,10 +65,6 @@ public:
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller = nullptr)
 	{
-		// NOTE: This `incRef()` is necessary since `executeActions()`
-		// will `decRef()` the scope chain the end, eventually leading
-		// to a premature `free()`.
-		scope->incRef();
 		if (needsSuper())
 		{
 			asAtom newsuper = computeSuper();
@@ -79,10 +75,6 @@ public:
 	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target, ASWorker* wrk) override
 	{
-		// NOTE: This `incRef()` is necessary since `executeActions()`
-		// will `decRef()` the scope chain the end, eventually leading
-		// to a premature `free()`.
-		scope->incRef();
 		asAtom obj = target;
 		if (needsSuper())
 		{

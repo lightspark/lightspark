@@ -70,14 +70,14 @@ class AVM1Scope : public RefCountable
 private:
 	_NR<AVM1Scope> parent;
 	AVM1ScopeClass _class;
-	_R<ASObject> values;
+	_NR<ASObject> values;
 
 	// Replaces the current local scope object with another object.
 	void setLocals(const _R<ASObject>& newLocals)
 	{
 		values->removeStoredMember();
+		values.fakeRelease();
 
-		newLocals->incRef();
 		newLocals->addStoredMember();
 
 		values = newLocals;
@@ -91,7 +91,6 @@ public:
 		const _R<ASObject>& _values
 	) : parent(_parent), _class(type), values(_values)
 	{
-		values->incRef();
 		values->addStoredMember();
 	}
 
@@ -129,7 +128,12 @@ public:
 		return *this;
 	}
 
-	~AVM1Scope() { values->removeStoredMember(); }
+	~AVM1Scope()
+	{
+		ASObject* o = values.getPtr();
+		values.fakeRelease();
+		o->removeStoredMember();
+	}
 
 	// Creates a global scope (A parentless scope).
 	static AVM1Scope makeGlobalScope(const _R<Global>& globals)

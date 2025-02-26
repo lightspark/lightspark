@@ -63,7 +63,6 @@ exceptionthrown(nullptr),
 callee(nullptr),
 globalScope(_MNR(new AVM1Scope(_MR(sys->avm1global))))
 {
-	target->incRef();
 	scope = _MNR(new AVM1Scope(globalScope, target));
 }
 
@@ -489,7 +488,11 @@ void AVM1context::setVariable
 			);
 
 			if (obj == nullptr || !obj->hasPropertyByMultiname(m, true, true, wrk))
+			{
+				if (obj)
+					obj->decRef();
 				return true;
+			}
 
 			bool alreadySet = obj->AVM1setVariableByMultiname
 			(
@@ -500,6 +503,7 @@ void AVM1context::setVariable
 			);
 			if (alreadySet)
 				ASATOM_DECREF(value)
+			obj->decRef();
 			return false;
 		});
 
@@ -808,9 +812,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		while (curdepth > 0 && it == scopestackstop[curdepth])
 		{
 			LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" end with "<<context->scope->getLocalsPtr()->toDebugString());
-			// `incRef()` the parent before setting the scope, to prevent
-			// a potential premature `free()`.
-			context->scope->getParentPtr()->incRef();
 			context->scope = context->scope->getParent();
 			curdepth--;
 			Log::calls_indent--;
@@ -2497,10 +2498,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionWith "<<codesize<<" "<<asAtomHandler::toDebugString(obj));
 				++curdepth;
 				scopestackstop[curdepth] = itend;
+				ASObject* o= asAtomHandler::toObject(obj, wrk);
+				o->incRef();
 				context->scope = _MNR(new AVM1Scope
 				(
 					context->scope,
-					_MR(asAtomHandler::toObject(obj, wrk))
+					_MR(o)
 				));
 				break;
 			}
@@ -2893,7 +2896,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 
 	if (!scope.isNull() && isClosure)
 	{
-		scope->incRef();
 		context->scope = scope;
 	}
 	else

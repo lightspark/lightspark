@@ -4878,7 +4878,7 @@ void ABCVm::abc_increment_local_localresult(call_context* context)
 	}
 	else
 		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-	asAtomHandler::increment(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,context->exec_pos->local3.pos == context->exec_pos->local_pos1);
+	asAtomHandler::increment(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,true);
 	++(context->exec_pos);
 }
 void ABCVm::abc_decrement_local(call_context* context)
@@ -4904,7 +4904,7 @@ void ABCVm::abc_decrement_local_localresult(call_context* context)
 	}
 	else
 		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-	asAtomHandler::decrement(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,context->exec_pos->local3.pos == context->exec_pos->local_pos1);
+	asAtomHandler::decrement(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,true);
 	++(context->exec_pos);
 }
 void ABCVm::abc_typeof_constant(call_context* context)

@@ -124,7 +124,7 @@
               mingw-w64-i686-rtmpdump
               mingw-w64-i686-ffmpeg
               mingw-w64-i686-SDL2
-              mingw-w64-i686-upx
+              mingw-w64-x86_64-upx
               git
               base-devel
         - uses: actions/checkout@v4

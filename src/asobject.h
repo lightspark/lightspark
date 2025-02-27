@@ -460,7 +460,7 @@ public:
 	 * Return the asAtom the function returned.
 	 * if coerceresult is false, the result of the function will not be coerced into the type provided by the method_info
 	 */
-	static void callFunction(asAtom& caller, ASWorker* wrk, asAtom& ret, asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true, bool coercearguments=true);
+	static void callFunction(asAtom& caller, ASWorker* wrk, asAtom& ret, asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true, bool coercearguments=true, bool isAVM1InternalCall=false);
 	static multiname* getVariableByMultiname(asAtom& a, asAtom &ret, const multiname& name, ASWorker* wrk, bool& canCache, GET_VARIABLE_OPTION opt);
 	static void getVariableByInteger(asAtom& a, asAtom &ret, int index, ASWorker* wrk);
 	static bool hasPropertyByMultiname(const asAtom& a, const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk);
@@ -1465,6 +1465,8 @@ public:
 	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
 	virtual bool AVM1HandleMouseEvent(EventDispatcher* dispatcher,MouseEvent* e);
 	bool AVM1HandleMouseEventStandard(ASObject *dispobj, MouseEvent *e);
+	void AVM1HandleSetFocusEvent(ASObject *dispobj);
+	virtual void AVM1HandlePressedEvent(ASObject *dispobj);
 	// updates AVM1 bindings in target for all members of this ASObject
 	void AVM1UpdateAllBindings(DisplayObject* target, ASWorker* wrk);
 
@@ -1570,6 +1572,7 @@ class ExtensionContext;
 class FileMode;
 class FileReference;
 class FileStream;
+class FocusEvent;
 class Function;
 class Function_object;
 class FontDescription;
@@ -1624,6 +1627,7 @@ class Sound;
 class SoundChannel;
 class SpaceJustifier;
 class Sprite;
+class StackOverflowError;
 class Stage;
 class Stage3D;
 class SyntaxError;
@@ -1668,7 +1672,7 @@ template<> inline bool ASObject::is<ApplicationDomain>() const { return subtype=
 template<> inline bool ASObject::is<ArgumentError>() const { return subtype==SUBTYPE_ARGUMENTERROR; }
 template<> inline bool ASObject::is<Array>() const { return type==T_ARRAY; }
 template<> inline bool ASObject::is<ASCondition>() const { return subtype==SUBTYPE_CONDITION; }
-template<> inline bool ASObject::is<ASError>() const { return subtype==SUBTYPE_ERROR || subtype==SUBTYPE_SECURITYERROR || subtype==SUBTYPE_ARGUMENTERROR || subtype==SUBTYPE_DEFINITIONERROR || subtype==SUBTYPE_EVALERROR || subtype==SUBTYPE_RANGEERROR || subtype==SUBTYPE_REFERENCEERROR || subtype==SUBTYPE_SYNTAXERROR || subtype==SUBTYPE_TYPEERROR || subtype==SUBTYPE_URIERROR || subtype==SUBTYPE_VERIFYERROR || subtype==SUBTYPE_UNINITIALIZEDERROR; }
+template<> inline bool ASObject::is<ASError>() const { return subtype==SUBTYPE_ERROR || subtype==SUBTYPE_SECURITYERROR || subtype==SUBTYPE_ARGUMENTERROR || subtype==SUBTYPE_DEFINITIONERROR || subtype==SUBTYPE_EVALERROR || subtype==SUBTYPE_RANGEERROR || subtype==SUBTYPE_REFERENCEERROR || subtype==SUBTYPE_SYNTAXERROR || subtype==SUBTYPE_TYPEERROR || subtype==SUBTYPE_URIERROR || subtype==SUBTYPE_VERIFYERROR || subtype==SUBTYPE_UNINITIALIZEDERROR || subtype==SUBTYPE_STACKOVERFLOWERROR; }
 template<> inline bool ASObject::is<ASFile>() const { return subtype==SUBTYPE_FILE; }
 template<> inline bool ASObject::is<ASMutex>() const { return subtype==SUBTYPE_MUTEX; }
 template<> inline bool ASObject::is<ASObject>() const { return true; }
@@ -1711,12 +1715,13 @@ template<> inline bool ASObject::is<DropShadowFilter>() const { return subtype==
 template<> inline bool ASObject::is<EastAsianJustifier>() const { return subtype==SUBTYPE_EASTASIANJUSTIFIER; }
 template<> inline bool ASObject::is<ElementFormat>() const { return subtype==SUBTYPE_ELEMENTFORMAT; }
 template<> inline bool ASObject::is<EvalError>() const { return subtype==SUBTYPE_EVALERROR; }
-template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT || subtype==SUBTYPE_SAMPLEDATA_EVENT || subtype == SUBTYPE_THROTTLE_EVENT || subtype == SUBTYPE_CONTEXTMENUEVENT || subtype == SUBTYPE_GAMEINPUTEVENT || subtype == SUBTYPE_NATIVEWINDOWBOUNDSEVENT; }
+template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT || subtype==SUBTYPE_SAMPLEDATA_EVENT || subtype == SUBTYPE_THROTTLE_EVENT || subtype == SUBTYPE_CONTEXTMENUEVENT || subtype == SUBTYPE_GAMEINPUTEVENT || subtype == SUBTYPE_NATIVEWINDOWBOUNDSEVENT || subtype == SUBTYPE_FOCUSEVENT; }
 template<> inline bool ASObject::is<ExtensionContext>() const { return subtype==SUBTYPE_EXTENSIONCONTEXT; }
 template<> inline bool ASObject::is<FontDescription>() const { return subtype==SUBTYPE_FONTDESCRIPTION; }
 template<> inline bool ASObject::is<FileMode>() const { return subtype==SUBTYPE_FILEMODE; }
 template<> inline bool ASObject::is<FileReference>() const { return subtype==SUBTYPE_FILE||subtype==SUBTYPE_FILEREFERENCE; }
 template<> inline bool ASObject::is<FileStream>() const { return subtype==SUBTYPE_FILESTREAM; }
+template<> inline bool ASObject::is<FocusEvent>() const { return subtype==SUBTYPE_FOCUSEVENT; }
 template<> inline bool ASObject::is<Function_object>() const { return subtype==SUBTYPE_FUNCTIONOBJECT; }
 template<> inline bool ASObject::is<Function>() const { return subtype==SUBTYPE_FUNCTION; }
 template<> inline bool ASObject::is<GameInputDevice>() const { return subtype==SUBTYPE_GAMEINPUTDEVICE; }
@@ -1771,6 +1776,7 @@ template<> inline bool ASObject::is<SoundChannel>() const { return subtype==SUBT
 template<> inline bool ASObject::is<SoundTransform>() const { return subtype==SUBTYPE_SOUNDTRANSFORM; }
 template<> inline bool ASObject::is<SpaceJustifier>() const { return subtype==SUBTYPE_SPACEJUSTIFIER; }
 template<> inline bool ASObject::is<Sprite>() const { return subtype==SUBTYPE_SPRITE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_AVM1MOVIECLIP; }
+template<> inline bool ASObject::is<StackOverflowError>() const { return subtype==SUBTYPE_STACKOVERFLOWERROR; }
 template<> inline bool ASObject::is<Stage>() const { return subtype==SUBTYPE_STAGE; }
 template<> inline bool ASObject::is<Stage3D>() const { return subtype==SUBTYPE_STAGE3D; }
 template<> inline bool ASObject::is<SyntaxError>() const { return subtype==SUBTYPE_SYNTAXERROR; }

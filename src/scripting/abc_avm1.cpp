@@ -82,6 +82,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("ContextMenuItem","",Class<AVM1ContextMenuItem>::getRef(m_sys));
 	builtinavm1->registerBuiltin("TextField","",Class<AVM1TextField>::getRef(m_sys));
 	builtinavm1->registerBuiltin("TextFormat","",Class<AVM1TextFormat>::getRef(m_sys));
+	builtinavm1->registerBuiltin("Selection","",Class<AVM1Selection>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XML","",Class<AVM1XMLDocument>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XMLNode","",Class<AVM1XMLNode>::getRef(m_sys));
 	builtinavm1->registerBuiltin("XMLSocket","",Class<AVM1XMLSocket>::getRef(m_sys));

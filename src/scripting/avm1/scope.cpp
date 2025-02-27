@@ -206,7 +206,7 @@ bool AVM1Scope::forceDefineLocal
 
 bool AVM1Scope::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
-	if (values->hasPropertyByMultiname(name, true, true, wrk))
+	if (values && values->hasPropertyByMultiname(name, true, true, wrk))
 		return values->deleteVariableByMultiname(name, wrk);
 	else if (!parent.isNull())
 		return parent->deleteVariableByMultiname(name, wrk);
@@ -215,15 +215,20 @@ bool AVM1Scope::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 
 bool AVM1Scope::countAllCyclicMemberReferences(garbagecollectorstate& gcstate)
 {
-	bool ret = values->countAllCylicMemberReferences(gcstate);
+	if (gcstate.stopped)
+		return false;
+	bool ret = false;
+	if (values)
+		ret = values->countAllCylicMemberReferences(gcstate);
 	if (!parent.isNull())
-		ret |= parent->countAllCyclicMemberReferences(gcstate);
+		ret = parent->countAllCyclicMemberReferences(gcstate) | ret;
 	return ret;
 }
 
 void AVM1Scope::prepareShutdown()
 {
-	values->prepareShutdown();
+	if (values)
+		values->prepareShutdown();
 	if (!parent.isNull())
 		parent->prepareShutdown();
 }

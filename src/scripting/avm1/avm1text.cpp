@@ -20,6 +20,7 @@
 #include "avm1text.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
+#include "scripting/flash/display/Stage.h"
 
 using namespace std;
 using namespace lightspark;
@@ -29,10 +30,49 @@ void AVM1TextField::sinit(Class_base* c)
 	InteractiveObject::AVM1SetupMethods(c);
 	TextField::sinit(c);
 	c->isSealed = false;
-	c->setDeclaredMethodByQName("setNewTextFormat","",c->getSystemState()->getBuiltinFunction(TextField::_setDefaultTextFormat),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("setNewTextFormat","",c->getSystemState()->getBuiltinFunction(TextField::_setDefaultTextFormat,1),DYNAMIC_TRAIT);
 }
 void AVM1TextFormat::sinit(Class_base* c)
 {
 	TextFormat::sinit(c);
 	c->isSealed = false;
 }
+
+void AVM1Selection::sinit(Class_base* c)
+{
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, 0);
+	c->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addListener),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("getFocus","",c->getSystemState()->getBuiltinFunction(getFocus),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("setFocus","",c->getSystemState()->getBuiltinFunction(getFocus),NORMAL_METHOD,false);
+}
+ASFUNCTIONBODY_ATOM(AVM1Selection,addListener)
+{
+	_NR<ASObject> listener;
+	ARG_CHECK(ARG_UNPACK(listener));
+	if (listener)
+		wrk->getSystemState()->stage->AVM1AddMouseListener(listener.getPtr());
+}
+ASFUNCTIONBODY_ATOM(AVM1Selection,getFocus)
+{
+	_NR<InteractiveObject> focus = wrk->getSystemState()->stage->getFocusTarget();
+	if (focus)
+		ret = asAtomHandler::fromString(wrk->getSystemState(),focus->AVM1GetPath());
+	else
+		ret = asAtomHandler::nullAtom;
+}
+ASFUNCTIONBODY_ATOM(AVM1Selection,setFocus)
+{
+	if (argslen==0)
+		return;
+	if (asAtomHandler::isNull(args[0]) || asAtomHandler::isUndefined(args[0]))
+		wrk->getSystemState()->stage->setFocusTarget(NullRef);
+	else if (asAtomHandler::is<InteractiveObject>(args[0]))
+	{
+		InteractiveObject* o = asAtomHandler::as<InteractiveObject>(args[0]);
+		o->incRef();
+		wrk->getSystemState()->stage->setFocusTarget(_MR(o));
+	}
+	else
+		LOG(LOG_ERROR,"invalid object for Selection.setFocus:"<<asAtomHandler::toDebugString(args[0]));
+}
+

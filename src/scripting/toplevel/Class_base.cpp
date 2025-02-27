@@ -100,42 +100,27 @@ bool Type::coerceForTemplate(ASWorker* wrk, asAtom& o, bool allowconversion)
 	}
 	if(this == Class<UInteger>::getRef(wrk->getSystemState()).getPtr())
 	{
-		ASObject* oldobj = asAtomHandler::getObject(o);
 		asAtomHandler::setUInt(o,wrk,asAtomHandler::toUInt(o));
-		if (oldobj)
-			oldobj->decRef();
 		return true;
 	}
 	if(this == Class<Integer>::getRef(wrk->getSystemState()).getPtr())
 	{
-		ASObject* oldobj = asAtomHandler::getObject(o);
 		asAtomHandler::setInt(o,wrk,asAtomHandler::toInt(o));
-		if (oldobj)
-			oldobj->decRef();
 		return true;
 	}
 	if(this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
 	{
-		ASObject* oldobj = asAtomHandler::getObject(o);
 		asAtomHandler::setNumber(o,wrk,asAtomHandler::toNumber(o));
-		if (oldobj)
-			oldobj->decRef();
 		return true;
 	}
 	if(allowconversion && this == Class<ASString>::getRef(wrk->getSystemState()).getPtr())
 	{
-		ASObject* oldobj = asAtomHandler::getObject(o);
 		o = asAtomHandler::fromObject(abstract_s(wrk,asAtomHandler::toString(o,wrk)));
-		if (oldobj)
-			oldobj->decRef();
 		return true;
 	}
 	if(this == Class<Boolean>::getRef(wrk->getSystemState()).getPtr())
 	{
-		ASObject* oldobj = asAtomHandler::getObject(o);
 		asAtomHandler::setBool(o,asAtomHandler::isString(o) || asAtomHandler::toInt(o));
-		if (oldobj)
-			oldobj->decRef();
 		return true;
 	}
 	if (asAtomHandler::getObject(o) && asAtomHandler::getObject(o)->is<ObjectConstructor>())

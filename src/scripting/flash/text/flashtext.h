@@ -170,6 +170,8 @@ public:
 	uint32_t getTagID() const override;
 	float getScaleFactor() const override { return this->scaling; }
 	bool isInUpdateVarBinding() const { return inUpdateVarBinding; }
+	bool isFocusable() override;
+
 	
 	ASFUNCTION_ATOM(appendText);
 	ASFUNCTION_ATOM(_getAntiAliasType);

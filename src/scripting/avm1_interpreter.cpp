@@ -21,6 +21,8 @@
 #include "scripting/class.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/errors/flasherrors.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Global.h"
@@ -53,6 +55,10 @@ asAtom ACTIONRECORD::PeekStack(std::stack<asAtom>& stack)
 		throw RunTimeException("AVM1: empty stack");
 	return stack.top();
 }
+AVM1context::AVM1context():keepLocals(true), callDepth(0), actionsExecuted(0),swfversion(0),
+	exceptionthrown(nullptr), callee(nullptr),scope(NullRef),globalScope(NullRef)
+{
+}
 
 AVM1context::AVM1context(const _R<DisplayObject>& target, SystemState* sys) :
 keepLocals(true),
@@ -64,6 +70,10 @@ callee(nullptr),
 globalScope(_MNR(new AVM1Scope(_MR(sys->avm1global))))
 {
 	scope = _MNR(new AVM1Scope(globalScope, target));
+}
+
+AVM1context::~AVM1context()
+{
 }
 
 // Based on Ruffle's `avm1::activation::Activation::resolve_target_path()`.
@@ -540,25 +550,34 @@ struct tryCatchBlock
 	uint32_t startpos;
 };
 Mutex executeactionmutex;
-void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, const std::vector<uint8_t> &actionlist, uint32_t startactionpos, const _NR<AVM1Scope>& scope, bool fromInitAction, asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args, const std::vector<uint32_t>& paramnames, const std::vector<uint8_t>& paramregisternumbers,
-								  bool preloadParent, bool preloadRoot, bool suppressSuper, bool preloadSuper, bool suppressArguments, bool preloadArguments, bool suppressThis, bool preloadThis, bool preloadGlobal, AVM1Function *caller, AVM1Function *callee, Activation_object *actobj, asAtom *superobj)
+void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, const std::vector<uint8_t> &actionlist,
+								  uint32_t startactionpos, AVM1Scope* scope, bool fromInitAction,
+								  asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args,
+								  const std::vector<uint32_t>& paramnames,
+								  const std::vector<uint8_t>& paramregisternumbers,
+								  bool preloadParent, bool preloadRoot, bool suppressSuper,
+								  bool preloadSuper, bool suppressArguments, bool preloadArguments,
+								  bool suppressThis, bool preloadThis, bool preloadGlobal,
+								  AVM1Function *caller, AVM1Function *callee,
+								  Activation_object *actobj, asAtom *superobj,bool isInternalCall)
 {
 	Locker l(executeactionmutex);
 	bool clip_isTarget=false;
 	assert(!clip->needsActionScript3());
 	SystemState* sys = clip->getSystemState();
 	ASWorker* wrk = sys->worker;
+	wrk->AVM1_cur_recursion_function++;
+	if (isInternalCall)
+		wrk->AVM1_cur_recursion_internal++;
+
 	if (context->callDepth == 0)
 		context->startTime = compat_now();
-	if (context->callDepth >= wrk->limits.max_recursion - 1)
+	if (context->callDepth >= wrk->limits.max_recursion - 1 ||
+		wrk->AVM1_cur_recursion_internal > AVM1_RECURSION_LIMIT_INTERN)
 	{
-		std::stringstream s;
-		s << "Reached maximum function recursion limit of " << wrk->limits.max_recursion;
-		throw ScriptLimitException
-		(
-			s.str(),
-			ScriptLimitException::MaxFunctionRecursion
-		);
+		if (!context->exceptionthrown)
+			wrk->throwStackOverflow();
+		return;
 	}
 	context->swfversion=clip->loadedFrom->version;
 	context->callee = callee;
@@ -571,18 +590,27 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 
 	bool isClosure = context->swfversion >= 6;
 
-	if (!isClosure || scope.isNull())
+	if (!isClosure || !scope)
 		clip->incRef();
 	// NOTE: In SWF 5, function calls aren't closures, and always create
 	// a new target scope, regardless of the function's origin.
-	auto parentScope = isClosure && !scope.isNull() ? scope : _MNR(new AVM1Scope
-	(
-		context->globalScope,
-		_MR(clip)
-	));
+	_NR<AVM1Scope> parentScope;
+	if (isClosure && scope)
+	{
+		scope->incRef();
+		parentScope = _MNR(scope);
+	}
+	else
+	{
+		parentScope = _MNR(new AVM1Scope
+		(
+			context->globalScope,
+			_MR(clip)
+		));
+	}
 
 	// Local scopes are only created for function calls.
-	context->scope = scope.isNull() ? parentScope : _MNR
+	context->scope = !scope ? parentScope : _MNR
 	(
 		new AVM1Scope(parentScope, wrk)
 	);
@@ -742,6 +770,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	auto tryblockstart = actionlist.end();
 	while (it != actionlist.end())
 	{
+		if (wrk->AVM1_cur_recursion_internal <= AVM1_RECURSION_LIMIT_INTERN && context->exceptionthrown && context->exceptionthrown->is<StackOverflowError>())
+		{
+			// stackoverflow exceptions on non-internal calls are never caught
+			break;
+		}
 		if (!(context->actionsExecuted % 2000))
 		{
 			auto delta = compat_now() - context->startTime;
@@ -2894,9 +2927,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		++context->actionsExecuted;
 	}
 
-	if (!scope.isNull() && isClosure)
+	if (scope && isClosure)
 	{
-		context->scope = scope;
+		scope->incRef();
+		context->scope = _MR(scope);
 	}
 	else
 	{
@@ -2921,8 +2955,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" executeActions done");
 	Log::calls_indent--;
 	context->callDepth--;
+	wrk->AVM1_cur_recursion_function--;
+	if (isInternalCall && !context->exceptionthrown)
+		wrk->AVM1_cur_recursion_internal--;
 	wrk->AVM1callStack.pop_back();
-	if (context->exceptionthrown && context->callDepth==0)
+	if (wrk->AVM1_cur_recursion_internal>65 || (context->exceptionthrown && context->callDepth==0 ))
 	{
 		if (wrk->AVM1callStack.empty())
 		{

@@ -24,6 +24,7 @@
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/display/Loader.h"
 #include "scripting/flash/display/Stage.h"
+#include "scripting/avm1/scope.h"
 #include "scripting/abc.h"
 #include "scripting/argconv.h"
 #include "compat.h"
@@ -571,7 +572,7 @@ DictionaryTag* ApplicationDomain::dictionaryLookupByName(uint32_t nameID)
 	// tag not found, also check case insensitive
 	if(it==dictionary.end())
 	{
-		
+
 		tiny_string namelower = getSystemState()->getStringFromUniqueId(nameID).lowercase();
 		it = dictionary.begin();
 		for(;it!=dictionary.end();++it)
@@ -661,7 +662,7 @@ void ApplicationDomain::bindClass(const QName& classname, Class_inherit* cls)
 {
 	if (cls->isBinded() || classesToBeBound.empty())
 		return;
-	
+
 	auto it=classesToBeBound.find(classname);
 	if(it!=classesToBeBound.end())
 	{
@@ -692,7 +693,7 @@ void ApplicationDomain::checkBinding(DictionaryTag *tag)
 	multiname clsname(nullptr);
 	clsname.name_type=multiname::NAME_STRING;
 	clsname.isAttribute = false;
-	
+
 	uint32_t pos = tag->bindingclassname.rfind(".");
 	tiny_string ns;
 	tiny_string nm;
@@ -709,7 +710,7 @@ void ApplicationDomain::checkBinding(DictionaryTag *tag)
 	}
 	clsname.name_s_id=getSystemState()->getUniqueStringId(nm);
 	clsname.ns.push_back(nsNameAndKind(getSystemState(),ns,NAMESPACE));
-	
+
 	ASObject* typeObject = nullptr;
 	auto i = classesBeingDefined.cbegin();
 	while (i != classesBeingDefined.cend())
@@ -1273,7 +1274,7 @@ ASFUNCTIONBODY_ATOM(System,totalMemory)
 		return;
 	}
 	fclose(f);
-	
+
 	uint32_t memsize = 0;
 	pugi::xml_document xmldoc;
 	xmldoc.load_buffer((void*)buf,size);
@@ -1339,7 +1340,9 @@ ASWorker::ASWorker(SystemState* s):
 	EventDispatcher(this,nullptr),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
 	stage(nullptr),
-	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(true),state("running"),
+	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),
+	cur_recursion(0),AVM1_cur_recursion_function(0),AVM1_cur_recursion_internal(0),
+	isPrimordial(true),state("running"),
 	nativeExtensionCallCount(0)
 {
 	subtype = SUBTYPE_WORKER;
@@ -1359,7 +1362,9 @@ ASWorker::ASWorker(Class_base* c):
 	EventDispatcher(c->getSystemState()->worker,c),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
 	stage(nullptr),
-	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new"),
+	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),
+	cur_recursion(0),AVM1_cur_recursion_function(0),AVM1_cur_recursion_internal(0),
+	isPrimordial(false),state("new"),
 	nativeExtensionCallCount(0)
 {
 	subtype = SUBTYPE_WORKER;
@@ -1378,7 +1383,9 @@ ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 	EventDispatcher(wrk,c),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
 	stage(nullptr),
-	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),cur_recursion(0),isPrimordial(false),state("new"),
+	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),
+	cur_recursion(0),AVM1_cur_recursion_function(0),AVM1_cur_recursion_internal(0),
+	isPrimordial(false),state("new"),
 	nativeExtensionCallCount(0)
 {
 	subtype = SUBTYPE_WORKER;
@@ -1620,6 +1627,11 @@ tiny_string ASWorker::getStackTraceString(SystemState* sys,const StackTraceList&
 	return ret;
 }
 
+_NR<AVM1Scope> ASWorker::AVM1getScope() const
+{
+	return AVM1callStack.empty() ? NullRef : AVM1callStack.back()->scope;
+}
+
 void ASWorker::throwStackOverflow()
 {
 	createError<StackOverflowError>(this,kStackOverflowError);
@@ -1670,7 +1682,7 @@ void ASWorker::execute()
 		_NR<EventDispatcher> dispatcher=events_queue.front().first;
 		_R<Event> e=events_queue.front().second;
 		events_queue.pop_front();
-	
+
 		event_queue_mutex.unlock();
 		try
 		{
@@ -1892,7 +1904,7 @@ ASFUNCTIONBODY_ATOM(ASWorker,getSharedProperty)
 	tiny_string key;
 	ARG_CHECK(ARG_UNPACK(key));
 	Locker l(wrk->getSystemState()->workerDomain->workersharedobjectmutex);
-	
+
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=wrk->getSystemState()->getUniqueStringId(key);
@@ -2099,12 +2111,12 @@ ASFUNCTIONBODY_ATOM(WorkerDomain,createWorker)
 ASFUNCTIONBODY_ATOM(WorkerDomain,createWorkerFromPrimordial)
 {
 	ASWorker* wk = Class<ASWorker>::getInstanceS(wrk->getSystemState()->worker);
-	
-	
+
+
 	ByteArray* ba = Class<ByteArray>::getInstanceS(wk);
 	FileStreamCache* sc = (FileStreamCache*)wrk->getSystemState()->getEngineData()->createFileStreamCache(wrk->getSystemState());
 	sc->useExistingFile(wrk->getSystemState()->getDumpedSWFPath());
-	
+
 	ba->append(sc->createReader(),wrk->getSystemState()->swffilesize);
 	wk->swf = _MR(ba);
 	ret = asAtomHandler::fromObject(wk);
@@ -2119,7 +2131,7 @@ ASFUNCTIONBODY_ATOM(WorkerDomain,createWorkerFromByteArray)
 ASFUNCTIONBODY_ATOM(WorkerDomain,listWorkers)
 {
 	WorkerDomain* th = asAtomHandler::as<WorkerDomain>(obj);
-	
+
 	th->workerlist->incRef();
 	ret = asAtomHandler::fromObject(th->workerlist.getPtr());
 }

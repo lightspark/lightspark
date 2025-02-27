@@ -87,7 +87,7 @@ class StackOverflowError: public ASError
 {
 public:
 	StackOverflowError(ASWorker* wrk,Class_base* c, const tiny_string& error_message = "", int id = 0):
-		ASError(wrk,c, error_message, id, "StackOverflowError"){}
+		ASError(wrk,c, error_message, id, "StackOverflowError",SUBTYPE_STACKOVERFLOWERROR){}
 	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	static void buildTraits(ASObject* o);

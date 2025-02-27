@@ -40,6 +40,7 @@
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/flash/display/Stage.h"
 #include "scripting/flash/utils/Dictionary.h"
 #include "scripting/toplevel/Undefined.h"
 #include "scripting/toplevel/Null.h"
@@ -579,7 +580,7 @@ asAtom ASObject::callResolveMethod(const tiny_string& name, ASWorker* wrk)
 
 		auto func = asAtomHandler::invalidAtom;
 
-		pr->AVM1getVariableByMultiname
+		GET_VARIABLE_RESULT varres = pr->AVM1getVariableByMultiname
 		(
 			func,
 			m,
@@ -605,7 +606,10 @@ asAtom ASObject::callResolveMethod(const tiny_string& name, ASWorker* wrk)
 			thisObj,
 			&strAtom,
 			1,
-			false
+			false,
+			true,
+			true,
+			varres & GETVAR_ISGETTER
 		);
 		ASATOM_DECREF(func);
 		break;
@@ -1174,7 +1178,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 
 		asAtom v =asAtomHandler::fromObject(target);
 		asAtom ret=asAtomHandler::invalidAtom;
-		asAtomHandler::callFunction(obj->setter,wrk,ret,v,arg1,1,false);
+		asAtomHandler::callFunction(obj->setter,wrk,ret,v,arg1,1,false,true,true,true);
 		if (asAtomHandler::is<SyntheticFunction>(obj->setter))
 			retval = asAtomHandler::as<SyntheticFunction>(obj->setter)->getSimpleName();
 		ASATOM_DECREF(ret);
@@ -2100,7 +2104,6 @@ bool ASObject::AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_
 
 			auto thisObj = asAtomHandler::fromObject(this);
 			auto res = asAtomHandler::invalidAtom;
-
 			asAtomHandler::callFunction
 			(
 				var->setter,
@@ -2647,7 +2650,6 @@ bool ASObject::destruct()
 {
 	return destructIntern();
 }
-
 bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 {
 	if (e->type =="keyDown")
@@ -2690,34 +2692,40 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	ASWorker* wrk = getInstanceWorker();
 	if (e->type == "mouseMove")
 	{
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
-		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
-		if (asAtomHandler::is<AVM1Function>(func))
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-		ASATOM_DECREF(func);
-	}
-	else if (e->type == "mouseDown")
-	{
-		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>())
-				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
+		if (!this->is<DisplayObject>() || this->is<MovieClip>())
 		{
-			m.name_s_id=BUILTIN_STRINGS::STRING_ONPRESS;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
 			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::is<AVM1Function>(func))
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 			ASATOM_DECREF(func);
 		}
-		func=asAtomHandler::invalidAtom;
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
-		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
-		if (asAtomHandler::is<AVM1Function>(func))
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-		ASATOM_DECREF(func);
+	}
+	else if (e->type == "mouseDown")
+	{
+		if (!this->is<DisplayObject>() || this->is<MovieClip>())
+		{
+			func=asAtomHandler::invalidAtom;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
+			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+			if (asAtomHandler::is<AVM1Function>(func))
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			ASATOM_DECREF(func);
+		}
 	}
 	else if (e->type == "mouseUp")
 	{
+		if (!this->is<DisplayObject>() || this->is<MovieClip>())
+		{
+			func=asAtomHandler::invalidAtom;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEUP;
+			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+			if (asAtomHandler::is<AVM1Function>(func))
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			ASATOM_DECREF(func);
+		}
 		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>())
-				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
+				|| (dispobj->as<DisplayObject>()->isVisible() && (this->is<MovieClip>() || this->is<SimpleButton>())  && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
 			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
@@ -2725,12 +2733,6 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 			ASATOM_DECREF(func);
 		}
-		func=asAtomHandler::invalidAtom;
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONMOUSEUP;
-		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
-		if (asAtomHandler::is<AVM1Function>(func))
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-		ASATOM_DECREF(func);
 	}
 	else if (e->type == "mouseWheel")
 	{
@@ -2742,16 +2744,18 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	}
 	else if (e->type == "releaseOutside")
 	{
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE;
-		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
-		if (asAtomHandler::is<AVM1Function>(func))
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-		ASATOM_DECREF(func);
+		if (!this->is<DisplayObject>() || this->is<MovieClip>())
+		{
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE;
+			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+			if (asAtomHandler::is<AVM1Function>(func))
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+			ASATOM_DECREF(func);
+		}
 	}
 	else if (e->type == "rollOver")
 	{
-		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>())
-				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
+		if (!this->is<DisplayObject>() || this->is<MovieClip>() || this->is<SimpleButton>())
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOVER;
 			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
@@ -2762,8 +2766,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 	}
 	else if (e->type == "rollOut")
 	{
-		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>())
-				|| (dispobj->as<DisplayObject>()->isVisible() && this->is<DisplayObject>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
+		if (dispobj == this && (!this->is<DisplayObject>() || this->is<MovieClip>() || this->is<SimpleButton>()))
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONROLLOUT;
 			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
@@ -2780,7 +2783,52 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 		LOG(LOG_NOT_IMPLEMENTED,"handling avm1 mouse event "<<e->type);
 	return false;
 }
+void ASObject::AVM1HandleSetFocusEvent(ASObject *dispobj)
+{
+	_NR<InteractiveObject> oldfocus = getSystemState()->stage->getFocusTarget();
+	if (dispobj && oldfocus.getPtr()==dispobj)
+		return;
+	if ((dispobj && dispobj->is<TextField>())
+		|| (oldfocus && oldfocus->is<TextField>()))
+	{
+		asAtom func=asAtomHandler::invalidAtom;
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+		asAtom ret=asAtomHandler::invalidAtom;
+		asAtom obj = asAtomHandler::fromObject(this);
+		ASWorker* wrk = getInstanceWorker();
+		asAtom args[2];
+		args[0] = !oldfocus || oldfocus==getSystemState()->stage || oldfocus->is<RootMovieClip>() ? asAtomHandler::nullAtom : asAtomHandler::fromObject(oldfocus.getPtr());
+		args[1] = !dispobj || dispobj==getSystemState()->stage || dispobj->is<RootMovieClip>() || !dispobj->is<TextField>() ? asAtomHandler::nullAtom : asAtomHandler::fromObject(dispobj);
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONSETFOCUS;
+		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+		if (asAtomHandler::is<AVM1Function>(func))
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,2);
+		ASATOM_DECREF(func);
+		ASATOM_DECREF(ret)
+	}
+}
 
+void ASObject::AVM1HandlePressedEvent(ASObject *dispobj)
+{
+	multiname m(nullptr);
+	m.name_type=multiname::NAME_STRING;
+	m.isAttribute = false;
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtom obj = asAtomHandler::fromObject(this);
+	ASWorker* wrk = getInstanceWorker();
+	if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>())
+					|| (dispobj->as<DisplayObject>()->isVisible() && (this->is<MovieClip>() || this->is<SimpleButton>()) && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
+	{
+		m.name_s_id=BUILTIN_STRINGS::STRING_ONPRESS;
+		asAtom func=asAtomHandler::invalidAtom;
+		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+		if (asAtomHandler::is<AVM1Function>(func))
+			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+		ASATOM_DECREF(func);
+	}
+}
 void ASObject::AVM1UpdateAllBindings(DisplayObject* target, ASWorker* wrk)
 {
 	auto it = Variables.Variables.begin();
@@ -3488,7 +3536,7 @@ asAtom asAtomHandler::fromString(SystemState* sys, const tiny_string& s)
 	return a;
 }
 
-void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult, bool coercearguments)
+void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult, bool coercearguments, bool isAVM1InternalCall)
 {
 	if (USUALLY_FALSE(!asAtomHandler::isFunction(caller)))
 	{
@@ -3519,7 +3567,7 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 	{
 		// The caller is just the previous callee.
 		auto argCaller = wrk->AVM1getCallee();
-		getObjectNoCheck(caller)->as<AVM1Function>()->call(&ret,&c, args, num_args, argCaller);
+		getObjectNoCheck(caller)->as<AVM1Function>()->call(&ret,&c, args, num_args, argCaller,isAVM1InternalCall);
 	}
 	else
 	{

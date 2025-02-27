@@ -141,7 +141,7 @@ void Event::sinit(Class_base* c)
 	c->setVariableAtomByQName("VIDEO_FRAME",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"videoFrame"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("WORKER_STATE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"workerState"),DECLARED_TRAIT);
 
-	c->setDeclaredMethodByQName("formatToString","",c->getSystemState()->getBuiltinFunction(formatToString),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("formatToString","",c->getSystemState()->getBuiltinFunction(formatToString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("isDefaultPrevented","",c->getSystemState()->getBuiltinFunction(_isDefaultPrevented),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("preventDefault","",c->getSystemState()->getBuiltinFunction(_preventDefault),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone),NORMAL_METHOD,true);
@@ -281,8 +281,16 @@ void EventPhase::sinit(Class_base* c)
 	c->setVariableAtomByQName("AT_TARGET",nsNameAndKind(),asAtomHandler::fromUInt(AT_TARGET),DECLARED_TRAIT);
 }
 
-FocusEvent::FocusEvent(ASWorker* wrk, Class_base* c, tiny_string _type):Event(wrk,c, _type,true)
+FocusEvent::FocusEvent(ASWorker* wrk, Class_base* c)
+	:Event(wrk,c, "focusEvent",true),relatedObject(NullRef)
 {
+	subtype=SUBTYPE_FOCUSEVENT;
+}
+
+FocusEvent::FocusEvent(ASWorker* wrk, Class_base* c, tiny_string _type, _NR<InteractiveObject> _relatedObject)
+	:Event(wrk,c, _type,true),relatedObject(_relatedObject)
+{
+	subtype=SUBTYPE_FOCUSEVENT;
 }
 
 void FocusEvent::sinit(Class_base* c)
@@ -292,7 +300,9 @@ void FocusEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("FOCUS_OUT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"focusOut"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("MOUSE_FOCUS_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseFocusChange"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("KEY_FOCUS_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"keyFocusChange"),DECLARED_TRAIT);
+	REGISTER_GETTER_RESULTTYPE(c,relatedObject,InteractiveObject);
 }
+ASFUNCTIONBODY_GETTER_SETTER(FocusEvent,relatedObject)
 
 ASFUNCTIONBODY_ATOM(FocusEvent,_constructor)
 {

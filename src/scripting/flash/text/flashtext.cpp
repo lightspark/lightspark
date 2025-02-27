@@ -182,10 +182,10 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("gridFitType","",c->getSystemState()->getBuiltinFunction(TextField::_setGridFitType),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(TextField::_getHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(TextField::_setHeight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("htmlText","",c->getSystemState()->getBuiltinFunction(TextField::_getHtmlText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("htmlText","",c->getSystemState()->getBuiltinFunction(TextField::_getHtmlText,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("htmlText","",c->getSystemState()->getBuiltinFunction(TextField::_setHtmlText),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(TextField::_getLength,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("text","",c->getSystemState()->getBuiltinFunction(TextField::_getText),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("text","",c->getSystemState()->getBuiltinFunction(TextField::_getText,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("text","",c->getSystemState()->getBuiltinFunction(TextField::_setText),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textHeight","",c->getSystemState()->getBuiltinFunction(TextField::_getTextHeight),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textWidth","",c->getSystemState()->getBuiltinFunction(TextField::_getTextWidth),GETTER_METHOD,true);
@@ -296,7 +296,7 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	if ((!this->legacy || (tag==nullptr) || autoSize!=AS_NONE))
 	{
 		xmin=tag ? tag->Bounds.Xmin/20.0f : 0.0f;
-		if (wordWrap)
+		if (wordWrap || autoSize==AS_NONE)
 			xmax=max(0.0f,float(width))+ (tag ? tag->Bounds.Xmin/20.0f : 0.0f);
 		else
 			xmax=max(0.0f,float(textWidth+autosizeposition))+2*TEXTFIELD_PADDING+ (tag ? tag->Bounds.Xmin/20.0f : 0.0f);
@@ -1793,6 +1793,11 @@ void TextField::tickFence()
 uint32_t TextField::getTagID() const
 {
 	return tag ? tag->getId() : UINT32_MAX;
+}
+
+bool TextField::isFocusable()
+{
+	return type==ET_EDITABLE && selectable;
 }
 
 void TextField::textUpdated()

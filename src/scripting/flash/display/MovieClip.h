@@ -21,6 +21,7 @@
 #define SCRIPTING_FLASH_DISPLAY_MOVIECLIP_H 1
 
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/avm1/scope.h"
 
 namespace lightspark
 {

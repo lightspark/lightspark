@@ -21,7 +21,7 @@
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/flash/display/DisplayObject.h"
-
+#include "scripting/avm1/scope.h"
 
 using namespace std;
 using namespace lightspark;
@@ -70,6 +70,12 @@ asAtom AVM1Function::computeSuper()
 	return newsuper;
 }
 
+void AVM1Function::checkInternalException()
+{
+	if (getInstanceWorker()->AVM1callStack.back()->exceptionthrown)
+		getInstanceWorker()->AVM1_cur_recursion_internal=AVM1_RECURSION_LIMIT_INTERN+1; // indicate stackoverflow on internal call
+}
+
 void AVM1Function::finalize()
 {
 	if (activationobject)
@@ -78,6 +84,7 @@ void AVM1Function::finalize()
 	if (clip)
 		clip->removeStoredMember();
 	clip=nullptr;
+	scope.reset();
 	ASATOM_REMOVESTOREDMEMBER(superobj);
 	IFunction::finalize();
 }
@@ -90,6 +97,7 @@ bool AVM1Function::destruct()
 	if (clip)
 		clip->removeStoredMember();
 	clip=nullptr;
+	scope.reset();
 	ASATOM_REMOVESTOREDMEMBER(superobj);
 	superobj=asAtomHandler::invalidAtom;
 	return IFunction::destruct();
@@ -104,7 +112,8 @@ void AVM1Function::prepareShutdown()
 		activationobject->prepareShutdown();
 	if (clip)
 		clip->prepareShutdown();
-	scope->prepareShutdown();
+	if (scope)
+		scope->prepareShutdown();
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
 		su->prepareShutdown();
@@ -117,7 +126,8 @@ bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		ret = activationobject->countAllCylicMemberReferences(gcstate) || ret;
 	if (clip)
 		ret = clip->countAllCylicMemberReferences(gcstate) || ret;
-	ret |= scope->countAllCyclicMemberReferences(gcstate);
+	if (scope)
+		ret |= scope->countAllCyclicMemberReferences(gcstate);
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
 		ret = su->countAllCylicMemberReferences(gcstate) || ret;

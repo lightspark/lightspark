@@ -319,8 +319,32 @@ ASFUNCTIONBODY_ATOM(Math,pow)
 	ARG_CHECK(ARG_UNPACK (x) (y));
 	if (::fabs(x) == 1 && (std::isnan(y) || std::isinf(y)) )
 		asAtomHandler::setNumber(ret,wrk,Number::NaN);
+	else if (std::isinf(x) && x<0 && y<0 && Number::isInteger(y))
+	{
+		// special case, see ruffle test from_avmplus/as3/Types/Number/pow
+		asAtomHandler::setNumber(ret,wrk,-0.0);
+	}
+	else if (x==0 && std::signbit(x) && y>0 && Number::isInteger(y))
+	{
+		// special case, see ruffle test from_avmplus/as3/Types/Number/pow
+		asAtomHandler::setNumber(ret,wrk,uint64_t(y)%2 ? -0.0 : 0.0);
+	}
 	else
-		asAtomHandler::setNumber(ret,wrk,::pow(x,y));
+	{
+		number_t val = ::pow(x,y);
+		if (Number::isInteger(val))
+		{
+			// turn result into (u)int if possible
+			if (::abs(val) < INT32_MAX)
+				asAtomHandler::setInt(ret,wrk,val);
+			else if (val > 0 && val < UINT32_MAX)
+				asAtomHandler::setUInt(ret,wrk,val);
+			else
+				asAtomHandler::setNumber(ret,wrk,val);
+		}
+		else
+			asAtomHandler::setNumber(ret,wrk,val);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Math,random)

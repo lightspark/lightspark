@@ -99,7 +99,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 		if (dispobj!= this)
 			return false;
 	}
-	BUTTONSTATE oldstate = currentState;
+	oldstate = currentState;
 	if(e->type == "mouseDown")
 	{
 		currentState = DOWN;
@@ -120,7 +120,6 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 		currentState = STATE_OUT;
 		reflectState(oldstate);
 	}
-	bool handled = false;
 	if (buttontag)
 	{
 		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
@@ -130,7 +129,6 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 				||(it->CondOutDownToOverDown && oldstate==DOWN && currentState==OVER)
 				||(it->CondOverDownToOutDown && (oldstate==DOWN || oldstate==OVER) && currentState==STATE_OUT)
 				||(it->CondOverDownToOverUp && (oldstate==DOWN || oldstate==OVER) && currentState==UP)
-				||(it->CondOverUpToOverDown && (oldstate==UP || oldstate==OVER) && currentState==DOWN)
 				||(it->CondOverUpToIdle && (oldstate==UP || oldstate==OVER) && currentState==STATE_OUT)
 				||(it->CondIdleToOverUp && oldstate==STATE_OUT && currentState==OVER)
 				||(it->CondOverDownToIdle && oldstate==DOWN && currentState==OVER)
@@ -142,16 +140,33 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 				if (c)
 				{
 					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
-					handled = true;
 				}
-				
 			}
 		}
 	}
-	handled |= AVM1HandleMouseEventStandard(dispobj,e);
-	return handled;
+	return AVM1HandleMouseEventStandard(dispobj,e);
 }
-
+void SimpleButton::AVM1HandlePressedEvent(ASObject* dispatcher)
+{
+	if (buttontag)
+	{
+		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
+		{
+			if ((it->CondOverUpToOverDown && (oldstate==UP || oldstate==OVER) && currentState==DOWN)
+				)
+			{
+				DisplayObjectContainer* c = getParent();
+				while (c && !c->is<MovieClip>())
+					c = c->getParent();
+				if (c)
+				{
+					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+				}
+			}
+		}
+	}
+	DisplayObjectContainer::AVM1HandlePressedEvent(dispatcher);
+}
 void SimpleButton::handleMouseCursor(bool rollover)
 {
 	if (rollover)
@@ -441,7 +456,7 @@ bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, nu
 SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DisplayObject *dS, DisplayObject *hTS,
 				DisplayObject *oS, DisplayObject *uS, DefineButtonTag *tag)
 	: DisplayObjectContainer(wrk,c), downState(dS), hitTestState(hTS), overState(oS), upState(uS),
-	  buttontag(tag),currentState(STATE_OUT),enabled(true),useHandCursor(true),hasMouse(false)
+	  buttontag(tag),currentState(STATE_OUT),oldstate(STATE_OUT),enabled(true),useHandCursor(true),hasMouse(false)
 {
 	subtype = SUBTYPE_SIMPLEBUTTON;
 	/* When called from DefineButton2Tag::instance, they are not constructed yet

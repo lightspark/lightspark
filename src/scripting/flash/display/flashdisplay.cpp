@@ -813,8 +813,8 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
-		
+		if (this->hasPropertyByMultiname(objName,true,false,this->getInstanceWorker()))
+			setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 	}
 	obj->placeFrame=UINT32_MAX;
 	obj->afterLegacyDelete(inskipping);
@@ -947,7 +947,8 @@ void DisplayObjectContainer::purgeLegacyChildren()
 				objName.name_type=multiname::NAME_STRING;
 				objName.name_s_id=obj->name;
 				objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-				setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom,ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+				if (this->hasPropertyByMultiname(objName,true,false,this->getInstanceWorker()))
+					setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom,ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 			}
 		}
 		i++;

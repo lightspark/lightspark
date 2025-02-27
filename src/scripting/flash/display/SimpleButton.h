@@ -53,6 +53,7 @@ private:
 		STATE_OUT
 	};
 	BUTTONSTATE currentState;
+	BUTTONSTATE oldstate;
 	bool enabled;
 	bool useHandCursor;
 	bool hasMouse;
@@ -95,6 +96,7 @@ public:
 	void afterLegacyDelete(bool inskipping) override;
 	bool AVM1HandleKeyboardEvent(KeyboardEvent* e) override;
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
+	void AVM1HandlePressedEvent(ASObject* dispatcher) override;
 	void handleMouseCursor(bool rollover) override;
 	bool allowAsMask() const override
 	{

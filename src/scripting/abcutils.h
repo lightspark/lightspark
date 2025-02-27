@@ -23,7 +23,6 @@
 #include "asobject.h"
 #include "smartrefs.h"
 #include "errorconstants.h"
-#include "scripting/avm1/scope.h"
 #include "utils/timespec.h"
 
 namespace lightspark
@@ -35,6 +34,7 @@ class ASObject;
 class Class_base;
 union asAtom;
 class SyntheticFunction;
+class AVM1Scope;
 
 struct scope_entry
 {
@@ -105,8 +105,9 @@ friend class AVM1Function;
 private:
 	std::vector<uint32_t> avm1strings;
 public:
-	AVM1context():keepLocals(true), callDepth(0), actionsExecuted(0),swfversion(0),exceptionthrown(nullptr), callee(nullptr) {}
+	AVM1context();
 	AVM1context(const _R<DisplayObject>& target, SystemState* sys);
+	~AVM1context();
 
 	void AVM1ClearConstants()
 	{

@@ -44,5 +44,16 @@ public:
 	static void sinit(Class_base* c);
 };
 
+class AVM1Selection: public ASObject
+{
+public:
+	AVM1Selection(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
+	{}
+	static void sinit(Class_base* c);
+	ASFUNCTION_ATOM(addListener);
+	ASFUNCTION_ATOM(getFocus);
+	ASFUNCTION_ATOM(setFocus);
+};
+
 }
 #endif // SCRIPTING_AVM1_AVM1TEXT_H

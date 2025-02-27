@@ -83,6 +83,10 @@ public:
 		else
 			return true;
 	}
+	virtual bool isFocusable()
+	{
+		return true;
+	}
 	InteractiveObject(ASWorker* wrk,Class_base* c);
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityImplementation>,accessibilityImplementation);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,contextMenu); // adobe seems to allow DisplayObjects, too

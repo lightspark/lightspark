@@ -93,7 +93,7 @@ private:
 	std::unordered_map<Class_base*,Class_base*> classesSuperNotFilled;
 	// list of classes where interfaces are not yet linked
 	std::vector<Class_base*> classesToLinkInterfaces;
-	
+
 	Mutex dictSpinlock;
 	std::unordered_map < uint32_t, DictionaryTag* > dictionary;
 	std::map < QName, DictionaryTag* > classesToBeBound;
@@ -126,7 +126,7 @@ public:
 	void prepareShutdown() override;
 	std::map<const multiname*, Class_base*> classesBeingDefined;
 	std::map<QName, Class_base*> instantiatedTemplates;
-	
+
 	void SetAllClassLinks();
 	void AddClassLinks(Class_base* target);
 	bool newClassRecursiveLink(Class_base* target, Class_base* c);
@@ -244,7 +244,7 @@ public:
 		}
 		*reinterpret_cast<T*>(dm->getBufferNoCheck()+addr)=val;
 	}
-	
+
 	static FORCE_INLINE void loadFloat(ApplicationDomain* appDomain,call_context *th)
 	{
 		RUNTIME_STACK_POP_CREATE(th,arg1);
@@ -403,7 +403,7 @@ public:
 	asfreelist freelist_syntheticfunction;
 	asfreelist freelist_activationobject;
 	asfreelist freelist_asobject;
-	
+
 	ASWorker(SystemState* s); // constructor for primordial worker only to be used in SystemState constructor
 	ASWorker(Class_base* c);
 	ASWorker(ASWorker* wrk,Class_base* c);
@@ -421,6 +421,8 @@ public:
 	/* The current recursion level. Each call increases this by one,
 	 * each return from a call decreases this. */
 	uint32_t cur_recursion;
+	uint32_t AVM1_cur_recursion_function; // recursion count for normal avm1 function calls
+	uint32_t AVM1_cur_recursion_internal; // recursion count for internal avm1 function calls (getters,setters...)
 	stacktrace_entry* stacktrace;
 	void fillStackTrace(StackTraceList& strace);
 	static tiny_string getStackTraceString(SystemState* sys, const StackTraceList& strace, ASObject* error);
@@ -446,10 +448,7 @@ public:
 	{
 		return AVM1callStack.empty() ? nullptr : AVM1callStack.back()->callee;
 	}
-	_NR<AVM1Scope> AVM1getScope() const
-	{
-		return AVM1callStack.empty() ? NullRef : AVM1callStack.back()->scope;
-	}
+	_NR<AVM1Scope> AVM1getScope() const;
 	bool AVM1isCaseSensitive() const
 	{
 		return

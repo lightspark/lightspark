@@ -200,12 +200,12 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 		for(unsigned int i=0;i<a->size();++i)
 		{
 			asAtom o = a->at(i);
-			asAtom old = a->at(i);
-			res->checkValue(o,false);
+			bool isNewObject=false;
+			res->checkValue(o,false,&isNewObject);
 			ASObject* obj = asAtomHandler::getObject(o);
 			if (obj)
 			{
-				if (o.uintval == old.uintval)
+				if (!isNewObject)
 					obj->incRef();
 				obj->addStoredMember();
 			}
@@ -223,8 +223,15 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 		for(unsigned int i=0;i<ba->getLength();++i)
 		{
 			asAtom o = asAtomHandler::fromInt(ba->getBufferNoCheck()[i]);
-			res->checkValue(o,false);
-			ASATOM_ADDSTOREDMEMBER(o);
+			bool isNewObject=false;
+			res->checkValue(o,false,&isNewObject);
+			ASObject* obj = asAtomHandler::getObject(o);
+			if (obj)
+			{
+				if (!isNewObject)
+					obj->incRef();
+				obj->addStoredMember();
+			}
 			res->vec.push_back(o);
 		}
 	}
@@ -564,10 +571,13 @@ ASFUNCTIONBODY_ATOM(Vector,push)
 		asAtom v = args[i];
 		bool isNewObject= false;
 		th->checkValue(v,true,&isNewObject);
-		if(isNewObject)
-			asAtomHandler::getObjectNoCheck(v)->addStoredMember();
-		else
-			ASATOM_ADDSTOREDMEMBER(v);
+		ASObject* ob = asAtomHandler::getObject(v);
+		if (ob)
+		{
+			if (!isNewObject)
+				ob->incRef();
+			ob->addStoredMember();
+		}
 		th->vec.push_back(v);
 	}
 	asAtomHandler::setUInt(ret,wrk,(uint32_t)th->vec.size());
@@ -833,7 +843,7 @@ bool Vector::checkValue(asAtom& o, bool allowconversion,bool* isNewObject)
 			*isNewObject=false;
 		return false;
 	}
-	if (isNewObject && asAtomHandler::isObject(o) && oldValue.uintval != o.uintval)
+	if (isNewObject && oldValue.uintval != o.uintval)
 		*isNewObject=true; // value was coerced to a new object
 	return true;
 }
@@ -859,12 +869,12 @@ ASFUNCTIONBODY_ATOM(Vector,slice)
 			res->vec[j] =th->vec[i];
 			bool isNewObject = false;
 			res->checkValue(res->vec[j],true,&isNewObject);
-			ASObject* obj = asAtomHandler::getObject(res->vec[j]);
-			if (obj)
+			ASObject* ob = asAtomHandler::getObject(res->vec[j]);
+			if (ob)
 			{
 				if (!isNewObject)
-					obj->incRef();
-				obj->addStoredMember();
+					ob->incRef();
+				ob->addStoredMember();
 			}
 		}
 		j++;
@@ -924,12 +934,12 @@ ASFUNCTIONBODY_ATOM(Vector,splice)
 		asAtom o = args[i];
 		bool isNewObject=false;
 		th->checkValue(o,true,&isNewObject);
-		ASObject* obj = asAtomHandler::getObject(o);
-		if (obj)
+		ASObject* ob = asAtomHandler::getObject(o);
+		if (ob)
 		{
 			if (!isNewObject)
-				obj->incRef();
-			obj->addStoredMember();
+				ob->incRef();
+			ob->addStoredMember();
 		}
 		th->vec.push_back(o);
 	}

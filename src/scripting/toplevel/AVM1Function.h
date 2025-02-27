@@ -20,12 +20,13 @@
 #ifndef SCRIPTING_TOPLEVEL_AVM1FUNCTION_H
 #define SCRIPTING_TOPLEVEL_AVM1FUNCTION_H 1
 
-#include "scripting/avm1/scope.h"
 #include "scripting/toplevel/IFunction.h"
 
+#define AVM1_RECURSION_LIMIT_INTERN 65 // according to ruffle the script limit for internal (getter,setter) AVM1 calls is 65
 
 namespace lightspark
 {
+class AVM1Scope;
 
 class AVM1Function : public IFunction
 {
@@ -39,7 +40,7 @@ protected:
 	std::vector<uint8_t> actionlist;
 	std::vector<uint32_t> paramnames;
 	std::vector<uint8_t> paramregisternumbers;
-	_R<AVM1Scope> scope;
+	_NR<AVM1Scope> scope;
 	bool preloadParent;
 	bool preloadRoot;
 	bool suppressSuper;
@@ -58,31 +59,35 @@ protected:
 		return nullptr;
 	}
 	asAtom computeSuper();
+	void checkInternalException();
 public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
-	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller = nullptr)
+	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller = nullptr, bool isInternalCall=false)
 	{
 		if (needsSuper())
 		{
 			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,&newsuper);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,&newsuper,isInternalCall);
 		}
 		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject);
-	}
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,nullptr,isInternalCall);
+		if (isInternalCall)
+			checkInternalException();
+ 	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target, ASWorker* wrk) override
 	{
 		asAtom obj = target;
 		if (needsSuper())
 		{
 			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,&newsuper);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,&newsuper,true);
 		}
 		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,nullptr,true);
+		checkInternalException();
 		return nullptr;
 	}
 	FORCE_INLINE Class_base* getReturnType(bool opportunistic=false) override

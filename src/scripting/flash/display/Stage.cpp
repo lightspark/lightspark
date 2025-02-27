@@ -300,7 +300,10 @@ void Stage::prepareShutdown()
 	if (nativeWindow)
 		nativeWindow->prepareShutdown();
 	if (focus)
+	{
 		focus->prepareShutdown();
+		focus.reset();
+	}
 	if (root)
 		root->prepareShutdown();
 	avm1KeyboardListeners.clear();
@@ -515,16 +518,24 @@ _NR<InteractiveObject> Stage::getFocusTarget()
 void Stage::setFocusTarget(_NR<InteractiveObject> f)
 {
 	Locker l(focusSpinlock);
+	if (f==focus || (f && !f->isFocusable()))
+		return;
+	_NR<InteractiveObject> oldfocus = focus;
 	if (focus)
 	{
 		focus->lostFocus();
-		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusOut")));
+		_NR<InteractiveObject> newfocus = f;
+		if (newfocus && (newfocus.getPtr()==this || newfocus.getPtr()->is<RootMovieClip>()))
+			newfocus.reset();
+		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusOut",newfocus)));
 	}
 	focus = f;
 	if (focus)
 	{
 		focus->gotFocus();
-		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusIn")));
+		if (oldfocus && (oldfocus.getPtr()==this || oldfocus.getPtr()->is<RootMovieClip>()))
+			oldfocus.reset();
+		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusIn",oldfocus)));
 	}
 }
 
@@ -815,17 +826,40 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 	else if (e->is<MouseEvent>())
 	{
 		avm1listenerMutex.lock();
+		// eventhandlers may change the listener list, so we work on a copy
 		vector<ASObject*> tmplisteners = avm1MouseListeners;
 		for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
 			(*it)->incRef();
 		avm1listenerMutex.unlock();
-		// eventhandlers may change the listener list, so we work on a copy
-		auto it = tmplisteners.rbegin();
-		while (it != tmplisteners.rend())
+		if (e->type=="mouseDown")
 		{
-			(*it)->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
-			(*it)->decRef();
-			it++;
+			// AVM1 mouseDown events trigger multiple handlers that have to be handled in the correct order:
+			// - onMouseDown
+			// - onSetFocus
+			// - onPressed
+			for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
+			{
+				(*it)->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
+			}
+			for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
+			{
+				(*it)->AVM1HandleSetFocusEvent(dispatcher);
+			}
+			for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
+			{
+				(*it)->AVM1HandlePressedEvent(dispatcher);
+				(*it)->decRef();
+			}
+		}
+		else
+		{
+			auto it = tmplisteners.rbegin();
+			while (it != tmplisteners.rend())
+			{
+				(*it)->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
+				(*it)->decRef();
+				it++;
+			}
 		}
 	}
 	else
@@ -857,7 +891,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 				multiname m(nullptr);
 				m.name_type=multiname::NAME_STRING;
 				m.isAttribute = false;
-				m.name_s_id=getSystemState()->getUniqueStringId("onResize");
+				m.name_s_id=BUILTIN_STRINGS::STRING_ONRESIZE;
 				(*it)->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 				if (asAtomHandler::is<AVM1Function>(func))
 				{
@@ -998,8 +1032,9 @@ ASFUNCTIONBODY_ATOM(Stage,_getFocus)
 {
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	_NR<InteractiveObject> focus = th->getFocusTarget();
-	if (focus.isNull())
+	if (focus.isNull() || focus.getPtr()==th || focus->is<RootMovieClip>())
 	{
+		ret = asAtomHandler::nullAtom;
 		return;
 	}
 	else

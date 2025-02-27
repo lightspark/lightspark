@@ -477,3 +477,5 @@ REGISTER_CLASS_NAME_AVM1(AVM1NetStream,"NetStream","")
 REGISTER_CLASS_NAME_AVM1(AVM1Array,"Array","")
 REGISTER_CLASS_NAME_AVM1(AVM1Date,"Date","")
 REGISTER_CLASS_NAME_AVM1(AVM1BitmapFilter,"BitmapFilter","flash.filters")
+REGISTER_CLASS_NAME_AVM1(AVM1Selection,"Selection","")
+

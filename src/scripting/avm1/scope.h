@@ -75,8 +75,11 @@ private:
 	// Replaces the current local scope object with another object.
 	void setLocals(const _R<ASObject>& newLocals)
 	{
-		values->removeStoredMember();
-		values.fakeRelease();
+		if (values)
+		{
+			values->removeStoredMember();
+			values.fakeRelease();
+		}
 
 		newLocals->addStoredMember();
 
@@ -88,7 +91,7 @@ public:
 	(
 		_NR<AVM1Scope> _parent,
 		const AVM1ScopeClass& type,
-		const _R<ASObject>& _values
+		const _NR<ASObject>& _values
 	) : parent(_parent), _class(type), values(_values)
 	{
 		values->addStoredMember();
@@ -117,8 +120,11 @@ public:
 	(
 		other.parent,
 		other._class,
-		other.values
-	) {}
+		NullRef
+	)
+	{
+		setLocals(other.values);
+	}
 
 	AVM1Scope& operator=(const AVM1Scope& other)
 	{
@@ -132,7 +138,8 @@ public:
 	{
 		ASObject* o = values.getPtr();
 		values.fakeRelease();
-		o->removeStoredMember();
+		if (o)
+			o->removeStoredMember();
 	}
 
 	// Creates a global scope (A parentless scope).

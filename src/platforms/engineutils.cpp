@@ -85,8 +85,10 @@ EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdl
 	width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false),
 	startInFullScreenMode(false),startscalefactor(1.0)
 {
-#ifdef _WIN32
+#if   defined(_WIN32)
 	platformOS="Windows";
+#elif defined(__APPLE__)
+	platformOS="Mac OS";
 #else
 	platformOS="Linux";
 #endif
@@ -294,19 +296,18 @@ bool initSDL()
 	return sdl_available;
 }
 /* main loop handling */
-static int mainloop_runner(void* d)
+static int mainloop_runner(IEventLoop* th)
 {
-	IEventLoop* th = (IEventLoop*)d;
 	if (!initSDL())
 	{
 		LOG(LOG_ERROR,"Unable to initialize SDL:"<<SDL_GetError());
-		EngineData::mainthread_initialized.signal();
+		//EngineData::mainthread_initialized.signal();
 		return 0;
 	}
 	else
 	{
 		EngineData::mainthread_running = true;
-		EngineData::mainthread_initialized.signal();
+		//EngineData::mainthread_initialized.signal();
 		Optional<LSEventStorage> event;
 		while (event = th->waitEvent(getSys()), event.hasValue())
 		{
@@ -378,8 +379,9 @@ void EngineData::startSDLEventTicker(SystemState* sys)
 bool EngineData::startSDLMain(EventLoop* eventLoop)
 {
 	assert(!mainLoopThread);
-	mainLoopThread = SDL_CreateThread(mainloop_runner,"mainloop",eventLoop);
-	mainthread_initialized.wait();
+	//mainLoopThread = SDL_CreateThread(mainloop_runner,"mainloop",eventLoop);
+	//mainthread_initialized.wait();
+	mainloop_runner(eventLoop);
 	return mainthread_running;
 }
 

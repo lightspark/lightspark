@@ -129,6 +129,11 @@ TestRunner::~TestRunner()
 
 void TestRunner::tick()
 {
+	// ensure that the scripts on the first frame are executed before any events are injected
+	// TODO maybe there is a better way to do that
+	if (!isDone && injector.hasEvents())
+		sys->runTick(frameTime);
+
 	isDone = runEventLoop(eventLoop, sys);
 	isDone |= injector.hasEvents() && injector.endOfInput();
 

@@ -21,7 +21,12 @@
 #include <SDL.h>
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
+#ifdef ENABLE_GLES2
+#define IMGUI_IMPL_OPENGL_ES2
+#include <imgui_impl_opengl3.h>
+#else
 #include <imgui_impl_opengl2.h>
+#endif
 #include "3rdparty/tinyfiledialogs/tinyfiledialogs.h"
 #include "3rdparty/pugixml/src/pugixml.hpp"
 #include <fstream>
@@ -1304,7 +1309,11 @@ bool Launcher::start()
 	
 	// Setup Platform/Renderer backends
 	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+#ifdef ENABLE_GLES2
+	ImGui_ImplOpenGL3_Init();
+#else
 	ImGui_ImplOpenGL2_Init();
+#endif
 	
 	bool start=false;
 	bool inentryediting=false;
@@ -1331,7 +1340,11 @@ bool Launcher::start()
 		}
 		
 		// Start the Dear ImGui frame
+#ifdef ENABLE_GLES2
+		ImGui_ImplOpenGL3_NewFrame();
+#else
 		ImGui_ImplOpenGL2_NewFrame();
+#endif
 		ImGui_ImplSDL2_NewFrame();
 		ImGui::NewFrame();
 		if (inentryediting)
@@ -1485,12 +1498,20 @@ bool Launcher::start()
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 		glClearColor(0.0,0.0,0.0,1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
+#ifdef ENABLE_GLES2
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#else
 		ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+#endif
 		SDL_GL_SwapWindow(window);
 	}
 	
 	// Cleanup
+#ifdef ENABLE_GLES2
+	ImGui_ImplOpenGL3_Shutdown();
+#else
 	ImGui_ImplOpenGL2_Shutdown();
+#endif
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
 	

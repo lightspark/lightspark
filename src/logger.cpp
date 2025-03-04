@@ -49,7 +49,10 @@ Log::~Log()
 	{
 		Locker l(logmutex);
 #ifndef NDEBUG
-		*logStream << level_names[cur_level] << ": " << asAtomHandler::toDebugString(logAtom)<<" " << message.str();
+		if (asAtomHandler::isValid(logAtom))
+			*logStream << level_names[cur_level] << ": " << asAtomHandler::toDebugString(logAtom)<<" " << message.str();
+		else
+			*logStream << level_names[cur_level] << ": " << message.str();
 #else
 		*logStream << level_names[cur_level] << ": " << message.str();
 #endif

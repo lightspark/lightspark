@@ -1743,7 +1743,12 @@ void EngineData::exec_glClearStencil(uint32_t stencil)
 }
 void EngineData::exec_glClearDepthf(float depth)
 {
+#ifdef ENABLE_GLES2
 	glClearDepthf(depth);
+#else
+	// glClearDepthf is not available in OpenGL2
+	glClearDepth(depth);
+#endif
 }
 
 void EngineData::exec_glClear_GL_COLOR_BUFFER_BIT()

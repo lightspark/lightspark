@@ -710,7 +710,8 @@ SystemState::~SystemState()
 	{
 		LOG(LOG_INFO,"memcheck leak found:"<<(*it)<<" "<<(*it)->getObjectType()<<" "<<(*it)->getSubtype()<<" "<<(*it)->getRefCount());
 	}
-	LOG(LOG_ERROR,"memleaks found:"<<memcheckset.size());
+	if (memcheckset.size())
+		LOG(LOG_ERROR,"memleaks found:"<<memcheckset.size());
 #endif
 }
 
@@ -2260,6 +2261,7 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 
 void SystemState::trace(const tiny_string& str)
 {
+	//LOG(LOG_ERROR,"trace:"<<str);
 	Logger genericLogger;
 	logger.valueOr(genericLogger).trace(str);
 }

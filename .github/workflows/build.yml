@@ -25,15 +25,15 @@ jobs:
     strategy:
       matrix:
         config:
-          - cc: clang-8
-            cxx: clang++-8
-            cxxpackage: clang-8
+          - cc: clang-9
+            cxx: clang++-9
+            cxxpackage: clang-9
           - cc: clang-11
             cxx: clang++-11
             cxxpackage: clang-11
-          - cc: gcc-7
-            cxx: g++-7
-            cxxpackage: g++-7
+          - cc: gcc-9
+            cxx: g++-9
+            cxxpackage: g++-9
           - cc: gcc-10
             cxx: g++-10
             cxxpackage: g++-10

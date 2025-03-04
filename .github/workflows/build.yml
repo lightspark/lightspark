@@ -25,9 +25,6 @@ jobs:
     strategy:
       matrix:
         config:
-          - cc: clang-9
-            cxx: clang++-9
-            cxxpackage: clang-9
           - cc: clang-11
             cxx: clang++-11
             cxxpackage: clang-11

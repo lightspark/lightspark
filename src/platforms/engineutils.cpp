@@ -175,7 +175,6 @@ bool EngineData::mainloop_handleevent(const LSEvent& event, SystemState* sys)
 			if (quit.quitType == LSQuitEvent::QuitType::User)
 			{
 				assert(hasEngineData);
-				setTLSSys(nullptr);
 				sys->getEngineData()->handleQuit();
 				return true;
 			}
@@ -551,7 +550,7 @@ void EngineData::showWindow(uint32_t w, uint32_t h)
 	assert(!widget);
 	this->origwidth = w;
 	this->origheight = h;
-	
+
 	// width and height may already be set from the plugin
 	if (this->width == 0)
 		this->width = w;
@@ -570,7 +569,7 @@ void EngineData::showWindow(uint32_t w, uint32_t h)
 	if (widget && !(SDL_GetWindowFlags(widget) & SDL_WINDOW_HIDDEN))
 		SDL_ShowWindow(widget);
 	grabFocus();
-	
+
 }
 
 void EngineData::checkForNativeAIRExtensions(std::vector<tiny_string>& extensions, char* fileName)
@@ -648,7 +647,6 @@ void EngineData::addQuitEvent()
 	}
 	else
 	{
-		setTLSSys(nullptr);
 		handleQuit();
 	}
 }
@@ -892,7 +890,7 @@ void EngineData::updateContextMenu(int newselecteditem)
 	float backgroundcolor = 0.9;
 	float selectedbackgroundcolor = 0.5;
 	float textcolor = 0.0;
-	
+
 	contextmenucurrentitem=newselecteditem;
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(contextmenupixels, CAIRO_FORMAT_ARGB32, CONTEXTMENUWIDTH, contextmenuheight, cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, CONTEXTMENUWIDTH));
 	cairo_t* cr=cairo_create(cairoSurface);
@@ -906,7 +904,7 @@ void EngineData::updateContextMenu(int newselecteditem)
 	cairo_set_line_width(cr, 2);
 	cairo_rectangle(cr, 1, 1, CONTEXTMENUWIDTH-2, contextmenuheight-2);
 	cairo_stroke(cr);
-	
+
 	PangoLayout* layout = pango_cairo_create_layout(cr);
 	PangoFontDescription* desc = pango_font_description_new();
 	pango_font_description_set_family(desc, "Helvetica");
@@ -1022,7 +1020,7 @@ void EngineData::setMouseCursor(SystemState* /*sys*/, const tiny_string& name)
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"showCursor for name:"<<name);
 		SDL_SetCursor(SDL_GetDefaultCursor());
-	}		
+	}
 }
 tiny_string EngineData::getMouseCursor(SystemState *sys)
 {
@@ -1447,7 +1445,7 @@ void EngineData::
 void EngineData::exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(uint32_t depthStencilRenderBuffer)
 {
 #ifndef ENABLE_GLES2
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);	
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);
 #endif
 }
 
@@ -1883,7 +1881,7 @@ void EngineData::exec_glStencilOpSeparate(TRIANGLE_FACE face, DEPTHSTENCIL_OP sf
 	GLenum glsfail=GL_KEEP;
 	switch (sfail)
 	{
-		case DEPTHSTENCIL_KEEP: 
+		case DEPTHSTENCIL_KEEP:
 			glsfail=GL_KEEP;
 			break;
 		case DEPTHSTENCIL_ZERO:
@@ -1911,7 +1909,7 @@ void EngineData::exec_glStencilOpSeparate(TRIANGLE_FACE face, DEPTHSTENCIL_OP sf
 	GLenum gldpfail=GL_KEEP;
 	switch (dpfail)
 	{
-		case DEPTHSTENCIL_KEEP: 
+		case DEPTHSTENCIL_KEEP:
 			gldpfail=GL_KEEP;
 			break;
 		case DEPTHSTENCIL_ZERO:
@@ -1939,7 +1937,7 @@ void EngineData::exec_glStencilOpSeparate(TRIANGLE_FACE face, DEPTHSTENCIL_OP sf
 	GLenum gldppass=GL_KEEP;
 	switch (dppass)
 	{
-		case DEPTHSTENCIL_KEEP: 
+		case DEPTHSTENCIL_KEEP:
 			gldppass=GL_KEEP;
 			break;
 		case DEPTHSTENCIL_ZERO:

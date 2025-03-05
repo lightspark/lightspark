@@ -64,10 +64,11 @@ void BlurFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, c
 
 	uint32_t width = sourceRect.Xmax-sourceRect.Xmin;
 	uint32_t height = sourceRect.Ymax-sourceRect.Ymin;
+	uint32_t targetwidth = target->getWidth();
 	uint8_t* data = target->getData();
 	for (uint32_t i = 0; i < height; i++)
 	{
-		memcpy(data+((int(ypos)+i)*width+int(xpos))*4, tmpdata+i*width*4,width*4);
+		memcpy(data+((int(ypos)+i)*targetwidth+int(xpos))*4, tmpdata+i*width*4,width*4);
 	}
 	delete[] tmpdata;
 }

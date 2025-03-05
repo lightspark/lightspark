@@ -705,6 +705,7 @@ SystemState::~SystemState()
 		delete mainClip;
 	delete[] builtinClasses;
 	builtinClasses=nullptr;
+	setTLSSys(nullptr);
 #ifndef NDEBUG
 	for (auto it = memcheckset.begin(); it != memcheckset.end(); it++)
 	{

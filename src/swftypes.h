@@ -1254,11 +1254,11 @@ public:
 	};
 	union
 	{
-		int32_t AnchorDeltaY:18;
+		int32_t AnchorDeltaY;
 		uint16_t LineStyle;
 	};
-	int32_t DeltaX:18;
-	int32_t DeltaY:18;
+	int32_t DeltaX;
+	int32_t DeltaY;
 	bool TypeFlag:1;
 	bool StateNewStyles:1;
 	bool StateLineStyle:1;

@@ -1014,6 +1014,7 @@ void SystemState::delayedCreation(SystemState* sys)
 		Locker l(sys->initializedMutex);
 		sys->isinitialized=true;
 		sys->initializedCond.broadcast();
+		sys->renderThread->forceInitialization();
 	}
 }
 

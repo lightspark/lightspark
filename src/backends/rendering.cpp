@@ -569,7 +569,19 @@ void RenderThread::setModelView(const MATRIX& matrix)
 	setMatrixUniform(LSGL_MODELVIEW);
 }
 
-void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter, bool flippedvertical, bool clearstate, bool renderstage3d)
+void RenderThread::renderTextureToFrameBuffer
+(
+	uint32_t filterTextureID,
+	uint32_t w,
+	uint32_t h,
+	float* filterdata,
+	float* gradientColors,
+	float* gradientStops,
+	bool isFirstFilter,
+	bool flippedvertical,
+	bool clearstate,
+	bool renderstage3d
+)
 {
 	if (filterdata)
 	{
@@ -583,8 +595,24 @@ void RenderThread::renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t
 		float empty=0;
 		engineData->exec_glUniform1fv(filterdataUniform, 1, &empty);
 	}
-	if (gradientcolors)
-		engineData->exec_glUniform4fv(gradientcolorsUniform, 256, gradientcolors);
+	if (gradientColors != nullptr)
+	{
+		engineData->exec_glUniform4fv
+		(
+			gradientColorsUniform,
+			MAX_FILTER_GRADIENTS,
+			gradientColors
+		);
+	}
+	if (gradientStops != nullptr)
+	{
+		engineData->exec_glUniform1fv
+		(
+			gradientStopsUniform,
+			MAX_FILTER_GRADIENTS,
+			gradientStops
+		);
+	}
 	
 	if (clearstate)
 	{
@@ -825,7 +853,8 @@ void RenderThread::commonGLInit()
 	directColorUniform=engineData->exec_glGetUniformLocation(gpu_program,"directColor");
 	blendModeUniform=engineData->exec_glGetUniformLocation(gpu_program,"blendMode");
 	filterdataUniform = engineData->exec_glGetUniformLocation(gpu_program,"filterdata");
-	gradientcolorsUniform = engineData->exec_glGetUniformLocation(gpu_program,"gradientcolors");
+	gradientColorsUniform = engineData->exec_glGetUniformLocation(gpu_program,"gradientColors");
+	gradientStopsUniform = engineData->exec_glGetUniformLocation(gpu_program,"gradientStops");
 
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	engineData->exec_glEnable_GL_TEXTURE_2D();

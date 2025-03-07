@@ -386,7 +386,18 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 			}
 			sys->getRenderThread()->setModelView(m);
 			sys->getRenderThread()->setupRenderingState(state->alpha,ctxt.transformStack().transform().colorTransform,state->smoothing,state->blendmode);
-			sys->getRenderThread()->renderTextureToFrameBuffer(cachedFilterTextureID,size.x,size.y,nullptr,nullptr,false,true,false);
+			sys->getRenderThread()->renderTextureToFrameBuffer
+			(
+				cachedFilterTextureID,
+				size.x,
+				size.y,
+				nullptr,
+				nullptr,
+				nullptr,
+				false,
+				true,
+				false
+			);
 			if (maskactive)
 			{
 				engineData->exec_glDisable_GL_STENCIL_TEST();
@@ -923,7 +934,17 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
 			engineData->exec_glClearColor(0,0,0,0);
 			engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
-			sys->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,nullptr,nullptr,false, false);
+			sys->getRenderThread()->renderTextureToFrameBuffer
+			(
+				texture1,
+				w,
+				h,
+				nullptr,
+				nullptr,
+				nullptr,
+				false,
+				false
+			);
 			firstfilter=false;
 		}
 		else
@@ -931,7 +952,17 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(texture2);
 			engineData->exec_glClearColor(0,0,0,0);
 			engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
-			sys->getRenderThread()->renderTextureToFrameBuffer(texture1,w,h,((*it).filterdata),((*it).gradientcolors),firstfilter,false);
+			sys->getRenderThread()->renderTextureToFrameBuffer
+			(
+				texture1,
+				w,
+				h,
+				it->filterdata,
+				it->gradientColors,
+				it->gradientStops,
+				firstfilter,
+				false
+			);
 			if (texture1 == filterTextureIDoriginal)
 				texture1 = filterTextureID1;
 			std::swap(texture1,texture2);

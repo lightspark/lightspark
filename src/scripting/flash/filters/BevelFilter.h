@@ -49,6 +49,7 @@ public:
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	number_t getMaxFilterBorder() const override { return max(max(blurX,blurY),distance); }
 	bool compareFILTER(const FILTER& filter) const override;
+
 	void getRenderFilterGradientColors(float* gradientcolors) const override;
 	void getRenderFilterArgs(uint32_t step, float* args) const override;
 };

@@ -52,7 +52,19 @@ bool Stage3D::renderImpl(RenderContext &ctxt) const
 		((GLRenderContext&)ctxt).lsglLoadIdentity();
 		((GLRenderContext&)ctxt).lsglTranslatef(x-offset.x,y-offset.y,0);
 		((GLRenderContext&)ctxt).setMatrixUniform(GLRenderContext::LSGL_MODELVIEW);
-		getSystemState()->getRenderThread()->renderTextureToFrameBuffer(context3D->backframebufferIDcurrent,context3D->backBufferWidth*scale.x,context3D->backBufferHeight*scale.y,nullptr,nullptr,true,true,true,true);
+		getSystemState()->getRenderThread()->renderTextureToFrameBuffer
+		(
+			context3D->backframebufferIDcurrent,
+			context3D->backBufferWidth*scale.x,
+			context3D->backBufferHeight*scale.y,
+			nullptr,
+			nullptr,
+			nullptr,
+			true,
+			true,
+			true,
+			true
+		);
 	}
 	return true;
 }

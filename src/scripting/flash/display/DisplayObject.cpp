@@ -903,12 +903,17 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 				this->filters->at_nocheck(f,i);
 				if (asAtomHandler::is<BitmapFilter>(f))
 				{
+					auto filter = asAtomHandler::as<BitmapFilter>(f);
 					FilterData fdata;
-					asAtomHandler::as<BitmapFilter>(f)->getRenderFilterGradientColors(fdata.gradientcolors);
+					filter->getRenderFilterGradient
+					(
+						fdata.gradientColors,
+						fdata.gradientStops
+					);
 					uint32_t step = 0;
 					while (true)
 					{
-						asAtomHandler::as<BitmapFilter>(f)->getRenderFilterArgs(step,fdata.filterdata);
+						filter->getRenderFilterArgs(step,fdata.filterdata);
 						state->filters.push_back(fdata);
 						if (fdata.filterdata[0] == 0)
 							break;

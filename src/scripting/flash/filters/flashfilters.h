@@ -23,6 +23,8 @@
 #include "compat.h"
 #include "asobject.h"
 
+#define MAX_FILTER_GRADIENTS 16
+
 namespace lightspark
 {
 enum FILTERSTEPS { FILTERSTEP_BLUR_HORIZONTAL=1,FILTERSTEP_BLUR_VERTICAL=2, FILTERSTEP_DROPSHADOW=3, FILTERSTEP_GRADIENT_GLOW=4, FILTERSTEP_BEVEL=5, FILTERSTEP_COLORMATRIX=6, FILTERSTEP_CONVOLUTION=7 };
@@ -33,6 +35,14 @@ private:
 protected:
 	void applyBlur(uint8_t* data, uint32_t width, uint32_t height, number_t blurx, number_t blury, int quality);
 	static void applyDropShadowFilter(uint8_t* data, uint32_t datawidth, uint32_t dataheight, uint8_t* tmpdata, const RECT& sourceRect, number_t xpos, number_t ypos, number_t strength, number_t alpha, uint32_t color, bool inner, bool knockout, number_t scalex, number_t scaley);
+	static void fillGradient
+	(
+		const _NR<Array>& ratios,
+		const _NR<Array>& alphas,
+		const _NR<Array>& colors,
+		float* gradientColors,
+		float* gradientStops
+	);
 	static void fillGradientColors(number_t* gradientalphas, uint32_t* gradientcolors, Array* ratios, Array* alphas, Array* colors);
 	static void applyGradientFilter(uint8_t* data, uint32_t datawidth, uint32_t dataheight, uint8_t* tmpdata, const RECT& sourceRect, number_t xpos, number_t ypos, number_t strength, number_t* alphas, uint32_t* colors, bool inner, bool knockout, number_t scalex, number_t scaley);
 	static void applyBevelFilter(BitmapContainer* target, const RECT& sourceRect, uint8_t* tmpdata, DisplayObject* owner, number_t distance, number_t strength, bool inner, bool knockout, uint32_t* gradientcolors, number_t* gradientalphas, number_t angle, number_t xpos, number_t ypos, number_t scalex, number_t scaley);
@@ -40,7 +50,18 @@ protected:
 	void getRenderFilterArgsBlurHorizontal(float* args, float blurX) const;
 	void getRenderFilterArgsBlurVertical(float* args, float blurY) const;
 	void getRenderFilterArgsDropShadow(float* args, bool inner, bool knockout, float strength, uint32_t color, float alpha, float xpos, float ypos) const;
-	void getRenderFilterArgsBevel(float* args, bool inner, bool knockout, float strength, float distance, float angle) const;
+	void getRenderFilterArgsBevel
+	(
+		float* args,
+		bool inner,
+		bool outer,
+		bool knockout,
+		const RGBA& shadowColor,
+		const RGBA& highlightColor,
+		float strength,
+		float distance,
+		float angle
+	) const;
 public:
 	BitmapFilter(ASWorker* wrk,Class_base* c, CLASS_SUBTYPE st=SUBTYPE_BITMAPFILTER):ASObject(wrk,c,T_OBJECT,st){}
 	static void sinit(Class_base* c);
@@ -50,6 +71,8 @@ public:
 	virtual bool compareFILTER(const FILTER& filter) const { return false; }
 	// last step is signaled by returning 0 in args[0]
 	virtual void getRenderFilterArgs(uint32_t step, float* args) const;
+	// NOTE: `gradientColors` is an array of 16x4 `float`s (RGBA values).
+	virtual void getRenderFilterGradient(float* gradientColors, float* gradientStops) const;
 	// gradientcolors is array of 256*4 floats (RGBA values)
 	virtual void getRenderFilterGradientColors(float* gradientcolors) const;
 };

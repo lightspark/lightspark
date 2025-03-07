@@ -197,7 +197,19 @@ public:
 	void setViewPort(uint32_t w, uint32_t h, bool flip);
 	void resetViewPort();
 	void setModelView(const MATRIX& matrix);
-	void renderTextureToFrameBuffer(uint32_t filterTextureID, uint32_t w, uint32_t h, float* filterdata, float* gradientcolors, bool isFirstFilter, bool flippedvertical, bool clearstate=true, bool renderstage3d=false);
+	void renderTextureToFrameBuffer
+	(
+		uint32_t filterTextureID,
+		uint32_t w,
+		uint32_t h,
+		float* filterdata,
+		float* gradientColors,
+		float* gradientStops,
+		bool isFirstFilter,
+		bool flippedvertical,
+		bool clearstate = true,
+		bool renderstage3d = false
+	);
 	cairo_t *cairoTextureContextSettings;
 	cairo_surface_t *cairoTextureSurfaceSettings;
 	uint8_t *cairoTextureDataSettings;

@@ -1,4 +1,5 @@
 R"(
+#define MAX_FILTER_GRADIENTS 16
 #ifdef GL_ES
 precision highp float;
 #endif
@@ -19,7 +20,8 @@ uniform vec4 colorTransformMultiply;
 uniform vec4 colorTransformAdd;
 uniform vec4 directColor;
 uniform float filterdata[256]; // FILTERDATA_MAXSIZE
-uniform vec4 gradientcolors[256];
+uniform vec4 gradientColors[MAX_FILTER_GRADIENTS];
+uniform float gradientStops[MAX_FILTER_GRADIENTS];
 
 const mat3 YUVtoRGB = mat3(1.164383, 1.164383, 1.164383, //First column
                            0.0,      -.391762, 2.017232, //Second column
@@ -51,11 +53,44 @@ float invert_value(float value)
 	return sign_value_squared / ( value + sign_value_squared - 1.0);
 }
 
+
 // filter methods
 // TODO all these methods are more or less just taken from their c++ implementation in applyFilter() so they don't take much advantage of vector arithmetics etc.
 vec4 getDstPx(vec2 pos)
 {
 	return isFirstFilter != 0.0 ? texture2D(g_tex_filter1, pos) : texture2D(g_tex_filter2, pos);
+}
+
+vec4 getGradientColor(float pos)
+{
+	int i;
+	float prevStop;
+	float stop = 0.0;
+
+	pos = clamp(pos, 0.0, 1.0);
+
+	for (i = 0; i < (MAX_FILTER_GRADIENTS - 1); ++i)
+	{
+		prevStop = stop;
+		stop = gradientStops[i];
+		if (pos <= stop || stop < 0.0)
+			break;
+	}
+
+	if (stop < 0.0)
+		stop = 1.0;
+	if (i == 0)
+		prevStop = 0.0;
+
+	vec4 startColor = gradientColors[i];
+	vec4 endColor = gradientColors[i + 1];
+	float _step = prevStop == stop || stop == 0.0 ? 1.0 : stop - prevStop;
+
+	vec4 color = mix(startColor, endColor, (pos - prevStop) / _step);
+
+	// Premultiply the mixed color.
+	color.rgb *= color.a;
+	return color;
 }
 
 vec4 filter_blur_horizontal()
@@ -88,82 +123,98 @@ vec4 filter_blur_vertical()
 	}
 	return sum/vec4(factor);
 }
-vec4 filter_dropshadow(float inner, float knockout, vec4 color, float strength, vec2 startpos)
+
+float getBlurAlpha(vec2 startPos, bool inner)
 {
-	vec4 src = texture2D(g_tex_standard, ls_TexCoords[0].xy+startpos);
-	float glowalpha = inner == 1.0 ? 1.0-src.a : src.a;
-	float srcalpha = color.a*clamp(glowalpha*strength, 0.0, 1.0);
+	vec2 pos = ls_TexCoords[0].xy + startPos;
+	if (pos.x < 0.0 || pos.x > 1.0 || pos.y < 0.0 || pos.y > 1.0)
+		return 0.0;
+	float alpha = texture2D(g_tex_standard, pos).a;
+	return inner ? 1.0 - alpha : alpha;
+}
+
+vec4 filter_dropshadow
+(
+	bool inner,
+	bool knockout,
+	vec4 color,
+	float strength,
+	vec2 startPos,
+	bool isGradientGlow
+)
+{
+	float srcalpha = color.a * clamp(getBlurAlpha(startPos, inner) * strength, 0.0, 1.0);
 	vec4 dst = getDstPx(ls_TexCoords[0].xy);
 	float dstalpha = dst.a;
 	color.a = 1.0;
 
-	if (inner==1.0)
+	if (inner)
 	{
-		if (knockout==1.0) 
+		if (knockout)
 			return color * srcalpha * dstalpha;
+		else if (isGradientGlow)
+			return color * (1.0 - srcalpha) * dstalpha + dst * srcalpha;
 		else
 			return color * srcalpha * dstalpha + dst * (1.0 - srcalpha);
 	}
 	else
 	{
-		if (knockout==1.0)
+		if (knockout)
 			return color * srcalpha * (1.0 - dstalpha);
 		else
 			return color * srcalpha * (1.0 - dstalpha) + dst;
 	}
 }
 
-vec4 filter_bevel()
+vec4 filter_bevel
+(
+	bool isGradient,
+	bool inner,
+	bool outer,
+	bool knockout,
+	float strength,
+	vec4 shadowColor,
+	vec4 highlightColor,
+	vec2 blurLeftOffset,
+	vec2 blurRightOffset
+)
 {
-	float inner = filterdata[1];
-	float knockout = filterdata[2];
-	float strength = filterdata[3];
-	vec2 highlightOffset = vec2(-filterdata[4]/filterdata[254],filterdata[5]/filterdata[255]);// last values of filterdata are always width and height
-	vec2 shadowOffset = vec2(-filterdata[6]/filterdata[254],filterdata[7]/filterdata[255]);// last values of filterdata are always width and height
-	float alphahigh = filter_dropshadow(inner,1.0,vec4(1.0,1.0,1.0,1.0),1.0,highlightOffset).a * strength * 256.0;
-	float alphashadow = filter_dropshadow(inner,1.0,vec4(1.0,1.0,1.0,1.0),1.0,shadowOffset).a * strength * 256.0;
-	int gradientindex = 128+int(clamp((alphahigh - alphashadow)/2.0,-128.0,127.0));
-	vec4 combinedpixel = gradientcolors[gradientindex];
-	vec4 dst = getDstPx(ls_TexCoords[0].xy);
+	float blurLeft = getBlurAlpha(blurLeftOffset, false);
+	float blurRight = getBlurAlpha(blurRightOffset, false);
 
-	if (inner==1.0)
-	{
-		combinedpixel.rgb *= combinedpixel.a;
-		if (knockout==1.0)
-			return vec4(combinedpixel.r,
-						combinedpixel.g,
-						combinedpixel.b,
-						clamp (combinedpixel.a*dst.a,0.0,1.0));
-		else
-			return vec4(clamp (dst.r*(1.0-gradientcolors[gradientindex].a)+combinedpixel.r,0.0,1.0),
-						clamp (dst.g*(1.0-gradientcolors[gradientindex].a)+combinedpixel.g,0.0,1.0),
-						clamp (dst.b*(1.0-gradientcolors[gradientindex].a)+combinedpixel.b,0.0,1.0),
-						dst.a);
-	}
+	float highlightAlpha = clamp((blurLeft - blurRight) * strength, 0.0, 1.0);
+	float shadowAlpha = clamp((blurRight - blurLeft) * strength, 0.0, 1.0);
+
+	vec4 color;
+	vec4 dst = getDstPx(ls_TexCoords[0].xy);
+	if (isGradient)
+		color = getGradientColor(0.5 + clamp((highlightAlpha - shadowAlpha) / 2.0, -0.5, 0.5));
 	else
 	{
-		if (knockout==1.0)
-			return vec4(combinedpixel.r,
-						combinedpixel.g,
-						combinedpixel.b,
-						clamp (combinedpixel.a*(1.0-dst.a),0.0,1.0));
-		else
-			return vec4(clamp (combinedpixel.r*(1.0-dst.r)*dst.a+dst.r,0.0,1.0),
-						clamp (combinedpixel.g*(1.0-dst.g)*dst.a+dst.g,0.0,1.0),
-						clamp (combinedpixel.b*(1.0-dst.b)*dst.a+dst.b,0.0,1.0),
-						clamp (combinedpixel.a*(1.0-dst.a)*dst.a+dst.a,0.0,1.0));
+		// Premultiply the shadow, and highlight colors.
+		highlightColor.rgb *= highlightColor.a;
+		shadowColor.rgb *= shadowColor.a;
+		color = highlightColor * highlightAlpha + shadowColor * shadowAlpha;
 	}
+
+	if (inner && outer)
+		return knockout ? color : dst - (dst * color.a + color);
+	else if (inner)
+		return color * dst.a + (knockout ? vec4(0.0) : dst * (1.0 - color.a));
+	return (knockout ? vec4(0.0) : dst) + color - color * dst.a;
 }
 
-vec4 filter_gradientglow()
+vec4 filter_gradientglow(bool inner, bool knockout, float strength, vec2 startPos)
 {
-	float inner = filterdata[1];
-	float knockout = filterdata[2];
-	float strength = filterdata[3];
-	vec2 startpos = vec2(filterdata[4],filterdata[5]);
-	float glowalpha = inner == 1.0 ? 1.0-texture2D(g_tex_standard,ls_TexCoords[0].xy+startpos).a : texture2D(g_tex_standard,ls_TexCoords[0].xy+startpos).a;
-	vec4 color = gradientcolors[int(glowalpha*256.0)];
-	return filter_dropshadow(inner, knockout,color , strength, startpos);
+	return filter_dropshadow
+	(
+		inner,
+		knockout,
+		getGradientColor(getBlurAlpha(startPos, inner)),
+		strength,
+		startPos,
+		true
+	);
 }
 
 vec4 filter_colormatrix(vec4 src)
@@ -255,14 +306,81 @@ void main()
 		} else if (filterdata[0]==2.0) {// FILTERSTEP_BLUR_VERTICAL
 			vbase = filter_blur_vertical();
 		} else if (filterdata[0]==3.0) {// FILTERSTEP_DROPSHADOW
-			vbase = filter_dropshadow(filterdata[1],filterdata[2],
-				vec4(filterdata[4],filterdata[5],filterdata[6],filterdata[7]),
+			vbase = filter_dropshadow
+			(
+				// `inner`
+				bool(filterdata[1]),
+				// `knockout`
+				bool(filterdata[2]),
+				// `color`
+				vec4(filterdata[4], filterdata[5], filterdata[6], filterdata[7]),
+				// `strength`
 				filterdata[3],
-				vec2(filterdata[8]/filterdata[254],filterdata[9]/filterdata[255]));// last values of filterdata are always width and height
+				// NOTE: The last values of `filterdata` are always width,
+				// and height.
+				// `startPos`
+				vec2(filterdata[8]/filterdata[254], filterdata[9]/filterdata[255]),
+				// `isGradientGlow`.
+				false
+			);
 		} else if (filterdata[0]==4.0) {// FILTERSTEP_GRADIENT_GLOW
-			vbase = filter_gradientglow();
+			vbase = filter_gradientglow
+			(
+				// `inner`
+				bool(filterdata[1]),
+				// `knockout`
+				bool(filterdata[2]),
+				// `strength`
+				filterdata[3],
+				// NOTE: The last values of `filterdata` are always width,
+				// and height.
+				// `startPos`
+				vec2(filterdata[4]/filterdata[254], filterdata[5]/filterdata[255])
+			);
 		} else if (filterdata[0]==5.0) {// FILTERSTEP_BEVEL
-			vbase = filter_bevel();
+			vec4 shadowColor = vec4
+			(
+				filterdata[5],
+				filterdata[6],
+				filterdata[7],
+				filterdata[8]
+			);
+			vec4 highlightColor = vec4
+			(
+				filterdata[9],
+				filterdata[10],
+				filterdata[11],
+				filterdata[12]
+			);
+			vbase = filter_bevel
+			(
+				// `isGradient`
+				gradientStops[0] >= 0.0,
+				// `inner`
+				bool(filterdata[1]),
+				// `outer`
+				bool(filterdata[2]),
+				// `knockout`
+				bool(filterdata[3]),
+				// `strength`
+				filterdata[4],
+				shadowColor,
+				highlightColor,
+				// NOTE: The last values of `filterdata` are always width,
+				// and height.
+				// `blurLeftOffset`
+				vec2
+				(
+					-filterdata[13]/filterdata[254],
+					filterdata[14]/filterdata[255]
+				),
+				// `blurRightOffset`
+				vec2
+				(
+					-filterdata[15]/filterdata[254],
+					filterdata[16]/filterdata[255]
+				)
+			);
 		} else if (filterdata[0]==6.0) {// FILTERSTEP_COLORMATRIX
 			vbase = filter_colormatrix(vbase);
 		} else if (filterdata[0]==7.0) {// FILTERSTEP_CONVOLUTION

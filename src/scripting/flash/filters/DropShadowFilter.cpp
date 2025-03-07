@@ -125,7 +125,19 @@ void DropShadowFilter::getRenderFilterArgs(uint32_t step,float* args) const
 	if (getRenderFilterArgsBlur(args,blurX,blurY,step,quality,nextstep))
 		return;
 	else if (step == nextstep)
-		getRenderFilterArgsDropShadow(args,inner,knockout,strength,color,alpha,cos(angle) * distance,sin(angle) * distance);
+	{
+		getRenderFilterArgsDropShadow
+		(
+			args,
+			inner,
+			knockout,
+			strength,
+			color,
+			alpha,
+			cos(angle + M_PI) * distance,
+			sin(angle) * distance
+		);
+	}
 	else
 		args[0]=0.0;
 }

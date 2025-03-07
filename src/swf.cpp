@@ -2121,7 +2121,7 @@ void ParseThread::parseExtensions(RootMovieClip* root)
 					case ABC_TAG:
 					{
 						const ControlTag* stag = static_cast<const ControlTag*>(tag);
-						stag->execute(root);
+						stag->executeInExtension(root);
 						delete stag;
 						break;
 					}

@@ -303,7 +303,7 @@ public:
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(ApplicationDomain* appDomain,SecurityDomain* secDomain, std::istream& in, ABCVm* vm) DLL_PUBLIC;
 	~ABCContext();
-	void declareScripts();
+	void declareScripts(bool inExtension=false);
 	void exec(bool lazy);
 
 	bool isinstance(ASObject* obj, multiname* name);

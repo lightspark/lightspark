@@ -3281,7 +3281,9 @@ void AVM1InitActionTag::execute(RootMovieClip *root) const
 		LOG(LOG_ERROR,"sprite not found for InitActionTag:"<<SpriteId);
 		return;
 	}
-	root->AVM1checkInitActions(sprite->instance(nullptr)->as<MovieClip>());
+	MovieClip* clip = sprite->instance(nullptr)->as<MovieClip>();
+	root->AVM1checkInitActions(clip);
+	clip->decRef();
 }
 
 void AVM1InitActionTag::executeDirect(MovieClip* clip) const
@@ -3353,7 +3355,7 @@ DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	}
 }
 
-void DoABCTag::execute(RootMovieClip* root) const
+void DoABCTag::execIntern(RootMovieClip* root, bool inExtension) const
 {
 	LOG(LOG_CALLS,"ABC Exec");
 	/* currentVM will free the context*/
@@ -3361,7 +3363,7 @@ void DoABCTag::execute(RootMovieClip* root) const
 	{
 		if (root == root->getSystemState()->mainClip)
 		{
-			context->declareScripts();
+			context->declareScripts(inExtension);
 			getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,false)));
 		}
 		else
@@ -3372,6 +3374,14 @@ void DoABCTag::execute(RootMovieClip* root) const
 		root->getInstanceWorker()->addABCContext(context);
 		context->exec(false);
 	}
+}
+void DoABCTag::execute(RootMovieClip* root) const
+{
+	execIntern(root,false);
+}
+void DoABCTag::executeInExtension(RootMovieClip *root) const
+{
+	execIntern(root,true);
 }
 
 DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
@@ -3392,7 +3402,7 @@ DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
 	}
 }
 
-void DoABCDefineTag::execute(RootMovieClip* root) const
+void DoABCDefineTag::execIntern(RootMovieClip* root,bool inExtension) const
 {
 	LOG(LOG_CALLS,"ABC Exec " << Name);
 	/* currentVM will free the context*/
@@ -3404,7 +3414,7 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 	{
 		if (root == root->getSystemState()->mainClip)
 		{
-			context->declareScripts();
+			context->declareScripts(inExtension);
 			getVm(root->getSystemState())->addEvent(NullRef,_MR(new (root->getSystemState()->unaccountedMemory) ABCContextInitEvent(context,lazy)));
 		}
 		else
@@ -3415,6 +3425,14 @@ void DoABCDefineTag::execute(RootMovieClip* root) const
 		root->getInstanceWorker()->addABCContext(context);
 		context->exec(lazy);
 	}
+}
+void DoABCDefineTag::execute(RootMovieClip* root) const
+{
+	execIntern(root,false);
+}
+void DoABCDefineTag::executeInExtension(RootMovieClip *root) const
+{
+	execIntern(root,true);
 }
 
 SymbolClassTag::SymbolClassTag(RECORDHEADER h, istream& in):ControlTag(h)

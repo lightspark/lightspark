@@ -102,6 +102,7 @@ public:
 	ControlTag(RECORDHEADER h):Tag(h){}
 	TAGTYPE getType() const override { return CONTROL_TAG; }
 	virtual void execute(RootMovieClip* root) const=0;
+	virtual void executeInExtension(RootMovieClip* root) const { execute(root); }
 };
 
 /*
@@ -928,10 +929,12 @@ class DoABCTag: public ControlTag
 {
 private:
 	ABCContext* context;
+	void execIntern(RootMovieClip* root, bool inExtension) const;
 public:
 	DoABCTag(RECORDHEADER h, std::istream& in);
 	TAGTYPE getType() const override { return ABC_TAG; }
 	void execute(RootMovieClip* root) const override;
+	void executeInExtension(RootMovieClip* root) const override;
 };
 
 class DoABCDefineTag: public ControlTag
@@ -940,10 +943,12 @@ private:
 	UI32_SWF Flags;
 	STRING Name;
 	ABCContext* context;
+	void execIntern(RootMovieClip* root, bool inExtension) const;
 public:
 	DoABCDefineTag(RECORDHEADER h, std::istream& in);
 	TAGTYPE getType() const override { return ABC_TAG; }
 	void execute(RootMovieClip* root) const override;
+	void executeInExtension(RootMovieClip* root) const override;
 };
 
 class SymbolClassTag: public ControlTag

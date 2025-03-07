@@ -29,6 +29,7 @@
 #include "backends/graphics.h"
 #include "memory_support.h"
 
+#define MAX_FILTER_GRADIENTS 16
 #define FILTERDATA_MAXSIZE 256
 
 namespace lightspark
@@ -38,7 +39,8 @@ class Array;
 
 struct FilterData
 {
-	float gradientcolors[256*4];
+	float gradientColors[MAX_FILTER_GRADIENTS*4];
+	float gradientStops[MAX_FILTER_GRADIENTS];
 	float filterdata[FILTERDATA_MAXSIZE];
 };
 

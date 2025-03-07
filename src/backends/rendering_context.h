@@ -164,7 +164,8 @@ protected:
 	int directColorUniform;
 	int blendModeUniform;
 	int filterdataUniform;
-	int gradientcolorsUniform;
+	int gradientColorsUniform;
+	int gradientStopsUniform;
 	uint32_t baseFramebuffer;
 	uint32_t baseRenderbuffer;
 	bool flipvertical;

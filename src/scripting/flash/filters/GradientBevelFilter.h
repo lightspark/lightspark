@@ -49,6 +49,7 @@ public:
 	number_t getMaxFilterBorder() const override { return max(max(blurX,blurY),distance); }
 	bool compareFILTER(const FILTER& filter) const override;
 	void getRenderFilterArgs(uint32_t step, float* args) const override;
+	void getRenderFilterGradient(float* gradientColors, float* gradientStops) const override;
 	void getRenderFilterGradientColors(float* gradientcolors) const override;
 	void prepareShutdown() override;
 };

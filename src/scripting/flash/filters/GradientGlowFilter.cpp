@@ -105,6 +105,15 @@ void GradientGlowFilter::prepareShutdown()
 		ratios->prepareShutdown();
 }
 
+void GradientGlowFilter::getRenderFilterGradient
+(
+	float* gradientColors,
+	float* gradientStops
+) const
+{
+	fillGradient(ratios, alphas, colors, gradientColors, gradientStops);
+}
+
 void GradientGlowFilter::getRenderFilterGradientColors(float* gradientcolors) const
 {
 	number_t tmpgradientalphas[256];
@@ -207,12 +216,18 @@ void GradientGlowFilter::getRenderFilterArgs(uint32_t step,float* args) const
 		return;
 	else if (step == nextstep)
 	{
+		int oX;
+		int oY;
+		float sX;
+		float sY;
+		getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, oX, oY, sX, sY);
+
 		args[0]=float(FILTERSTEP_GRADIENT_GLOW);
 		args[1]=type=="inner";
 		args[2]=knockout;
 		args[3]=strength;
-		args[4]=cos(angle+(type=="inner" ? M_PI:0.0)) * distance / float(getSystemState()->getRenderThread()->windowWidth);
-		args[5]=sin(angle+(type=="inner" ? 0.0:M_PI)) * distance / float(getSystemState()->getRenderThread()->windowHeight);
+		args[4] = (cos(angle + M_PI) * distance * sX);
+		args[5] = (sin(angle) * distance * sY);
 	}
 	else
 		args[0]=0.0;

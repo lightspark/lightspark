@@ -55,6 +55,11 @@ void BitmapFilter::getRenderFilterArgs(uint32_t step, float* args) const
 	throw RunTimeException("BitmapFilter::getRenderFilterArgs");
 }
 
+void BitmapFilter::getRenderFilterGradient(float* gradientColors, float* gradientStops) const
+{
+	gradientStops[0] = -1;
+}
+
 void BitmapFilter::getRenderFilterGradientColors(float* gradientcolors) const
 {
 }
@@ -373,6 +378,79 @@ void BitmapFilter::applyDropShadowFilter(uint8_t* data, uint32_t datawidth, uint
 		datapixel[targetpos] = dropShadowPixel(datapixel[targetpos], tmpdata[i*4+3], strength, alpha, color, inner, knockout);
 	}
 }
+
+void BitmapFilter::fillGradient
+(
+	const _NR<Array>& ratios,
+	const _NR<Array>& alphas,
+	const _NR<Array>& colors,
+	float* gradientColors,
+	float* gradientStops
+)
+{
+	auto getRatio = [&](size_t i) -> ssize_t
+	{
+		if (ratios.isNull() || !ratios->size())
+			return -1;
+
+		asAtom atom = asAtomHandler::invalidAtom;
+		ratios->at_nocheck(atom, std::min<size_t>(i, ratios->size()));
+		return asAtomHandler::toUInt(atom);
+	};
+
+	auto getColor = [&](size_t i)
+	{
+		float alpha = 0;
+		uint32_t color = 0;
+		asAtom atom = asAtomHandler::invalidAtom;
+
+		if (!alphas.isNull() && i < alphas->size())
+		{
+			alphas->at_nocheck(atom, i);
+			alpha = asAtomHandler::toNumber(atom);
+		}
+
+		if (!colors.isNull() && i < colors->size())
+		{
+			colors->at_nocheck(atom, i);
+			color = asAtomHandler::toUInt(atom);
+		}
+
+		return RGBA(color, alpha * 255);
+	};
+
+	if (getRatio(0) < 0)
+	{
+		auto color = getColor(0);
+		gradientColors[0] = color.rf();
+		gradientColors[1] = color.gf();
+		gradientColors[2] = color.bf();
+		gradientColors[3] = color.af();
+
+		gradientStops[0] = 0;
+		gradientStops[1] = -1;
+		return;
+	}
+
+	auto size = std::min<size_t>(ratios->size(), MAX_FILTER_GRADIENTS);
+	for (size_t i = 0; i < size; ++i)
+	{
+		auto color = getColor(i);
+		gradientColors[i*4  ] = color.rf();
+		gradientColors[i*4+1] = color.gf();
+		gradientColors[i*4+2] = color.bf();
+		gradientColors[i*4+3] = color.af();
+
+		if (i < (size - 1))
+			gradientStops[i] = float(getRatio(i + 1)) / 255;
+		else
+			gradientStops[i] = -1;
+	}
+
+	if (size < MAX_FILTER_GRADIENTS)
+		gradientStops[size] = -1;
+}
+
 void BitmapFilter::fillGradientColors(number_t* gradientalphas, uint32_t* gradientcolors, Array* ratios, Array* alphas, Array* colors)
 {
 	number_t alpha = 1.0;
@@ -689,24 +767,46 @@ void BitmapFilter::getRenderFilterArgsDropShadow(float* args, bool inner, bool k
 	args[9]=(ypos * sY);
 }
 
-void BitmapFilter::getRenderFilterArgsBevel(float* args, bool inner, bool knockout, float strength, float distance, float angle) const
+void BitmapFilter::getRenderFilterArgsBevel
+(
+	float* args,
+	bool inner,
+	bool outer,
+	bool knockout,
+	const RGBA& shadowColor,
+	const RGBA& highlightColor,
+	float strength,
+	float distance,
+	float angle
+) const
 {
 	int oX;
 	int oY;
 	float sX;
 	float sY;
-	args[0]=float(FILTERSTEP_BEVEL);
-	args[1]=inner;
-	args[2]=knockout;
-	args[3]=strength;
+	args[0] = float(FILTERSTEP_BEVEL);
+	args[1] = inner;
+	args[2] = outer;
+	args[3] = knockout;
+	args[4] = strength;
+
+	args[5] = shadowColor.rf();
+	args[6] = shadowColor.gf();
+	args[7] = shadowColor.bf();
+	args[8] = shadowColor.af();
+
+	args[9] = highlightColor.rf();
+	args[10] = highlightColor.gf();
+	args[11] = highlightColor.bf();
+	args[12] = highlightColor.af();
 
 	getSystemState()->stageCoordinateMapping(getSystemState()->getRenderThread()->windowWidth, getSystemState()->getRenderThread()->windowHeight, oX, oY, sX, sY);
-	//highlightOffset
-	args[4]=(cos(angle+(inner ? 0.0:M_PI)) * distance * sX);
-	args[5]=(sin(angle+(inner ? 0.0:M_PI)) * distance * sY);
-	//shadowOffset
-	args[6]=(cos(angle+(inner ? M_PI:0.0)) * distance * sX);
-	args[7]=(sin(angle+(inner ? M_PI:0.0)) * distance * sY);
+	// `blurLeftOffset`
+	args[13] = (cos(angle+(inner ? M_PI:0.0)) * distance * sX);
+	args[14] = (sin(angle+(inner ? M_PI:0.0)) * distance * sY);
+	// `blurRightOffset`
+	args[15] = (cos(angle+(inner ? 0.0:M_PI)) * distance * sX);
+	args[16] = (sin(angle+(inner ? 0.0:M_PI)) * distance * sY);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapFilter,clone)

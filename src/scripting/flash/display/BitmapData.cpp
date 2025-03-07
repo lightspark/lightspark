@@ -1198,12 +1198,16 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 			std::list<tiny_string> ns;
 			inputRect->getVariableByMultiname(a,"x",ns,wrk);
 			inrect.Xmin=asAtomHandler::toInt(a);
+			ASATOM_DECREF(a);
 			inputRect->getVariableByMultiname(a,"y",ns,wrk);
 			inrect.Ymin=asAtomHandler::toInt(a);
+			ASATOM_DECREF(a);
 			inputRect->getVariableByMultiname(a,"width",ns,wrk);
 			inrect.Xmax=inrect.Xmin+asAtomHandler::toInt(a);
+			ASATOM_DECREF(a);
 			inputRect->getVariableByMultiname(a,"height",ns,wrk);
 			inrect.Ymax=inrect.Ymin+asAtomHandler::toInt(a);
+			ASATOM_DECREF(a);
 		}
 	}
 	th->pixels->clipRect(inrect, rect);

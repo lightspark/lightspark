@@ -142,20 +142,20 @@ void AVM1Stage::sinit(Class_base* c)
 {
 	// in AVM1 Stage is no DisplayObject and all methods/properties are static
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
-	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_getStageWidth),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_setStageWidth),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_getStageHeight),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_setStageHeight),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("displayState","",c->getSystemState()->getBuiltinFunction(_getDisplayState),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("displayState","",c->getSystemState()->getBuiltinFunction(_setDisplayState),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("scaleMode","",c->getSystemState()->getBuiltinFunction(_getScaleMode),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("scaleMode","",c->getSystemState()->getBuiltinFunction(_setScaleMode),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("showMenu","",c->getSystemState()->getBuiltinFunction(_getShowMenu),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("showMenu","",c->getSystemState()->getBuiltinFunction(_setShowMenu),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("align","",c->getSystemState()->getBuiltinFunction(getAlign),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("align","",c->getSystemState()->getBuiltinFunction(setAlign),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addResizeListener),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeResizeListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_getStageWidth),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_setStageWidth),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_getStageHeight),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_setStageHeight),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("displayState","",c->getSystemState()->getBuiltinFunction(_getDisplayState),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("displayState","",c->getSystemState()->getBuiltinFunction(_setDisplayState),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("scaleMode","",c->getSystemState()->getBuiltinFunction(_getScaleMode),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("scaleMode","",c->getSystemState()->getBuiltinFunction(_setScaleMode),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("showMenu","",c->getSystemState()->getBuiltinFunction(_getShowMenu),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("showMenu","",c->getSystemState()->getBuiltinFunction(_setShowMenu),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("align","",c->getSystemState()->getBuiltinFunction(getAlign),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("align","",c->getSystemState()->getBuiltinFunction(setAlign),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addResizeListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeResizeListener),NORMAL_METHOD,false);
 }
 ASFUNCTIONBODY_ATOM(AVM1Stage,_getDisplayState)
 {
@@ -685,7 +685,10 @@ void AVM1Broadcaster::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("initialize","",c->getSystemState()->getBuiltinFunction(initialize),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("initialize","",c->getSystemState()->getBuiltinFunction(initialize),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("broadcastMessage","",c->getSystemState()->getBuiltinFunction(broadcastMessage),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeListener),NORMAL_METHOD,false);
 }
 ASFUNCTIONBODY_ATOM(AVM1Broadcaster,initialize)
 {
@@ -709,7 +712,7 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,broadcastMessage)
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=wrk->getSystemState()->getUniqueStringId("_listeners");
-	th->getVariableByMultiname(l,m,GET_VARIABLE_OPTION::NONE,wrk);
+	th->getVariableByMultiname(l,m,GET_VARIABLE_OPTION::NO_INCREF,wrk);
 	if (asAtomHandler::isArray(l))
 	{
 		multiname mmsg(nullptr);
@@ -728,16 +731,16 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,broadcastMessage)
 				asAtom res = asAtomHandler::invalidAtom;
 				if (asAtomHandler::is<Function>(f))
 				{
-					asAtomHandler::as<Function>(f)->call(res,wrk,o,nullptr,0);
+					asAtomHandler::as<Function>(f)->call(res,wrk,o,argslen > 1 ? &args[1] : nullptr,argslen-1);
 					asAtomHandler::as<Function>(f)->decRef();
 				}
 				else if (asAtomHandler::is<SyntheticFunction>(f))
 				{
-					asAtomHandler::as<SyntheticFunction>(f)->call(wrk,res,o,nullptr,0,false,false);
+					asAtomHandler::as<SyntheticFunction>(f)->call(wrk,res,o,argslen > 1 ? &args[1] : nullptr,argslen-1,false,false);
 				}
 				else if (asAtomHandler::is<AVM1Function>(f))
 				{
-					asAtomHandler::as<AVM1Function>(f)->call(&res,&o,nullptr,0);
+					asAtomHandler::as<AVM1Function>(f)->call(&res,&o,argslen > 1 ? &args[1] : nullptr,argslen-1);
 					asAtomHandler::as<AVM1Function>(f)->decRef();
 				}
 			}
@@ -758,13 +761,26 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,addListener)
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=wrk->getSystemState()->getUniqueStringId("_listeners");
-	th->getVariableByMultiname(l,m,GET_VARIABLE_OPTION::NONE,wrk);
+	th->getVariableByMultiname(l,m,GET_VARIABLE_OPTION::NO_INCREF,wrk);
 	if (asAtomHandler::isArray(l))
 	{
-		// TODO spec is not clear if listener can be added multiple times
 		Array* listeners = asAtomHandler::as<Array>(l);
-		listener->incRef();
-		listeners->push(asAtomHandler::fromObjectNoPrimitive(listener.getPtr()));
+		bool found = false;
+		for (uint32_t i=0; i < listeners->size(); i++)
+		{
+			asAtom a = asAtomHandler::invalidAtom;
+			listeners->at_nocheck(a,i);
+			if (a.uintval == args[0].uintval)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+		{
+			listener->incRef();
+			listeners->push(asAtomHandler::fromObjectNoPrimitive(listener.getPtr()));
+		}
 	}
 	ret = asAtomHandler::trueAtom;
 }
@@ -780,7 +796,7 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,removeListener)
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=wrk->getSystemState()->getUniqueStringId("_listeners");
-	th->getVariableByMultiname(l,m,GET_VARIABLE_OPTION::NONE,wrk);
+	th->getVariableByMultiname(l,m,GET_VARIABLE_OPTION::NO_INCREF,wrk);
 	if (asAtomHandler::isArray(l))
 	{
 		Array* listeners = asAtomHandler::as<Array>(l);
@@ -788,11 +804,12 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,removeListener)
 		{
 			asAtom o=asAtomHandler::invalidAtom;
 			listeners->at_nocheck(o,i);
-			if (o.uintval==l.uintval)
+			if (o.uintval==args[0].uintval)
 			{
 				asAtom res;
 				asAtom index = asAtomHandler::fromUInt(i);
-				listeners->removeAt(res,wrk,obj,&index,1);
+				Array::removeAt(res,wrk,l,&index,1);
+				ASATOM_DECREF(res);
 				ret=asAtomHandler::trueAtom;
 				break;
 			}

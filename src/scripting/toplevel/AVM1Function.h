@@ -40,6 +40,7 @@ protected:
 	std::vector<uint8_t> actionlist;
 	std::vector<uint32_t> paramnames;
 	std::vector<uint8_t> paramregisternumbers;
+	std::vector<asAtom> implementedinterfaces;
 	_NR<AVM1Scope> scope;
 	bool preloadParent;
 	bool preloadRoot;
@@ -115,6 +116,14 @@ public:
 	{
 		return superobj;
 	}
+	FORCE_INLINE void addInterface(asAtom& iface)
+	{
+		ASObject* o = asAtomHandler::getObject(iface);
+		if (o)
+			o->addStoredMember();
+		implementedinterfaces.push_back(iface);
+	}
+	bool implementsInterface(asAtom& iface);
 };
 
 }

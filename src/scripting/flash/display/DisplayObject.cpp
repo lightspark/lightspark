@@ -2808,7 +2808,6 @@ GET_VARIABLE_RESULT DisplayObject::AVM1getVariableByMultiname
 	if (isInternalProp)
 		ret = getPropertyByName(s, wrk);
 
-	ASATOM_INCREF(ret);
 	return result;
 }
 

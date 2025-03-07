@@ -86,6 +86,11 @@ void AVM1Function::finalize()
 	clip=nullptr;
 	scope.reset();
 	ASATOM_REMOVESTOREDMEMBER(superobj);
+	for (auto it = implementedinterfaces.begin(); it != implementedinterfaces.end(); it++)
+	{
+		ASATOM_REMOVESTOREDMEMBER(*it);
+	}
+	implementedinterfaces.clear();
 	IFunction::finalize();
 }
 
@@ -100,6 +105,11 @@ bool AVM1Function::destruct()
 	scope.reset();
 	ASATOM_REMOVESTOREDMEMBER(superobj);
 	superobj=asAtomHandler::invalidAtom;
+	for (auto it = implementedinterfaces.begin(); it != implementedinterfaces.end(); it++)
+	{
+		ASATOM_REMOVESTOREDMEMBER(*it);
+	}
+	implementedinterfaces.clear();
 	return IFunction::destruct();
 }
 
@@ -117,6 +127,12 @@ void AVM1Function::prepareShutdown()
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
 		su->prepareShutdown();
+	for (auto it = implementedinterfaces.begin(); it != implementedinterfaces.end(); it++)
+	{
+		ASObject* iface = asAtomHandler::getObject(*it);
+		if (iface)
+			iface->prepareShutdown();
+	}
 }
 
 bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -132,4 +148,24 @@ bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	if (su)
 		ret = su->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
+}
+bool AVM1Function::implementsInterface(asAtom &iface)
+{
+	for (auto it = implementedinterfaces.begin(); it != implementedinterfaces.end(); it++)
+	{
+		if ((*it).uintval == iface.uintval)
+			return true;
+	}
+	ASObject* pr = this->prototype->getprop_prototype();
+	if (pr)
+	{
+		asAtom o = asAtomHandler::invalidAtom;
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.name_s_id=BUILTIN_STRINGS::STRING_CONSTRUCTOR;
+		pr->getVariableByMultiname(o,m,GET_VARIABLE_OPTION(SKIP_IMPL|NO_INCREF),getInstanceWorker());
+		if (asAtomHandler::is<AVM1Function>(o))
+			return asAtomHandler::as<AVM1Function>(o)->implementsInterface(iface);
+	}
+	return false;
 }

@@ -5399,6 +5399,8 @@ bool asAtomHandler::AVM1isEqualStrict(asAtom& a, asAtom& b, ASWorker* wrk)
 				// proper refactor of the `flash.xml` code is done.
 				return getObject(a)->isEqual(getObject(b));
 			}
+			else if (is<IFunction>(a) && is<IFunction>(b))
+				return as<IFunction>(a)->isEqual(as<IFunction>(b));
 
 			return getObject(a) == getObject(b);
 			break;

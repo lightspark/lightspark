@@ -1672,6 +1672,7 @@ public:
 	static void PushStack(std::stack<asAtom>& stack,const asAtom& a);
 	static asAtom PopStack(std::stack<asAtom>& stack);
 	static asAtom PeekStack(std::stack<asAtom>& stack);
+	static bool implementsInterface(asAtom type, ASObject* value, ASWorker* wrk);
 	static void executeActions(
 		DisplayObject* clip, AVM1context* context, const std::vector<uint8_t> &actionlist, uint32_t startactionpos,
 		AVM1Scope* scope = nullptr, bool fromInitAction = false, asAtom *result = nullptr,

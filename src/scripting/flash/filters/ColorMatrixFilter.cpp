@@ -154,13 +154,20 @@ BitmapFilter* ColorMatrixFilter::cloneImpl() const
 {
 	ColorMatrixFilter *cloned = Class<ColorMatrixFilter>::getInstanceS(getInstanceWorker());
 	if (!matrix.isNull())
-	{
-		matrix->incRef();
 		cloned->matrix = matrix;
-	}
 	return cloned;
 }
 
+bool ColorMatrixFilter::destruct()
+{
+	matrix.reset();
+	return BitmapFilter::destruct();
+}
+void ColorMatrixFilter::finalize()
+{
+	matrix.reset();
+	BitmapFilter::finalize();
+}
 void ColorMatrixFilter::prepareShutdown()
 {
 	if (preparedforshutdown)

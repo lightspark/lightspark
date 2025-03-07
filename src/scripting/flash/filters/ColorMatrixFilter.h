@@ -38,6 +38,8 @@ public:
 	void applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner=nullptr) override;
 	bool compareFILTER(const FILTER& filter) const override;
 	void getRenderFilterArgs(uint32_t step, float* args) const override;
+	bool destruct() override;
+	void finalize() override;
 	void prepareShutdown() override;
 };
 

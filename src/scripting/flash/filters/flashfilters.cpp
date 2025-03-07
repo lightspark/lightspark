@@ -98,8 +98,8 @@ void BitmapFilter::applyBlur(uint8_t* data, uint32_t width, uint32_t height, num
 
 	blurx*=sX;
 	blury*=sY;
-	int radiusX = int(round(blurx)) >> 1;
-	int radiusY = int(round(blury)) >> 1;
+	int radiusX = int(ceil(blurx)) >> 1;
+	int radiusY = int(ceil(blury)) >> 1;
 	if (radiusX >= int(sizeof(MUL_TABLE)/sizeof(int)))
 		radiusX = sizeof(MUL_TABLE)/sizeof(int)-1;
 	if (radiusY >= int(sizeof(MUL_TABLE)/sizeof(int)))

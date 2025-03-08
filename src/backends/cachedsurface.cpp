@@ -236,8 +236,6 @@ void nanoVGFillStyle(NVGcontext* nvgctxt, const FILLSTYLE& style, ColorTransform
 				NVGcolor c = applyColorTransform(record.Color, ct);
 				return NVGgradientStop { c, float(record.Ratio) / 255.0f };
 			});
-			if (stops.back().stop != 1.0) // ensure we end gradient with ratio 1.0
-				stops.push_back(NVGgradientStop {stops.back().color,1.0});
 
 			int spreadMode = toNanoVGSpreadMode(style.Gradient.SpreadMode);
 
@@ -259,8 +257,7 @@ void nanoVGFillStyle(NVGcontext* nvgctxt, const FILLSTYLE& style, ColorTransform
 					stops.data(),
 					stops.size(),
 					spreadMode,
-					style.Gradient.InterpolationMode,
-					&style.bitmap->nanoVGGradientPattern
+					style.Gradient.InterpolationMode
 				);
 			}
 			else
@@ -281,8 +278,7 @@ void nanoVGFillStyle(NVGcontext* nvgctxt, const FILLSTYLE& style, ColorTransform
 					stops.size(),
 					spreadMode,
 					style.Gradient.InterpolationMode,
-					style.Gradient.FocalPoint,
-					&style.bitmap->nanoVGGradientPattern
+					style.Gradient.FocalPoint
 				);
 				applyMatrixTransform(pattern, m);
 			}

@@ -868,74 +868,6 @@ static NVGcolor nvg__premulColor(NVGcolor c)
 	return c;
 }
 
-// Based on https://github.com/femtovg/femtovg/blob/4e40a61f824a8ea1bd361b4d227a2187e912124a/src/gradient_store.rs#L71
-static void nvg__gradientSpan(float* gradientcolors,
-					   NVGcolor startColor, NVGcolor endColor,
-					   float startStop, float endStop)
-
-{
-	startStop = nvg__clampf(startStop, 0.0f, 1.0f);
-	endStop = nvg__clampf(endStop, 0.0f, 1.0f);
-
-	if (endStop < startStop)
-		return;
-
-	int i;
-	int start = startStop * 256.0f;
-	int end = endStop * 256.0f;
-
-	float steps = end - start;
-
-	float u = 0;
-	const float du = 1.0f / steps;
-	for (i = start; i < end; i++) {
-		NVGcolor lerpColor = nvg__premulColor(nvgLerpRGBA(startColor, endColor, u));
-
-		gradientcolors[(i*4)+0] = lerpColor.r;
-		gradientcolors[(i*4)+1] = lerpColor.g;
-		gradientcolors[(i*4)+2] = lerpColor.b;
-		gradientcolors[(i*4)+3] = lerpColor.a;
-		u += du;
-	}
-}
-
-static void nvg__gradientSpanStop(float* gradientcolors,
-					   NVGgradientStop start, NVGgradientStop end)
-{
-	nvg__gradientSpan(gradientcolors, start.color, end.color, start.stop, end.stop);
-}
-
-// Based on https://github.com/femtovg/femtovg/blob/4e40a61f824a8ea1bd361b4d227a2187e912124a/src/gradient_store.rs#L114
-static void nvg__linearGradientStops(NVGcontext* ctx,
-							 NVGgradientStop* stops, int count,
-							 int spreadMode, float* gradientcolors)
-{
-	if (stops == NULL || count <= 0)
-		return;
-
-	int i;
-	memset(gradientcolors, 0, sizeof(*gradientcolors));
-
-	// Fill upto the first stop.
-	if (stops[0].stop > 0.0f) {
-		nvg__gradientSpan(gradientcolors, stops[0].color, stops[0].color, 0.0f, stops[0].stop);
-	}
-
-	// Iterate over each stop in overlapping pairs, filling the entire
-	// gradient. If our stop position is > 1.0f, we've gone through all
-	// stops, and are done. as a special case, if the last stop position
-	// is > 1.0f, we pad the rest of the gradient with the current color.
-	for (i = 0; i < count-1 && stops[i].stop <= 1.0f; i++) {
-		NVGgradientStop* s0 = &stops[i];
-		NVGgradientStop* s1 = &stops[i+1];
-		// Pad the rest of the gradient, if last stop is < 1.0f.
-		if ((s0->stop < 1.0f) && (s1->stop > 1.0f))
-			nvg__gradientSpan(gradientcolors, s0->color, s0->color, s0->stop, 1.0f);
-		else
-			nvg__gradientSpanStop(gradientcolors, *s0, *s1);
-	}
-}
-
 NVGpaint nvgLinearGradient(NVGcontext* ctx,
 						   float sx, float sy, float ex, float ey,
 						   NVGcolor icol, NVGcolor ocol,
@@ -983,7 +915,7 @@ NVGpaint nvgLinearGradient(NVGcontext* ctx,
 NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 								float sx, float sy, float ex, float ey,
 								NVGgradientStop* stops, int count,
-								int spreadMode, int interpolationmode, float** gradientcolors)
+								int spreadMode, int interpolationmode)
 {
 	NVGpaint p;
 
@@ -1024,11 +956,8 @@ NVGpaint nvgLinearGradientStops(NVGcontext* ctx,
 
 	p.feather = nvg__maxf(1.0f, d);
 
-	if (*gradientcolors == NULL) {
-		*gradientcolors = (float*)malloc(NANOVG_GRADIENTCOLOR_SIZE*4*sizeof(float));
-	}
-	p.gradientcolors = *gradientcolors;
-	nvg__linearGradientStops(ctx, stops, count, spreadMode, p.gradientcolors);
+	p.nstops = nvg__mini(count, NVG_MAX_GRADIENTS);
+	memcpy(p.stops, stops, sizeof(NVGgradientStop)*p.nstops);
 
 	p.spreadMode = spreadMode;
 	p.interpolationmode = interpolationmode;
@@ -1072,7 +1001,7 @@ NVGpaint nvgRadialGradient(NVGcontext* ctx,
 NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
 								float cx, float cy, float inr, float outr,
 								NVGgradientStop* stops, int count,
-								int spreadMode, int interpolationmode, float focalpoint, float** gradientcolors)
+								int spreadMode, int interpolationmode, float focalpoint)
 {
 	NVGpaint p;
 
@@ -1101,11 +1030,8 @@ NVGpaint nvgRadialGradientStops(NVGcontext* ctx,
 
 	p.feather = nvg__maxf(1.0f, f);
 
-	if (*gradientcolors == NULL) {
-		*gradientcolors = (float*)malloc(NANOVG_GRADIENTCOLOR_SIZE*4*sizeof(float));
-	}
-	p.gradientcolors = *gradientcolors;
-	nvg__linearGradientStops(ctx, stops, count, spreadMode, p.gradientcolors);
+	p.nstops = nvg__mini(count, NVG_MAX_GRADIENTS);
+	memcpy(p.stops, stops, sizeof(NVGgradientStop)*p.nstops);
 
 	p.spreadMode = spreadMode;
 	p.interpolationmode = interpolationmode;

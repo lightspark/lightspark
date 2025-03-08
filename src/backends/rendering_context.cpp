@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <stack>
+#include "lsopengl.h"
 #include "platforms/engineutils.h"
 #include "backends/rendering_context.h"
 #include "logger.h"
@@ -463,6 +464,9 @@ bool GLRenderContext::handleGLErrors() const
 	{
 		if(engineData && engineData->getGLError(err))
 		{
+			#ifdef ENABLE_GLES3
+			if(err!=GL_INVALID_ENUM)
+			#endif
 			errorCount++;
 			LOG(LOG_ERROR,"GL error "<< hex<<err);
 		}

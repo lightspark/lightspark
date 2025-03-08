@@ -24,6 +24,9 @@
 #ifdef ENABLE_GLES2
 #define IMGUI_IMPL_OPENGL_ES2
 #include <imgui_impl_opengl3.h>
+#elif defined(ENABLE_GLES3)
+#define IMGUI_IMPL_OPENGL_ES3
+#include <imgui_impl_opengl3.h>
 #else
 #include <imgui_impl_opengl2.h>
 #endif
@@ -1253,8 +1256,18 @@ bool Launcher::start()
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+#ifndef ENABLE_GLES3
+    #ifdef ENABLE_GLES2
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    #endif
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+#else
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
 	SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 	SDL_Window* window = SDL_CreateWindow("Lightspark launcher", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 400, 400, window_flags);
 	if (window == nullptr)
@@ -1310,7 +1323,9 @@ bool Launcher::start()
 	// Setup Platform/Renderer backends
 	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
 #ifdef ENABLE_GLES2
-	ImGui_ImplOpenGL3_Init();
+	ImGui_ImplOpenGL3_Init("#version 100");
+#elif defined(ENABLE_GLES3)
+    ImGui_ImplOpenGL3_Init("#version 100");
 #else
 	ImGui_ImplOpenGL2_Init();
 #endif
@@ -1340,7 +1355,7 @@ bool Launcher::start()
 		}
 		
 		// Start the Dear ImGui frame
-#ifdef ENABLE_GLES2
+#if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
 		ImGui_ImplOpenGL3_NewFrame();
 #else
 		ImGui_ImplOpenGL2_NewFrame();
@@ -1498,7 +1513,7 @@ bool Launcher::start()
 		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
 		glClearColor(0.0,0.0,0.0,1.0);
 		glClear(GL_COLOR_BUFFER_BIT);
-#ifdef ENABLE_GLES2
+#if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 #else
 		ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
@@ -1507,7 +1522,7 @@ bool Launcher::start()
 	}
 	
 	// Cleanup
-#ifdef ENABLE_GLES2
+#if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
 	ImGui_ImplOpenGL3_Shutdown();
 #else
 	ImGui_ImplOpenGL2_Shutdown();

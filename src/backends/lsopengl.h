@@ -37,6 +37,14 @@
 //	#define glBindBuffer(...)
 //	#define glBufferData(...)
 	#define glPixelStorei(...)
+#elif defined(ENABLE_GLES3)
+	#include "SDL_opengles2.h"
+	#include <GLES3/gl3.h>
+	#include <GLES3/gl3ext.h>
+	// No GL_EXT_texture_format_BGRA8888 on GLES3, fun
+
+	//there are no multiple buffers in GLES 3.0... I think
+	#define glDrawBuffer(x) {}
 #else
 	//GLEW_NO_GLU tells glew.h to not include glu.h. Required to
 	//compile on systems without glu.h.

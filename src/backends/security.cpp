@@ -546,7 +546,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSandboxURL(const URLI
  */
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateLocalDirectoryURL(const URLInfo& url)
 {
-	The URL is local and points to a directory above the origin
+	//The URL is local and points to a directory above the origin
 	if(url.getProtocol() == "file" && !url.isSubOf(getSys()->mainClip->getOrigin()))
 	{
 		LOG(LOG_ERROR,"evaluateLocalDirectoryURL failed:"<<url<<" "<<getSys()->mainClip->getOrigin());

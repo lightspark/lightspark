@@ -792,6 +792,11 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 	glsl += "#version 100\n";
 	// Required to set the default precision of vectors
 	glsl += "precision highp float;\n";
+#elif defined(ENABLE_GLES3)
+	glsl += "#version 100\n";
+	glsl += "precision highp float;\n";
+#elif defined(__APPLE__)
+	glsl += "#version 150\n";
 #else
 	glsl += "#version 120\n";
 #endif

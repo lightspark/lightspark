@@ -441,10 +441,7 @@ void BitmapFilter::fillGradient
 		gradientColors[i*4+2] = color.bf();
 		gradientColors[i*4+3] = color.af();
 
-		if (i < (size - 1))
-			gradientStops[i] = float(getRatio(i + 1)) / 255;
-		else
-			gradientStops[i] = -1;
+		gradientStops[i] = float(getRatio(i)) / 255;
 	}
 
 	if (size < MAX_FILTER_GRADIENTS)

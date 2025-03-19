@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2025  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -97,7 +98,7 @@ namespace cereal
 		archive(cereal::make_size_tag(size));
 		archive(vec.x, vec.y);
 	}
-};
+}
 
 enum class EventType
 {
@@ -180,6 +181,7 @@ struct Wait
 struct MouseMove
 {
 	Vector2f pos;
+	static bool mouseButtonPressed;
 
 	operator LSEventStorage() const
 	{
@@ -189,7 +191,7 @@ struct MouseMove
 			pos,
 			pos,
 			LSModifier::None,
-			false
+			mouseButtonPressed
 		);
 	}
 	template<class Archive>
@@ -209,6 +211,7 @@ struct MouseDown
 
 	operator LSEventStorage() const
 	{
+		MouseMove::mouseButtonPressed=true;
 		return LSMouseButtonEvent
 		(
 			0,
@@ -239,6 +242,7 @@ struct MouseUp
 
 	operator LSEventStorage() const
 	{
+		MouseMove::mouseButtonPressed=false;
 		return LSMouseButtonEvent
 		(
 			0,

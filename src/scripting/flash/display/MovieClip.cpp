@@ -1422,11 +1422,6 @@ void MovieClip::declareFrame(bool implicit)
 	{
 		if(getFramesLoaded())
 		{
-			if (this->as<MovieClip>()->state.last_FP > (int)this->as<MovieClip>()->state.next_FP)
-			{
-				// we are moving backwards in the timeline, so we keep the current list of legacy children available for reusing
-				this->rememberLastFrameChildren();
-			}
 			auto iter=frames.begin();
 			uint32_t frame = state.FP;
 			removedFrameScripts.clear();
@@ -1439,7 +1434,6 @@ void MovieClip::declareFrame(bool implicit)
 				++iter;
 			}
 			state.FP = frame;
-			this->clearLastFrameChildren();
 		}
 		if (newFrame)
 			state.frameadvanced=true;

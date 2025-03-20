@@ -265,7 +265,25 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 	bool ret = false;
 
 	if(dynamicDisplayList.empty())
+	{
+		// values for invalid bounds, see ruffle avm1/movieclip_invalid_get_bounds_<x> tests
+		if (loadedFrom->version >= 8 || getSystemState()->getSwfVersion() >= 8)
+		{
+			//needsNewInvalidRectValues=true;
+			xmin= number_t(0x8000000)/20.0;
+			xmax=number_t(0x8000000)/20.0;
+			ymin=number_t(0x8000000)/20.0;
+			ymax=number_t(0x8000000)/20.0;
+		}
+		else
+		{
+			xmin= number_t(0x7ffffff)/20.0;
+			xmax=number_t(0x7ffffff)/20.0;
+			ymin=number_t(0x7ffffff)/20.0;
+			ymax=number_t(0x7ffffff)/20.0;
+		}
 		return false;
+	}
 	if (visibleOnly)
 	{
 		if (!this->isVisible())
@@ -310,6 +328,13 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 				ymax=tymax;
 				ret=true;
 			}
+		}
+		else
+		{
+			xmin=txmin;
+			xmax=txmax;
+			ymin=tymin;
+			ymax=tymax;
 		}
 	}
 	if (ret)

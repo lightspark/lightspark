@@ -520,7 +520,7 @@ void Loader::setContent(DisplayObject* o)
 
 	{
 		Locker l(spinlock);
-		if (o->is<RootMovieClip>() && o != getSystemState()->mainClip && !o->as<RootMovieClip>()->needsActionScript3())
+		if (needsActionScript3() && o->is<RootMovieClip>() && o != getSystemState()->mainClip && !o->as<RootMovieClip>()->needsActionScript3())
 		{
 			AVM1Movie* m = Class<AVM1Movie>::getInstanceS(getInstanceWorker());
 			m->setLoaderInfo(this->loaderInfo);

@@ -472,9 +472,7 @@ void EngineData::initGLEW()
 {
 //For now GLEW does not work with GLES2
 #ifdef ENABLE_GLES2
-#ifdef GL_DEPTH24_STENCIL8_OES
-	supportPackedDepthStencil=true;
-#endif
+	supportPackedDepthStencil=SDL_GL_ExtensionSupported("GL_OES_packed_depth_stencil");
 #else
 	//Now we can initialize GLEW
 	GLenum err = glewInit();
@@ -1432,12 +1430,11 @@ void EngineData::exec_glBindRenderbuffer(uint32_t renderBuffer)
 	glBindRenderbuffer(GL_RENDERBUFFER,renderBuffer);
 }
 
-void EngineData::
-	exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(uint32_t width, uint32_t height)
+void EngineData::exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(uint32_t width, uint32_t height)
 {
 #ifdef ENABLE_GLES2
 #ifdef GL_DEPTH24_STENCIL8_OES
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH24_STENCIL8_OES,width,height);
+	glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH24_STENCIL8_OES,width,height);
 #endif
 #else
 	glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH24_STENCIL8,width,height);

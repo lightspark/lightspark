@@ -464,9 +464,6 @@ bool GLRenderContext::handleGLErrors() const
 	{
 		if(engineData && engineData->getGLError(err))
 		{
-#if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
-			if(err!=GL_INVALID_ENUM)
-#endif
 			errorCount++;
 			LOG(LOG_ERROR,"GL error "<< hex<<err);
 		}

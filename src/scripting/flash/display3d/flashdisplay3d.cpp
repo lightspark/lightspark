@@ -938,12 +938,7 @@ void Context3D::configureBackBufferIntern(bool enableDepthAndStencil, uint32_t w
 		{
 			engineData->exec_glBindRenderbuffer(backDepthRenderBuffer[index]);
 			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(width,height);
-#ifdef ENABLE_GLES2
-			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_ATTACHMENT(backDepthRenderBuffer[index]);
-			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(backDepthRenderBuffer[index]);
-#else
 			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(backDepthRenderBuffer[index]);
-#endif
 			engineData->exec_glBindRenderbuffer(0);
 		}
 		else

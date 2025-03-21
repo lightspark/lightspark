@@ -1443,7 +1443,10 @@ void EngineData::exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(uin
 
 void EngineData::exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(uint32_t depthStencilRenderBuffer)
 {
-#ifndef ENABLE_GLES2
+#ifdef ENABLE_GLES2
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);
+#else
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);
 #endif
 }

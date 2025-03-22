@@ -335,7 +335,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				if (asAtomHandler::is<AVM1Function>(func))
 				{
 					asAtom ret=asAtomHandler::invalidAtom;
-					asAtom obj = asAtomHandler::fromObject(this);
+					asAtom obj = asAtomHandler::fromObject(*it);
 					asAtom args[1];
 					if (ldr->getContent())
 					{

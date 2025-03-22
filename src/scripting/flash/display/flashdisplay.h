@@ -149,14 +149,12 @@ protected:
 	virtual void resetToStart() {}
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
 	void LegacyChildEraseDeletionMarked();
-	void rememberLastFrameChildren();
-	void clearLastFrameChildren();
 public:
 	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override
 	{
 		return false;
 	}
-	DisplayObject* getLastFrameChildAtDepth(int depth);
+	DisplayObject* getLastFrameChildAtDepth(int depth, uint32_t CharacterId);
 	void fillGraphicsData(Vector* v, bool recursive) override;
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;

@@ -1014,6 +1014,12 @@ void SystemState::delayedCreation(SystemState* sys)
 		Locker l(sys->initializedMutex);
 		sys->isinitialized=true;
 		sys->initializedCond.broadcast();
+		// TODO: macOS fails to signal that the renderThread is intialized for some reason
+		// this is a hack that works around it but will surely cause issues
+		// We have to look into a proper fix enventually
+#if defined(__APPLE__) && defined(NDEBUG)
+		sys->renderThread->forceInitialization();
+#endif
 	}
 }
 

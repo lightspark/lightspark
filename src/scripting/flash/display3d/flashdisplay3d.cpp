@@ -933,7 +933,7 @@ void Context3D::configureBackBufferIntern(bool enableDepthAndStencil, uint32_t w
 	{
 		if (backDepthRenderBuffer[index] == UINT32_MAX)
 			backDepthRenderBuffer[index] = engineData->exec_glGenRenderbuffer();
-		
+
 		if (engineData->supportPackedDepthStencil)
 		{
 			engineData->exec_glBindRenderbuffer(backDepthRenderBuffer[index]);
@@ -943,12 +943,15 @@ void Context3D::configureBackBufferIntern(bool enableDepthAndStencil, uint32_t w
 		}
 		else
 		{
+			if (backStencilRenderBuffer[index] == UINT32_MAX)
+				backStencilRenderBuffer[index] = engineData->exec_glGenRenderbuffer();
 			engineData->exec_glBindRenderbuffer(backDepthRenderBuffer[index]);
 			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_COMPONENT16(width,height);
 			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_ATTACHMENT(backDepthRenderBuffer[index]);
+			engineData->exec_glBindRenderbuffer(backStencilRenderBuffer[index]);
 			engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(width,height);
-			engineData->exec_glBindRenderbuffer(0);
 			engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(backStencilRenderBuffer[index]);
+			engineData->exec_glBindRenderbuffer(0);
 		}
 		engineData->exec_glEnable_GL_DEPTH_TEST();
 		engineData->exec_glEnable_GL_STENCIL_TEST();

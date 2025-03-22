@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - test-runner-ci
     tags-ignore:
       - '**'
   pull_request:
@@ -119,6 +118,7 @@ jobs:
     strategy:
       matrix:
         os:
+          - macos-13
           - macos-14
     steps:
       - uses: actions/checkout@v4
@@ -129,7 +129,6 @@ jobs:
             nasm \
             mesa \
             mesa-glu \
-            xquartz \
             glew \
             pango \
             ffmpeg \
@@ -138,5 +137,11 @@ jobs:
         run: |
           export CPPFLAGS="-I$(brew --prefix)/include${CPPFLAGS+ ${CPPFLAGS}}"
           export LDFLAGS="-L$(brew --prefix)/lib -Wl,-rpath,$(brew --prefix)/lib${LDFLAGS+ ${LDFLAGS}}"
-          cmake -DCMAKE_BUILD_TYPE=Release -B obj-release -D CMAKE_TRY_COMPILE_TARGET_TYPE="STATIC_LIBRARY" -G Ninja
+          cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -Bobj-release \
+            -DCOMPILE_NPAPI_PLUGIN=OFF \
+            -D COMPILE_PPAPI_PLUGIN=OFF \
+            -D CMAKE_TRY_COMPILE_TARGET_TYPE="STATIC_LIBRARY" \
+            -G Ninja
           cmake --build obj-release

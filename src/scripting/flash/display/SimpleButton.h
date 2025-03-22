@@ -36,6 +36,7 @@ namespace lightspark
 class SimpleButton: public DisplayObjectContainer
 {
 private:
+	DisplayObjectContainer* lastParent; // needed for AVM1 mouse events that may be handled after the button is removed from stage
 	DisplayObject* downState;
 	DisplayObject* hitTestState;
 	DisplayObject* overState;
@@ -45,13 +46,15 @@ private:
 	_NR<SoundChannel> soundchannel_OverUpToOverDown;
 	_NR<SoundChannel> soundchannel_OverDownToOverUp;
 	DefineButtonTag* buttontag;
+public:
 	enum BUTTONSTATE
 	{
-		UP,
-		OVER,
-		DOWN,
+		STATE_UP,
+		STATE_OVER,
+		STATE_DOWN,
 		STATE_OUT
 	};
+	private:
 	BUTTONSTATE currentState;
 	BUTTONSTATE oldstate;
 	bool enabled;
@@ -93,7 +96,6 @@ public:
 	ASFUNCTION_ATOM(_setUseHandCursor);
 
 	void afterLegacyInsert() override;
-	void afterLegacyDelete(bool inskipping) override;
 	bool AVM1HandleKeyboardEvent(KeyboardEvent* e) override;
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
 	void AVM1HandlePressedEvent(ASObject* dispatcher) override;
@@ -117,22 +119,23 @@ public:
 		switch (currentState)
 		{
 			case STATE_OUT:
-			case UP:
+			case STATE_UP:
 				if (upState)
 					ret = upState;
-			break;
-			case OVER:
+				break;
+			case STATE_OVER:
 				if (overState)
 					ret = overState;
-			break;
-			case DOWN:
+				break;
+			case STATE_DOWN:
 				if (downState)
 					ret = downState;
-			break;
+				break;
 			default: break;
 		}
 		return ret;
 	}
+	BUTTONSTATE getCurrentState() const { return currentState; }
 };
 
 

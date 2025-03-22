@@ -57,94 +57,98 @@ void SimpleButton::afterLegacyInsert()
 		getSystemState()->stage->AVM1AddKeyboardListener(this);
 		getSystemState()->stage->AVM1AddMouseListener(this);
 	}
-	DisplayObjectContainer::afterLegacyInsert();
-}
-
-void SimpleButton::afterLegacyDelete(bool inskipping)
-{
-	if (!needsActionScript3())
+	if (lastParent)
+		lastParent->removeStoredMember();
+	// keep track of the DisplayObjectContainer this was added to
+	// this is needed to handle AVM1 mouse events, as they might be executed after this button was removed from stage
+	lastParent = getParent();
+	if (lastParent)
 	{
-		getSystemState()->stage->AVM1RemoveKeyboardListener(this);
-		getSystemState()->stage->AVM1RemoveMouseListener(this);
+		lastParent->incRef();
+		lastParent->addStoredMember();
 	}
+	DisplayObjectContainer::afterLegacyInsert();
 }
 
 bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e)
 {
-	if (!this->isOnStage() || !this->enabled || !this->isVisible() || this->loadedFrom->usesActionScript3)
+	if (this->loadedFrom->usesActionScript3)
 		return false;
 	if (!dispatcher->is<DisplayObject>())
 		return false;
-	DisplayObject* dispobj=nullptr;
-	if(e->type == "mouseOut")
-	{
-		if (dispatcher!= this)
-			return false;
-	}
-	else
-	{
-		if (dispatcher == this)
-			dispobj=this;
-		else
-		{
-			number_t x,y;
-			// TODO: Add an overload for Vector2f.
-			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,x,y);
-			number_t x1,y1;
-			// TODO: Add an overload for Vector2f.
-			this->globalToLocal(x,y,x1,y1);
-			_NR<DisplayObject> d = hitTest(Vector2f(x,y), Vector2f(x1,y1), MOUSE_CLICK_HIT,true);
-			dispobj=d.getPtr();
-		}
-		if (dispobj!= this)
-			return false;
-	}
 	oldstate = currentState;
-	if(e->type == "mouseDown")
+	bool CondIdleToOverDown = false;
+	bool CondOutDownToIdle = false;
+	bool CondOutDownToOverDown = false;
+	bool CondOverDownToOutDown = false;
+	bool CondOverDownToOverUp = false;
+	bool CondOverUpToIdle = false;
+	bool CondIdleToOverUp = false;
+	bool CondOverDownToIdle = false;
+	if(e->type == "mouseDown" && dispatcher == this)
 	{
-		currentState = DOWN;
+		currentState = STATE_DOWN;
 		reflectState(oldstate);
 	}
 	else if(e->type == "mouseUp")
 	{
-		currentState = UP;
+		CondOverDownToOverUp = oldstate!=STATE_UP  && dispatcher == this;
+		currentState = STATE_UP;
 		reflectState(oldstate);
 	}
 	else if(e->type == "mouseOver")
 	{
-		currentState = OVER;
-		reflectState(oldstate);
+		CondIdleToOverDown = oldstate == STATE_OUT && e->buttonDown && dispatcher != this;
+		CondOutDownToOverDown = oldstate == STATE_DOWN && e->buttonDown  && dispatcher != this;
+		CondIdleToOverUp = oldstate==STATE_OUT && !e->buttonDown && dispatcher == this;
+		CondOverDownToIdle = oldstate==STATE_DOWN && !e->buttonDown && dispatcher != this;
+		if (dispatcher == this)
+		{
+			currentState = STATE_OVER;
+			reflectState(oldstate);
+		}
 	}
-	else if(e->type == "mouseOut")
+	else if(e->type == "mouseOut" && dispatcher == this)
 	{
+		CondOverDownToOutDown = oldstate!=STATE_OUT && e->buttonDown;
+		CondOverUpToIdle = (oldstate==STATE_UP || oldstate==STATE_OVER) && !e->buttonDown;
+		if (!e->buttonDown)
+		{
+			currentState = STATE_OUT;
+			reflectState(oldstate);
+		}
+	}
+	else if(e->type == "releaseOutside" && dispatcher == this)
+	{
+		CondOutDownToIdle = oldstate!=STATE_OUT;
 		currentState = STATE_OUT;
 		reflectState(oldstate);
 	}
+	else
+		return false;
 	if (buttontag)
 	{
 		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
 		{
-			if (  (it->CondIdleToOverDown && currentState==DOWN)
-				||(it->CondOutDownToIdle && oldstate==DOWN && currentState==STATE_OUT)
-				||(it->CondOutDownToOverDown && oldstate==DOWN && currentState==OVER)
-				||(it->CondOverDownToOutDown && (oldstate==DOWN || oldstate==OVER) && currentState==STATE_OUT)
-				||(it->CondOverDownToOverUp && (oldstate==DOWN || oldstate==OVER) && currentState==UP)
-				||(it->CondOverUpToIdle && (oldstate==UP || oldstate==OVER) && currentState==STATE_OUT)
-				||(it->CondIdleToOverUp && oldstate==STATE_OUT && currentState==OVER)
-				||(it->CondOverDownToIdle && oldstate==DOWN && currentState==OVER)
+			if (  (it->CondIdleToOverDown && CondIdleToOverDown)
+				||(it->CondOutDownToIdle && CondOutDownToIdle)
+				||(it->CondOutDownToOverDown && CondOutDownToOverDown)
+				||(it->CondOverDownToOutDown && CondOverDownToOutDown)
+				||(it->CondOverDownToOverUp && CondOverDownToOverUp)
+				||(it->CondOverUpToIdle && CondOverUpToIdle)
+				||(it->CondIdleToOverUp && CondIdleToOverUp)
+				||(it->CondOverDownToIdle && CondOverDownToIdle)
 				)
 			{
-				DisplayObjectContainer* c = getParent();
+				DisplayObjectContainer* c = lastParent;
 				while (c && !c->is<MovieClip>())
 					c = c->getParent();
 				if (c)
-				{
 					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
-				}
 			}
 		}
 	}
-	return AVM1HandleMouseEventStandard(dispobj,e);
+	return AVM1HandleMouseEventStandard(dispatcher,e);
 }
 void SimpleButton::AVM1HandlePressedEvent(ASObject* dispatcher)
 {
@@ -152,16 +156,14 @@ void SimpleButton::AVM1HandlePressedEvent(ASObject* dispatcher)
 	{
 		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
 		{
-			if ((it->CondOverUpToOverDown && (oldstate==UP || oldstate==OVER) && currentState==DOWN)
+			if ((it->CondOverUpToOverDown && (oldstate==STATE_UP || oldstate==STATE_OVER) && currentState==STATE_DOWN)
 				)
 			{
-				DisplayObjectContainer* c = getParent();
+				DisplayObjectContainer* c = lastParent;
 				while (c && !c->is<MovieClip>())
 					c = c->getParent();
 				if (c)
-				{
 					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
-				}
 			}
 		}
 	}
@@ -236,8 +238,8 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 					execute = code==AS3KEYCODE_BACKQUOTE;break;
 				default:// A-Z
 					execute = it->CondKeyPress>=65
-							&& it->CondKeyPress<=90
-							&& (uint32_t)code-(uint32_t)AS3KEYCODE_A==it->CondKeyPress-65;
+							  && it->CondKeyPress<=90
+							  && (uint32_t)code-(uint32_t)AS3KEYCODE_A==it->CondKeyPress-65;
 					break;
 			}
 		}
@@ -311,7 +313,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 					execute = code==AS3KEYCODE_EQUAL;break;
 				case 91:// [
 					execute = code==AS3KEYCODE_LEFTBRACKET;break;
-				case 92:// 
+				case 92://
 					execute = code==AS3KEYCODE_BACKSLASH;break;
 				case 93:// ]
 					execute = code==AS3KEYCODE_RIGHTBRACKET;break;
@@ -319,17 +321,18 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 					execute = code==AS3KEYCODE_BACKQUOTE;break;
 				default:// a-z
 					execute = it->CondKeyPress>=97
-							&& it->CondKeyPress<=122
-							&& (uint32_t)code-(uint32_t)AS3KEYCODE_A==it->CondKeyPress-97;
+							  && it->CondKeyPress<=122
+							  && (uint32_t)code-(uint32_t)AS3KEYCODE_A==it->CondKeyPress-97;
 					break;
 			}
 		}
 		if (execute)
 		{
-			DisplayObjectContainer* c = getParent();
+			DisplayObjectContainer* c = lastParent;
 			while (c && !c->is<MovieClip>())
 				c = c->getParent();
-			ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+			if (c)
+				ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
 			handled=true;
 		}
 	}
@@ -373,17 +376,19 @@ void SimpleButton::defaultEventBehavior(_R<Event> e)
 {
 	bool is_valid = true;
 	BUTTONSTATE oldstate = currentState;
-	if(e->type == "mouseDown")
-		currentState = DOWN;
-	else if(e->type == "releaseOutside")
-		currentState = UP;
-	else if(e->type == "rollOver" || e->type == "mouseOver" || e->type == "mouseUp")
-		currentState = OVER;
-	else if(e->type == "rollOut" || e->type == "mouseOut")
-		currentState = STATE_OUT;
-	else
-		is_valid = false;
-
+	if (e->is<MouseEvent>())
+	{
+		if(e->type == "mouseDown")
+			currentState = STATE_DOWN;
+		else if(e->type == "releaseOutside")
+			currentState = STATE_UP;
+		else if(e->type == "rollOver" || e->type == "mouseOver" || e->type == "mouseUp")
+			currentState = STATE_OVER;
+		else if((e->type == "rollOut" || e->type == "mouseOut") && !e->as<MouseEvent>()->buttonDown)
+			currentState = STATE_OUT;
+		else
+			is_valid = false;
+	}
 	if (is_valid)
 		reflectState(oldstate);
 	else
@@ -454,40 +459,30 @@ bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, nu
 }
 
 SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DisplayObject *dS, DisplayObject *hTS,
-				DisplayObject *oS, DisplayObject *uS, DefineButtonTag *tag)
-	: DisplayObjectContainer(wrk,c), downState(dS), hitTestState(hTS), overState(oS), upState(uS),
-	  buttontag(tag),currentState(STATE_OUT),oldstate(STATE_OUT),enabled(true),useHandCursor(true),hasMouse(false)
+						   DisplayObject *oS, DisplayObject *uS, DefineButtonTag *tag)
+	: DisplayObjectContainer(wrk,c), lastParent(nullptr),
+	downState(dS), hitTestState(hTS), overState(oS), upState(uS),
+	buttontag(tag),currentState(STATE_OUT),oldstate(STATE_OUT),enabled(true),useHandCursor(true),hasMouse(false)
 {
 	subtype = SUBTYPE_SIMPLEBUTTON;
-	/* When called from DefineButton2Tag::instance, they are not constructed yet
-	 * TODO: construct them here for once, or each time they become visible?
-	 */
 	if(dS)
 	{
 		dS->addStoredMember();
-		dS->advanceFrame(false);
-		dS->initFrame();
 		getSystemState()->stage->removeHiddenObject(dS); // avoid any changes when not visible
 	}
 	if(hTS)
 	{
 		hTS->addStoredMember();
-		hTS->advanceFrame(false);
-		hTS->initFrame();
 		getSystemState()->stage->removeHiddenObject(hTS); // avoid any changes when not visible
 	}
 	if(oS)
 	{
 		oS->addStoredMember();
-		oS->advanceFrame(false);
-		oS->initFrame();
 		getSystemState()->stage->removeHiddenObject(oS); // avoid any changes when not visible
 	}
 	if(uS)
 	{
 		uS->addStoredMember();
-		uS->advanceFrame(false);
-		uS->initFrame();
 		getSystemState()->stage->removeHiddenObject(uS); // avoid any changes when not visible
 	}
 	if (tag)
@@ -558,6 +553,9 @@ void SimpleButton::constructionComplete(bool _explicit)
 void SimpleButton::finalize()
 {
 	DisplayObjectContainer::finalize();
+	if (lastParent)
+		lastParent->removeStoredMember();
+	lastParent=nullptr;
 	if (downState)
 		downState->removeStoredMember();
 	downState=nullptr;
@@ -579,6 +577,9 @@ void SimpleButton::finalize()
 
 bool SimpleButton::destruct()
 {
+	if (lastParent)
+		lastParent->removeStoredMember();
+	lastParent=nullptr;
 	if (downState)
 		downState->removeStoredMember();
 	downState=nullptr;
@@ -604,6 +605,8 @@ void SimpleButton::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	DisplayObjectContainer::prepareShutdown();
+	if (lastParent)
+		lastParent->prepareShutdown();
 	if(downState)
 		downState->prepareShutdown();
 	if(hitTestState)
@@ -626,6 +629,8 @@ void SimpleButton::prepareShutdown()
 bool SimpleButton::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
+	if (lastParent)
+		ret = lastParent->countAllCylicMemberReferences(gcstate) || ret;
 	if (downState)
 		ret = downState->countAllCylicMemberReferences(gcstate) || ret;
 	if (hitTestState)
@@ -635,7 +640,7 @@ bool SimpleButton::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	if (upState)
 		ret = upState->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
-	
+
 }
 IDrawable *SimpleButton::invalidate(bool smoothing)
 {
@@ -648,7 +653,7 @@ void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefr
 	hasChanged=true;
 	incRef();
 	q->addToInvalidateQueue(_MR(this));
-	
+
 }
 
 uint32_t SimpleButton::getTagID() const
@@ -705,31 +710,31 @@ void SimpleButton::reflectState(BUTTONSTATE oldstate)
 		_removeChild(dynamicDisplayList.front(),true);
 	}
 
-	if((currentState == UP || currentState == STATE_OUT) && upState)
+	if((currentState == STATE_UP || currentState == STATE_OUT) && upState)
 	{
 		resetStateToStart(upState);
 		upState->incRef();
 		_addChildAt(upState,0);
 	}
-	else if(currentState == DOWN && downState)
+	else if(currentState == STATE_DOWN && downState)
 	{
 		resetStateToStart(downState);
 		downState->incRef();
 		_addChildAt(downState,0);
 	}
-	else if(currentState == OVER && overState)
+	else if(currentState == STATE_OVER && overState)
 	{
 		resetStateToStart(overState);
 		overState->incRef();
 		_addChildAt(overState,0);
 	}
-	if ((oldstate == OVER || oldstate == UP) && currentState == STATE_OUT && soundchannel_OverUpToIdle)
+	if ((oldstate == STATE_OVER || oldstate == STATE_UP) && currentState == STATE_OUT && soundchannel_OverUpToIdle)
 		soundchannel_OverUpToIdle->play();
-	if (oldstate == STATE_OUT && (currentState == OVER || currentState == UP) && soundchannel_IdleToOverUp)
+	if (oldstate == STATE_OUT && (currentState == STATE_OVER || currentState == STATE_UP) && soundchannel_IdleToOverUp)
 		soundchannel_IdleToOverUp->play();
-	if ((oldstate == OVER || oldstate == UP) && currentState == DOWN && soundchannel_OverUpToOverDown)
+	if ((oldstate == STATE_OVER || oldstate == STATE_UP) && currentState == STATE_DOWN && soundchannel_OverUpToOverDown)
 		soundchannel_OverUpToOverDown->play();
-	if (oldstate == DOWN && currentState == UP && soundchannel_OverDownToOverUp)
+	if (oldstate == STATE_DOWN && currentState == STATE_UP && soundchannel_OverDownToOverUp)
 		soundchannel_OverDownToOverUp->play();
 }
 void SimpleButton::resetStateToStart(DisplayObject* obj)

@@ -265,7 +265,25 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 	bool ret = false;
 
 	if(dynamicDisplayList.empty())
+	{
+		// values for invalid bounds, see ruffle avm1/movieclip_invalid_get_bounds_<x> tests
+		if (loadedFrom->version >= 8 || getSystemState()->getSwfVersion() >= 8)
+		{
+			//needsNewInvalidRectValues=true;
+			xmin= number_t(0x8000000)/20.0;
+			xmax=number_t(0x8000000)/20.0;
+			ymin=number_t(0x8000000)/20.0;
+			ymax=number_t(0x8000000)/20.0;
+		}
+		else
+		{
+			xmin= number_t(0x7ffffff)/20.0;
+			xmax=number_t(0x7ffffff)/20.0;
+			ymin=number_t(0x7ffffff)/20.0;
+			ymax=number_t(0x7ffffff)/20.0;
+		}
 		return false;
+	}
 	if (visibleOnly)
 	{
 		if (!this->isVisible())
@@ -310,6 +328,13 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 				ymax=tymax;
 				ret=true;
 			}
+		}
+		else
+		{
+			xmin=txmin;
+			xmax=txmax;
+			ymin=tymin;
+			ymax=tymax;
 		}
 	}
 	if (ret)
@@ -382,34 +407,18 @@ void DisplayObjectContainer::LegacyChildEraseDeletionMarked()
 	}
 }
 
-void DisplayObjectContainer::rememberLastFrameChildren()
-{
-	assert(this->is<MovieClip>());
-	for (auto it=mapDepthToLegacyChild.begin(); it != mapDepthToLegacyChild.end(); it++)
-	{
-		if (this->as<MovieClip>()->state.next_FP < it->second->placeFrame)
-			continue;
-		it->second->incRef();
-		it->second->addStoredMember();
-		mapFrameDepthToLegacyChildRemembered.insert(make_pair(it->first,it->second));
-	}
-}
-
-void DisplayObjectContainer::clearLastFrameChildren()
-{
-	auto it=mapFrameDepthToLegacyChildRemembered.begin();
-	while (it != mapFrameDepthToLegacyChildRemembered.end())
-	{
-		it->second->removeStoredMember();
-		it = mapFrameDepthToLegacyChildRemembered.erase(it);
-	}
-}
-
-DisplayObject* DisplayObjectContainer::getLastFrameChildAtDepth(int depth)
+DisplayObject* DisplayObjectContainer::getLastFrameChildAtDepth(int depth, uint32_t CharacterId)
 {
 	auto it=mapFrameDepthToLegacyChildRemembered.find(depth);
 	if (it != mapFrameDepthToLegacyChildRemembered.end())
-		return it->second;
+	{
+		if (it->second->getTagID()==CharacterId)
+		{
+			it->second->markedForLegacyDeletion=false;
+			it->second->incRef();
+			return it->second;
+		}
+	}
 	return nullptr;
 }
 
@@ -816,8 +825,20 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 		if (this->hasPropertyByMultiname(objName,true,false,this->getInstanceWorker()))
 			setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 	}
-	obj->placeFrame=UINT32_MAX;
+	if (!inskipping && obj->is<SimpleButton>())
+	{
+		auto inserted = mapFrameDepthToLegacyChildRemembered.insert(make_pair(depth,obj));
+		obj->incRef();
+		obj->addStoredMember();
+		obj->markedForLegacyDeletion=true;
+		if ((*inserted.first).second != obj)
+		{
+			(*inserted.first).second->removeStoredMember();
+			(*inserted.first).second = obj;
+		}
+	}
 	obj->afterLegacyDelete(inskipping);
+
 	//this also removes it from depthToLegacyChild
 	_removeChild(obj,false,inskipping);
 }
@@ -936,10 +957,10 @@ void DisplayObjectContainer::purgeLegacyChildren()
 	auto i = mapDepthToLegacyChild.begin();
 	while( i != mapDepthToLegacyChild.end() )
 	{
-		if (i->first < 0 && is<MovieClip>() && i->second->placeFrame > as<MovieClip>()->state.FP)
+		DisplayObject* obj = i->second;
+		if (i->first < 0 && is<MovieClip>() && obj->placeFrame > as<MovieClip>()->state.FP)
 		{
 			legacyChildrenMarkedForDeletion.insert(i->first);
-			DisplayObject* obj = i->second;
 			obj->markedForLegacyDeletion=true;
 			if(obj->name != BUILTIN_STRINGS::EMPTY)
 			{
@@ -949,6 +970,17 @@ void DisplayObjectContainer::purgeLegacyChildren()
 				objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 				if (this->hasPropertyByMultiname(objName,true,false,this->getInstanceWorker()))
 					setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom,ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+			}
+		}
+		if (i->first < 0 && is<MovieClip>() && obj->placeFrame <= as<MovieClip>()->state.FP)
+		{
+			auto inserted = mapFrameDepthToLegacyChildRemembered.insert(make_pair(i->first,obj));
+			obj->incRef();
+			obj->addStoredMember();
+			if ((*inserted.first).second != obj)
+			{
+				(*inserted.first).second->removeStoredMember();
+				(*inserted.first).second = obj;
 			}
 		}
 		i++;

@@ -85,8 +85,10 @@ EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdl
 	width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false),
 	startInFullScreenMode(false),startscalefactor(1.0)
 {
-#ifdef _WIN32
+#if   defined(_WIN32)
 	platformOS="Windows";
+#elif defined(__APPLE__)
+	platformOS="Mac OS";
 #else
 	platformOS="Linux";
 #endif
@@ -293,19 +295,18 @@ bool initSDL()
 	return sdl_available;
 }
 /* main loop handling */
-static int mainloop_runner(void* d)
+static int mainloop_runner(IEventLoop* th)
 {
-	IEventLoop* th = (IEventLoop*)d;
 	if (!initSDL())
 	{
 		LOG(LOG_ERROR,"Unable to initialize SDL:"<<SDL_GetError());
-		EngineData::mainthread_initialized.signal();
+		//EngineData::mainthread_initialized.signal();
 		return 0;
 	}
 	else
 	{
 		EngineData::mainthread_running = true;
-		EngineData::mainthread_initialized.signal();
+		//EngineData::mainthread_initialized.signal();
 		Optional<LSEventStorage> event;
 		while (event = th->waitEvent(getSys()), event.hasValue())
 		{
@@ -377,8 +378,9 @@ void EngineData::startSDLEventTicker(SystemState* sys)
 bool EngineData::startSDLMain(EventLoop* eventLoop)
 {
 	assert(!mainLoopThread);
-	mainLoopThread = SDL_CreateThread(mainloop_runner,"mainloop",eventLoop);
-	mainthread_initialized.wait();
+	//mainLoopThread = SDL_CreateThread(mainloop_runner,"mainloop",eventLoop);
+	//mainthread_initialized.wait();
+	mainloop_runner(eventLoop);
 	return mainthread_running;
 }
 
@@ -470,9 +472,7 @@ void EngineData::initGLEW()
 {
 //For now GLEW does not work with GLES2
 #ifdef ENABLE_GLES2
-#ifdef GL_DEPTH24_STENCIL8_OES
-	supportPackedDepthStencil=true;
-#endif
+	supportPackedDepthStencil=SDL_GL_ExtensionSupported("GL_OES_packed_depth_stencil");
 #else
 	//Now we can initialize GLEW
 	GLenum err = glewInit();
@@ -1430,12 +1430,11 @@ void EngineData::exec_glBindRenderbuffer(uint32_t renderBuffer)
 	glBindRenderbuffer(GL_RENDERBUFFER,renderBuffer);
 }
 
-void EngineData::
-	exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(uint32_t width, uint32_t height)
+void EngineData::exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(uint32_t width, uint32_t height)
 {
 #ifdef ENABLE_GLES2
 #ifdef GL_DEPTH24_STENCIL8_OES
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH24_STENCIL8_OES,width,height);
+	glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH24_STENCIL8_OES,width,height);
 #endif
 #else
 	glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH24_STENCIL8,width,height);
@@ -1444,7 +1443,10 @@ void EngineData::
 
 void EngineData::exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(uint32_t depthStencilRenderBuffer)
 {
-#ifndef ENABLE_GLES2
+#ifdef ENABLE_GLES2
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);
+#else
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER,depthStencilRenderBuffer);
 #endif
 }

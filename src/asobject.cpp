@@ -2725,7 +2725,10 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 			ASATOM_DECREF(func);
 		}
 		if (dispobj && ((dispobj == this && !dispobj->is<DisplayObject>())
-				|| (dispobj->as<DisplayObject>()->isVisible() && (this->is<MovieClip>() || this->is<SimpleButton>())  && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>()))))
+				|| (dispobj->as<DisplayObject>()->isVisible()
+					&& (this->is<SimpleButton>()
+						||(this->is<MovieClip>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>())))
+						)))
 		{
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
 			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);

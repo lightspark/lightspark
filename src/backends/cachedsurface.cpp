@@ -297,7 +297,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 		return;
 	if (!state->mask.isNull() && !state->mask->state)
 		return;
-	if((!state->isMask && !state->clipdepth && !state->visible) || state->alpha==0.0)
+	if((!state->isMask && !state->clipdepth && !state->visible && !container) || state->alpha==0.0)
 		return;
 	MATRIX _matrix;
 	if (startmatrix)

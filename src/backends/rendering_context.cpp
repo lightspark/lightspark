@@ -31,7 +31,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <stack>
-#include "lsopengl.h"
 #include "platforms/engineutils.h"
 #include "backends/rendering_context.h"
 #include "logger.h"

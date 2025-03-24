@@ -289,7 +289,6 @@ bool initSDL()
 			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24 );
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);// needed for nanovg
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);// needed for nanovg
-			SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #if defined(ENABLE_GLES2)
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);

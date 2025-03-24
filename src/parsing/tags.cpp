@@ -1871,9 +1871,7 @@ void PlaceObjectTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	placedTag->loadedFrom->checkBinding(placedTag);
 	DisplayObject *toAdd = nullptr;
 	// check if we can reuse the DisplayObject from the last declared frame (only relevant if we are moving backwards in the timeline)
-	toAdd = parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth);
-	if (toAdd)
-		toAdd->incRef();
+	toAdd = parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth,CharacterId);
 	if (!toAdd)
 	{
 		//We can create the object right away
@@ -1986,9 +1984,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		if (!exists)
 		{
 			// check if we can reuse the DisplayObject from the last declared frame (only relevant if we are moving backwards in the timeline)
-			toAdd = parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth);
-			if (toAdd)
-				toAdd->incRef();
+			toAdd = parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth,CharacterId);
 		}
 		if (!toAdd)
 		{

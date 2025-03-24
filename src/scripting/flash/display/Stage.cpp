@@ -757,10 +757,10 @@ void Stage::executeAVM1Scripts(bool implicit)
 		{
 			if ((*itscr).isEventScript)
 				(*itscr).clip->AVM1EventScriptsAdded=false;
-			if ((*itscr).clip->isOnStage())
+			if (!(*itscr).clip->markedForLegacyDeletion)
 				(*itscr).execute();
 			else
-				(*itscr).clip->decRef(); // was increffed in AVM1AddScriptEvents 
+				(*itscr).clip->decRef(); // was increffed in AVM1AddScriptEvents
 			itscr = avm1scriptstoexecute.erase(itscr);
 		}
 		avm1ScriptMutex.unlock();

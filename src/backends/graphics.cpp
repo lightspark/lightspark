@@ -1139,26 +1139,6 @@ RefreshableDrawable::RefreshableDrawable(float _x, float _y, float _w, float _h,
 {
 }
 
-BitmapRenderer::BitmapRenderer(_NR<BitmapContainer> _data,
-		float _x, float _y, float _w, float _h, float _xs, float _ys,
-		bool _ismask, bool _cacheAsBitmap,
-		float _a,
-		const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m)
-	: IDrawable(_w, _h, _x, _y, _xs, _ys, 1, 1, _ismask,_cacheAsBitmap,1.0,_a,
-				_colortransform,_smoothing,_blendmode,_m)
-	, data(_data)
-{
-}
-
-uint8_t *BitmapRenderer::getPixelBuffer(bool *isBufferOwner, uint32_t* bufsize)
-{
-	if (isBufferOwner)
-		*isBufferOwner=false;
-	if (bufsize)
-		*bufsize=data->getWidth()*data->getHeight()*4;
-	return data->getData();
-}
-
 uint8_t* CharacterRenderer::upload(bool refresh)
 {
 	return this->data;

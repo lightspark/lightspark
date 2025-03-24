@@ -427,7 +427,7 @@ void DisplayObject::onSetName(uint32_t oldName)
 			asAtom val = asAtomHandler::fromObject(this);
 			// use internal version to avoid any unwanted sideeffects (events/addChild/removeChild)
 			parent->setVariableByMultiname_intern(m, val, ASObject::CONST_NOT_ALLOWED, nullptr,nullptr, wrk);
-			
+
 			if (oldName != BUILTIN_STRINGS::EMPTY)
 			{
 				m.name_s_id = oldName;
@@ -452,7 +452,7 @@ void DisplayObject::onSetScrollRect(_NR<Rectangle> oldValue)
 		res->y=this->scrollRect->y;
 		res->width=this->scrollRect->width;
 		res->height=this->scrollRect->height;
-		
+
 		this->scrollRect = _MR(res);
 		this->scrollRect->addUser(this);
 	}
@@ -479,7 +479,7 @@ void DisplayObject::updatedRect()
 		requestInvalidation(getSystemState());
 	else
 		requestInvalidationFilterParent();
-	
+
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getter_opaqueBackground)
@@ -612,7 +612,7 @@ void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 		{
 			p->requestInvalidationFilterParent(q);
 			break;
-		}	
+		}
 		p = p->getParent();
 	}
 }
@@ -666,7 +666,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_cacheAsBitmap)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getTransform)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	
+
 	th->incRef();
 	ret = asAtomHandler::fromObject(Class<Transform>::getInstanceS(wrk,_MR(th)));
 }
@@ -1230,7 +1230,7 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 	cachedSurface->isInitialized=true;
 	cachedSurface->wasUpdated=true;
 }
-//TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results, 
+//TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results,
 //this way they have less pb with precision.
 Vector2f DisplayObject::localToGlobal(const Vector2f& point, bool fromcurrentrendering) const
 {
@@ -1336,7 +1336,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 	ARG_CHECK(ARG_UNPACK (val));
 	if (!th->loadedFrom->usesActionScript3) // AVM1 uses alpha values from 0-100
 		val /= 100.0;
-	
+
 	if (th->colorTransform.isNull())
 		th->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(th->getInstanceWorker()));
 
@@ -1350,7 +1350,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 			th->requestInvalidation(wrk->getSystemState(),false);
 		else
 			th->requestInvalidationFilterParent();
-		
+
 	}
 }
 
@@ -1574,7 +1574,7 @@ void DisplayObject::setY(number_t val)
 void DisplayObject::setZ(number_t val)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"setting DisplayObject.z has no effect");
-	
+
 	//Stop using the legacy matrix
 	if(useLegacyMatrix)
 		useLegacyMatrix=false;
@@ -1692,7 +1692,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getLoaderInfo)
 		asAtomHandler::setNull(ret);
 		return;
 	}
-	
+
 	r->loaderInfo->incRef();
 	ret = asAtomHandler::fromObject(r->loaderInfo);
 }
@@ -1757,7 +1757,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setBlendMode)
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	tiny_string val;
 	ARG_CHECK(ARG_UNPACK(val));
-	
+
 	AS_BLENDMODE oldblendmode= th->blendMode;
 	th->blendMode = BLENDMODE_NORMAL;
 	if (val == "add") th->blendMode = BLENDMODE_ADD;
@@ -1887,7 +1887,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getRoot)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	_NR<DisplayObject> res;
-	
+
 	if (th->isLoadedRootObject())
 		res = _NR<DisplayObject>(th);
 	else if (th->is<Stage>())
@@ -2242,7 +2242,7 @@ IDrawable* DisplayObject::getFilterDrawable(bool smoothing)
 		return nullptr;
 	}
 	MATRIX matrix = getMatrix();
-	
+
 	bool isMask=false;
 	MATRIX m;
 	m.scale(matrix.getScaleX(),matrix.getScaleY());
@@ -2414,7 +2414,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestObject)
 	number_t intersect_xmin = dmax(xmin, xmin2);
 	number_t intersect_ymax = dmin(ymax, ymax2);
 	number_t intersect_ymin = dmax(ymin, ymin2);
-	asAtomHandler::setBool(ret,(intersect_xmax > intersect_xmin) && 
+	asAtomHandler::setBool(ret,(intersect_xmax > intersect_xmin) &&
 			  (intersect_ymax > intersect_ymin));
 }
 
@@ -3167,9 +3167,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_localToGlobal)
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	assert_and_throw(argslen == 1);
 
-	
+
 	ASObject* pt=asAtomHandler::toObject(args[0],wrk);
-	
+
 	asAtom x = asAtomHandler::fromInt(0);
 	asAtom y = asAtomHandler::fromInt(0);
 	multiname mx(nullptr);
@@ -3197,9 +3197,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_globalToLocal)
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	assert_and_throw(argslen == 1);
 
-	
+
 	ASObject* pt=asAtomHandler::toObject(args[0],wrk);
-	
+
 	asAtom x = asAtomHandler::fromInt(0);
 	asAtom y = asAtomHandler::fromInt(0);
 	multiname mx(nullptr);
@@ -3273,8 +3273,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 
-	ASObject* o =  new_asobject(wrk);
-	ret = asAtomHandler::fromObject(o);
 	DisplayObject* target= th;
 	if(argslen>=1) // contrary to spec adobe allows getBounds with zero parameters
 	{
@@ -3292,7 +3290,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 		}
 		target =asAtomHandler::as<DisplayObject>(t);
 	}
-	
+	ASObject* o =  new_asobject(wrk);
+	ret = asAtomHandler::fromObject(o);
 	//Compute the transformation matrix
 	MATRIX m;
 	DisplayObject* cur=th;
@@ -3375,7 +3374,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_toString)
 void DisplayObject::AVM1SetupMethods(Class_base* c)
 {
 	// setup all methods and properties available for MovieClips in AVM1
-	
+
 	c->destroyContents();
 	c->borrowedVariables.destroyContents();
 	c->setDeclaredMethodByQName("hitTest","",c->getSystemState()->getBuiltinFunction(AVM1_hitTest),NORMAL_METHOD,true);
@@ -3453,7 +3452,7 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path, asAtom* mem
 			*member=asAtomHandler::invalidAtom;
 		return nullptr;
 	}
-	// path "/stage" is mapped to the root movie (?) 
+	// path "/stage" is mapped to the root movie (?)
 	if (this == getSystemState()->mainClip && subpath == "stage")
 	{
 		if (member)
@@ -3480,7 +3479,7 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path, asAtom* mem
 		tiny_string localname = subpath.substr_bytes(posdot+1,subpath.numBytes()-posdot-1);
 		return parent->AVM1GetClipFromPath(localname,member);
 	}
-	
+
 	multiname objName(nullptr);
 	objName.name_type=multiname::NAME_STRING;
 	objName.name_s_id=getSystemState()->getUniqueStringId(subpath);
@@ -3798,7 +3797,7 @@ void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> o
 {
 	bool caseSensitive = getInstanceWorker()->AVM1callStack.back()->isCaseSensitive();
 	uint32_t nameID = getSystemState()->getUniqueStringId(name, caseSensitive);
-	
+
 	auto it = avm1variables.find(nameID);
 	if (it != avm1variables.end())
 	{
@@ -3814,7 +3813,7 @@ void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> o
 		obj->incRef();
 		obj->addStoredMember();
 		avm1variables[nameID] = v;
-		
+
 		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=nameID;

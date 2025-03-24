@@ -215,6 +215,9 @@ SET(PPAPI_PLUGIN_DIRECTORY "${LIBDIR}/PepperFlash" CACHE STRING "Directory to in
 SET(MANUAL_DIRECTORY "share/man" CACHE STRING "Directory to install manual to (UNIX only)")
 SET(ENABLE_SSE2 TRUE CACHE BOOL "Enable use of SSE2 asm instructions (x86/x86_64 only)")
 SET(INSTALL_SYSTEM_CONFIGURATION TRUE CACHE BOOL "Install system wide configuration file (UNIX only)")
+IF(APPLE)
+SET(ENABLE_SSE2 FALSE)
+ENDIF(APPLE)
 
 IF(ENABLE_GLES3)
 SET(COMPILE_NPAPI_PLUGIN FALSE)

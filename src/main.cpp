@@ -616,12 +616,6 @@ int main(int argc, char* argv[])
 	SystemState::staticInit();
 
 	SDLEventLoop* eventLoop = new SDLEventLoop(new Time());
-	if (!EngineData::startSDLMain(eventLoop))
-	{
-		LOG(LOG_ERROR,"SDL initialization failed, aborting");
-		SystemState::staticDeinit();
-		exit(3);
-	}
 	char absolutepath[PATH_MAX];
 	if (realpath(fileName,absolutepath) == nullptr)
 	{
@@ -719,6 +713,13 @@ int main(int argc, char* argv[])
 
 	//Start the parser
 	sys->addJob(pt);
+	
+	if (!EngineData::startSDLMain(eventLoop))
+	{
+		LOG(LOG_ERROR,"SDL initialization failed, aborting");
+		SystemState::staticDeinit();
+		exit(3);
+	}
 
 	/* Destroy blocks until the 'terminated' flag is set by
 	 * SystemState::setShutdownFlag.

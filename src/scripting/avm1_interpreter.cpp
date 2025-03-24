@@ -584,6 +584,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 {
 	Locker l(executeactionmutex);
 	bool clip_isTarget=false;
+	bool invalidTarget=false;
 	assert(!clip->needsActionScript3());
 	SystemState* sys = clip->getSystemState();
 	ASWorker* wrk = sys->worker;
@@ -894,6 +895,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionNextFrame "<<clip->toDebugString());
 					break;
 				}
+				if (invalidTarget)
+				{
+					break;
+				}
 				uint32_t frame = clip->as<MovieClip>()->state.FP+1;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNextFrame "<<frame);
 				clip->as<MovieClip>()->AVM1gotoFrame(frame,true,true);
@@ -904,6 +909,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (!clip->is<MovieClip>())
 				{
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionPreviousFrame "<<clip->toDebugString());
+					break;
+				}
+				if (invalidTarget)
+				{
 					break;
 				}
 				uint32_t frame = clip->as<MovieClip>()->state.FP-1;
@@ -918,6 +927,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionPlay "<<clip->toDebugString());
 					break;
 				}
+				if (invalidTarget)
+				{
+					break;
+				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPlay");
 				clip->as<MovieClip>()->setPlaying();
 				break;
@@ -927,6 +940,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (!clip->is<MovieClip>())
 				{
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" no MovieClip for ActionStop "<<clip->toDebugString());
+					break;
+				}
+				if (invalidTarget)
+				{
 					break;
 				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStop");
@@ -1158,6 +1175,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						clip = c != nullptr ? c : clip->AVM1getRoot();
 						if (c == nullptr)
 							LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetTarget2 clip not found:"<<s);
+						clip->incRef();
+						clip_isTarget=true;
 					}
 				}
 				clip->incRef();
@@ -2396,6 +2415,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					break;
 				}
 				uint32_t frame = uint32_t(*it++) | ((*it++)<<8);
+				if (invalidTarget)
+				{
+					break;
+				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGotoFrame "<<frame);
 				clip->as<MovieClip>()->AVM1gotoFrame(frame,true,!clip->as<MovieClip>()->state.stop_FP,true);
 				break;
@@ -2477,13 +2500,31 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					clip->decRef();
 				clip_isTarget=false;
 				if (s.empty())
+				{
 					clip = originalclip;
+					invalidTarget=!clip->isOnStage();
+				}
 				else
 				{
 					auto newTarget = clip->AVM1GetClipFromPath(s);
+					if (!clip->isOnStage())
+					{
+						// clip is not on stage, so we set invalidTarget
+						// according to ruffle everything except playhead commands (play/stop/gotoframe...) is handled on root
+						// see ruffle test avm1/removed_base_clip_tell_target
+						invalidTarget=true;
+						if (clip->getSystemState()->use_testrunner_date)
+						{
+							// Adobe doesn't display any message, but for some reason ruffle does,
+							// so we do the same if we are in the testrunner
+							tiny_string msg("Target not found: Target=\"");
+							msg += s;
+							msg += "\" Base=\"?\"";
+							clip->getSystemState()->trace(msg);
+						}
+						newTarget=nullptr;
+					}
 					clip = newTarget != nullptr ? newTarget : clip->AVM1getRoot();
-					if (newTarget == nullptr)
-						LOG(LOG_ERROR,"AVM1: ActionSetTarget clip not found:"<<s);
 				}
 				clip->incRef();
 				context->scope->setTargetScope(_MR(clip));
@@ -2498,6 +2539,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				tiny_string s((const char*)&(*it));
 				it += s.numBytes()+1;
+				if (invalidTarget)
+				{
+					break;
+				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGotoLabel "<<s);
 				clip->as<MovieClip>()->AVM1gotoFrameLabel(s,true,true);
 				break;
@@ -2831,6 +2876,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					ASATOM_DECREF(a);
 					break;
 				}
+				if (invalidTarget)
+				{
+					ASATOM_DECREF(a);
+					break;
+				}
 				if (asAtomHandler::isString(a))
 				{
 					tiny_string s = asAtomHandler::toString(a,wrk);
@@ -2838,7 +2888,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						LOG(LOG_NOT_IMPLEMENTED,"AVM1: GotFrame2 with bias and label:"<<asAtomHandler::toDebugString(a));
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGotoFrame2 label "<<s);
 					clip->as<MovieClip>()->AVM1gotoFrameLabel(s,!playflag,clip->as<MovieClip>()->state.stop_FP == playflag);
-					
+
 				}
 				else
 				{

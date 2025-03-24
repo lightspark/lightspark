@@ -41,7 +41,6 @@ class TextData;
 class LineData;
 class CairoPangoRenderer;
 class RefreshableDrawable;
-class BitmapRenderer;
 class InvalidateQueue;
 class CharacterRenderer;
 class ITextureUploadable;

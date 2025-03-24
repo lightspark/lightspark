@@ -77,14 +77,14 @@ vec4 getGradientColor(float pos)
 			break;
 	}
 
+	if (i == 0 && pos < stop)
+		return gradientColors[i];
 	if (stop < 0.0)
 		stop = 1.0;
-	if (i == 0)
-		prevStop = 0.0;
 
-	vec4 startColor = gradientColors[i];
-	vec4 endColor = gradientColors[i + 1];
-	float _step = prevStop == stop || stop == 0.0 ? 1.0 : stop - prevStop;
+	vec4 startColor = gradientColors[i - int(i != 0 && stop <= 1.0)];
+	vec4 endColor = gradientColors[i + int(i == 0)];
+	float _step = stop != prevStop ? stop - prevStop : 1.0;
 
 	vec4 color = mix(startColor, endColor, (pos - prevStop) / _step);
 

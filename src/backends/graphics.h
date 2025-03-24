@@ -564,21 +564,6 @@ public:
 	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override { return nullptr; }
 };
 
-class BitmapRenderer: public IDrawable
-{
-protected:
-	_NR<BitmapContainer> data;
-public:
-	BitmapRenderer(_NR<BitmapContainer> _data, float _x, float _y, float _w, float _h
-				  , float _xs, float _ys
-				  , bool _ismask, bool _cacheAsBitmap
-				  , float _a
-				  , const ColorTransformBase& _colortransform
-				  , SMOOTH_MODE _smoothing,AS_BLENDMODE _blendmode, const MATRIX& _m);
-	//IDrawable interface
-	uint8_t* getPixelBuffer(bool* isBufferOwner=nullptr, uint32_t* bufsize=nullptr) override;
-};
-
 class InvalidateQueue
 {
 protected:

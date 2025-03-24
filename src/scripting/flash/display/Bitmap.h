@@ -21,6 +21,7 @@
 #define SCRIPTING_FLASH_DISPLAY_BITMAP_H 1
 
 #include "scripting/flash/display/DisplayObject.h"
+#include "scripting/flash/display/TokenContainer.h"
 
 namespace lightspark
 {
@@ -34,7 +35,7 @@ class IntSize
 	IntSize(uint32_t w, uint32_t h):width(w),height(h){}
 };
 
-class Bitmap: public DisplayObject
+class Bitmap: public DisplayObject, public TokenContainer
 {
 friend class CairoTokenRenderer;
 private:
@@ -42,6 +43,8 @@ private:
 	void onSmoothingChanged(bool);
 	void onPixelSnappingChanged(tiny_string snapping);
 	Vector2 size;
+	FILLSTYLE fs;
+	tokensVector bitmaptokens;
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);

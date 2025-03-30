@@ -3157,7 +3157,7 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 		}
 		if (value->is<DisplayObject>())
 		{
-			AVM1Function* constr = value->as<DisplayObject>()->loadedFrom->AVM1getClassConstructor(value->as<DisplayObject>()->getTagID());
+			AVM1Function* constr = value->getInstanceWorker()->AVM1getClassConstructor(value->as<DisplayObject>());
 			bool res = type== constr;
 			if (!res && constr)
 			{
@@ -3169,7 +3169,7 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 					pr=pr->getprop_prototype();
 				}
 			}
-			return type== value->as<DisplayObject>()->loadedFrom->AVM1getClassConstructor(value->as<DisplayObject>()->getTagID());
+			return type== value->getInstanceWorker()->AVM1getClassConstructor(value->as<DisplayObject>());
 		}
 		proto = value->getprop_prototype();
 		while(proto)

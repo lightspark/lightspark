@@ -419,7 +419,18 @@ asAtom AVM1context::getVariable
 	// If variable resolution on the scope chain failed, then fallback
 	// to looking in either the target, or root clip.
 	if (!clip->hasPropertyByMultiname(m, true, true, wrk))
+	{
+		if (!isCaseSensitive() && clip->getSystemState()->avm1global)
+		{
+			// variable not found for swf <= 6, try to find builtin class with case sensitive name
+			m.name_s_id = sys->getUniqueStringId(path, true);
+			asAtom ret = asAtomHandler::invalidAtom;
+			clip->getSystemState()->avm1global->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk);
+			if (asAtomHandler::isValid(ret))
+				return ret;
+		}
 		return asAtomHandler::undefinedAtom;
+	}
 
 	clip->AVM1getVariableByMultiname
 	(
@@ -1729,7 +1740,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionTypeOf "<<asAtomHandler::toDebugString(obj));
 				asAtom res=asAtomHandler::invalidAtom;
 				if (asAtomHandler::is<MovieClip>(obj))
-					res = asAtomHandler::fromString(clip->getSystemState(),"movieclip");
+					res = asAtomHandler::fromStringID(BUILTIN_STRINGS::STRING_MOVIECLIP);
 				else if (asAtomHandler::is<Date>(obj))
 					res = asAtomHandler::fromStringID(BUILTIN_STRINGS::STRING_STRING);
 				else if (asAtomHandler::is<Class_base>(obj))

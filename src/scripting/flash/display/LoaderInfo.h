@@ -102,6 +102,7 @@ public:
 	void setComplete();
 	void setContent(DisplayObject* c);
 	bool fillBytesData(ByteArray* data);
+	Loader* getLoader() const { return loader; }
 };
 
 }

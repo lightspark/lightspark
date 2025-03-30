@@ -1696,17 +1696,11 @@ ASFUNCTIONBODY_ATOM(ASObject,registerClass)
 	tiny_string name;
 	_NR<IFunction> theClassConstructor;
 	ARG_CHECK(ARG_UNPACK(name)(theClassConstructor));
-	if (name.empty())
+	if (name.empty() || wrk->AVM1callStack.back()->exceptionthrown)
 		return;
-	if (!theClassConstructor.isNull())
-	{
-		ApplicationDomain* appDomain = nullptr;
-		if (theClassConstructor->is<AVM1Function>())
-			appDomain = theClassConstructor->as<AVM1Function>()->getClip()->loadedFrom;
-		if (!appDomain)
-			appDomain = wrk->getSystemState()->mainClip->applicationDomain.getPtr();
-		ret = asAtomHandler::fromBool(appDomain->AVM1registerTagClass(name,theClassConstructor));
-	}
+	uint32_t nameID = wrk->getSystemState()->getUniqueStringId(name,wrk->AVM1isCaseSensitive());
+	wrk->AVM1registerTagClass(nameID,theClassConstructor.getPtr());
+	ret = asAtomHandler::trueAtom;
 }
 ASFUNCTIONBODY_ATOM(ASObject,AVM1_IgnoreSetter)
 {
@@ -2064,6 +2058,28 @@ std::pair<asAtom, uint8_t> ASObject::AVM1searchPrototypeByMultiname
 GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath)
 {
 	GET_VARIABLE_RESULT res = getVariableByMultiname(ret,name,opt,wrk);
+	if (asAtomHandler::isInvalid(ret) && name.name_type == multiname::NAME_STRING &&
+			(name.name_s_id == BUILTIN_STRINGS::STRING_PROTO || name.name_s_id == BUILTIN_STRINGS::PROTOTYPE))
+	{
+		ASObject* o = nullptr;
+		o = getprop_prototype();
+		if (!o)
+		{
+			if (this->is<IFunction>())
+				o = this->as<IFunction>()->prototype.getPtr();
+			else if (this->is<Class_base>())
+				o = this->as<Class_base>()->prototype->getObj();
+			else
+				o = this->getClass()->prototype->getObj();
+		}
+		if (o)
+		{
+			o->incRef();
+			ret = asAtomHandler::fromObject(o);
+			return GETVAR_NORMAL;
+		}
+	}
+
 	if (asAtomHandler::isInvalid(ret) && !(opt & DONT_CHECK_PROTOTYPE))
 	{
 		auto pair = AVM1searchPrototypeByMultiname(name, isSlashPath, wrk);

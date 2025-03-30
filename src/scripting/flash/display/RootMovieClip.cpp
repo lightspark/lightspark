@@ -19,6 +19,7 @@
 
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/LoaderInfo.h"
+#include "scripting/flash/display/Loader.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/avm1/avm1display.h"
@@ -162,6 +163,8 @@ void RootMovieClip::constructionComplete(bool _explicit)
 				getInstanceWorker()->stage->_addChildAt(this,0);
 				this->setOnStage(true,true);
 			}
+			else if (this->loaderInfo && this->loaderInfo->getLoader())
+				this->loaderInfo->getLoader()->setContent(this);
 		}
 		return;
 	}

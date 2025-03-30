@@ -267,7 +267,9 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 	{
 		//Same domain
 		ApplicationDomain* parentDomain=nullptr;
-		if (getInstanceWorker()->currentCallContext)
+		if (this->loadedFrom)
+			parentDomain = this->loadedFrom;
+		if (!parentDomain && getInstanceWorker()->currentCallContext)
 			parentDomain = ABCVm::getCurrentApplicationDomain(getInstanceWorker()->currentCallContext);
 		if (parentDomain)
 			parentDomain->incRef();
@@ -431,6 +433,9 @@ void Loader::finalize()
 	if (contentLoaderInfo)
 		contentLoaderInfo->removeStoredMember();
 	contentLoaderInfo=nullptr;
+	if (avm1container)
+		avm1container->removeStoredMember();
+	avm1container=nullptr;
 	avm1target.reset();
 	uncaughtErrorEvents.reset();
 }
@@ -445,6 +450,9 @@ bool Loader::destruct()
 	if (contentLoaderInfo)
 		contentLoaderInfo->removeStoredMember();
 	contentLoaderInfo=nullptr;
+	if (avm1container)
+		avm1container->removeStoredMember();
+	avm1container=nullptr;
 	avm1target.reset();
 	uncaughtErrorEvents.reset();
 	return DisplayObjectContainer::destruct();
@@ -460,6 +468,8 @@ bool Loader::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	Locker l(mutexDisplayList);
 	if (content)
 		ret = content->countAllCylicMemberReferences(gcstate) || ret;
+	if (avm1container)
+		ret = avm1container->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 void Loader::prepareShutdown()
@@ -473,11 +483,13 @@ void Loader::prepareShutdown()
 		contentLoaderInfo->prepareShutdown();
 	if (avm1target)
 		avm1target->prepareShutdown();
+	if (avm1container)
+		avm1container->prepareShutdown();
 	if (uncaughtErrorEvents)
 		uncaughtErrorEvents->prepareShutdown();
 }
 Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(nullptr),contentLoaderInfo(nullptr),loaded(false),
-	allowCodeImport(true),avm1level(-1),uncaughtErrorEvents(NullRef)
+	allowCodeImport(true),avm1level(-1),avm1container(nullptr),uncaughtErrorEvents(NullRef)
 {
 	subtype=SUBTYPE_LOADER;
 	contentLoaderInfo=Class<LoaderInfo>::getInstanceS(wrk,this);
@@ -513,6 +525,8 @@ void Loader::threadFinished(IThreadJob* finishedJob)
 
 void Loader::setContent(DisplayObject* o)
 {
+	if (o->isOnStage())
+		return;
 	{
 		Locker l(mutexDisplayList);
 		clearDisplayList();
@@ -548,6 +562,7 @@ void Loader::setContent(DisplayObject* o)
 		o->sx = avm1target->sx;
 		o->sy = avm1target->sy;
 		o->sz = avm1target->sz;
+		o->name = avm1target->name;
 		DisplayObjectContainer* p = avm1target->getParent();
 		if (p)
 		{
@@ -562,7 +577,7 @@ void Loader::setContent(DisplayObject* o)
 				p->deleteLegacyChildAt(depth,false);
 			}
 			o->incRef();
-			p->_addChildAt(o,depth);
+			p->insertLegacyChildAt(depth,o,false,false);
 		}
 	}
 	else
@@ -577,4 +592,18 @@ void Loader::setContent(DisplayObject* o)
 LoaderInfo* Loader::getContentLoaderInfo() 
 {
 	return contentLoaderInfo;
+}
+
+void Loader::AVM1setup(int level, ASObject* container)
+{
+	avm1level = level;
+	assert(!avm1container);
+	if (container)
+	{
+		// the container (AVM1MovieClipLoader) is set here to ensure it is kept alive until this Loader is destroyed,
+		// as it may have event handlers that need to be executed
+		container->incRef();
+		container->addStoredMember();
+		avm1container = container;
+	}
 }

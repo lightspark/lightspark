@@ -1035,8 +1035,20 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		return;
 	}
 	int Depth = asAtomHandler::toInt(args[2]);
+	ApplicationDomain* appDomain = th->loadedFrom;
+	auto it = wrk->AVM1callStack.rbegin();
+	while (it != wrk->AVM1callStack.rend())
+	{
+		if ((*it)->scope->getLocalsPtr()->is<DisplayObject>())
+		{
+			appDomain = (*it)->scope->getLocalsPtr()->as<DisplayObject>()->loadedFrom;
+			break;
+		}
+		++it;
+	}
 	uint32_t nameId = asAtomHandler::toStringId(args[1],wrk);
-	DictionaryTag* placedTag = th->loadedFrom->dictionaryLookupByName(asAtomHandler::toStringId(args[0],wrk));
+
+	DictionaryTag* placedTag = appDomain->dictionaryLookupByName(asAtomHandler::toStringId(args[0],wrk),true);
 	if (!placedTag)
 	{
 		ret=asAtomHandler::undefinedAtom;
@@ -1372,12 +1384,20 @@ void MovieClip::AVM1HandleConstruction()
 	setConstructIndicator();
 	getSystemState()->stage->AVM1AddDisplayObject(this);
 	setConstructorCallComplete();
-	AVM1Function* constr = this->loadedFrom->AVM1getClassConstructor(fromDefineSpriteTag);
+	AVM1Function* constr = this->getInstanceWorker()->AVM1getClassConstructor(this);
 	if (constr)
 	{
-		constr->incRef();
-		_NR<ASObject> pr = _MNR(constr);
+		_NR<ASObject> pr;
+		ASObject* p = constr->getprop_prototype();
+		if (p)
+		{
+			p->incRef();
+			pr = _MNR(p);
+		}
+		else
+			pr = constr->prototype;
 		setprop_prototype(pr);
+		setprop_prototype(pr, BUILTIN_STRINGS::STRING_PROTO);
 		asAtom ret = asAtomHandler::invalidAtom;
 		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 		constr->call(&ret,&obj,nullptr,0);

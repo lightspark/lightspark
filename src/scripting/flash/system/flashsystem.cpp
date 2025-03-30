@@ -560,31 +560,20 @@ DictionaryTag* ApplicationDomain::dictionaryLookup(int id)
 	return it->second;
 }
 
-DictionaryTag* ApplicationDomain::dictionaryLookupByName(uint32_t nameID)
+DictionaryTag* ApplicationDomain::dictionaryLookupByName(uint32_t nameID, bool recursive)
 {
+	uint32_t nameIDcaseInsensitive=UINT32_MAX;
+	if (this->needsCaseInsensitiveNames())
+		nameIDcaseInsensitive = getSystemState()->getUniqueStringId(getSystemState()->getStringFromUniqueId(nameID),false);
 	Locker l(dictSpinlock);
 	auto it = dictionary.begin();
 	for(;it!=dictionary.end();++it)
 	{
-		if(it->second->nameID==nameID)
+		if(it->second->nameID==nameID || (nameIDcaseInsensitive != UINT32_MAX && it->second->nameID==nameIDcaseInsensitive))
 			return it->second;
 	}
-	// tag not found, also check case insensitive
-	if(it==dictionary.end())
-	{
-
-		tiny_string namelower = getSystemState()->getStringFromUniqueId(nameID).lowercase();
-		it = dictionary.begin();
-		for(;it!=dictionary.end();++it)
-		{
-			if (it->second->nameID == UINT32_MAX)
-				continue;
-			tiny_string dictnamelower = getSystemState()->getStringFromUniqueId(it->second->nameID);
-			dictnamelower = dictnamelower.lowercase();
-			if(dictnamelower==namelower)
-				return it->second;
-		}
-	}
+	if (recursive && parentDomain)
+		return parentDomain->dictionaryLookupByName(nameID,recursive);
 	LOG(LOG_ERROR,"No such name on dictionary " << getSystemState()->getStringFromUniqueId(nameID) << " for " << origin);
 	return nullptr;
 }
@@ -670,21 +659,6 @@ void ApplicationDomain::bindClass(const QName& classname, Class_inherit* cls)
 		classesToBeBound.erase(it);
 	}
 }
-bool ApplicationDomain::AVM1registerTagClass(const tiny_string &name, _NR<IFunction> theClassConstructor)
-{
-	uint32_t nameID = getSystemState()->getUniqueStringId(name);
-	DictionaryTag* t = dictionaryLookupByName(nameID);
-	if (!t)
-	{
-		LOG(LOG_ERROR,"registerClass:no tag found in dictionary for "<<name);
-		return false;
-	}
-	if (theClassConstructor.isNull())
-		avm1ClassConstructors.erase(t->getId());
-	else
-		avm1ClassConstructors.insert(make_pair(t->getId(),theClassConstructor));
-	return true;
-}
 
 void ApplicationDomain::checkBinding(DictionaryTag *tag)
 {
@@ -744,12 +718,9 @@ void ApplicationDomain::checkBinding(DictionaryTag *tag)
 	}
 }
 
-AVM1Function* ApplicationDomain::AVM1getClassConstructor(uint32_t spriteID)
+bool ApplicationDomain::needsCaseInsensitiveNames()
 {
-	auto it = avm1ClassConstructors.find(spriteID);
-	if (it == avm1ClassConstructors.end())
-		return nullptr;
-	return it->second->is<AVM1Function>() ? it->second->as<AVM1Function>() : nullptr;
+	return this->version <= 6 || (parentDomain  && parentDomain != getSystemState()->systemDomain && parentDomain->needsCaseInsensitiveNames());
 }
 
 void ApplicationDomain::setOrigin(const tiny_string& u, const tiny_string& filename)
@@ -1406,6 +1377,16 @@ void ASWorker::finalize()
 	if (inFinalize)
 		return;
 	inFinalize=true;
+	for (auto it = avm1ClassConstructorsCaseSensitive.begin(); it != avm1ClassConstructorsCaseSensitive.end(); it++)
+	{
+		it->second->removeStoredMember();
+	}
+	avm1ClassConstructorsCaseSensitive.clear();
+	for (auto it = avm1ClassConstructorsCaseInsensitive.begin(); it != avm1ClassConstructorsCaseInsensitive.end(); it++)
+	{
+		it->second->removeStoredMember();
+	}
+	avm1ClassConstructorsCaseInsensitive.clear();
 	if (!this->preparedforshutdown)
 		this->prepareShutdown();
 	protoypeMap.clear();
@@ -1630,6 +1611,35 @@ tiny_string ASWorker::getStackTraceString(SystemState* sys,const StackTraceList&
 _NR<AVM1Scope> ASWorker::AVM1getScope() const
 {
 	return AVM1callStack.empty() ? NullRef : AVM1callStack.back()->scope;
+}
+void ASWorker::AVM1registerTagClass(uint32_t nameID, IFunction* theClassConstructor)
+{
+	unordered_map<uint32_t,IFunction*>* m = AVM1isCaseSensitive() ? &avm1ClassConstructorsCaseSensitive :&avm1ClassConstructorsCaseInsensitive;
+	auto it = m->find(nameID);
+	if (it != m->end())
+	{
+		it->second->removeStoredMember();
+		m->erase(it);
+	}
+	if (theClassConstructor)
+	{
+		theClassConstructor->incRef();
+		theClassConstructor->addStoredMember();
+		m->insert(make_pair(nameID,theClassConstructor));
+	}
+}
+AVM1Function* ASWorker::AVM1getClassConstructor(DisplayObject* d)
+{
+	uint32_t nameID = d->name;
+	if (d->getTagID() != UINT32_MAX)
+	{
+		DictionaryTag* t = d->loadedFrom->dictionaryLookup(d->getTagID());
+		if (t)
+			nameID =t->nameID;
+	}
+	unordered_map<uint32_t,IFunction*>* m = AVM1isCaseSensitive() ? &avm1ClassConstructorsCaseSensitive :&avm1ClassConstructorsCaseInsensitive;
+	auto it = m->find(nameID);
+	return it != m->end() && it->second->is<AVM1Function>() ? it->second->as<AVM1Function>() : nullptr;
 }
 
 void ASWorker::throwStackOverflow()

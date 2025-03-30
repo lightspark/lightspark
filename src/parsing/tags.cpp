@@ -2146,7 +2146,7 @@ PlaceObject2Tag::PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 	{
 		STRING Name;
 		in >> Name;
-		NameID =root->getSystemState()->getUniqueStringId(Name);
+		NameID =root->getSystemState()->getUniqueStringId(Name,root->getSystemState()->mainClip->loadedFrom->version > 6);
 	}
 	else
 		NameID = BUILTIN_STRINGS::EMPTY;
@@ -2209,7 +2209,7 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 	{
 		STRING Name;
 		in >> Name;
-		NameID =root->getSystemState()->getUniqueStringId(Name);
+		NameID =root->getSystemState()->getUniqueStringId(Name,root->getSystemState()->mainClip->loadedFrom->version > 6);
 	}
 	else
 		NameID = BUILTIN_STRINGS::EMPTY;
@@ -2935,7 +2935,7 @@ ExportAssetsTag::ExportAssetsTag(RECORDHEADER h, std::istream& in,RootMovieClip*
 		in >> tagid >> tagname;
 		DictionaryTag* tag = root->loadedFrom->dictionaryLookup(tagid);
 		if (tag)
-			tag->nameID = root->getSystemState()->getUniqueStringId(tagname);
+			tag->nameID = root->getSystemState()->getUniqueStringId(tagname,root->getSystemState()->mainClip->loadedFrom->version > 6);
 		else
 			LOG(LOG_ERROR,"ExportAssetsTag: tag not found:"<<tagid<<" "<<tagname);
 	}
@@ -2947,7 +2947,7 @@ NameCharacterTag::NameCharacterTag(RECORDHEADER h, istream &in, RootMovieClip *r
 	in >> tagid >> tagname;
 	DictionaryTag* tag = root->loadedFrom->dictionaryLookup(tagid);
 	if (tag)
-		tag->nameID = root->getSystemState()->getUniqueStringId(tagname);
+		tag->nameID = root->getSystemState()->getUniqueStringId(tagname,root->getSystemState()->mainClip->loadedFrom->version > 6);
 	else
 		LOG(LOG_ERROR,"NameCharacterTag: tag not found:"<<tagid<<" "<<tagname);
 }

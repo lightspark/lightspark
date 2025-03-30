@@ -107,6 +107,7 @@ public:
 	ASFUNCTION_ATOM(addListener);
 	ASFUNCTION_ATOM(removeListener);
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
+	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;

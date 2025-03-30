@@ -99,7 +99,6 @@ private:
 	std::map < QName, DictionaryTag* > classesToBeBound;
 	std::map < tiny_string,FontTag* > embeddedfonts;
 	std::map < uint32_t,FontTag* > embeddedfontsByID;
-	unordered_map<uint32_t,_NR<IFunction>> avm1ClassConstructors;
 	Mutex scalinggridsmutex;
 	std::unordered_map < uint32_t, RECT > scalinggrids;
 	URLInfo origin;
@@ -107,6 +106,7 @@ private:
 	RECT frameSize;
 	float frameRate;
 	URLInfo baseURL;
+	AVM1Function* AVM1getClassConstructorIntern(uint32_t nameID);
 public:
 	//map of all classed defined in the swf. They own one reference to each class/template
 	//key is the stringID of the class name (without namespace)
@@ -120,6 +120,7 @@ public:
 
 	uint32_t version;
 	bool usesActionScript3;
+	bool needsCaseInsensitiveNames();// returns true if the swf version of this domain or any parent domain is <= 6
 	ByteArray* currentDomainMemory;
 	ApplicationDomain(ASWorker* wrk, Class_base* c, _NR<ApplicationDomain> p=NullRef);
 	void finalize() override;
@@ -134,7 +135,7 @@ public:
 	void copyBorrowedTraitsFromSuper(Class_base* cls);
 	void addToDictionary(DictionaryTag* r);
 	DictionaryTag* dictionaryLookup(int id);
-	DictionaryTag* dictionaryLookupByName(uint32_t nameID);
+	DictionaryTag* dictionaryLookupByName(uint32_t nameID, bool recursive=false);
 	void registerEmbeddedFont(const tiny_string fontname, FontTag *tag);
 	FontTag* getEmbeddedFont(const tiny_string fontname) const;
 	FontTag* getEmbeddedFontByID(uint32_t fontID) const;
@@ -143,9 +144,7 @@ public:
 	void addBinding(const tiny_string& name, DictionaryTag *tag);
 	void bindClass(const QName &classname, Class_inherit* cls);
 	void checkBinding(DictionaryTag* tag);
-	// map AVM1 class constructors to named tags
-	bool AVM1registerTagClass(const tiny_string& name, _NR<IFunction> theClassConstructor);
-	AVM1Function* AVM1getClassConstructor(uint32_t spriteID);
+	AVM1Function* AVM1getClassConstructor(DisplayObject *d);
 	void setOrigin(const tiny_string& u, const tiny_string& filename="");
 	URLInfo& getOrigin() { return origin; }
 	void setFrameSize(const RECT& f);
@@ -397,6 +396,8 @@ private:
 	std::set<ASObject*> constantrefs;
 	uint64_t last_garbagecollection;
 	std::vector<ABCContext*> contexts;
+	unordered_map<uint32_t,IFunction*> avm1ClassConstructorsCaseSensitive;
+	unordered_map<uint32_t,IFunction*> avm1ClassConstructorsCaseInsensitive;
 public:
 	Stage* stage; // every worker has its own stage. In case of the primordial worker this points to the stage of the SystemState.
 	asfreelist* freelist;
@@ -443,6 +444,9 @@ public:
 		if (cur_recursion > 0)
 			--cur_recursion; //decrement current recursion depth
 	}
+	// map AVM1 class constructors to named tags
+	void AVM1registerTagClass(uint32_t nameID, IFunction* theClassConstructor);
+	AVM1Function* AVM1getClassConstructor(DisplayObject* d);
 	std::vector<AVM1context*> AVM1callStack;
 	AVM1Function* AVM1getCallee() const
 	{

@@ -205,7 +205,7 @@ void AVM1MovieClipLoader::addLoader(URLRequest* r, DisplayObject* target,int lev
 	Loader* ldr = Class<Loader>::getInstanceSNoArgs(getInstanceWorker());
 	ldr->addStoredMember();
 	ldr->loadedFrom=target->loadedFrom;
-	ldr->AVM1setLevel(level);
+	ldr->AVM1setup(level,this);
 	loadermutex.lock();
 	loaderlist.insert(ldr);
 	loadermutex.unlock();
@@ -222,6 +222,8 @@ void AVM1MovieClipLoader::sinit(Class_base* c)
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,_constructor)
 {
+	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
+	th->getSystemState()->stage->AVM1AddEventListener(th);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 {
@@ -296,6 +298,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 		ASWorker* wrk = getInstanceWorker();
 		
 		std::set<ASObject*> tmplisteners = listeners;
+		listeners.insert(this);
 		auto it = tmplisteners.begin();
 		while (it != tmplisteners.end())
 		{
@@ -428,8 +431,31 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 	}
 }
 
+void AVM1MovieClipLoader::finalize()
+{
+	getSystemState()->stage->AVM1RemoveEventListener(this);
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
+	{
+		ASObject* o = (*itlst);
+		itlst = listeners.erase(itlst);
+		o->removeStoredMember();
+	}
+	loadermutex.lock();
+	auto itldr = loaderlist.begin();
+	while (itldr != loaderlist.end())
+	{
+		Loader* o = (*itldr);
+		itldr = loaderlist.erase(itldr);
+		o->removeStoredMember();
+	}
+	loadermutex.unlock();
+
+}
+
 bool AVM1MovieClipLoader::destruct()
 {
+	getSystemState()->stage->AVM1RemoveEventListener(this);
 	auto itlst = listeners.begin();
 	while (itlst != listeners.end())
 	{

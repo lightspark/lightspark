@@ -43,9 +43,12 @@
 #include <sys/stat.h>
 
 extern "C" {
-#ifdef ENABLE_GLES2
+#if defined(ENABLE_GLES2)
 extern NVGcontext* nvgCreateGLES2(int flags);
 extern void nvgDeleteGLES2(NVGcontext* ctx);
+#elif defined(ENABLE_GLES3)
+extern NVGcontext* nvgCreateGLES3(int flags);
+extern void nvgDeleteGLES3(NVGcontext* ctx);
 #else
 extern NVGcontext* nvgCreateGL2(int flags);
 extern void nvgDeleteGL2(NVGcontext* ctx);
@@ -99,11 +102,12 @@ EngineData::~EngineData()
 	if (handCursor)
 		SDL_FreeCursor(handCursor);
 	handCursor=nullptr;
-#ifdef ENABLE_GLES2
 	if (nvgcontext)
+#if defined(ENABLE_GLES2)
 		nvgDeleteGLES2(nvgcontext);
+#elif defined(ENABLE_GLES3)
+		nvgDeleteGLES3(nvgcontext);
 #else
-	if (nvgcontext)
 		nvgDeleteGL2(nvgcontext);
 #endif
 	handleQuit();
@@ -285,9 +289,13 @@ bool initSDL()
 			SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24 );
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);// needed for nanovg
 			SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);// needed for nanovg
-#ifdef ENABLE_GLES2
+#if defined(ENABLE_GLES2)
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#elif defined(ENABLE_GLES3)
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
 		}
@@ -471,8 +479,10 @@ tiny_string EngineData::FileGetApplicationStorageDir()
 void EngineData::initGLEW()
 {
 //For now GLEW does not work with GLES2
-#ifdef ENABLE_GLES2
+#if defined(ENABLE_GLES2)
 	supportPackedDepthStencil=SDL_GL_ExtensionSupported("GL_OES_packed_depth_stencil");
+#elif defined(ENABLE_GLES3)
+	supportPackedDepthStencil=true;
 #else
 	//Now we can initialize GLEW
 	GLenum err = glewInit();
@@ -505,8 +515,10 @@ void EngineData::initGLEW()
 
 void EngineData::initNanoVG()
 {
-#ifdef ENABLE_GLES2
+#if defined(ENABLE_GLES2)
 	nvgcontext=nvgCreateGLES2(0);
+#elif defined(ENABLE_GLES3)
+	nvgcontext=nvgCreateGLES3(0);
 #else
 	nvgcontext=nvgCreateGL2(0);
 #endif
@@ -1432,7 +1444,7 @@ void EngineData::exec_glBindRenderbuffer(uint32_t renderBuffer)
 
 void EngineData::exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(uint32_t width, uint32_t height)
 {
-#ifdef ENABLE_GLES2
+#if defined(ENABLE_GLES2)
 #ifdef GL_DEPTH24_STENCIL8_OES
 	glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH24_STENCIL8_OES,width,height);
 #endif
@@ -1648,7 +1660,7 @@ void EngineData::exec_glSetTexParameters(int32_t lodbias, uint32_t dimension, ui
 	glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap&1 ? GL_REPEAT : GL_CLAMP_TO_EDGE);
 	glTexParameteri(dimension ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap&2 ? GL_REPEAT : GL_CLAMP_TO_EDGE);
-#ifdef ENABLE_GLES2
+#if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
 	if (lodbias != 0)
 		LOG(LOG_NOT_IMPLEMENTED,"Context3D: GL_TEXTURE_LOD_BIAS not available for OpenGL ES");
 #else
@@ -1663,14 +1675,26 @@ void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(int32_t level,
 }
 void EngineData::exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(int32_t level,int32_t width, int32_t height,int32_t border, const void* pixels)
 {
+#ifdef ENABLE_GLES3
+	glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+#else
 	glTexImage2D(GL_TEXTURE_2D, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
+#endif
 }
 void EngineData::glTexImage2Dintern(uint32_t type,int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize)
 {
 	switch (format)
 	{
 		case TEXTUREFORMAT::BGRA:
+#ifdef ENABLE_GLES3
+			glTexImage2D(type, level, GL_RGBA8, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+			glTexParameteri(type, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+			glTexParameteri(type, GL_TEXTURE_SWIZZLE_B, GL_RED);
+#else
 			glTexImage2D(type, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_BYTE, pixels);
+#endif
 			break;
 		case TEXTUREFORMAT::BGR:
 #if ENABLE_GLES2
@@ -1680,17 +1704,31 @@ void EngineData::glTexImage2Dintern(uint32_t type,int32_t level,int32_t width, i
 				((uint8_t*)pixels)[i+2] = t;
 			}
 			glTexImage2D(type, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+#elif ENABLE_GLES3
+			glTexImage2D(type, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+			glTexParameteri(type, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+			glTexParameteri(type, GL_TEXTURE_SWIZZLE_B, GL_RED);
 #else
 			glTexImage2D(type, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_BYTE, pixels);
 #endif
 			break;
 		case TEXTUREFORMAT::BGRA_PACKED:
+#ifdef ENABLE_GLES3
+			glTexImage2D(type, level, GL_RGBA8, width, height, border, GL_RGBA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
+			glTexParameteri(type, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+			glTexParameteri(type, GL_TEXTURE_SWIZZLE_B, GL_RED);
+#else
 			glTexImage2D(type, level, GL_RGBA8, width, height, border, GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4, pixels);
+#endif
 			break;
 		case TEXTUREFORMAT::BGR_PACKED:
 #if ENABLE_GLES2
 			LOG(LOG_NOT_IMPLEMENTED,"textureformat BGR_PACKED for opengl es");
-#else
+#elif ENABLE_GLES3
+			glTexImage2D(type, level, GL_RGB, width, height, border, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
+			glTexParameteri(type, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+			glTexParameteri(type, GL_TEXTURE_SWIZZLE_B, GL_RED);
+			#else
 			glTexImage2D(type, level, GL_RGB, width, height, border, GL_BGR, GL_UNSIGNED_SHORT_5_6_5, pixels);
 #endif
 			break;
@@ -1721,7 +1759,7 @@ void EngineData::glTexImage2Dintern(uint32_t type,int32_t level,int32_t width, i
 }
 void EngineData::exec_glTexImage2D_GL_TEXTURE_2D(int32_t level,int32_t width, int32_t height,int32_t border, void* pixels, TEXTUREFORMAT format, TEXTUREFORMAT_COMPRESSED compressedformat,uint32_t compressedImageSize, bool isRectangleTexture)
 {
-#if ENABLE_GLES2
+#if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
 	glTexImage2Dintern(GL_TEXTURE_2D ,level, width, height, border, pixels, format, compressedformat,compressedImageSize);
 #else
 	glTexImage2Dintern(isRectangleTexture ? GL_TEXTURE_RECTANGLE : GL_TEXTURE_2D,level, width, height, border, pixels, format, compressedformat,compressedImageSize);
@@ -1743,7 +1781,7 @@ void EngineData::exec_glClearStencil(uint32_t stencil)
 }
 void EngineData::exec_glClearDepthf(float depth)
 {
-#ifdef ENABLE_GLES2
+#if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
 	glClearDepthf(depth);
 #else
 	// glClearDepthf is not available in OpenGL2
@@ -1774,7 +1812,13 @@ void EngineData::exec_glDepthMask(bool flag)
 
 void EngineData::exec_glTexSubImage2D_GL_TEXTURE_2D(int32_t level, int32_t xoffset, int32_t yoffset, int32_t width, int32_t height, const void* pixels)
 {
+#ifndef ENABLE_GLES3
 	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
+#else
+	glTexSubImage2D(GL_TEXTURE_2D, level, xoffset, yoffset, width, height, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_HOST, pixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+#endif
 }
 void EngineData::exec_glGetIntegerv_GL_MAX_TEXTURE_SIZE(int32_t* data)
 {
@@ -1797,8 +1841,17 @@ void EngineData::exec_glReadPixels(int32_t width, int32_t height, void *buf)
 }
 void EngineData::exec_glReadPixels_GL_BGRA(int32_t width, int32_t height,void *buf)
 {
+#ifndef ENABLE_GLES3
 	glPixelStorei(GL_PACK_ALIGNMENT, 1);
 	glReadPixels(0,0,width, height, GL_BGRA, GL_UNSIGNED_BYTE, buf);
+#else
+	glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+
+	unsigned char* pixels = reinterpret_cast<unsigned char*>(buf);
+	for (int i = 0; i < width * height; i++) {
+		std::swap(pixels[i * 4], pixels[i * 4 + 2]);
+	}
+#endif
 }
 void EngineData::exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id)
 {

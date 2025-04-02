@@ -106,7 +106,7 @@ private:
 	std::vector<uint32_t> avm1strings;
 public:
 	AVM1context();
-	AVM1context(const _R<DisplayObject>& target, SystemState* sys);
+	AVM1context(DisplayObject* target, SystemState* sys);
 	~AVM1context();
 
 	void AVM1ClearConstants()
@@ -139,7 +139,7 @@ public:
 		const asAtom& thisObj,
 		DisplayObject* baseClip,
 		DisplayObject* root,
-		const _R<ASObject>& start,
+		ASObject* start,
 		const tiny_string& _path,
 		bool hasSlash,
 		bool first = true

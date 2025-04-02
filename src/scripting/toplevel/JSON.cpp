@@ -272,7 +272,7 @@ bool JSON::parse(const tiny_string &jsonstring, CharIterator& it, asAtom& parent
 					if (asAtomHandler::isObject(parent))
 					{
 						bool alreadyset=false;
-						asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,funcret,ASObject::CONST_NOT_ALLOWED,&alreadyset,wrk);
+						asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,funcret,CONST_NOT_ALLOWED,&alreadyset,wrk);
 						if (alreadyset)
 							ASATOM_DECREF(funcret)
 					}
@@ -313,7 +313,7 @@ bool JSON::parseTrue(CharIterator& it, asAtom& parent, multiname &key, ASWorker*
 	else if (asAtomHandler::isObject(parent))
 	{
 		asAtom v = asAtomHandler::trueAtom;
-		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
+		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 	else
 		return false;
@@ -336,7 +336,7 @@ bool JSON::parseFalse(CharIterator& it, asAtom& parent, multiname &key, ASWorker
 	else if (asAtomHandler::isObject(parent))
 	{
 		asAtom v = asAtomHandler::falseAtom;
-		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
+		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 	else
 		return false;
@@ -357,7 +357,7 @@ bool JSON::parseNull(CharIterator& it, asAtom& parent, multiname &key, ASWorker*
 	else if (asAtomHandler::isObject(parent))
 	{
 		asAtom v = asAtomHandler::nullAtom;
-		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
+		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 	else
 		return false;
@@ -473,7 +473,7 @@ bool JSON::parseString(const tiny_string& jsonstring, CharIterator& it, asAtom& 
 		else if (asAtomHandler::isObject(parent))
 		{
 			asAtom v = asAtomHandler::fromObject(abstract_s(wrk,res));
-			asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
+			asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,CONST_NOT_ALLOWED,nullptr,wrk);
 		}
 		else
 			return false;
@@ -524,7 +524,7 @@ bool JSON::parseNumber(const tiny_string &jsonstring, CharIterator& it, asAtom& 
 	else if (asAtomHandler::isObject(parent))
 	{
 		asAtom v = asAtomHandler::fromNumber(wrk,num,false);
-		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
+		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 	else
 		return false;
@@ -539,7 +539,7 @@ bool JSON::parseObject(const tiny_string &jsonstring, CharIterator& it, asAtom& 
 	else if (asAtomHandler::isObject(parent))
 	{
 		asAtom v = asAtomHandler::fromObject(subobj);
-		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
+		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 	else
 		return false;
@@ -613,7 +613,7 @@ bool JSON::parseArray(const tiny_string &jsonstring, CharIterator& it, asAtom& p
 	else if (asAtomHandler::isObject(parent))
 	{
 		asAtom v = asAtomHandler::fromObject(subobj);
-		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
+		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 	else
 		return false;

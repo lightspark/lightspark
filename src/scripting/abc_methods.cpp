@@ -800,7 +800,7 @@ void ABCVm::abc_setproperty(call_context* context)
 	//Do not allow to set contant traits
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
 	bool alreadyset=false;
-	o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+	o->setVariableByMultiname(*name,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
 		ASATOM_DECREF_POINTER(value);
 	o->decRef();
@@ -934,7 +934,7 @@ void ABCVm::abc_initproperty(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,obj);
 	LOG_CALL("initProperty "<<*name<<" on "<< asAtomHandler::toDebugString(*obj)<<" to "<<asAtomHandler::toDebugString(*value));
 	bool alreadyset=false;
-	asAtomHandler::toObject(*obj,context->worker)->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+	asAtomHandler::toObject(*obj,context->worker)->setVariableByMultiname(*name,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset)
 		ASATOM_DECREF_POINTER(value);
 	ASATOM_DECREF_POINTER(obj);

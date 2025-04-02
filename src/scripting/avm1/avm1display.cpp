@@ -46,7 +46,6 @@ void AVM1MovieClip::afterConstruction(bool _explicit)
 
 bool AVM1MovieClip::destruct()
 {
-	avm1loader.reset();
 	color.reset();
 	getSystemState()->stage->AVM1RemoveEventListener(this);
 	return MovieClip::destruct();
@@ -337,8 +336,9 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				(*it)->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 				if (asAtomHandler::is<AVM1Function>(func))
 				{
+					AVM1Function* f = asAtomHandler::as<AVM1Function>(func);
 					asAtom ret=asAtomHandler::invalidAtom;
-					asAtom obj = asAtomHandler::fromObject(*it);
+					asAtom obj = asAtomHandler::fromObject(f->getClip());
 					asAtom args[1];
 					if (ldr->getContent())
 					{
@@ -347,8 +347,9 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
-					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
-					asAtomHandler::as<AVM1Function>(func)->decRef();
+
+					f->call(&ret,&obj,args,1);
+					f->decRef();
 				}
 			}
 			else if (e->type == "progress")
@@ -594,35 +595,35 @@ ASFUNCTIONBODY_ATOM(AVM1Color,getTransform)
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ra");
 		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->redMultiplier*100.0,false);
-		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED,nullptr,wrk);
+		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("rb");
 		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->redOffset,false);
-		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED,nullptr,wrk);
+		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ga");
 		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->greenMultiplier*100.0,false);
-		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED,nullptr,wrk);
+		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("gb");
 		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->greenOffset,false);
-		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED,nullptr,wrk);
+		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ba");
 		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->blueMultiplier*100.0,false);
-		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED,nullptr,wrk);
+		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("bb");
 		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->blueOffset,false);
-		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED,nullptr,wrk);
+		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("aa");
 		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->alphaMultiplier*100.0,false);
-		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED,nullptr,wrk);
+		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ab");
 		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->alphaOffset,false);
-		o->setVariableByMultiname(m,a,ASObject::CONST_ALLOWED,nullptr,wrk);
+		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 	}
 	ret = asAtomHandler::fromObject(o);

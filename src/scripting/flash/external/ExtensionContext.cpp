@@ -244,7 +244,7 @@ public:
 		tiny_string s((const char*)propertyName);
 		m.name_s_id= getSys()->getUniqueStringId(s);
 		ASATOM_INCREF(*(asAtom*)propertyValue);
-		obj->setVariableByMultiname(m,*(asAtom*)propertyValue,ASObject::CONST_NOT_ALLOWED,nullptr,obj->getInstanceWorker());
+		obj->setVariableByMultiname(m,*(asAtom*)propertyValue,CONST_NOT_ALLOWED,nullptr,obj->getInstanceWorker());
 		LOG(LOG_CALLS,"nativeExtension:setObjectProperty:"<<m<<" "<<obj->toDebugString()<<" "<<asAtomHandler::toDebugString(*(asAtom*)propertyValue));
 		
 		if (obj->getInstanceWorker()->currentCallContext && obj->getInstanceWorker()->currentCallContext->exceptionthrown)

@@ -2571,7 +2571,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 		}
 		default:
 			LOG(LOG_ERROR,"Trait not supported " << *mname << " " << t->kind);
-			obj->setVariableByMultiname(*mname, asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED,nullptr,applicationDomain->getInstanceWorker());
+			obj->setVariableByMultiname(*mname, asAtomHandler::undefinedAtom, CONST_NOT_ALLOWED,nullptr,applicationDomain->getInstanceWorker());
 			break;
 	}
 }

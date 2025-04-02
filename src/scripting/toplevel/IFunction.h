@@ -71,9 +71,8 @@ public:
 		length=0;
 		ASATOM_REMOVESTOREDMEMBER(closure_this);
 		closure_this=asAtomHandler::invalidAtom;
-		if (prototype && !prototype->getConstant())
-			prototype->removeStoredMember();
-		prototype.fakeRelease();
+		ASATOM_REMOVESTOREDMEMBER(prototype);
+		prototype=asAtomHandler::invalidAtom;
 		return destructIntern();
 	}
 	inline void finalize() override
@@ -82,9 +81,8 @@ public:
 		clonedFrom=nullptr;
 		ASATOM_REMOVESTOREDMEMBER(closure_this);
 		closure_this=asAtomHandler::invalidAtom;
-		if (prototype && !prototype->getConstant())
-			prototype->removeStoredMember();
-		prototype.fakeRelease();
+		ASATOM_REMOVESTOREDMEMBER(prototype);
+		prototype=asAtomHandler::invalidAtom;
 	}
 	
 	void prepareShutdown() override;
@@ -104,8 +102,7 @@ public:
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
 		ret->prototype=this->prototype;
-		if (ret->prototype && !ret->prototype->getConstant())
-			ret->prototype->addStoredMember();
+		ASATOM_ADDSTOREDMEMBER(ret->prototype);
 		return ret;
 	}
 	IFunction* createFunctionInstance(ASWorker* wrk)
@@ -121,7 +118,7 @@ public:
 	ASFUNCTION_ATOM(apply);
 	ASFUNCTION_ATOM(_call);
 	ASFUNCTION_ATOM(_toString);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,prototype);
+	ASPROPERTY_GETTER_SETTER(asAtom,prototype);
 	virtual method_info* getMethodInfo() const=0;
 	ASObject *describeType(ASWorker* wrk) const override;
 	uint32_t functionname;

@@ -1303,7 +1303,7 @@ multiname *ByteArray::setVariableByMultiname(multiname& name, asAtom& o, CONST_A
 	ASATOM_DECREF(o);
 	return nullptr;
 }
-void ByteArray::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
+void ByteArray::setVariableByInteger(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
 	if (index < 0)
 	{
@@ -1329,7 +1329,7 @@ void ByteArray::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOW
 void ByteArray::setVariableByMultiname_i(multiname& name, int32_t value, ASWorker* wrk)
 {
 	asAtom v = asAtomHandler::fromInt(value);
-	setVariableByMultiname(name, v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
+	setVariableByMultiname(name, v,CONST_NOT_ALLOWED,nullptr,wrk);
 }
 
 void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)

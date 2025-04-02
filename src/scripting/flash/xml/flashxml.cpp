@@ -424,7 +424,7 @@ void XMLNode::fillIDMap(ASObject* o)
 		m.name_type=multiname::NAME_STRING;
 		m.name_s_id=getSystemState()->getUniqueStringId(val);
 		m.isAttribute = false;
-		o->setVariableByMultiname(m,a,ASObject::CONST_NOT_ALLOWED,nullptr,getInstanceWorker());
+		o->setVariableByMultiname(m,a,CONST_NOT_ALLOWED,nullptr,getInstanceWorker());
 	}
 }
 

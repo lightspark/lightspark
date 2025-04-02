@@ -2,6 +2,9 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* improved handling of class inheritance in AVM1
+	* implemented OpenGL ES 3 renderer
+	* better support for OpenGL ES 2 backend
 	* improved focus support
 
 Version 0.9.0:

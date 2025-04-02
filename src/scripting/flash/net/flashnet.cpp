@@ -2472,7 +2472,7 @@ void URLVariables::decode(const tiny_string& s)
 					ASATOM_INCREF(curValue);
 					arr->push(curValue);
 					asAtom v = asAtomHandler::fromObject(arr);
-					setVariableByMultiname(propName,v,ASObject::CONST_NOT_ALLOWED,nullptr,getInstanceWorker());
+					setVariableByMultiname(propName,v,CONST_NOT_ALLOWED,nullptr,getInstanceWorker());
 				}
 				else
 					arr=Class<Array>::cast(asAtomHandler::getObject(curValue));
@@ -2482,7 +2482,7 @@ void URLVariables::decode(const tiny_string& s)
 			else
 			{
 				asAtom v = asAtomHandler::fromObject(abstract_s(getInstanceWorker(),value));
-				setVariableByMultiname(propName,v,ASObject::CONST_NOT_ALLOWED,nullptr,getInstanceWorker());
+				setVariableByMultiname(propName,v,CONST_NOT_ALLOWED,nullptr,getInstanceWorker());
 			}
 
 			g_free(name);

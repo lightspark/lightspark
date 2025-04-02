@@ -2233,9 +2233,9 @@ void ABCVm::abc_setPropertyStaticName(call_context* context)
 	bool alreadyset=false;
 	multiname* simplesettername = nullptr;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (simplesettername)
 		context->exec_pos->cachedmultiname2 = simplesettername;
 	if (alreadyset || context->exceptionthrown)
@@ -2269,9 +2269,9 @@ void ABCVm::abc_setPropertyStaticName_constant_constant(call_context* context)
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
 	multiname* simplesettername = nullptr;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,nullptr,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,*value,CONST_ALLOWED,nullptr,context->worker);
 	else//Do not allow to set contant traits
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,nullptr,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,*value,CONST_NOT_ALLOWED,nullptr,context->worker);
 	if (simplesettername)
 		context->exec_pos->cachedmultiname2 = simplesettername;
 	++(context->exec_pos);
@@ -2302,9 +2302,9 @@ void ABCVm::abc_setPropertyStaticName_local_constant(call_context* context)
 	o->incRef(); // this is neccessary for reference counting in case of exception thrown in setVariableByMultiname
 	multiname* simplesettername = nullptr;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,nullptr,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,*value,CONST_ALLOWED,nullptr,context->worker);
 	else//Do not allow to set contant traits
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,nullptr,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,*value,CONST_NOT_ALLOWED,nullptr,context->worker);
 	if (simplesettername)
 		context->exec_pos->cachedmultiname2 = simplesettername;
 	o->decRef(); // this is neccessary for reference counting in case of exception thrown in setVariableByMultiname
@@ -2337,9 +2337,9 @@ void ABCVm::abc_setPropertyStaticName_constant_local(call_context* context)
 	bool alreadyset=false;
 	multiname* simplesettername = nullptr;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (simplesettername)
 		context->exec_pos->cachedmultiname2 = simplesettername;
 	if (alreadyset || context->exceptionthrown)
@@ -2374,9 +2374,9 @@ void ABCVm::abc_setPropertyStaticName_local_local(call_context* context)
 	bool alreadyset=false;
 	multiname* simplesettername = nullptr;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		simplesettername =o->setVariableByMultiname(*name,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (simplesettername)
 		context->exec_pos->cachedmultiname2 = simplesettername;
 	if (alreadyset || context->exceptionthrown)
@@ -2415,9 +2415,9 @@ void ABCVm::abc_setPropertyInteger(call_context* context)
 		o = asAtomHandler::toObject(*obj,context->worker);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
 		ASATOM_DECREF_POINTER(value);
 	ASATOM_DECREF_POINTER(obj);
@@ -2452,9 +2452,9 @@ void ABCVm::abc_setPropertyInteger_constant_constant_constant(call_context* cont
 	ASATOM_INCREF_POINTER(value);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
 		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
@@ -2488,9 +2488,9 @@ void ABCVm::abc_setPropertyInteger_constant_local_constant(call_context* context
 	ASATOM_INCREF_POINTER(value);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
 		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
@@ -2524,9 +2524,9 @@ void ABCVm::abc_setPropertyInteger_constant_constant_local(call_context* context
 	ASATOM_INCREF_POINTER(value);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
 		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
@@ -2560,9 +2560,9 @@ void ABCVm::abc_setPropertyInteger_constant_local_local(call_context* context)
 		o = asAtomHandler::toObject(*obj,context->worker);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
 		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
@@ -2596,9 +2596,9 @@ void ABCVm::abc_setPropertyInteger_local_constant_constant(call_context* context
 	ASATOM_INCREF_POINTER(value);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
 		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
@@ -2632,9 +2632,9 @@ void ABCVm::abc_setPropertyInteger_local_local_constant(call_context* context)
 	ASATOM_INCREF_POINTER(value);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
 		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
@@ -2668,9 +2668,9 @@ void ABCVm::abc_setPropertyInteger_local_constant_local(call_context* context)
 		o = asAtomHandler::toObject(obj,context->worker);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
 		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);
@@ -2704,9 +2704,9 @@ void ABCVm::abc_setPropertyInteger_local_local_local(call_context* context)
 		o = asAtomHandler::toObject(obj,context->worker);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,ASObject::CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,ASObject::CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
 		ASATOM_DECREF_POINTER(value);
 	++(context->exec_pos);

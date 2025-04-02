@@ -1735,7 +1735,7 @@ multiname *XML::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED
 {
 	return setVariableByMultinameIntern(name, o, allowConst, false,alreadyset,wrk);
 }
-void XML::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
+void XML::setVariableByInteger(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
 	if (index < 0)
 	{

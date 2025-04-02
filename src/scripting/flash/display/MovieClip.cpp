@@ -221,14 +221,14 @@ ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
   ,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
-  ,actions(nullptr),totalFrames_unreliable(1),enabled(true)
+  ,actions(nullptr),totalFrames_unreliable(1),enabled(true),avm1loader(nullptr)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
 
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(wrk,c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
   ,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
-  ,actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true)
+  ,actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true),avm1loader(nullptr)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	//For sprites totalFrames_unreliable is the actual frame count
@@ -263,7 +263,9 @@ bool MovieClip::destruct()
 	actions=nullptr;
 
 	enabled = true;
-	avm1loader.reset();
+	if (avm1loader)
+		avm1loader->removeStoredMember();
+	avm1loader = nullptr;
 	return Sprite::destruct();
 }
 
@@ -279,7 +281,9 @@ void MovieClip::finalize()
 	frameScripts.clear();
 	scenes.clear();
 	state.reset();
-	avm1loader.reset();
+	if (avm1loader)
+		avm1loader->removeStoredMember();
+	avm1loader = nullptr;
 	Sprite::finalize();
 }
 
@@ -311,6 +315,8 @@ bool MovieClip::countCylicMemberReferences(garbagecollectorstate &gcstate)
 		if (o)
 			ret = o->countAllCylicMemberReferences(gcstate) || ret;
 	}
+	if (avm1loader)
+		ret = avm1loader->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 /* Returns a Scene_data pointer for a scene called sceneName, or for
@@ -1321,9 +1327,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 	tiny_string method;
 	ARG_CHECK(ARG_UNPACK(url,"")(method,"GET"));
 	
-	AVM1MovieClipLoader* ld = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
-	th->avm1loader = _MR(ld);
-	ld->load(url,method,th);
+	th->avm1loader = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
+	th->avm1loader->addStoredMember();
+	th->avm1loader->load(url,method,th);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)
 {
@@ -1339,9 +1345,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovieNum)
 	int32_t level;
 	ARG_CHECK(ARG_UNPACK(url,"")(level,0)(method,"GET"));
 
-	AVM1MovieClipLoader* ld = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
-	th->avm1loader = _MR(ld);
-	ld->load(url,method,th,level);
+	th->avm1loader = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
+	th->avm1loader->addStoredMember();
+	th->avm1loader->load(url,method,th,level);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 {
@@ -1368,7 +1374,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 		objName.name_s_id=tf->name;
 		objName.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		asAtom v = asAtomHandler::fromObjectNoPrimitive(tf);
-		th->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,wrk);
+		th->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 	if (wrk->getSystemState()->getSwfVersion() >= 8)
 	{
@@ -1387,14 +1393,8 @@ void MovieClip::AVM1HandleConstruction()
 	AVM1Function* constr = this->getInstanceWorker()->AVM1getClassConstructor(this);
 	if (constr)
 	{
-		_NR<ASObject> pr;
-		ASObject* p = constr->getprop_prototype();
-		if (p)
-		{
-			p->incRef();
-			pr = _MNR(p);
-		}
-		else
+		asAtom pr = constr->getprop_prototypeAtom();
+		if (!asAtomHandler::isObject(pr))
 			pr = constr->prototype;
 		setprop_prototype(pr);
 		setprop_prototype(pr, BUILTIN_STRINGS::STRING_PROTO);

@@ -36,7 +36,6 @@ union asAtom;
 struct garbagecollectorstate;
 struct multiname;
 class ASObject;
-//enum ASObject::CONST_ALLOWED_FLAG;
 class ASWorker;
 class DisplayObject;
 class Global;
@@ -70,20 +69,14 @@ class AVM1Scope : public RefCountable
 private:
 	_NR<AVM1Scope> parent;
 	AVM1ScopeClass _class;
-	_NR<ASObject> values;
+	asAtom values;
 
 	// Replaces the current local scope object with another object.
-	void setLocals(const _R<ASObject>& newLocals)
+	void setLocals(asAtom newLocals)
 	{
-		if (values)
-		{
-			values->removeStoredMember();
-			values.fakeRelease();
-		}
-
-		newLocals->addStoredMember();
-
+		ASATOM_REMOVESTOREDMEMBER(values);
 		values = newLocals;
+		ASATOM_ADDSTOREDMEMBER(values);
 	}
 public:
 	// Contructs/Creates an arbitrary scope.
@@ -91,17 +84,24 @@ public:
 	(
 		_NR<AVM1Scope> _parent,
 		const AVM1ScopeClass& type,
-		const _NR<ASObject>& _values
+		asAtom _values,
+		bool valuesrefcounted=false
 	) : parent(_parent), _class(type), values(_values)
 	{
-		values->addStoredMember();
+		ASObject* o = asAtomHandler::getObject(values);
+		if (o)
+		{
+			if(!valuesrefcounted)
+				o->incRef();
+			o->addStoredMember();
+		}
 	}
 
 	// Constructs a global scope (A parentless scope).
-	AVM1Scope(const _R<Global>& globals);
+	AVM1Scope(Global* globals);
 
 	// Constructs a target/timeline scope.
-	AVM1Scope(const _R<AVM1Scope>& _parent, const _R<DisplayObject>& clip);
+	AVM1Scope(const _R<AVM1Scope>& _parent, DisplayObject* clip);
 
 	// Constructs a child/local scope of another scope.
 	AVM1Scope(const _R<AVM1Scope>& _parent, ASWorker* wrk);
@@ -113,14 +113,14 @@ public:
 	AVM1Scope
 	(
 		const _R<AVM1Scope>& parent,
-		const _R<ASObject>& withObj
+		asAtom withObj
 	) : AVM1Scope(parent, AVM1ScopeClass::With, withObj) {}
 
 	AVM1Scope(const AVM1Scope& other) : AVM1Scope
 	(
 		other.parent,
 		other._class,
-		NullRef
+		asAtomHandler::invalidAtom
 	)
 	{
 		setLocals(other.values);
@@ -136,14 +136,11 @@ public:
 
 	~AVM1Scope()
 	{
-		ASObject* o = values.getPtr();
-		values.fakeRelease();
-		if (o)
-			o->removeStoredMember();
+		ASATOM_REMOVESTOREDMEMBER(values);
 	}
 
 	// Creates a global scope (A parentless scope).
-	static AVM1Scope makeGlobalScope(const _R<Global>& globals)
+	static AVM1Scope makeGlobalScope(Global* globals)
 	{
 		return AVM1Scope(globals);
 	}
@@ -155,7 +152,7 @@ public:
 	}
 
 	// Creates a target/timeline scope.
-	static AVM1Scope makeTargetScope(const _R<AVM1Scope>& parent, const _R<DisplayObject>& clip)
+	static AVM1Scope makeTargetScope(const _R<AVM1Scope>& parent, DisplayObject* clip)
 	{
 		return AVM1Scope(parent, clip);
 	}
@@ -164,13 +161,13 @@ public:
 	//
 	// `with` blocks add an object to the top of the scope chain, so that
 	// unqualified references will attempt to resolve that object first.
-	static AVM1Scope makeWithScope(const _R<AVM1Scope>& parent, const _R<ASObject>& withObj)
+	static AVM1Scope makeWithScope(const _R<AVM1Scope>& parent, asAtom withObj)
 	{
 		return AVM1Scope(parent, withObj);
 	}
 
 	// Replaces the target/timeline scope with another object.
-	void setTargetScope(const _R<DisplayObject>& clip);
+	void setTargetScope(DisplayObject* clip);
 
 	// Returns the parent scope.
 	_NR<AVM1Scope> getParent() const { return parent; }
@@ -178,9 +175,9 @@ public:
 	AVM1Scope* getParentPtr() { return parent.getPtr(); }
 
 	// Returns the current local scope object.
-	_R<ASObject> getLocals() const { return values; }
-	const ASObject* getLocalsPtr() const { return values.getPtr(); }
-	ASObject* getLocalsPtr() { return values.getPtr(); }
+	asAtom getLocals() const { return values; }
+	const ASObject* getLocalsPtr() const { return asAtomHandler::getObject(values); }
+	ASObject* getLocalsPtr() { return asAtomHandler::getObject(values); }
 
 	// Returns the class type.
 	AVM1ScopeClass getClass() const { return _class; }
@@ -242,7 +239,7 @@ public:
 	(
 		multiname& name,
 		asAtom& value,
-		const ASObject::CONST_ALLOWED_FLAG& allowConst,
+		const CONST_ALLOWED_FLAG& allowConst,
 		ASWorker* wrk
 	);
 
@@ -256,7 +253,7 @@ public:
 	(
 		multiname& name,
 		asAtom& value,
-		const ASObject::CONST_ALLOWED_FLAG& allowConst,
+		const CONST_ALLOWED_FLAG& allowConst,
 		ASWorker* wrk
 	);
 
@@ -269,7 +266,7 @@ public:
 	(
 		multiname& name,
 		asAtom& value,
-		const ASObject::CONST_ALLOWED_FLAG& allowConst,
+		const CONST_ALLOWED_FLAG& allowConst,
 		ASWorker* wrk
 	);
 
@@ -277,7 +274,7 @@ public:
 	(
 		const tiny_string& name,
 		asAtom& value,
-		const ASObject::CONST_ALLOWED_FLAG& allowConst,
+		const CONST_ALLOWED_FLAG& allowConst,
 		ASWorker* wrk
 	);
 
@@ -285,7 +282,7 @@ public:
 	(
 		uint32_t nameID,
 		asAtom& value,
-		const ASObject::CONST_ALLOWED_FLAG& allowConst,
+		const CONST_ALLOWED_FLAG& allowConst,
 		ASWorker* wrk
 	);
 

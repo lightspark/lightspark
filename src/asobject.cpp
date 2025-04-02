@@ -668,7 +668,7 @@ void ASObject::call_valueOf(asAtom& ret)
 	}
 	else
 	{
-		asAtom v =asAtomHandler::fromObject(this);
+		asAtom v = getThisAtom();
 		asAtomHandler::callFunction(o,getInstanceWorker(),ret,v,nullptr,0,false);
 	}
 	ASATOM_DECREF(o);
@@ -722,7 +722,7 @@ void ASObject::call_toString(asAtom &ret)
 	}
 	else
 	{
-		asAtom v =asAtomHandler::fromObject(this);
+		asAtom v = getThisAtom();
 		asAtomHandler::callFunction(o,getInstanceWorker(),ret,v,nullptr,0,false);
 	}
 	ASATOM_DECREF(o);
@@ -748,7 +748,7 @@ tiny_string ASObject::call_toJSON(bool& ok,std::vector<ASObject *> &path, asAtom
 		ASATOM_DECREF(o);
 		return res;
 	}
-	asAtom v=asAtomHandler::fromObject(this);
+	asAtom v = getThisAtom();
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::callFunction(o,getInstanceWorker(), ret,v,nullptr,0,false);
 	ASATOM_DECREF(o);
@@ -1670,7 +1670,8 @@ ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 	m.ns.push_back(nsNameAndKind());
 	if (m.name_s_id == BUILTIN_STRINGS::EMPTY)
 		return;
-	asAtomHandler::toObject(obj,wrk)->deleteVariableByMultiname_intern(m,wrk);
+	ASObject* o = asAtomHandler::toObject(obj,wrk);
+	o->deleteVariableByMultiname_intern(m,wrk);
 	if (!getter.isNull())
 	{
 		if (!getter->is<IFunction>())
@@ -1678,7 +1679,7 @@ ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 		ret = asAtomHandler::trueAtom;
 		getter->incRef();
 		getter->addStoredMember();
-		asAtomHandler::toObject(obj,wrk)->setDeclaredMethodByQName(m.name_s_id,nsNameAndKind(),getter.getPtr(),GETTER_METHOD,false);
+		o->setDeclaredMethodByQName(m.name_s_id,nsNameAndKind(),getter.getPtr(),GETTER_METHOD,false);
 	}
 	if (!setter.isNull())
 	{
@@ -1687,7 +1688,7 @@ ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 		ret = asAtomHandler::trueAtom;
 		setter->incRef();
 		setter->addStoredMember();
-		asAtomHandler::toObject(obj,wrk)->setDeclaredMethodByQName(m.name_s_id,nsNameAndKind(),setter.getPtr(),SETTER_METHOD,false);
+		o->setDeclaredMethodByQName(m.name_s_id,nsNameAndKind(),setter.getPtr(),SETTER_METHOD,false);
 	}
 }
 ASFUNCTIONBODY_ATOM(ASObject,registerClass)
@@ -1844,7 +1845,9 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		if (cls)
 		{
 			obj= ASObject::findGettableImpl(getInstanceWorker(), cls->borrowedVariables,name,&nsRealId);
-			if(!obj && ((opt & DONT_CHECK_CLASS) == 0) && name.hasEmptyNS)
+			if(!obj
+					&& (getInstanceWorker()->needsActionScript3() || ((opt & DONT_CHECK_PROTOTYPE) == 0))
+					&& name.hasEmptyNS)
 			{
 				//Check prototype chain
 				Prototype* proto = cls->getPrototype(wrk);
@@ -2057,8 +2060,7 @@ std::pair<asAtom, uint8_t> ASObject::AVM1searchPrototypeByMultiname
 
 GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath)
 {
-	GET_VARIABLE_RESULT res = getVariableByMultiname(ret,name,opt,wrk);
-	if (asAtomHandler::isInvalid(ret) && name.name_type == multiname::NAME_STRING &&
+	if (name.name_type == multiname::NAME_STRING &&
 			(name.name_s_id == BUILTIN_STRINGS::STRING_PROTO || name.name_s_id == BUILTIN_STRINGS::PROTOTYPE))
 	{
 		ASObject* o = nullptr;
@@ -2066,7 +2068,11 @@ GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const mult
 		if (!o)
 		{
 			if (this->is<IFunction>())
-				o = this->as<IFunction>()->prototype.getPtr();
+			{
+				ret = this->as<IFunction>()->prototype;
+				ASATOM_INCREF(ret);
+				return GETVAR_NORMAL;
+			}
 			else if (this->is<Class_base>())
 				o = this->as<Class_base>()->prototype->getObj();
 			else
@@ -2079,7 +2085,7 @@ GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const mult
 			return GETVAR_NORMAL;
 		}
 	}
-
+	GET_VARIABLE_RESULT res = getVariableByMultiname(ret,name,opt,wrk);
 	if (asAtomHandler::isInvalid(ret) && !(opt & DONT_CHECK_PROTOTYPE))
 	{
 		auto pair = AVM1searchPrototypeByMultiname(name, isSlashPath, wrk);
@@ -2110,9 +2116,8 @@ bool ASObject::AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_
 		// before inserting a new property.
 		for (auto pr = getprop_prototype(); pr != nullptr; pr = pr->getprop_prototype())
 		{
-			bool hasVirtual = false;
-			auto var = findSettable(name, &hasVirtual);
-			if (var == nullptr || !hasVirtual)
+			auto var = pr->findSettable(name);
+			if (var == nullptr)
 				continue;
 
 			if (asAtomHandler::isInvalid(var->setter))
@@ -3470,15 +3475,27 @@ ASObject* ASObject::getprop_prototype()
 	return nullptr;
 }
 
+asAtom ASObject::getprop_prototypeAtom()
+{
+	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
+			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
+	if (var)
+		return var->var;
+	if (!getSystemState()->mainClip->needsActionScript3())
+		var=Variables.findObjVar(BUILTIN_STRINGS::STRING_PROTO,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
+			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
+	if (var != nullptr)
+		return var->var;
+	return asAtomHandler::invalidAtom;
+}
+
 /*
  * (creates and) sets the property 'prototype' to o
  * 'prototype' is usually DYNAMIC_TRAIT, but on Class_base
  * it is a DECLARED_TRAIT, which is gettable only
  */
-void ASObject::setprop_prototype(_NR<ASObject>& prototype,uint32_t nameID)
+void ASObject::setprop_prototype(asAtom& prototype,uint32_t nameID)
 {
-	ASObject* obj = prototype.getPtr();
-
 	multiname prototypeName(nullptr);
 	prototypeName.name_type=multiname::NAME_STRING;
 	prototypeName.name_s_id=nameID;
@@ -3499,16 +3516,15 @@ void ASObject::setprop_prototype(_NR<ASObject>& prototype,uint32_t nameID)
 	ret->isenumerable=false;
 	if(asAtomHandler::isValid(ret->setter))
 	{
-		asAtom arg1= asAtomHandler::fromObject(obj);
+		asAtom arg1= prototype;
 		asAtom v=asAtomHandler::fromObject(this);
 		asAtom res=asAtomHandler::invalidAtom;
 		asAtomHandler::callFunction(ret->setter,getInstanceWorker(),res,v,&arg1,1,false);
 	}
 	else
 	{
-		obj->incRef();
-		asAtom v = asAtomHandler::fromObject(obj);
-		ret->setVar(this->getInstanceWorker(),v);
+		ASATOM_INCREF(prototype);
+		ret->setVar(this->getInstanceWorker(),prototype);
 	}
 }
 
@@ -3674,6 +3690,26 @@ bool asAtomHandler::hasPropertyByMultiname(const asAtom& a, const multiname& nam
 	if (!isobject)
 		ASATOM_DECREF(tmp);
 	return found;
+}
+GET_VARIABLE_RESULT asAtomHandler::AVM1getVariableByMultiname(const asAtom& a,asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath)
+{
+	// we use a temporary atom here to avoid converting the source atom into an ASObject if it isn't an ASObject
+	asAtom tmp = a;
+	bool isobject = asAtomHandler::isObject(tmp);
+	GET_VARIABLE_RESULT res=asAtomHandler::toObject(tmp,wrk)->AVM1getVariableByMultiname(ret,name,opt,wrk,isSlashPath);
+	if (!isobject)
+		ASATOM_DECREF(tmp);
+	return res;
+}
+bool asAtomHandler::AVM1setVariableByMultiname(const asAtom& a,multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk)
+{
+	// we use a temporary atom here to avoid converting the source atom into an ASObject if it isn't an ASObject
+	asAtom tmp = a;
+	bool isobject = asAtomHandler::isObject(tmp);
+	bool res=asAtomHandler::toObject(tmp,wrk)->AVM1setVariableByMultiname(name, value, allowConst, wrk);
+	if (!isobject)
+		ASATOM_DECREF(tmp);
+	return res;
 }
 Class_base *asAtomHandler::getClass(const asAtom& a,SystemState* sys,bool followclass)
 {
@@ -4226,7 +4262,7 @@ bool asAtomHandler::AVM1toPrimitive(asAtom& ret, ASWorker* wrk, bool& isRefCount
 	return false;
 }
 
-tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk)
+tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk, bool fortrace)
 {
 	auto swfVersion = wrk->AVM1getSwfVersion();
 	switch (a.uintval & 0x7)
@@ -4238,7 +4274,10 @@ tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk)
 				case ATOMTYPE_NULL_BIT:
 					return "null";
 				case ATOMTYPE_UNDEFINED_BIT:
-					return swfVersion < 7 ? "" : "undefined";
+					if (fortrace)
+						return  "undefined";
+					else
+						return swfVersion < 7 ? "" : "undefined";
 				case ATOMTYPE_BOOL_BIT:
 					// NOTE: In SWF 4, bool to string conversions return
 					// 1, or 0, rather than true, or false.

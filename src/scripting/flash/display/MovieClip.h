@@ -146,7 +146,7 @@ public:
 	void beforeConstruction(bool _explicit = false) override;
 	void afterConstruction(bool _explicit = false) override;
 	RunState state;
-	_NR<AVM1MovieClipLoader> avm1loader;
+	AVM1MovieClipLoader* avm1loader;
 	Frame* getCurrentFrame();
 	MovieClip(ASWorker* wrk,Class_base* c);
 	MovieClip(ASWorker* wrk,Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID);

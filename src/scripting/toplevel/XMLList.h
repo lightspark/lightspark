@@ -101,7 +101,7 @@ public:
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, lightspark::ASWorker* wrk) override;
-	void setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk) override;
+	void setVariableByInteger(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk) override;
 	multiname *setVariableByMultinameIntern(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool replacetext, bool* alreadyset, ASWorker* wrk);
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;

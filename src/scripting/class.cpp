@@ -59,10 +59,10 @@ Prototype* lightspark::new_functionPrototype(ASWorker* wrk,Class_base* functionC
 	return new (functionClass->memoryAccount) FunctionPrototype(wrk,functionClass, p);
 }
 
-Function_object* lightspark::new_functionObject(_NR<ASObject> p)
+Function_object* lightspark::new_functionObject(asAtom p, ASWorker* wrk)
 {
-	Class_base* c=Class<ASObject>::getClass(p->getSystemState());
-	return new (c->memoryAccount) Function_object(p->getInstanceWorker(), c, p);
+	Class_base* c=Class<ASObject>::getClass(wrk->getSystemState());
+	return new (c->memoryAccount) Function_object(wrk->getInstanceWorker(), c, p);
 }
 
 ObjectConstructor* lightspark::new_objectConstructor(Class_base* cls,uint32_t length)
@@ -86,6 +86,15 @@ Activation_object* lightspark::new_activationObject(ASWorker* wrk)
 	return ret;
 }
 
+asAtom lightspark::new_AVM1SuperObject(asAtom o,ASObject* super, ASWorker* wrk)
+{
+	Class_base* c=Class<ASObject>::getClass(wrk->getSystemState());
+	ASObject* baseobject = asAtomHandler::getObject(o);
+	if (baseobject)
+		return asAtomHandler::fromObjectNoPrimitive(new (c->memoryAccount) AVM1Super_object(wrk->getInstanceWorker(), c, baseobject,super));
+	else
+		return asAtomHandler::undefinedAtom;
+}
 
 Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_global):Class_base(name, UINT32_MAX,m),tag(nullptr),bindedToRoot(false),bindingchecked(false),inScriptInit(false),classtrait(_classtrait)
 {

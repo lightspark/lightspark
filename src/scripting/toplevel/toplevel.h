@@ -139,14 +139,40 @@ public:
 class Function_object: public ASObject
 {
 public:
-	Function_object(ASWorker* wrk, Class_base* c, _R<ASObject> p);
-	_NR<ASObject> functionPrototype;
+	Function_object(ASWorker* wrk, Class_base* c, asAtom p);
+	asAtom functionPrototype;
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 };
+
+// special object if AVM1 ActionGetVariable "super" is used
+// it is just a wrapper around the original object with the prototype of its superclass as prototype
+class AVM1Super_object : public ASObject
+{
+private:
+	ASObject* baseobject;
+	ASObject* super;
+	ASObject* prototype;
+	bool checkPrototype(asAtom& ret, const multiname& name);
+public:
+	AVM1Super_object(ASWorker* wrk, Class_base* c, ASObject* obj,ASObject* _super);
+	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath) override;
+	bool AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk) override;
+	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
+	ASObject* getprop_prototype() override;
+	asAtom getprop_prototypeAtom() override;
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+	ASObject* getBaseObject() const;
+	asAtom getThisAtom() override { return asAtomHandler::fromObject(getBaseObject()); }
+};
+
 
 #ifdef PROFILING_SUPPORT
 extern void addFunctionCall(Class_base* cls, uint32_t functionname, uint64_t duration, bool builtin);

@@ -302,7 +302,7 @@ public:
 	{
 		if (USUALLY_FALSE(index < 0))
 		{
-			setVariableByInteger_intern(index,o,ASObject::CONST_ALLOWED,alreadyset,wrk);
+			setVariableByInteger_intern(index,o,CONST_ALLOWED,alreadyset,wrk);
 			return;
 		}
 		*alreadyset=false;

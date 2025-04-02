@@ -226,7 +226,8 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 	if (_avm1target != nullptr)
 	{
 		_avm1target->incRef();
-		this->avm1target=_MR(_avm1target);
+		_avm1target->addStoredMember();
+		this->avm1target=_avm1target;
 	}
 	if (!contentLoaderInfo)
 	{
@@ -436,7 +437,9 @@ void Loader::finalize()
 	if (avm1container)
 		avm1container->removeStoredMember();
 	avm1container=nullptr;
-	avm1target.reset();
+	if (avm1target)
+		avm1target->removeStoredMember();
+	avm1target=nullptr;
 	uncaughtErrorEvents.reset();
 }
 bool Loader::destruct()
@@ -453,7 +456,9 @@ bool Loader::destruct()
 	if (avm1container)
 		avm1container->removeStoredMember();
 	avm1container=nullptr;
-	avm1target.reset();
+	if (avm1target)
+		avm1target->removeStoredMember();
+	avm1target=nullptr;
 	uncaughtErrorEvents.reset();
 	return DisplayObjectContainer::destruct();
 }
@@ -470,6 +475,8 @@ bool Loader::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		ret = content->countAllCylicMemberReferences(gcstate) || ret;
 	if (avm1container)
 		ret = avm1container->countAllCylicMemberReferences(gcstate) || ret;
+	if (avm1target)
+		ret = avm1target->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 void Loader::prepareShutdown()
@@ -489,7 +496,7 @@ void Loader::prepareShutdown()
 		uncaughtErrorEvents->prepareShutdown();
 }
 Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(nullptr),contentLoaderInfo(nullptr),loaded(false),
-	allowCodeImport(true),avm1level(-1),avm1container(nullptr),uncaughtErrorEvents(NullRef)
+	allowCodeImport(true),avm1level(-1),avm1target(nullptr),avm1container(nullptr),uncaughtErrorEvents(NullRef)
 {
 	subtype=SUBTYPE_LOADER;
 	contentLoaderInfo=Class<LoaderInfo>::getInstanceS(wrk,this);
@@ -553,7 +560,7 @@ void Loader::setContent(DisplayObject* o)
 		loaded=true;
 	}
 	// _addChild may cause AS code to run, release locks beforehand.
-	if (!avm1target.isNull())
+	if (avm1target)
 	{
 		o->tx = avm1target->tx;
 		o->ty = avm1target->ty;
@@ -569,11 +576,11 @@ void Loader::setContent(DisplayObject* o)
 			int depth=0;
 			if (p->is<Stage>())
 			{
-				p->_removeChild(avm1target.getPtr());
+				p->_removeChild(avm1target);
 			}
 			else
 			{
-				depth =p->findLegacyChildDepth(avm1target.getPtr());
+				depth =p->findLegacyChildDepth(avm1target);
 				p->deleteLegacyChildAt(depth,false);
 			}
 			o->incRef();

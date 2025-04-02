@@ -113,9 +113,10 @@ public:
 ASObject* new_asobject(ASWorker* wrk);
 Prototype* new_objectPrototype(ASWorker* wrk);
 Prototype* new_functionPrototype(ASWorker* wrk, Class_base* functionClass, _NR<Prototype> p);
-Function_object* new_functionObject(_NR<ASObject> p);
+Function_object* new_functionObject(asAtom p, ASWorker* wrk);
 ObjectConstructor* new_objectConstructor(Class_base* cls,uint32_t length);
 Activation_object* new_activationObject(ASWorker* wrk);
+asAtom new_AVM1SuperObject(asAtom o, ASObject* super, ASWorker* wrk);
 
 template<class T,std::size_t N>
 struct newWithOptionalClass
@@ -344,12 +345,12 @@ public:
 	{
 		return static_cast<ASObject*>(o);
 	}
-	void buildInstanceTraits(ASObject* o) const
+	void buildInstanceTraits(ASObject* o) const override
 	{
 		ASObject::buildTraits(o);
 	}
 	void AVM1generator(ASWorker* wrk,asAtom& ret, asAtom* args, const unsigned int argslen);
-	void generator(ASWorker* wrk,asAtom& ret, asAtom* args, const unsigned int argslen)
+	void generator(ASWorker* wrk,asAtom& ret, asAtom* args, const unsigned int argslen) override
 	{
 		if (!wrk->needsActionScript3())
 			AVM1generator(wrk, ret, args, argslen);

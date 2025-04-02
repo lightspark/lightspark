@@ -1869,7 +1869,7 @@ void ParseThread::parseSWF(UI8 ver)
 			FileAttributesTag* fat = dynamic_cast<FileAttributesTag*>(tag);
 			if(!fat)
 			{
-				LOG(LOG_ERROR,"Invalid SWF - First tag must be a FileAttributesTag!");
+				LOG(LOG_INFO,"Invalid SWF - First tag must be a FileAttributesTag!");
 				//Official implementation is not strict in this regard. Let's continue and hope for the best.
 			}
 			//Check if this clip is the main clip then honour its FileAttributesTag

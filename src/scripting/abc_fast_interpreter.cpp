@@ -996,7 +996,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				multiname* name=context->mi->context->getMultiname(t,context);
 				LOG_CALL("initProperty "<<*name);
 				RUNTIME_STACK_POP_CREATE(context,obj);
-				asAtomHandler::toObject(*obj,context->worker)->setVariableByMultiname(*name,*value,ASObject::CONST_ALLOWED,nullptr,context->worker);
+				asAtomHandler::toObject(*obj,context->worker)->setVariableByMultiname(*name,*value,CONST_ALLOWED,nullptr,context->worker);
 				ASATOM_DECREF_POINTER(obj);
 				name->resetNameIfObject();
 				break;

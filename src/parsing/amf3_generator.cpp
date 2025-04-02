@@ -75,7 +75,7 @@ void Amf3Deserializer::readSharedObject(ASObject* ret)
 				multiname m(nullptr);
 				m.name_type=multiname::NAME_STRING;
 				m.name_s_id=input->getSystemState()->getUniqueStringId(key);
-				ret->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED,nullptr,input->getInstanceWorker());
+				ret->setVariableByMultiname(m,value,CONST_ALLOWED,nullptr,input->getInstanceWorker());
 			}
 			uint8_t b;
 			input->readByte(b); // skip 0 byte
@@ -194,7 +194,7 @@ asAtom Amf3Deserializer::parseArray(std::vector<tiny_string>& stringMap,
 		m.name_type=multiname::NAME_STRING;
 		m.name_s_id=input->getSystemState()->getUniqueStringId(varName);
 		m.isInteger=Array::isIntegerWithoutLeadingZeros(varName);
-		ret->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED,nullptr,input->getInstanceWorker());
+		ret->setVariableByMultiname(m,value,CONST_ALLOWED,nullptr,input->getInstanceWorker());
 	}
 
 	//Read the dense portion
@@ -378,7 +378,7 @@ asAtom Amf3Deserializer::parseDictionary(std::vector<tiny_string>& stringMap,
 			name.name_o = key;
 		}
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
-		ret->setVariableByMultiname(name,value,ASObject::CONST_ALLOWED,nullptr,input->getInstanceWorker());
+		ret->setVariableByMultiname(name,value,CONST_ALLOWED,nullptr,input->getInstanceWorker());
 	}
 	return asAtomHandler::fromObject(ret);
 }
@@ -515,7 +515,7 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		name.name_s_id=input->getSystemState()->getUniqueStringId(traits.traitsNames[i]);
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		name.isAttribute=false;
-		asAtomHandler::getObject(ret)->setVariableByMultiname_intern(name,value,ASObject::CONST_ALLOWED,traits.type,nullptr,input->getInstanceWorker());
+		asAtomHandler::getObject(ret)->setVariableByMultiname_intern(name,value,CONST_ALLOWED,traits.type,nullptr,input->getInstanceWorker());
 		if (input->getInstanceWorker()->currentCallContext->exceptionthrown)
 		{
 			// exception thrown during setter call
@@ -721,7 +721,7 @@ asAtom Amf3Deserializer::parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
 		// contrary to Adobe AMF specs integer names are treated as indexes inside the array
 		m.name_s_id = ar->getSystemState()->getUniqueStringId(varName);
 		m.isInteger=Array::isIntegerWithoutLeadingZeros(varName);
-		ar->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED,nullptr,input->getInstanceWorker());
+		ar->setVariableByMultiname(m,value,CONST_ALLOWED,nullptr,input->getInstanceWorker());
 		count--;
 	}
 	return ret;
@@ -778,7 +778,7 @@ asAtom Amf3Deserializer::parseObjectAMF0(std::vector<tiny_string>& stringMap,
 			multiname m(nullptr);
 			m.name_type = multiname::NAME_STRING;
 			m.name_s_id = input->getSystemState()->getUniqueStringId(varName);
-			asAtomHandler::getObjectNoCheck(ret)->setVariableByMultiname(m,value,ASObject::CONST_ALLOWED,nullptr,input->getInstanceWorker());
+			asAtomHandler::getObjectNoCheck(ret)->setVariableByMultiname(m,value,CONST_ALLOWED,nullptr,input->getInstanceWorker());
 		}
 	}
 	return ret;

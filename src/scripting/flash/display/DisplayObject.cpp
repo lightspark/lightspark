@@ -426,7 +426,7 @@ void DisplayObject::onSetName(uint32_t oldName)
 			incRef();
 			asAtom val = asAtomHandler::fromObject(this);
 			// use internal version to avoid any unwanted sideeffects (events/addChild/removeChild)
-			parent->setVariableByMultiname_intern(m, val, ASObject::CONST_NOT_ALLOWED, nullptr,nullptr, wrk);
+			parent->setVariableByMultiname_intern(m, val, CONST_NOT_ALLOWED, nullptr,nullptr, wrk);
 
 			if (oldName != BUILTIN_STRINGS::EMPTY)
 			{
@@ -1497,7 +1497,6 @@ void DisplayObject::setLoaderInfo(LoaderInfo* li)
 		loaderInfo = li;
 		loaderInfo->incRef();
 		loaderInfo->addStoredMember();
-		li->setContent(this);
 	}
 }
 
@@ -2917,15 +2916,13 @@ bool DisplayObject::hasPropertyByMultiname(const multiname& name, bool considerD
 	auto s = name.normalizedName(wrk);
 	bool caseSensitive = wrk->AVM1isCaseSensitive();
 
-	bool isExpando = isOnStage() && ASObject::hasPropertyByMultiname
+	if (ASObject::hasPropertyByMultiname
 	(
 		name,
 		considerDynamic,
 		considerPrototype,
 		wrk
-	);
-
-	if (isExpando)
+	))
 		return true;
 
 	bool isInternalProp = s.startsWith("_");
@@ -3318,16 +3315,16 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("xMin");
 	v = asAtomHandler::fromNumber(wrk,x1,false);
-	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("xMax");
 	v = asAtomHandler::fromNumber(wrk,x2,false);
-	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("yMin");
 	v = asAtomHandler::fromNumber(wrk,y1,false);
-	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("yMax");
 	v = asAtomHandler::fromNumber(wrk,y2,false);
-	o->setVariableByMultiname(name,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_swapDepths)
 {
@@ -3559,9 +3556,9 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 			ASATOM_INCREF(v);
 			bool alreadyset;
 			if (o)
-				o->setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,&alreadyset,loadedFrom->getInstanceWorker());
+				o->setVariableByMultiname(objName,v, CONST_ALLOWED,&alreadyset,loadedFrom->getInstanceWorker());
 			else
-				setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,&alreadyset,loadedFrom->getInstanceWorker());
+				setVariableByMultiname(objName,v, CONST_ALLOWED,&alreadyset,loadedFrom->getInstanceWorker());
 			if (alreadyset)
 				ASATOM_DECREF(v);
 		}
@@ -3731,7 +3728,7 @@ asAtom DisplayObject::getVariableBindingValue(const tiny_string &name)
 	if (needsActionScript3())
 		return asAtomHandler::invalidAtom;
 
-	AVM1context fallback(_MR(this), sys);
+	AVM1context fallback(this, sys);
 	const auto& ctx =
 	(
 		!wrk->AVM1callStack.empty() ?
@@ -3819,7 +3816,7 @@ void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> o
 		objName.name_s_id=nameID;
 		obj->incRef();
 		bool alreadyset;
-		setVariableByMultiname(objName,v, ASObject::CONST_ALLOWED,&alreadyset,loadedFrom->getInstanceWorker());
+		setVariableByMultiname(objName,v, CONST_ALLOWED,&alreadyset,loadedFrom->getInstanceWorker());
 		if (alreadyset)
 			ASATOM_DECREF(v);
 	}

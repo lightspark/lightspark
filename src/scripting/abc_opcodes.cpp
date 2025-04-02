@@ -86,7 +86,7 @@ void ABCVm::setProperty(ASObject* value,ASObject* obj,multiname* name)
 	//Do not allow to set contant traits
 	asAtom v = asAtomHandler::fromObject(value);
 	bool alreadyset=false;
-	obj->setVariableByMultiname(*name,v,ASObject::CONST_NOT_ALLOWED,&alreadyset,obj->getInstanceWorker());
+	obj->setVariableByMultiname(*name,v,CONST_NOT_ALLOWED,&alreadyset,obj->getInstanceWorker());
 	if (alreadyset || (obj->getInstanceWorker()->currentCallContext && obj->getInstanceWorker()->currentCallContext->exceptionthrown))
 		value->decRef();
 	obj->decRef();
@@ -835,9 +835,7 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 		createError<TypeError>(th->worker,kCannotCallMethodAsConstructor, "");
 		return;
 	}
-
-	assert(asAtomHandler::as<IFunction>(f)->prototype);
-	ret=asAtomHandler::fromObject(new_functionObject(asAtomHandler::as<IFunction>(f)->prototype));
+	ret=asAtomHandler::fromObject(new_functionObject(asAtomHandler::as<IFunction>(f)->prototype,th->worker));
 #ifndef NDEBUG
 	asAtomHandler::getObject(ret)->initialized=false;
 #endif
@@ -857,11 +855,12 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 	asAtomHandler::getObject(ret)->initialized=true;
 #endif
 
-	ASObject* constructor = new_functionObject(asAtomHandler::as<IFunction>(f)->prototype);
-	if (asAtomHandler::as<IFunction>(f)->prototype->subtype != SUBTYPE_FUNCTIONOBJECT)
+	ASObject* constructor = new_functionObject(asAtomHandler::as<IFunction>(f)->prototype,th->worker);
+	ASObject* o = asAtomHandler::getObject(asAtomHandler::as<IFunction>(f)->prototype);
+	if (o && o->subtype != SUBTYPE_FUNCTIONOBJECT)
 	{
-		asAtomHandler::as<IFunction>(f)->prototype->incRef();
-		constructor->setVariableByQName("prototype","",asAtomHandler::as<IFunction>(f)->prototype.getPtr(),DECLARED_TRAIT);
+		o->incRef();
+		constructor->setVariableByQName("prototype","",o,DECLARED_TRAIT);
 	}
 	else
 	{
@@ -1594,7 +1593,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	assert_and_throw(obj->getClass()->isSubClass(th->function->inClass));
 
 	bool alreadyset=false;
-	obj->setVariableByMultiname_intern(*name,*value,ASObject::CONST_NOT_ALLOWED,th->function->inClass->super.getPtr(),&alreadyset,th->worker);
+	obj->setVariableByMultiname_intern(*name,*value,CONST_NOT_ALLOWED,th->function->inClass->super.getPtr(),&alreadyset,th->worker);
 	if (alreadyset)
 		ASATOM_DECREF_POINTER(value);
 	name->resetNameIfObject();
@@ -2049,7 +2048,7 @@ void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 	//Allow to set contant traits
 	asAtom v = asAtomHandler::fromObject(value);
 	bool alreadyset=false;
-	obj->setVariableByMultiname(*name,v,ASObject::CONST_ALLOWED,&alreadyset,obj->getInstanceWorker());
+	obj->setVariableByMultiname(*name,v,CONST_ALLOWED,&alreadyset,obj->getInstanceWorker());
 	if (alreadyset)
 		value->decRef();
 	obj->decRef();
@@ -2898,7 +2897,7 @@ ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
 	ASObject* act= nullptr;
 	ASObject* caller = asAtomHandler::getObject(th->locals[0]);
 	if (caller != nullptr && caller->is<Function_object>())
-		act = new_functionObject(caller->as<Function_object>()->functionPrototype);
+		act = new_functionObject(caller->as<Function_object>()->functionPrototype,th->worker);
 	else
 		act = new_activationObject(th->worker);
 #ifndef NDEBUG
@@ -3061,9 +3060,10 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 		f->addToScope(scope_entry(th->scope_stack[i],th->scope_stack_dynamic[i]));
 	}
 	//Create the prototype object
-	f->prototype = _MR(new_asobject(th->worker));
-	f->prototype->addStoredMember();
-	f->prototype->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),asAtomHandler::fromObject(f),DECLARED_TRAIT,true,false);
+	ASObject* o = new_asobject(th->worker);
+	o->addStoredMember();
+	o->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),asAtomHandler::fromObject(f),DECLARED_TRAIT,true,false);
+	f->prototype = asAtomHandler::fromObject(o);
 	return f;
 }
 
@@ -3087,7 +3087,7 @@ ASObject* ABCVm::newCatch(call_context* th, int n)
 	ASObject* catchScope = new_asobject(th->worker);
 	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exceptions.size());
 	multiname* name = th->mi->context->getMultiname(th->mi->body->exceptions[n].var_name, nullptr);
-	catchScope->setVariableByMultiname(*name, asAtomHandler::undefinedAtom,ASObject::CONST_NOT_ALLOWED,nullptr,th->worker);
+	catchScope->setVariableByMultiname(*name, asAtomHandler::undefinedAtom,CONST_NOT_ALLOWED,nullptr,th->worker);
 	variable* v = catchScope->findVariableByMultiname(*name,nullptr,nullptr,nullptr,true,th->worker);
 	catchScope->initSlot(1, v);
 	return catchScope;
@@ -3146,14 +3146,14 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 	if(type->is<IFunction>())
 	{
 		IFunction* t=static_cast<IFunction*>(type);
-		ASObject* functionProto=t->prototype.getPtr();
+		asAtom functionProto=t->prototype;
 		//Only Function_object instances may come from functions
 		ASObject* proto=value;
 		while(proto->is<Function_object>())
 		{
-			proto=proto->as<Function_object>()->functionPrototype.getPtr();
-			if(proto==functionProto)
+			if(proto->as<Function_object>()->functionPrototype.uintval==functionProto.uintval)
 				return true;
+			proto=asAtomHandler::getObject(proto->as<Function_object>()->functionPrototype);
 		}
 		if (value->is<DisplayObject>())
 		{
@@ -3161,10 +3161,10 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 			bool res = type== constr;
 			if (!res && constr)
 			{
-				ASObject* pr = constr->prototype.getPtr();
+				ASObject* pr = asAtomHandler::getObject(constr->prototype);
 				while (pr)
 				{
-					if (pr == functionProto)
+					if (pr == asAtomHandler::getObject(functionProto))
 						return true;
 					pr=pr->getprop_prototype();
 				}
@@ -3174,7 +3174,7 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 		proto = value->getprop_prototype();
 		while(proto)
 		{
-			if(proto==functionProto)
+			if(proto==asAtomHandler::getObject(functionProto))
 				return true;
 			proto=proto->getprop_prototype();
 		}
@@ -3205,7 +3205,7 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 	if (value->is<Function_object>())
 	{
 		Function_object* t=static_cast<Function_object*>(value);
-		value = t->functionPrototype.getPtr();
+		value = asAtomHandler::getObject(t->functionPrototype);
 	}
 	return value->getClass() && value->getClass()->isSubClass(type->as<Class_base>(), false);
 }

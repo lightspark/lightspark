@@ -53,7 +53,7 @@ GET_VARIABLE_RESULT Global::getVariableByMultiname(asAtom& ret, const multiname&
 	return getVariableByMultinameIntern(ret,name,this->getClass(),(GET_VARIABLE_OPTION)(opt|GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE),wrk);
 }
 
-multiname *Global::setVariableByMultiname(multiname &name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset,ASWorker* wrk)
+multiname *Global::setVariableByMultiname(multiname &name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset,ASWorker* wrk)
 {
 	if (context && !context->hasRunScriptInit[scriptId])
 	{

@@ -57,7 +57,7 @@ private:
 	bool allowCodeImport;
 	int avm1level;
 protected:
-	_NR<DisplayObject> avm1target;
+	DisplayObject* avm1target;
 	ASObject* avm1container;
 public:
 	Loader(ASWorker* wrk, Class_base* c);
@@ -85,7 +85,7 @@ public:
 	DisplayObject* getContent() const { return content; }
 	LoaderInfo* getContentLoaderInfo();
 	bool allowLoadingSWF() { return allowCodeImport; }
-	bool hasAVM1Target() const { return !avm1target.isNull(); }
+	bool hasAVM1Target() const { return avm1target; }
 	void AVM1setup(int level, ASObject* container);
 	int AVM1getLevel() const { return avm1level; }
 	void loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _avm1target=nullptr);

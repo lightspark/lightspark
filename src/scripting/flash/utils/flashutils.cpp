@@ -223,13 +223,13 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 		m.isAttribute = false;
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("name");
 		v = asAtomHandler::fromString(wrk->getSystemState(),cls->getQualifiedClassName(true));
-		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+		res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("isDynamic");
 		v = asAtomHandler::fromBool(!cls->isSealed);
-		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+		res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("isFinal");
 		v = asAtomHandler::fromBool(!cls->isFinal);
-		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+		res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 	
 		ASObject* traits = new_asobject(wrk);
 	
@@ -259,7 +259,7 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 				}
 				m.name_s_id=wrk->getSystemState()->getUniqueStringId("bases");
 				v = asAtomHandler::fromObject(bases);
-				traits->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+				traits->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 			}
 			if (INCLUDE_INTERFACES)
 			{
@@ -276,7 +276,7 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 		}
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("traits");
 		v = asAtomHandler::fromObjectNoPrimitive(traits);
-		res->setVariableByMultiname(m,v,ASObject::CONST_ALLOWED,nullptr,wrk);
+		res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"avmplus.describeTypeJSON with flags:"<<hex<<flags);
@@ -340,6 +340,8 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 		// it seems that adobe uses the ObjectReference as "this" for the callback
 		if (!asAtomHandler::isFunction(args[0]))
 			o = args[0];
+		else
+			o = asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<AVM1Function>(func)->getClip());
 	}
 	//Build arguments array
 	asAtom* callbackArgs = g_newa(asAtom,argslen-paramstart);

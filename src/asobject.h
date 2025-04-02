@@ -302,6 +302,9 @@ struct asfreelist
 
 extern SystemState* getSys();
 extern ASWorker* getWorker();
+
+enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
+enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 //for toPrimitive
 enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
@@ -464,6 +467,8 @@ public:
 	static multiname* getVariableByMultiname(asAtom& a, asAtom &ret, const multiname& name, ASWorker* wrk, bool& canCache, GET_VARIABLE_OPTION opt);
 	static void getVariableByInteger(asAtom& a, asAtom &ret, int index, ASWorker* wrk);
 	static bool hasPropertyByMultiname(const asAtom& a, const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk);
+	static GET_VARIABLE_RESULT AVM1getVariableByMultiname(const asAtom& a,asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath);
+	static bool AVM1setVariableByMultiname(const asAtom& a,multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
 	static Class_base* getClass(const asAtom& a,SystemState *sys, bool followclass=true);
 	static bool canCacheMethod(asAtom& a,const multiname* name);
 	static void fillMultiname(asAtom& a, ASWorker *wrk, multiname& name);
@@ -540,7 +545,7 @@ public:
 	static void getStringView(tiny_string& res, const asAtom &a, ASWorker* wrk); // this doesn't deep copy the data buffer if parameter a is an ASString
 	static tiny_string toString(const asAtom &a, ASWorker* wrk, bool fromAVM1add2=false);
 	static tiny_string toErrorString(const asAtom& a, ASWorker* wrk); // returns string in format needed as argument in error messages
-	static tiny_string AVM1toString(const asAtom &a, ASWorker* wrk);
+	static tiny_string AVM1toString(const asAtom &a, ASWorker* wrk, bool fortrace=false);
 	static tiny_string toLocaleString(const asAtom &a, ASWorker* wrk);
 	static uint32_t toStringId(asAtom &a, ASWorker* wrk);
 	static FORCE_INLINE asAtom typeOf(asAtom& a);
@@ -932,7 +937,6 @@ public:
 	void removeVar(variable* v);
 };
 
-enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 class ASWorker;
 
 extern ASWorker* getWorker();
@@ -1170,8 +1174,6 @@ public:
 		return getVariableByIntegerIntern(ret,index,opt,wrk);
 	}
 
-	enum CONST_ALLOWED_FLAG { CONST_ALLOWED=0, CONST_NOT_ALLOWED };
-
 	std::pair<asAtom, uint8_t> AVM1searchPrototypeByMultiname
 	(
 		const multiname& name,
@@ -1181,7 +1183,7 @@ public:
 	// AVM1 needs to check the "protoype" variable in addition to the normal behaviour
 	virtual GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath = true);
 	virtual bool AVM1setLocalByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
-	bool AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
+	virtual bool AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
 
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.
@@ -1378,8 +1380,9 @@ public:
 
 	/* helpers for the dynamic property 'prototype' */
 	bool hasprop_prototype();
-	ASObject* getprop_prototype();
-	void setprop_prototype(_NR<ASObject>& prototype, uint32_t nameID=BUILTIN_STRINGS::PROTOTYPE);
+	virtual ASObject* getprop_prototype();
+	virtual asAtom getprop_prototypeAtom();
+	void setprop_prototype(asAtom& prototype, uint32_t nameID=BUILTIN_STRINGS::PROTOTYPE);
 
 	//Comparison operators
 	virtual bool isEqual(ASObject* r);
@@ -1473,6 +1476,8 @@ public:
 	// copies all dynamic values to the target
 	void copyValues(ASObject* target, ASWorker* wrk);
 
+	virtual asAtom getThisAtom() { return asAtomHandler::fromObject(this); }
+
 	cyclicmembercount gccounter;
 };
 
@@ -1537,6 +1542,7 @@ class AVM1Function;
 class AVM1MovieClip;
 class AVM1MovieClipLoader;
 class AVM1Sound;
+class AVM1Super_object;
 class AVM1XMLDocument;
 class AVM1XMLNode;
 class BevelFilter;
@@ -1684,6 +1690,7 @@ template<> inline bool ASObject::is<AVM1Movie>() const { return subtype == SUBTY
 template<> inline bool ASObject::is<AVM1MovieClip>() const { return subtype == SUBTYPE_AVM1MOVIECLIP; }
 template<> inline bool ASObject::is<AVM1MovieClipLoader>() const { return subtype == SUBTYPE_AVM1MOVIECLIPLOADER; }
 template<> inline bool ASObject::is<AVM1Sound>() const { return subtype == SUBTYPE_AVM1SOUND; }
+template<> inline bool ASObject::is<AVM1Super_object>() const { return subtype == SUBTYPE_AVM1SUPEROBJECT; }
 template<> inline bool ASObject::is<AVM1XMLDocument>() const { return subtype == SUBTYPE_AVM1XMLDOCUMENT; }
 template<> inline bool ASObject::is<AVM1XMLNode>() const { return subtype == SUBTYPE_AVM1XMLNODE; }
 template<> inline bool ASObject::is<BevelFilter>() const { return subtype==SUBTYPE_BEVELFILTER; }

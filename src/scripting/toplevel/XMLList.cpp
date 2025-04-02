@@ -933,7 +933,7 @@ multiname *XMLList::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALL
 {
 	return setVariableByMultinameIntern(name, o, allowConst, false,alreadyset,wrk);
 }
-void XMLList::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
+void XMLList::setVariableByInteger(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
 	if (index < 0)
 	{

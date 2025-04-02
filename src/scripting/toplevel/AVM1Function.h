@@ -34,6 +34,7 @@ class AVM1Function : public IFunction
 	friend class Class_base;
 protected:
 	DisplayObject* clip;
+	ASObject* avm1Class;
 	Activation_object* activationobject;
 	AVM1context context;
 	asAtom superobj;
@@ -61,6 +62,7 @@ protected:
 	}
 	asAtom computeSuper();
 	void checkInternalException();
+	uint32_t getSWFVersion();
 public:
 	void finalize() override;
 	bool destruct() override;
@@ -68,7 +70,7 @@ public:
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller = nullptr, bool isInternalCall=false)
 	{
-		if (needsSuper())
+		if (needsSuper() || getSWFVersion() < 7)
 		{
 			asAtom newsuper = computeSuper();
 			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,&newsuper,isInternalCall);
@@ -81,7 +83,7 @@ public:
 	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target, ASWorker* wrk) override
 	{
 		asAtom obj = target;
-		if (needsSuper())
+		if (needsSuper() || getSWFVersion() < 7)
 		{
 			asAtom newsuper = computeSuper();
 			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,&newsuper,true);
@@ -124,6 +126,14 @@ public:
 		implementedinterfaces.push_back(iface);
 	}
 	bool implementsInterface(asAtom& iface);
+	FORCE_INLINE void setAVM1Class(ASObject* cls)
+	{
+		avm1Class = cls;
+	}
+	FORCE_INLINE ASObject* getAVM1Class() const
+	{
+		return avm1Class;
+	}
 };
 
 }

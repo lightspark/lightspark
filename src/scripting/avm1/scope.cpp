@@ -31,14 +31,14 @@ using namespace lightspark;
 
 // Based on Ruffle's `avm1::scope::Scope`.
 
-AVM1Scope::AVM1Scope(const _R<Global>& globals) : AVM1Scope
+AVM1Scope::AVM1Scope(Global* globals) : AVM1Scope
 (
 	// `parent`
 	NullRef,
 	// `_class`
 	AVM1ScopeClass::Global,
 	// `values`
-	globals
+	asAtomHandler::fromObjectNoPrimitive(globals)
 )
 {
 }
@@ -46,8 +46,8 @@ AVM1Scope::AVM1Scope(const _R<Global>& globals) : AVM1Scope
 AVM1Scope::AVM1Scope
 (
 	const _R<AVM1Scope>& parent,
-	const _R<DisplayObject>& clip
-) : AVM1Scope(parent, AVM1ScopeClass::Target, clip)
+	DisplayObject* clip
+) : AVM1Scope(parent, AVM1ScopeClass::Target, asAtomHandler::fromObjectNoPrimitive(clip))
 {
 }
 
@@ -55,14 +55,14 @@ AVM1Scope::AVM1Scope
 (
 	const _R<AVM1Scope>& parent,
 	ASWorker* wrk
-) : AVM1Scope(parent, AVM1ScopeClass::Local, _MR(new_asobject(wrk)))
+) : AVM1Scope(parent, AVM1ScopeClass::Local, asAtomHandler::fromObjectNoPrimitive(new_asobject(wrk)),true)
 {
 }
 
-void AVM1Scope::setTargetScope(const _R<DisplayObject>& clip)
+void AVM1Scope::setTargetScope(DisplayObject* clip)
 {
 	if (isTargetScope())
-		setLocals(clip);
+		setLocals(asAtomHandler::fromObjectNoPrimitive(clip));
 	else if (!parent.isNull())
 		parent->setTargetScope(clip);
 }
@@ -77,9 +77,9 @@ asAtom AVM1Scope::resolveRecursiveByMultiname
 )
 {
 	asAtom ret = asAtomHandler::invalidAtom;
-	if (values->hasPropertyByMultiname(name, true, true, wrk))
+	if (asAtomHandler::hasPropertyByMultiname(values,name, true, true, wrk))
 	{
-		values->AVM1getVariableByMultiname(ret, name, options, wrk, false);
+		asAtomHandler::AVM1getVariableByMultiname(values,ret, name, options, wrk, false);
 		return ret;
 	}
 
@@ -88,10 +88,10 @@ asAtom AVM1Scope::resolveRecursiveByMultiname
 
 	ret = parent->getVariableByMultiname(baseClip, name, options, wrk);
 
-	if (asAtomHandler::isValid(ret) || !values->is<DisplayObject>())
+	if (asAtomHandler::isValid(ret) || !asAtomHandler::is<DisplayObject>(values))
 		return ret;
 
-	auto clip = values->as<DisplayObject>();
+	auto clip = asAtomHandler::as<DisplayObject>(values);
 	if (!isTopLevel || (clip->isOnStage() && !clip->hasPropertyByMultiname(name, true, true, wrk)))
 		return ret;
 
@@ -108,21 +108,21 @@ bool AVM1Scope::setVariableByMultiname
 (
 	multiname& name,
 	asAtom& value,
-	const ASObject::CONST_ALLOWED_FLAG& allowConst,
+	const CONST_ALLOWED_FLAG& allowConst,
 	ASWorker* wrk
 )
 {
 	bool removed =
 	(
-		values->is<DisplayObject>() &&
-		!values->as<DisplayObject>()->isOnStage()
+		asAtomHandler::is<DisplayObject>(values) &&
+		!asAtomHandler::as<DisplayObject>(values)->isOnStage()
 	);
 
-	if (!removed && (isTargetScope() || values->hasPropertyByMultiname(name, true, true, wrk)))
+	if (!removed && (isTargetScope() || asAtomHandler::hasPropertyByMultiname(values,name, true, true, wrk)))
 	{
 		// Found the variable on this object, overwrite it.
 		// Or, we've hit the currently running clip, so create it here.
-		return values->AVM1setVariableByMultiname(name, value, allowConst, wrk);
+		return asAtomHandler::AVM1setVariableByMultiname(values,name, value, allowConst, wrk);
 	}
 	else if (!parent.isNull())
 	{
@@ -134,27 +134,28 @@ bool AVM1Scope::setVariableByMultiname
 	// reference to a `MovieClip`, so we should always have a `MovieClip`
 	// scope. Define it on the top level scope.
 	LOG(LOG_ERROR, "AVM1Scope::setVariableByMultiname: No top level `MovieClip` scope.");
-	return values->AVM1setVariableByMultiname(name, value, allowConst, wrk);
+	return asAtomHandler::AVM1setVariableByMultiname(values,name, value, allowConst, wrk);
 }
 
 bool AVM1Scope::defineLocalByMultiname
 (
 	multiname& name,
 	asAtom& value,
-	const ASObject::CONST_ALLOWED_FLAG& allowConst,
+	const CONST_ALLOWED_FLAG& allowConst,
 	ASWorker* wrk
 )
 {
+	ASObject* v = asAtomHandler::getObject(values);
 	if (!isWithScope() || !parent.isNull())
-		return values->AVM1setVariableByMultiname(name, value, allowConst, wrk);
+		return v && v->AVM1setVariableByMultiname(name, value, allowConst, wrk);
 	// When defining a local in a `with` scope, we also need to check if
 	// that local exists on the `with` target. If it does, the variable
 	// of the target should be modified. If not, the property should be
 	// defined in the first non-`with` parent scope.
 
 	// Does this variable already exist on the target?
-	if (values->hasPropertyByMultiname(name, true, true, wrk))
-		return values->AVM1setVariableByMultiname(name, value, allowConst, wrk);
+	if (v && v->hasPropertyByMultiname(name, true, true, wrk))
+		return v->AVM1setVariableByMultiname(name, value, allowConst, wrk);
 
 	// If not, go up the scope chain.
 	return parent->defineLocalByMultiname(name, value, allowConst, wrk);
@@ -164,12 +165,14 @@ bool AVM1Scope::forceDefineLocalByMultiname
 (
 	multiname& name,
 	asAtom& value,
-	const ASObject::CONST_ALLOWED_FLAG& allowConst,
+	const CONST_ALLOWED_FLAG& allowConst,
 	ASWorker* wrk
 )
 {
+	ASObject* v = asAtomHandler::getObject(values);
 	bool alreadySet = false;
-	values->setVariableByMultiname(name, value, allowConst, &alreadySet, wrk);
+	if (v)
+		v->setVariableByMultiname(name, value, allowConst, &alreadySet, wrk);
 	return alreadySet;
 }
 
@@ -177,7 +180,7 @@ bool AVM1Scope::forceDefineLocal
 (
 	const tiny_string& name,
 	asAtom& value,
-	const ASObject::CONST_ALLOWED_FLAG& allowConst,
+	const CONST_ALLOWED_FLAG& allowConst,
 	ASWorker* wrk
 )
 {
@@ -194,7 +197,7 @@ bool AVM1Scope::forceDefineLocal
 (
 	uint32_t nameID,
 	asAtom& value,
-	const ASObject::CONST_ALLOWED_FLAG& allowConst,
+	const CONST_ALLOWED_FLAG& allowConst,
 	ASWorker* wrk
 )
 {
@@ -206,8 +209,9 @@ bool AVM1Scope::forceDefineLocal
 
 bool AVM1Scope::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
-	if (values && values->hasPropertyByMultiname(name, true, true, wrk))
-		return values->deleteVariableByMultiname(name, wrk);
+	ASObject* v = asAtomHandler::getObject(values);
+	if (v && v->hasPropertyByMultiname(name, true, true, wrk))
+		return v->deleteVariableByMultiname(name, wrk);
 	else if (!parent.isNull())
 		return parent->deleteVariableByMultiname(name, wrk);
 	return false;
@@ -218,8 +222,9 @@ bool AVM1Scope::countAllCyclicMemberReferences(garbagecollectorstate& gcstate)
 	if (gcstate.stopped)
 		return false;
 	bool ret = false;
-	if (values)
-		ret = values->countAllCylicMemberReferences(gcstate);
+	ASObject* v = asAtomHandler::getObject(values);
+	if (v)
+		ret = v->countAllCylicMemberReferences(gcstate);
 	if (!parent.isNull())
 		ret = parent->countAllCyclicMemberReferences(gcstate) | ret;
 	return ret;
@@ -227,8 +232,9 @@ bool AVM1Scope::countAllCyclicMemberReferences(garbagecollectorstate& gcstate)
 
 void AVM1Scope::prepareShutdown()
 {
-	if (values)
-		values->prepareShutdown();
+	ASObject* v = asAtomHandler::getObject(values);
+	if (v)
+		v->prepareShutdown();
 	if (!parent.isNull())
 		parent->prepareShutdown();
 }

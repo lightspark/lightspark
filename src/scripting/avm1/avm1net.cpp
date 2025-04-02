@@ -152,7 +152,7 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 								tiny_string key =spl2.front();
 								mdata.name_s_id = getSystemState()->getUniqueStringId(key);
 								asAtom value = asAtomHandler::fromString(getSystemState(),spl2.back());
-								this->setVariableByMultiname(mdata,value,ASObject::CONST_ALLOWED,nullptr,this->getInstanceWorker());
+								this->setVariableByMultiname(mdata,value,CONST_ALLOWED,nullptr,this->getInstanceWorker());
 							}
 						}
 					}

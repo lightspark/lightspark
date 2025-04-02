@@ -2074,7 +2074,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		objName.name_s_id=currchar->name;
 		objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		asAtom v = asAtomHandler::fromObject(currchar);
-		parent->setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
+		parent->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
 	}
 	if (exists && PlaceFlagHasClipAction)
 	{

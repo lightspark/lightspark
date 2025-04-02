@@ -823,7 +823,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		if (this->hasPropertyByMultiname(objName,true,false,this->getInstanceWorker()))
-			setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+			setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 	}
 	if (!inskipping && obj->is<SimpleButton>())
 	{
@@ -917,7 +917,7 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 		{
 			obj->incRef();
 			asAtom v = asAtomHandler::fromObject(obj);
-			setVariableByMultiname(objName,v,ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+			setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 		}
 	}
 	_addChildAt(obj,insertpos,inskipping);
@@ -969,7 +969,7 @@ void DisplayObjectContainer::purgeLegacyChildren()
 				objName.name_s_id=obj->name;
 				objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 				if (this->hasPropertyByMultiname(objName,true,false,this->getInstanceWorker()))
-					setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom,ASObject::CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+					setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom,CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 			}
 		}
 		if (i->first < 0 && is<MovieClip>() && obj->placeFrame <= as<MovieClip>()->state.FP)
@@ -2156,7 +2156,7 @@ void DisplayObjectContainer::afterLegacyDelete(bool inskipping)
 		(*it)->afterLegacyDelete(inskipping);
 }
 
-multiname *DisplayObjectContainer::setVariableByMultiname(multiname& name, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk)
+multiname *DisplayObjectContainer::setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk)
 {
 // TODO I disable this for now as gamesmenu from homestarrunner doesn't work with it (I don't know which swf file required this...)
 //	if (asAtomHandler::is<DisplayObject>(o))

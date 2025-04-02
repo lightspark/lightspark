@@ -2374,7 +2374,7 @@ multiname *Array::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOW
 	return nullptr;
 }
 
-void Array::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
+void Array::setVariableByInteger(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
 	if (index < 0)
 	{

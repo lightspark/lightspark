@@ -33,7 +33,7 @@ using namespace lightspark;
 IFunction::IFunction(ASWorker* wrk,Class_base* c,CLASS_SUBTYPE st):ASObject(wrk,c,T_FUNCTION,st),length(0),
 	closure_this(asAtomHandler::invalidAtom),
 	inClass(nullptr),isStatic(false),isGetter(false),isSetter(false),namespaceNameID(BUILTIN_STRINGS::EMPTY),
-	clonedFrom(nullptr),functionname(0)
+	clonedFrom(nullptr),prototype(asAtomHandler::invalidAtom),functionname(0)
 {
 }
 
@@ -60,8 +60,9 @@ void IFunction::prepareShutdown()
 		clonedFrom->prepareShutdown();
 	if (asAtomHandler::isAccessibleObject(closure_this))
 		asAtomHandler::getObjectNoCheck(closure_this)->prepareShutdown();
-	if (prototype)
-		prototype->prepareShutdown();
+	ASObject* pr = asAtomHandler::getObject(prototype);
+	if (pr)
+		pr->prepareShutdown();
 }
 
 bool IFunction::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -69,8 +70,9 @@ bool IFunction::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (asAtomHandler::isAccessibleObject(closure_this))
 		ret = asAtomHandler::getObjectNoCheck(closure_this)->countAllCylicMemberReferences(gcstate) || ret;
-	if (prototype)
-		ret = prototype->countAllCylicMemberReferences(gcstate) || ret;
+	ASObject* pr = asAtomHandler::getObject(prototype);
+	if (pr)
+		ret = pr->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 
@@ -88,14 +90,9 @@ void IFunction::_setter_prototype(asAtom& ret,ASWorker* wrk, asAtom& obj, asAtom
 		createError<ArgumentError>(wrk,0,"Arguments provided in setter");
 		return;
 	}
-	if (th->prototype && !th->prototype->getConstant())
-	{
-		th->prototype->removeStoredMember();
-		th->prototype.fakeRelease();
-	}
-	th->prototype = _MR(asAtomHandler::toObject(args[0],wrk));
-	th->prototype->incRef();
-	th->prototype->addStoredMember();
+	ASATOM_REMOVESTOREDMEMBER(th->prototype);
+	th->prototype = args[0];
+	ASATOM_ADDSTOREDMEMBER(th->prototype);
 }
 
 ASFUNCTIONBODY_ATOM(IFunction,_length)

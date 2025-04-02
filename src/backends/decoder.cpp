@@ -1913,7 +1913,7 @@ FFMpegStreamDecoder::FFMpegStreamDecoder(NetStream *ns, EngineData *eng, std::is
 		m.isAttribute = false;
 		ASObject* dataobj = new_asobject(netstream->getInstanceWorker());
 		asAtom v = asAtomHandler::fromInt(formatCtx->duration/AV_TIME_BASE);
-		dataobj->setVariableByMultiname(m,v,ASObject::CONST_NOT_ALLOWED,nullptr,netstream->getInstanceWorker());
+		dataobj->setVariableByMultiname(m,v,CONST_NOT_ALLOWED,nullptr,netstream->getInstanceWorker());
 		dataobjectlist.push_back(asAtomHandler::fromObjectNoPrimitive(dataobj));
 		netstream->sendClientNotification("onMetaData",dataobjectlist);
 	}

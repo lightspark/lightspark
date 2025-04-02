@@ -1673,7 +1673,7 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 	return nullptr;
 }
 
-void Vector::setVariableByInteger(int index, asAtom &o, ASObject::CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
+void Vector::setVariableByInteger(int index, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
 	if (index < 0)
 	{

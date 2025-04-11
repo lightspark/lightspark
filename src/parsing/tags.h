@@ -776,7 +776,7 @@ public:
 class DefineFontNameTag: public Tag
 {
 public:
-	DefineFontNameTag(RECORDHEADER h, std::istream& in);
+	DefineFontNameTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 };
 
 class DefineFontAlignZonesTag: public Tag

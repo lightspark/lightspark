@@ -296,7 +296,7 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 				ret=new DefineBinaryDataTag(h,f,root);
 				break;
 			case 88:
-				ret=new DefineFontNameTag(h,f);
+				ret=new DefineFontNameTag(h,f,root);
 				break;
 			case 91:
 				ret=new DefineFont4Tag(h,f,root);
@@ -706,6 +706,30 @@ DefineFontInfoTag::DefineFontInfoTag(RECORDHEADER h, std::istream& in,RootMovieC
 		}
 	}
 	root->applicationDomain->registerEmbeddedFont(fonttag->getFontname(),fonttag);
+}
+
+DefineFontNameTag::DefineFontNameTag(RECORDHEADER h, std::istream& in, RootMovieClip* root) : Tag(h)
+{
+	LOG(LOG_TRACE, "DefineFontNameTag");
+	UI16_SWF FontID;
+	STRING FontName;
+	STRING FontCopyright;
+
+	auto appDomain = root->applicationDomain;
+
+	in >> FontID;
+	auto fontTag = dynamic_cast<FontTag*>(appDomain->dictionaryLookup(FontID));
+
+	if (fontTag == nullptr)
+	{
+		LOG(LOG_ERROR, "DefineFontNameTag font not found:" << FontID);
+		ignore(in, h.getLength()-2);
+		return;
+	}
+
+	in >> FontName >> FontCopyright;
+
+	appDomain->registerEmbeddedFont(FontName, fontTag);
 }
 
 FontTag::FontTag(RECORDHEADER h, int _scaling, RootMovieClip* root):DictionaryTag(h,root), scaling(_scaling)

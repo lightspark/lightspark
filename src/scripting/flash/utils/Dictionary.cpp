@@ -36,8 +36,6 @@ using namespace lightspark;
 Dictionary::Dictionary(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_DICTIONARY),
 	data(std::less<dictType::key_type>(), reporter_allocator<dictType::value_type>(c->memoryAccount)),weakkeys(false)
 {
-	currentnameiterator = data.end();
-	currentnameindex=UINT32_MAX;
 }
 
 void Dictionary::finalize()
@@ -52,6 +50,7 @@ void Dictionary::finalize()
 		if (obj)
 			obj->removeStoredMember();
 	}
+	enumeratedKeys.clear();
 }
 
 bool Dictionary::destruct()
@@ -66,8 +65,7 @@ bool Dictionary::destruct()
 		if (obj)
 			obj->removeStoredMember();
 	}
-	currentnameiterator = data.end();
-	currentnameindex=UINT32_MAX;
+	enumeratedKeys.clear();
 	weakkeys=false;
 	return destructIntern();
 }
@@ -152,7 +150,7 @@ void Dictionary::getKeyFromMultiname(const multiname& name,asAtom& key)
 			}
 			break;
 		case multiname::NAME_UINT:
-			key = asAtomHandler::fromUInt(name.name_i);
+			key = asAtomHandler::fromUInt(name.name_ui);
 			break;
 		case multiname::NAME_NUMBER:
 		{
@@ -214,6 +212,7 @@ multiname *Dictionary::setVariableByMultiname(multiname& name, asAtom& o, CONST_
 		if (obj)
 			obj->addStoredMember();
 		data.insert(make_pair(key,o));
+		enumeratedKeys.push_back(key);
 	}
 	return nullptr;
 }
@@ -230,10 +229,16 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 		ASObject* obj = asAtomHandler::getObject(it->second);
 		if (obj)
 			obj->removeStoredMember();
-		if (currentnameiterator == it)
-			currentnameiterator = data.erase(it);
-		else
-			data.erase(it);
+		for (auto iten = enumeratedKeys.begin(); iten != enumeratedKeys.end(); iten++)
+		{
+			if ((*iten).uintval == it->first.uintval)
+			{
+				// don't erase, as we might be inside a "hasnext" loop and have to keep the index valid
+				*iten = asAtomHandler::invalidAtom;
+				break;
+			}
+		}
+		data.erase(it);
 		ASATOM_REMOVESTOREDMEMBER(it->first);
 	}
 	else if (name.name_type==multiname::NAME_STRING && getClass() && getClass()->isSealed)
@@ -301,59 +306,34 @@ bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDyna
 uint32_t Dictionary::nextNameIndex(uint32_t cur_index)
 {
 	assert_and_throw(implEnable);
-	if (data.empty() || (cur_index == currentnameindex && currentnameiterator == data.end()))
-	{
-		currentnameindex=UINT32_MAX;
-	 	return 0;
-	}
-	if (cur_index == 0)
-	{
-		currentnameiterator = data.begin();
-		currentnameindex = 0;
-	}
-	else
-	{
-		if (cur_index != currentnameindex+1)
-		{
-			currentnameiterator = data.begin();
-			currentnameindex = 0;
-			while (currentnameindex < cur_index-1)
-			{
-				++currentnameiterator;
-				++currentnameindex;
-			}
-		}
-		++currentnameiterator;
-		++currentnameindex;
-	}
-	if (currentnameiterator == data.end())
-	{
-		currentnameindex=UINT32_MAX;
+	while (cur_index < enumeratedKeys.size() && asAtomHandler::isInvalid(enumeratedKeys[cur_index]))
+		cur_index++;
+	if (cur_index >= enumeratedKeys.size())
 		return 0;
-	}
 	return cur_index+1;
 }
 
 void Dictionary::nextName(asAtom& ret,uint32_t index)
 {
 	assert_and_throw(implEnable);
-	if (currentnameiterator == data.end())
+	if (index > enumeratedKeys.size())
 		ret = asAtomHandler::undefinedAtom;
 	else
 	{
-		ASATOM_INCREF(currentnameiterator->first);
-		ret = currentnameiterator->first;
+		ret = enumeratedKeys[index-1];
+		ASATOM_INCREF(ret);
 	}
 }
 
 void Dictionary::nextValue(asAtom& ret,uint32_t index)
 {
 	assert_and_throw(implEnable);
-	if (currentnameiterator == data.end())
+	if (index > enumeratedKeys.size())
 		ret = asAtomHandler::undefinedAtom;
 	else
 	{
-		ret = currentnameiterator->second;
+		asAtom key = enumeratedKeys[index-1];
+		ret = data.find(key)->second;
 		ASATOM_INCREF(ret);
 	}
 }

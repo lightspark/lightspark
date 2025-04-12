@@ -34,8 +34,7 @@ private:
 	typedef std::map<asAtom, asAtom> dictType;
 	dictType data;
 	dictType::iterator findKey(asAtom o);
-	dictType::iterator currentnameiterator;
-	uint32_t currentnameindex;
+	std::vector<asAtom> enumeratedKeys;
 	bool weakkeys;
 	void getKeyFromMultiname(const multiname& name, lightspark::asAtom& key);
 public:

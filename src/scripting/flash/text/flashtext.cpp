@@ -1299,6 +1299,7 @@ void TextField::updateSizes()
 					t.textwidth=w;
 					t.height=h;
 					it = textlines.insert(++it,t);
+					th+=h;
 					listchanged=true;
 					text =t.text;
 					if (uint32_t(w) <= width-TEXTFIELD_PADDING*2)

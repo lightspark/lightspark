@@ -1292,12 +1292,12 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 		  asynchronous uses of setOnStage are removed the code can be simplified
 		  by removing the !isVmThread case.
 		*/
-		if(onStage==true && isConstructed())
+		if(onStage==true)
 		{
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
-			// the main clip is added to stage after the builtin MovieClip is constructed, but before the constructor call is completed.
+			// root clips are added to stage after the builtin MovieClip is constructed, but before the constructor call is completed.
 			// So the EventListeners for "addedToStage" may not be registered yet and we can't execute the event directly
-			if(isVmThread()	&& this != getSystemState()->mainClip)
+			if(isVmThread()	&& !this->is<RootMovieClip>())
 				ABCVm::publicHandleEvent(this,e);
 			else
 			{

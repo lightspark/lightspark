@@ -330,6 +330,7 @@ public:
 	virtual void exec_glGenerateMipmap_GL_TEXTURE_CUBE_MAP();
 	virtual void exec_glReadPixels(int32_t width, int32_t height,void* buf);
 	virtual void exec_glReadPixels_GL_BGRA(int32_t width, int32_t height, void *buf);
+	virtual void exec_glGetTexImage_GL_TEXTURE_2D(void *buf);
 	virtual void exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id);
 	virtual void exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	virtual void exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR();

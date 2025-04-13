@@ -210,6 +210,8 @@ void Bitmap::updatedData()
 }
 void Bitmap::refreshSurfaceState()
 {
+	if (bitmapData)
+		bitmapData->checkForUpload();
 }
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {

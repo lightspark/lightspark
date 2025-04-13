@@ -31,8 +31,10 @@ using namespace std;
 using namespace lightspark;
 
 extern void nanoVGDeleteImage(int image);
+extern void nanoVGUpdateImage(int image, const unsigned char* data);
 BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
 	data(reporter_allocator<uint8_t>(m)),renderevent(0),
+	hasModifiedData(false),hasModifiedTexture(false),
 	nanoVGImageHandle(-1),cachedCairoPattern(nullptr)
 {
 }
@@ -51,7 +53,6 @@ BitmapContainer::~BitmapContainer()
 		nanoVGDeleteImage(nanoVGImageHandle);
 	if (cachedCairoPattern)
 		cairo_pattern_destroy(cachedCairoPattern);
-		
 }
 
 uint8_t* BitmapContainer::applyColorTransform(ColorTransform *ctransform)
@@ -60,6 +61,8 @@ uint8_t* BitmapContainer::applyColorTransform(ColorTransform *ctransform)
 		return getOriginalData();
 	if (*ctransform==currentcolortransform)
 		return getDataColorTransformed();
+	checkModifiedTexture();
+	hasModifiedData=true;
 	currentcolortransform=*ctransform;
 	return ctransform->applyTransformation(this);
 }
@@ -143,7 +146,7 @@ bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMA
 		LOG(LOG_ERROR, "Error decoding image");
 		return false;
 	}
-
+	this->hasModifiedData=true;
 	return true;
 }
 
@@ -239,18 +242,9 @@ void BitmapContainer::fromRawData(uint8_t* data, uint32_t width, uint32_t height
 	this->height=height;
 	uint32_t dataSize = stride * height;
 	this->data.resize(dataSize);
+	this->hasModifiedData=true;
 	memcpy(this->data.data(),data,dataSize);
 	
-}
-
-void BitmapContainer::clear()
-{
-	data.clear();
-	data.shrink_to_fit();
-	stride=0;
-	width=0;
-	height=0;
-	bitmaptexture.makeEmpty();
 }
 
 // needs to be called in renderThread
@@ -260,9 +254,14 @@ bool BitmapContainer::checkTextureForUpload(SystemState* sys)
 		return false;
 	}
 
-	if (!bitmaptexture.isValid())
-		bitmaptexture=sys->getRenderThread()->allocateTexture(width, height, true,true);
-	sys->getRenderThread()->loadChunkBGRA(bitmaptexture,width, height,currentcolortransform.isIdentity() ? getData() : getDataColorTransformed());
+	if (nanoVGImageHandle >= 0)
+		nanoVGUpdateImage(nanoVGImageHandle,currentcolortransform.isIdentity() ? getData() : getDataColorTransformed());
+	else
+	{
+		if (!bitmaptexture.isValid())
+			bitmaptexture=sys->getRenderThread()->allocateTexture(width, height, true,true);
+		sys->getRenderThread()->loadChunkBGRA(bitmaptexture,width, height,currentcolortransform.isIdentity() ? getData() : getDataColorTransformed());
+	}
 	return true;
 }
 
@@ -274,6 +273,7 @@ void BitmapContainer::clone(BitmapContainer* c)
 		c->currentcolortransform = currentcolortransform;
 		memcpy (c->getDataColorTransformed(),getDataColorTransformed(),getWidth()*getHeight()*4);
 	}
+	c->hasModifiedData=true;
 }
 
 void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)
@@ -283,6 +283,7 @@ void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)
 	uint8_t* d = getCurrentData();
 	uint32_t *p=reinterpret_cast<uint32_t *>(&d[y*stride + 4*x]);
 	*p = ((uint32_t)alpha << 24) + (*p & 0xFFFFFF);
+	hasModifiedData=true;
 }
 
 void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlpha, bool ispremultiplied)
@@ -303,6 +304,7 @@ void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlp
 		res |= alpha<<24;
 		*p=res;
 	}
+	hasModifiedData=true;
 }
 
 // values taken from ruffle, see https://github.com/ruffle-rs/ruffle/blob/master/core/src/bitmap/bitmap_data.rs
@@ -332,7 +334,7 @@ uint32_t FLASH_PREMUL_FACTOR[256] = {
 	67576, 67326, 67070, 66813, 66556, 66302, 66046, 65791, 65408,
 };
 
-uint32_t BitmapContainer::getPixel(int32_t x, int32_t y,bool premultiplied) const
+uint32_t BitmapContainer::getPixel(int32_t x, int32_t y,bool premultiplied)
 {
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return 0;
@@ -421,6 +423,7 @@ void BitmapContainer::copyRectangle(_R<BitmapContainer> source,
 		if (needsdeletion)
 			delete[] sourcedata;
 	}
+	hasModifiedData=true;
 }
 
 void BitmapContainer::applyFilter(_R<BitmapContainer> source,
@@ -433,6 +436,7 @@ void BitmapContainer::applyFilter(_R<BitmapContainer> source,
 	int32_t clippedY;
 	clipRect(source, sourceRect, destX, destY, clippedSourceRect, clippedX, clippedY);
 	filter->applyFilter(this,source.getPtr(),clippedSourceRect,destX,destY,1.0,1.0);
+	hasModifiedData=true;
 }
 
 void BitmapContainer::fillRectangle(const RECT& inputRect, uint32_t color, bool useAlpha)
@@ -442,6 +446,12 @@ void BitmapContainer::fillRectangle(const RECT& inputRect, uint32_t color, bool 
 	if (clippedRect.Ymin>=clippedRect.Ymax || clippedRect.Xmin>=clippedRect.Xmax)
 		return;
 	
+	if (this->nanoVGImageHandle >= 0 && clippedRect.Xmin==0 && clippedRect.Ymin==0 && clippedRect.Xmax==this->width && clippedRect.Ymax==this->height)
+	{
+		nanoVGImageBackgroundcolor=RGBA(color,useAlpha ? (color>>24)&0xff : 0xff);
+		hasModifiedData=false;
+		return;
+	}
 	uint32_t realcolor = useAlpha ? color : (0xFF000000 | (color & 0xFFFFFF));
 	// fill first line
 	for(int32_t x=clippedRect.Xmin;x<clippedRect.Xmax;x++)
@@ -456,6 +466,7 @@ void BitmapContainer::fillRectangle(const RECT& inputRect, uint32_t color, bool 
 		uint32_t offset=y*stride + clippedRect.Xmin*4;
 		memcpy(getCurrentData()+offset,getData()+clippedRect.Ymin*stride+clippedRect.Xmin*4,(clippedRect.Xmax-clippedRect.Xmin)*4);
 	}
+	hasModifiedData=true;
 }
 
 bool BitmapContainer::scroll(int32_t x, int32_t y)
@@ -487,19 +498,29 @@ bool BitmapContainer::scroll(int32_t x, int32_t y)
 			dataBase + (sourceY+row)*stride + 4*sourceX,
 			4*copyWidth);
 	}
-
+	hasModifiedData=true;
 	return true;
 }
 
-inline uint32_t *BitmapContainer::getDataNoBoundsChecking(int32_t x, int32_t y) const
+inline uint32_t *BitmapContainer::getDataNoBoundsChecking(int32_t x, int32_t y)
 {
 	uint8_t* d = getCurrentData();
 	return (uint32_t*)&d[y*stride + 4*x];
 }
 
-uint8_t* BitmapContainer::getCurrentData() const
+uint8_t* BitmapContainer::getCurrentData()
 {
+	checkModifiedTexture();
 	return currentcolortransform.isIdentity() ? (uint8_t*)data.data() : (uint8_t*)data_colortransformed.data();
+}
+
+void BitmapContainer::checkModifiedTexture()
+{
+	if (hasModifiedTexture)
+	{
+		this->incRef();
+		getSys()->getRenderThread()->readPixelsToBimapContainer(_MR(this));
+	}
 }
 
 /*
@@ -616,6 +637,7 @@ void BitmapContainer::floodFill(int32_t startX, int32_t startY, uint32_t color)
 		}
 		while (t <= r.x2);
 	}
+	hasModifiedData=true;
 }
 
 void BitmapContainer::clipRect(const RECT& sourceRect, RECT& clippedRect) const
@@ -660,7 +682,7 @@ void BitmapContainer::clipRect(_R<BitmapContainer> source, const RECT& sourceRec
 	outputY = dTop;
 }
 
-std::vector<uint32_t> BitmapContainer::getPixelVector(const RECT& inputRect, bool premultiplied) const
+std::vector<uint32_t> BitmapContainer::getPixelVector(const RECT& inputRect, bool premultiplied)
 {
 	RECT rect;
 	clipRect(inputRect, rect);

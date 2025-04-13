@@ -49,18 +49,21 @@ protected:
 	std::vector<uint8_t> data_colortransformed;
 	// color transformation values currently applied to data_colortransformed
 	ColorTransformBase currentcolortransform;
-	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y) const;
-	uint8_t* getCurrentData() const;
+	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y);
+	uint8_t* getCurrentData();
+	void checkModifiedTexture();
 public:
 	Semaphore renderevent;
+	bool hasModifiedData;
+	bool hasModifiedTexture;
 	TextureChunk bitmaptexture;
 	int nanoVGImageHandle;
+	RGBA nanoVGImageBackgroundcolor;
 	cairo_pattern_t* cachedCairoPattern;
 	BitmapContainer(MemoryAccount* m);
 	~BitmapContainer();
 	uint32_t getDataSize() const { return data.size(); }
 	uint8_t* getData() { return getCurrentData(); }
-	const uint8_t* getData() const { return getCurrentData(); }
 	uint8_t* getOriginalData() { return &data[0]; }
 	uint8_t* getDataColorTransformed() 
 	{
@@ -91,8 +94,8 @@ public:
 		      int32_t& outputX, int32_t& outputY) const;
 	void setAlpha(int32_t x, int32_t y, uint8_t alpha);
 	void setPixel(int32_t x, int32_t y, uint32_t color, bool setAlpha, bool ispremultiplied=true);
-	uint32_t getPixel(int32_t x, int32_t y, bool premultiplied=true) const;
-	std::vector<uint32_t> getPixelVector(const RECT& rect, bool premultiplied=true) const;
+	uint32_t getPixel(int32_t x, int32_t y, bool premultiplied=true);
+	std::vector<uint32_t> getPixelVector(const RECT& rect, bool premultiplied=true);
 	void copyRectangle(_R<BitmapContainer> source, 
 			   const RECT& sourceRect,
 			   int32_t destX, int32_t destY,
@@ -107,7 +110,6 @@ public:
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
 	bool isEmpty() const { return data.empty(); }
-	void clear();
 
 	bool checkTextureForUpload(SystemState* sys);
 	void clone(BitmapContainer* c);

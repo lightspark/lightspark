@@ -261,6 +261,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 {
 	d->incRef();
 	getSystemState()->getRenderThread()->renderDisplayObjectToBimapContainer(_MNR(d),initialMatrix,smoothing,blendMode,ct,this->pixels);
+	if (this->pixels->nanoVGImageHandle>=0)
+		this->pixels->hasModifiedTexture=true;
 	this->notifyUsers();
 }
 

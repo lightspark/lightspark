@@ -2715,6 +2715,10 @@ void ppPluginEngineData::exec_glReadPixels_GL_BGRA(int32_t width, int32_t height
 	g_gles2_interface->PixelStorei(instance->m_graphics,GL_PACK_ALIGNMENT, 1);
 	g_gles2_interface->ReadPixels(instance->m_graphics,0,0,width, height, GL_BGRA_EXT, GL_UNSIGNED_BYTE, buf);
 }
+void ppPluginEngineData::exec_glGetTexImage_GL_TEXTURE_2D(void *buf)
+{
+	LOG(LOG_ERROR,"glGetTexImage not available for PPAPI");
+}
 
 void ppPluginEngineData::exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id)
 {

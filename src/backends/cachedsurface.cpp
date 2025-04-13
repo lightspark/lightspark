@@ -126,6 +126,26 @@ void nanoVGDeleteImage(int image)
 		nvgDeleteImage(nvgctxt,image);
 }
 
+void nanoVGUpdateImage(int image, const unsigned char* data)
+{
+	NVGcontext* nvgctxt = getSys()->getEngineData() ? getSys()->getEngineData()->nvgcontext : nullptr;
+	if (nvgctxt)
+		nvgUpdateImage(nvgctxt,image,data);
+}
+uint32_t nanoVGGetTextureID(int image)
+{
+	NVGcontext* nvgctxt = getSys()->getEngineData() ? getSys()->getEngineData()->nvgcontext : nullptr;
+	if (nvgctxt)
+#if defined(ENABLE_GLES2)
+		return nvglImageHandleGLES2(nvgctxt, image);
+#elif defined(ENABLE_GLES3)
+		return nvglImageHandleGLES3(nvgctxt, image);
+#else
+		return nvglImageHandleGL2(nvgctxt, image);
+#endif
+	return UINT32_MAX;
+}
+
 int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style)
 {
 	if (!style->bitmap)

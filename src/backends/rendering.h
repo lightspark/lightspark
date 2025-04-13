@@ -148,6 +148,7 @@ public:
 	void signalSurfaceRefresh();
 
 	void renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, const MATRIX& initialMatrix,bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct,_NR<BitmapContainer> bm);
+	void readPixelsToBimapContainer(_NR<BitmapContainer> bm);
 	/**
 		Allocates a chunk from the shared texture
 		if direct is true, the openGL texture is generated directly. this can only be used inside the render thread

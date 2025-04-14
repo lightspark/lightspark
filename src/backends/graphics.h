@@ -245,6 +245,7 @@ struct RenderDisplayObjectToBitmapContainer
 	bool smoothing;
 	AS_BLENDMODE blendMode;
 	ColorTransformBase* ct;
+	RECT* clipRect;
 	std::list<ITextureUploadable*> uploads;
 	std::list<RefreshableSurface> surfacesToRefresh;
 };

@@ -255,7 +255,10 @@ bool BitmapContainer::checkTextureForUpload(SystemState* sys)
 	}
 
 	if (nanoVGImageHandle >= 0)
-		nanoVGUpdateImage(nanoVGImageHandle,currentcolortransform.isIdentity() ? getData() : getDataColorTransformed());
+	{
+		if (this->hasModifiedData)
+			nanoVGUpdateImage(nanoVGImageHandle,currentcolortransform.isIdentity() ? getData() : getDataColorTransformed());
+	}
 	else
 	{
 		if (!bitmaptexture.isValid())
@@ -448,6 +451,7 @@ void BitmapContainer::fillRectangle(const RECT& inputRect, uint32_t color, bool 
 	
 	if (this->nanoVGImageHandle >= 0 && clippedRect.Xmin==0 && clippedRect.Ymin==0 && clippedRect.Xmax==this->width && clippedRect.Ymax==this->height)
 	{
+		// fast path: fill full bitmap with new color
 		nanoVGImageBackgroundcolor=RGBA(color,useAlpha ? (color>>24)&0xff : 0xff);
 		hasModifiedData=false;
 		return;

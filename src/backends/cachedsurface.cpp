@@ -450,7 +450,8 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 }
 void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisplayObjectToBitmapContainer* container)
 {
-	if (state->scrollRect.Xmin || state->scrollRect.Xmax || state->scrollRect.Ymin || state->scrollRect.Ymax)
+	bool hasscrollrect = state->scrollRect.Xmin || state->scrollRect.Xmax || state->scrollRect.Ymin || state->scrollRect.Ymax;
+	if (hasscrollrect)
 	{
 		MATRIX m = ctxt.transformStack().transform().matrix;
 		sys->getEngineData()->exec_glScissor(m.getTranslateX()+state->scrollRect.Xmin*m.getScaleX()
@@ -848,7 +849,8 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 		ctxt.deactivateMask();
 		ctxt.popMask();
 	});
-	sys->getEngineData()->exec_glDisable_GL_SCISSOR_TEST();
+	if(hasscrollrect)
+		sys->getEngineData()->exec_glDisable_GL_SCISSOR_TEST();
 }
 void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t w, uint32_t h, const MATRIX& m)
 {

@@ -1454,7 +1454,7 @@ static void glnvg__renderFlush(void* uptr)
 		glFrontFace(GL_CCW);
 		glEnable(GL_BLEND);
 		glDisable(GL_DEPTH_TEST);
-		glDisable(GL_SCISSOR_TEST);
+		//glDisable(GL_SCISSOR_TEST); // Lightspark needs to control scissoring and nanoVG doesn't seem to need it
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		glStencilMask(0xffffffff);
 		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);

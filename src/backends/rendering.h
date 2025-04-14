@@ -147,7 +147,7 @@ public:
 	void addRefreshableSurface(IDrawable* d,_NR<DisplayObject> o);
 	void signalSurfaceRefresh();
 
-	void renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, const MATRIX& initialMatrix,bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct,_NR<BitmapContainer> bm);
+	void renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, _NR<BitmapContainer> bm, lightspark::Rectangle* clipRect);
 	void readPixelsToBimapContainer(_NR<BitmapContainer> bm);
 	/**
 		Allocates a chunk from the shared texture

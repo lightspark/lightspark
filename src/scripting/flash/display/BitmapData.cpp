@@ -38,7 +38,7 @@
 #include "backends/rendering.h"
 #include "3rdparty/perlinnoise/PerlinNoise.hpp"
 
-#include <cstdlib> 
+#include <cstdlib>
 
 using namespace lightspark;
 using namespace std;
@@ -257,10 +257,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	th->notifyUsers();
 }
 
-void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct)
+void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, Rectangle* clipRect)
 {
 	d->incRef();
-	getSystemState()->getRenderThread()->renderDisplayObjectToBimapContainer(_MNR(d),initialMatrix,smoothing,blendMode,ct,this->pixels);
+	getSystemState()->getRenderThread()->renderDisplayObjectToBimapContainer(_MNR(d),initialMatrix,smoothing,blendMode,ct,this->pixels,clipRect);
 	if (this->pixels->nanoVGImageHandle>=0)
 		this->pixels->hasModifiedTexture=true;
 	this->notifyUsers();
@@ -285,7 +285,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 	if(!drawable->getClass() || !drawable->getClass()->isSubClass(InterfaceClass<IBitmapDrawable>::getClass(wrk->getSystemState())) )
 	{
 		if (wrk->rootClip->needsActionScript3())
-			createError<TypeError>(wrk,kCheckTypeFailedError, 
+			createError<TypeError>(wrk,kCheckTypeFailedError,
 								   drawable->getClassName(),
 								   "IBitmapDrawable");
 		return;
@@ -294,11 +294,20 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.drawWithQuality parameter quality is ignored:"<<asAtomHandler::toDebugString(quality));
 
 	uint32_t blendModeID = BUILTIN_STRINGS::EMPTY;
-	if (asAtomHandler::isValid(blendMode) 
+	if (asAtomHandler::isValid(blendMode)
 		&& !asAtomHandler::isNull(blendMode)
 		&& !asAtomHandler::isUndefined(blendMode))
 		blendModeID = asAtomHandler::toStringId(blendMode,wrk);
-	if(drawable->is<BitmapData>())
+	DisplayObject* d=nullptr;
+	if(drawable->is<DisplayObject>())
+		d = drawable->as<DisplayObject>();
+	else if(th->pixels->nanoVGImageHandle >= 0 && drawable->is<BitmapData>())
+	{
+		// fast path: use temporary Bitmap to render BitmapData
+		d = Class<Bitmap>::getInstanceS(wrk,_MNR<BitmapData>(drawable->as<BitmapData>()),false);
+		drawable->as<BitmapData>()->pixels->hasModifiedData=false;
+	}
+	else if(drawable->is<BitmapData>())
 	{
 		if(blendModeID != BUILTIN_STRINGS::EMPTY)
 			LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support blendMode parameter:"<<drawable->toDebugString()<<" "<<wrk->getSystemState()->getStringFromUniqueId(blendModeID));
@@ -319,12 +328,12 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 			ctxt.transformedBlit(initialMatrix, data->pixels.getPtr(),ctransform.getPtr(),
 								smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,clipRect->x,clipRect->y,clipRect->width,clipRect->height);
 		}
+		th->pixels->hasModifiedData=true;
 	}
-	else if(drawable->is<DisplayObject>())
+	else
+		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());
+	if (d)
 	{
-		if(!clipRect.isNull())
-			LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support clipRect parameter:"<<drawable->toDebugString()<<" "<<clipRect->x<<"/"<<clipRect->y<<" "<<clipRect->width<<"/"<<clipRect->height);
-		DisplayObject* d=drawable->as<DisplayObject>();
 		//Compute the initial matrix, if any
 		MATRIX initialMatrix;
 		if(!matrix.isNull())
@@ -346,10 +355,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 			case BUILTIN_STRINGS::STRING_SCREEN: bl = BLENDMODE_SCREEN; break;
 			case BUILTIN_STRINGS::STRING_SUBTRACT: bl = BLENDMODE_SUBTRACT; break;
 		}
-		th->drawDisplayObject(d, initialMatrix,smoothing,bl,ctransform.getPtr());
+		th->drawDisplayObject(d, initialMatrix,smoothing,bl,ctransform.getPtr(),clipRect.getPtr());
 	}
-	else
-		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());
 	th->notifyUsers();
 }
 ASFUNCTIONBODY_ATOM(BitmapData,draw)
@@ -774,7 +781,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 			ret = asAtomHandler::trueAtom;
 	}
 	else
-		createError<TypeError>(wrk,kCheckTypeFailedError, 
+		createError<TypeError>(wrk,kCheckTypeFailedError,
 				      secondObject->getClassName(),
 				      " Point, Rectangle, Bitmap, or BitmapData");
 }
@@ -1234,9 +1241,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 			b = ((pixel )&0xff) * inputColorTransform->blueMultiplier + inputColorTransform->blueOffset;
 			if (b > 255) b = 255;
 			if (b < 0) b = 0;
-			
+
 			pixel = (a<<24) | (r<<16) | (g<<8) | b;
-			
+
 			th->pixels->setPixel(x, y, pixel, th->transparent,false);
 			i++;
 		}
@@ -1253,7 +1260,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 		return;
 	}
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	
+
 	_NR<BitmapData> otherBitmapData;
 	ARG_CHECK(ARG_UNPACK(otherBitmapData));
 
@@ -1293,10 +1300,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 	rect.Xmax = th->getWidth();
 	rect.Ymin = 0;
 	rect.Ymax = th->getHeight();
-	
+
 	vector<uint32_t> pixelvec = th->pixels->getPixelVector(rect,false);
 	vector<uint32_t> otherpixelvec = otherBitmapData->pixels->getPixelVector(rect,false);
-	
+
 	BitmapData* res = wrk->needsActionScript3() ? Class<BitmapData>::getInstanceS(wrk,rect.Xmax,rect.Ymax) : Class<AVM1BitmapData>::getInstanceS(wrk,rect.Xmax,rect.Ymax);
 	unsigned int i = 0;
 	bool different = false;
@@ -1314,7 +1321,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 				uint32_t resultpixel= (((pixel & 0xFF000000) - (otherpixel & 0xFF000000))&0xFF000000) | 0x00FFFFFF;
 				res->pixels->setPixel(x, y, resultpixel, true,false);
 			}
-			else 
+			else
 			{
 				different = true;
 				uint32_t resultpixel= (((pixel & 0x00FF0000) - (otherpixel & 0x00FF0000)) &0x00FF0000) |
@@ -1379,7 +1386,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,noise)
 	uint32_t channelOptions;
 	bool grayScale;
 	ARG_CHECK(ARG_UNPACK(randomSeed)(low, 0) (high, 255) (channelOptions, 7) (grayScale, false));
-	
+
 	uint32_t randomval = randomSeed <= 0 ? -randomSeed+1 : randomSeed;
 	if (high < low)
 		high=low;
@@ -1389,7 +1396,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,noise)
 		for (int32_t x=0; x<th->getWidth(); x++)
 		{
 			uint32_t pixel = 0;
-			
+
 			if (grayScale)
 			{
 				uint8_t v = (LehmerRandom(randomval) % (range +1) + low) & 0xff;

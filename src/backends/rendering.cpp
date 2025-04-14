@@ -294,6 +294,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			if (it->cachedsurface.isNull()) // indicates readPixels only
 			{
 				assert(it->bitmapcontainer->nanoVGImageHandle>=0);
+				it->bitmapcontainer->hasModifiedTexture=false;
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(nanoVGGetTextureID(it->bitmapcontainer->nanoVGImageHandle));
 #if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
 				uint32_t fbo = engineData->exec_glGenFramebuffer();
@@ -305,7 +306,6 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 #else
 				engineData->exec_glGetTexImage_GL_TEXTURE_2D(it->bitmapcontainer->getData());
 #endif
-				it->bitmapcontainer->hasModifiedTexture=false;
 			}
 			else
 			{
@@ -359,6 +359,12 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				baseRenderbuffer=bmrenderbuffer;
 				flipvertical=false; // avoid flipping resulting image vertically (as is done for normal rendering)
 				setViewPort(w,h,false);
+				if (it->clipRect)
+					engineData->exec_glScissor(it->clipRect->Xmin,
+											it->clipRect->Ymin,
+											(it->clipRect->Xmax-it->clipRect->Xmin),
+											(it->clipRect->Ymax-it->clipRect->Ymin)
+											);
 
 				// render DisplayObject to texture
 				it->cachedsurface->Render(m_sys,*this,&it->initialMatrix,&(*it));
@@ -376,6 +382,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 
 				// cleanup
+				engineData->exec_glDisable_GL_SCISSOR_TEST();
 				engineData->exec_glDeleteFramebuffers(1,&bmframebuffer);
 				engineData->exec_glDeleteRenderbuffers(1,&bmrenderbuffer);
 				if (it->bitmapcontainer->nanoVGImageHandle<0)
@@ -1666,7 +1673,9 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 		engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(0, blockX, blockY, sizeX, sizeY, data_clamp);
 	}
 }
-void RenderThread::renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, const MATRIX &initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase *ct, _NR<BitmapContainer> bm)
+void RenderThread::renderDisplayObjectToBimapContainer(
+		_NR<DisplayObject> o, const MATRIX &initialMatrix, bool smoothing, AS_BLENDMODE blendMode,
+		ColorTransformBase *ct, _NR<BitmapContainer> bm, Rectangle* clipRect)
 {
 	if(m_sys->isShuttingDown() || !EngineData::enablerendering)
 		return;
@@ -1678,6 +1687,13 @@ void RenderThread::renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, con
 	r.smoothing = smoothing;
 	r.blendMode = blendMode;
 	r.ct = ct;
+	r.clipRect = nullptr;
+	RECT rc;
+	if (clipRect)
+	{
+		rc = clipRect->getRect();
+		r.clipRect=&rc;
+	}
 	o->invalidateForRenderToBitmap(&r);
 	displayobjectsToRender.push_back(r);
 	renderToBitmapContainerNeeded=true;

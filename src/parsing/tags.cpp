@@ -2464,6 +2464,8 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 				state->setFilters(i->FilterList);
 			if (!i->ColorTransform.isIdentity())
 				state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(loadedFrom->getInstanceWorker(),i->ColorTransform));
+			state->constructionComplete();
+			state->afterConstruction();
 
 			if(states[j] == nullptr)
 			{

@@ -190,7 +190,7 @@ void RootMovieClip::afterConstruction(bool _explicit)
 
 bool RootMovieClip::needsActionScript3() const
 {
-	assert(getSystemState()->isShuttingDown() || applicationDomain || getInDestruction() || deletedingarbagecollection);
+	assert(getSystemState()->isShuttingDown() || applicationDomain || getInDestruction() || deletedingarbagecollection || gcNext || gcPrev);
 	return !this->applicationDomain || this->applicationDomain->usesActionScript3;
 }
 void RootMovieClip::revertFrame()
@@ -337,7 +337,7 @@ bool RootMovieClip::destruct()
 	waitingforparser=false;
 	avm1focusrect=asAtomHandler::trueAtom;
 	parsethread=nullptr;
-	return MovieClip::destruct();;
+	return MovieClip::destruct();
 }
 void RootMovieClip::finalize()
 {

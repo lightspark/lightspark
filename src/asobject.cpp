@@ -2292,7 +2292,11 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 {
 	if (gcstate.stopped)
 		return false;
-	gcstate.setAncestor(parent);
+	if (!parent->gccounter.ischecked)
+	{
+		gcstate.checkedobjects.push_back(parent);
+		parent->gccounter.ischecked=true;
+	}
 	bool ret = false;
 	auto it=Variables.cbegin();
 	while(it!=Variables.cend())
@@ -2334,7 +2338,11 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 			else if (o != parent && ((uint32_t)o->getRefCount()==o->storedmembercount))
 			{
 				if(o->gccounter.ischecked)
+				{
+					if (o->gccounter.countlevel <= 1)
+						gcstate.incCount(o,o->gccounter.hasmember);
 					ret = o->gccounter.hasmember || ret;
+				}
 				else if (o->countAllCylicMemberReferences(gcstate))
 				{
 					o->gccounter.hasmember=true;
@@ -2542,7 +2550,7 @@ bool ASObject::handleGarbageCollection()
 		return false;
 	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1))
 	{
-		garbagecollectorstate gcstate(this);
+		garbagecollectorstate gcstate(this,max(16U,this->Variables.size()));
 		this->countCylicMemberReferences(gcstate);
 		markedforgarbagecollection=false;
 		if (gcstate.stopped)
@@ -2630,6 +2638,7 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 	if (gcstate.stopped)
 		return false;
 	bool ret = false;
+	this->gccounter.countlevel++;
 	if (this == gcstate.startobj)
 	{
 		gcstate.incCount(this,false);
@@ -2644,26 +2653,24 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 	{
 		if (!this->gccounter.ischecked)
 		{
-			if (this->gccounter.isAncestor)
-			{
+			if (this->gccounter.countlevel > 1)
 				ret = gcstate.incCount(this,false);
-				return this->gccounter.hasmember;
-			}
-			ret = countCylicMemberReferences(gcstate);
-			gcstate.incCount(this,false);
-			if (ret)
-				this->gccounter.hasmember=true;
 			else
-				ret=this->gccounter.hasmember;
+			{
+				ret = countCylicMemberReferences(gcstate);
+				gcstate.incCount(this,false);
+				if (ret)
+					this->gccounter.hasmember=true;
+				else
+					ret=this->gccounter.hasmember;
+			}
 		}
-		else if (!this->gccounter.isAncestor)
+		else
 			ret = gcstate.incCount(this,false);
 	}
 	else
-	{
 		ret = this->gccounter.hasmember;
-	}
-
+	this->gccounter.countlevel--;
 	return ret;
 }
 
@@ -5603,15 +5610,6 @@ void garbagecollectorstate::ignoreCount(ASObject* o)
 	}
 	if (o->gccounter.hasmember)
 		this->stopped=true;
-}
-void garbagecollectorstate::setAncestor(ASObject* o)
-{
-	o->gccounter.isAncestor=true;
-	if (!o->gccounter.ischecked)
-	{
-		this->checkedobjects.push_back(o);
-		o->gccounter.ischecked=true;
-	}
 }
 void garbagecollectorstate::reset()
 {

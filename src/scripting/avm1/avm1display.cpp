@@ -201,14 +201,15 @@ ASFUNCTIONBODY_ATOM(AVM1Stage,removeResizeListener)
 
 void AVM1MovieClipLoader::addLoader(URLRequest* r, DisplayObject* target,int level)
 {
+	loadermutex.lock();
 	Loader* ldr = Class<Loader>::getInstanceSNoArgs(getInstanceWorker());
 	ldr->addStoredMember();
 	ldr->loadedFrom=target->loadedFrom;
 	ldr->AVM1setup(level,this);
-	loadermutex.lock();
 	loaderlist.insert(ldr);
 	loadermutex.unlock();
 	ldr->loadIntern(r,nullptr,target);
+	r->decRef();
 }
 
 void AVM1MovieClipLoader::sinit(Class_base* c)
@@ -296,8 +297,12 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 	{
 		ASWorker* wrk = getInstanceWorker();
 		
+		if (listeners.insert(this).second)
+		{
+			this->incRef();
+			this->addStoredMember();
+		}
 		std::set<ASObject*> tmplisteners = listeners;
-		listeners.insert(this);
 		auto it = tmplisteners.begin();
 		while (it != tmplisteners.end())
 		{

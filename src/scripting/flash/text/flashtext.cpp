@@ -2396,7 +2396,7 @@ void TextFormat::finalize()
 	ASATOM_REMOVESTOREDMEMBER(rightMargin);
 	if (tabStops)
 		tabStops->removeStoredMember();
-	tabStops.reset();
+	tabStops.fakeRelease();
 	ASATOM_REMOVESTOREDMEMBER(underline);
 	ASATOM_REMOVESTOREDMEMBER(display);
 	ASATOM_REMOVESTOREDMEMBER(align);
@@ -2432,7 +2432,7 @@ bool TextFormat::destruct()
 	rightMargin = asAtomHandler::nullAtom;
 	if (tabStops)
 		tabStops->removeStoredMember();
-	tabStops.reset();
+	tabStops.fakeRelease();
 	ASATOM_REMOVESTOREDMEMBER(underline);
 	underline = asAtomHandler::nullAtom;
 	ASATOM_REMOVESTOREDMEMBER(display);

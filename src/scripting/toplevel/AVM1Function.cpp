@@ -26,24 +26,20 @@
 using namespace std;
 using namespace lightspark;
 
-AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, Activation_object* act, AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a, const _R<AVM1Scope>& _scope, std::vector<uint8_t> _registernumbers, bool _preloadParent, bool _preloadRoot, bool _suppressSuper, bool _preloadSuper, bool _suppressArguments, bool _preloadArguments, bool _suppressThis, bool _preloadThis, bool _preloadGlobal)
-	:IFunction(wrk,c,SUBTYPE_AVM1FUNCTION),clip(cl),avm1Class(nullptr),activationobject(act),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers), scope(_scope),
+AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a, const _R<AVM1Scope>& _scope, std::vector<uint8_t> _registernumbers, bool _preloadParent, bool _preloadRoot, bool _suppressSuper, bool _preloadSuper, bool _suppressArguments, bool _preloadArguments, bool _suppressThis, bool _preloadThis, bool _preloadGlobal)
+	:IFunction(wrk,c,SUBTYPE_AVM1FUNCTION),clip(cl),avm1Class(nullptr),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers), scope(_scope),
 	  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal)
 {
 	if (ctx)
 		context.avm1strings.assign(ctx->avm1strings.begin(),ctx->avm1strings.end());
 	clip->incRef();
 	clip->addStoredMember();
-	if (act)
-		act->addStoredMember();
 	context.keepLocals=true;
 	superobj = asAtomHandler::invalidAtom;
 }
 
 AVM1Function::~AVM1Function()
 {
-	if (activationobject)
-		activationobject->removeStoredMember();
 	if (clip)
 		clip->removeStoredMember();
 }
@@ -58,12 +54,11 @@ asAtom AVM1Function::computeSuper()
 		pr= asAtomHandler::getObject(this->prototype);
 	if (pr)
 	{
-		pr->incRef();
 		multiname m(nullptr);
 		m.name_type=multiname::NAME_STRING;
 		m.isAttribute = false;
 		m.name_s_id = BUILTIN_STRINGS::STRING_CONSTRUCTOR;
-		pr->getVariableByMultiname(newsuper,m,GET_VARIABLE_OPTION::NONE,clip->getInstanceWorker());
+		pr->getVariableByMultiname(newsuper,m,GET_VARIABLE_OPTION::NO_INCREF,clip->getInstanceWorker());
 		if (asAtomHandler::isInvalid(newsuper))
 			LOG(LOG_ERROR,"no super found:"<<pr->toDebugString());
 	}
@@ -84,9 +79,6 @@ uint32_t AVM1Function::getSWFVersion()
 
 void AVM1Function::finalize()
 {
-	if (activationobject)
-		activationobject->removeStoredMember();
-	activationobject=nullptr;
 	if (clip)
 		clip->removeStoredMember();
 	clip=nullptr;
@@ -102,9 +94,6 @@ void AVM1Function::finalize()
 
 bool AVM1Function::destruct()
 {
-	if (activationobject)
-		activationobject->removeStoredMember();
-	activationobject=nullptr;
 	if (clip)
 		clip->removeStoredMember();
 	clip=nullptr;
@@ -124,8 +113,6 @@ void AVM1Function::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	IFunction::prepareShutdown();
-	if (activationobject)
-		activationobject->prepareShutdown();
 	if (clip)
 		clip->prepareShutdown();
 	scope.reset();
@@ -143,8 +130,6 @@ void AVM1Function::prepareShutdown()
 bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = IFunction::countCylicMemberReferences(gcstate);
-	if (activationobject)
-		ret = activationobject->countAllCylicMemberReferences(gcstate) || ret;
 	if (clip)
 		ret = clip->countAllCylicMemberReferences(gcstate) || ret;
 	if (scope)

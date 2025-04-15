@@ -828,8 +828,11 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 	if (!inskipping && obj->is<SimpleButton>())
 	{
 		auto inserted = mapFrameDepthToLegacyChildRemembered.insert(make_pair(depth,obj));
-		obj->incRef();
-		obj->addStoredMember();
+		if (inserted.second)
+		{
+			obj->incRef();
+			obj->addStoredMember();
+		}
 		obj->markedForLegacyDeletion=true;
 		if ((*inserted.first).second != obj)
 		{
@@ -975,8 +978,11 @@ void DisplayObjectContainer::purgeLegacyChildren()
 		if (i->first < 0 && is<MovieClip>() && obj->placeFrame <= as<MovieClip>()->state.FP)
 		{
 			auto inserted = mapFrameDepthToLegacyChildRemembered.insert(make_pair(i->first,obj));
-			obj->incRef();
-			obj->addStoredMember();
+			if (inserted.second)
+			{
+				obj->incRef();
+				obj->addStoredMember();
+			}
 			if ((*inserted.first).second != obj)
 			{
 				(*inserted.first).second->removeStoredMember();
@@ -1028,6 +1034,12 @@ bool DisplayObjectContainer::destruct()
 	// clear all member variables in the display list first to properly handle cyclic reference detection
 	prepareDestruction();
 	clearDisplayList();
+	auto it = mapFrameDepthToLegacyChildRemembered.begin();
+	while (it != mapFrameDepthToLegacyChildRemembered.end())
+	{
+		(*it).second->removeStoredMember();
+		it = mapFrameDepthToLegacyChildRemembered.erase(it);
+	}
 	mouseChildren = true;
 	boundsRectDirty = true;
 	boundsRectVisibleDirty = true;
@@ -1045,6 +1057,12 @@ void DisplayObjectContainer::finalize()
 	// clear all member variables in the display list first to properly handle cyclic reference detection
 	prepareDestruction();
 	clearDisplayList();
+	auto it = mapFrameDepthToLegacyChildRemembered.begin();
+	while (it != mapFrameDepthToLegacyChildRemembered.end())
+	{
+		(*it).second->removeStoredMember();
+		it = mapFrameDepthToLegacyChildRemembered.erase(it);
+	}
 	legacyChildrenMarkedForDeletion.clear();
 	mapDepthToLegacyChild.clear();
 	mapLegacyChildToDepth.clear();
@@ -1072,6 +1090,10 @@ bool DisplayObjectContainer::countCylicMemberReferences(garbagecollectorstate& g
 	if (skipCountCylicMemberReferences(gcstate))
 		return gcstate.hasMember(this);
 	bool ret = InteractiveObject::countCylicMemberReferences(gcstate);
+	for (auto it = mapFrameDepthToLegacyChildRemembered.begin(); it != mapFrameDepthToLegacyChildRemembered.end(); it++)
+	{
+		ret = (*it).second->countAllCylicMemberReferences(gcstate) || ret;
+	}
 	Locker l(mutexDisplayList);
 	for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); it++)
 	{

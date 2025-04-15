@@ -1683,7 +1683,7 @@ public:
 		bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false,
 		bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false,
 		AVM1Function *caller = nullptr, AVM1Function *callee = nullptr,
-		Activation_object *actobj=nullptr, asAtom* superobj=nullptr, bool isInternalCall=false);
+		asAtom* superobj=nullptr, bool isInternalCall=false);
 };
 class BUTTONCONDACTION
 {

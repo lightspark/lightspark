@@ -603,7 +603,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 								  bool preloadSuper, bool suppressArguments, bool preloadArguments,
 								  bool suppressThis, bool preloadThis, bool preloadGlobal,
 								  AVM1Function *caller, AVM1Function *callee,
-								  Activation_object *actobj, asAtom *superobj,bool isInternalCall)
+								  asAtom *superobj,bool isInternalCall)
 {
 	Locker l(executeactionmutex);
 	bool clip_isTarget=false;
@@ -981,7 +981,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom aa = PopStack(stack);
 				asAtom ab = PopStack(stack);
 				// we have to call AVM1toNumber for b first, as it may call an overridden valueOf()
-				// so we call in the same order that adobe does
+				// so we call in the same order as adobe does
 				number_t b = asAtomHandler::AVM1toNumber(ab,clip->loadedFrom->version);
 				number_t a = asAtomHandler::AVM1toNumber(aa,clip->loadedFrom->version);
 				ASATOM_DECREF(aa);
@@ -1469,7 +1469,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				else
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionExtends  super prototype not found "<<asAtomHandler::toDebugString(superconstr)<<" "<<asAtomHandler::toDebugString(subconstr));
-				superobj->incRef();
 				pr->setVariableAtomByQName("constructor",nsNameAndKind(),superconstr, DECLARED_TRAIT,false);
 				if (c->is<AVM1Function>())
 				{
@@ -2615,9 +2614,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				vector<uint8_t> code;
 				code.assign(it,it+codesize);
 				it += codesize;
-				Activation_object* act = name == "" ? new_activationObject(wrk) : nullptr;
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction2 "<<name<<" "<<paramcount<<" "<<flag1<<flag2<<flag3<<flag4<<flag5<<flag6<<flag7<<flag8<<flag9<<" "<<codesize<<" "<<act);
-				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,act,context,funcparamnames,code,context->scope,registernumber,flag1, flag2, flag3, flag4, flag5, flag6, flag7, flag8, flag9);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction2 "<<name<<" "<<paramcount<<" "<<flag1<<flag2<<flag3<<flag4<<flag5<<flag6<<flag7<<flag8<<flag9<<" "<<codesize);
+				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,context,funcparamnames,code,context->scope,registernumber,flag1, flag2, flag3, flag4, flag5, flag6, flag7, flag8, flag9);
 				//Create the prototype object
 				ASObject* pr =new_asobject(f->getSystemState()->worker);
 				pr->addStoredMember();
@@ -2844,8 +2842,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				code.assign(it,it+codesize);
 				it += codesize;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction "<<name<<" "<<paramcount);
-				Activation_object* act = name == "" ? new_activationObject(wrk) : nullptr;
-				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,act,context,paramnames,code,context->scope);
+				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,context,paramnames,code,context->scope);
 				//Create the prototype object
 				ASObject* pr = new_asobject(f->getSystemState()->worker);
 				f->prototype = asAtomHandler::fromObject(pr);

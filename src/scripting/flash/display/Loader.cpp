@@ -318,16 +318,18 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 	}
 
 	r->incRef();
+	LoaderThread *thread=new LoaderThread(_MR(r), this);
 	if (!getSystemState()->runSingleThreaded)
 	{
-		LoaderThread *thread=new LoaderThread(_MR(r), this);
-
 		Locker l(this->spinlock);
 		this->jobs.push_back(thread);
 		this->getSystemState()->addJob(thread);
 	}
 	else
-		LoaderThread(_MR(r), this).execute();
+	{
+		thread->execute();
+		thread->jobFence();
+	}
 }
 ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 {

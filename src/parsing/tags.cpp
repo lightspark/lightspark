@@ -488,7 +488,7 @@ ASObject* DefineEditTextTag::instance(Class_base* c)
 	}
 	//TODO: check
 	assert_and_throw(bindedTo==nullptr);
-	TextField* ret= loadedFrom->usesActionScript3 ? 
+	TextField* ret= loadedFrom->usesActionScript3 ?
 					new (c->memoryAccount) TextField(loadedFrom->getInstanceWorker(), c, textData, !NoSelect, ReadOnly,VariableName,this) :
 					new (c->memoryAccount) AVM1TextField(loadedFrom->getInstanceWorker(),c, textData, !NoSelect, ReadOnly,VariableName,this);
 	if (HTML)
@@ -732,7 +732,7 @@ void FontTag::fillTokens(int glyphposition, const RGBA& color, tokensVector* tk,
 }
 
 ASObject* FontTag::instance(Class_base* c)
-{ 
+{
 	Class_base* retClass=nullptr;
 	if(c)
 		retClass=c;
@@ -773,7 +773,7 @@ bool FontTag::hasGlyphs(const tiny_string text) const
 	return true;
 }
 
-number_t DefineFontTag::getRenderCharStartYPos() const 
+number_t DefineFontTag::getRenderCharStartYPos() const
 {
 	return 1024;
 }
@@ -1036,7 +1036,7 @@ tokensVector* DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_st
 
 	int tokenscaling = fontpixelsize * this->scaling;
 	curPos.y = (1024+this->FontLeading/2.0)+startposy*1024;
-	
+
 	bool first=true;
 	bool emptytoken=false;// indicates "space" glyph
 	tokensVector* tk = &tokens;
@@ -1198,7 +1198,7 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	{
 		//It seems legal to have 1 byte records. We ignore
 		//them, because 1 byte is too short to encode a SHAPE.
-		if ((i < NumGlyphs-1) && 
+		if ((i < NumGlyphs-1) &&
 		    (OffsetTable[i+1]-OffsetTable[i] == 1))
 		{
 			char ignored;
@@ -1323,7 +1323,7 @@ DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	ignore(in,dest-in.tellg());
 }
 ASObject* DefineFont4Tag::instance(Class_base* c)
-{ 
+{
 	tiny_string fontname = FontName;
 	Class_base* retClass=nullptr;
 	if(c)
@@ -1537,7 +1537,7 @@ void DefineTextTag::computeCached()
 	// Scale the translation component of TextMatrix.
 	MATRIX scaledTextMatrix = TextMatrix;
 	scaledTextMatrix.translate((TextMatrix.getTranslateX()-TextBounds.Xmin/20) *pixelScaling,(TextMatrix.getTranslateY()-TextBounds.Ymin/20) *pixelScaling);
-	
+
 	bool first=true;
 	bool emptytoken=false;// indicates "space" glyph
 	tokensVector* tk = &tokens;
@@ -1581,11 +1581,11 @@ void DefineTextTag::computeCached()
 			if (!tk->empty())
 			{
 				Vector2f glyphPos = curPos*twipsScaling;
-				
-				MATRIX glyphMatrix(1, 1, 0, 0, 
+
+				MATRIX glyphMatrix(1, 1, 0, 0,
 								   glyphPos.x,
 								   glyphPos.y);
-				
+
 				//Apply glyphMatrix first, then scaledTextMatrix
 				tk->startMatrix = scaledTextMatrix.multiplyMatrix(glyphMatrix);
 			}
@@ -2080,12 +2080,12 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	{
 		parent->setupClipActionsAt(LEGACY_DEPTH_START+Depth,ClipActions);
 	}
-	
+
 	if (exists && PlaceFlagHasRatio)
 		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, Ratio, inskipping);
 	else if (exists && PlaceFlagHasCharacter)
 		parent->checkRatioForLegacyChildAt(LEGACY_DEPTH_START + Depth, 0, inskipping);
-	
+
 	if(PlaceFlagHasColorTransform)
 		parent->checkColorTransformForLegacyChildAt(LEGACY_DEPTH_START+Depth,ColorTransformWithAlpha);
 	if (newInstance && PlaceFlagHasClipAction && this->ClipActions.AllEventFlags.ClipEventConstruct && currchar)
@@ -2277,14 +2277,14 @@ ProductInfoTag::ProductInfoTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,"ProductInfoTag Tag");
 
-	in >> ProductId >> Edition >> MajorVersion >> MinorVersion >> 
+	in >> ProductId >> Edition >> MajorVersion >> MinorVersion >>
 	MinorBuild >> MajorBuild >> CompileTimeLo >> CompileTimeHi;
 
 	uint64_t longlongTime = CompileTimeHi;
 	longlongTime<<=32;
 	longlongTime|=CompileTimeLo;
 
-	LOG(LOG_INFO,"SWF Info:" << 
+	LOG(LOG_INFO,"SWF Info:" <<
 	endl << "\tProductId:\t\t" << ProductId <<
 	endl << "\tEdition:\t\t" << Edition <<
 	endl << "\tVersion:\t\t" << int(MajorVersion) << "." << int(MinorVersion) << "." << MajorBuild << "." << MinorBuild <<
@@ -2358,7 +2358,7 @@ DefineButtonTag::DefineButtonTag(RECORDHEADER h, std::istream& in, int version, 
 		Characters.push_back(br);
 	}
 	while(true);
-	
+
 	int realactionoffset = (((int)in.tellg())-pos);
 	len -= realactionoffset;
 	int datatagskipbytes = Header.getHeaderSize()+realactionoffset + 2 + (version > 1 ? 1 : 0);
@@ -2600,7 +2600,7 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	uint8_t sndinfo = SoundFormat<<4|SoundRate<<2|SoundSize<<1|SoundType;
 	in >> SoundSampleCount;
 	unsigned int soundDataLength = h.getLength()-7;
-	
+
 	switch (SoundFormat)
 	{
 		case LS_AUDIO_CODEC::ADPCM:
@@ -2608,15 +2608,15 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 			// split ADPCM sound into packets and embed packets into an flv container so that ffmpeg can properly handle it
 			uint32_t bpos = 0;
 			uint8_t flv[soundDataLength+25];
-			
+
 			// flv header
 			flv[bpos++] = 'F'; flv[bpos++] = 'L'; flv[bpos++] = 'V';
 			flv[bpos++] = 0x01;
 			flv[bpos++] = 0x04; // indicate audio tag presence
 			flv[bpos++] = 0x00; flv[bpos++] = 0x00; flv[bpos++] = 0x00; flv[bpos++] = 0x09; // DataOffset, end of flv header
-			
+
 			flv[bpos++] = 0x00; flv[bpos++] = 0x00; flv[bpos++] = 0x00; flv[bpos++] = 0x00; // PreviousTagSize0
-			
+
 			SoundData->append(flv,bpos);
 			uint32_t timestamp=0;
 			int adpcmcodesize = UB(2,bs);
@@ -2634,10 +2634,10 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 				flv[bpos++] = (timestamp>>24) &0xff; // timestamp extended
 				timestamp += 4096 *1000 / getSampleRate();
 				flv[bpos++] = 0x00; flv[bpos++] = 0x00; flv[bpos++] = 0x00; // StreamID
-				
+
 				uint32_t datalenstart=bpos;
 				flv[bpos++] = sndinfo; // sound format
-				
+
 				// ADPCM packet data
 				flv[bpos++] = ((adpcmcodesize<<6) | UB(6,bs))&0xff;
 				bitstoprocess-=6;
@@ -2658,7 +2658,7 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 				flv[datasizepos++] = (dataSize>> 8) &0xff;
 				flv[datasizepos++] = (dataSize    ) &0xff;
 				SoundData->append(flv,bpos);
-				
+
 				// PreviousTagSize
 				uint32_t l = bpos;
 				flv[0] = (l>>24) &0xff;
@@ -2674,7 +2674,7 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 			// split NELLYMOSER sound into packets and embed packets into an flv container so that ffmpeg can properly handle it
 			uint32_t bpos = 0;
 			uint8_t flv[25+64*4];
-			
+
 			// flv header
 			flv[bpos++] = 'F'; flv[bpos++] = 'L'; flv[bpos++] = 'V';
 			flv[bpos++] = 0x01;
@@ -2695,15 +2695,15 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 				flv[bpos++] = (timestamp>>24) &0xff; // timestamp extended
 				timestamp += 4096 *1000 / getSampleRate();
 				flv[bpos++] = 0x00; flv[bpos++] = 0x00; flv[bpos++] = 0x00; // StreamID
-				
+
 				uint32_t datalenstart=bpos;
 				flv[bpos++] = sndinfo; // sound format
-				
+
 				// NELLYMOSER packet data
 				// according to https://wiki.multimedia.cx/index.php?title=Nelly_Moser,
 				// each audio tag can contain 1,2 or 4 audio packets with size 64 bytes each
 				// TODO we use 1 packet per tag for now (maybe the other formats (NELLYMOSER16/NELLYMOSER8) need more packets)
-				in.read((char *)flv+bpos, 64); 
+				in.read((char *)flv+bpos, 64);
 				bpos+=64;
 				bytestoprocess-=64;
 				// compute and set dataSize
@@ -2712,7 +2712,7 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 				flv[datasizepos++] = (dataSize>> 8) &0xff;
 				flv[datasizepos++] = (dataSize    ) &0xff;
 				SoundData->append(flv,bpos);
-				
+
 				// PreviousTagSize
 				uint32_t l = bpos;
 				flv[0] = (l>>24) &0xff;
@@ -3069,7 +3069,7 @@ DefineBitsJPEG3Tag::DefineBitsJPEG3Tag(RECORDHEADER h, std::istream& in, RootMov
 
 		vector<char> alphaDataUncompressed;
 		alphaDataUncompressed.resize(bitmap->getHeight()*bitmap->getWidth());
-		
+
 		//Catch the exception if the stream ends
 		try
 		{
@@ -3142,7 +3142,7 @@ SoundStreamHeadTag::SoundStreamHeadTag(RECORDHEADER h, std::istream& in, RootMov
 	StreamSoundSize = UB(1,bs);
 	StreamSoundType = UB(1,bs);
 	in>>StreamSoundSampleCount;
-	if (StreamSoundCompression == LS_AUDIO_CODEC::MP3) 
+	if (StreamSoundCompression == LS_AUDIO_CODEC::MP3)
 		in>>LatencySeek;
 	SoundData->setConstant();
 	if (StreamSoundSampleCount == 0) // ignore sounds with no samples
@@ -3217,7 +3217,7 @@ AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, Ad
 	if (root->needsActionScript3())
 	{
 		skip(s);
-		return; 
+		return;
 	}
 	startactionpos=0;
 	actions.resize(Header.getLength()+ (datatag ? datatag->numbytes+Header.getHeaderSize() : 0)+1,0);
@@ -3238,7 +3238,7 @@ void AVM1ActionTag::execute(DisplayObjectContainer* parent, bool inskipping)
 		script.avm1context = parent->as<MovieClip>()->getCurrentFrame()->getAVM1Context();
 		script.event_name_id = UINT32_MAX;
 		script.isEventScript = false;
-		parent->incRef(); // will be decreffed after script handler was executed 
+		parent->incRef(); // will be decreffed after script handler was executed
 		script.clip=parent->as<MovieClip>();
 		parent->getSystemState()->stage->AVM1AddScriptToExecute(script);
 	}
@@ -3256,7 +3256,7 @@ AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *
 	if (root->needsActionScript3())
 	{
 		skip(s);
-		return; 
+		return;
 	}
 	startactionpos=0;
 	actions.resize(Header.getLength()+ (datatag ? datatag->numbytes+Header.getHeaderSize()+2 : 0)+1,0);
@@ -3272,7 +3272,7 @@ AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *
 
 void AVM1InitActionTag::execute(RootMovieClip *root) const
 {
-	
+
 	DefineSpriteTag* sprite = dynamic_cast<DefineSpriteTag*>(root->loadedFrom->dictionaryLookup(SpriteId));
 	if (!sprite)
 	{
@@ -3280,6 +3280,8 @@ void AVM1InitActionTag::execute(RootMovieClip *root) const
 		return;
 	}
 	MovieClip* clip = sprite->instance(nullptr)->as<MovieClip>();
+	clip->constructionComplete();
+	clip->afterConstruction();
 	root->AVM1checkInitActions(clip);
 	clip->decRef();
 }

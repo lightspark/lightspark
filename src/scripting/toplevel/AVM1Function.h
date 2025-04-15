@@ -35,7 +35,6 @@ class AVM1Function : public IFunction
 protected:
 	DisplayObject* clip;
 	ASObject* avm1Class;
-	Activation_object* activationobject;
 	AVM1context context;
 	asAtom superobj;
 	std::vector<uint8_t> actionlist;
@@ -52,7 +51,7 @@ protected:
 	bool suppressThis;
 	bool preloadThis;
 	bool preloadGlobal;
-	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,Activation_object* act,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,const _R<AVM1Scope>& _scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false);
+	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,const _R<AVM1Scope>& _scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false);
 	~AVM1Function();
 	method_info* getMethodInfo() const override { return nullptr; }
 	IFunction* clone(ASWorker* wrk) override
@@ -73,10 +72,10 @@ public:
 		if (needsSuper() || getSWFVersion() < 7)
 		{
 			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,&newsuper,isInternalCall);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,&newsuper,isInternalCall);
 		}
 		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,activationobject,nullptr,isInternalCall);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,nullptr,isInternalCall);
 		if (isInternalCall)
 			checkInternalException();
  	}
@@ -86,20 +85,16 @@ public:
 		if (needsSuper() || getSWFVersion() < 7)
 		{
 			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,&newsuper,true);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,&newsuper,true);
 		}
 		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,activationobject,nullptr,true);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,nullptr,true);
 		checkInternalException();
 		return nullptr;
 	}
 	FORCE_INLINE Class_base* getReturnType(bool opportunistic=false) override
 	{
 		return nullptr;
-	}
-	FORCE_INLINE Activation_object* getActivationObject() const
-	{
-		return activationobject;
 	}
 	FORCE_INLINE void setSuper(asAtom s)
 	{

@@ -219,7 +219,7 @@ bool AVM1Scope::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 
 bool AVM1Scope::countAllCyclicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.stopped)
+	if (gcstate.stopped || !this->isLastRef())
 		return false;
 	bool ret = false;
 	ASObject* v = asAtomHandler::getObject(values);

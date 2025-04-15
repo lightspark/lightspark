@@ -197,7 +197,7 @@ void LoaderInfo::afterHandleEvent(Event* ev)
 	auto it = loaderevents.find(ev);
 	if (it != loaderevents.end())
 	{
-		this->loader->decRef();
+		this->loader->removeStoredMember();
 		loaderevents.erase(it);
 	}
 }
@@ -211,6 +211,7 @@ void LoaderInfo::addLoaderEvent(Event* ev)
 		if (it == loaderevents.end())
 		{
 			this->loader->incRef();
+			this->loader->addStoredMember();
 			loaderevents.insert(ev);
 		}
 	}

@@ -135,6 +135,8 @@ void AVM1SimpleButton::sinit(Class_base* c)
 	SimpleButton::sinit(c);
 	c->isSealed = false;
 	InteractiveObject::AVM1SetupMethods(c);
+	c->prototype->setDeclaredMethodByQName("useHandCursor","",c->getSystemState()->getBuiltinFunction(_getUseHandCursor),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("useHandCursor","",c->getSystemState()->getBuiltinFunction(_setUseHandCursor),SETTER_METHOD,false);
 }
 
 void AVM1Stage::sinit(Class_base* c)

@@ -74,6 +74,7 @@ private:
 public:
 	UI16_SWF Ratio;
 	int ClipDepth;
+	bool hasDefaultName; // indicates if name is an automatically assigned "instance<x>"
 	// list of objects that are currently not on stage, but need to be handled in frame events
 	DisplayObject* hiddenPrevDisplayObject;
 	DisplayObject* hiddenNextDisplayObject;

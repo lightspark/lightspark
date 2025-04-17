@@ -259,6 +259,7 @@ private:
 	Mutex mutexLocalConnection;
 	std::map<uint32_t, _NR<ASObject>> localconnection_client_map;
 	ACQUIRE_RELEASE_VARIABLE(FramePhase, framePhase);
+	ATOMIC_INT32(instanceCounter); // used to create unique instanceX names for AVM1
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	tiny_string getDumpedSWFPath() const { return dumpedSWFPath;}
@@ -274,7 +275,7 @@ public:
 	const FLASH_MODE flashMode;
 	uint32_t swffilesize;
 	asAtom nanAtom;
-	ATOMIC_INT32(instanceCounter); // used to create unique instanceX names for AVM1
+	uint32_t getNextInstanceName();
 	// the global object for AVM1
 	Global* avm1global;
 	void setupAVM1();

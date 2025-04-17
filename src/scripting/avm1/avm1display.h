@@ -71,9 +71,8 @@ public:
 class AVM1SimpleButton: public SimpleButton
 {
 public:
-	AVM1SimpleButton(ASWorker* wrk,Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
-				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr)
-		:SimpleButton(wrk,c,dS,hTS,oS,uS,tag) {}
+	AVM1SimpleButton(ASWorker* wrk,Class_base* c, DefineButtonTag* tag = nullptr)
+		:SimpleButton(wrk,c,tag) {}
 	
 	static void sinit(Class_base* c);
 };

@@ -239,7 +239,8 @@ SystemState::SystemState
 	vmVersion(VMNONE),childPid(0),
 	parameters(NullRef),
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedNamespaceId(0x7fffffff),framePhase(FramePhase::IDLE),
-	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),instanceCounter(0),avm1global(nullptr),
+	instanceCounter(0),
+	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),avm1global(nullptr),
 	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),runSingleThreaded(_runSingleThreaded),exitOnError(ERROR_NONE),
 	systemDomain(nullptr),worker(nullptr),workerDomain(nullptr),singleworker(true),
 	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
@@ -2828,3 +2829,11 @@ ASObject* SystemState::getBuiltinFunction(as_atom_function v, int len, Class_bas
 	return Class<IFunction>::getFunction(this,v,len,returnType, returnTypeAllArgsInt);
 }
 
+uint32_t SystemState::getNextInstanceName()
+{
+	int32_t instancenum = ATOMIC_INCREMENT(instanceCounter);
+	char buf[100];
+	sprintf(buf,"instance%i",instancenum);
+	tiny_string s(buf);
+	return getUniqueStringId(s);
+}

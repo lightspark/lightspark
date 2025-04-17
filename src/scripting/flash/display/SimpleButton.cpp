@@ -345,6 +345,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 _NR<DisplayObject> SimpleButton::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret = NullRef;
+	DisplayObject* hitTestState = parentSprite[BUTTONOBJECTTYPE_HIT];
 	if(hitTestState)
 	{
 		if(!hitTestState->getMatrix().isInvertible())
@@ -352,6 +353,19 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(const Vector2f& globalPoint, const 
 
 		const auto hitPoint = hitTestState->getMatrix().getInverted().multiply2D(localPoint);
 		ret = hitTestState->hitTest(globalPoint, hitPoint, type,false);
+	}
+	else
+	{
+		for (auto it = states[BUTTONOBJECTTYPE_HIT].begin(); it != states[BUTTONOBJECTTYPE_HIT].end(); it++)
+		{
+			hitTestState = (*it).second;
+			if(!hitTestState->getMatrix().isInvertible())
+				return NullRef;
+
+			const auto hitPoint = hitTestState->getMatrix().getInverted().multiply2D(localPoint);
+			ret = hitTestState->hitTest(globalPoint, hitPoint, type,false);
+		}
+
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been
@@ -401,90 +415,63 @@ bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, nu
 		return false;
 	bool ret = false;
 	number_t txmin,txmax,tymin,tymax;
-	if (upState && upState->getBounds(txmin,txmax,tymin,tymax,upState->getMatrix()))
+	for (uint32_t i=0; i<4; i++)
 	{
-		if(ret==true)
+		if (parentSprite[i] && parentSprite[i]->getBounds(txmin,txmax,tymin,tymax,parentSprite[i]->getMatrix()))
 		{
-			xmin = min(xmin,txmin);
-			xmax = max(xmax,txmax);
-			ymin = min(ymin,tymin);
-			ymax = max(ymax,tymax);
+			if(ret==true)
+			{
+				xmin = min(xmin,txmin);
+				xmax = max(xmax,txmax);
+				ymin = min(ymin,tymin);
+				ymax = max(ymax,tymax);
+			}
+			else
+			{
+				xmin=txmin;
+				xmax=txmax;
+				ymin=tymin;
+				ymax=tymax;
+				ret=true;
+			}
 		}
-		else
+		for (auto it = states[type].begin(); it != states[type].end(); it++)
 		{
-			xmin=txmin;
-			xmax=txmax;
-			ymin=tymin;
-			ymax=tymax;
-			ret=true;
-		}
-	}
-	if (overState && overState->getBounds(txmin,txmax,tymin,tymax,overState->getMatrix()))
-	{
-		if(ret==true)
-		{
-			xmin = min(xmin,txmin);
-			xmax = max(xmax,txmax);
-			ymin = min(ymin,tymin);
-			ymax = max(ymax,tymax);
-		}
-		else
-		{
-			xmin=txmin;
-			xmax=txmax;
-			ymin=tymin;
-			ymax=tymax;
-			ret=true;
-		}
-	}
-	if (downState && downState->getBounds(txmin,txmax,tymin,tymax,downState->getMatrix()))
-	{
-		if(ret==true)
-		{
-			xmin = min(xmin,txmin);
-			xmax = max(xmax,txmax);
-			ymin = min(ymin,tymin);
-			ymax = max(ymax,tymax);
-		}
-		else
-		{
-			xmin=txmin;
-			xmax=txmax;
-			ymin=tymin;
-			ymax=tymax;
-			ret=true;
+			if ((*it).second->getBounds(txmin,txmax,tymin,tymax,(*it).second->getMatrix()))
+			{
+				if(ret==true)
+				{
+					xmin = min(xmin,txmin);
+					xmax = max(xmax,txmax);
+					ymin = min(ymin,tymin);
+					ymax = max(ymax,tymax);
+				}
+				else
+				{
+					xmin=txmin;
+					xmax=txmax;
+					ymin=tymin;
+					ymax=tymax;
+					ret=true;
+				}
+			}
 		}
 	}
 	return ret;
 }
+void SimpleButton::addDisplayObject(BUTTONOBJECTTYPE state, uint32_t depth, DisplayObject* o)
+{
+	assert(state < 4);
+	o->addStoredMember();
+	states[state].push_back(make_pair(depth,o));
+}
 
-SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DisplayObject *dS, DisplayObject *hTS,
-						   DisplayObject *oS, DisplayObject *uS, DefineButtonTag *tag)
-	: DisplayObjectContainer(wrk,c), lastParent(nullptr),
-	downState(dS), hitTestState(hTS), overState(oS), upState(uS),
-	buttontag(tag),currentState(STATE_OUT),oldstate(STATE_OUT),enabled(true),useHandCursor(true),hasMouse(false)
+SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DefineButtonTag *tag)
+	: DisplayObjectContainer(wrk,c), lastParent(nullptr),parentSprite{nullptr,nullptr,nullptr,nullptr},
+	buttontag(tag),statesdirty(true),
+	currentState(STATE_OUT),oldstate(STATE_OUT),enabled(true),useHandCursor(true),hasMouse(false)
 {
 	subtype = SUBTYPE_SIMPLEBUTTON;
-	if(dS)
-	{
-		dS->addStoredMember();
-		getSystemState()->stage->removeHiddenObject(dS); // avoid any changes when not visible
-	}
-	if(hTS)
-	{
-		hTS->addStoredMember();
-		getSystemState()->stage->removeHiddenObject(hTS); // avoid any changes when not visible
-	}
-	if(oS)
-	{
-		oS->addStoredMember();
-		getSystemState()->stage->removeHiddenObject(oS); // avoid any changes when not visible
-	}
-	if(uS)
-	{
-		uS->addStoredMember();
-		getSystemState()->stage->removeHiddenObject(uS); // avoid any changes when not visible
-	}
 	if (tag)
 		this->loadedFrom = tag->loadedFrom;
 	if (!needsActionScript3())
@@ -530,49 +517,17 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DisplayObject *dS, Disp
 	tabEnabled = true;
 }
 
-void SimpleButton::enterFrame(bool implicit)
-{
-	if (needsActionScript3())
-	{
-		if (hitTestState)
-			hitTestState->enterFrame(implicit);
-		if (upState)
-			upState->enterFrame(implicit);
-		if (downState)
-			downState->enterFrame(implicit);
-		if (overState)
-			overState->enterFrame(implicit);
-	}
-}
-
-void SimpleButton::constructionComplete(bool _explicit)
-{
-	reflectState(STATE_OUT);
-	DisplayObjectContainer::constructionComplete(_explicit);
-}
 void SimpleButton::finalize()
 {
 	DisplayObjectContainer::finalize();
 	if (lastParent)
 		lastParent->removeStoredMember();
 	lastParent=nullptr;
-	if (downState)
-		downState->removeStoredMember();
-	downState=nullptr;
-	if (hitTestState)
-		hitTestState->removeStoredMember();
-	hitTestState=nullptr;
-	if (overState)
-		overState->removeStoredMember();
-	overState=nullptr;
-	if (upState)
-		upState->removeStoredMember();
-	upState=nullptr;
 
-	enabled=true;
-	useHandCursor=true;
-	hasMouse=false;
-	buttontag=nullptr;
+	for (uint32_t i=0; i<4; i++)
+	{
+		clearStateObject((BUTTONOBJECTTYPE)i);
+	}
 }
 
 bool SimpleButton::destruct()
@@ -580,23 +535,13 @@ bool SimpleButton::destruct()
 	if (lastParent)
 		lastParent->removeStoredMember();
 	lastParent=nullptr;
-	if (downState)
-		downState->removeStoredMember();
-	downState=nullptr;
-	if (hitTestState)
-		hitTestState->removeStoredMember();
-	hitTestState=nullptr;
-	if (overState)
-		overState->removeStoredMember();
-	overState=nullptr;
-	if (upState)
-		upState->removeStoredMember();
-	upState=nullptr;
-
+	for (uint32_t i=0; i<4; i++)
+		clearStateObject((BUTTONOBJECTTYPE)i);
 	enabled=true;
 	useHandCursor=true;
 	hasMouse=false;
 	buttontag=nullptr;
+	statesdirty=true;
 	return DisplayObjectContainer::destruct();
 }
 
@@ -607,14 +552,15 @@ void SimpleButton::prepareShutdown()
 	DisplayObjectContainer::prepareShutdown();
 	if (lastParent)
 		lastParent->prepareShutdown();
-	if(downState)
-		downState->prepareShutdown();
-	if(hitTestState)
-		hitTestState->prepareShutdown();
-	if(overState)
-		overState->prepareShutdown();
-	if(upState)
-		upState->prepareShutdown();
+	for (uint32_t i=0; i<4; i++)
+	{
+		for (auto it = states[i].begin(); it != states[i].end(); it++)
+		{
+			(*it).second->prepareShutdown();
+		}
+		if (parentSprite[i])
+			parentSprite[i]->prepareShutdown();
+	}
 	if(soundchannel_OverUpToIdle)
 		soundchannel_OverUpToIdle->prepareShutdown();
 	if(soundchannel_IdleToOverUp)
@@ -631,20 +577,15 @@ bool SimpleButton::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
 	if (lastParent)
 		ret = lastParent->countAllCylicMemberReferences(gcstate) || ret;
-	if (downState)
-		ret = downState->countAllCylicMemberReferences(gcstate) || ret;
-	if (hitTestState)
-		ret = hitTestState->countAllCylicMemberReferences(gcstate) || ret;
-	if (overState)
-		ret = overState->countAllCylicMemberReferences(gcstate) || ret;
-	if (upState)
-		ret = upState->countAllCylicMemberReferences(gcstate) || ret;
+	for (uint32_t i=0; i<4; i++)
+	{
+		for (auto it = states[i].begin(); it != states[i].end(); it++)
+			ret = (*it).second->countAllCylicMemberReferences(gcstate) || ret;
+		if (parentSprite[i])
+			ret = parentSprite[i]->countAllCylicMemberReferences(gcstate) || ret;
+	}
 	return ret;
 
-}
-IDrawable *SimpleButton::invalidate(bool smoothing)
-{
-	return DisplayObjectContainer::invalidate(smoothing);
 }
 void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
@@ -675,59 +616,27 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 	ARG_CHECK(ARG_UNPACK(upState, NullRef)(overState, NullRef)(downState, NullRef)(hitTestState, NullRef));
 
 	if (!upState.isNull())
-	{
-		th->upState = upState.getPtr();
-		th->upState->incRef();
-		th->upState->addStoredMember();
-	}
-	if (!overState.isNull())
-	{
-		th->overState = overState.getPtr();
-		th->overState->incRef();
-		th->overState->addStoredMember();
-	}
+		th->addDisplayObject(BUTTONOBJECTTYPE_UP,0,downState.getPtr());
 	if (!downState.isNull())
-	{
-		th->downState = downState.getPtr();
-		th->downState->incRef();
-		th->downState->addStoredMember();
-	}
+		th->addDisplayObject(BUTTONOBJECTTYPE_DOWN,0,downState.getPtr());
 	if (!hitTestState.isNull())
-	{
-		th->hitTestState = hitTestState.getPtr();
-		th->hitTestState->incRef();
-		th->hitTestState->addStoredMember();
-	}
+		th->addDisplayObject(BUTTONOBJECTTYPE_HIT,0,hitTestState.getPtr());
+	if (!overState.isNull())
+		th->addDisplayObject(BUTTONOBJECTTYPE_OVER,0,overState.getPtr());
 }
 
 void SimpleButton::reflectState(BUTTONSTATE oldstate)
 {
-	assert(dynamicDisplayList.empty() || dynamicDisplayList.size() == 1);
-	if (isConstructed() && oldstate==currentState)
+	if (!statesdirty && isConstructed() && oldstate==currentState)
 		return;
-	if(!dynamicDisplayList.empty())
-	{
-		_removeChild(dynamicDisplayList.front(),true);
-	}
+	this->_removeAllChildren();
 
-	if((currentState == STATE_UP || currentState == STATE_OUT) && upState)
-	{
-		resetStateToStart(upState);
-		upState->incRef();
-		_addChildAt(upState,0);
-	}
-	else if(currentState == STATE_DOWN && downState)
-	{
-		resetStateToStart(downState);
-		downState->incRef();
-		_addChildAt(downState,0);
-	}
-	else if(currentState == STATE_OVER && overState)
-	{
-		resetStateToStart(overState);
-		overState->incRef();
-		_addChildAt(overState,0);
-	}
+	if((currentState == STATE_UP || currentState == STATE_OUT))
+		resetStateToStart(BUTTONOBJECTTYPE_UP);
+	else if(currentState == STATE_DOWN)
+		resetStateToStart(BUTTONOBJECTTYPE_DOWN);
+	else if(currentState == STATE_OVER)
+		resetStateToStart(BUTTONOBJECTTYPE_OVER);
 	if ((oldstate == STATE_OVER || oldstate == STATE_UP) && currentState == STATE_OUT && soundchannel_OverUpToIdle)
 		soundchannel_OverUpToIdle->play();
 	if (oldstate == STATE_OUT && (currentState == STATE_OVER || currentState == STATE_UP) && soundchannel_IdleToOverUp)
@@ -736,133 +645,131 @@ void SimpleButton::reflectState(BUTTONSTATE oldstate)
 		soundchannel_OverUpToOverDown->play();
 	if (oldstate == STATE_DOWN && currentState == STATE_UP && soundchannel_OverDownToOverUp)
 		soundchannel_OverDownToOverUp->play();
+	statesdirty=false;
 }
-void SimpleButton::resetStateToStart(DisplayObject* obj)
+void SimpleButton::resetStateToStart(BUTTONOBJECTTYPE type)
 {
 	// reset the MovieClips belonging to the current State to frame 0, so animations will start from the beginning when state has changed
 	asAtom arg = asAtomHandler::fromInt(0);
-	if (obj->getSubtype()== SUBTYPE_SPRITE) // really a sprite, this means it contains the "real" DisplayObjects for the current state
+	assert(this->dynamicDisplayList.empty());
+	if(this->needsActionScript3())
 	{
-		std::vector<_R<DisplayObject>> tmplist;
-		obj->as<Sprite>()->cloneDisplayList(tmplist);
-		for (auto it = tmplist.begin(); it != tmplist.end(); it++)
+		if (!parentSprite[type])
 		{
-			if ((*it)->is<MovieClip>())
-				(*it)->as<MovieClip>()->gotoAnd(&arg,1,false);
+			/* There maybe multiple DisplayObjects for one state. The official
+			 * implementation for AS3 seems to create a Sprite in that case with
+			 * all DisplayObjects as children.
+			 */
+			parentSprite[type] = Class<Sprite>::getInstanceSNoArgs(loadedFrom->getInstanceWorker());
+			parentSprite[type]->loadedFrom=this->loadedFrom;
+			parentSprite[type]->constructionComplete(true);
+			parentSprite[type]->afterConstruction(true);
+			parentSprite[type]->name = BUILTIN_STRINGS::EMPTY;
 		}
 	}
-	else if (obj->is<MovieClip>())
-		obj->as<MovieClip>()->gotoAnd(&arg,1,false);
+	for (auto it = states[type].begin(); it != states[type].end(); it++)
+	{
+		DisplayObject* obj = (*it).second;
+		if (obj->is<MovieClip>())
+			obj->as<MovieClip>()->gotoAnd(&arg,1,false);
+		obj->incRef();
+		if (this->needsActionScript3() && parentSprite[type]->is<DisplayObjectContainer>())
+		{
+			parentSprite[type]->as<DisplayObjectContainer>()->insertLegacyChildAt((*it).first,obj);
+			parentSprite[type]->incRef();
+			insertLegacyChildAt((*it).first,parentSprite[type],false,false);
+		}
+		else
+			insertLegacyChildAt((*it).first,obj);
+	}
 }
-
+void SimpleButton::clearStateObject(BUTTONOBJECTTYPE type)
+{
+	if(parentSprite[type])
+	{
+		parentSprite[type]->removeStoredMember();
+		parentSprite[type]=nullptr;
+	}
+	for (auto it = states[type].begin(); it != states[type].end(); it++)
+	{
+		(*it).second->removeStoredMember();
+	}
+	states[type].clear();
+}
+void SimpleButton::getStateObject(BUTTONOBJECTTYPE type,asAtom& ret)
+{
+	assert(this->needsActionScript3());
+	if(parentSprite[type]==nullptr)
+		ret = asAtomHandler::nullAtom;
+	else
+	{
+		parentSprite[type]->incRef();
+		ret = asAtomHandler::fromObjectNoPrimitive(parentSprite[type]);
+	}
+}
+void SimpleButton::setStateObject(BUTTONOBJECTTYPE type,asAtom o)
+{
+	assert(this->needsActionScript3());
+	clearStateObject(type);
+	if (asAtomHandler::is<DisplayObject>(o))
+	{
+		parentSprite[type] = asAtomHandler::as<DisplayObject>(o);
+		parentSprite[type]->incRef();
+		parentSprite[type]->addStoredMember();
+	}
+}
 ASFUNCTIONBODY_ATOM(SimpleButton,_getUpState)
 {
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
-	if(!th->upState)
-	{
-		asAtomHandler::setNull(ret);
-		return;
-	}
-
-	th->upState->incRef();
-	ret = asAtomHandler::fromObjectNoPrimitive(th->upState);
+	th->getStateObject(BUTTONOBJECTTYPE_UP,ret);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_setUpState)
 {
 	assert_and_throw(argslen == 1);
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
-	if(th->upState)
-		th->upState->removeStoredMember();
-	th->upState = asAtomHandler::as<DisplayObject>(args[0]);
-	if (th->upState)
-	{
-		th->upState->incRef();
-		th->upState->addStoredMember();
-	}
+	th->setStateObject(BUTTONOBJECTTYPE_UP,args[0]);
 	th->reflectState(th->currentState);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_getHitTestState)
 {
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
-	if(!th->hitTestState)
-	{
-		asAtomHandler::setNull(ret);
-		return;
-	}
-
-	th->hitTestState->incRef();
-	ret = asAtomHandler::fromObjectNoPrimitive(th->hitTestState);
+	th->getStateObject(BUTTONOBJECTTYPE_HIT,ret);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_setHitTestState)
 {
 	assert_and_throw(argslen == 1);
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
-	if(th->hitTestState)
-		th->hitTestState->removeStoredMember();
-	th->hitTestState = asAtomHandler::as<DisplayObject>(args[0]);
-	if (th->hitTestState)
-	{
-		th->hitTestState->incRef();
-		th->hitTestState->addStoredMember();
-	}
+	th->setStateObject(BUTTONOBJECTTYPE_HIT,args[0]);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_getOverState)
 {
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
-	if(!th->overState)
-	{
-		asAtomHandler::setNull(ret);
-		return;
-	}
-
-	th->overState->incRef();
-	ret = asAtomHandler::fromObjectNoPrimitive(th->overState);
+	th->getStateObject(BUTTONOBJECTTYPE_OVER,ret);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_setOverState)
 {
 	assert_and_throw(argslen == 1);
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
-	if(th->overState)
-		th->overState->removeStoredMember();
-	th->overState = asAtomHandler::as<DisplayObject>(args[0]);
-	if (th->overState)
-	{
-		th->overState->incRef();
-		th->overState->addStoredMember();
-	}
+	th->setStateObject(BUTTONOBJECTTYPE_OVER,args[0]);
 	th->reflectState(th->currentState);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_getDownState)
 {
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
-	if(!th->downState)
-	{
-		asAtomHandler::setNull(ret);
-		return;
-	}
-
-	th->downState->incRef();
-	ret = asAtomHandler::fromObjectNoPrimitive(th->downState);
+	th->getStateObject(BUTTONOBJECTTYPE_DOWN,ret);
 }
 
 ASFUNCTIONBODY_ATOM(SimpleButton,_setDownState)
 {
 	assert_and_throw(argslen == 1);
 	SimpleButton* th=asAtomHandler::as<SimpleButton>(obj);
-	if(th->downState)
-		th->downState->removeStoredMember();
-	th->downState = asAtomHandler::as<DisplayObject>(args[0]);
-	if (th->downState)
-	{
-		th->downState->incRef();
-		th->downState->addStoredMember();
-	}
+	th->setStateObject(BUTTONOBJECTTYPE_DOWN,args[0]);
 	th->reflectState(th->currentState);
 }
 

@@ -134,7 +134,8 @@ bool DisplayObject::belongsToMask() const
 }
 
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),isLoadedRoot(false),filterlistHasChanged(false),ismaskCount(0),maxfilterborder(0),ClipDepth(0),
+	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),
+	isLoadedRoot(false),filterlistHasChanged(false),ismaskCount(0),maxfilterborder(0),ClipDepth(0),hasDefaultName(false),
 	hiddenPrevDisplayObject(nullptr),hiddenNextDisplayObject(nullptr),avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),cachedSurface(new CachedSurface()),
 	constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),
@@ -235,6 +236,7 @@ bool DisplayObject::destruct()
 	loadedFrom=getSystemState()->mainClip->applicationDomain.getPtr();
 	hasChanged = true;
 	needsTextureRecalculation=true;
+	hasDefaultName=false;
 	tx=0;
 	ty=0;
 	rotation=0;
@@ -1003,6 +1005,7 @@ bool DisplayObject::isShaderBlendMode(AS_BLENDMODE bl)
 	return bl == AS_BLENDMODE::BLENDMODE_OVERLAY
 			|| bl == BLENDMODE_HARDLIGHT;
 }
+
 MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot, bool fromcurrentrendering) const
 {
 	if(!parent || (!includeRoot && parent == getSystemState()->mainClip))

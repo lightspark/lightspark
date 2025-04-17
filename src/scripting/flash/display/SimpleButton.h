@@ -25,7 +25,6 @@
 
 namespace lightspark
 {
-
 /* This is really ugly, but the parent of the current
  * active state (e.g. upState) is set to the owning SimpleButton,
  * which is not a DisplayObjectContainer per spec.
@@ -37,15 +36,14 @@ class SimpleButton: public DisplayObjectContainer
 {
 private:
 	DisplayObjectContainer* lastParent; // needed for AVM1 mouse events that may be handled after the button is removed from stage
-	DisplayObject* downState;
-	DisplayObject* hitTestState;
-	DisplayObject* overState;
-	DisplayObject* upState;
+	std::vector<pair<uint32_t,DisplayObject*>> states[4];// list of depth/DisplayObjects per state (down/hit/over/up)
+	DisplayObject* parentSprite[4]; // container sprites for all states, only used in AVM2
 	_NR<SoundChannel> soundchannel_OverUpToIdle;
 	_NR<SoundChannel> soundchannel_IdleToOverUp;
 	_NR<SoundChannel> soundchannel_OverUpToOverDown;
 	_NR<SoundChannel> soundchannel_OverDownToOverUp;
 	DefineButtonTag* buttontag;
+	bool statesdirty;
 public:
 	enum BUTTONSTATE
 	{
@@ -54,31 +52,37 @@ public:
 		STATE_DOWN,
 		STATE_OUT
 	};
-	private:
+	enum BUTTONOBJECTTYPE {
+		BUTTONOBJECTTYPE_DOWN=0,
+		BUTTONOBJECTTYPE_HIT=1,
+		BUTTONOBJECTTYPE_OVER=2,
+		BUTTONOBJECTTYPE_UP=3
+	};
+private:
 	BUTTONSTATE currentState;
 	BUTTONSTATE oldstate;
 	bool enabled;
 	bool useHandCursor;
 	bool hasMouse;
 	void reflectState(BUTTONSTATE oldstate);
-	void resetStateToStart(DisplayObject* obj);
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
-	/* This is called by when an event is dispatched */
+	/* This is called by the VM when an event is dispatched */
 	void defaultEventBehavior(_R<Event> e) override;
+	void resetStateToStart(BUTTONOBJECTTYPE type);
+	void clearStateObject(BUTTONOBJECTTYPE type);
+	void getStateObject(BUTTONOBJECTTYPE type, asAtom& ret);
+	void setStateObject(BUTTONOBJECTTYPE type,asAtom o);
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 public:
-	SimpleButton(ASWorker* wrk,Class_base* c, DisplayObject *dS = nullptr, DisplayObject *hTS = nullptr,
-				 DisplayObject *oS = nullptr, DisplayObject *uS = nullptr, DefineButtonTag* tag = nullptr);
-	void enterFrame(bool implicit) override;
-	void constructionComplete(bool _explicit = false) override;
+	SimpleButton(ASWorker* wrk,Class_base* c, DefineButtonTag* tag = nullptr);
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
-	IDrawable* invalidate(bool smoothing) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	uint32_t getTagID() const override;
+	void addDisplayObject(BUTTONOBJECTTYPE state, uint32_t depth, DisplayObject* o);
 
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
@@ -102,40 +106,11 @@ public:
 	void handleMouseCursor(bool rollover) override;
 	bool allowAsMask() const override
 	{
-		if (needsActionScript3())
-		{
-			DisplayObject* stateChild = this->getStateChild();
-			if (stateChild && stateChild->is<DisplayObjectContainer>())
-				return stateChild->as<DisplayObjectContainer>()->isEmpty();
-			return false;
-		}
-		else
-			return !isEmpty();
+		return !isEmpty();
 	}
 
-	DisplayObject* getStateChild() const
-	{
-		DisplayObject* ret = nullptr;
-		switch (currentState)
-		{
-			case STATE_OUT:
-			case STATE_UP:
-				if (upState)
-					ret = upState;
-				break;
-			case STATE_OVER:
-				if (overState)
-					ret = overState;
-				break;
-			case STATE_DOWN:
-				if (downState)
-					ret = downState;
-				break;
-			default: break;
-		}
-		return ret;
-	}
 	BUTTONSTATE getCurrentState() const { return currentState; }
+	void refreshCurrentState() { reflectState(currentState); }
 };
 
 

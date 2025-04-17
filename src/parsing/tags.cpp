@@ -356,7 +356,7 @@ RemoveObject2Tag::RemoveObject2Tag(RECORDHEADER h, std::istream& in):DisplayList
 	LOG(LOG_TRACE,"RemoveObject2 Depth: " << Depth);
 }
 
-DictionaryTag::DictionaryTag(RECORDHEADER h, RootMovieClip* root):Tag(h),bindedTo(nullptr),loadedFrom(root->applicationDomain.getPtr()),nameID(UINT32_MAX)
+DictionaryTag::DictionaryTag(RECORDHEADER h, RootMovieClip* root):Tag(h),bindedTo(nullptr),loadedFrom(root->applicationDomain.getPtr()),nameID(BUILTIN_STRINGS::EMPTY)
 {
 	assert(root->applicationDomain.getPtr());
 }
@@ -1624,7 +1624,7 @@ DefineShapeTag::~DefineShapeTag()
 	}
 }
 
-ASObject *DefineShapeTag::instance(Class_base *c)
+ASObject* DefineShapeTag::instance(Class_base *c)
 {
 	if (!tokens)
 	{
@@ -1874,6 +1874,8 @@ void PlaceObjectTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	toAdd = parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth,CharacterId);
 	if (!toAdd)
 	{
+		// reserve an instance<x> name for the new DisplayObject (if necessary) before construction to match adobe naming mechanism
+		uint32_t defaultNameID = placedTag->needsDefaultName() ? parent->getSystemState()->getNextInstanceName() : UINT32_MAX;
 		//We can create the object right away
 		ASObject* instance = placedTag->instance();
 		if (!placedTag->bindedTo)
@@ -1889,6 +1891,11 @@ void PlaceObjectTag::execute(DisplayObjectContainer *parent, bool inskipping)
 			LOG(LOG_NOT_IMPLEMENTED, "Adding non-DisplayObject to display list");
 			instance->decRef();
 			return;
+		}
+		if (defaultNameID != UINT32_MAX)
+		{
+			toAdd->name = defaultNameID;
+			toAdd->hasDefaultName=true;
 		}
 	}
 	toAdd->loadedFrom=placedTag->loadedFrom;
@@ -1927,11 +1934,6 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 		}
 		else
 			LOG(LOG_ERROR, "Moving of registered objects not really supported");
-	}
-	else if (!PlaceFlagMove)
-	{
-		//Remove the automatic name set by the DisplayObject constructor
-		obj->name = BUILTIN_STRINGS::EMPTY;
 	}
 }
 
@@ -1988,7 +1990,11 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		}
 		if (!toAdd)
 		{
+			// reserve an instance<x> name for the new DisplayObject (if necessary) before construction to match adobe naming mechanism
+			uint32_t defaultNameID = !this->PlaceFlagHasName && placedTag->needsDefaultName() ? parent->getSystemState()->getNextInstanceName() : UINT32_MAX ;
+
 			//We can create the object right away
+
 			ASObject* instance = placedTag->instance();
 			if (!placedTag->bindedTo)
 				instance->setIsInitialized();
@@ -2007,8 +2013,11 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 				return;
 			}
 			newInstance = true;
-			if(!PlaceFlagHasName)
-				nameID = BUILTIN_STRINGS::EMPTY;
+			if(defaultNameID != UINT32_MAX)
+			{
+				toAdd->name = defaultNameID;
+				toAdd->hasDefaultName=true;
+			}
 		}
 		assert_and_throw(toAdd);
 
@@ -2424,72 +2433,6 @@ DefineButtonTag::~DefineButtonTag()
 
 ASObject* DefineButtonTag::instance(Class_base* c)
 {
-	DisplayObject* states[4] = {nullptr, nullptr, nullptr, nullptr};
-	bool isSprite[4] = {false, false, false, false};
-	uint32_t curDepth[4];
-
-	/* There maybe multiple DisplayObjects for one state. The official
-	 * implementation seems to create a Sprite in that case with
-	 * all DisplayObjects as children.
-	 */
-
-	auto i = Characters.begin();
-	for(;i != Characters.end(); ++i)
-	{
-		for(int j=0;j<4;++j)
-		{
-			if(j==0 && !i->ButtonStateDown)
-				continue;
-			if(j==1 && !i->ButtonStateHitTest)
-				continue;
-			if(j==2 && !i->ButtonStateOver)
-				continue;
-			if(j==3 && !i->ButtonStateUp)
-				continue;
-			DictionaryTag* dict=loadedFrom->dictionaryLookup(i->CharacterID);
-			loadedFrom->checkBinding(dict);
-
-			//We can create the object right away
-			DisplayObject* state=dynamic_cast<DisplayObject*>(dict->instance());
-			assert_and_throw(state);
-			//The matrix must be set before invoking the constructor
-			state->setLegacyMatrix(dict->MapToBounds(i->PlaceMatrix));
-			state->legacy=true;
-			state->name = BUILTIN_STRINGS::EMPTY;
-			state->setScalingGrid();
-			state->loadedFrom=this->loadedFrom;
-			if (i->ButtonHasBlendMode && i->buttonVersion == 2)
-				state->setBlendMode(i->BlendMode);
-			if (i->ButtonHasFilterList)
-				state->setFilters(i->FilterList);
-			if (!i->ColorTransform.isIdentity())
-				state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(loadedFrom->getInstanceWorker(),i->ColorTransform));
-			state->constructionComplete();
-			state->afterConstruction();
-
-			if(states[j] == nullptr)
-			{
-				states[j] = state;
-				curDepth[j] = i->PlaceDepth;
-			}
-			else
-			{
-				if(!isSprite[j])
-				{
-					Sprite* spr = Class<Sprite>::getInstanceSNoArgs(loadedFrom->getInstanceWorker());
-					spr->loadedFrom=this->loadedFrom;
-					spr->constructionComplete();
-					spr->afterConstruction();
-					spr->insertLegacyChildAt(LEGACY_DEPTH_START+curDepth[j],states[j]);
-					states[j] = spr;
-					spr->name = BUILTIN_STRINGS::EMPTY;
-					isSprite[j] = true;
-				}
-				Sprite* spr = Class<Sprite>::cast(states[j]);
-				spr->insertLegacyChildAt(LEGACY_DEPTH_START+i->PlaceDepth,state);
-			}
-		}
-	}
 	Class_base* realClass=(c)?c:bindedTo;
 
 	if(realClass==nullptr)
@@ -2500,9 +2443,60 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 			realClass=Class<SimpleButton>::getClass(loadedFrom->getSystemState());
 	}
 	SimpleButton* ret= !loadedFrom->usesActionScript3 ?
-				new (realClass->memoryAccount) AVM1SimpleButton(loadedFrom->getInstanceWorker(), realClass, states[0], states[1], states[2], states[3],this) :
-				new (realClass->memoryAccount) SimpleButton(loadedFrom->getInstanceWorker(), realClass, states[0], states[1], states[2], states[3],this);
+				new (realClass->memoryAccount) AVM1SimpleButton(loadedFrom->getInstanceWorker(), realClass,this) :
+				new (realClass->memoryAccount) SimpleButton(loadedFrom->getInstanceWorker(), realClass,this);
+	ret->legacy=true;
 	ret->setScalingGrid();
+
+	auto i = Characters.begin();
+	for(;i != Characters.end(); ++i)
+	{
+		DictionaryTag* dict=loadedFrom->dictionaryLookup(i->CharacterID);
+		loadedFrom->checkBinding(dict);
+
+		DisplayObject* state=nullptr;
+		for(int j=0;j<4;++j)
+		{
+			if(j==0 && !i->ButtonStateDown)
+				continue;
+			if(j==1 && !i->ButtonStateHitTest)
+				continue;
+			if(j==2 && !i->ButtonStateOver)
+				continue;
+			if(j==3 && !i->ButtonStateUp)
+				continue;
+			// only create one instance per character even if it is used on multiple states
+			if (!state)
+			{
+				state = dynamic_cast<DisplayObject*>(dict->instance());
+				assert_and_throw(state);
+				//The matrix must be set before invoking the constructor
+				state->setLegacyMatrix(dict->MapToBounds(i->PlaceMatrix));
+				state->legacy=true;
+				state->setScalingGrid();
+				state->loadedFrom=this->loadedFrom;
+				if (dict->nameID!= BUILTIN_STRINGS::EMPTY)
+					state->name = dict->nameID;
+				else if (dict->needsDefaultName())
+				{
+					state->name = loadedFrom->getSystemState()->getNextInstanceName();
+					state->hasDefaultName=true;
+				}
+				if (i->ButtonHasBlendMode && i->buttonVersion == 2)
+					state->setBlendMode(i->BlendMode);
+				if (i->ButtonHasFilterList)
+					state->setFilters(i->FilterList);
+				if (!i->ColorTransform.isIdentity())
+					state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(loadedFrom->getInstanceWorker(),i->ColorTransform));
+				state->constructionComplete(true);
+				state->afterConstruction(true);
+			}
+			else
+				state->incRef();
+			ret->addDisplayObject((SimpleButton::BUTTONOBJECTTYPE)j,i->PlaceDepth,state);
+		}
+	}
+	ret->refreshCurrentState();
 	return ret;
 }
 
@@ -3280,8 +3274,10 @@ void AVM1InitActionTag::execute(RootMovieClip *root) const
 		return;
 	}
 	MovieClip* clip = sprite->instance(nullptr)->as<MovieClip>();
-	clip->constructionComplete();
-	clip->afterConstruction();
+	clip->beforeConstruction(true);
+	clip->state.last_FP=0; // avoid declaring the first frame
+	clip->constructionComplete(true);
+	clip->afterConstruction(true);
 	root->AVM1checkInitActions(clip);
 	clip->decRef();
 }

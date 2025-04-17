@@ -412,11 +412,19 @@ DisplayObject* DisplayObjectContainer::getLastFrameChildAtDepth(int depth, uint3
 	auto it=mapFrameDepthToLegacyChildRemembered.find(depth);
 	if (it != mapFrameDepthToLegacyChildRemembered.end())
 	{
+		DisplayObject* o = it->second;
 		if (it->second->getTagID()==CharacterId)
 		{
-			it->second->markedForLegacyDeletion=false;
-			it->second->incRef();
-			return it->second;
+			o->markedForLegacyDeletion=false;
+			o->incRef();
+			o->removeStoredMember();
+			mapFrameDepthToLegacyChildRemembered.erase(it);
+			return o;
+		}
+		else
+		{
+			o->removeStoredMember();
+			mapFrameDepthToLegacyChildRemembered.erase(it);
 		}
 	}
 	return nullptr;
@@ -880,21 +888,7 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 			}
 		}
 	}
-	bool needsDefaultName = obj->legacy && obj->name == BUILTIN_STRINGS::EMPTY && obj->is<InteractiveObject>();
-	if (needsDefaultName)
-	{
-		// adobe seems to assign a unique name "instance{x}" to all children that
-		// - are InteractiveObjects (?) and
-		// - don't have a name and
-		// - are added by tags
-		
-		int32_t instancenum = ATOMIC_INCREMENT(getSystemState()->instanceCounter);
-		char buf[100];
-		sprintf(buf,"instance%i",instancenum);
-		tiny_string s(buf);
-		obj->name = getSystemState()->getUniqueStringId(s);
-	}
-	if(obj->name != BUILTIN_STRINGS::EMPTY && !needsDefaultName)
+	if(obj->name != BUILTIN_STRINGS::EMPTY && !obj->hasDefaultName)
 	{
 		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;

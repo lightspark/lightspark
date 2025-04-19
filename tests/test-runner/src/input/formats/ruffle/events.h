@@ -300,7 +300,7 @@ struct KeyDown
 			Vector2f(NAN, NAN),
 			Vector2f(NAN, NAN),
 			AS3KeyCode(key_code),
-			AS3KEYCODE_UNKNOWN,
+			AS3KeyCode(key_code),
 			LSModifier::None,
 			KeyType::Down
 		);
@@ -324,7 +324,7 @@ struct KeyUp
 			Vector2f(NAN, NAN),
 			Vector2f(NAN, NAN),
 			AS3KeyCode(key_code),
-			AS3KEYCODE_UNKNOWN,
+			AS3KeyCode(key_code),
 			LSModifier::None,
 			KeyType::Up
 		);
@@ -340,9 +340,13 @@ struct KeyUp
 struct TextInput
 {
 	using TextType = LSTextEvent::TextType;
-	WChar<char32_t> codepoint;
+	using KeyType = LSKeyEvent::KeyType;
+	tiny_string codepoint;
 
-	operator LSEventStorage() const { return LSTextEvent(tiny_string(codepoint), TextType::Input); }
+	operator LSEventStorage() const
+	{
+		return LSTextEvent(codepoint,TextType::Input);
+	}
 	template<class Archive>
 	void serialize(Archive& archive)
 	{

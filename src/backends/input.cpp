@@ -192,7 +192,7 @@ int InputThread::handleEvent(const LSEvent& event)
 		[&](const LSKeyEvent& key)
 		{
 			bool handled = false;
-			if (key.keyType != KeyType::Up && (handled = handleKeyboardShortcuts(key), !handled))
+			if (key.keyType != KeyType::Up && key.keyType != KeyType::Control && (handled = handleKeyboardShortcuts(key), !handled))
 				sendKeyEvent(key, true);
 			if (key.keyType == KeyType::Up || (handled && key.keyType == KeyType::Press))
 				sendKeyEvent(key, false);
@@ -202,11 +202,11 @@ int InputThread::handleEvent(const LSEvent& event)
 		{
 			if(m_sys->currentVm == nullptr)
 				return false;
-			_NR<InteractiveObject> target = m_sys->stage->getFocusTarget();
-			if (target.isNull())
+			InteractiveObject* target = m_sys->stage->getFocusTarget();
+			if (!target)
 				return false;
 			target->incRef();
-			m_sys->currentVm->addIdleEvent(NullRef, _MR(new (m_sys->unaccountedMemory) TextInputEvent(target,text.text)));
+			m_sys->currentVm->addIdleEvent(NullRef, _MR(new (m_sys->unaccountedMemory) TextInputEvent(_MR(target),text.text)));
 			return false;
 		},
 		[&](const LSMouseButtonEvent& mouseButton)
@@ -870,12 +870,13 @@ void InputThread::sendKeyEvent(const LSKeyEvent& event, bool pressed)
 	if(m_sys->currentVm == nullptr)
 		return;
 
-	_NR<DisplayObject> target = m_sys->stage->getFocusTarget();
-	if (target.isNull())
+	DisplayObject* target = m_sys->stage->getFocusTarget();
+	if (!target)
 		return;
 
 	tiny_string type = pressed ? "keyDown" : "keyUp";
-	m_sys->currentVm->addIdleEvent(target,
+	target->incRef();
+	m_sys->currentVm->addIdleEvent(_MR(target),
 	    _MR(Class<KeyboardEvent>::getInstanceS(m_sys->worker,type, event.charCode, event.keyCode, event.modifiers)));
 }
 

@@ -1001,6 +1001,16 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			event->currentTarget=NullRef;
 		}
 	}
+	if (dispatcher->is<DisplayObject>() || dispatcher->is<LoaderInfo>() || dispatcher->is<URLLoader>())
+		dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event.getPtr());
+	else
+		dispatcher->AVM1HandleEvent(dispatcher,event.getPtr());
+	if (event->type == "mouseDown" && dispatcher->is<InteractiveObject>())
+		dispatcher->getSystemState()->stage->setFocusTarget(dispatcher->as<InteractiveObject>());
+
+	/* This must even be called if stop*Propagation has been called */
+	if(!event->defaultPrevented)
+		dispatcher->defaultEventBehavior(event);
 	// ensure that keyboard events are also handled for the stage
 	if (event->is<KeyboardEvent>() && !stagehandled && !dispatcher->is<Stage>() && dispatcher->is<DisplayObject>())
 	{
@@ -1011,19 +1021,6 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		if(!event->defaultPrevented)
 			dispatcher->getSystemState()->stage->defaultEventBehavior(event);
 	}
-	if (dispatcher->is<DisplayObject>() || dispatcher->is<LoaderInfo>() || dispatcher->is<URLLoader>())
-		dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event.getPtr());
-	else
-		dispatcher->AVM1HandleEvent(dispatcher,event.getPtr());
-	if (event->type == "mouseDown" && dispatcher->is<InteractiveObject>())
-	{
-		dispatcher->incRef();
-		dispatcher->getSystemState()->stage->setFocusTarget(_MNR(dispatcher->as<InteractiveObject>()));
-	}
-
-	/* This must even be called if stop*Propagation has been called */
-	if(!event->defaultPrevented)
-		dispatcher->defaultEventBehavior(event);
 
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;
@@ -1097,7 +1094,7 @@ void ABCVm::tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e)
 
 void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 {
-	//LOG(LOG_INFO,"handleEvent:"<<e.second->type);
+	//LOG(LOG_INFO,"handleEvent:"<<e.second->type<<" "<<e.first.getPtr());
 	e.second->check();
 	if(!e.first.isNull())
 		publicHandleEvent(e.first.getPtr(), e.second);
@@ -1357,7 +1354,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 	if(e.second->is<WaitableEvent>())
 		e.second->as<WaitableEvent>()->signal();
 	RELEASE_WRITE(e.second->queued,false);
-	//LOG(LOG_INFO,"handleEvent done:"<<e.second->type);
+	//LOG(LOG_INFO,"handleEvent done:"<<e.second->type<<" "<<e.first.getPtr());
 }
 
 bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)

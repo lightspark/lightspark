@@ -1244,7 +1244,7 @@ Vector2f DisplayObject::localToGlobal(const Vector2f& point, bool fromcurrentren
 	}
 	else
 	{
-		auto matrix = fromcurrentrendering ? currentrendermatrix : getMatrix();
+		auto matrix = fromcurrentrendering && EngineData::enablerendering ? currentrendermatrix : getMatrix();
 		Vector2f newPoint = matrix.multiply2D(point);
 		if (parent != nullptr)
 			return parent->localToGlobal(newPoint, fromcurrentrendering);

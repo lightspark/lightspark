@@ -1107,7 +1107,12 @@ void DisplayObjectContainer::cloneDisplayList(std::vector<Ref<DisplayObject> >& 
 	}
 }
 
-InteractiveObject::InteractiveObject(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),mouseEnabled(true),doubleClickEnabled(false),avm1focusrect(asAtomHandler::invalidAtom),accessibilityImplementation(NullRef),contextMenu(NullRef),tabEnabled(false),tabIndex(-1)
+InteractiveObject::InteractiveObject(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),
+	mouseEnabled(true),doubleClickEnabled(false),
+	avm1focusrect(asAtomHandler::invalidAtom),avm1tabindex(asAtomHandler::undefinedAtom),
+	accessibilityImplementation(NullRef),contextMenu(NullRef),
+	tabEnabled(false),tabIndex(-1)
+
 {
 	subtype=SUBTYPE_INTERACTIVE_OBJECT;
 }
@@ -1166,6 +1171,8 @@ bool InteractiveObject::destruct()
 	focusRect.reset();
 	tabEnabled = false;
 	tabIndex = -1;
+	ASATOM_REMOVESTOREDMEMBER(avm1tabindex);
+	avm1tabindex=asAtomHandler::undefinedAtom;
 	return DisplayObject::destruct();
 }
 void InteractiveObject::finalize()
@@ -1177,6 +1184,7 @@ void InteractiveObject::finalize()
 	}
 	accessibilityImplementation.reset();
 	focusRect.reset();
+	ASATOM_REMOVESTOREDMEMBER(avm1tabindex);
 	DisplayObject::finalize();
 }
 
@@ -1245,10 +1253,12 @@ void InteractiveObject::sinit(Class_base* c)
 void InteractiveObject::AVM1SetupMethods(Class_base* c)
 {
 	DisplayObject::AVM1SetupMethods(c);
-	c->setDeclaredMethodByQName("_focusrect","",c->getSystemState()->getBuiltinFunction(AVM1_setfocusrect),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("_focusrect","",c->getSystemState()->getBuiltinFunction(AVM1_getfocusrect,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("_focusrect","",c->getSystemState()->getBuiltinFunction(AVM1_setfocusrect),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("_focusrect","",c->getSystemState()->getBuiltinFunction(AVM1_getfocusrect,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_setter_tabEnabled),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_getter_tabEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_setTabIndex),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_getTabIndex,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, accessibilityImplementation)
@@ -1297,6 +1307,25 @@ ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_setfocusrect)
 	}
 }
 
+ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_getTabIndex)
+{
+	InteractiveObject* th=asAtomHandler::as<InteractiveObject>(obj);
+	ASATOM_INCREF(th->avm1tabindex);
+	ret = th->avm1tabindex;
+}
+
+ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_setTabIndex)
+{
+	InteractiveObject* th=asAtomHandler::as<InteractiveObject>(obj);
+	th->avm1tabindex=asAtomHandler::invalidAtom;
+	ARG_CHECK(ARG_UNPACK(th->avm1tabindex,asAtomHandler::undefinedAtom));
+	if (asAtomHandler::isUndefined(th->avm1tabindex))
+		th->tabIndex=-1;
+	else
+		th->tabIndex=asAtomHandler::toInt(th->avm1tabindex);
+
+}
+
 void InteractiveObject::onContextMenu(_NR<ASObject> oldValue)
 {
 	if (oldValue)
@@ -1308,6 +1337,68 @@ void InteractiveObject::onContextMenu(_NR<ASObject> oldValue)
 	{
 		this->contextMenu->as<ContextMenu>()->owner = this;
 		this->contextMenu->addStoredMember();
+	}
+}
+
+bool DisplayObjectContainer::fillTabStopsAutomatic(std::map<int32_t, DisplayObject*>& distancemap, bool& hasTabIndices)
+{
+	if (!this->is<Stage>() && !this->is<RootMovieClip>() && (!this->isVisible() || !this->isOnStage() || !this->tabEnabled))
+		return false;
+	if (this->tabIndex>=0)
+	{
+		hasTabIndices=true;
+		return false;
+	}
+	if (is<SimpleButton>())
+		return false;
+	bool filled=false;
+	auto it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();++it)
+	{
+		if (!(*it)->isVisible() || !(*it)->isOnStage() || !(*it)->is<InteractiveObject>())
+			continue;
+		InteractiveObject* o = (*it)->as<InteractiveObject>();
+		if (!o->is<RootMovieClip>() && !o->tabEnabled && (!o->is<Sprite>() || !o->as<Sprite>()->buttonMode))
+			continue;
+		if (o->tabIndex>=0)
+		{
+			hasTabIndices=true;
+			return false;
+		}
+		if (o->is<DisplayObjectContainer>())
+		{
+			if (o->as<DisplayObjectContainer>()->fillTabStopsAutomatic(distancemap,hasTabIndices))
+			{
+				filled = true;
+				if (hasTabIndices)
+					return false;
+				continue;
+			}
+		}
+		Vector2f globalpoint=o->localToGlobal(Vector2f());
+		distancemap.insert(make_pair(globalpoint.y*getSystemState()->stage->internalGetWidth()+globalpoint.x,o));
+		filled=true;
+	}
+	return filled;
+}
+void DisplayObjectContainer::fillTabStopsByTabIndex(std::map<int32_t, DisplayObject*>& indexmap)
+{
+	if (!this->is<Stage>() && !this->is<RootMovieClip>() && (!this->isVisible() || !this->isOnStage() || !this->tabEnabled))
+		return;
+	if (this->tabIndex>=0)
+		indexmap.insert(make_pair(this->tabIndex,this));
+	auto it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();++it)
+	{
+		if (!(*it)->isVisible() || !(*it)->isOnStage() || !(*it)->is<InteractiveObject>())
+			continue;
+		InteractiveObject* o = (*it)->as<InteractiveObject>();
+		if (!o->is<RootMovieClip>() && !o->tabEnabled && (!o->is<Sprite>() || !o->as<Sprite>()->buttonMode))
+			continue;
+		if (o->is<DisplayObjectContainer>() && !o->is<SimpleButton>())
+			o->as<DisplayObjectContainer>()->fillTabStopsByTabIndex(indexmap);
+		if (o->tabIndex>=0)
+			indexmap.insert(make_pair(o->tabIndex,o));
 	}
 }
 
@@ -1452,6 +1543,34 @@ IDrawable* DisplayObjectContainer::invalidate(bool smoothing)
 	{
 		Locker l(mutexDisplayList);
 		res->getState()->setupChildrenList(dynamicDisplayList);
+	}
+	if (!this->needsActionScript3()
+			&& tabEnabled
+			&& this == getSystemState()->stage->getFocusTarget())
+	{
+		// add rectangle to be rendered for focused SimpleButton/Sprite (AVM1 only)
+		assert (this->is<Sprite>() || this->is<SimpleButton>());
+		number_t bxmin,bxmax,bymin,bymax;
+		if(boundsRect(bxmin,bxmax,bymin,bymax,false))
+		{
+			if (!res->getState()->tokens.stroketokens)
+				res->getState()->tokens.stroketokens=_MR(new tokenListRef());
+			res->getState()->renderWithNanoVG=true;
+			res->getState()->tokens.isFilled=true;
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(SET_STROKE).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(getSystemState()->avm1FocusRectLinestyle).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(MOVE).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2(0.0 , (bymin-bxmin)*20.0)).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2(0.0, (bymax-bymin)*20.0)).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)*20.0, (bymax-bymin)*20.0)).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)*20.0, 0.0)).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2(0.0, 0.0)).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
+		}
 	}
 	return res;
 }
@@ -2322,13 +2441,12 @@ void AVM1scriptToExecute::execute()
 		m.name_type=multiname::NAME_STRING;
 		m.isAttribute = false;
 		m.name_s_id= this->event_name_id;
-		clip->AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,clip->getInstanceWorker(), false);
+		clip->AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NO_INCREF,clip->getInstanceWorker(), false);
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
 			asAtom ret=asAtomHandler::invalidAtom;
 			asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-			asAtomHandler::as<AVM1Function>(func)->decRef();
 		}
 	}
 	clip->decRef(); // was increffed in AVM1AddScriptEvents

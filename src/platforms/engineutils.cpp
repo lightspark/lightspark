@@ -299,6 +299,7 @@ bool initSDL()
 			SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
 		}
+		SDL_StopTextInput();
 	}
 	return sdl_available;
 }

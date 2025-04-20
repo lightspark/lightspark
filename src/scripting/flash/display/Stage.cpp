@@ -187,6 +187,20 @@ void Stage::defaultEventBehavior(_R<Event> e)
 					if (getSystemState()->getEngineData()->inFullScreenMode())
 						getSystemState()->getEngineData()->setDisplayState("normal",getSystemState());
 					break;
+				case AS3KEYCODE_TAB:
+					setTabFocusTarget(true);
+					break;
+				default:
+					break;
+			}
+		}
+		if (modifiers & KMOD_SHIFT)
+		{
+			switch (ev->getKeyCode())
+			{
+				case AS3KEYCODE_TAB:
+					setTabFocusTarget(false);
+					break;
 				default:
 					break;
 			}
@@ -243,7 +257,9 @@ bool Stage::destruct()
 {
 	cleanupDeadHiddenObjects();
 	cleanupRemovedDisplayObjects();
-	focus.reset();
+	if (focus)
+		focus->removeStoredMember();
+	focus=nullptr;
 	root.reset();
 	stage3Ds.reset();
 	nativeWindow.reset();
@@ -263,7 +279,9 @@ bool Stage::destruct()
 
 void Stage::finalize()
 {
-	focus.reset();
+	if (focus)
+		focus->removeStoredMember();
+	focus=nullptr;
 	root.reset();
 	stage3Ds.reset();
 	nativeWindow.reset();
@@ -283,6 +301,8 @@ bool Stage::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
 	for (auto it = removedDisplayObjects.begin(); it != removedDisplayObjects.end(); it++)
 		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
+	if (focus)
+		ret = focus->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 
@@ -300,10 +320,7 @@ void Stage::prepareShutdown()
 	if (nativeWindow)
 		nativeWindow->prepareShutdown();
 	if (focus)
-	{
 		focus->prepareShutdown();
-		focus.reset();
-	}
 	if (root)
 		root->prepareShutdown();
 	avm1KeyboardListeners.clear();
@@ -313,7 +330,7 @@ void Stage::prepareShutdown()
 }
 
 Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
-	,avm1DisplayObjectFirst(nullptr),avm1DisplayObjectLast(nullptr),hasAVM1Clips(false),invalidated(true)
+	,focus(nullptr),avm1DisplayObjectFirst(nullptr),avm1DisplayObjectLast(nullptr),hasAVM1Clips(false),invalidated(true)
 	,align(c->getSystemState()->getUniqueStringId("TL")), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high")
 	,stageFocusRect(false),allowsFullScreen(false),contentsScaleFactor(1.0)
 {
@@ -501,49 +518,128 @@ ASFUNCTIONBODY_ATOM(Stage,_isFocusInaccessible)
 	ret = asAtomHandler::falseAtom;
 }
 
-_NR<InteractiveObject> Stage::getFocusTarget()
+InteractiveObject* Stage::getFocusTarget()
 {
 	Locker l(focusSpinlock);
-	if (focus.isNull() || !focus->isOnStage() || !focus->isVisible())
-	{
-		incRef();
-		return _MNR(this);
-	}
+	if (!focus || !focus->isOnStage() || !focus->isVisible())
+		return this;
 	else
-	{
 		return focus;
-	}
 }
+void Stage::setTabFocusTarget(bool next)
+{
+	DisplayObject* currentfocustarget = getFocusTarget();
+	Vector2f startposition;
+	if (currentfocustarget)
+		startposition=currentfocustarget->localToGlobal(Vector2f());
+	std::map<int32_t,DisplayObject*> distancemap;
+	bool hasTabIndices=false;
+	fillTabStopsAutomatic(distancemap,hasTabIndices);
+	DisplayObject* newfocustarget=nullptr;
+	if (hasTabIndices)
+	{
+		std::map<int32_t,DisplayObject*> tabindexmap;
+		fillTabStopsByTabIndex(tabindexmap);
+		int32_t currenttabindex=-1;
+		if (currentfocustarget && currentfocustarget->is<InteractiveObject>())
+			currenttabindex=currentfocustarget->as<InteractiveObject>()->tabIndex;
 
-void Stage::setFocusTarget(_NR<InteractiveObject> f)
+		auto it = tabindexmap.find(currenttabindex);
+		if (it==tabindexmap.end())
+			it=tabindexmap.begin();
+		else
+		{
+			if (next)
+			{
+				it++;
+				if (it==tabindexmap.end())
+					it=tabindexmap.begin();
+			}
+			else
+			{
+				if (it==tabindexmap.begin())
+					it=tabindexmap.end();
+				it--;
+			}
+		}
+		newfocustarget = it->second;
+	}
+	else if (!distancemap.empty())
+	{
+		auto it = distancemap.find(startposition.y*internalGetWidth()+startposition.x);
+		if (it==distancemap.end())
+			it=distancemap.begin();
+		else
+		{
+			if (next)
+			{
+				it++;
+				if (it==distancemap.end())
+					it=distancemap.begin();
+			}
+			else
+			{
+				if (it==distancemap.begin())
+					it=distancemap.end();
+				it--;
+			}
+		}
+		newfocustarget = it->second;
+	}
+	if (newfocustarget && newfocustarget->is<InteractiveObject>())
+		setFocusTarget(newfocustarget->as<InteractiveObject>());
+}
+void Stage::setFocusTarget(InteractiveObject* f)
 {
 	Locker l(focusSpinlock);
 	if (f==focus || (f && !f->isFocusable()))
 		return;
-	_NR<InteractiveObject> oldfocus = focus;
+	InteractiveObject* oldfocus = focus;
 	if (focus)
 	{
 		focus->lostFocus();
-		_NR<InteractiveObject> newfocus = f;
-		if (newfocus && (newfocus.getPtr()==this || newfocus.getPtr()->is<RootMovieClip>()))
-			newfocus.reset();
-		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusOut",newfocus)));
+		_NR<InteractiveObject> focusrel;
+		if (f && f!=this && !f->is<RootMovieClip>())
+		{
+			f->incRef();
+			focusrel=_MR(f);
+		}
+		focus->incRef();
+		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusOut",focusrel)));
 	}
 	focus = f;
 	if (focus)
 	{
+		focus->incRef();
+		focus->addStoredMember();
 		focus->gotFocus();
-		if (oldfocus && (oldfocus.getPtr()==this || oldfocus.getPtr()->is<RootMovieClip>()))
-			oldfocus.reset();
-		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusIn",oldfocus)));
+		_NR<InteractiveObject> focusrel;
+		if (oldfocus && oldfocus!=this && !oldfocus->is<RootMovieClip>())
+		{
+			oldfocus->incRef();
+			focusrel=_MR(oldfocus);
+		}
+		focus->incRef();
+		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusIn",focusrel)));
 	}
+	l.release();
+	if (oldfocus)
+		oldfocus->requestInvalidation(getSystemState());
+	if (focus)
+		focus->requestInvalidation(getSystemState());
+	l.acquire();
+	if (oldfocus)
+		oldfocus->removeStoredMember();
 }
 
 void Stage::checkResetFocusTarget(InteractiveObject* removedtarget)
 {
 	Locker l(focusSpinlock);
-	if (focus.getPtr() == removedtarget)
-		focus=NullRef;
+	if (focus && focus == removedtarget)
+	{
+		focus->removeStoredMember();
+		focus=nullptr;
+	}
 }
 void Stage::addHiddenObject(DisplayObject* o)
 {
@@ -814,8 +910,8 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
 		bool handled = false;
-		auto it = tmplisteners.rbegin();
-		while (it != tmplisteners.rend())
+		auto it = tmplisteners.begin();
+		while (it != tmplisteners.end())
 		{
 			if (!handled && (*it)->AVM1HandleKeyboardEvent(e->as<KeyboardEvent>()))
 				handled=true;
@@ -1031,8 +1127,8 @@ bool Stage::AVM1RemoveResizeListener(ASObject *o)
 ASFUNCTIONBODY_ATOM(Stage,_getFocus)
 {
 	Stage* th=asAtomHandler::as<Stage>(obj);
-	_NR<InteractiveObject> focus = th->getFocusTarget();
-	if (focus.isNull() || focus.getPtr()==th || focus->is<RootMovieClip>())
+	InteractiveObject* focus = th->getFocusTarget();
+	if (!focus || focus==th || focus->is<RootMovieClip>())
 	{
 		ret = asAtomHandler::nullAtom;
 		return;
@@ -1040,7 +1136,7 @@ ASFUNCTIONBODY_ATOM(Stage,_getFocus)
 	else
 	{
 		focus->incRef();
-		ret = asAtomHandler::fromObject(focus.getPtr());
+		ret = asAtomHandler::fromObject(focus);
 	}
 }
 
@@ -1049,7 +1145,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setFocus)
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	_NR<InteractiveObject> focus;
 	ARG_CHECK(ARG_UNPACK(focus));
-	th->setFocusTarget(focus);
+	th->setFocusTarget(focus.getPtr());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setTabChildren)

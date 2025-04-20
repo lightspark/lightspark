@@ -41,7 +41,7 @@ private:
 	// Keyboard focus object is accessed from the VM thread (AS
 	// code) and the input thread and is protected focusSpinlock
 	Mutex focusSpinlock;
-	_NR<InteractiveObject> focus;
+	InteractiveObject* focus;
 	_NR<RootMovieClip> root;
 	vector<ASObject*> avm1KeyboardListeners;
 	vector<ASObject*> avm1MouseListeners;
@@ -77,8 +77,9 @@ public:
 	Stage(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	_NR<Stage> getStage() override;
-	_NR<InteractiveObject> getFocusTarget();
-	void setFocusTarget(_NR<InteractiveObject> focus);
+	InteractiveObject* getFocusTarget();
+	void setTabFocusTarget(bool next);
+	void setFocusTarget(InteractiveObject* focus);
 	void checkResetFocusTarget(InteractiveObject* removedtarget);
 	void addHiddenObject(DisplayObject* o);
 	void removeHiddenObject(DisplayObject* o);

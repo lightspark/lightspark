@@ -2680,6 +2680,7 @@ bool ASObject::destruct()
 }
 bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 {
+	bool handled = false;
 	if (e->type =="keyDown")
 	{
 		multiname m(nullptr);
@@ -2688,7 +2689,10 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 		asAtom f=asAtomHandler::invalidAtom;
 		AVM1getVariableByMultiname(f,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 		if (asAtomHandler::is<AVM1Function>(f))
+		{
 			asAtomHandler::as<AVM1Function>(f)->call(nullptr,nullptr,nullptr,0);
+			handled = true;
+		}
 		ASATOM_DECREF(f);
 	}
 	if (e->type =="keyUp")
@@ -2699,10 +2703,13 @@ bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 		asAtom f=asAtomHandler::invalidAtom;
 		AVM1getVariableByMultiname(f,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 		if (asAtomHandler::is<AVM1Function>(f))
+		{
 			asAtomHandler::as<AVM1Function>(f)->call(nullptr,nullptr,nullptr,0);
+			handled = true;
+		}
 		ASATOM_DECREF(f);
 	}
-	return false;
+	return handled;
 }
 
 bool ASObject::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
@@ -2816,8 +2823,8 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 }
 void ASObject::AVM1HandleSetFocusEvent(ASObject *dispobj)
 {
-	_NR<InteractiveObject> oldfocus = getSystemState()->stage->getFocusTarget();
-	if (dispobj && oldfocus.getPtr()==dispobj)
+	InteractiveObject* oldfocus = getSystemState()->stage->getFocusTarget();
+	if (dispobj && oldfocus==dispobj)
 		return;
 	if ((dispobj && dispobj->is<TextField>())
 		|| (oldfocus && oldfocus->is<TextField>()))
@@ -2830,7 +2837,7 @@ void ASObject::AVM1HandleSetFocusEvent(ASObject *dispobj)
 		asAtom obj = asAtomHandler::fromObject(this);
 		ASWorker* wrk = getInstanceWorker();
 		asAtom args[2];
-		args[0] = !oldfocus || oldfocus==getSystemState()->stage || oldfocus->is<RootMovieClip>() ? asAtomHandler::nullAtom : asAtomHandler::fromObject(oldfocus.getPtr());
+		args[0] = !oldfocus || oldfocus==getSystemState()->stage || oldfocus->is<RootMovieClip>() ? asAtomHandler::nullAtom : asAtomHandler::fromObject(oldfocus);
 		args[1] = !dispobj || dispobj==getSystemState()->stage || dispobj->is<RootMovieClip>() || !dispobj->is<TextField>() ? asAtomHandler::nullAtom : asAtomHandler::fromObject(dispobj);
 		m.name_s_id=BUILTIN_STRINGS::STRING_ONSETFOCUS;
 		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);

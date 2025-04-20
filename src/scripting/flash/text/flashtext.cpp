@@ -1299,7 +1299,6 @@ void TextField::updateSizes()
 					t.textwidth=w;
 					t.height=h;
 					it = textlines.insert(++it,t);
-					th+=h;
 					listchanged=true;
 					text =t.text;
 					if (uint32_t(w) <= width-TEXTFIELD_PADDING*2)
@@ -1308,6 +1307,7 @@ void TextField::updateSizes()
 							tw = w;
 						break;
 					}
+					th+=h;
 					c=text.numChars();
 				}
 				c= text.rfind(" ",c-1);// TODO check for other whitespace characters
@@ -1776,7 +1776,7 @@ void TextField::tick()
 {
 	if (this->type != ET_EDITABLE)
 		return;
-	if (this == getSystemState()->stage->getFocusTarget().getPtr())
+	if (this == getSystemState()->stage->getFocusTarget())
 		caretblinkstate = !caretblinkstate;
 	else
 		caretblinkstate = false;

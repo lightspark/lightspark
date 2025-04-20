@@ -85,10 +85,29 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 	bool CondOverUpToIdle = false;
 	bool CondIdleToOverUp = false;
 	bool CondOverDownToIdle = false;
-	if(e->type == "mouseDown" && dispatcher == this)
+
+	if(e->type == "mouseDown")
 	{
-		currentState = STATE_DOWN;
-		reflectState(oldstate);
+		if(dispatcher==this)
+		{
+			currentState = STATE_DOWN;
+			reflectState(oldstate);
+		}
+		else
+		{
+			number_t xmin, xmax, ymin, ymax;
+			if (this->boundsRectGlobal(xmin, xmax, ymin, ymax))
+			{
+				if (xmin<=e->stageX &&
+						xmax>=e->stageX &&
+						ymin<=e->stageY &&
+						ymax>=e->stageY)
+				{
+					currentState = STATE_DOWN;
+					reflectState(oldstate);
+				}
+			}
+		}
 	}
 	else if(e->type == "mouseUp")
 	{
@@ -144,7 +163,10 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 				while (c && !c->is<MovieClip>())
 					c = c->getParent();
 				if (c)
-					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+				{
+					asAtom obj = asAtomHandler::fromObjectNoPrimitive(this->getParent());
+					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,nullptr,false,nullptr,&obj);
+				}
 			}
 		}
 	}
@@ -156,14 +178,17 @@ void SimpleButton::AVM1HandlePressedEvent(ASObject* dispatcher)
 	{
 		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
 		{
-			if ((it->CondOverUpToOverDown && (oldstate==STATE_UP || oldstate==STATE_OVER) && currentState==STATE_DOWN)
+			if ((it->CondOverUpToOverDown && (oldstate==STATE_UP || oldstate==STATE_OVER || oldstate==STATE_OUT) && currentState==STATE_DOWN)
 				)
 			{
 				DisplayObjectContainer* c = lastParent;
 				while (c && !c->is<MovieClip>())
 					c = c->getParent();
 				if (c)
-					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+				{
+					asAtom obj = asAtomHandler::fromObjectNoPrimitive(this->getParent());
+					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,nullptr,false,nullptr,&obj);
+				}
 			}
 		}
 	}
@@ -185,7 +210,13 @@ void SimpleButton::handleMouseCursor(bool rollover)
 
 bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 {
-	bool handled=false;
+	bool handled = false;
+	if (getSystemState()->stage->getFocusTarget()== this)
+		handled = DisplayObjectContainer::AVM1HandleKeyboardEvent(e);
+	if (e->type!="keyDown")
+		return handled;
+	if (getSystemState()->stage->getFocusTarget()!= this)
+		return false;
 	for (auto it = this->buttontag->condactions.begin(); it != this->buttontag->condactions.end(); it++)
 	{
 		bool execute=false;
@@ -333,11 +364,8 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 				c = c->getParent();
 			if (c)
 				ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
-			handled=true;
 		}
 	}
-	if (!handled)
-		DisplayObjectContainer::AVM1HandleKeyboardEvent(e);
 	return handled;
 }
 
@@ -364,8 +392,9 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(const Vector2f& globalPoint, const 
 
 			const auto hitPoint = hitTestState->getMatrix().getInverted().multiply2D(localPoint);
 			ret = hitTestState->hitTest(globalPoint, hitPoint, type,false);
+			if (ret)
+				break;
 		}
-
 	}
 	/* mouseDown events, for example, are never dispatched to the hitTestState,
 	 * but directly to this button (and with event.target = this). This has been
@@ -665,6 +694,10 @@ void SimpleButton::resetStateToStart(BUTTONOBJECTTYPE type)
 			parentSprite[type]->constructionComplete(true);
 			parentSprite[type]->afterConstruction(true);
 			parentSprite[type]->name = BUILTIN_STRINGS::EMPTY;
+		}
+		else if (parentSprite[type]->is<DisplayObjectContainer>())
+		{
+			parentSprite[type]->as<DisplayObjectContainer>()->_removeAllChildren();
 		}
 	}
 	for (auto it = states[type].begin(); it != states[type].end(); it++)

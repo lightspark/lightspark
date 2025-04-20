@@ -483,6 +483,9 @@ public:
 	OBJECT_ENCODING staticByteArrayDefaultObjectEncoding;
 	OBJECT_ENCODING staticSharedObjectDefaultObjectEncoding;
 	bool staticSharedObjectPreventBackup;
+
+	LINESTYLE2 avm1FocusRectLinestyle;
+
 	
 	//broadcast event management
 	void registerFrameListener(DisplayObject* clip);

@@ -241,9 +241,11 @@ SystemState::SystemState
 	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedNamespaceId(0x7fffffff),framePhase(FramePhase::IDLE),
 	instanceCounter(0),
 	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),avm1global(nullptr),
-	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),ignoreUnhandledExceptions(false),runSingleThreaded(_runSingleThreaded),exitOnError(ERROR_NONE),
+	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),
+	ignoreUnhandledExceptions(false),runSingleThreaded(_runSingleThreaded),exitOnError(ERROR_NONE),
 	systemDomain(nullptr),worker(nullptr),workerDomain(nullptr),singleworker(true),
-	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
+	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),avm1FocusRectLinestyle(0xff),
+	unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
 	static_SoundMixer_bufferTime(0),
 	static_Multitouch_inputMode("gesture"),
 	static_XML_ignoreComments(true),
@@ -348,6 +350,11 @@ SystemState::SystemState
 
 	static_SoundMixer_soundTransform  = _MR(Class<SoundTransform>::getInstanceS(this->worker));
 	static_SoundMixer_soundTransform->setRefConstant();
+
+	// line style for rendering focus rect (solid yellow)
+	avm1FocusRectLinestyle.Color=RGBA(0xff,0xff,0,0xff);
+	avm1FocusRectLinestyle.Width=200;
+
 	threads = std::min(size_t(NUM_THREADS), threads);
 	threadPool=new ThreadPool(this, threads);
 	downloadThreadPool=new ThreadPool(this, threads);

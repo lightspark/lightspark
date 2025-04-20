@@ -43,7 +43,7 @@ void AVM1Selection::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, 0);
 	c->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addListener),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("getFocus","",c->getSystemState()->getBuiltinFunction(getFocus),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("setFocus","",c->getSystemState()->getBuiltinFunction(getFocus),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("setFocus","",c->getSystemState()->getBuiltinFunction(setFocus),NORMAL_METHOD,false);
 }
 ASFUNCTIONBODY_ATOM(AVM1Selection,addListener)
 {
@@ -54,7 +54,7 @@ ASFUNCTIONBODY_ATOM(AVM1Selection,addListener)
 }
 ASFUNCTIONBODY_ATOM(AVM1Selection,getFocus)
 {
-	_NR<InteractiveObject> focus = wrk->getSystemState()->stage->getFocusTarget();
+	InteractiveObject* focus = wrk->getSystemState()->stage->getFocusTarget();
 	if (focus)
 		ret = asAtomHandler::fromString(wrk->getSystemState(),focus->AVM1GetPath());
 	else
@@ -65,13 +65,9 @@ ASFUNCTIONBODY_ATOM(AVM1Selection,setFocus)
 	if (argslen==0)
 		return;
 	if (asAtomHandler::isNull(args[0]) || asAtomHandler::isUndefined(args[0]))
-		wrk->getSystemState()->stage->setFocusTarget(NullRef);
+		wrk->getSystemState()->stage->setFocusTarget(nullptr);
 	else if (asAtomHandler::is<InteractiveObject>(args[0]))
-	{
-		InteractiveObject* o = asAtomHandler::as<InteractiveObject>(args[0]);
-		o->incRef();
-		wrk->getSystemState()->stage->setFocusTarget(_MR(o));
-	}
+		wrk->getSystemState()->stage->setFocusTarget(asAtomHandler::as<InteractiveObject>(args[0]));
 	else
 		LOG(LOG_ERROR,"invalid object for Selection.setFocus:"<<asAtomHandler::toDebugString(args[0]));
 }

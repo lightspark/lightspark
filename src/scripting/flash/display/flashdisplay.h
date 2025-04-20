@@ -70,6 +70,7 @@ protected:
 	bool mouseEnabled;
 	bool doubleClickEnabled;
 	asAtom avm1focusrect;
+	asAtom avm1tabindex;
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	void onContextMenu(_NR<ASObject> oldValue);
 	~InteractiveObject();
@@ -113,6 +114,8 @@ public:
 	_NR<InteractiveObject> getCurrentContextMenuItems(std::vector<_R<NativeMenuItem> > &items);
 	ASFUNCTION_ATOM(AVM1_setfocusrect);
 	ASFUNCTION_ATOM(AVM1_getfocusrect);
+	ASFUNCTION_ATOM(AVM1_setTabIndex);
+	ASFUNCTION_ATOM(AVM1_getTabIndex);
 };
 
 class DisplayObjectContainer: public InteractiveObject
@@ -163,6 +166,8 @@ public:
 	void invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container) override;
 	
 	void _addChildAt(DisplayObject* child, unsigned int index, bool inskipping=false);
+	bool fillTabStopsAutomatic(std::map<int32_t, DisplayObject*>& distancemap, bool& hasTabIndices);
+	void fillTabStopsByTabIndex(std::map<int32_t,DisplayObject*>& indexmap);
 	void dumpDisplayList(unsigned int level=0);
 	void handleRemovedEvent(DisplayObject* child, bool keepOnStage = false, bool inskipping = false);
 	bool _removeChild(DisplayObject* child, bool direct=false, bool inskipping=false, bool keeponstage=false);

@@ -879,7 +879,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	}
 	else
 	{
-		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
+		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT,isEnumerable);
 	}
 	if(this->is<Class_base>())
 	{
@@ -891,8 +891,6 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 			cls = cls->super.getPtr();
 		}
 	}
-
-	obj->isenumerable = isEnumerable;
 	obj->min_swfversion = min_swfversion;
 	switch(type)
 	{
@@ -1159,6 +1157,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 			uint32_t nameID = name.normalizedNameId(getInstanceWorker());
 			variables_map::var_iterator inserted=Variables.Variables.insert(Variables.Variables.cbegin(),
 				make_pair(nameID,variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind(),name.isInteger,nameID)));
+			inserted->second.isenumerable=true;
 			Variables.insertVar(&inserted->second);
 			obj = &inserted->second;
 		}
@@ -2632,7 +2631,6 @@ bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	ret = Variables.countCylicMemberReferences(gcstate,this) || ret;
 	return ret;
 }
-
 bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	if (gcstate.stopped)
@@ -2885,36 +2883,33 @@ void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 {
 	bool needsactionscript3 = (target->is<DisplayObject>() && target->as<DisplayObject>()->needsActionScript3())
 			|| (!target->is<DisplayObject>() && wrk->rootClip->needsActionScript3());
-	auto it = Variables.Variables.begin();
-	while (it != Variables.Variables.end())
+	auto it = Variables.dynamic_vars.begin();
+	while (it != Variables.dynamic_vars.end())
 	{
-		if (it->second.kind == DYNAMIC_TRAIT || it->second.kind == CONSTANT_TRAIT)
+		multiname m(nullptr);
+		m.name_type = multiname::NAME_STRING;
+		m.name_s_id = (*it)->nameStringID;
+		asAtom v=(*it)->var;
+		if (wrk)
 		{
-			multiname m(nullptr);
-			m.name_type = multiname::NAME_STRING;
-			m.name_s_id = it->first;
-			asAtom v=it->second.var;
-			if (wrk)
+			// prepare value for use in another worker
+			if (needsactionscript3 && asAtomHandler::isFunction(v))
+				v = asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<IFunction>(v)->createFunctionInstance(wrk));
+			else if (asAtomHandler::isObject(v))
 			{
-				// prepare value for use in another worker
-				if (needsactionscript3 && asAtomHandler::isFunction(v))
-					v = asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<IFunction>(v)->createFunctionInstance(wrk));
-				else if (asAtomHandler::isObject(v))
-				{
-					asAtomHandler::getObjectNoCheck(v)->incRef();
-					asAtomHandler::getObjectNoCheck(v)->objfreelist=nullptr;
-				}
+				asAtomHandler::getObjectNoCheck(v)->incRef();
+				asAtomHandler::getObjectNoCheck(v)->objfreelist=nullptr;
 			}
-			else
-			{
-				ASATOM_INCREF(v);
-			}
-
-			if (needsactionscript3)
-				target->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
-			else
-				(void)target->AVM1setVariableByMultiname(m, v, CONST_ALLOWED, wrk);
 		}
+		else
+		{
+			ASATOM_INCREF(v);
+		}
+
+		if (needsactionscript3)
+			target->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+		else
+			(void)target->AVM1setVariableByMultiname(m, v, CONST_ALLOWED, wrk);
 		it++;
 	}
 }

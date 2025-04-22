@@ -89,6 +89,8 @@ void AVM1Function::finalize()
 		ASATOM_REMOVESTOREDMEMBER(*it);
 	}
 	implementedinterfaces.clear();
+	context.scope.reset();
+	context.globalScope.reset();
 	IFunction::finalize();
 }
 
@@ -105,6 +107,8 @@ bool AVM1Function::destruct()
 		ASATOM_REMOVESTOREDMEMBER(*it);
 	}
 	implementedinterfaces.clear();
+	context.scope.reset();
+	context.globalScope.reset();
 	return IFunction::destruct();
 }
 
@@ -115,6 +119,8 @@ void AVM1Function::prepareShutdown()
 	IFunction::prepareShutdown();
 	if (clip)
 		clip->prepareShutdown();
+	context.scope.reset();
+	context.globalScope.reset();
 	scope.reset();
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
@@ -137,6 +143,10 @@ bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
 		ret = su->countAllCylicMemberReferences(gcstate) || ret;
+	if (context.scope)
+		ret |= context.scope->countAllCyclicMemberReferences(gcstate);
+	if (context.globalScope)
+		ret |= context.globalScope->countAllCyclicMemberReferences(gcstate);
 	return ret;
 }
 bool AVM1Function::implementsInterface(asAtom &iface)

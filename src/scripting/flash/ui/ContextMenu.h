@@ -33,6 +33,7 @@ class ContextMenu : public EventDispatcher
 public:
 	ContextMenu(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
+	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
@@ -44,6 +45,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<ContextMenuBuiltInItems>,builtInItems);
 	void getCurrentContextMenuItems(std::vector<_R<NativeMenuItem>>& items);
 	InteractiveObject* owner;
+	virtual bool builtInItemEnabled(const tiny_string& name);
 	static void getVisibleBuiltinContextMenuItems(ContextMenu* m, std::vector<Ref<NativeMenuItem> > &items, ASWorker* worker);
 };
 

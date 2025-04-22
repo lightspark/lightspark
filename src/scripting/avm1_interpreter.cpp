@@ -703,13 +703,13 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		if (caller)
 			caller->incRef();
 
-		argsArray->setVariableAtomByQName("caller", tmpns, c, DYNAMIC_TRAIT, false, 5);
+		argsArray->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CALLER, tmpns, c, DYNAMIC_TRAIT, false, true, 5);
 
 		if (callee)
 		{
 			callee->incRef();
 			asAtom c = asAtomHandler::fromObject(callee);
-			argsArray->setVariableAtomByQName("callee", tmpns, c, DYNAMIC_TRAIT, false, 5);
+			argsArray->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CALLEE, tmpns, c, DYNAMIC_TRAIT, false, true, 5);
 		}
 
 		auto argsAtom = asAtomHandler::fromObject(argsArray);
@@ -719,7 +719,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		{
 			if (context->scope->forceDefineLocal
 			(
-				"arguments",
+				BUILTIN_STRINGS::STRING_ARGUMENTS,
 				argsAtom,
 				CONST_ALLOWED,
 				wrk
@@ -1239,6 +1239,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				if (asAtomHandler::isInvalid(ret))
 					ret = asAtomHandler::undefinedAtom;
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetProperty done "<<asAtomHandler::toDebugString(target)<<" "<<asAtomHandler::toDebugString(ret));
 				ASATOM_DECREF(index);
 				ASATOM_DECREF(target);
 				PushStack(stack,ret);

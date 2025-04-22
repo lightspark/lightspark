@@ -38,6 +38,13 @@ void ContextMenu::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,builtInItems,ContextMenuBuiltInItems);
 }
 
+void ContextMenu::finalize()
+{
+	customItems.reset();
+	builtInItems.reset();
+	EventDispatcher::finalize();
+}
+
 bool ContextMenu::destruct()
 {
 	customItems.reset();
@@ -89,10 +96,27 @@ void ContextMenu::getCurrentContextMenuItems(std::vector<_R<NativeMenuItem> >& i
 	getVisibleBuiltinContextMenuItems(this,items,getInstanceWorker());
 }
 
+bool ContextMenu::builtInItemEnabled(const tiny_string& name)
+{
+	if (name == "save")
+		return builtInItems->save;
+	else if (name == "zoom")
+		return builtInItems->zoom;
+	else if (name == "quality")
+		return builtInItems->quality;
+	else if (name == "play")
+		return builtInItems->play;
+	else if (name == "forwardAndBack")
+		return builtInItems->forwardAndBack;
+	else if (name == "print")
+		return builtInItems->print;
+	return false;
+}
+
 void ContextMenu::getVisibleBuiltinContextMenuItems(ContextMenu *m, std::vector<Ref<NativeMenuItem> >& items, ASWorker* worker)
 {
 	NativeMenuItem* n;
-	if (!m || m->builtInItems->save)
+	if (!m || m->builtInItemEnabled("save"))
 	{
 		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Save";
@@ -101,7 +125,7 @@ void ContextMenu::getVisibleBuiltinContextMenuItems(ContextMenu *m, std::vector<
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
-	if (!m || m->builtInItems->zoom)
+	if (!m || m->builtInItemEnabled("zoom"))
 	{
 		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Zoom In";
@@ -119,7 +143,7 @@ void ContextMenu::getVisibleBuiltinContextMenuItems(ContextMenu *m, std::vector<
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
-	if (!m || m->builtInItems->quality)
+	if (!m || m->builtInItemEnabled("quality"))
 	{
 		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Quality";
@@ -128,7 +152,7 @@ void ContextMenu::getVisibleBuiltinContextMenuItems(ContextMenu *m, std::vector<
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
-	if (!m || m->builtInItems->play)
+	if (!m || m->builtInItemEnabled("play"))
 	{
 		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Play";
@@ -140,7 +164,7 @@ void ContextMenu::getVisibleBuiltinContextMenuItems(ContextMenu *m, std::vector<
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
-	if (!m || m->builtInItems->forwardAndBack)
+	if (!m || m->builtInItemEnabled("forwardAndBack"))
 	{
 		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Rewind";
@@ -155,7 +179,7 @@ void ContextMenu::getVisibleBuiltinContextMenuItems(ContextMenu *m, std::vector<
 		n->isSeparator = true;
 		items.push_back(_MR(n));
 	}
-	if (!m || m->builtInItems->print)
+	if (!m || m->builtInItemEnabled("print"))
 	{
 		n = Class<NativeMenuItem>::getInstanceSNoArgs(worker);
 		n->label="Print";

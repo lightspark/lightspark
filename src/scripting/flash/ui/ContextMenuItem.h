@@ -30,12 +30,17 @@ namespace lightspark
 class ContextMenuItem : public NativeMenuItem
 {
 protected:
-	_NR<ASObject> callbackfunction;
+	asAtom callbackfunction;
 public:
 	ContextMenuItem(ASWorker* wrk,Class_base* c);
 	~ContextMenuItem();
 	void defaultEventBehavior(_R<Event> e) override;
 	static void sinit(Class_base* c);
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+
 	ASFUNCTION_ATOM(_constructor);
 	ASPROPERTY_GETTER_SETTER(bool, separatorBefore);
 	ASPROPERTY_GETTER_SETTER(bool, visible);

@@ -78,7 +78,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("Key","",Class<AVM1Key>::getRef(m_sys));
 	builtinavm1->registerBuiltin("Stage","",Class<AVM1Stage>::getRef(m_sys));
 	builtinavm1->registerBuiltin("SharedObject","",Class<AVM1SharedObject>::getRef(m_sys));
-	builtinavm1->registerBuiltin("ContextMenu","",Class<ContextMenu>::getRef(m_sys));
+	builtinavm1->registerBuiltin("ContextMenu","",Class<AVM1ContextMenu>::getRef(m_sys));
 	builtinavm1->registerBuiltin("ContextMenuItem","",Class<AVM1ContextMenuItem>::getRef(m_sys));
 	builtinavm1->registerBuiltin("TextField","",Class<AVM1TextField>::getRef(m_sys));
 	builtinavm1->registerBuiltin("TextFormat","",Class<AVM1TextFormat>::getRef(m_sys));

@@ -36,7 +36,40 @@ void ContextMenuItem::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,enabled);
 }
 
-ContextMenuItem::ContextMenuItem(ASWorker* wrk, Class_base* c):NativeMenuItem(wrk,c)
+void ContextMenuItem::finalize()
+{
+	ASATOM_REMOVESTOREDMEMBER(callbackfunction);
+	callbackfunction=asAtomHandler::invalidAtom;
+	NativeMenuItem::finalize();
+}
+
+bool ContextMenuItem::destruct()
+{
+	ASATOM_REMOVESTOREDMEMBER(callbackfunction);
+	callbackfunction=asAtomHandler::invalidAtom;
+	return NativeMenuItem::destruct();
+}
+
+void ContextMenuItem::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	NativeMenuItem::prepareShutdown();
+	ASObject* o = asAtomHandler::getObject(callbackfunction);
+	if (o)
+		o->prepareShutdown();
+}
+
+bool ContextMenuItem::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = NativeMenuItem::countCylicMemberReferences(gcstate);
+	ASObject* o = asAtomHandler::getObject(callbackfunction);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+}
+
+ContextMenuItem::ContextMenuItem(ASWorker* wrk, Class_base* c):NativeMenuItem(wrk,c),callbackfunction(asAtomHandler::invalidAtom)
 {
 }
 
@@ -46,11 +79,11 @@ ContextMenuItem::~ContextMenuItem()
 
 void ContextMenuItem::defaultEventBehavior(Ref<Event> e)
 {
-	if (e->type == "menuItemSelect" && !callbackfunction.isNull())
+	if (e->type == "menuItemSelect" && asAtomHandler::isValid(callbackfunction))
 	{
 		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 		this->incRef();
-		if (callbackfunction->is<AVM1Function>())
+		if (asAtomHandler::is<AVM1Function>(callbackfunction))
 		{
 			asAtom args[2];
 			if (this->menu && this->menu->owner)
@@ -62,13 +95,12 @@ void ContextMenuItem::defaultEventBehavior(Ref<Event> e)
 				args[0]=asAtomHandler::nullAtom;
 			this->incRef();
 			args[1]=asAtomHandler::fromObjectNoPrimitive(this);
-			callbackfunction->as<AVM1Function>()->call(nullptr,&obj,args,2);
+			asAtomHandler::as<AVM1Function>(callbackfunction)->call(nullptr,&obj,args,2);
 		}
 		else
 		{
-			asAtom caller = asAtomHandler::fromObjectNoPrimitive(callbackfunction.getPtr());
 			asAtom ret = asAtomHandler::invalidAtom;
-			asAtomHandler::callFunction(caller,getInstanceWorker(),ret,obj,nullptr,0,false);
+			asAtomHandler::callFunction(callbackfunction,getInstanceWorker(),ret,obj,nullptr,0,false);
 		}
 	}
 	
@@ -103,7 +135,10 @@ ASFUNCTIONBODY_ATOM(ContextMenuItem,_constructor)
 	else
 	{
 		// contrary to spec constructors without label and callbackfunction are allowed
-		ARG_CHECK(ARG_UNPACK(th->label,"")(th->callbackfunction,NullRef)(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true));
+		asAtom callback = asAtomHandler::invalidAtom;
+		ARG_CHECK(ARG_UNPACK(th->label,"")(callback,asAtomHandler::undefinedAtom)(th->separatorBefore,false)(th->separatorBefore,false)(th->enabled,true)(th->visible,true));
+		ASATOM_ADDSTOREDMEMBER(callback);
+		th->callbackfunction=callback;
 	}
 	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 }

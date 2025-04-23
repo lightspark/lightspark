@@ -50,6 +50,7 @@
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Number.h"
+#include "scripting/avm1/avm1display.h"
 #include <algorithm>
 #include <array>
 
@@ -1065,22 +1066,28 @@ void DisplayObject::afterHandleEvent(Event *ev)
 	}
 }
 
-tiny_string DisplayObject::AVM1GetPath()
+tiny_string DisplayObject::AVM1GetPath(bool dotnotation)
 {
 	tiny_string res;
 	if (getParent())
-		res = getParent()->AVM1GetPath();
+		res = getParent()->AVM1GetPath(dotnotation);
 	if (this->name != BUILTIN_STRINGS::EMPTY)
 	{
-		if (!res.empty())
-			res += ".";
+		if (dotnotation)
+		{
+			if (!res.empty())
+				res += ".";
+		}
+		else
+			res += "/";
 		res += getSystemState()->getStringFromUniqueId(this->name);
 	}
 	else if (is<RootMovieClip>())
 	{
 		// TODO: Add a depth member, and return `_level{depth}` if we
 		// don't have a parent.
-		res += "_level0";
+		if (dotnotation)
+			res += "_level0";
 	}
 	return res;
 }
@@ -2536,6 +2543,14 @@ asAtom DisplayObject::getPropertyByIndex(size_t idx, ASWorker* wrk)
 			break;
 		case 13:// name
 			_getter_name(ret,wrk,obj,nullptr,0);
+			break;
+		case 14:// _droptarget
+			if (is<AVM1MovieClip>())
+			{
+				DisplayObject* droptarget = as<AVM1MovieClip>()->getDroptarget();
+				if (droptarget)
+					ret = asAtomHandler::fromString(sys, droptarget->AVM1GetPath(false));
+			}
 			break;
 		case 15:// url
 			return asAtomHandler::fromString(sys, sys->mainClip->getOrigin().getURL());

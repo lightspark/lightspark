@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* implement drag/drop for AVM1
 	* implement keyboard tab navigation
 	* improved handling of class inheritance in AVM1
 	* implemented OpenGL ES 3 renderer

@@ -881,28 +881,31 @@ void InputThread::sendKeyEvent(const LSKeyEvent& event, bool pressed)
 }
 
 
-void InputThread::startDrag(_R<Sprite> s, const lightspark::RECT* limit, Vector2f offset)
+void InputThread::startDrag(Sprite* s, const lightspark::RECT* limit, Vector2f offset)
 {
 	Locker locker(mutexDragged);
-	if(s==curDragged)
+	if(s==curDragged.getPtr())
 		return;
 
-	curDragged=s;
+	s->incRef();
+	curDragged=_MR(s);
 	curDragged->dragged=true;
 	dragLimit=limit;
 	dragOffset=offset;
 }
 
-void InputThread::stopDrag(Sprite* s)
+DisplayObject* InputThread::stopDrag(DisplayObject* s)
 {
 	Locker locker(mutexDragged);
 	if(curDragged == s)
 	{
 		curDragged->dragged=false;
-		curDragged = NullRef;
+		curDragged.reset();
 		delete dragLimit;
 		dragLimit = 0;
+		return lastMouseUpTarget.getPtr();
 	}
+	return nullptr;
 }
 
 AS3KeyCode InputThread::getLastKeyDown()

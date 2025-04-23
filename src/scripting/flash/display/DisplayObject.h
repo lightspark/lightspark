@@ -256,7 +256,7 @@ public:
 
 	virtual void UpdateVariableBinding(asAtom v) {}
 	
-	tiny_string AVM1GetPath();
+	tiny_string AVM1GetPath(bool dotnotation=true);
 	virtual void afterLegacyInsert();
 	virtual void afterLegacyDelete(bool inskipping) {}
 	virtual uint32_t getTagID() const { return UINT32_MAX;}

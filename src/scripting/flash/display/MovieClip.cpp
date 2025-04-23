@@ -866,8 +866,12 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 				{
 					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
 				}
-				if( dispobj &&
-					((e->type == "mouseUp" && it->EventFlags.ClipEventRelease)
+				if (this->dragged && it->EventFlags.ClipEventRelease && e->type == "mouseUp")
+				{
+					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+				}
+				else if( dispobj &&
+					((e->type == "mouseUp" && it->EventFlags.ClipEventRelease && !this->dragged)
 					|| (e->type == "mouseDown" && it->EventFlags.ClipEventPress)
 					|| (e->type == "rollOver" && it->EventFlags.ClipEventRollOver)
 					|| (e->type == "rollOut" && it->EventFlags.ClipEventRollOut)

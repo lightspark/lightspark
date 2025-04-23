@@ -34,6 +34,7 @@
 #include "parsing/tags.h"
 #include "scripting/abc.h"
 #include "backends/security.h"
+#include "backends/input.h"
 
 using namespace std;
 using namespace lightspark;
@@ -44,8 +45,21 @@ void AVM1MovieClip::afterConstruction(bool _explicit)
 	getSystemState()->stage->AVM1AddEventListener(this);
 }
 
+void AVM1MovieClip::finalize()
+{
+	MovieClip::finalize();
+	if (droptarget)
+		droptarget->removeStoredMember();
+	droptarget=nullptr;
+	color.reset();
+	getSystemState()->stage->AVM1RemoveEventListener(this);
+}
+
 bool AVM1MovieClip::destruct()
 {
+	if (droptarget)
+		droptarget->removeStoredMember();
+	droptarget=nullptr;
 	color.reset();
 	getSystemState()->stage->AVM1RemoveEventListener(this);
 	return MovieClip::destruct();
@@ -58,6 +72,15 @@ void AVM1MovieClip::prepareShutdown()
 	MovieClip::prepareShutdown();
 	if (color)
 		color->prepareShutdown();
+	if (droptarget)
+		droptarget->prepareShutdown();
+}
+bool AVM1MovieClip::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = MovieClip::countCylicMemberReferences(gcstate);
+	if (droptarget)
+		ret = droptarget->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void AVM1MovieClip::sinit(Class_base* c)
@@ -82,10 +105,16 @@ void AVM1MovieClip::setColor(AVM1Color* c)
 
 ASFUNCTIONBODY_ATOM(AVM1MovieClip,startDrag)
 {
+	AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
 	bool lockcenter;
 	number_t x1, y1, x2, y2;
 	ARG_CHECK(ARG_UNPACK(lockcenter,false)(x1,0)(y1,0)(x2,0)(y2,0));
 
+	if (th->droptarget)
+	{
+		th->droptarget->removeStoredMember();
+		th->droptarget=nullptr;
+	}
 	if (argslen > 1)
 	{
 		Rectangle* rect = Class<Rectangle>::getInstanceS(wrk);
@@ -115,7 +144,21 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClip,startDrag)
 
 ASFUNCTIONBODY_ATOM(AVM1MovieClip,stopDrag)
 {
-	Sprite::_stopDrag(ret,wrk,obj,nullptr,0);
+	if (!asAtomHandler::is<DisplayObject>(obj))
+		return;
+	DisplayObject* dt = wrk->getSystemState()->getInputThread()->stopDrag(asAtomHandler::as<DisplayObject>(obj));
+	if (asAtomHandler::is<AVM1MovieClip>(obj))
+	{
+		AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
+		if (th->droptarget)
+			th->droptarget->removeStoredMember();
+		th->droptarget = dt;
+		if (th->droptarget)
+		{
+			th->droptarget->incRef();
+			th->droptarget->addStoredMember();
+		}
+	}
 }
 
 ASFUNCTIONBODY_ATOM(AVM1MovieClip,attachAudio)

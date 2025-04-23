@@ -41,24 +41,28 @@ class AVM1MovieClip: public MovieClip
 private:
 	// this is only needed to make this movieclip the owner of the color (avoids circular references if color is also set as variable)
 	_NR<AVM1Color> color;
+	DisplayObject* droptarget;
 public:
-	AVM1MovieClip(ASWorker* wrk,Class_base* c):MovieClip(wrk,c)
+	AVM1MovieClip(ASWorker* wrk,Class_base* c):MovieClip(wrk,c),droptarget(nullptr)
 	{
 		subtype = SUBTYPE_AVM1MOVIECLIP;
 	}
-	AVM1MovieClip(ASWorker* wrk,Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID,uint32_t nameID=BUILTIN_STRINGS::EMPTY):MovieClip(wrk,c,f,defineSpriteTagID) 
+	AVM1MovieClip(ASWorker* wrk,Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID,uint32_t nameID=BUILTIN_STRINGS::EMPTY):MovieClip(wrk,c,f,defineSpriteTagID),droptarget(nullptr)
 	{
 		subtype = SUBTYPE_AVM1MOVIECLIP;
 		name=nameID;
 	}
 	void afterConstruction(bool _explicit = false) override;
+	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(startDrag);
 	ASFUNCTION_ATOM(stopDrag);
 	ASFUNCTION_ATOM(attachAudio);
 	void setColor(AVM1Color* c);
+	DisplayObject* getDroptarget() const { return droptarget; }
 };
 
 class AVM1Shape: public Shape

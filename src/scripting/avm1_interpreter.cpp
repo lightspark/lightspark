@@ -1374,6 +1374,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					DisplayObject* targetclip = clip->AVM1GetClipFromPath(s);
 					if (targetclip)
 					{
+						targetclip->incRef();
 						obj = asAtomHandler::fromObject(targetclip);
 					}
 					else
@@ -1387,7 +1388,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				args[0] = lockcenter;
 				if (rect)
 					args[1] = asAtomHandler::fromObject(rect);
-				Sprite::_startDrag(ret,wrk,obj,args,rect ? 2 : 1);
+				AVM1MovieClip::startDrag(ret,wrk,obj,args,rect ? 2 : 1);
+				ASATOM_DECREF(obj);
 				ASATOM_DECREF(lockcenter);
 				ASATOM_DECREF(constrain);
 				break;
@@ -1397,7 +1399,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::fromObject(clip);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEndDrag "<<asAtomHandler::toDebugString(obj));
-				Sprite::_stopDrag(ret,wrk,obj,nullptr,0);
+				AVM1MovieClip::stopDrag(ret,wrk,obj,nullptr,0);
 				break;
 			}
 			case 0x2a: // ActionThrow

@@ -106,8 +106,8 @@ public:
 	~InputThread();
 	void wait();
 	void start(EngineData* data);
-	void startDrag(_R<Sprite> s, const RECT* limit, Vector2f dragOffset);
-	void stopDrag(Sprite* s);
+	void startDrag(Sprite* s, const RECT* limit, Vector2f dragOffset);
+	DisplayObject* stopDrag(DisplayObject* s);
 
 	Vector2 getMousePos()
 	{

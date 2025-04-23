@@ -198,8 +198,7 @@ ASFUNCTIONBODY_ATOM(Sprite,_startDrag)
 		offset += th->getXY();
 	}
 
-	th->incRef();
-	wrk->getSystemState()->getInputThread()->startDrag(_MR(th), bounds, offset);
+	wrk->getSystemState()->getInputThread()->startDrag(th, bounds, offset);
 }
 
 ASFUNCTIONBODY_ATOM(Sprite,_stopDrag)
@@ -494,15 +493,14 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(const Vector2f& globalPoi
 					{
 						if (!ret->is<InteractiveObject>())
 						{
-							// we have hit a non-interactive object, so "this" may be the hit target
-							// but we continue to search the children as there may be an InteractiveObject that is also hit
+							// we have hit a non-interactive object, so "this" is be the hit target
 							hit_this=true;
 							ret.reset();
-							continue;
+							break;;
 						}
 						else if (!ret->as<InteractiveObject>()->isHittable(type))
 						{
-							// hit is a disabled InteractiveObject, so so "this" may be the hit target
+							// hit is a disabled InteractiveObject, so "this" may be the hit target
 							// but we continue to search the children as there may be an enabled InteractiveObject that is also hit
 							hit_this=true;
 							ret.reset();

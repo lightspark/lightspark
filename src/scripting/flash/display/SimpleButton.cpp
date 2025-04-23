@@ -645,13 +645,25 @@ ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 	ARG_CHECK(ARG_UNPACK(upState, NullRef)(overState, NullRef)(downState, NullRef)(hitTestState, NullRef));
 
 	if (!upState.isNull())
-		th->addDisplayObject(BUTTONOBJECTTYPE_UP,0,downState.getPtr());
+	{
+		upState->incRef();
+		th->addDisplayObject(BUTTONOBJECTTYPE_UP,0,upState.getPtr());
+	}
 	if (!downState.isNull())
+	{
+		downState->incRef();
 		th->addDisplayObject(BUTTONOBJECTTYPE_DOWN,0,downState.getPtr());
+	}
 	if (!hitTestState.isNull())
+	{
+		hitTestState->incRef();
 		th->addDisplayObject(BUTTONOBJECTTYPE_HIT,0,hitTestState.getPtr());
+	}
 	if (!overState.isNull())
+	{
+		overState->incRef();
 		th->addDisplayObject(BUTTONOBJECTTYPE_OVER,0,overState.getPtr());
+	}
 }
 
 void SimpleButton::reflectState(BUTTONSTATE oldstate)
@@ -690,6 +702,7 @@ void SimpleButton::resetStateToStart(BUTTONOBJECTTYPE type)
 			 * all DisplayObjects as children.
 			 */
 			parentSprite[type] = Class<Sprite>::getInstanceSNoArgs(loadedFrom->getInstanceWorker());
+			parentSprite[type]->addStoredMember();
 			parentSprite[type]->loadedFrom=this->loadedFrom;
 			parentSprite[type]->constructionComplete(true);
 			parentSprite[type]->afterConstruction(true);
@@ -708,8 +721,8 @@ void SimpleButton::resetStateToStart(BUTTONOBJECTTYPE type)
 		obj->incRef();
 		if (this->needsActionScript3() && parentSprite[type]->is<DisplayObjectContainer>())
 		{
-			parentSprite[type]->as<DisplayObjectContainer>()->insertLegacyChildAt((*it).first,obj);
 			parentSprite[type]->incRef();
+			parentSprite[type]->as<DisplayObjectContainer>()->insertLegacyChildAt((*it).first,obj);
 			insertLegacyChildAt((*it).first,parentSprite[type],false,false);
 		}
 		else

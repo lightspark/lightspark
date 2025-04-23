@@ -126,7 +126,9 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 TextField::TextField(ASWorker* wrk, Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname, DefineEditTextTag *_tag)
 	: InteractiveObject(wrk,c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
 	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  textInteractionMode(TI_NORMAL),autosizeposition(0),tagvarname(varname,true),tagvartarget(nullptr),tag(_tag),originalXPosition(0),originalWidth(textData.width),
+	  textInteractionMode(TI_NORMAL),
+	  restrictChars(asAtomHandler::nullAtom),
+	  autosizeposition(0),tagvarname(varname,true),tagvartarget(nullptr),tag(_tag),originalXPosition(0),originalWidth(textData.width),
 	  fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),linemutex(new Mutex()),inAVM1syncVar(false),
 	  inUpdateVarBinding(false),
 	  alwaysShowSelection(false),
@@ -153,7 +155,7 @@ TextField::~TextField()
 
 void TextField::sinit(Class_base* c)
 {
-	CLASS_SETUP_NO_CONSTRUCTOR(c, InteractiveObject, CLASS_SEALED);
+	CLASS_SETUP(c, InteractiveObject, _constructor, CLASS_SEALED);
 
 	// methods
 	c->setDeclaredMethodByQName("appendText","",c->getSystemState()->getBuiltinFunction(TextField:: appendText),NORMAL_METHOD,true);
@@ -170,6 +172,8 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("replaceText","",c->getSystemState()->getBuiltinFunction(_replaceText),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setSelection","",c->getSystemState()->getBuiltinFunction(_setSelection),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getCharBoundaries","",c->getSystemState()->getBuiltinFunction(_getCharBoundaries),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getFirstCharInParagraph","",c->getSystemState()->getBuiltinFunction(getFirstCharInParagraph,1,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getParagraphLength","",c->getSystemState()->getBuiltinFunction(getParagraphLength,1,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 
 	// properties
 	c->setDeclaredMethodByQName("antiAliasType","",c->getSystemState()->getBuiltinFunction(TextField::_getAntiAliasType),GETTER_METHOD,true);
@@ -202,6 +206,8 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("textInteractionMode","",c->getSystemState()->getBuiltinFunction(TextField::_getTextInteractionMode),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("displayAsPassword","",c->getSystemState()->getBuiltinFunction(TextField::_getdisplayAsPassword),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("displayAsPassword","",c->getSystemState()->getBuiltinFunction(TextField::_setdisplayAsPassword),SETTER_METHOD,true);
+	// undocumented property, see ruffle test avm2/edittext_mouse_selection
+	c->setDeclaredMethodByQName("selectedText","",c->getSystemState()->getBuiltinFunction(TextField::_getSelectedText,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 
 	// special handling neccessary when getting/setting x
 	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(TextField::_getTextFieldX),GETTER_METHOD,true);
@@ -256,7 +262,8 @@ ASFUNCTIONBODY_GETTER_SETTER(TextField, useRichTextClipboard) // stub
 void TextField::finalize()
 {
 	InteractiveObject::finalize();
-	restrictChars.reset();
+	ASATOM_REMOVESTOREDMEMBER(restrictChars);
+	restrictChars=asAtomHandler::nullAtom;
 	styleSheet.reset();
 }
 
@@ -265,8 +272,9 @@ void TextField::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	InteractiveObject::prepareShutdown();
-	if(restrictChars)
-		restrictChars->prepareShutdown();
+	ASObject* restrict = asAtomHandler::getObject(restrictChars);
+	if(restrict)
+		restrict->prepareShutdown();
 	if (styleSheet)
 		styleSheet->prepareShutdown();
 	if (tagvartarget)
@@ -276,6 +284,9 @@ void TextField::prepareShutdown()
 bool TextField::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = InteractiveObject::countCylicMemberReferences(gcstate);
+	ASObject* restrict = asAtomHandler::getObject(restrictChars);
+	if(restrict)
+		ret = restrict->countAllCylicMemberReferences(gcstate) || ret;
 	if (tagvartarget)
 		ret = tagvartarget->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
@@ -338,6 +349,13 @@ _NR<DisplayObject> TextField::hitTestImpl(const Vector2f&, const Vector2f& local
 	}
 	else
 		return NullRef;
+}
+
+ASFUNCTIONBODY_ATOM(TextField,_constructor)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+	InteractiveObject::_constructor(ret,wrk,obj,nullptr,0);
+	th->restrictChars=asAtomHandler::nullAtom;
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getdisplayAsPassword)
@@ -1013,6 +1031,19 @@ ASFUNCTIONBODY_ATOM(TextField,_getNumLines)
 	Locker l(*th->linemutex);
 	asAtomHandler::setInt(ret,wrk,(int32_t)th->getLineCount());
 }
+ASFUNCTIONBODY_ATOM(TextField,_getSelectedText)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+	if (th->selectionBeginIndex == th->selectionEndIndex)
+		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
+	else
+	{
+		Locker l(*th->linemutex);
+		tiny_string text = th->getText();
+		tiny_string selected = text.substr(th->selectionBeginIndex,th->selectionEndIndex-th->selectionBeginIndex);
+		ret = asAtomHandler::fromString(wrk->getSystemState(),selected);
+	}
+}
 
 ASFUNCTIONBODY_ATOM(TextField,_getMaxScrollH)
 {
@@ -1047,20 +1078,17 @@ ASFUNCTIONBODY_ATOM(TextField,_getBottomScrollV)
 ASFUNCTIONBODY_ATOM(TextField,_getRestrict)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	if (th->restrictChars.isNull())
-		return;
-	else
-	{
-		th->restrictChars->incRef();
-		ret = asAtomHandler::fromObject(th->restrictChars.getPtr());
-	}
+	ASATOM_INCREF(th->restrictChars);
+	ret=th->restrictChars;
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_setRestrict)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	ARG_CHECK(ARG_UNPACK(th->restrictChars));
-	if (!th->restrictChars.isNull())
+	tiny_string restrictchars;
+	ARG_CHECK(ARG_UNPACK(restrictchars));
+	th->restrictChars=asAtomHandler::fromString(wrk->getSystemState(),restrictchars);
+	if (!restrictchars.empty())
 		LOG(LOG_NOT_IMPLEMENTED, "TextField restrict property");
 }
 
@@ -1181,6 +1209,26 @@ ASFUNCTIONBODY_ATOM(TextField,_getCharBoundaries)
 		rect->height = ymax2-ymin2;
 	}
 	ret = asAtomHandler::fromObjectNoPrimitive(rect);
+}
+ASFUNCTIONBODY_ATOM(TextField,getFirstCharInParagraph)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+
+	int32_t charIndex;
+	ARG_CHECK(ARG_UNPACK(charIndex));
+
+	LOG(LOG_NOT_IMPLEMENTED,"TextField.getFirstCharInParagraph always returns 0");
+	ret = asAtomHandler::fromInt(0);
+}
+ASFUNCTIONBODY_ATOM(TextField,getParagraphLength)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+
+	int32_t charIndex;
+	ARG_CHECK(ARG_UNPACK(charIndex));
+
+	LOG(LOG_NOT_IMPLEMENTED,"TextField.getParagraphLength always returns 0");
+	ret = asAtomHandler::fromInt(0);
 }
 
 void TextField::afterSetLegacyMatrix()

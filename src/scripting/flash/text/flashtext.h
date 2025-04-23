@@ -130,7 +130,7 @@ private:
 	ANTI_ALIAS_TYPE antiAliasType;
 	GRID_FIT_TYPE gridFitType;
 	TEXT_INTERACTION_MODE textInteractionMode;
-	_NR<ASString> restrictChars;
+	asAtom restrictChars;
 	number_t autosizeposition;
 	tiny_string tagvarname;
 	DisplayObject* tagvartarget;
@@ -172,7 +172,7 @@ public:
 	bool isInUpdateVarBinding() const { return inUpdateVarBinding; }
 	bool isFocusable() override;
 
-	
+	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(appendText);
 	ASFUNCTION_ATOM(_getAntiAliasType);
 	ASFUNCTION_ATOM(_setAntiAliasType);
@@ -217,6 +217,10 @@ public:
 	ASFUNCTION_ATOM(_getCharBoundaries);
 	ASFUNCTION_ATOM(_getdisplayAsPassword);
 	ASFUNCTION_ATOM(_setdisplayAsPassword);
+	ASFUNCTION_ATOM(_getSelectedText);
+	ASFUNCTION_ATOM(getFirstCharInParagraph);
+	ASFUNCTION_ATOM(getParagraphLength);
+
 	ASPROPERTY_GETTER_SETTER(bool, alwaysShowSelection);
 	ASFUNCTION_GETTER_SETTER(background);
 	ASFUNCTION_GETTER_SETTER(backgroundColor);

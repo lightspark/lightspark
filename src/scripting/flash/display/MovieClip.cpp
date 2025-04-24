@@ -248,7 +248,7 @@ bool MovieClip::destruct()
 		it++;
 	}
 	frameScripts.clear();
-	
+
 	fromDefineSpriteTag = UINT32_MAX;
 	lastFrameScriptExecuted = UINT32_MAX;
 	lastratio=0;
@@ -1128,7 +1128,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	}
 	else
 		th->insertLegacyChildAt(Depth,toAdd,false,false);
-	toAdd->constructionComplete();
 	toAdd->afterConstruction();
 	toAdd->incRef();
 	ret=asAtomHandler::fromObject(toAdd);
@@ -1179,7 +1178,7 @@ MovieClip* MovieClip::AVM1CloneSprite(asAtom target, uint32_t Depth,ASObject* in
 {
 	uint32_t nameId = asAtomHandler::toStringId(target,getInstanceWorker());
 	AVM1MovieClip* toAdd=nullptr;
-	DefineSpriteTag* tag = (DefineSpriteTag*)loadedFrom->dictionaryLookup(getTagID());
+	DefineSpriteTag* tag = getTagID() != UINT32_MAX ? (DefineSpriteTag*)loadedFrom->dictionaryLookup(getTagID()) : nullptr;
 	if (tag)
 	{
 		toAdd= tag->instance()->as<AVM1MovieClip>();
@@ -1187,7 +1186,7 @@ MovieClip* MovieClip::AVM1CloneSprite(asAtom target, uint32_t Depth,ASObject* in
 	}
 	else
 		toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(getInstanceWorker());
-	
+
 	if (initobj)
 		initobj->copyValues(toAdd,getInstanceWorker());
 	toAdd->loadedFrom=this->loadedFrom;
@@ -1254,7 +1253,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginFill)
 	asAtom o = asAtomHandler::fromObject(g);
 	if(argslen>=2)
 		args[1]=asAtomHandler::fromNumber(wrk,asAtomHandler::toNumber(args[1])/100.0,false);
-	
+
 	Graphics::beginFill(ret,wrk,o,args,argslen);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginGradientFill)
@@ -1330,7 +1329,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 	tiny_string url;
 	tiny_string method;
 	ARG_CHECK(ARG_UNPACK(url,"")(method,"GET"));
-	
+
 	th->avm1loader = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
 	th->avm1loader->addStoredMember();
 	th->avm1loader->load(url,method,th);
@@ -1485,7 +1484,7 @@ void MovieClip::AVM1AddScriptEvents()
 				script.avm1context = this->getCurrentFrame()->getAVM1Context();
 				script.event_name_id = UINT32_MAX;
 				script.isEventScript = true;
-				this->incRef(); // will be decreffed after script handler was executed 
+				this->incRef(); // will be decreffed after script handler was executed
 				script.clip=this;
 				getSystemState()->stage->AVM1AddScriptToExecute(script);
 			}
@@ -1495,12 +1494,12 @@ void MovieClip::AVM1AddScriptEvents()
 	script.actions = nullptr;;
 	script.startactionpos = 0;
 	script.avm1context = nullptr;
-	this->incRef(); // will be decreffed after script handler was executed 
+	this->incRef(); // will be decreffed after script handler was executed
 	script.clip=this;
 	script.event_name_id = isAVM1Loaded ? BUILTIN_STRINGS::STRING_ONENTERFRAME : BUILTIN_STRINGS::STRING_ONLOAD;
 	script.isEventScript = true;
 	getSystemState()->stage->AVM1AddScriptToExecute(script);
-	
+
 	isAVM1Loaded=true;
 }
 void MovieClip::initFrame()
@@ -1705,7 +1704,7 @@ void MovieClip::advanceFrame(bool implicit)
 	// ensure the legacy objects of the current frame are created
 	if (int(state.FP) >= state.last_FP && !state.inEnterFrame && implicit) // no need to advance frame if we are moving backwards in the timeline, as the timeline will be rebuild anyway
 		DisplayObjectContainer::advanceFrame(true);
-	
+
 	declareFrame(implicit);
 	// setting state.frameadvanced ensures that the frame is not declared multiple times
 	// if it was set by an actionscript command.

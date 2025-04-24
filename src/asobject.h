@@ -123,7 +123,9 @@
 		c* th = asAtomHandler::as<c>(obj); \
 		if(argslen != 1) {\
 			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		decltype(th->name) oldValue = th->name; \
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
+		ArgumentConversionAtom<decltype(th->name)>::cleanupOldValue(oldValue); \
 	}
 #define ASFUNCTIONBODY_SETTER_STATIC(c,name) \
 	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
@@ -172,6 +174,7 @@
 		decltype(th->name) oldValue = th->name; \
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
 		th->callback(oldValue); \
+		ArgumentConversionAtom<decltype(th->name)>::cleanupOldValue(oldValue); \
 	}
 
 #define ASFUNCTIONBODY_SETTER_STRINGID_CB(c,name,callback) \
@@ -1577,6 +1580,7 @@ class Event;
 class ExtensionContext;
 class FileMode;
 class FileReference;
+class FileReferenceList;
 class FileStream;
 class FocusEvent;
 class Function;
@@ -1727,6 +1731,7 @@ template<> inline bool ASObject::is<ExtensionContext>() const { return subtype==
 template<> inline bool ASObject::is<FontDescription>() const { return subtype==SUBTYPE_FONTDESCRIPTION; }
 template<> inline bool ASObject::is<FileMode>() const { return subtype==SUBTYPE_FILEMODE; }
 template<> inline bool ASObject::is<FileReference>() const { return subtype==SUBTYPE_FILE||subtype==SUBTYPE_FILEREFERENCE; }
+template<> inline bool ASObject::is<FileReferenceList>() const { return subtype==SUBTYPE_FILEREFERENCELIST; }
 template<> inline bool ASObject::is<FileStream>() const { return subtype==SUBTYPE_FILESTREAM; }
 template<> inline bool ASObject::is<FocusEvent>() const { return subtype==SUBTYPE_FOCUSEVENT; }
 template<> inline bool ASObject::is<Function_object>() const { return subtype==SUBTYPE_FUNCTIONOBJECT; }

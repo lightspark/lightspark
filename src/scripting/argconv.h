@@ -66,6 +66,7 @@ public:
 		return toConcrete(wrk,obj,v);
 	}
 	static void toAbstract(asAtom& ret, ASWorker* wrk,const T& val);
+	static void cleanupOldValue(T& oldval);
 	static T failValue();
 };
 
@@ -116,6 +117,10 @@ public:
 		}
 		return obj;
 	}
+	static void cleanupOldValue(asAtom& oldval)
+	{
+		ASATOM_REMOVESTOREDMEMBER(oldval);
+	}
 };
 
 template<class T>
@@ -155,6 +160,9 @@ public:
 		return toConcrete(wrk,obj,v);
 	}
 	static NullableRef<T> failValue() { return NullRef; }
+	static void cleanupOldValue(NullableRef<T>& oldval)
+	{
+	}
 };
 
 template<>
@@ -182,6 +190,9 @@ public:
 		return toConcrete(wrk,obj,v);
 	}
 	static NullableRef<ASObject> failValue() { return NullRef; }
+	static void cleanupOldValue(NullableRef<ASObject>& oldval)
+	{
+	}
 };
 
 template<>
@@ -193,6 +204,9 @@ template<>
 inline number_t lightspark::ArgumentConversionAtom<number_t>::failValue() { return 0; }
 
 template<>
+inline void lightspark::ArgumentConversionAtom<number_t>::cleanupOldValue(number_t& oldvalue) {}
+
+template<>
 inline bool lightspark::ArgumentConversionAtom<bool>::toConcrete(ASWorker* wrk,asAtom obj,const bool& v)
 {
 	return asAtomHandler::Boolean_concrete(obj);
@@ -201,12 +215,17 @@ template<>
 inline bool lightspark::ArgumentConversionAtom<bool>::failValue() { return false; }
 
 template<>
+inline void lightspark::ArgumentConversionAtom<bool>::cleanupOldValue(bool& oldvalue) {}
+
+template<>
 inline uint32_t lightspark::ArgumentConversionAtom<uint32_t>::toConcrete(ASWorker* wrk,asAtom obj,const uint32_t& v)
 {
 	return asAtomHandler::toUInt(obj);
 }
 template<>
 inline uint32_t lightspark::ArgumentConversionAtom<uint32_t>::failValue() { return 0; }
+template<>
+inline void lightspark::ArgumentConversionAtom<uint32_t>::cleanupOldValue(uint32_t& oldvalue) {}
 
 template<>
 inline int32_t lightspark::ArgumentConversionAtom<int32_t>::toConcrete(ASWorker* wrk,asAtom obj,const int32_t& v)
@@ -217,12 +236,18 @@ template<>
 inline int32_t lightspark::ArgumentConversionAtom<int32_t>::failValue() { return 0; }
 
 template<>
+inline void lightspark::ArgumentConversionAtom<int32_t>::cleanupOldValue(int32_t& oldvalue) {}
+
+template<>
 inline int64_t lightspark::ArgumentConversionAtom<int64_t>::toConcrete(ASWorker* wrk,asAtom obj,const int64_t& v)
 {
 	return asAtomHandler::toInt64(obj);
 }
 template<>
 inline int64_t lightspark::ArgumentConversionAtom<int64_t>::failValue() { return 0; }
+
+template<>
+inline void lightspark::ArgumentConversionAtom<int64_t>::cleanupOldValue(int64_t& oldvalue) {}
 
 template<>
 inline tiny_string lightspark::ArgumentConversionAtom<tiny_string>::toConcrete(ASWorker* wrk,asAtom obj,const tiny_string& v)
@@ -233,6 +258,9 @@ template<>
 inline tiny_string lightspark::ArgumentConversionAtom<tiny_string>::failValue() { return ""; }
 
 template<>
+inline void lightspark::ArgumentConversionAtom<tiny_string>::cleanupOldValue(tiny_string& oldvalue) {}
+
+template<>
 inline RGB lightspark::ArgumentConversionAtom<RGB>::toConcrete(ASWorker* wrk,asAtom obj,const RGB& v)
 {
 	return RGB(asAtomHandler::toUInt(obj));
@@ -240,12 +268,17 @@ inline RGB lightspark::ArgumentConversionAtom<RGB>::toConcrete(ASWorker* wrk,asA
 template<>
 inline RGB lightspark::ArgumentConversionAtom<RGB>::failValue() { return RGB(); }
 template<>
+inline void lightspark::ArgumentConversionAtom<RGB>::cleanupOldValue(RGB& oldvalue) {}
+
+template<>
 inline AS3KeyCode lightspark::ArgumentConversionAtom<AS3KeyCode>::toConcrete(ASWorker* wrk,asAtom obj,const AS3KeyCode& v)
 {
 	return AS3KeyCode(asAtomHandler::toUInt(obj));
 }
 template<>
 inline AS3KeyCode lightspark::ArgumentConversionAtom<AS3KeyCode>::failValue() { return AS3KEYCODE_UNKNOWN; }
+template<>
+inline void lightspark::ArgumentConversionAtom<AS3KeyCode>::cleanupOldValue(AS3KeyCode& oldvalue) {}
 
 template<>
 inline Vector2f lightspark::ArgumentConversionAtom<Vector2f>::toConcrete(ASWorker* wrk, asAtom obj, const Vector2f& v)
@@ -287,6 +320,8 @@ inline Vector2f lightspark::ArgumentConversionAtom<Vector2f>::failValue()
 	auto _default = Number::NaN;
 	return Vector2f(_default, _default);
 }
+template<>
+inline void lightspark::ArgumentConversionAtom<Vector2f>::cleanupOldValue(Vector2f& oldvalue) {}
 
 template<>
 inline void lightspark::ArgumentConversionAtom<int32_t>::toAbstract(asAtom& ret, ASWorker* wrk,const int32_t& val)

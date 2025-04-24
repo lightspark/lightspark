@@ -1563,13 +1563,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					context->isCaseSensitive()
 				);
 
-				context->scope->defineLocalByMultiname
+				if (context->scope->defineLocalByMultiname
 				(
 					m,
 					value,
 					CONST_ALLOWED,
 					wrk
-				);
+				))
+					ASATOM_DECREF(value);
 				ASATOM_DECREF(name);
 				break;
 			}

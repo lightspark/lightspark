@@ -23,7 +23,8 @@
 #include "compat.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
-#include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/net/FileReference.h"
+#include <fstream>
 
 namespace lightspark
 {

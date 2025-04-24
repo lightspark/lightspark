@@ -22,6 +22,8 @@
 
 #include "asobject.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/net/FileReference.h"
+#include "scripting/flash/net/FileReferenceList.h"
 #include "scripting/flash/net/LocalConnection.h"
 #include "scripting/flash/net/XMLSocket.h"
 
@@ -76,6 +78,32 @@ public:
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(avm1pause);
 	void AVM1HandleEvent(EventDispatcher *dispatcher, Event *e) override;
+};
+class AVM1FileReference: public FileReference
+{
+	std::set<ASObject*> listeners;
+public:
+	AVM1FileReference(ASWorker* wrk,Class_base* c):FileReference(wrk,c){}
+	static void sinit(Class_base* c);
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+	ASFUNCTION_ATOM(addListener);
+	ASFUNCTION_ATOM(removeListener);
+};
+class AVM1FileReferenceList: public FileReferenceList
+{
+	std::set<ASObject*> listeners;
+public:
+	AVM1FileReferenceList(ASWorker* wrk,Class_base* c):FileReferenceList(wrk,c){}
+	static void sinit(Class_base* c);
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+	ASFUNCTION_ATOM(addListener);
+	ASFUNCTION_ATOM(removeListener);
 };
 
 }

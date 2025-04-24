@@ -28,6 +28,7 @@
 #include "scripting/flash/utils/IntervalManager.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/filesystem/flashfilesystem.h"
+#include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/desktop/flashdesktop.h"
 #include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/Loader.h"

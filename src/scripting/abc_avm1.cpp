@@ -134,6 +134,12 @@ void ABCVm::registerClassesAVM1()
 		flashgeompackage->setVariableByQName("Transform","flash.geom",Class<Transform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashgeompackage->setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashgeompackage->setVariableByQName("Point","flash.geom",Class<Point>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+
+		ASObject* flashnetpackage = new_asobject(m_sys->worker);
+		flashpackage->setVariableByQName("net",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashnetpackage,CONSTANT_TRAIT);
+
+		flashnetpackage->setVariableByQName("FileReference","flash.net",Class<AVM1FileReference>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashnetpackage->setVariableByQName("FileReferenceList","flash.net",Class<AVM1FileReferenceList>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 	}
 	m_sys->avm1global=builtinavm1;
 }

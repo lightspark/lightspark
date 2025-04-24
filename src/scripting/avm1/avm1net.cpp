@@ -253,3 +253,167 @@ void AVM1NetStream::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 		}
 	}
 }
+
+void AVM1FileReference::finalize()
+{
+	EventDispatcher::finalize();
+	getSystemState()->stage->AVM1RemoveEventListener(this);
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
+	{
+		ASObject* o = (*itlst);
+		itlst = listeners.erase(itlst);
+		o->removeStoredMember();
+	}
+}
+
+bool AVM1FileReference::destruct()
+{
+	getSystemState()->stage->AVM1RemoveEventListener(this);
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
+	{
+		ASObject* o = (*itlst);
+		itlst = listeners.erase(itlst);
+		o->removeStoredMember();
+	}
+	return EventDispatcher::destruct();
+}
+
+void AVM1FileReference::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
+	{
+		(*itlst)->prepareShutdown();
+		itlst++;
+	}
+}
+bool AVM1FileReference::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
+	{
+		ret = (*itlst)->countAllCylicMemberReferences(gcstate) || ret;
+		itlst++;
+	}
+	return ret;
+}
+void AVM1FileReference::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, EventDispatcher,_constructor, CLASS_SEALED);
+	c->prototype->setDeclaredMethodByQName("browse","",c->getSystemState()->getBuiltinFunction(browse),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("download","",c->getSystemState()->getBuiltinFunction(download),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeListener),NORMAL_METHOD,false);
+}
+
+ASFUNCTIONBODY_ATOM(AVM1FileReference,addListener)
+{
+	AVM1FileReference* th=asAtomHandler::as<AVM1FileReference>(obj);
+
+	wrk->getSystemState()->stage->AVM1AddEventListener(th);
+	ASObject* o = asAtomHandler::toObject(args[0],wrk);
+
+	o->incRef();
+	o->addStoredMember();
+	th->listeners.insert(o);
+}
+ASFUNCTIONBODY_ATOM(AVM1FileReference,removeListener)
+{
+	AVM1FileReference* th=asAtomHandler::as<AVM1FileReference>(obj);
+
+	ASObject* o = asAtomHandler::toObject(args[0],wrk);
+
+	auto it = th->listeners.find(o);
+	if (it != th->listeners.end())
+	{
+		th->listeners.erase(o);
+		o->removeStoredMember();
+	}
+}
+void AVM1FileReferenceList::finalize()
+{
+	EventDispatcher::finalize();
+	getSystemState()->stage->AVM1RemoveEventListener(this);
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
+	{
+		ASObject* o = (*itlst);
+		itlst = listeners.erase(itlst);
+		o->removeStoredMember();
+	}
+}
+
+bool AVM1FileReferenceList::destruct()
+{
+	getSystemState()->stage->AVM1RemoveEventListener(this);
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
+	{
+		ASObject* o = (*itlst);
+		itlst = listeners.erase(itlst);
+		o->removeStoredMember();
+	}
+	return EventDispatcher::destruct();
+}
+
+void AVM1FileReferenceList::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
+	{
+		(*itlst)->prepareShutdown();
+		itlst++;
+	}
+}
+bool AVM1FileReferenceList::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	auto itlst = listeners.begin();
+	while (itlst != listeners.end())
+	{
+		ret = (*itlst)->countAllCylicMemberReferences(gcstate) || ret;
+		itlst++;
+	}
+	return ret;
+}
+
+void AVM1FileReferenceList::sinit(Class_base* c)
+{
+	CLASS_SETUP(c, EventDispatcher,_constructor, CLASS_SEALED);
+	c->prototype->setDeclaredMethodByQName("browse","",c->getSystemState()->getBuiltinFunction(browse),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeListener),NORMAL_METHOD,false);
+}
+ASFUNCTIONBODY_ATOM(AVM1FileReferenceList,addListener)
+{
+	AVM1FileReferenceList* th=asAtomHandler::as<AVM1FileReferenceList>(obj);
+
+	wrk->getSystemState()->stage->AVM1AddEventListener(th);
+	ASObject* o = asAtomHandler::toObject(args[0],wrk);
+
+	o->incRef();
+	o->addStoredMember();
+	th->listeners.insert(o);
+}
+ASFUNCTIONBODY_ATOM(AVM1FileReferenceList,removeListener)
+{
+	AVM1FileReferenceList* th=asAtomHandler::as<AVM1FileReferenceList>(obj);
+
+	ASObject* o = asAtomHandler::toObject(args[0],wrk);
+
+	auto it = th->listeners.find(o);
+	if (it != th->listeners.end())
+	{
+		th->listeners.erase(o);
+		o->removeStoredMember();
+	}
+}

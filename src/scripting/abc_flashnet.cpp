@@ -30,6 +30,8 @@
 #include "scripting/flash/net/netgroupsendresult.h"
 #include "scripting/flash/net/DatagramSocket.h"
 #include "scripting/flash/net/LocalConnection.h"
+#include "scripting/flash/net/FileReference.h"
+#include "scripting/flash/net/FileReferenceList.h"
 
 #include "scripting/toplevel/Global.h"
 #include "scripting/class.h"
@@ -43,6 +45,7 @@ void ABCVm::registerClassesFlashNet(Global* builtin)
 	builtin->registerBuiltin("DynamicPropertyOutput","flash.net",Class<DynamicPropertyOutput>::getRef(m_sys));
 	builtin->registerBuiltin("FileFilter","flash.net",Class<FileFilter>::getRef(m_sys));
 	builtin->registerBuiltin("FileReference","flash.net",Class<FileReference>::getRef(m_sys));
+	builtin->registerBuiltin("FileReferenceList","flash.net",Class<FileReferenceList>::getRef(m_sys));
 	builtin->registerBuiltin("IDynamicPropertyWriter","flash.net",InterfaceClass<IDynamicPropertyWriter>::getRef(m_sys));
 	builtin->registerBuiltin("IDynamicPropertyOutput","flash.net",InterfaceClass<IDynamicPropertyOutput>::getRef(m_sys));
 	builtin->registerBuiltin("LocalConnection","flash.net",Class<LocalConnection>::getRef(m_sys));

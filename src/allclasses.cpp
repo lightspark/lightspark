@@ -86,6 +86,8 @@
 #include "scripting/flash/filters/GradientBevelFilter.h"
 #include "scripting/flash/filters/GradientGlowFilter.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/net/FileReference.h"
+#include "scripting/flash/net/FileReferenceList.h"
 #include "scripting/flash/net/URLRequestHeader.h"
 #include "scripting/flash/net/URLStream.h" 
 #include "scripting/flash/net/Socket.h"

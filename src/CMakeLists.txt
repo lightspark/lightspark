@@ -195,6 +195,8 @@ SET(LIBSPARK_SOURCES
   scripting/flash/media/stagevideoavailabilityreason.cpp
   scripting/flash/media/videodecoder.cpp
   scripting/flash/net/flashnet.cpp
+  scripting/flash/net/FileReference.cpp
+  scripting/flash/net/FileReferenceList.cpp
   scripting/flash/net/LocalConnection.cpp
   scripting/flash/net/netgroupreceivemode.cpp
   scripting/flash/net/netgroupreplicationstrategy.cpp

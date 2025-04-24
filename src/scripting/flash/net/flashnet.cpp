@@ -2717,28 +2717,6 @@ ASFUNCTIONBODY_ATOM(NetGroup,_constructor)
 	LOG(LOG_NOT_IMPLEMENTED,"NetGroup is not implemented");
 }
 
-FileReference::FileReference(ASWorker* wrk, Class_base* c):
-	EventDispatcher(wrk,c)
-{
-	subtype = SUBTYPE_FILEREFERENCE;
-}
-
-void FileReference::sinit(Class_base* c)
-{
-	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	REGISTER_GETTER_RESULTTYPE(c,size,Number);
-	REGISTER_GETTER_RESULTTYPE(c,name,ASString);
-}
-ASFUNCTIONBODY_GETTER(FileReference, size)
-ASFUNCTIONBODY_GETTER(FileReference, name)
-
-ASFUNCTIONBODY_ATOM(FileReference,_constructor)
-{
-	EventDispatcher::_constructor(ret,wrk,obj, NULL, 0);
-	//FileReference* th=Class<FileReference>::cast(obj);
-	LOG(LOG_NOT_IMPLEMENTED,"FileReference is not implemented");
-}
-
 FileFilter::FileFilter(ASWorker* wrk, Class_base* c):
 	ASObject(wrk,c)
 {

@@ -268,15 +268,14 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 		// values for invalid bounds, see ruffle avm1/movieclip_invalid_get_bounds_<x> tests
 		if (loadedFrom->version >= 8 || getSystemState()->getSwfVersion() >= 8)
 		{
-			//needsNewInvalidRectValues=true;
-			xmin= number_t(0x8000000)/20.0;
+			xmin=number_t(0x8000000)/20.0;
 			xmax=number_t(0x8000000)/20.0;
 			ymin=number_t(0x8000000)/20.0;
 			ymax=number_t(0x8000000)/20.0;
 		}
 		else
 		{
-			xmin= number_t(0x7ffffff)/20.0;
+			xmin=number_t(0x7ffffff)/20.0;
 			xmax=number_t(0x7ffffff)/20.0;
 			ymin=number_t(0x7ffffff)/20.0;
 			ymax=number_t(0x7ffffff)/20.0;
@@ -328,7 +327,7 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 				ret=true;
 			}
 		}
-		else
+		else if (!ret)
 		{
 			xmin=txmin;
 			xmax=txmax;

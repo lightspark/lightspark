@@ -279,6 +279,7 @@ public:
 	virtual _NR<Stage> getStage();
 	void setLegacyMatrix(const MATRIX& m);
 	void setFilters(const FILTERLIST& filterlist);
+	void setFilter(BitmapFilter* filter);
 	virtual void refreshSurfaceState();
 	void setupSurfaceState(IDrawable* d);
 

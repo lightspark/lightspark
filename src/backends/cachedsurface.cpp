@@ -119,22 +119,22 @@ FORCE_INLINE bool isSmoothed(FILL_STYLE_TYPE type)
 	return type == FILL_STYLE_TYPE::REPEATING_BITMAP || type == FILL_STYLE_TYPE::CLIPPED_BITMAP;
 }
 
-void nanoVGDeleteImage(int image)
+void nanoVGDeleteImage(int image, EngineData* engineData)
 {
-	NVGcontext* nvgctxt = getSys()->getEngineData() ? getSys()->getEngineData()->nvgcontext : nullptr;
+	NVGcontext* nvgctxt = engineData ? engineData->nvgcontext : nullptr;
 	if (nvgctxt)
 		nvgDeleteImage(nvgctxt,image);
 }
 
-void nanoVGUpdateImage(int image, const unsigned char* data)
+void nanoVGUpdateImage(int image, const unsigned char* data, EngineData* engineData)
 {
-	NVGcontext* nvgctxt = getSys()->getEngineData() ? getSys()->getEngineData()->nvgcontext : nullptr;
+	NVGcontext* nvgctxt = engineData ? engineData->nvgcontext : nullptr;
 	if (nvgctxt)
 		nvgUpdateImage(nvgctxt,image,data);
 }
-uint32_t nanoVGGetTextureID(int image)
+uint32_t nanoVGGetTextureID(int image, EngineData* engineData)
 {
-	NVGcontext* nvgctxt = getSys()->getEngineData() ? getSys()->getEngineData()->nvgcontext : nullptr;
+	NVGcontext* nvgctxt = engineData ? engineData->nvgcontext : nullptr;
 	if (nvgctxt)
 #if defined(ENABLE_GLES2)
 		return nvglImageHandleGLES2(nvgctxt, image);
@@ -144,6 +144,19 @@ uint32_t nanoVGGetTextureID(int image)
 		return nvglImageHandleGL2(nvgctxt, image);
 #endif
 	return UINT32_MAX;
+}
+void nanoVGCreateImage(BitmapContainer* container, EngineData* engineData)
+{
+	NVGcontext* nvgctxt = engineData->nvgcontext;
+	if (nvgctxt)
+		container->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,container->getWidth(),container->getHeight(),NVG_IMAGE_GENERATE_MIPMAPS,container->getData());
+}
+int nanoVGCreateImageFromData(int width,int height, uint8_t* data, EngineData* engineData)
+{
+	NVGcontext* nvgctxt = engineData->nvgcontext;
+	if (nvgctxt)
+		return nvgCreateImageRGBA(nvgctxt,width,height,NVG_IMAGE_GENERATE_MIPMAPS,data);
+	return -1;
 }
 
 int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style)
@@ -455,7 +468,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 	{
 		MATRIX m = ctxt.transformStack().transform().matrix;
 		sys->getEngineData()->exec_glScissor(m.getTranslateX()+state->scrollRect.Xmin*m.getScaleX()
-											 ,sys->getRenderThread()->windowHeight-m.getTranslateY()-state->scrollRect.Ymax*m.getScaleY()
+											 ,sys->getRenderThread()->currentframebufferHeight-state->scrollRect.Ymax*m.getScaleY()
 											 ,(state->scrollRect.Xmax-state->scrollRect.Xmin)*m.getScaleX()
 											 ,(state->scrollRect.Ymax-state->scrollRect.Ymin)*m.getScaleY());
 	}

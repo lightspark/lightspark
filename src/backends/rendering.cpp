@@ -128,7 +128,7 @@ void RenderThread::handleUpload()
 	assert(u);
 	uint32_t w,h;
 	u->sizeNeeded(w,h);
-	
+
 	//force creation of buffer if neccessary
 	u->upload(true);
 	//Get the texture to be sure it's allocated when the upload comes
@@ -150,7 +150,7 @@ void RenderThread::init()
 	engineData->InitOpenGL();
 	commonGLInit();
 	commonGLResize();
-	
+
 }
 
 int RenderThread::worker(void* d)
@@ -202,7 +202,10 @@ int RenderThread::worker(void* d)
 	th->mutexUploadJobs.unlock();
 	return 0;
 }
-extern uint32_t nanoVGGetTextureID(int image);
+extern uint32_t nanoVGGetTextureID(int image, EngineData* engineData);
+extern void nanoVGCreateImage(BitmapContainer* container, EngineData* engineData);
+extern int nanoVGCreateImageFromData(int width,int height, uint8_t* data, EngineData* engineData);
+extern void nanoVGDeleteImage(int image, EngineData* engineData);
 bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 {
 	event.wait();
@@ -294,12 +297,12 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			if (it->cachedsurface.isNull()) // indicates readPixels only
 			{
 				assert(it->bitmapcontainer->nanoVGImageHandle>=0);
-				it->bitmapcontainer->hasModifiedTexture=false;
-				engineData->exec_glBindTexture_GL_TEXTURE_2D(nanoVGGetTextureID(it->bitmapcontainer->nanoVGImageHandle));
+				it->bitmapcontainer->setModifiedTexture(false);
+				engineData->exec_glBindTexture_GL_TEXTURE_2D(nanoVGGetTextureID(it->bitmapcontainer->nanoVGImageHandle,engineData));
 #if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
 				uint32_t fbo = engineData->exec_glGenFramebuffer();
 				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(fbo);
-				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(nanoVGGetTextureID(it->bitmapcontainer->nanoVGImageHandle));
+				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(nanoVGGetTextureID(it->bitmapcontainer->nanoVGImageHandle,engineData));
 				engineData->exec_glReadPixels_GL_BGRA(it->bitmapcontainer->getWidth(), it->bitmapcontainer->getHeight(), it->bitmapcontainer->getData());
 				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
 				engineData->exec_glDeleteFramebuffers(1, &fbo);
@@ -309,17 +312,36 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			}
 			else
 			{
+				it->bitmapcontainer->setModifiedTexture(false);
 				int w = it->bitmapcontainer->getWidth();
 				int h = it->bitmapcontainer->getHeight();
-				// setup new texture to render to
+				// setup texture to render to
 				uint32_t bmTextureID;
 				engineData->exec_glFrontFace(false);
 				engineData->exec_glDrawBuffer_GL_BACK();
 				engineData->exec_glUseProgram(gpu_program);
-				if (it->bitmapcontainer->nanoVGImageHandle>=0)
-					bmTextureID = nanoVGGetTextureID(it->bitmapcontainer->nanoVGImageHandle);
-				else
-					engineData->exec_glGenTextures(1, &bmTextureID);
+				if (it->bitmapcontainer->nanoVGImageHandle<0)
+					nanoVGCreateImage(it->bitmapcontainer.getPtr(),engineData);
+				bmTextureID = nanoVGGetTextureID(it->bitmapcontainer->nanoVGImageHandle,engineData);
+				engineData->exec_glBindTexture_GL_TEXTURE_2D(bmTextureID);
+				// upload current content of bitmap container (no need for locking the bitmapcontainer as the worker thread is waiting until rendering is done)
+				if (it->bitmapcontainer->getModifiedData() && (it->needscopy || !it->bitmapcontainer->getNeedsClear()))
+				{
+					it->bitmapcontainer->setModifiedData(false);
+					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0,w,h,0,it->bitmapcontainer->getData());
+				}
+				int nanoVGoriginalImage = -1;
+				int nanoVGnewImage=-1;
+				if (it->needscopy)
+				{
+					// the texture to render to is used during rendering, so we create a new texture
+					// and delete the old one at the end
+					nanoVGoriginalImage = it->bitmapcontainer->nanoVGImageHandle;
+					nanoVGnewImage = nanoVGCreateImageFromData(w,h,it->bitmapcontainer->getData(),engineData);
+					assert(nanoVGnewImage>=0);
+					bmTextureID = nanoVGGetTextureID(nanoVGnewImage,engineData);
+				}
+
 				uint32_t bmframebuffer = engineData->exec_glGenFramebuffer();
 				engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(bmTextureID);
@@ -340,20 +362,22 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(bmTextureID);
 
-				// upload current content of bitmap container (no need for locking the bitmapcontainer as the worker thread is waiting until rendering is done)
-				if (it->bitmapcontainer->hasModifiedData)
+				if (it->bitmapcontainer->getNeedsClear())
 				{
-					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0,w,h,0,it->bitmapcontainer->getData());
-					it->bitmapcontainer->hasModifiedData=false;
-				}
-				else
+					it->bitmapcontainer->setNeedsClear(false);
 					engineData->exec_glClearColor(
 								it->bitmapcontainer->nanoVGImageBackgroundcolor.rf(),
 								it->bitmapcontainer->nanoVGImageBackgroundcolor.gf(),
 								it->bitmapcontainer->nanoVGImageBackgroundcolor.bf(),
 								it->bitmapcontainer->nanoVGImageBackgroundcolor.af()
-								);
-
+					);
+					engineData->exec_glClear(CLEARMASK::COLOR);
+					if (it->bitmapcontainer->getModifiedData())
+					{
+						it->bitmapcontainer->setModifiedData(false);
+						engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0,w,h,0,it->bitmapcontainer->getData());
+					}
+				}
 				engineData->exec_glClear(CLEARMASK::STENCIL);
 				baseFramebuffer=bmframebuffer;
 				baseRenderbuffer=bmrenderbuffer;
@@ -369,10 +393,6 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				// render DisplayObject to texture
 				it->cachedsurface->Render(m_sys,*this,&it->initialMatrix,&(*it));
 
-				// read rendered texture back into bitmapcontainer (no need for locking the bitmapcontainer as the worker thread is waiting until rendering is done)
-				if (it->bitmapcontainer->nanoVGImageHandle<0)
-					engineData->exec_glReadPixels_GL_BGRA(w, h,it->bitmapcontainer->getData());
-
 				// reset everything for normal rendering
 				baseFramebuffer=0;
 				baseRenderbuffer=0;
@@ -385,8 +405,13 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				engineData->exec_glDisable_GL_SCISSOR_TEST();
 				engineData->exec_glDeleteFramebuffers(1,&bmframebuffer);
 				engineData->exec_glDeleteRenderbuffers(1,&bmrenderbuffer);
-				if (it->bitmapcontainer->nanoVGImageHandle<0)
-					engineData->exec_glDeleteTextures(1,&bmTextureID);
+				if (nanoVGnewImage >= 0)
+				{
+					// set bitmapcontainer texture to new resulting texture and delete original
+					assert(nanoVGoriginalImage>=0);
+					it->bitmapcontainer->nanoVGImageHandle=nanoVGnewImage;
+					nanoVGDeleteImage(nanoVGoriginalImage,engineData);
+				}
 			}
 			// signal to waiting worker thread that rendering is complete
 			it->bitmapcontainer->renderevent.signal();
@@ -436,11 +461,11 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	if (screenshotneeded)
 		generateScreenshot();
 	engineData->DoSwapBuffers();
-	
+
 	if (Log::getLevel() >= LOG_INFO)
 	{
 		uint64_t time_d=compat_msectiming();
-		
+
 		uint64_t diff = time_d-time_s;
 		if(diff>1000) /* one second elapsed */
 		{
@@ -452,7 +477,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		else
 			frameCount++;
 	}
-	
+
 	if (profile && chronometer)
 		profile->accountTime(chronometer->checkpoint());
 	renderNeeded=false;
@@ -654,7 +679,7 @@ void RenderThread::renderTextureToFrameBuffer
 			gradientStops
 		);
 	}
-	
+
 	if (clearstate)
 	{
 		engineData->exec_glUniform1f(blendModeUniform, AS_BLENDMODE::BLENDMODE_NORMAL);
@@ -668,7 +693,7 @@ void RenderThread::renderTextureToFrameBuffer
 	engineData->exec_glUniform1f(isFirstFilterUniform, (float)isFirstFilter);
 
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID);
+		engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID);
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 	float vertex_coords[] = {0,0, float(w),0, 0,float(h), float(w),float(h)};
@@ -676,7 +701,7 @@ void RenderThread::renderTextureToFrameBuffer
 	float texture_coords[] = {0,0, 1,0, 0,1, 1,1};
 	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, flippedvertical ? vertex_coords_flipped : vertex_coords,FLOAT_2);
 	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 0, texture_coords,FLOAT_2);
-	
+
 	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glEnableVertexAttribArray(TEXCOORD_ATTRIB);
 	engineData->exec_glDrawArrays_GL_TRIANGLE_STRIP(0, 4);
@@ -692,7 +717,7 @@ void RenderThread::generateScreenshot()
 		return;
 	}
 	engineData->exec_glReadPixels(windowWidth, windowHeight, buf);
-	
+
 	char* name_used=nullptr;
 	int fd = g_file_open_tmp("lightsparkXXXXXX.bmp",&name_used,nullptr);
 	if(fd == -1)
@@ -700,7 +725,7 @@ void RenderThread::generateScreenshot()
 		LOG(LOG_ERROR,"generating screenshot file failed");
 		return;
 	}
-	
+
 	unsigned char bmp_file_header[14] = { 'B', 'M', 0, 0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, };
 	unsigned char bmp_info_header[40] = { 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 24, 0, };
 	size_t size = 54 + windowWidth * windowHeight * 3;
@@ -719,7 +744,7 @@ void RenderThread::generateScreenshot()
 	bmp_info_header[9] = (windowHeight >> 8)&0xff;
 	bmp_info_header[10] = (windowHeight >> 16)&0xff;
 	bmp_info_header[11] = (windowHeight >> 24)&0xff;
-		
+
 	if (write(fd,bmp_file_header,14)<0)
 		LOG(LOG_INFO,"screenshot header write error");
 	if (write(fd,bmp_info_header,40)<0)
@@ -763,14 +788,14 @@ bool RenderThread::loadShaderPrograms()
 {
 	//Create render program
 	uint32_t f = engineData->exec_glCreateShader_GL_FRAGMENT_SHADER();
-	
+
 	// directly include shader source to avoid filesystem access
-	const char *fs = 
+	const char *fs =
 #include "lightspark.frag"
 ;
 	engineData->exec_glShaderSource(f, 1, &fs,nullptr);
 	uint32_t g = engineData->exec_glCreateShader_GL_VERTEX_SHADER();
-	
+
 	bool ret=true;
 	char str[1024];
 	int a;
@@ -785,7 +810,7 @@ bool RenderThread::loadShaderPrograms()
 	}
 
 	// directly include shader source to avoid filesystem access
-	const char *fs2 = 
+	const char *fs2 =
 #include "lightspark.vert"
 ;
 	engineData->exec_glShaderSource(g, 1, &fs2,nullptr);
@@ -815,7 +840,7 @@ bool RenderThread::loadShaderPrograms()
 		ret=false;
 		return ret;
 	}
-	
+
 	assert(ret);
 	return true;
 }
@@ -860,19 +885,19 @@ void RenderThread::commonGLInit()
 	if(tex!=-1)
 		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 
-	// uniform for textures used for blending 
+	// uniform for textures used for blending
 	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex_blend");
 	if(tex!=-1)
 		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_BLEND);
 
-	// uniform for textures used for filtering 
+	// uniform for textures used for filtering
 	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex_filter1");
 	if(tex!=-1)
 		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_FILTER);
 	tex=engineData->exec_glGetUniformLocation(gpu_program,"g_tex_filter2");
 	if(tex!=-1)
 		engineData->exec_glUniform1i(tex,SAMPLEPOSITION::SAMPLEPOS_FILTER_DST);
-	
+
 	//The uniform that enables YUV->RGB transform on the texels (needed for video)
 	yuvUniform =engineData->exec_glGetUniformLocation(gpu_program,"yuv");
 	//The uniform that tells the alpha value multiplied to the alpha of every pixel
@@ -917,7 +942,7 @@ void RenderThread::commonGLResize()
 	RGB bg=m_sys->mainClip->getBackground();
 	engineData->exec_glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 	engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
-	
+
 	if (cairoTextureContext)
 	{
 		cairo_destroy(cairoTextureContext);
@@ -982,7 +1007,7 @@ void RenderThread::requestResize(uint32_t w, uint32_t h, bool force)
 		rectAfter->height = newHeight;
 		getVm(m_sys)->addEvent(_MR(m_sys->stage->nativeWindow),_MR(Class<NativeWindowBoundsEvent>::getInstanceS(m_sys->worker,"resizing",_MR(rectBefore),_MR(rectAfter))));
 	}
-	
+
 	event.signal();
 }
 
@@ -1087,7 +1112,7 @@ void RenderThread::plotProfilingData()
 	engineData->exec_glDrawArrays_GL_LINES(0, 20);
 	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glDisableVertexAttribArray(COLOR_ATTRIB);
- 
+
 	list<ThreadProfile*>::iterator it=m_sys->profilingData.begin();
 	for(;it!=m_sys->profilingData.end();++it)
 		(*it)->plot(1000000/m_sys->mainClip->applicationDomain->getFrameRate(),cr);
@@ -1126,7 +1151,7 @@ void RenderThread::drawDebugPoint(const Vector2f& pos)
 	cairo_set_line_width(cr, 1);
 	cairo_rectangle(cr, pos.x-2, pos.y-2, 4, 4);
 	cairo_fill(cr);
-	
+
 
 	engineData->exec_glUniform1f(directUniform, 0);
 	engineData->exec_glUniform1f(alphaUniform, 1);
@@ -1166,7 +1191,7 @@ void RenderThread::drawDebugLine(const Vector2f &a, const Vector2f &b)
 	cairo_line_to(cr, b.x, b.y);
 	cairo_close_path(cr);
 	cairo_stroke(cr);
-	
+
 
 	engineData->exec_glUniform1f(directUniform, 0);
 	engineData->exec_glUniform1f(alphaUniform, 1);
@@ -1210,7 +1235,7 @@ void RenderThread::drawDebugRect(float x, float y, float width, float height, co
 	cairo_set_line_width(cr, 1);
 	cairo_rectangle(cr, x, y, width, height);
 	cairo_stroke(cr);
-	
+
 
 	engineData->exec_glUniform1f(directUniform, 0);
 	engineData->exec_glUniform1f(alphaUniform, 1);
@@ -1659,7 +1684,7 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 			data_clamp[j*sizeX*4+1] = data_clamp[j*sizeX*4+4+1];
 			data_clamp[j*sizeX*4+2] = data_clamp[j*sizeX*4+4+2];
 			data_clamp[j*sizeX*4+3] = data_clamp[j*sizeX*4+4+3];
-	
+
 			// clamp right border to edge
 			data_clamp[j*sizeX*4 + (sizeX-1)*4  ] = data_clamp[j*sizeX*4 + (sizeX-2)*4  ];
 			data_clamp[j*sizeX*4 + (sizeX-1)*4+1] = data_clamp[j*sizeX*4 + (sizeX-2)*4+1];
@@ -1675,7 +1700,7 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 }
 void RenderThread::renderDisplayObjectToBimapContainer(
 		_NR<DisplayObject> o, const MATRIX &initialMatrix, bool smoothing, AS_BLENDMODE blendMode,
-		ColorTransformBase *ct, _NR<BitmapContainer> bm, Rectangle* clipRect)
+		ColorTransformBase *ct, _NR<BitmapContainer> bm, Rectangle* clipRect, bool needscopy)
 {
 	if(m_sys->isShuttingDown() || !EngineData::enablerendering)
 		return;
@@ -1688,6 +1713,7 @@ void RenderThread::renderDisplayObjectToBimapContainer(
 	r.blendMode = blendMode;
 	r.ct = ct;
 	r.clipRect = nullptr;
+	r.needscopy = needscopy;
 	RECT rc;
 	if (clipRect)
 	{

@@ -33,6 +33,11 @@
 using namespace std;
 using namespace lightspark;
 
+Bitmap::Bitmap(ASWorker* wrk, Class_base* c):
+	DisplayObject(wrk,c),TokenContainer(this,&bitmaptokens,1.0),fs(0xff),smoothing(false)
+{
+	subtype=SUBTYPE_BITMAP;
+}
 Bitmap::Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, std::istream *s, FILE_TYPE type):
 	DisplayObject(wrk,c),TokenContainer(this,&bitmaptokens,1.0),fs(0xff),smoothing(false)
 {
@@ -71,7 +76,7 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, std::istream *s, FI
 			break;
 	}
 	setSize(bitmapData->getWidth(), bitmapData->getHeight());
-	Bitmap::updatedData();
+	updatedData();
 	afterConstruction();
 }
 
@@ -81,7 +86,7 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startuplo
 	subtype=SUBTYPE_BITMAP;
 	bitmapData = data;
 	bitmapData->addUser(this,startupload);
-	Bitmap::updatedData();
+	updatedData();
 }
 
 Bitmap::~Bitmap()
@@ -161,7 +166,7 @@ void Bitmap::onBitmapData(_NR<BitmapData> old)
 	else
 		setSize(Vector2());
 	geometryChanged();
-	Bitmap::updatedData();
+	updatedData();
 }
 
 void Bitmap::onSmoothingChanged(bool /*old*/)
@@ -179,10 +184,8 @@ void Bitmap::onPixelSnappingChanged(tiny_string snapping)
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,bitmapData,onBitmapData)
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,smoothing,onSmoothingChanged)
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged)
-
-void Bitmap::updatedData()
+void Bitmap::setupTokens()
 {
-	hasChanged=true;
 	bitmaptokens.clear();
 	if (bitmapData)
 	{
@@ -206,6 +209,11 @@ void Bitmap::updatedData()
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(CLEAR_FILL).uval);
 		bitmaptokens.boundsRect = RECT(0,0,size.x,size.y);
 	}
+}
+void Bitmap::updatedData()
+{
+	hasChanged=true;
+	setupTokens();
 	requestInvalidation(getSystemState());
 }
 void Bitmap::refreshSurfaceState()
@@ -261,4 +269,15 @@ IDrawable *Bitmap::invalidate(bool smoothing)
 void Bitmap::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container)
 {
 	DisplayObject::invalidateForRenderToBitmap(container);
+}
+
+void Bitmap::setupTemporaryBitmap(BitmapData* data)
+{
+	data->incRef();
+	bitmapData =_MR<BitmapData>(data);
+	setSize(data->getWidth(), data->getHeight());
+	hasChanged=true;
+	setupTokens();
+	resetNeedsTextureRecalculation();
+	data->getBitmapContainer()->setModifiedData(false);
 }

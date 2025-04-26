@@ -257,12 +257,12 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	th->notifyUsers();
 }
 
-void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, Rectangle* clipRect)
+void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, Rectangle* clipRect, bool needscopy)
 {
 	d->incRef();
-	getSystemState()->getRenderThread()->renderDisplayObjectToBimapContainer(_MNR(d),initialMatrix,smoothing,blendMode,ct,this->pixels,clipRect);
+	getSystemState()->getRenderThread()->renderDisplayObjectToBimapContainer(_MNR(d),initialMatrix,smoothing,blendMode,ct,this->pixels,clipRect,needscopy);
 	if (this->pixels->nanoVGImageHandle>=0)
-		this->pixels->hasModifiedTexture=true;
+		this->pixels->setModifiedTexture(true);
 	this->notifyUsers();
 }
 
@@ -299,36 +299,15 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 		&& !asAtomHandler::isUndefined(blendMode))
 		blendModeID = asAtomHandler::toStringId(blendMode,wrk);
 	DisplayObject* d=nullptr;
+	bool needscopy=false;
 	if(drawable->is<DisplayObject>())
 		d = drawable->as<DisplayObject>();
-	else if(th->pixels->nanoVGImageHandle >= 0 && drawable->is<BitmapData>())
-	{
-		// fast path: use temporary Bitmap to render BitmapData
-		d = Class<Bitmap>::getInstanceS(wrk,_MNR<BitmapData>(drawable->as<BitmapData>()),false);
-		drawable->as<BitmapData>()->pixels->hasModifiedData=false;
-	}
 	else if(drawable->is<BitmapData>())
 	{
-		if(blendModeID != BUILTIN_STRINGS::EMPTY)
-			LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support blendMode parameter:"<<drawable->toDebugString()<<" "<<wrk->getSystemState()->getStringFromUniqueId(blendModeID));
-		BitmapData* data=drawable->as<BitmapData>();
-		//Compute the initial matrix, if any
-		MATRIX initialMatrix;
-		if(!matrix.isNull())
-			initialMatrix=matrix->getMATRIX();
-		CairoRenderContext ctxt(th->pixels->getData(), th->pixels->getWidth(), th->pixels->getHeight(),false);
-		//Blit the data while transforming it
-		if (clipRect.isNull())
-		{
-			ctxt.transformedBlit(initialMatrix, data->pixels.getPtr(),ctransform.getPtr(),
-								smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,0,0,th->pixels->getWidth(), th->pixels->getHeight());
-		}
-		else
-		{
-			ctxt.transformedBlit(initialMatrix, data->pixels.getPtr(),ctransform.getPtr(),
-								smoothing ? CairoRenderContext::FILTER_SMOOTH : CairoRenderContext::FILTER_NONE,clipRect->x,clipRect->y,clipRect->width,clipRect->height);
-		}
-		th->pixels->hasModifiedData=true;
+		// fast path: use temporary Bitmap to render BitmapData
+		d = Class<Bitmap>::getInstanceSNoArgs(wrk);
+		d->as<Bitmap>()->setupTemporaryBitmap(drawable->as<BitmapData>());
+		needscopy=drawable->as<BitmapData>()->getBitmapContainer() == th->getBitmapContainer();
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());
@@ -355,8 +334,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 			case BUILTIN_STRINGS::STRING_SCREEN: bl = BLENDMODE_SCREEN; break;
 			case BUILTIN_STRINGS::STRING_SUBTRACT: bl = BLENDMODE_SUBTRACT; break;
 		}
-		th->drawDisplayObject(d, initialMatrix,smoothing,bl,ctransform.getPtr(),clipRect.getPtr());
+		th->drawDisplayObject(d, initialMatrix,smoothing,bl,ctransform.getPtr(),clipRect.getPtr(),needscopy);
 	}
+	if(drawable->is<BitmapData>())
+		d->decRef();
 	th->notifyUsers();
 }
 ASFUNCTIONBODY_ATOM(BitmapData,draw)
@@ -1362,9 +1343,15 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 		createError<TypeError>(wrk,kNullPointerError,"filter");
 	else
 	{
-		th->pixels->applyFilter(sourceBitmapData->pixels, sourceRect->getRect(),
-				  destPoint->getX(), destPoint->getY(),
-				  filter.getPtr());
+		// use temporary Bitmap to render filter on GPU
+		Bitmap* d = Class<Bitmap>::getInstanceSNoArgs(wrk);
+		d->setupTemporaryBitmap(sourceBitmapData.getPtr());
+		d->setFilter(filter.getPtr());
+		d->scrollRect=sourceRect;
+		MATRIX m;
+		m.translate(destPoint->getX(),destPoint->getY());
+		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,sourceBitmapData->getBitmapContainer()==th->getBitmapContainer());
+		d->decRef();
 		th->notifyUsers();
 	}
 }

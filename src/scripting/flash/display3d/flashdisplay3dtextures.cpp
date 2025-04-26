@@ -638,6 +638,9 @@ uint32_t TextureBase::getBytesNeeded(uint32_t miplevel)
 
 void TextureBase::uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplevel, uint32_t side, uint32_t max_miplevel)
 {
+	// get bitmap data before locking rendermutex to avoid possible deadlock in render thread
+	uint8_t* bmdata = source->getBitmapContainer()->getData();
+
 	context->rendermutex.lock();
 	format = TEXTUREFORMAT::BGRA;
 	if (bitmaparray.size() <= miplevel)
@@ -655,7 +658,7 @@ void TextureBase::uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplev
 		for (uint32_t j = 0; j < (width>>miplevel) && j < sourcewidth; j++)
 		{
 			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
-			uint32_t* data = (uint32_t*)(&source->getBitmapContainer()->getData()[i*source->getBitmapContainer()->getWidth()*4+j*4]);
+			uint32_t* data = (uint32_t*)(&bmdata[i*source->getBitmapContainer()->getWidth()*4+j*4]);
 			uint8_t alpha = ((*data) >>24) & 0xff;
 			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4  ] = (uint8_t)((((*data)     ) & 0xff)*alpha /255);
 			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4+1] = (uint8_t)((((*data) >> 8) & 0xff)*alpha /255);

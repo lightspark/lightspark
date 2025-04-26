@@ -52,10 +52,11 @@ protected:
 	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y);
 	uint8_t* getCurrentData();
 	void checkModifiedTexture();
-public:
-	Semaphore renderevent;
 	bool hasModifiedData;
 	bool hasModifiedTexture;
+	bool needsclear;
+public:
+	Semaphore renderevent;
 	TextureChunk bitmaptexture;
 	int nanoVGImageHandle;
 	RGBA nanoVGImageBackgroundcolor;
@@ -113,6 +114,11 @@ public:
 
 	bool checkTextureForUpload(SystemState* sys);
 	void clone(BitmapContainer* c);
+	void setModifiedData(bool modified);
+	void setModifiedTexture(bool modified);
+	bool getModifiedData() const { return hasModifiedData; }
+	void setNeedsClear(bool clear) { needsclear=clear; }
+	bool getNeedsClear() const { return needsclear; }
 };
 
 }

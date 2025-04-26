@@ -1860,7 +1860,7 @@ void EngineData::exec_glGetTexImage_GL_TEXTURE_2D(void *buf)
 #if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
 	LOG(LOG_ERROR,"glGetTexImage not available for OpenGL ES");
 #else
-	glGetTexImage(GL_TEXTURE_2D,0,GL_RGBA, GL_UNSIGNED_BYTE, buf);
+	glGetTexImage(GL_TEXTURE_2D,0,GL_BGRA, GL_UNSIGNED_BYTE, buf);
 #endif
 }
 void EngineData::exec_glBindTexture_GL_TEXTURE_CUBE_MAP(uint32_t id)

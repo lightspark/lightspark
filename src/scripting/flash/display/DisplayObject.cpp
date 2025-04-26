@@ -873,6 +873,21 @@ void DisplayObject::setFilters(const FILTERLIST& filterlist)
 	}
 }
 
+void DisplayObject::setFilter(BitmapFilter* filter)
+{
+	if (filters.isNull())
+		filters = _MR(Class<Array>::getInstanceS(getInstanceWorker()));
+	filters->resize(0);
+
+	filter->incRef();
+	filters->push(asAtomHandler::fromObject(filter));
+	maxfilterborder = filter->getMaxFilterBorder();
+
+	hasChanged=true;
+	filterlistHasChanged=true;
+	requestInvalidation(getSystemState());
+}
+
 void DisplayObject::refreshSurfaceState()
 {
 }

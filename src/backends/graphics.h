@@ -246,6 +246,7 @@ struct RenderDisplayObjectToBitmapContainer
 	AS_BLENDMODE blendMode;
 	ColorTransformBase* ct;
 	RECT* clipRect;
+	bool needscopy;
 	std::list<ITextureUploadable*> uploads;
 	std::list<RefreshableSurface> surfacesToRefresh;
 };

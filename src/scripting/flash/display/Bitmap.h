@@ -45,13 +45,15 @@ private:
 	Vector2 size;
 	FILLSTYLE fs;
 	tokensVector bitmaptokens;
+	void setupTokens();
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
 	ASPROPERTY_GETTER_SETTER(tiny_string,pixelSnapping);
 	/* Call this after updating any member of 'data' */
 	void updatedData();
-	Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li=nullptr, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
+	Bitmap(ASWorker* wrk, Class_base* c);
+	Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, std::istream *s = NULL, FILE_TYPE type=FT_UNKNOWN);
 	Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload=true);
 	~Bitmap();
 	bool destruct() override;
@@ -69,6 +71,7 @@ public:
 	void invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container) override;
 	void setSize(const Vector2& _size) { size = _size; }
 	void setSize(int32_t width, int32_t height) { size = Vector2(width, height); }
+	void setupTemporaryBitmap(BitmapData* data);
 };
 
 }

@@ -60,7 +60,7 @@ public:
 	/*
 	 * Utility method to draw a DisplayObject on the surface
 	 */
-	void drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, Rectangle* clipRect, bool needscopy);
+	void drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, Rectangle* clipRect, bool needscopy, RGBA* fillcolor=nullptr);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(dispose);
 	ASFUNCTION_ATOM(draw);

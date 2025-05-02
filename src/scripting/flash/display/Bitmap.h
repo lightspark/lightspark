@@ -68,7 +68,6 @@ public:
 	virtual IntSize getBitmapSize() const;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	IDrawable* invalidate(bool smoothing) override;
-	void invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container) override;
 	void setSize(const Vector2& _size) { size = _size; }
 	void setSize(int32_t width, int32_t height) { size = Vector2(width, height); }
 	void setupTemporaryBitmap(BitmapData* data);

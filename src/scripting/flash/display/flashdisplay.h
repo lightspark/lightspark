@@ -63,6 +63,7 @@ class NativeMenuItem;
 class AVM1MovieClipLoader;
 class Context3D;
 class AccessibilityImplementation;
+struct BitmapContainerRenderData;
 
 class InteractiveObject: public DisplayObject
 {
@@ -163,7 +164,7 @@ public:
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	void requestInvalidationIncludingChildren(InvalidateQueue* q) override;
 	IDrawable* invalidate(bool smoothing) override;
-	void invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container) override;
+	void invalidateForRenderToBitmap(BitmapContainerRenderData* container, bool smoothing) override;
 	
 	void _addChildAt(DisplayObject* child, unsigned int index, bool inskipping=false);
 	bool fillTabStopsAutomatic(std::map<int32_t, DisplayObject*>& distancemap, bool& hasTabIndices);

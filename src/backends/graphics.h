@@ -237,19 +237,6 @@ struct RefreshableSurface
 	IDrawable* drawable;
 	_NR<DisplayObject> displayobject;
 };
-struct RenderDisplayObjectToBitmapContainer
-{
-	MATRIX initialMatrix;
-	_NR<CachedSurface> cachedsurface;
-	_NR<BitmapContainer> bitmapcontainer;
-	bool smoothing;
-	AS_BLENDMODE blendMode;
-	ColorTransformBase* ct;
-	RECT* clipRect;
-	bool needscopy;
-	std::list<ITextureUploadable*> uploads;
-	std::list<RefreshableSurface> surfacesToRefresh;
-};
 
 class IDrawable
 {

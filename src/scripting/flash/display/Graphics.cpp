@@ -861,7 +861,7 @@ IDrawable* Graphics::invalidate(SMOOTH_MODE smoothing)
 	IDrawable* res = nullptr;
 	if (needsRefresh)
 	{
-		owner->owner->setNeedsTextureRecalculation(true);
+		//owner->owner->setNeedsTextureRecalculation(true);
 		tokensHaveChanged=false;
 		needsRefresh = false;
 		if (rendertokens.empty())
@@ -1205,7 +1205,6 @@ ASFUNCTIONBODY_ATOM(Graphics,lineBitmapStyle)
 	style.Width = th->currentLineWidth;
 	style.HasFillFlag = true;
 	style.FillType = createBitmapFill(bitmap, matrix, repeat, smooth);
-	
 
 	th->AddStrokeToken(GeomToken(SET_STROKE));
 	th->AddLineStyleToken(GeomToken(th->addLineStyle(style)));
@@ -1407,6 +1406,7 @@ FILLSTYLE Graphics::createBitmapFill(_R<BitmapData> bitmap, _NR<Matrix> matrix, 
 	style.Matrix=style.Matrix.multiplyMatrix(m);
 
 	style.bitmap = bitmap->getBitmapContainer();
+	style.bitmap->flushRenderCalls(bitmap->getSystemState()->getRenderThread());
 
 	return style;
 }

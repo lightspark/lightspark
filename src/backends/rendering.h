@@ -100,7 +100,7 @@ private:
 
 	volatile bool renderToBitmapContainerNeeded;
 	Mutex mutexRenderToBitmapContainer;
-	std::list<RenderDisplayObjectToBitmapContainer> displayobjectsToRender;
+	_NR<BitmapContainer> bitmapContainerToRenderTo;
 
 	std::list<uint32_t> texturesToDelete;
 
@@ -147,8 +147,9 @@ public:
 	void addRefreshableSurface(IDrawable* d,_NR<DisplayObject> o);
 	void signalSurfaceRefresh();
 
-	void renderDisplayObjectToBimapContainer(_NR<DisplayObject> o, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, _NR<BitmapContainer> bm, lightspark::Rectangle* clipRect, bool needscopy);
 	void readPixelsToBimapContainer(_NR<BitmapContainer> bm);
+	void renderBitmap(BitmapContainer* bm);
+
 	/**
 		Allocates a chunk from the shared texture
 		if direct is true, the openGL texture is generated directly. this can only be used inside the render thread

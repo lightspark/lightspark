@@ -32,6 +32,28 @@
 
 namespace lightspark
 {
+struct RenderDisplayObjectToBitmapContainer
+{
+	MATRIX initialMatrix;
+	_NR<CachedSurface> cachedsurface;
+	ColorTransformBase ct;
+	RECT clipRect;
+	RGBA backgroundcolor;
+	AS_BLENDMODE blendMode;
+	bool smoothing:1;
+	bool hasClipRect:1;
+	bool needsfill:1;
+};
+
+struct BitmapContainerRenderData
+{
+	std::list<ITextureUploadable*> uploads;
+	std::list<RefreshableSurface> surfacesToRefresh;
+	std::list<RenderDisplayObjectToBitmapContainer> rendercalls;
+	bool readpixels:1;
+	bool needscopy:1;
+};
+
 class BitmapFilter;
 class BitmapContainer : public RefCountable
 {
@@ -56,6 +78,7 @@ protected:
 	bool hasModifiedTexture;
 	bool needsclear;
 public:
+	BitmapContainerRenderData renderdata;
 	Semaphore renderevent;
 	TextureChunk bitmaptexture;
 	int nanoVGImageHandle;
@@ -119,6 +142,8 @@ public:
 	bool getModifiedData() const { return hasModifiedData; }
 	void setNeedsClear(bool clear) { needsclear=clear; }
 	bool getNeedsClear() const { return needsclear; }
+	void addRenderCall(RenderDisplayObjectToBitmapContainer& call);
+	void flushRenderCalls(RenderThread* renderthread);
 };
 
 }

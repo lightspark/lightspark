@@ -1212,11 +1212,11 @@ IDrawable* DisplayObject::invalidate(bool smoothing)
 	//Not supposed to be called
 	throw RunTimeException("DisplayObject::invalidate");
 }
-void DisplayObject::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container)
+void DisplayObject::invalidateForRenderToBitmap(BitmapContainerRenderData* container,bool smoothing)
 {
 	if (this->mask)
-		this->mask->invalidateForRenderToBitmap(container);
-	IDrawable* d = this->invalidate(container->smoothing);
+		this->mask->invalidateForRenderToBitmap(container,smoothing);
+	IDrawable* d = this->invalidate(smoothing);
 	if (d)
 	{
 		setupSurfaceState(d);
@@ -1250,7 +1250,6 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 {
 	// this is called only from rendering thread, so no locking done here
 	cachedSurface->SetState(d->getState());
-	refreshSurfaceState();
 	cachedSurface->isValid=true;
 	cachedSurface->isInitialized=true;
 	cachedSurface->wasUpdated=true;

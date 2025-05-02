@@ -35,8 +35,6 @@
 using namespace lightspark;
 using namespace std;
 
-extern int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style);
-
 TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o),tokens(nullptr)
   ,scaling(0.05),renderWithNanoVG(false)
 {

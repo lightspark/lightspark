@@ -171,6 +171,11 @@ int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style)
 		if (isRepeating(style->FillStyleType))
 			imageFlags |= NVG_IMAGE_REPEATX|NVG_IMAGE_REPEATY;
 		style->bitmap->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,style->bitmap->getWidth(),style->bitmap->getHeight(),imageFlags,style->bitmap->getData());
+		style->bitmap->setModifiedData(false);
+	}
+	else
+	{
+		assert(!style->bitmap->getModifiedData());
 	}
 	return style->bitmap->nanoVGImageHandle;
 }
@@ -339,7 +344,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 		_matrix = state->matrix;
 	_matrix.translate(-state->scrollRect.Xmin,-state->scrollRect.Ymin);
 	AS_BLENDMODE bl = container ? container->blendMode : state->blendmode;
-	ColorTransformBase ct = container && container->ct ? *container->ct : state->colortransform;
+	ColorTransformBase ct = container ? container->ct : state->colortransform;
 	Transform2D currenttransform(_matrix,ct,bl);
 	ctxt.transformStack().push(currenttransform);
 	EngineData* engineData = sys->getEngineData();

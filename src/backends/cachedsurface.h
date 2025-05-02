@@ -20,7 +20,6 @@
 #ifndef BACKENDS_CACHEDSURFACE_H
 #define BACKENDS_CACHEDSURFACE_H 1
 
-#include "forwards/scripting/flash/display/DisplayObject.h"
 #include "compat.h"
 #include <vector>
 #include "smartrefs.h"
@@ -36,6 +35,7 @@ namespace lightspark
 {
 class RenderContext;
 class Array;
+class DisplayObject;
 
 struct FilterData
 {

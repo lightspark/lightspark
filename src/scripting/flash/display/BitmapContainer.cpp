@@ -19,10 +19,12 @@
 
 #include <stack>
 #include "scripting/flash/display/BitmapContainer.h"
+#include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "backends/rendering.h"
+#include "backends/cachedsurface.h"
 #include "backends/image.h"
 #include "backends/decoder.h"
 #include "backends/streamcache.h"
@@ -246,11 +248,14 @@ void BitmapContainer::fromRawData(uint8_t* data, uint32_t width, uint32_t height
 	this->stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	this->width=width;
 	this->height=height;
-	uint32_t dataSize = stride * height;
-	this->data.resize(dataSize);
-	setNeedsClear(false);
-	setModifiedData(true);
-	memcpy(this->data.data(),data,dataSize);
+	if (data)
+	{
+		uint32_t dataSize = stride * height;
+		this->data.resize(dataSize);
+		setNeedsClear(false);
+		setModifiedData(true);
+		memcpy(this->data.data(),data,dataSize);
+	}
 }
 
 // needs to be called in renderThread
@@ -295,6 +300,16 @@ void BitmapContainer::setModifiedTexture(bool modified)
 {
 	assert(!modified ||!hasModifiedData);
 	hasModifiedTexture=modified;
+}
+
+void BitmapContainer::addRenderCall(RenderDisplayObjectToBitmapContainer& call)
+{
+	renderdata.rendercalls.push_back(call);
+}
+
+void BitmapContainer::flushRenderCalls(RenderThread* renderthread)
+{
+	renderthread->renderBitmap(this);
 }
 
 void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)
@@ -476,14 +491,6 @@ void BitmapContainer::fillRectangle(const RECT& inputRect, uint32_t color, bool 
 	if (clippedRect.Ymin>=clippedRect.Ymax || clippedRect.Xmin>=clippedRect.Xmax)
 		return;
 	
-	if (clippedRect.Xmin==0 && clippedRect.Ymin==0 && clippedRect.Xmax==this->width && clippedRect.Ymax==this->height)
-	{
-		// fast path: fill full bitmap with new color
-		nanoVGImageBackgroundcolor=RGBA(color,useAlpha ? (color>>24)&0xff : 0xff);
-		setNeedsClear(true);
-		setModifiedData(false);
-		return;
-	}
 	uint32_t realcolor = useAlpha ? color : (0xFF000000 | (color & 0xFFFFFF));
 	// fill first line
 	for(int32_t x=clippedRect.Xmin;x<clippedRect.Xmax;x++)

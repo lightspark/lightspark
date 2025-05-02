@@ -36,6 +36,7 @@
 #include "scripting/flash/geom/Point.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "backends/rendering.h"
+#include "backends/cachedsurface.h"
 #include "3rdparty/perlinnoise/PerlinNoise.hpp"
 
 #include <cstdlib>
@@ -257,13 +258,31 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	th->notifyUsers();
 }
 
-void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, Rectangle* clipRect, bool needscopy)
+void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, Rectangle* clipRect, bool needscopy,RGBA* fillcolor )
 {
-	d->incRef();
-	getSystemState()->getRenderThread()->renderDisplayObjectToBimapContainer(_MNR(d),initialMatrix,smoothing,blendMode,ct,this->pixels,clipRect,needscopy);
-	if (this->pixels->nanoVGImageHandle>=0)
-		this->pixels->setModifiedTexture(true);
-	this->notifyUsers();
+	RenderDisplayObjectToBitmapContainer r;
+	r.initialMatrix = initialMatrix;
+	r.blendMode = blendMode;
+	if (ct)
+		r.ct = *ct;
+	r.smoothing = smoothing;
+	r.hasClipRect = clipRect!=nullptr;
+
+	if (fillcolor)
+	{
+		r.needsfill = true;
+		r.backgroundcolor=*fillcolor;
+	}
+	else
+		r.needsfill = false;
+	if (clipRect)
+		r.clipRect=clipRect->getRect();
+	if (d)
+		d->invalidateForRenderToBitmap(&pixels->renderdata,smoothing);
+	if (d)
+		r.cachedsurface = d->getCachedSurface();
+	pixels->renderdata.needscopy=needscopy;
+	pixels->addRenderCall(r);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
@@ -301,7 +320,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 	DisplayObject* d=nullptr;
 	bool needscopy=false;
 	if(drawable->is<DisplayObject>())
+	{
 		d = drawable->as<DisplayObject>();
+	}
 	else if(drawable->is<BitmapData>())
 	{
 		// fast path: use temporary Bitmap to render BitmapData
@@ -469,7 +490,12 @@ ASFUNCTIONBODY_ATOM(BitmapData,fillRect)
 			color = res;
 		}
 	}
-	th->pixels->fillRectangle(rect->getRect(), color, th->transparent);
+	MATRIX m;
+	RGBA c(color,th->transparent ? (color>>24)&0xff : 0xff);
+	if (rect->getRect().Xmin==0 && rect->getRect().Ymin==0 && rect->getRect().Xmax==th->getWidth() && rect->getRect().Ymax==th->getHeight())
+		th->drawDisplayObject(nullptr, m,true, BLENDMODE_NORMAL ,nullptr,nullptr,false,&c);
+	else
+		th->drawDisplayObject(nullptr, m,true, BLENDMODE_NORMAL ,nullptr,rect.getPtr(),false,&c);
 	th->notifyUsers();
 }
 
@@ -507,9 +533,16 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 	if(!alphaBitmapData.isNull())
 		LOG(LOG_NOT_IMPLEMENTED, "BitmapData.copyPixels doesn't support alpha bitmap");
 
-	th->pixels->copyRectangle(source->pixels, sourceRect->getRect(),
-				  destPoint->getX(), destPoint->getY(),
-				  mergeAlpha|| !th->transparent);
+	// use temporary Bitmap to copy BitmapData on GPU
+	Bitmap* d = Class<Bitmap>::getInstanceSNoArgs(wrk);
+	d->setupTemporaryBitmap(source.getPtr());
+	d->scrollRect=sourceRect;
+	MATRIX m;
+	m.translate(destPoint->getX(),destPoint->getY());
+	th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer());
+	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
+
+	d->decRef();
 	th->notifyUsers();
 }
 
@@ -777,9 +810,23 @@ ASFUNCTIONBODY_ATOM(BitmapData,scroll)
 	int y;
 	ARG_CHECK(ARG_UNPACK(x) (y));
 
-	if (th->pixels->scroll(x, y))
-		th->notifyUsers();
+	int copyWidth = imax(th->getWidth() - abs(x), 0);
+	int copyHeight = imax(th->getHeight() - abs(y), 0);
 
+	if (x!=0 && y!=0 && copyWidth > 0 && copyHeight > 0)
+	{
+		Bitmap* d = Class<Bitmap>::getInstanceSNoArgs(wrk);
+		d->setupTemporaryBitmap(th);
+		Rectangle* rcScroll = Class<Rectangle>::getInstanceSNoArgs(wrk);
+		rcScroll->x = -x;
+		rcScroll->y = -y;
+		rcScroll->width = copyWidth;
+		rcScroll->height = copyHeight;
+		d->scrollRect=_MR(rcScroll);
+		th->drawDisplayObject(d, MATRIX(),false,BLENDMODE_NORMAL,nullptr,nullptr,true);
+		d->decRef();
+		th->notifyUsers();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,clone)
@@ -1351,6 +1398,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 		MATRIX m;
 		m.translate(destPoint->getX(),destPoint->getY());
 		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,sourceBitmapData->getBitmapContainer()==th->getBitmapContainer());
+		th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
 		d->decRef();
 		th->notifyUsers();
 	}

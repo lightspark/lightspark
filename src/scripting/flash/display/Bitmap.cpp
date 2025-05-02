@@ -264,11 +264,11 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 
 IDrawable *Bitmap::invalidate(bool smoothing)
 {
+	if (this->bitmapData)
+	{
+		this->bitmapData->getBitmapContainer()->flushRenderCalls(getSystemState()->getRenderThread());
+	}
 	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);
-}
-void Bitmap::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container)
-{
-	DisplayObject::invalidateForRenderToBitmap(container);
 }
 
 void Bitmap::setupTemporaryBitmap(BitmapData* data)
@@ -279,5 +279,5 @@ void Bitmap::setupTemporaryBitmap(BitmapData* data)
 	hasChanged=true;
 	setupTokens();
 	resetNeedsTextureRecalculation();
-	data->getBitmapContainer()->setModifiedData(false);
+	data->addUser(this,false);
 }

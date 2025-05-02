@@ -1571,13 +1571,13 @@ IDrawable* DisplayObjectContainer::invalidate(bool smoothing)
 	}
 	return res;
 }
-void DisplayObjectContainer::invalidateForRenderToBitmap(RenderDisplayObjectToBitmapContainer* container)
+void DisplayObjectContainer::invalidateForRenderToBitmap(BitmapContainerRenderData* container,bool smoothing)
 {
-	DisplayObject::invalidateForRenderToBitmap(container);
+	DisplayObject::invalidateForRenderToBitmap(container, smoothing);
 	auto it=dynamicDisplayList.begin();
 	for(;it!=dynamicDisplayList.end();++it)
 	{
-		(*it)->invalidateForRenderToBitmap(container);
+		(*it)->invalidateForRenderToBitmap(container, smoothing);
 	}
 }
 void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int index, bool inskipping)

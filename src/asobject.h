@@ -1478,6 +1478,7 @@ public:
 
 	// copies all dynamic values to the target
 	void copyValues(ASObject* target, ASWorker* wrk);
+	void copyValuesForPrototype(ASObject* target, ASWorker* wrk);
 
 	virtual asAtom getThisAtom() { return asAtomHandler::fromObject(this); }
 

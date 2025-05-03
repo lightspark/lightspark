@@ -1368,7 +1368,7 @@ void Prototype::copyOriginalValues(Prototype* target)
 {
 	if (this->prevPrototype)
 		this->prevPrototype->copyOriginalValues(target);
-	originalPrototypeVars->copyValues(target->getObj(),target->getObj()->getInstanceWorker());
+	originalPrototypeVars->copyValuesForPrototype(target->getObj(),target->getObj()->getInstanceWorker());
 	if (!target->workerDynamicClassVars)
 		target->workerDynamicClassVars = new_asobject(target->getObj()->getInstanceWorker());
 	target->getObj()->setRefConstant();

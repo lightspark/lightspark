@@ -2913,6 +2913,42 @@ void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 		it++;
 	}
 }
+void ASObject::copyValuesForPrototype(ASObject *target,ASWorker* wrk)
+{
+	bool needsactionscript3 = (target->is<DisplayObject>() && target->as<DisplayObject>()->needsActionScript3())
+			|| (!target->is<DisplayObject>() && wrk->rootClip->needsActionScript3());
+	auto it = Variables.Variables.begin();
+	while (it != Variables.Variables.end())
+	{
+		if (it->second.kind == DYNAMIC_TRAIT || it->second.kind == CONSTANT_TRAIT)
+		{
+			multiname m(nullptr);
+			m.name_type = multiname::NAME_STRING;
+			m.name_s_id = it->first;
+			asAtom v=it->second.var;
+			if (wrk)
+			{
+				// prepare value for use in another worker
+				if (needsactionscript3 && asAtomHandler::isFunction(v))
+					v = asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<IFunction>(v)->createFunctionInstance(wrk));
+				else if (asAtomHandler::isObject(v))
+				{
+					asAtomHandler::getObjectNoCheck(v)->incRef();
+					asAtomHandler::getObjectNoCheck(v)->objfreelist=nullptr;
+				}
+			}
+			else
+			{
+				ASATOM_INCREF(v);
+			}
+			if (needsactionscript3)
+				target->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+			else
+				(void)target->AVM1setVariableByMultiname(m, v, CONST_ALLOWED, wrk);
+		}
+		it++;
+	}
+}
 
 uint32_t variables_map::findInstanceSlotByMultiname(multiname* name,ASWorker* wrk)
 {

@@ -458,8 +458,8 @@ void MovieClip::setStopped()
 	if (!state.stop_FP)
 	{
 		state.stop_FP=true;
-		// if we reset state.next_FP when in framescript, we get into an infinite loop (see ruffle test avm2/goto_framescript_queued)
-		if (!this->inExecuteFramescript)
+		// if we reset state.next_FP when it was set explicitly, we get into an infinite loop (see ruffle test avm2/goto_framescript_queued)
+		if (!state.explicit_FP)
 			state.next_FP=state.FP;
 	}
 }

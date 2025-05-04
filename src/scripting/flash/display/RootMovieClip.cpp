@@ -183,8 +183,6 @@ void RootMovieClip::constructionComplete(bool _explicit)
 void RootMovieClip::afterConstruction(bool _explicit)
 {
 	DisplayObject::afterConstruction(_explicit);
-	if (this!=getSystemState()->mainClip)
-		return;
 	executeFrameScript();
 }
 

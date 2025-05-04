@@ -254,6 +254,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if (th->checkDisposed(ret))
 		return;
+	th->pixels->flushRenderCalls(th->getSystemState()->getRenderThread());
 	th->pixels.reset();
 	th->notifyUsers();
 }
@@ -356,6 +357,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 			case BUILTIN_STRINGS::STRING_SUBTRACT: bl = BLENDMODE_SUBTRACT; break;
 		}
 		th->drawDisplayObject(d, initialMatrix,smoothing,bl,ctransform.getPtr(),clipRect.getPtr(),needscopy);
+		if (th->users.empty())
+			th->pixels->flushRenderCalls(th->getSystemState()->getRenderThread());
 	}
 	if(drawable->is<BitmapData>())
 		d->decRef();

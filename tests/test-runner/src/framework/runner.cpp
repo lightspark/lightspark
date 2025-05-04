@@ -81,7 +81,6 @@ swfFile(test.swfPath)
 	auto fileSize = swfFile.tellg();
 	swfFile.seekg(0, std::ios::beg);
 
-	EngineData::enablerendering = false;	
 	sys = new SystemState
 	(
 		fileSize,
@@ -97,6 +96,7 @@ swfFile(test.swfPath)
 
 	setTLSSys(getSys());
 	setTLSWorker(sys->worker);
+	EngineData::initSDL();
 	sys->setParamsAndEngine(new TestRunnerEngineData(rootPath, this), true);
 	sys->mainClip->setOrigin(tiny_string("file://") + test.swfPath.generic_string());
 	sys->securityManager->setSandboxType(SecurityManager::LOCAL_TRUSTED);

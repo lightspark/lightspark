@@ -267,7 +267,7 @@ bool EngineData::mainloop_handleevent(const LSEvent& event, SystemState* sys)
 	));
 	return false;
 }
-bool initSDL()
+bool EngineData::initSDL()
 {
 	bool sdl_available = !EngineData::needinit;
 	if (EngineData::needinit)
@@ -306,7 +306,7 @@ bool initSDL()
 /* main loop handling */
 static int mainloop_runner(IEventLoop* th)
 {
-	if (!initSDL())
+	if (!EngineData::initSDL())
 	{
 		LOG(LOG_ERROR,"Unable to initialize SDL:"<<SDL_GetError());
 		//EngineData::mainthread_initialized.signal();

@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -27,6 +28,11 @@
 #include "framework/backends/event_loop.h"
 #include "framework/options.h"
 #include "framework/runner.h"
+
+SDL_Window* TestRunnerEngineData::createWidget(uint32_t w, uint32_t h)
+{
+	return SDL_CreateWindow("Lightspark",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,w,h,SDL_WINDOW_BORDERLESS|SDL_WINDOW_HIDDEN| SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+}
 
 bool TestRunnerEngineData::FileExists(SystemState* sys, const tiny_string& filename, bool isfullpath)
 {

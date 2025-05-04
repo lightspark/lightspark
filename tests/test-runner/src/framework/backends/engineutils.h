@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -32,7 +33,7 @@ namespace lightspark
 	class ByteArray;
 	class SystemState;
 	class tiny_string;
-};
+}
 
 struct TestRunner;
 
@@ -42,7 +43,7 @@ private:
 	path_t basePath;
 	TestRunner* runner;
 protected:
-	SDL_Window* createWidget(uint32_t w, uint32_t h) override { return nullptr; }
+	SDL_Window* createWidget(uint32_t w, uint32_t h) override;
 	void notifyTimer() override {}
 public:
 	TestRunnerEngineData

@@ -193,6 +193,7 @@ public:
 	static bool mainthread_running;
 	static Semaphore mainthread_initialized;
 	static bool startSDLMain(EventLoop* eventLoop);
+	static bool initSDL();
 
 	virtual bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath);
 	virtual bool FileIsHidden(SystemState* sys,const tiny_string& filename, bool isfullpath);

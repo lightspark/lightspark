@@ -376,7 +376,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel)
 	int32_t x;
 	int32_t y;
 	ARG_CHECK(ARG_UNPACK(x)(y));
-
+	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	uint32_t pix=th->pixels->getPixel(x, y,false);
 	asAtomHandler::setUInt(ret,wrk,pix & 0xffffff);
 }
@@ -390,6 +390,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel32)
 	int32_t y;
 	ARG_CHECK(ARG_UNPACK(x)(y));
 
+	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	if (wrk->needsActionScript3())
 	{
 		uint32_t pix=th->pixels->getPixel(x, y,false);

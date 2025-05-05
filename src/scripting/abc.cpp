@@ -802,6 +802,7 @@ void ABCVm::shutdown()
 void ABCVm::addDeletableObject(ASObject *obj)
 {
 	Locker l(deletable_objects_mutex);
+	obj->addStoredMember();
 	deletableObjects.push_back(obj);
 }
 
@@ -1867,6 +1868,9 @@ void ABCVm::initVM(std::string* errStr)
 void ABCVm::shutdownVM()
 {
 	status = TERMINATED;
+	for (auto it = deletableObjects.begin(); it != deletableObjects.end(); it++)
+		(*it)->removeStoredMember();
+	deletableObjects.clear();
 	if (!m_sys->runSingleThreaded && m_sys->isShuttingDown())
 		m_sys->signalTerminated();
 #ifdef LLVM_ENABLED
@@ -1912,7 +1916,7 @@ int ABCVm::Run(void* d)
 	{
 		th->deletable_objects_mutex.lock();
 		for (auto it = th->deletableObjects.begin(); it != th->deletableObjects.end(); it++)
-			(*it)->decRef();
+			(*it)->removeStoredMember();
 		th->deletableObjects.clear();
 		th->deletable_objects_mutex.unlock();
 		th->event_queue_mutex.lock();

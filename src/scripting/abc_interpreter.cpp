@@ -923,7 +923,7 @@ abc_function ABCVm::abcfunctions[]={
 	abc_convert_d_local_setslotnocoerce,
 	abc_convert_b_constant_setslotnocoerce,// 0x2fe ABC_OP_OPTIMZED_CONVERTB_SETSLOT
 	abc_convert_b_local_setslotnocoerce,
-	
+
 	abc_lf32_constant_setslotnocoerce,// 0x300 ABC_OP_OPTIMZED_LF32_SETSLOT
 	abc_lf32_local_setslotnocoerce,
 	abc_lf64_constant_setslotnocoerce,// 0x302 ABC_OP_OPTIMZED_LF64_SETSLOT
@@ -953,7 +953,7 @@ abc_function ABCVm::abcfunctions[]={
 	abc_ifstricteq,
 	abc_ifstrictne,
 	abc_lookupswitch,
-	
+
 	abc_dup_local_setslotnocoerce, // 0x31c ABC_OP_OPTIMZED_DUP_SETSLOT
 	abc_newobject_noargs_localresult,
 	abc_getfuncscopeobject, // 0x31e ABC_OP_OPTIMZED_GETFUNCSCOPEOBJECT
@@ -1057,7 +1057,7 @@ abc_function ABCVm::abcfunctions[]={
 	abc_sxi16_local,
 	abc_sxi16_constant_localresult,
 	abc_sxi16_local_localresult,
-	
+
 	abc_nextvalue_constant_constant,// 0x378 ABC_OP_OPTIMZED_NEXTVALUE
 	abc_nextvalue_local_constant,
 	abc_nextvalue_constant_local,
@@ -1066,7 +1066,7 @@ abc_function ABCVm::abcfunctions[]={
 	abc_nextvalue_local_constant_localresult,
 	abc_nextvalue_constant_local_localresult,
 	abc_nextvalue_local_local_localresult,
-	
+
 	abc_hasnext2_localresult,
 	abc_hasnext2_iftrue,
 	abc_getSlotFromScopeObject, // 0x382 ABC_OP_OPTIMZED_GETSLOTFROMSCOPEOBJECT
@@ -1219,7 +1219,7 @@ struct operands
 #define ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME 0x00000106
 #define ABC_OP_OPTIMZED_GETLEX 0x0000010a
 #define ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_LOCALRESULT 0x0000010b
-#define ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME 0x0000011c 
+#define ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME 0x0000011c
 #define ABC_OP_OPTIMZED_MULTIPLY 0x00000120
 #define ABC_OP_OPTIMZED_BITOR 0x00000128
 #define ABC_OP_OPTIMZED_BITXOR 0x00000130
@@ -1249,7 +1249,7 @@ struct operands
 #define ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT 0x000001ba
 #define ABC_OP_OPTIMZED_LESSEQUALS 0x000001c0
 #define ABC_OP_OPTIMZED_GREATEREQUALS 0x000001c8
-#define ABC_OP_OPTIMZED_GETLEX_FROMSLOT 0x000001bb 
+#define ABC_OP_OPTIMZED_GETLEX_FROMSLOT 0x000001bb
 #define ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS 0x000001bd
 #define ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS 0x000001be
 #define ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME_LOCALRESULT 0x000001bf
@@ -1283,8 +1283,8 @@ struct operands
 #define ABC_OP_OPTIMZED_SETSLOT 0x00000238
 #define ABC_OP_OPTIMZED_CONVERTI 0x0000023c
 #define ABC_OP_OPTIMZED_CONVERTU 0x00000240
-#define ABC_OP_OPTIMZED_CONSTRUCTPROP_STATICNAME_NOARGS 0x00000244 
-#define ABC_OP_OPTIMZED_CONVERTB 0x00000248 
+#define ABC_OP_OPTIMZED_CONSTRUCTPROP_STATICNAME_NOARGS 0x00000244
+#define ABC_OP_OPTIMZED_CONVERTB 0x00000248
 #define ABC_OP_OPTIMZED_CONSTRUCT_NOARGS 0x0000024c
 #define ABC_OP_OPTIMZED_SETSLOT_NOCOERCE 0x00000250
 #define ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_VOID 0x00000254
@@ -1415,7 +1415,7 @@ void clearOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastloc
 	{
 		for (uint32_t i = 0; i < state.mi->body->getReturnValuePos()+state.mi->body->localresultcount; i++)
 		{
-			assert(i < state.defaultlocaltypes.size() && "array out of bounds!"); 
+			assert(i < state.defaultlocaltypes.size() && "array out of bounds!");
 			state.localtypes[i] = state.defaultlocaltypes[i];
 		}
 	}
@@ -1440,7 +1440,7 @@ void removeOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastlo
 	{
 		for (uint32_t i = 0; i < state.mi->body->getReturnValuePos()+state.mi->body->localresultcount; i++)
 		{
-			assert(i < state.defaultlocaltypes.size() && "array out of bounds!"); 
+			assert(i < state.defaultlocaltypes.size() && "array out of bounds!");
 			state.localtypes[i] = state.defaultlocaltypes[i];
 		}
 	}
@@ -1495,7 +1495,7 @@ bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden)
 		objtype->isSealed && // it's sealed
 		(
 		!objtype->is<Class_inherit>() || // type is builtin class
-		ignoreoverridden || 
+		ignoreoverridden ||
 		!objtype->as<Class_inherit>()->hasoverriddenmethod(name) // current method is not in overridden methods
 		);
 }
@@ -2090,7 +2090,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					argsneeded--;
 					// if one of the arguments is a localresult, it will be reused and we don't have to increase localresultused
 					if (!localresultaddedindex.count(currindex-1) && !localresultaddedindex.count(currindex-2))
-						localresultused++; 
+						localresultused++;
 					localresultaddedindex.insert(currindex);
 				}
 				else
@@ -2126,14 +2126,17 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				break;
 			case 0x63://setlocal
 				candup=false;
-				if (argsneeded)
+				if (argsneeded || fromdup)
 				{
 					pos = code.skipu30FromPosition(pos);
 					b = code.peekbyteFromPosition(pos);
 					pos++;
-					argsneeded--;
-					if (dupskipped==argsneeded)
-						dupskipped=UINT32_MAX;
+					if (!fromdup)
+					{
+						argsneeded--;
+						if (dupskipped==argsneeded)
+							dupskipped=UINT32_MAX;
+					}
 				}
 				else
 					keepchecking=false;
@@ -2144,13 +2147,16 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0xd7://setlocal_3
 			case 0x29://pop
 				candup=false;
-				if (argsneeded)
+				if (argsneeded || fromdup)
 				{
 					b = code.peekbyteFromPosition(pos);
 					pos++;
-					argsneeded--;
-					if (dupskipped==argsneeded)
-						dupskipped=UINT32_MAX;
+					if (!fromdup)
+					{
+						argsneeded--;
+						if (dupskipped==argsneeded)
+							dupskipped=UINT32_MAX;
+					}
 				}
 				else
 					keepchecking=false;
@@ -2168,7 +2174,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x2a://dup
 			if (!argsneeded && !fromdup && state.jumptargets.find(pos) == state.jumptargets.end())
 			{
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2184,7 +2190,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				uint32_t num = code.peeku30FromPosition(pos);
 				state.setlocal_handled.insert(pos);
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = num;
 				state.localtypes[num] = restype;
@@ -2203,7 +2209,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
 			{
 				state.setlocal_handled.insert(pos);
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = b-0xd4;
 				state.localtypes[b-0xd4] = restype;
@@ -2221,7 +2227,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					&& argcount < UINT16_MAX
 					&& (argcount+1 >= argsneeded) && (state.operandlist.size() >= (argcount+1-argsneeded)))
 			{
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2256,7 +2262,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				}
 				if (res)
 				{
-					// set optimized opcode to corresponding opcode with local result 
+					// set optimized opcode to corresponding opcode with local result
 					state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 					state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 					state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2274,7 +2280,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					&& argcount == 0
 					&& !argsneeded && (state.operandlist.size() >= 1))
 			{
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2292,7 +2298,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					&& argcount == 0
 					&& !argsneeded && (state.operandlist.size() >= 1))
 			{
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2309,15 +2315,15 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			uint32_t t = code.peeku30FromPosition(pos);
 			if (state.jumptargets.find(pos) == state.jumptargets.end() && (argsneeded<=1) &&
 					(
-					   (((argsneeded==1) || (state.operandlist.size() >= 1)) 
+					   (((argsneeded==1) || (state.operandlist.size() >= 1))
 					    && (uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
-					|| ((argsneeded==0) && (state.operandlist.size() > 1) 
+					|| ((argsneeded==0) && (state.operandlist.size() > 1)
 						&& (uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 1
 						&& (state.operandlist.back().objtype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()))
 					)
 				)
 			{
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2337,7 +2343,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					|| (!argsneeded && (state.operandlist.size() >= 1) && state.mi->context->constant_pool.multinames[t].runtimeargs == 1)
 					))
 			{
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2352,7 +2358,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x12://iffalse
 			if (!argsneeded && !fromdup  && (state.jumptargets.find(pos) == state.jumptargets.end()))
 			{
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2432,7 +2438,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x1e://nextname
 			if ((argsneeded==1 || (!argsneeded && state.operandlist.size() > 0)) && (state.jumptargets.find(pos) == state.jumptargets.end()))
 			{
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2460,7 +2466,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 						state.preloadedcode[preloadpos].pcode.local3.flags |= ABC_OP_FORCEINT;
 						break;
 				}
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2473,7 +2479,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x48://returnvalue
 			if (!argsneeded && (state.jumptargets.find(pos) == state.jumptargets.end()))
 			{
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos();
 				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2490,7 +2496,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		{
 			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
 			{
-				// set optimized opcode to corresponding opcode with local result 
+				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 				state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
@@ -2713,7 +2719,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 		it = state.operandlist.end();
 		op2isconstant = ((--it)->type != OP_LOCAL && it->type != OP_CACHED_SLOT);
 		op1isconstant = ((--it)->type != OP_LOCAL && it->type != OP_CACHED_SLOT);
-		
+
 		it =state.operandlist.end();
 		(--it)->removeArg(state);// remove arg2
 		(--it)->removeArg(state);// remove arg1
@@ -2731,7 +2737,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 		{
 			case ABC_OP_OPTIMZED_ADD:
 				// if both operands are numeric, the result is always a number, so we can skip convert_d opcode
-				skip_conversion = 
+				skip_conversion =
 						(op1type == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || op1type == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || op1type == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()) &&
 						(op2type == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || op2type == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || op2type == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr());
 				if (skip_conversion)
@@ -2810,7 +2816,7 @@ bool checkmatchingLastObjtype(preloadstate& state, Type* resulttype, Class_base*
 {
 	if (requiredtype == resulttype || resulttype==Type::anyType || resulttype == Type::voidType)
 		return true;
-	if (requiredtype == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() && 
+	if (requiredtype == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() &&
 			(resulttype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
 			|| resulttype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()))
 		return true;
@@ -2865,7 +2871,7 @@ void addOperand(preloadstate& state,operands& op,memorystream& code)
 		state.preloadedcode.back().pcode.arg3_uint = op.index;
 		state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));
 	}
-	
+
 }
 void addCachedConstant(preloadstate& state,method_info* mi, asAtom& val,memorystream& code)
 {
@@ -3155,7 +3161,7 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 			{
 				int j = code.peeks24FromPosition(pos+1);
 				bool canoptimize = (!multiconditions || code.peekbyteFromPosition(pos+4) == 0x29); //pop
-						
+
 				if (multiconditions)
 				{
 					if (j <= 0)
@@ -3235,8 +3241,8 @@ void setupInstructionIncDecInteger(preloadstate& state,memorystream& code,std::v
 	uint32_t p = code.tellg();
 	// optimize common case of increment/decrement local variable
 #ifdef ENABLE_OPTIMIZATION
-	if (state.operandlist.size() > 0 && 
-			state.operandlist.back().type == OP_LOCAL && 
+	if (state.operandlist.size() > 0 &&
+			state.operandlist.back().type == OP_LOCAL &&
 			state.operandlist.back().objtype == Class<Integer>::getRef(state.function->getSystemState()).getPtr() &&
 			state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 	{
@@ -3324,7 +3330,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 	std::map<int32_t,int32_t> jumpstartpositions;
 	std::map<int32_t,int32_t> switchpositions;
 	std::map<int32_t,int32_t> switchstartpositions;
-	
+
 	// this is used in a simple mechanism to detect if kill opcodes can be skipped
 	// we just check if no getlocal opcode occurs after the kill
 	std::set<uint32_t> skippablekills;
@@ -3368,7 +3374,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 		itex++;
 	}
 	uint32_t simple_getter_opcode_pos = 0;
-	uint8_t simple_getter_opcodes[] { 
+	uint8_t simple_getter_opcodes[] {
 				0xd0, //getlocal_0
 				0x30, //pushscope
 				0x60, //getlex
@@ -3376,7 +3382,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				0x00
 			};
 	uint32_t simple_setter_opcode_pos = 0;
-	uint8_t simple_setter_opcodes[] { 
+	uint8_t simple_setter_opcodes[] {
 				0xd0, //getlocal_0
 				0x30, //pushscope
 				0x5e, //findproperty
@@ -3548,7 +3554,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			{
 				int32_t p = codejumps.tellg();
 				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
-				if (p1 > p && constantsstack.size()>1 && 
+				if (p1 > p && constantsstack.size()>1 &&
 						asAtomHandler::isEqual(constantsstack[constantsstack.size()-1]
 												, wrk
 												, constantsstack[constantsstack.size()-1])
@@ -3575,7 +3581,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			{
 				int32_t p = codejumps.tellg();
 				int32_t p1 = codejumps.reads24()+codejumps.tellg()+1;
-				if (p1 > p && constantsstack.size()>1 && 
+				if (p1 > p && constantsstack.size()>1 &&
 						!asAtomHandler::isEqual(constantsstack[constantsstack.size()-1]
 												, wrk
 												, constantsstack[constantsstack.size()-1])
@@ -3736,7 +3742,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				realNextReachable = *itexctarget;
 			itexctarget++;
 		}
-		
+
 		// search backwards for jumps that point inside the unreachable area and adjust realUnreachableEnd
 		auto itpoint = jumppoints.rbegin();
 		while (itpoint != jumppoints.rend())
@@ -4046,7 +4052,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #endif
 	// third pass:
 	// - use optimized opcode version if it doesn't interfere with a jump target
-	
+
 	std::vector<typestackentry> typestack; // contains the type or the global object of the arguments currently on the stack
 	Class_base* lastlocalresulttype=nullptr;
 	clearOperands(state,true,&lastlocalresulttype);
@@ -4241,7 +4247,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							createError<TypeError>(function->worker,0,"Wrong type in applytype");
 							break;
 						}
-						
+
 						removeOperands(state,true,&lastlocalresulttype,t+1);
 						for (i=0; i < t+1; i++)
 							state.preloadedcode.pop_back(); // remove getlocals
@@ -4257,7 +4263,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							global->setVariableAtomByQName(global->getSystemState()->getStringFromUniqueId(qname.nameId),nsNameAndKind(global->getSystemState(),qname.nsStringId,NAMESPACE),ret,DECLARED_TRAIT);
 						break;
 					}
-					
+
 				}
 #endif
 				removetypestack(typestack,t+1);
@@ -4437,7 +4443,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					state.preloadedcode.back().pcode.arg3_uint = t;
 				}
 				setOperandModified(state,OP_LOCAL,t);
-				
+
 				break;
 			}
 			case 0x92://inclocal
@@ -5183,7 +5189,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										}
 									}
 								}
-								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT || it->type == OP_CACHED_SLOT) 
+								if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT || it->type == OP_CACHED_SLOT)
 										&& it->objtype && !it->objtype->isInterface && it->objtype->isInitialized() && it->objtype->isSealed
 										&& (!typestack[typestack.size()-2].obj || !typestack[typestack.size()-2].classvar))
 								{
@@ -5401,7 +5407,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #endif
 				assert_and_throw(value < mi->body->getReturnValuePos());
 				removeInitializeLocalToConstant(state,value);
-				state.preloadedcode.push_back(opcode);
+				state.preloadedcode.push_back((uint32_t)opcode);
+				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
 				state.preloadedcode.back().pcode.arg3_uint=value;
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 					clearOperands(state,true,&lastlocalresulttype);
@@ -6783,7 +6790,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								// return type matches type of last operand, no need to continue checking
 //								if ((state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local3.flags & ABC_OP_FORCEINT)
 //									&& mi->returnType == Class<Integer>::getRef(state.mi->context->root->getSystemState()).getPtr())
-								
+
 								checkresulttype=false;
 							}
 						}

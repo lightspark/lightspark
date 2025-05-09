@@ -210,7 +210,23 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 {
 	event.wait();
 	if(m_sys->isShuttingDown())
+	{
+		// cleanup surfaces still waiting for refresh
+		Locker l(mutexRefreshSurfaces);
+		auto it = surfacesToRefresh.begin();
+		while (it != surfacesToRefresh.end())
+		{
+			delete it->drawable;
+			// ensure that the DisplayObject is moved to freelist in vm thread
+			if (getVm(m_sys))
+			{
+				it->displayobject->incRef();
+				getVm(m_sys)->addDeletableObject(it->displayobject.getPtr());
+			}
+			it = surfacesToRefresh.erase(it);
+		}
 		return false;
+	}
 	if (chronometer)
 		chronometer->checkpoint();
 

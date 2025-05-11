@@ -36,10 +36,15 @@ class Vector2Tmpl
 
 public:
 	T x,y;
-	Vector2Tmpl(T a=0, T b=0):x(a),y(b){}
-	Vector2Tmpl& operator=(const Vector2Tmpl&) = default;
-	/* conversion Vector2 -> Vector2f is implicit */
-	Vector2Tmpl(const Vector2Tmpl<int32_t>& o) : x(o.x),y(o.y) {}
+	Vector2Tmpl():x(0),y(0){}
+	Vector2Tmpl(T a, T b):x(a),y(b){}
+	template<typename U>
+	Vector2Tmpl& operator=(const Vector2Tmpl<U>& r)
+	{
+		x=r.x;
+		y=r.y;
+		return *this;
+	}
 	template<typename U>
 	Vector2Tmpl(const Vector2Tmpl<U>& o) : x(o.x),y(o.y) {}
 	/* conversion Vector2f -> Vector2 is explicit */

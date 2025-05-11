@@ -251,7 +251,7 @@ public:
 	ASObject* instance(Class_base* c=nullptr) override;
 	MATRIX MapToBounds(const MATRIX& mat) override;
 	bool isHTML() const { return HTML; }
-	bool needsDefaultName() const { return true; }
+	bool needsDefaultName() const override { return true; }
 };
 
 class MemoryStreamCache;
@@ -450,7 +450,7 @@ public:
 	~DefineButtonTag();
 	int getId() const override { return ButtonId; }
 	ASObject* instance(Class_base* c=nullptr) override;
-	bool needsDefaultName() const { return true; }
+	bool needsDefaultName() const override { return true; }
 	DefineButtonSoundTag* sounds;
 };
 
@@ -650,7 +650,7 @@ public:
 	~DefineSpriteTag();
 	int getId() const override { return SpriteID; }
 	ASObject* instance(Class_base* c=nullptr) override;
-	bool needsDefaultName() const { return true; }
+	bool needsDefaultName() const override { return true; }
 	void setSoundStartFrame()
 	{
 		if (soundstartframe == UINT32_MAX)

@@ -3319,7 +3319,292 @@ void removeInitializeLocalToConstant(preloadstate& state,int32_t value)
 		state.canlocalinitialize[value]=false;
 	}
 }
-
+void preloadFunction_secondPass(preloadstate& state)
+{
+#ifdef ENABLE_OPTIMIZATION
+	method_info* mi = state.mi;
+	SyntheticFunction* function = state.function;
+	Class_base* currenttype=nullptr;
+	memorystream codetypes(mi->body->code.data(), mi->body->code.size());
+	uint8_t opcode = 0;
+	while(!codetypes.atend())
+	{
+		uint8_t prevopcode=opcode;
+		opcode = codetypes.readbyte();
+		//LOG(LOG_ERROR,"preload pass2:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< codetypes.tellg()-1<<" "<<currenttype<<" "<<hex<<(int)opcode);
+		switch(opcode)
+		{
+			case 0x04://getsuper
+			case 0x05://setsuper
+			case 0x06://dxns
+			case 0x40://newfunction
+			case 0x41://call
+			case 0x42://construct
+			case 0x49://constructsuper
+			case 0x53://constructgenerictype
+			case 0x55://newobject
+			case 0x56://newarray
+			case 0x58://newclass
+			case 0x59://getdescendants
+			case 0x5a://newcatch
+			case 0x5d://findpropstrict
+			case 0x5e://findproperty
+			case 0x5f://finddef
+			case 0x60://getlex
+			case 0x61://setproperty
+			case 0x65://getscopeobject
+			case 0x66://getproperty
+			case 0x68://initproperty
+			case 0x6a://deleteproperty
+			case 0x6c://getslot
+			case 0x6d://setslot
+			case 0x6e://getglobalSlot
+			case 0x6f://setglobalSlot
+			case 0xb2://istype
+			case 0x08://kill
+				codetypes.readu30();
+				currenttype=nullptr;
+				break;
+			case 0x62://getlocal
+			{
+				uint32_t t = codetypes.readu30();
+				if (state.defaultlocaltypes.size()>t)
+					currenttype=state.defaultlocaltypes[t];
+				else
+					currenttype=nullptr;
+				break;
+			}
+			case 0xd0://getlocal_0
+			case 0xd1://getlocal_1
+			case 0xd2://getlocal_2
+			case 0xd3://getlocal_3
+			{
+				if (state.defaultlocaltypes.size()>uint32_t(opcode-0xd0))
+					currenttype=state.defaultlocaltypes[opcode-0xd0];
+				else
+					currenttype=nullptr;
+				break;
+			}
+			case 0x86://astype
+			case 0x80://coerce
+			{
+				uint32_t t = codetypes.readu30();
+				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+				if (name->isStatic)
+				{
+					Type* tp = Type::getTypeFromMultiname(name, mi->context);
+					currenttype = dynamic_cast<Class_base*>(tp);
+				}
+				else
+					currenttype=nullptr;
+				break;
+			}
+			case 0xf0://debugline
+			case 0xf1://debugfile
+			case 0xf2://bkptline
+				codetypes.readu30();
+				break;
+			case 0x85://coerce_s
+				currenttype=Class<ASString>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x73://convert_i
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x74://convert_u
+				currenttype=Class<UInteger>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x75://convert_d
+				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x76://convert_b
+				currenttype=Class<Boolean>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2c://pushstring
+				codetypes.readu30();
+				currenttype=Class<ASString>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2d://pushint
+				codetypes.readu30();
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2e://pushuint
+				codetypes.readu30();
+				currenttype=Class<UInteger>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x2f://pushdouble
+				codetypes.readu30();
+				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x31://pushnamespace
+				codetypes.readu30();
+				currenttype=Class<Namespace>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x28://pushnan
+				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x63://setlocal
+			{
+				uint32_t t = codetypes.readu30();
+				state.unchangedlocals.erase(t);
+				setdefaultlocaltype(state,t,currenttype);
+				currenttype=nullptr;
+				break;
+			}
+			case 0xd4://setlocal_0
+			case 0xd5://setlocal_1
+			case 0xd6://setlocal_2
+			case 0xd7://setlocal_3
+				state.unchangedlocals.erase(opcode-0xd4);
+				setdefaultlocaltype(state,opcode-0xd4,currenttype);
+				currenttype=nullptr;
+				break;
+			case 0x92://inclocal
+			case 0x94://declocal
+			{
+				uint32_t t = codetypes.readu30();
+				state.unchangedlocals.erase(t);
+				setdefaultlocaltype(state,t,Class<Number>::getRef(function->getSystemState()).getPtr());
+				currenttype=nullptr;
+				break;
+			}
+			case 0xc0://increment_i
+			case 0xc1://decrement_i
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0xc2://inclocal_i
+			case 0xc3://declocal_i
+			{
+				uint32_t t = codetypes.readu30();
+				state.unchangedlocals.erase(t);
+				setdefaultlocaltype(state,t,Class<Integer>::getRef(function->getSystemState()).getPtr());
+				currenttype=nullptr;
+				break;
+			}
+			case 0x10://jump
+			{
+				int32_t p = codetypes.tellg();
+				int32_t p1 = codetypes.reads24()+codetypes.tellg()+1;
+				if (p1 > p)
+					skipunreachablecode(state,codetypes,false);
+				if (!state.jumptargets.count(p1) && currenttype)
+					state.jumptargeteresulttypes[p1] = currenttype;
+				currenttype=nullptr;
+				break;
+			}
+			case 0x0c://ifnlt
+			case 0x0d://ifnle
+			case 0x0e://ifngt
+			case 0x0f://ifnge
+			case 0x13://ifeq
+			case 0x14://ifne
+			case 0x15://iflt
+			case 0x16://ifle
+			case 0x17://ifgt
+			case 0x18://ifge
+			case 0x19://ifstricteq
+			case 0x1a://ifstrictne
+			{
+				codetypes.reads24();
+				currenttype=nullptr;
+				break;
+			}
+			case 0x11://iftrue
+			{
+				int32_t p = codetypes.tellg();
+				int32_t p1 = codetypes.reads24()+codetypes.tellg()+1;
+				if (p1 > p && prevopcode==0x26) //pushtrue
+				{
+					skipunreachablecode(state,codetypes,false);
+				}
+				currenttype=nullptr;
+				break;
+			}
+			case 0x12://iffalse
+			{
+				int32_t p = codetypes.tellg();
+				int32_t p1 = codetypes.reads24()+codetypes.tellg()+1;
+				if (p1 > p && prevopcode==0x27) //pushfalse
+				{
+					skipunreachablecode(state,codetypes,false);
+				}
+				currenttype=nullptr;
+				break;
+			}
+			case 0x1b://lookupswitch
+			{
+				codetypes.reads24();
+				uint32_t count = codetypes.readu30();
+				for(unsigned int i=0;i<count+1;i++)
+				{
+					codetypes.reads24();
+				}
+				currenttype=nullptr;
+				break;
+			}
+			case 0x24://pushbyte
+			{
+				codetypes.readbyte();
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			}
+			case 0x25://pushshort
+			{
+				codetypes.readu32();
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			}
+			case 0x26://pushtrue
+			case 0x27://pushfalse
+			{
+				currenttype=Class<Boolean>::getRef(function->getSystemState()).getPtr();
+				break;
+			}
+			case 0x32://hasnext2
+			case 0x43://callmethod
+			case 0x44://callstatic
+			case 0x45://callsuper
+			case 0x46://callproperty
+			case 0x4c://callproplex
+			case 0x4a://constructprop
+			case 0x4e://callsupervoid
+			case 0x4f://callpropvoid
+			{
+				codetypes.readu30();
+				codetypes.readu30();
+				currenttype=nullptr;
+				break;
+			}
+			case 0xef://debug
+			{
+				codetypes.readbyte();
+				codetypes.readu30();
+				codetypes.readbyte();
+				codetypes.readu30();
+				break;
+			}
+			case 0xa5://lshift
+			case 0xa6://rshift
+			case 0xa8://bitand
+			case 0xa9://bitor
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x09://label
+			case 0x2a://dup
+			case 0x82://coerce_a
+				break;
+			case 0x47://returnvoid
+			case 0x48://returnvalue
+			case 0x03://throw
+				skipunreachablecode(state,codetypes,false);
+				currenttype=nullptr;
+				break;
+			default:
+				currenttype=nullptr;
+				break;
+		}
+	}
+#endif
+}
 void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 {
 	method_info* mi=function->mi;
@@ -3770,286 +4055,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #endif
 	// second pass:
 	// - compute types of the locals and detect if they don't change during execution
-#ifdef ENABLE_OPTIMIZATION
-	Class_base* currenttype=nullptr;
-	memorystream codetypes(mi->body->code.data(), code_len);
-	while(!codetypes.atend())
-	{
-		uint8_t prevopcode=opcode;
-		opcode = codetypes.readbyte();
-		//LOG(LOG_ERROR,"preload pass2:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< codetypes.tellg()-1<<" "<<currenttype<<" "<<hex<<(int)opcode);
-		switch(opcode)
-		{
-			case 0x04://getsuper
-			case 0x05://setsuper
-			case 0x06://dxns
-			case 0x40://newfunction
-			case 0x41://call
-			case 0x42://construct
-			case 0x49://constructsuper
-			case 0x53://constructgenerictype
-			case 0x55://newobject
-			case 0x56://newarray
-			case 0x58://newclass
-			case 0x59://getdescendants
-			case 0x5a://newcatch
-			case 0x5d://findpropstrict
-			case 0x5e://findproperty
-			case 0x5f://finddef
-			case 0x60://getlex
-			case 0x61://setproperty
-			case 0x65://getscopeobject
-			case 0x66://getproperty
-			case 0x68://initproperty
-			case 0x6a://deleteproperty
-			case 0x6c://getslot
-			case 0x6d://setslot
-			case 0x6e://getglobalSlot
-			case 0x6f://setglobalSlot
-			case 0xb2://istype
-			case 0x08://kill
-				codetypes.readu30();
-				currenttype=nullptr;
-				break;
-			case 0x62://getlocal
-			{
-				uint32_t t = codetypes.readu30();
-				if (state.defaultlocaltypes.size()>t)
-					currenttype=state.defaultlocaltypes[t];
-				else
-					currenttype=nullptr;
-				break;
-			}
-			case 0xd0://getlocal_0
-			case 0xd1://getlocal_1
-			case 0xd2://getlocal_2
-			case 0xd3://getlocal_3
-			{
-				if (state.defaultlocaltypes.size()>uint32_t(opcode-0xd0))
-					currenttype=state.defaultlocaltypes[opcode-0xd0];
-				else
-					currenttype=nullptr;
-				break;
-			}
-			case 0x86://astype
-			case 0x80://coerce
-			{
-				uint32_t t = codetypes.readu30();
-				multiname* name =  mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
-				if (name->isStatic)
-				{
-					Type* tp = Type::getTypeFromMultiname(name, mi->context);
-					currenttype = dynamic_cast<Class_base*>(tp);
-				}
-				else
-					currenttype=nullptr;
-				break;
-			}
-			case 0xf0://debugline
-			case 0xf1://debugfile
-			case 0xf2://bkptline
-				codetypes.readu30();
-				break;
-			case 0x85://coerce_s
-				currenttype=Class<ASString>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x73://convert_i
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x74://convert_u
-				currenttype=Class<UInteger>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x75://convert_d
-				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x76://convert_b
-				currenttype=Class<Boolean>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x2c://pushstring
-				codetypes.readu30();
-				currenttype=Class<ASString>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x2d://pushint
-				codetypes.readu30();
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x2e://pushuint
-				codetypes.readu30();
-				currenttype=Class<UInteger>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x2f://pushdouble
-				codetypes.readu30();
-				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x31://pushnamespace
-				codetypes.readu30();
-				currenttype=Class<Namespace>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x28://pushnan
-				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x63://setlocal
-			{
-				uint32_t t = codetypes.readu30();
-				state.unchangedlocals.erase(t);
-				setdefaultlocaltype(state,t,currenttype);
-				currenttype=nullptr;
-				break;
-			}
-			case 0xd4://setlocal_0
-			case 0xd5://setlocal_1
-			case 0xd6://setlocal_2
-			case 0xd7://setlocal_3
-				state.unchangedlocals.erase(opcode-0xd4);
-				setdefaultlocaltype(state,opcode-0xd4,currenttype);
-				currenttype=nullptr;
-				break;
-			case 0x92://inclocal
-			case 0x94://declocal
-			{
-				uint32_t t = codetypes.readu30();
-				state.unchangedlocals.erase(t);
-				setdefaultlocaltype(state,t,Class<Number>::getRef(function->getSystemState()).getPtr());
-				currenttype=nullptr;
-				break;
-			}
-			case 0xc0://increment_i
-			case 0xc1://decrement_i
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0xc2://inclocal_i
-			case 0xc3://declocal_i
-			{
-				uint32_t t = codetypes.readu30();
-				state.unchangedlocals.erase(t);
-				setdefaultlocaltype(state,t,Class<Integer>::getRef(function->getSystemState()).getPtr());
-				currenttype=nullptr;
-				break;
-			}
-			case 0x10://jump
-			{
-				int32_t p = codetypes.tellg();
-				int32_t p1 = codetypes.reads24()+codetypes.tellg()+1;
-				if (p1 > p)
-					skipunreachablecode(state,codetypes,false);
-				if (!state.jumptargets.count(p1) && currenttype)
-					state.jumptargeteresulttypes[p1] = currenttype;
-				currenttype=nullptr;
-				break;
-			}
-			case 0x0c://ifnlt
-			case 0x0d://ifnle
-			case 0x0e://ifngt
-			case 0x0f://ifnge
-			case 0x13://ifeq
-			case 0x14://ifne
-			case 0x15://iflt
-			case 0x16://ifle
-			case 0x17://ifgt
-			case 0x18://ifge
-			case 0x19://ifstricteq
-			case 0x1a://ifstrictne
-			{
-				codetypes.reads24();
-				currenttype=nullptr;
-				break;
-			}
-			case 0x11://iftrue
-			{
-				int32_t p = codetypes.tellg();
-				int32_t p1 = codetypes.reads24()+codetypes.tellg()+1;
-				if (p1 > p && prevopcode==0x26) //pushtrue
-				{
-					skipunreachablecode(state,codetypes,false);
-				}
-				currenttype=nullptr;
-				break;
-			}
-			case 0x12://iffalse
-			{
-				int32_t p = codetypes.tellg();
-				int32_t p1 = codetypes.reads24()+codetypes.tellg()+1;
-				if (p1 > p && prevopcode==0x27) //pushfalse
-				{
-					skipunreachablecode(state,codetypes,false);
-				}
-				currenttype=nullptr;
-				break;
-			}
-			case 0x1b://lookupswitch
-			{
-				codetypes.reads24();
-				uint32_t count = codetypes.readu30();
-				for(unsigned int i=0;i<count+1;i++)
-				{
-					codetypes.reads24();
-				}
-				currenttype=nullptr;
-				break;
-			}
-			case 0x24://pushbyte
-			{
-				codetypes.readbyte();
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
-				break;
-			}
-			case 0x25://pushshort
-			{
-				codetypes.readu32();
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
-				break;
-			}
-			case 0x26://pushtrue
-			case 0x27://pushfalse
-			{
-				currenttype=Class<Boolean>::getRef(function->getSystemState()).getPtr();
-				break;
-			}
-			case 0x32://hasnext2
-			case 0x43://callmethod
-			case 0x44://callstatic
-			case 0x45://callsuper
-			case 0x46://callproperty
-			case 0x4c://callproplex
-			case 0x4a://constructprop
-			case 0x4e://callsupervoid
-			case 0x4f://callpropvoid
-			{
-				codetypes.readu30();
-				codetypes.readu30();
-				currenttype=nullptr;
-				break;
-			}
-			case 0xef://debug
-			{
-				codetypes.readbyte();
-				codetypes.readu30();
-				codetypes.readbyte();
-				codetypes.readu30();
-				break;
-			}
-			case 0xa5://lshift
-			case 0xa6://rshift
-			case 0xa8://bitand
-			case 0xa9://bitor
-				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
-				break;
-			case 0x09://label
-			case 0x2a://dup
-			case 0x82://coerce_a
-				break;
-			case 0x47://returnvoid
-			case 0x48://returnvalue
-			case 0x03://throw
-				skipunreachablecode(state,codetypes,false);
-				currenttype=nullptr;
-				break;
-			default:
-				currenttype=nullptr;
-				break;
-		}
-	}
-#endif
+	preloadFunction_secondPass(state);
 	// third pass:
 	// - use optimized opcode version if it doesn't interfere with a jump target
 

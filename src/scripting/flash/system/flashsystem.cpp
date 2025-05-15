@@ -1608,10 +1608,6 @@ tiny_string ASWorker::getStackTraceString(SystemState* sys,const StackTraceList&
 	return ret;
 }
 
-_NR<AVM1Scope> ASWorker::AVM1getScope() const
-{
-	return AVM1callStack.empty() ? NullRef : AVM1callStack.back()->scope;
-}
 void ASWorker::AVM1registerTagClass(uint32_t nameID, IFunction* theClassConstructor)
 {
 	unordered_map<uint32_t,IFunction*>* m = AVM1isCaseSensitive() ? &avm1ClassConstructorsCaseSensitive :&avm1ClassConstructorsCaseInsensitive;

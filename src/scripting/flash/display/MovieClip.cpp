@@ -266,6 +266,11 @@ bool MovieClip::destruct()
 	if (avm1loader)
 		avm1loader->removeStoredMember();
 	avm1loader = nullptr;
+	auto avm1ctxt = getAVM1Context();
+	if (avm1ctxt->scope)
+		avm1ctxt->scope.reset();
+	if (avm1ctxt->globalScope)
+		avm1ctxt->globalScope.reset();
 	return Sprite::destruct();
 }
 
@@ -284,6 +289,11 @@ void MovieClip::finalize()
 	if (avm1loader)
 		avm1loader->removeStoredMember();
 	avm1loader = nullptr;
+	auto avm1ctxt = getAVM1Context();
+	if (avm1ctxt->scope)
+		avm1ctxt->scope.reset();
+	if (avm1ctxt->globalScope)
+		avm1ctxt->globalScope.reset();
 	Sprite::finalize();
 }
 
@@ -317,6 +327,12 @@ bool MovieClip::countCylicMemberReferences(garbagecollectorstate &gcstate)
 	}
 	if (avm1loader)
 		ret = avm1loader->countAllCylicMemberReferences(gcstate) || ret;
+	auto avm1ctxt = getAVM1Context();
+	if (avm1ctxt->scope)
+		ret |= avm1ctxt->scope->countAllCyclicMemberReferences(gcstate);
+	if (avm1ctxt->globalScope)
+		ret |= avm1ctxt->globalScope->countAllCyclicMemberReferences(gcstate);
+
 	return ret;
 }
 /* Returns a Scene_data pointer for a scene called sceneName, or for

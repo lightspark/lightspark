@@ -26,7 +26,7 @@
 using namespace std;
 using namespace lightspark;
 
-AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a, const _R<AVM1Scope>& _scope, std::vector<uint8_t> _registernumbers, bool _preloadParent, bool _preloadRoot, bool _suppressSuper, bool _preloadSuper, bool _suppressArguments, bool _preloadArguments, bool _suppressThis, bool _preloadThis, bool _preloadGlobal)
+AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a, const _NR<AVM1Scope>& _scope, std::vector<uint8_t> _registernumbers, bool _preloadParent, bool _preloadRoot, bool _suppressSuper, bool _preloadSuper, bool _suppressArguments, bool _preloadArguments, bool _suppressThis, bool _preloadThis, bool _preloadGlobal)
 	:IFunction(wrk,c,SUBTYPE_AVM1FUNCTION),clip(cl),avm1Class(nullptr),actionlist(a),paramnames(p), paramregisternumbers(_registernumbers), scope(_scope),
 	  preloadParent(_preloadParent),preloadRoot(_preloadRoot),suppressSuper(_suppressSuper),preloadSuper(_preloadSuper),suppressArguments(_suppressArguments),preloadArguments(_preloadArguments),suppressThis(_suppressThis), preloadThis(_preloadThis), preloadGlobal(_preloadGlobal)
 {
@@ -34,6 +34,8 @@ AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, AVM1
 		context.avm1strings.assign(ctx->avm1strings.begin(),ctx->avm1strings.end());
 	clip->incRef();
 	clip->addStoredMember();
+	if (scope)// && scope->isLocalScope())
+	 	ASATOM_ADDSTOREDMEMBER(scope->getLocals());
 	context.keepLocals=true;
 	superobj = asAtomHandler::invalidAtom;
 }
@@ -82,6 +84,8 @@ void AVM1Function::finalize()
 	if (clip)
 		clip->removeStoredMember();
 	clip=nullptr;
+	if (scope)
+		scope->clearScope();
 	scope.reset();
 	ASATOM_REMOVESTOREDMEMBER(superobj);
 	for (auto it = implementedinterfaces.begin(); it != implementedinterfaces.end(); it++)
@@ -99,6 +103,9 @@ bool AVM1Function::destruct()
 	if (clip)
 		clip->removeStoredMember();
 	clip=nullptr;
+
+	if (scope)
+		scope->clearScope();
 	scope.reset();
 	ASATOM_REMOVESTOREDMEMBER(superobj);
 	superobj=asAtomHandler::invalidAtom;
@@ -119,9 +126,12 @@ void AVM1Function::prepareShutdown()
 	IFunction::prepareShutdown();
 	if (clip)
 		clip->prepareShutdown();
-	context.scope.reset();
-	context.globalScope.reset();
-	scope.reset();
+	if (context.scope)
+		context.scope->prepareShutdown();
+	if (context.globalScope)
+		context.globalScope->prepareShutdown();
+	if (scope)
+		scope->prepareShutdown();
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
 		su->prepareShutdown();
@@ -143,7 +153,7 @@ bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
 		ret = su->countAllCylicMemberReferences(gcstate) || ret;
-	if (context.scope)
+	if (context.scope && context.scope != scope)
 		ret |= context.scope->countAllCyclicMemberReferences(gcstate);
 	if (context.globalScope)
 		ret |= context.globalScope->countAllCyclicMemberReferences(gcstate);

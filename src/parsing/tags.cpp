@@ -258,7 +258,7 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 				ret=new PlaceObject3Tag(h,f,root);
 				break;
 			case 72:
-				ret=new DoABCTag(h,f);
+				ret=new DoABCTag(h,f,root);
 				break;
 			case 73:
 				ret=new DefineFontAlignZonesTag(h,f);
@@ -279,7 +279,7 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 				ret=new DefineScalingGridTag(h,f);
 				break;
 			case 82:
-				ret=new DoABCDefineTag(h,f);
+				ret=new DoABCDefineTag(h,f,root);
 				break;
 			case 83:
 				ret=new DefineShape4Tag(h,f,root);
@@ -3284,15 +3284,9 @@ void AVM1InitActionTag::execute(RootMovieClip *root) const
 
 void AVM1InitActionTag::executeDirect(MovieClip* clip) const
 {
-	DefineSpriteTag* sprite = dynamic_cast<DefineSpriteTag*>(clip->loadedFrom->dictionaryLookup(SpriteId));
-	if (!sprite)
-	{
-		LOG(LOG_ERROR,"sprite not found for InitActionTag:"<<SpriteId);
-		return;
-	}
-	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString()<<" "<<sprite->getId());
-	ACTIONRECORD::executeActions(clip,sprite->getAVM1Context(),actions,startactionpos,nullptr,true);
-	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions done "<< clip->toDebugString()<<" "<<sprite->getId());
+	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString());
+	ACTIONRECORD::executeActions(clip,clip->getAVM1Context(),actions,startactionpos,nullptr,true);
+	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions done "<< clip->toDebugString());
 }
 
 AdditionalDataTag::AdditionalDataTag(RECORDHEADER h, istream &in):Tag(h)
@@ -3334,14 +3328,14 @@ uint32_t VideoFrameTag::getNumBytes()
 	return numbytes+AV_INPUT_BUFFER_PADDING_SIZE;
 }
 
-DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in):ControlTag(h)
+DoABCTag::DoABCTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):ControlTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
 	LOG(LOG_CALLS,"DoABCTag");
 
-	ApplicationDomain* appDomain=getParseThread()->getRootMovie()->applicationDomain.getPtr();
-	context=new ABCContext(appDomain,getParseThread()->getRootMovie()->securityDomain.getPtr(), in, getVm(appDomain->getSystemState()));
+	ApplicationDomain* appDomain=root->applicationDomain.getPtr();
+	context=new ABCContext(appDomain,root->securityDomain.getPtr(), in, getVm(appDomain->getSystemState()));
 
 	int pos=in.tellg();
 	if(dest!=pos)
@@ -3380,15 +3374,15 @@ void DoABCTag::executeInExtension(RootMovieClip *root) const
 	execIntern(root,true);
 }
 
-DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in):ControlTag(h)
+DoABCDefineTag::DoABCDefineTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):ControlTag(h)
 {
 	int dest=in.tellg();
 	dest+=h.getLength();
 	in >> Flags >> Name;
 	LOG(LOG_CALLS,"DoABCDefineTag Name: " << Name);
 
-	ApplicationDomain* appDomain=getParseThread()->getRootMovie()->applicationDomain.getPtr();
-	context=new ABCContext(appDomain,getParseThread()->getRootMovie()->securityDomain.getPtr(), in, getVm(appDomain->getSystemState()));
+	ApplicationDomain* appDomain=root->applicationDomain.getPtr();
+	context=new ABCContext(appDomain,root->securityDomain.getPtr(), in, getVm(appDomain->getSystemState()));
 
 	int pos=in.tellg();
 	if(dest!=pos)

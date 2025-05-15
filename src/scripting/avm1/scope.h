@@ -70,14 +70,10 @@ private:
 	_NR<AVM1Scope> parent;
 	AVM1ScopeClass _class;
 	asAtom values;
+	uint32_t storedmembercount;
 
 	// Replaces the current local scope object with another object.
-	void setLocals(asAtom newLocals)
-	{
-		ASATOM_REMOVESTOREDMEMBER(values);
-		values = newLocals;
-		ASATOM_ADDSTOREDMEMBER(values);
-	}
+	void setLocals(asAtom newLocals);
 public:
 	// Contructs/Creates an arbitrary scope.
 	AVM1Scope
@@ -86,7 +82,7 @@ public:
 		const AVM1ScopeClass& type,
 		asAtom _values,
 		bool valuesrefcounted=false
-	) : parent(_parent), _class(type), values(_values)
+	) : parent(_parent), _class(type), values(_values),storedmembercount(1)
 	{
 		ASObject* o = asAtomHandler::getObject(values);
 		if (o)
@@ -136,7 +132,6 @@ public:
 
 	~AVM1Scope()
 	{
-		ASATOM_REMOVESTOREDMEMBER(values);
 	}
 
 	// Creates a global scope (A parentless scope).
@@ -170,9 +165,7 @@ public:
 	void setTargetScope(DisplayObject* clip);
 
 	// Returns the parent scope.
-	_NR<AVM1Scope> getParent() const { return parent; }
-	const AVM1Scope* getParentPtr() const { return parent.getPtr(); }
-	AVM1Scope* getParentPtr() { return parent.getPtr(); }
+	_NR<AVM1Scope> getParentScope() const { return parent; }
 
 	// Returns the current local scope object.
 	asAtom getLocals() const { return values; }
@@ -285,6 +278,16 @@ public:
 		const CONST_ALLOWED_FLAG& allowConst,
 		ASWorker* wrk
 	);
+	void addStoredMember()
+	{
+		++storedmembercount;
+	}
+	void removeStoredMember()
+	{
+		assert(storedmembercount);
+		--storedmembercount;
+	}
+	void clearScope();
 
 	// Deletes a variable from the scope.
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk);

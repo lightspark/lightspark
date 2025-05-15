@@ -935,7 +935,7 @@ private:
 	ABCContext* context;
 	void execIntern(RootMovieClip* root, bool inExtension) const;
 public:
-	DoABCTag(RECORDHEADER h, std::istream& in);
+	DoABCTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	TAGTYPE getType() const override { return ABC_TAG; }
 	void execute(RootMovieClip* root) const override;
 	void executeInExtension(RootMovieClip* root) const override;
@@ -949,7 +949,7 @@ private:
 	ABCContext* context;
 	void execIntern(RootMovieClip* root, bool inExtension) const;
 public:
-	DoABCDefineTag(RECORDHEADER h, std::istream& in);
+	DoABCDefineTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	TAGTYPE getType() const override { return ABC_TAG; }
 	void execute(RootMovieClip* root) const override;
 	void executeInExtension(RootMovieClip* root) const override;

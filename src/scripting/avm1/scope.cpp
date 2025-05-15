@@ -59,6 +59,11 @@ AVM1Scope::AVM1Scope
 {
 }
 
+void AVM1Scope::setLocals(asAtom newLocals)
+{
+	values = newLocals;
+}
+
 void AVM1Scope::setTargetScope(DisplayObject* clip)
 {
 	if (isTargetScope())
@@ -118,7 +123,7 @@ bool AVM1Scope::setVariableByMultiname
 		!asAtomHandler::as<DisplayObject>(values)->isOnStage()
 	);
 
-	if (!removed && (isTargetScope() || asAtomHandler::hasPropertyByMultiname(values,name, true, true, wrk)))
+	if (!removed && asAtomHandler::isValid(values) && (isTargetScope() || asAtomHandler::hasPropertyByMultiname(values,name, true, true, wrk)))
 	{
 		// Found the variable on this object, overwrite it.
 		// Or, we've hit the currently running clip, so create it here.
@@ -129,11 +134,6 @@ bool AVM1Scope::setVariableByMultiname
 		// Couldn't find the variable, traverse the scope chain.
 		return parent->setVariableByMultiname(name, value, allowConst, wrk);
 	}
-
-	// This probably shouldn't happen, since all AVM1 code runs in
-	// reference to a `MovieClip`, so we should always have a `MovieClip`
-	// scope. Define it on the top level scope.
-	LOG(LOG_ERROR, "AVM1Scope::setVariableByMultiname: No top level `MovieClip` scope.");
 	return asAtomHandler::AVM1setVariableByMultiname(values,name, value, allowConst, wrk);
 }
 
@@ -207,6 +207,16 @@ bool AVM1Scope::forceDefineLocal
 	return forceDefineLocalByMultiname(m, value, allowConst, wrk);
 }
 
+void AVM1Scope::clearScope()
+{
+	assert(storedmembercount);
+	--this->storedmembercount;
+	// resetting the local value is needed to avoid dangling references
+	ASObject* v = getLocalsPtr();
+	if (v)
+		v->removeStoredMember();
+}
+
 bool AVM1Scope::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
 	ASObject* v = asAtomHandler::getObject(values);
@@ -219,14 +229,12 @@ bool AVM1Scope::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 
 bool AVM1Scope::countAllCyclicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (gcstate.stopped || !this->isLastRef())
+	if (gcstate.stopped || this->getRefCount() != (int)this->storedmembercount)
 		return false;
 	bool ret = false;
 	ASObject* v = asAtomHandler::getObject(values);
 	if (v)
 		ret = v->countAllCylicMemberReferences(gcstate);
-	if (!parent.isNull())
-		ret = parent->countAllCyclicMemberReferences(gcstate) | ret;
 	return ret;
 }
 

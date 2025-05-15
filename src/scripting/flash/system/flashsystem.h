@@ -452,7 +452,6 @@ public:
 	{
 		return AVM1callStack.empty() ? nullptr : AVM1callStack.back()->callee;
 	}
-	_NR<AVM1Scope> AVM1getScope() const;
 	bool AVM1isCaseSensitive() const
 	{
 		return

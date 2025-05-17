@@ -159,6 +159,7 @@
             bundle: lightspark-latest.flatpak
             manifest-path: flatpak/org.lightspark.lightspark-latest.yaml
             cache-key: flatpak-builder-${{ github.sha }}
+
         - name: Upload Flatpak Release Asset
             uses: softprops/action-gh-release@v2
             env:

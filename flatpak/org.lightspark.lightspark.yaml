@@ -1,0 +1,60 @@
+app-id: org.lightspark.lightspark
+runtime: org.freedesktop.Platform
+runtime-version: '24.08'
+sdk: org.freedesktop.Sdk
+command: lightspark
+rename-desktop-file: lightspark.desktop
+rename-icon: lightspark
+add-extensions:
+  org.freedesktop.Platform.GL:
+    # 1.4 is for Nvidia drivers
+    versions: "%{branch};%{branch-extra};1.4"
+    version: "1.4"
+    directory: "%{lib}/GL"
+    subdirectories: "true"
+    no-autodownload: "true"
+    autodelete: "false"
+    add-ld-path: "lib"
+    merge-dirs: "%{gl_merge_dirs}"
+    download-if: "active-gl-driver"
+    enable-if: "active-gl-driver"
+    autoprune-unless: active-gl-driver
+modules:
+- name: glew
+  buildsystem: simple
+  build-commands:
+    - sed -i 's|lib64|lib|' config/Makefile.linux
+    - GLEW_PREFIX=${FLATPAK_DEST} GLEW_DEST=${FLATPAK_DEST} make install
+  sources:
+    - type: archive
+      url: https://downloads.sourceforge.net/project/glew/glew/2.2.0/glew-2.2.0.tgz
+      sha256: d4fc82893cfb00109578d0a1a2337fb8ca335b3ceccf97b97e5cc7f08e4353e1
+  cleanup:
+    - '/include'
+    - 'lib/pkgconfig'
+    - '/lib/*.a'
+- name: librtmp
+  buildsystem: simple
+  build-commands:
+    - make prefix='/' sbindir='/bin' mandir='/share/man' DESTDIR="${FLATPAK_DEST}" install
+  sources:
+    - type: git
+      url: https://git.ffmpeg.org/rtmpdump.git
+- name: lightspark
+  buildsystem: cmake
+  sources:
+    - type: dir
+      path: ..
+  config-opts:
+    - -DCOMPILE_NPAPI_PLUGIN=false
+    - -DCOMPILE_PPAPI_PLUGIN=false
+    - -DINSTALL_SYSTEM_CONFIGURATION=false
+  builddir: true
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --share=network
+  - --filesystem=xdg-public-share
+  - --socket=pulseaudio

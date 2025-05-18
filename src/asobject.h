@@ -1481,6 +1481,7 @@ public:
 	void copyValuesForPrototype(ASObject* target, ASWorker* wrk);
 
 	virtual asAtom getThisAtom() { return asAtomHandler::fromObject(this); }
+	const variables_map* getVariables() const { return &Variables; }
 
 	cyclicmembercount gccounter;
 };

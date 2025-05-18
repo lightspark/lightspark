@@ -384,6 +384,7 @@ void ApplicationDomain::sinit(Class_base* c)
 	//Instance
 	c->setDeclaredMethodByQName("hasDefinition","",c->getSystemState()->getBuiltinFunction(hasDefinition,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getDefinition","",c->getSystemState()->getBuiltinFunction(getDefinition,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getQualifiedDefinitionNames","",c->getSystemState()->getBuiltinFunction(getQualifiedDefinitionNames,0,Class<Vector>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,domainMemory,ByteArray);
 	REGISTER_GETTER_RESULTTYPE(c,parentDomain,ApplicationDomain);
 }
@@ -897,7 +898,31 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getDefinition)
 	LOG(LOG_CALLS,"Getting definition for " << name<<" "<<asAtomHandler::toDebugString(ret));
 	ASATOM_INCREF(ret);
 }
-
+ASFUNCTIONBODY_ATOM(ApplicationDomain,getQualifiedDefinitionNames)
+{
+	ApplicationDomain* th = asAtomHandler::as<ApplicationDomain>(obj);
+	asAtom v=asAtomHandler::invalidAtom;
+	Template<Vector>::getInstanceS(wrk,v,Class<ASString>::getClass(wrk->getSystemState()),th);
+	Vector *result = asAtomHandler::as<Vector>(v);
+	for(uint32_t j=0;j<th->globalScopes.size();j++)
+	{
+		auto vars = th->globalScopes[j]->getVariables();
+		th->globalScopes[j]->dumpVariables();
+		for (auto it = vars->Variables.cbegin(); it != vars->Variables.cend(); ++it)
+		{
+			if ((*it).second.ns.kind == PRIVATE_NAMESPACE || (*it).second.ns.nsNameId == BUILTIN_STRINGS::STRING_AS3VECTOR)
+				continue;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.name_s_id=(*it).first;
+			m.ns.push_back((*it).second.ns);
+			tiny_string s = m.qualifiedString(wrk->getSystemState(),true);
+			asAtom a = asAtomHandler::fromString(wrk->getSystemState(),s);
+			result->append(a);
+		}
+	}
+	ret = asAtomHandler::fromObject(result);
+}
 void ApplicationDomain::registerGlobalScope(Global* scope)
 {
 	globalScopes.push_back(scope);
@@ -1019,7 +1044,7 @@ ASObject* ApplicationDomain::getVariableByMultinameOpportunistic(const multiname
 		if(asAtomHandler::isValid(o))
 		{
 			// No incRef, return a reference borrowed from globalScopes
-			return asAtomHandler::toObject(o,wrk);
+			return asAtomHandler::getObject(o);
 		}
 	}
 	if(!parentDomain.isNull())

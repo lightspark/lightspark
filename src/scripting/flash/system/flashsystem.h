@@ -173,6 +173,7 @@ public:
 	ASFUNCTION_ATOM(_getMinDomainMemoryLength);
 	ASFUNCTION_ATOM(hasDefinition);
 	ASFUNCTION_ATOM(getDefinition);
+	ASFUNCTION_ATOM(getQualifiedDefinitionNames);
 	ASPROPERTY_GETTER_SETTER(_NR<ByteArray>, domainMemory);
 	ASPROPERTY_GETTER(_NR<ApplicationDomain>, parentDomain);
 	static void throwRangeError();

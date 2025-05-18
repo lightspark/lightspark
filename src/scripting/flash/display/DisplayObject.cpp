@@ -2450,7 +2450,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	ARG_CHECK(ARG_UNPACK (x) (y) (shapeFlag, false));
 
 	number_t xmin, xmax, ymin, ymax;
-	if (!th->boundsRectGlobal(xmin, xmax, ymin, ymax))
+	if (!th->boundsRectGlobal(xmin, xmax, ymin, ymax,false))
 	{
 		asAtomHandler::setBool(ret,false);
 		return;
@@ -2599,39 +2599,30 @@ void DisplayObject::setPropertyByIndex(size_t idx, const asAtom& val, ASWorker* 
 	{
 		case 0:// x
 			_setX(ret,wrk,obj,&value,1);
-			ASATOM_DECREF(value);
 			break;
 		case 1:// y
 			_setY(ret,wrk,obj,&value,1);
-			ASATOM_DECREF(value);
 			break;
 		case 2:// xscale
 			AVM1_setScaleX(ret,wrk,obj,&value,1);
-			ASATOM_DECREF(value);
 			break;
 		case 3:// xscale
 			AVM1_setScaleY(ret,wrk,obj,&value,1);
-			ASATOM_DECREF(value);
 			break;
 		case 6:// alpha
 			AVM1_setAlpha(ret,wrk,obj,&value,1);
-			ASATOM_DECREF(value);
 			break;
 		case 7:// visible
 			_setVisible(ret,wrk,obj,&value,1);
-			ASATOM_DECREF(value);
 			break;
 		case 8:// width
 			_setWidth(ret,wrk,obj,&value,1);
-			ASATOM_DECREF(value);
 			break;
 		case 9:// height
 			_setHeight(ret,wrk,obj,&value,1);
-			ASATOM_DECREF(value);
 			break;
 		case 10:// rotation
 			_setRotation(ret,wrk,obj,&value,1);
-			ASATOM_DECREF(value);
 			break;
 		case 13:// name
 			_setter_name(ret,wrk,obj,&value,1);
@@ -2647,6 +2638,7 @@ void DisplayObject::setPropertyByIndex(size_t idx, const asAtom& val, ASWorker* 
 			LOG(LOG_NOT_IMPLEMENTED, "setPropertyByIndex: Unknown property index " << idx);
 			break;
 	}
+	ASATOM_DECREF(value);
 }
 
 template<typename T, typename... Args>

@@ -173,6 +173,14 @@ void AVM1Shape::sinit(Class_base* c)
 	DisplayObject::AVM1SetupMethods(c);
 }
 
+ASObject* AVM1SimpleButton::AVM1getClassPrototypeObject() const
+{
+	// for some reason buttons don't allow access to its prototype on swf6 (see ruffle tests avm1/focusrect_property_swf6)
+	if (this->loadedFrom->version < 7)
+		return nullptr;
+	return SimpleButton::AVM1getClassPrototypeObject();
+}
+
 void AVM1SimpleButton::sinit(Class_base* c)
 {
 	SimpleButton::sinit(c);
@@ -366,10 +374,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					
 					asAtom args[1];
 					if (ldr->getContent())
-					{
-						ldr->getContent()->incRef();
 						args[0] = asAtomHandler::fromObject(ldr->getContent());
-					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
@@ -391,10 +396,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					asAtom obj = asAtomHandler::fromObject(f->getClip());
 					asAtom args[1];
 					if (ldr->getContent())
-					{
-						ldr->getContent()->incRef();
 						args[0] = asAtomHandler::fromObject(ldr->getContent());
-					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
 
@@ -417,10 +419,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					asAtom obj = asAtomHandler::fromObject(this);
 					asAtom args[3];
 					if (ldr->getContent())
-					{
-						ldr->getContent()->incRef();
 						args[0] = asAtomHandler::fromObject(ldr->getContent());
-					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
 					args[1] = asAtomHandler::fromInt(ev->bytesLoaded);
@@ -443,10 +442,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					asAtom obj = asAtomHandler::fromObject(this);
 					asAtom args[1];
 					if (ldr->getContent())
-					{
-						ldr->getContent()->incRef();
 						args[0] = asAtomHandler::fromObject(ldr->getContent());
-					}
 					else
 						args[0] = asAtomHandler::undefinedAtom;
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);

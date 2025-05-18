@@ -36,7 +36,7 @@ RootMovieClip::RootMovieClip(ASWorker* wrk, LoaderInfo* li, _NR<ApplicationDomai
 	parsingIsFailed(false),waitingforparser(false),Background(0xFF,0xFF,0xFF),avm1level(0),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
-	this->avm1focusrect=asAtomHandler::trueAtom;
+	this->avm1focusrect=asAtomHandler::falseAtom;
 	this->objfreelist=nullptr; // ensure RootMovieClips aren't reused to avoid conflicts with "normal" MovieClips
 	subtype=SUBTYPE_ROOTMOVIECLIP;
 	setLoaderInfo(li);
@@ -140,6 +140,8 @@ void RootMovieClip::constructionComplete(bool _explicit)
 {
 	if(isConstructed())
 		return;
+	if (this==getSystemState()->mainClip)
+		this->avm1focusrect = asAtomHandler::trueAtom;
 	if (!getSystemState()->runSingleThreaded && !isVmThread() && !getInstanceWorker()->isPrimordial)
 	{
 		this->incRef();
@@ -333,7 +335,7 @@ bool RootMovieClip::destruct()
 	applicationDomain.reset();
 	securityDomain.reset();
 	waitingforparser=false;
-	avm1focusrect=asAtomHandler::trueAtom;
+	avm1focusrect=asAtomHandler::falseAtom;
 	parsethread=nullptr;
 	return MovieClip::destruct();
 }

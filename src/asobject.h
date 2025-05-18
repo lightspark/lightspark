@@ -1475,6 +1475,7 @@ public:
 	virtual void AVM1HandlePressedEvent(ASObject *dispobj);
 	// updates AVM1 bindings in target for all members of this ASObject
 	void AVM1UpdateAllBindings(DisplayObject* target, ASWorker* wrk);
+	virtual ASObject* AVM1getClassPrototypeObject() const;
 
 	// copies all dynamic values to the target
 	void copyValues(ASObject* target, ASWorker* wrk);
@@ -1975,7 +1976,7 @@ FORCE_INLINE bool asAtomHandler::AVM1toBool(asAtom& a, ASWorker* wrk, uint32_t s
 			if (swfversion <7)
 			{
 				number_t r = toNumber(a) ;
-				return r!=0.0; // returns true for NaN
+				return r!=0.0 && !std::isnan(r);
 			}
 			else
 				return getStringId(a) != BUILTIN_STRINGS::EMPTY;
@@ -1983,7 +1984,7 @@ FORCE_INLINE bool asAtomHandler::AVM1toBool(asAtom& a, ASWorker* wrk, uint32_t s
 			if (swfversion <7)
 			{
 				number_t r = toNumber(a) ;
-				return r!=0.0; // returns true for NaN
+				return r!=0.0 && !std::isnan(r);
 			}
 			else
 				return !toString(a,wrk).empty();

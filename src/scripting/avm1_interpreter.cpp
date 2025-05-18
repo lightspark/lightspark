@@ -1935,18 +1935,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 								{
 									case BUILTIN_STRINGS::PROTOTYPE:
 									{
-										if (o->is<Class_base>())
+										ASObject* p = o->AVM1getClassPrototypeObject();
+										if (p)
 										{
-											ret = asAtomHandler::fromObject(o->as<Class_base>()->getPrototype(wrk)->getObj());
-											ASATOM_INCREF(ret);
+											p->incRef();
+											ret = asAtomHandler::fromObject(p);
 										}
-										else if (o->getClass())
-										{
-											ret = asAtomHandler::fromObject(o->getClass()->getPrototype(wrk)->getObj());
-											ASATOM_INCREF(ret);
-										}
-										else
-											LOG(LOG_NOT_IMPLEMENTED,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetMember for scriptobject without class "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name));
 										break;
 									}
 									default:
@@ -2078,7 +2072,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				uint32_t numargs = asAtomHandler::toUInt(na);
 				asAtom* args = numargs ? g_newa(asAtom, numargs) : nullptr;
 				for (uint32_t i = 0; i < numargs; i++)
+				{
 					args[i] = PopStack(stack);
+					ASObject* a = asAtomHandler::getObject(args[i]);
+					if (a)
+						a->addStoredMember();
+				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 				asAtom ret=asAtomHandler::invalidAtom;
 				bool done=false;
@@ -2239,7 +2238,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				PushStack(stack,ret);
 				for (uint32_t i = 0; i < numargs; i++)
-					ASATOM_DECREF(args[i]);
+					ASATOM_REMOVESTOREDMEMBER(args[i]);
 				ASATOM_DECREF(name);
 				ASATOM_DECREF(scriptobject);
 				ASATOM_DECREF(na);

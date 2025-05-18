@@ -2072,10 +2072,8 @@ GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const mult
 				ASATOM_INCREF(ret);
 				return GETVAR_NORMAL;
 			}
-			else if (this->is<Class_base>())
-				o = this->as<Class_base>()->prototype->getObj();
 			else
-				o = this->getClass()->prototype->getObj();
+				o = AVM1getClassPrototypeObject();
 		}
 		if (o)
 		{
@@ -2547,6 +2545,7 @@ bool ASObject::handleGarbageCollection()
 {
 	if (getConstant() || getCached() || this->getInDestruction())
 		return false;
+	LOG(LOG_CALLS,"handleGarbageCollection:"<<this<<" "<<this->getRefCount()<<"/"<<this->storedmembercount);
 	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1))
 	{
 		garbagecollectorstate gcstate(this,max(16U,this->Variables.size()));
@@ -2608,6 +2607,7 @@ bool ASObject::handleGarbageCollection()
 			this->deletedingarbagecollection=true;
 			this->markedforgarbagecollection=true;
 			gcstate.reset();
+			LOG(LOG_CALLS,"handleGarbageCollection ok:"<<this);
 			return true;
 		}
 		gcstate.reset();
@@ -2877,6 +2877,14 @@ void ASObject::AVM1UpdateAllBindings(DisplayObject* target, ASWorker* wrk)
 		}
 		it++;
 	}
+}
+
+ASObject* ASObject::AVM1getClassPrototypeObject() const
+{
+	if (this->is<Class_base>())
+		return  this->as<Class_base>()->prototype->getObj();
+	else
+		return  this->getClass()->prototype->getObj();
 }
 
 void ASObject::copyValues(ASObject *target,ASWorker* wrk)

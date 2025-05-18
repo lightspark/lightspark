@@ -77,6 +77,7 @@ class AVM1SimpleButton: public SimpleButton
 public:
 	AVM1SimpleButton(ASWorker* wrk,Class_base* c, DefineButtonTag* tag = nullptr)
 		:SimpleButton(wrk,c,tag) {}
+	ASObject* AVM1getClassPrototypeObject() const override;
 	
 	static void sinit(Class_base* c);
 };

@@ -1251,8 +1251,6 @@ void InteractiveObject::sinit(Class_base* c)
 void InteractiveObject::AVM1SetupMethods(Class_base* c)
 {
 	DisplayObject::AVM1SetupMethods(c);
-	c->prototype->setDeclaredMethodByQName("_focusrect","",c->getSystemState()->getBuiltinFunction(AVM1_setfocusrect),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("_focusrect","",c->getSystemState()->getBuiltinFunction(AVM1_getfocusrect,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_setter_tabEnabled),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_getter_tabEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_setTabIndex),SETTER_METHOD,false);
@@ -1277,31 +1275,43 @@ ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_getfocusrect)
 			return;
 		}
 	}
-	ret = th->avm1focusrect;
+	ret = asAtomHandler::isInvalid(th->avm1focusrect) ? asAtomHandler::nullAtom : th->avm1focusrect;
 }
 
 ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_setfocusrect)
 {
 	InteractiveObject* th=asAtomHandler::as<InteractiveObject>(obj);
-	if (argslen
-		&& !asAtomHandler::isNull(args[0]) && !asAtomHandler::isUndefined(args[0])) // it seems that null/undefined leave _focusrect unchanged
+	if (argslen)
 	{
+		if (th->is<RootMovieClip>() || th->is<Stage>())
+		{
+			if (asAtomHandler::isNull(args[0]) || asAtomHandler::isUndefined(args[0]))
+				return; // undefined/null are ignored if setting the global _focusrect
+			if (asAtomHandler::isString(args[0]) && asAtomHandler::toStringId(args[0],wrk) == BUILTIN_STRINGS::EMPTY)
+				return;
+			number_t r = asAtomHandler::isPrimitive(args[0]) ? asAtomHandler::AVM1toNumber(args[0],th->loadedFrom->version) : 0;
+			th->avm1focusrect= r == 0 ? asAtomHandler::falseAtom : asAtomHandler::trueAtom;
+			return;
+		}
+		if (asAtomHandler::isNull(args[0]) || asAtomHandler::isUndefined(args[0]))
+		{
+			th->avm1focusrect=asAtomHandler::nullAtom;
+			return;
+		}
 		if (th->loadedFrom->version < 6)
 		{
 			DisplayObject* root = th->AVM1getRoot();
 			if (root && root->is<InteractiveObject>())
 			{
-				number_t r = asAtomHandler::AVM1toNumber(args[0],th->loadedFrom->version);
+				number_t r = 0;
+				if (asAtomHandler::isPrimitive(args[0]))
+					r =  asAtomHandler::AVM1toNumber(args[0],th->loadedFrom->version);
 				root->as<InteractiveObject>()->avm1focusrect = asAtomHandler::fromInt(r == 0 ? 0 : 1);
-				if (r != 0)
-					LOG(LOG_NOT_IMPLEMENTED,"_focusrect not rendered");
 				return;
 			}
 		}
 		bool newval = asAtomHandler::AVM1toBool(args[0],wrk,th->loadedFrom->version);
 		th->avm1focusrect=asAtomHandler::fromBool(newval);
-		if (newval)
-			LOG(LOG_NOT_IMPLEMENTED,"_focusrect not rendered");
 	}
 }
 

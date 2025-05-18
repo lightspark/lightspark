@@ -43,6 +43,7 @@ IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id,
 
 IntervalRunner::~IntervalRunner()
 {
+	ASATOM_DECREF(callback);
 	for(uint32_t i=0; i<argslen; i++)
 		ASATOM_DECREF(args[i]);
 	delete[] args;

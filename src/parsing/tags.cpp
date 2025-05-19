@@ -1401,7 +1401,8 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 		else
 			format = BitmapContainer::ARGB32;
 
-		bitmap->fromRGB(inData, BitmapWidth, BitmapHeight, format);
+		if (size > 0)
+			bitmap->fromRGB(inData, BitmapWidth, BitmapHeight, format);
 	}
 	else if (BitmapFormat == LOSSLESS_BITMAP_PALETTE)
 	{
@@ -1425,7 +1426,8 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 
 		uint8_t *palette = inData;
 		uint8_t *pixelData = inData + paletteBPP*numColors;
-		bitmap->fromPalette(pixelData, BitmapWidth, BitmapHeight, stride, palette, numColors, paletteBPP);
+		if (size > 0)
+			bitmap->fromPalette(pixelData, BitmapWidth, BitmapHeight, stride, palette, numColors, paletteBPP);
 		delete[] inData;
 	}
 	else

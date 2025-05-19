@@ -22,7 +22,6 @@
 
 #include "forwards/threading.h"
 #include "forwards/timer.h"
-#include "forwards/backends/netutils.h"
 #include "interfaces/threading.h"
 #include "interfaces/timer.h"
 #include "interfaces/backends/netutils.h"
@@ -183,20 +182,22 @@ class URLLoader: public EventDispatcher, public IDownloaderThreadListener, publi
 {
 private:
 	tiny_string dataFormat;
-	_NR<ASObject> data;
+	asAtom data;
 	Mutex spinlock;
 	URLLoaderThread *job;
 	uint64_t timestamp_last_progress;
 public:
 	URLLoader(ASWorker* wrk,Class_base* c);
 	void finalize() override;
+	bool destruct() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	static void sinit(Class_base*);
 	void threadFinished(IThreadJob *job) override;
-	void setData(_NR<ASObject> data);
-	ASObject* getData() const
+	void setData(asAtom data);
+	asAtom getData() const
 	{
-		return data.getPtr();
+		return data;
 	}
 	tiny_string getDataFormat();
 	void setDataFormat(const tiny_string& newFormat);

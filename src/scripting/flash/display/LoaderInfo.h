@@ -22,7 +22,6 @@
 
 #include "scripting/flash/events/flashevents.h"
 #include "interfaces/backends/netutils.h"
-#include "backends/netutils.h"
 
 namespace lightspark
 {

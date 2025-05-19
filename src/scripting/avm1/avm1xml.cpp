@@ -162,14 +162,14 @@ void AVM1XMLDocument::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 				asAtom obj = asAtomHandler::fromObject(this);
 				asAtom args[1];
 
-				args[0] = loader->getData() ? asAtomHandler::fromObject(loader->getData()) : asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
+				args[0] = asAtomHandler::isValid(loader->getData()) ? loader->getData() : asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
 				asAtomHandler::as<AVM1Function>(func)->decRef();
 			}
 
-			if (e->type == "complete" && loader->getData())
+			if (e->type == "complete" && asAtomHandler::isValid(loader->getData()))
 			{
-				std::string str = loader->getData()->toString().raw_buf();
+				std::string str = asAtomHandler::toString(loader->getData(),getInstanceWorker()).raw_buf();
 				this->status = this->parseXMLImpl(str);
 			}
 			func=asAtomHandler::invalidAtom;

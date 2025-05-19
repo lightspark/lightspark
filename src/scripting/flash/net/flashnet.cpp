@@ -84,14 +84,17 @@ URLInfo URLRequest::getRequestURL() const
 	else
 	{
 		tiny_string newURL = ret.getParsedURL();
-		tiny_string s = asAtomHandler::toString(data,getInstanceWorker());
-		if (!s.empty())
+		if (ret.getProtocol()!="file")
 		{
-			if(ret.getQuery() == "")
-				newURL += "?";
-			else
-				newURL += "&amp;";
-			newURL += s;
+			tiny_string s = asAtomHandler::toString(data,getInstanceWorker());
+			if (!s.empty())
+			{
+				if(ret.getQuery() == "")
+					newURL += "?";
+				else
+					newURL += "&amp;";
+				newURL += s;
+			}
 		}
 		ret=ret.goToURL(newURL);
 	}
@@ -428,7 +431,7 @@ void URLLoaderThread::execute()
 	if(!createDownloader(cache, loader, loader.getPtr()))
 		return;
 
-	_NR<ASObject> data;
+	asAtom data;
 	bool success=false;
 	if(!downloader->hasFailed())
 	{
@@ -447,20 +450,21 @@ void URLLoaderThread::execute()
 			tiny_string dataFormat=loader->getDataFormat();
 			if(dataFormat=="binary")
 			{
-				_R<ByteArray> byteArray=_MR(Class<ByteArray>::getInstanceS(loader->getInstanceWorker()));
+				ByteArray* byteArray=Class<ByteArray>::getInstanceS(loader->getInstanceWorker());
 				byteArray->acquireBuffer(buf,downloader->getLength());
-				data=byteArray;
+				data=asAtomHandler::fromObjectNoPrimitive(byteArray);
 				//The buffers must not be deleted, it's now handled by the ByteArray instance
 			}
 			else if(dataFormat=="text")
 			{
 				// don't use abstract_s here, because we are not in the main thread
-				data=_MR(Class<ASString>::getInstanceS(loader->getInstanceWorker(),(char*)buf,downloader->getLength()));
+				std::string tmp((char*)buf,downloader->getLength());
+				data=asAtomHandler::fromString(loader->getSystemState(),tmp);
 				delete[] buf;
 			}
 			else if(dataFormat=="variables")
 			{
-				data=_MR(Class<URLVariables>::getInstanceS(loader->getInstanceWorker(),(char*)buf));
+				data=asAtomHandler::fromObjectNoPrimitive(Class<URLVariables>::getInstanceS(loader->getInstanceWorker(),(char*)buf));
 				delete[] buf;
 			}
 			else
@@ -497,15 +501,33 @@ void URLLoaderThread::execute()
 	}
 }
 
-URLLoader::URLLoader(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),dataFormat("text"),data(),job(nullptr),timestamp_last_progress(0),bytesLoaded(0),bytesTotal(UINT32_MAX)
+URLLoader::URLLoader(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),dataFormat("text"),data(asAtomHandler::invalidAtom),job(nullptr),timestamp_last_progress(0),bytesLoaded(0),bytesTotal(UINT32_MAX)
 {
 	subtype=SUBTYPE_URLLOADER;
 }
 
 void URLLoader::finalize()
 {
+	if(job)
+		job->threadAbort();
+	job=nullptr;
 	EventDispatcher::finalize();
-	data.reset();
+	ASATOM_REMOVESTOREDMEMBER(data);
+	data = asAtomHandler::invalidAtom;
+}
+bool URLLoader::destruct()
+{
+	if(job)
+		job->threadAbort();
+	job=nullptr;
+
+	ASATOM_REMOVESTOREDMEMBER(data);
+	data = asAtomHandler::invalidAtom;
+	dataFormat = "text";
+	timestamp_last_progress = 0;
+	bytesLoaded = 0;
+	bytesTotal = UINT32_MAX;
+	return EventDispatcher::destruct();
 }
 
 void URLLoader::prepareShutdown()
@@ -513,13 +535,23 @@ void URLLoader::prepareShutdown()
 	if (this->preparedforshutdown)
 		return;
 	EventDispatcher::prepareShutdown();
-	if (data)
-		data->prepareShutdown();
+	ASObject* o = asAtomHandler::getObject(data);
+	if (o)
+		o->prepareShutdown();
+}
+bool URLLoader::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	ASObject* o = asAtomHandler::getObject(data);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void URLLoader::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("dataFormat","",c->getSystemState()->getBuiltinFunction(_getDataFormat,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_getData,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_setData),SETTER_METHOD,true);
@@ -547,9 +579,10 @@ void URLLoader::threadFinished(IThreadJob *finishedJob)
 	}
 }
 
-void URLLoader::setData(_NR<ASObject> newData)
+void URLLoader::setData(asAtom newData)
 {
 	Locker l(spinlock);
+	ASATOM_ADDSTOREDMEMBER(newData);
 	data=newData;
 }
 
@@ -614,7 +647,7 @@ ASFUNCTIONBODY_ATOM(URLLoader,load)
 	th->incRef();
 	urlRequest->incRef();
 	URLLoaderThread *job=new URLLoaderThread(_MR(urlRequest), _MR(th));
-	getSys()->addJob(job);
+	th->getSystemState()->addJob(job);
 	th->job=job;
 }
 
@@ -648,14 +681,14 @@ ASFUNCTIONBODY_ATOM(URLLoader,_getData)
 {
 	URLLoader* th=asAtomHandler::as<URLLoader>(obj);
 	Locker l(th->spinlock);
-	if(th->data.isNull())
+	if(asAtomHandler::isInvalid(th->data))
 	{
 		asAtomHandler::setUndefined(ret);
 		return;
 	}
 	
-	th->data->incRef();
-	ret = asAtomHandler::fromObject(th->data.getPtr());
+	ASATOM_INCREF(th->data);
+	ret = th->data;
 }
 
 ASFUNCTIONBODY_ATOM(URLLoader,_setData)
@@ -671,8 +704,7 @@ ASFUNCTIONBODY_ATOM(URLLoader,_setData)
 		createError<ArgumentError>(wrk,0,"Wrong number of arguments in setter");
 		return;
 	}
-	ASATOM_INCREF(args[0]);
-	th->setData(_MR(asAtomHandler::toObject(args[0],wrk)));
+	th->setData(args[0]);
 }
 
 ASFUNCTIONBODY_ATOM(URLLoader,_setDataFormat)

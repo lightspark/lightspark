@@ -46,14 +46,17 @@ public:
 
 class AVM1LoadVars: public URLVariables
 {
-	_NR<URLLoader> loader;
+	URLLoader* loader;
 public:
-	AVM1LoadVars(ASWorker* wrk,Class_base* c):URLVariables(wrk,c){}
+	AVM1LoadVars(ASWorker* wrk,Class_base* c):URLVariables(wrk,c),loader(nullptr){}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(sendAndLoad);
 	ASFUNCTION_ATOM(load);
+	void finalize() override;
 	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 };

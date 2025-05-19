@@ -229,11 +229,11 @@ protected:
 	Downloader* downloader;
 	bool createDownloader(_R<StreamCache> cache,
 			      _NR<EventDispatcher> dispatcher=NullRef,
-			      ILoadable* owner=NULL,
+			      ILoadable* owner=nullptr,
 			      bool checkPolicyFile=true);
 	void jobFence();
 public:
-	DownloaderThreadBase(_NR<URLRequest> request, IDownloaderThreadListener* listener);
+	DownloaderThreadBase(_NR<URLRequest> request, IDownloaderThreadListener* _listener);
 	void execute()=0;
 	void threadAbort();
 };

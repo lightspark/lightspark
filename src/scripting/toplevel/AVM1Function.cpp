@@ -34,7 +34,7 @@ AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, AVM1
 		context.avm1strings.assign(ctx->avm1strings.begin(),ctx->avm1strings.end());
 	clip->incRef();
 	clip->addStoredMember();
-	if (scope)// && scope->isLocalScope())
+	if (scope)
 	 	ASATOM_ADDSTOREDMEMBER(scope->getLocals());
 	context.keepLocals=true;
 	superobj = asAtomHandler::invalidAtom;

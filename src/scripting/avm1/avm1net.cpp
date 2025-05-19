@@ -49,6 +49,7 @@ void AVM1LocalConnection::sinit(Class_base *c)
 void AVM1LoadVars::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, URLVariables, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("sendAndLoad","",c->getSystemState()->getBuiltinFunction(sendAndLoad),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,true);
 }
@@ -67,11 +68,14 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,sendAndLoad)
 	{
 		AVM1LoadVars* t = asAtomHandler::as<AVM1LoadVars>(target);
 		th->copyValues(t,wrk);
-		if (t->loader.isNull())
-			t->loader = _MR(Class<URLLoader>::getInstanceS(wrk));
+		if (!t->loader)
+		{
+			t->loader = Class<URLLoader>::getInstanceSNoArgs(wrk);
+			t->loader->addStoredMember();
+		}
 		URLRequest* req = Class<URLRequest>::getInstanceS(wrk,strurl,method,target);
 		asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
-		asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(t->loader.getPtr());
+		asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(t->loader);
 		URLLoader::load(ret,wrk,loaderobj,&urlarg,1);
 	}
 	else
@@ -83,18 +87,49 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,load)
 	tiny_string strurl;
 	ARG_CHECK(ARG_UNPACK(strurl));
 
-	if (th->loader.isNull())
-		th->loader = _MR(Class<URLLoader>::getInstanceS(wrk));
+	if (!th->loader)
+	{
+		th->loader = Class<URLLoader>::getInstanceS(wrk);
+		th->loader->addStoredMember();
+	}
 	URLRequest* req = Class<URLRequest>::getInstanceS(wrk,strurl,"GET",asAtomHandler::fromObjectNoPrimitive(th));
 	asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
-	asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(th->loader.getPtr());
+	asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(th->loader);
 	URLLoader::load(ret,wrk,loaderobj,&urlarg,1);
+	req->decRef();
+}
+void AVM1LoadVars::finalize()
+{
+	getSystemState()->stage->AVM1RemoveEventListener(this);
+	URLVariables::finalize();
+	if (loader)
+		loader->removeStoredMember();
+	loader=nullptr;
 }
 bool AVM1LoadVars::destruct()
 {
 	getSystemState()->stage->AVM1RemoveEventListener(this);
+	if (loader)
+		loader->removeStoredMember();
+	loader=nullptr;
 	return URLVariables::destruct();
 }
+void AVM1LoadVars::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	URLVariables::prepareShutdown();
+	if (loader)
+		loader->prepareShutdown();
+}
+bool AVM1LoadVars::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = URLVariables::countCylicMemberReferences(gcstate);
+	if (loader)
+		ret = loader->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+}
+
 multiname* AVM1LoadVars::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset,ASWorker* wrk)
 {
 	multiname* res = URLVariables::setVariableByMultiname(name,o,allowConst,alreadyset,wrk);
@@ -108,7 +143,7 @@ multiname* AVM1LoadVars::setVariableByMultiname(multiname& name, asAtom& o, CONS
 
 void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
-	if (dispatcher == loader.getPtr())
+	if (dispatcher == loader)
 	{
 		if (e->type == "complete" || e->type == "ioError")
 		{
@@ -123,8 +158,8 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				asAtom ret=asAtomHandler::invalidAtom;
 				asAtom obj = asAtomHandler::fromObject(this);
 				asAtom args[1];
-				if (loader->getData())
-					args[0] = asAtomHandler::fromObject(loader->getData());
+				if (asAtomHandler::isValid(loader->getData()))
+					args[0] = loader->getData();
 				else
 					args[0] = asAtomHandler::nullAtom;
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
@@ -136,10 +171,10 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 				if (asAtomHandler::is<AVM1Function>(func))
 				{
-					if (loader->getDataFormat()=="text" && loader->getData())
+					if (loader->getDataFormat()=="text" && asAtomHandler::isValid(loader->getData()))
 					{
 						// TODO how are '&' or '=' handled when inside keys/values?
-						tiny_string s = loader->getData()->toString();
+						tiny_string s = asAtomHandler::toString(loader->getData(),getInstanceWorker());
 						std::list<tiny_string> spl = s.split((uint32_t)'&');
 						for (auto it = spl.begin(); it != spl.end(); it++)
 						{

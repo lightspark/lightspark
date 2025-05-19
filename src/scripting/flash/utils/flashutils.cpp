@@ -294,7 +294,6 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 {
 	if (argslen < 2)
 		return;
-
 	uint32_t paramstart = 2;
 	asAtom func = args[0];
 	uint32_t delayarg = 1;
@@ -311,13 +310,13 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 		m.isAttribute = false;
 		m.name_s_id= asAtomHandler::toStringId(args[1],wrk);
 		func = asAtomHandler::invalidAtom;
-		oref->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+		oref->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NO_INCREF,wrk);
 		if (asAtomHandler::isInvalid(func))
 		{
 			ASObject* pr = oref->getprop_prototype();
 			while (pr)
 			{
-				pr->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+				pr->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NO_INCREF,wrk);
 				if (asAtomHandler::isValid(func))
 					break;
 				pr = pr->getprop_prototype();
@@ -347,15 +346,8 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 	asAtom* callbackArgs = g_newa(asAtom,argslen-paramstart);
 	uint32_t i;
 	for(i=0; i<argslen-paramstart; i++)
-	{
 		callbackArgs[i] = args[i+paramstart];
-		//incRef all passed arguments
-		ASATOM_INCREF(args[i+paramstart]);
-	}
 
-
-	//incRef the function
-	ASATOM_INCREF(func);
 	//Add interval through manager
 	uint32_t id = wrk->getSystemState()->intervalManager->setInterval(func, callbackArgs, argslen-paramstart,
 			o, asAtomHandler::toInt(args[delayarg]));
@@ -371,18 +363,12 @@ ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 	asAtom* callbackArgs = g_newa(asAtom,argslen-2);
 	uint32_t i;
 	for(i=0; i<argslen-2; i++)
-	{
 		callbackArgs[i] = args[i+2];
-		//incRef all passed arguments
-		ASATOM_INCREF(args[i+2]);
-	}
 
 	asAtom o = asAtomHandler::nullAtom;
 	if (asAtomHandler::isValid(asAtomHandler::as<IFunction>(args[0])->closure_this))
 		o = asAtomHandler::as<IFunction>(args[0])->closure_this;
 
-	//incRef the function
-	ASATOM_INCREF(args[0]);
 	//Add timeout through manager
 	uint32_t id = wrk->getSystemState()->intervalManager->setTimeout(args[0], callbackArgs, argslen-2,
 			o, asAtomHandler::toInt(args[1]));

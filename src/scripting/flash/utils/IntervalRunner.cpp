@@ -31,49 +31,65 @@
 using namespace std;
 using namespace lightspark;
 
-
 IntervalRunner::IntervalRunner(IntervalRunner::INTERVALTYPE _type, uint32_t _id, asAtom _callback, asAtom* _args,
 		const unsigned int _argslen, asAtom _obj):
-	EventDispatcher(nullptr,nullptr),type(_type), id(_id), callback(_callback),obj(_obj),argslen(_argslen)
+	EventDispatcher(nullptr,nullptr),type(_type), id(_id), callback(_callback),obj(_obj),argslen(_argslen),running(false),finished(false)
 {
+	ASATOM_ADDSTOREDMEMBER(callback);
+	ASATOM_ADDSTOREDMEMBER(obj);
 	args = new asAtom[argslen];
 	for(uint32_t i=0; i<argslen; i++)
+	{
 		args[i] = _args[i];
+		ASATOM_ADDSTOREDMEMBER(args[i]);
+	}
 }
 
 IntervalRunner::~IntervalRunner()
 {
-	ASATOM_DECREF(callback);
+	ASATOM_REMOVESTOREDMEMBER(callback);
+	ASATOM_REMOVESTOREDMEMBER(obj);
 	for(uint32_t i=0; i<argslen; i++)
-		ASATOM_DECREF(args[i]);
+		ASATOM_REMOVESTOREDMEMBER(args[i]);
 	delete[] args;
 }
 
 void IntervalRunner::tick()
 {
-	if (getSys()->isShuttingDown())
+	SystemState* sys = asAtomHandler::getObjectNoCheck(callback)->getSystemState();
+	if (sys->isShuttingDown())
 		return;
-	//incRef all arguments
-	uint32_t i;
-	for(i=0; i < argslen; i++)
-	{
-		ASATOM_INCREF(args[i]);
-	}
-	ASATOM_INCREF(obj);
-	_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(callback, obj, args, argslen));
-	getVm(getSys())->addEvent(NullRef,event);
+	RELEASE_WRITE(running,true);
+
+	_R<FunctionEvent> event(new (sys->unaccountedMemory) FunctionEvent(callback, obj, args, argslen));
+	getVm(sys)->addEvent(NullRef,event);
 	event->wait();
+	RELEASE_WRITE(running,false);
 	if(type == TIMEOUT)
 	{
-		//TODO: IntervalRunner deletes itself. Is this allowed?
-		//Delete ourselves from the active intervals list
-		getSys()->intervalManager->clearInterval(id, TIMEOUT, false);
-		//No actions may be performed after this point
+		//remove ourselves from the active intervals list
+		sys->intervalManager->clearInterval(id, TIMEOUT, true);
+	}
+	if (ACQUIRE_READ(finished))
+	{
+		// clearInterval was called from inside the callback, so we delete ourselves after the callback is completed
+		sys->removeJob(this);
 	}
 }
 
 void IntervalRunner::tickFence()
 {
 	delete this;
+}
+
+void IntervalRunner::removeJob()
+{
+	if (ACQUIRE_READ(running))
+	{
+		// clearInterval was called from inside the callback, so we don't delete ourselves (yet)
+		RELEASE_WRITE(finished,true);
+	}
+	else
+		asAtomHandler::getObjectNoCheck(callback)->getSystemState()->removeJob(this);
 }
 

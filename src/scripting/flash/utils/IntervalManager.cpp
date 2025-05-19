@@ -104,9 +104,7 @@ void IntervalManager::clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE ty
 	if(it != runners.end() && (*it).second->getType() == type)
 	{
 		if(removeJob)
-		{
-			getSys()->removeJob((*it).second);
-		}
+			(*it).second->removeJob();
 		runners.erase(it);
 	}
 }

@@ -397,6 +397,7 @@ void LSTimers::removeJobNoLock(ITickJob* job)
 
 	if (first)
 		sys->getEngineData()->notifyTimer();
+	job->tickFence();
 }
 
 Chronometer::Chronometer()

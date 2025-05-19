@@ -43,11 +43,14 @@ private:
 	asAtom* args;
 	asAtom obj=asAtomHandler::invalidAtom;
 	const unsigned int argslen;
+	ACQUIRE_RELEASE_FLAG(running);
+	ACQUIRE_RELEASE_FLAG(finished);
 public:
 	IntervalRunner(INTERVALTYPE _type, uint32_t _id, asAtom _callback, asAtom* _args,
 			const unsigned int _argslen, asAtom _obj);
 	void tick();
 	void tickFence();
+	void removeJob();
 	INTERVALTYPE getType() { return type; }
 };
 

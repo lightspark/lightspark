@@ -104,10 +104,16 @@ class AVM1context
 friend class AVM1Function;
 private:
 	std::vector<uint32_t> avm1strings;
+	AVM1Scope* scope;
+	AVM1Scope* globalScope;
 public:
 	AVM1context();
 	AVM1context(DisplayObject* target, SystemState* sys);
 	~AVM1context();
+	AVM1Scope* getScope() const { return scope; }
+	AVM1Scope* getGlobalScope() const { return globalScope; }
+	void setScope(AVM1Scope* sc);
+	void setGlobalScope(AVM1Scope* sc);
 
 	void AVM1ClearConstants()
 	{
@@ -231,8 +237,6 @@ public:
 	uint8_t swfversion;
 	ASObject* exceptionthrown;
 	AVM1Function* callee;
-	_NR<AVM1Scope> scope;
-	_NR<AVM1Scope> globalScope;
 };
 
 

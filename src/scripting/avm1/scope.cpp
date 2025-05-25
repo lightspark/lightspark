@@ -34,7 +34,7 @@ using namespace lightspark;
 AVM1Scope::AVM1Scope(Global* globals) : AVM1Scope
 (
 	// `parent`
-	NullRef,
+	nullptr,
 	// `_class`
 	AVM1ScopeClass::Global,
 	// `values`
@@ -45,7 +45,7 @@ AVM1Scope::AVM1Scope(Global* globals) : AVM1Scope
 
 AVM1Scope::AVM1Scope
 (
-	const _R<AVM1Scope>& parent,
+	AVM1Scope* parent,
 	DisplayObject* clip
 ) : AVM1Scope(parent, AVM1ScopeClass::Target, asAtomHandler::fromObjectNoPrimitive(clip))
 {
@@ -53,22 +53,25 @@ AVM1Scope::AVM1Scope
 
 AVM1Scope::AVM1Scope
 (
-	const _R<AVM1Scope>& parent,
+	AVM1Scope* parent,
 	ASWorker* wrk
-) : AVM1Scope(parent, AVM1ScopeClass::Local, asAtomHandler::fromObjectNoPrimitive(new_asobject(wrk)),true)
+) : AVM1Scope(parent, AVM1ScopeClass::Local, asAtomHandler::fromObjectNoPrimitive(new_asobject(wrk)))
 {
 }
 
-void AVM1Scope::setLocals(asAtom newLocals)
+AVM1Scope::~AVM1Scope()
 {
-	values = newLocals;
+	if (parent)
+		parent->decRef();
+	if (_class==AVM1ScopeClass::Local)
+		ASATOM_DECREF(values);
 }
 
 void AVM1Scope::setTargetScope(DisplayObject* clip)
 {
 	if (isTargetScope())
-		setLocals(asAtomHandler::fromObjectNoPrimitive(clip));
-	else if (!parent.isNull())
+		values = asAtomHandler::fromObjectNoPrimitive(clip);
+	else if (parent)
 		parent->setTargetScope(clip);
 }
 
@@ -88,7 +91,7 @@ asAtom AVM1Scope::resolveRecursiveByMultiname
 		return ret;
 	}
 
-	if (parent.isNull())
+	if (!parent)
 		return ret;
 
 	ret = parent->getVariableByMultiname(baseClip, name, options, wrk);
@@ -129,7 +132,7 @@ bool AVM1Scope::setVariableByMultiname
 		// Or, we've hit the currently running clip, so create it here.
 		return asAtomHandler::AVM1setVariableByMultiname(values,name, value, allowConst, wrk);
 	}
-	else if (!parent.isNull())
+	else if (parent)
 	{
 		// Couldn't find the variable, traverse the scope chain.
 		return parent->setVariableByMultiname(name, value, allowConst, wrk);
@@ -146,7 +149,7 @@ bool AVM1Scope::defineLocalByMultiname
 )
 {
 	ASObject* v = asAtomHandler::getObject(values);
-	if (!isWithScope() || !parent.isNull())
+	if (!isWithScope() || parent)
 		return v && v->AVM1setVariableByMultiname(name, value, allowConst, wrk);
 	// When defining a local in a `with` scope, we also need to check if
 	// that local exists on the `with` target. If it does, the variable
@@ -207,22 +210,12 @@ bool AVM1Scope::forceDefineLocal
 	return forceDefineLocalByMultiname(m, value, allowConst, wrk);
 }
 
-void AVM1Scope::clearScope()
-{
-	assert(storedmembercount);
-	--this->storedmembercount;
-	// resetting the local value is needed to avoid dangling references
-	ASObject* v = getLocalsPtr();
-	if (v)
-		v->removeStoredMember();
-}
-
 bool AVM1Scope::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
 	ASObject* v = asAtomHandler::getObject(values);
 	if (v && v->hasPropertyByMultiname(name, true, true, wrk))
 		return v->deleteVariableByMultiname(name, wrk);
-	else if (!parent.isNull())
+	else if (parent)
 		return parent->deleteVariableByMultiname(name, wrk);
 	return false;
 }
@@ -243,6 +236,4 @@ void AVM1Scope::prepareShutdown()
 	ASObject* v = asAtomHandler::getObject(values);
 	if (v)
 		v->prepareShutdown();
-	if (!parent.isNull())
-		parent->prepareShutdown();
 }

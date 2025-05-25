@@ -1380,6 +1380,7 @@ ArrayPrototype::ArrayPrototype(ASWorker* wrk, Class_base* c) : Array(wrk,c)
 	originalPrototypeVars = new_asobject(wrk);
 	originalPrototypeVars->objfreelist=nullptr;
 	originalPrototypeVars->setRefConstant();
+	prevPrototype = getClass()->super->prototype;
 }
 
 void ArrayPrototype::prepareShutdown()

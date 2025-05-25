@@ -55,25 +55,78 @@ asAtom ACTIONRECORD::PeekStack(std::stack<asAtom>& stack)
 		throw RunTimeException("AVM1: empty stack");
 	return stack.top();
 }
-AVM1context::AVM1context():keepLocals(true), callDepth(0), actionsExecuted(0),swfversion(0),
-	exceptionthrown(nullptr), callee(nullptr),scope(NullRef),globalScope(NullRef)
+AVM1context::AVM1context():
+	scope(nullptr),
+	globalScope(nullptr),
+	keepLocals(true),
+	callDepth(0),
+	actionsExecuted(0),
+	swfversion(0),
+	exceptionthrown(nullptr),
+	callee(nullptr)
 {
 }
 
 AVM1context::AVM1context(DisplayObject* target, SystemState* sys) :
-keepLocals(true),
-callDepth(0),
-actionsExecuted(0),
-swfversion(target->loadedFrom->version),
-exceptionthrown(nullptr),
-callee(nullptr),
-globalScope(_MNR(new AVM1Scope(sys->avm1global)))
+	globalScope(new AVM1Scope(sys->avm1global)),
+	keepLocals(true),
+	callDepth(0),
+	actionsExecuted(0),
+	swfversion(target->loadedFrom->version),
+	exceptionthrown(nullptr),
+	callee(nullptr)
 {
-	scope = _MNR(new AVM1Scope(globalScope, target));
+	globalScope->addStoredMember();
+	globalScope->incRef();
+	ASATOM_ADDSTOREDMEMBER(globalScope->getLocals());
+	scope = new AVM1Scope(globalScope, target);
+	scope->addStoredMember();
+	ASATOM_ADDSTOREDMEMBER(scope->getLocals());
 }
 
 AVM1context::~AVM1context()
 {
+	if (scope)
+	{
+		scope->removeStoredMember();
+		scope->decRef();
+	}
+	if (globalScope)
+	{
+		globalScope->removeStoredMember();
+		globalScope->decRef();
+	}
+}
+
+void AVM1context::setScope(AVM1Scope* sc)
+{
+	if (scope)
+	{
+		ASATOM_REMOVESTOREDMEMBER(scope->getLocals());
+		scope->removeStoredMember();
+		scope->decRef();
+	}
+	scope = sc;
+	if (scope)
+	{
+		scope->addStoredMember();
+		ASATOM_ADDSTOREDMEMBER(scope->getLocals());
+	}
+}
+void AVM1context::setGlobalScope(AVM1Scope* sc)
+{
+	if (globalScope)
+	{
+		ASATOM_REMOVESTOREDMEMBER(globalScope->getLocals());
+		globalScope->removeStoredMember();
+		globalScope->decRef();
+	}
+	globalScope = sc;
+	if (globalScope)
+	{
+		globalScope->addStoredMember();
+		ASATOM_ADDSTOREDMEMBER(globalScope->getLocals());
+	}
 }
 
 // Based on Ruffle's `avm1::activation::Activation::resolve_target_path()`.
@@ -631,30 +684,31 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	context->swfversion=clip->loadedFrom->version;
 	context->callee = callee;
 
-	if (context->globalScope.isNull())
+	if (!context->getGlobalScope())
 	{
 		auto global = clip->getSystemState()->avm1global;
-		context->globalScope = _MNR(new AVM1Scope(global));
+		context->setGlobalScope(new AVM1Scope(global));
 	}
 
 	bool isClosure = context->swfversion >= 6;
 
 	// NOTE: In SWF 5, function calls aren't closures, and always create
 	// a new target scope, regardless of the function's origin.
-	_NR<AVM1Scope> parentScope;
+	AVM1Scope* parentScope=nullptr;
 	if (isClosure && scope)
 	{
 		scope->incRef();
-		parentScope = _MNR(scope);
+		parentScope = scope;
 	}
 	else
 	{
-		parentScope = _MNR(new AVM1Scope
+		context->getGlobalScope()->incRef();
+		parentScope = new AVM1Scope
 		(
-			context->globalScope,
+			context->getGlobalScope(),
 			clip
-		));
-		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" setup new parent scope "<<asAtomHandler::toDebugString(parentScope->getLocals())<<" "<<parentScope.getPtr());
+		);
+		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" setup new parent scope "<<asAtomHandler::toDebugString(parentScope->getLocals())<<" "<<parentScope);
 	}
 
 	// Local scopes are only created for function calls.
@@ -662,10 +716,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	{
 		auto sc = new AVM1Scope(parentScope, wrk);
 		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" setup new local scope "<<asAtomHandler::toDebugString(sc->getLocals()));
-		context->scope = _MNR(sc);
+		context->setScope(sc);
+		sc->getLocalsPtr()->decRef(); // remove ref received through new_asobject() in AVM1Scope constructor
 	}
 	else
-		context->scope = parentScope;
+		context->setScope(parentScope);
 
 	wrk->AVM1callStack.push_back(context);
 	context->callDepth++;
@@ -725,7 +780,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			registers[currRegister++] = argsAtom;
 		else
 		{
-			if (context->scope->forceDefineLocal
+			if (context->getScope()->forceDefineLocal
 			(
 				BUILTIN_STRINGS::STRING_ARGUMENTS,
 				argsAtom,
@@ -756,7 +811,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		else
 		{
 			ASATOM_INCREF(super);
-			if (context->scope->forceDefineLocal
+			if (context->getScope()->forceDefineLocal
 			(
 				BUILTIN_STRINGS::STRING_SUPER,
 				super,
@@ -802,7 +857,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		else
 		{
 			ASATOM_INCREF(args[i]);
-			if (context->scope->forceDefineLocal
+			if (context->getScope()->forceDefineLocal
 			(
 				paramnames[i],
 				args[i],
@@ -857,7 +912,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					multiname m(nullptr);
 					m.name_type = multiname::NAME_STRING;
 					m.name_s_id = nameID;
-					context->scope->setVariableByMultiname
+					context->getScope()->setVariableByMultiname
 					(
 						m,
 						e,
@@ -894,8 +949,11 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		}
 		while (curdepth > 0 && it == scopestackstop[curdepth])
 		{
-			LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" end with "<<asAtomHandler::toDebugString(context->scope->getLocals()));
-			context->scope = context->scope->getParentScope();
+			LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" end with "<<asAtomHandler::toDebugString(context->getScope()->getLocals()));
+			AVM1Scope* sc = context->getScope()->getParentScope();
+			if (sc)
+				sc->incRef();
+			context->setScope(sc);
 			curdepth--;
 			Log::calls_indent--;
 		}
@@ -907,7 +965,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			// we are in a target that was not found during ActionSetTarget(2), so these actions are ignored
 			continue;
 		}
-		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<< " "<<int(it-actionlist.begin())<< " action code:"<<hex<<(int)*it<<dec<<" "<<clip->toDebugString());
+		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<< " "<<int(it-actionlist.begin())<<" stack:"<<stack.size()<<" action code:"<<hex<<(int)*it<<dec<<" "<<clip->toDebugString());
 		uint8_t opcode = *it++;
 		if (opcode > 0x80)
 			it+=2; // skip length
@@ -1212,7 +1270,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						clip_isTarget=true;
 					}
 				}
-				context->scope->setTargetScope(clip);
+				context->getScope()->setTargetScope(clip);
 				break;
 			}
 			case 0x21: // ActionStringAdd
@@ -1547,7 +1605,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				);
 				m.ns.emplace_back(clip->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 
-				bool ret = context->scope->deleteVariableByMultiname(m, wrk);
+				bool ret = context->getScope()->deleteVariableByMultiname(m, wrk);
 
 				ASATOM_DECREF(name);
 				PushStack(stack,asAtomHandler::fromBool(ret)); // spec doesn't mention this, but it seems that a bool indicating wether a property was deleted is pushed on the stack
@@ -1571,7 +1629,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					context->isCaseSensitive()
 				);
 
-				if (context->scope->defineLocalByMultiname
+				if (context->getScope()->defineLocalByMultiname
 				(
 					m,
 					value,
@@ -1596,7 +1654,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (a)
 						a->addStoredMember();
 				}
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(thisObj));
 
 				asAtom ret = asAtomHandler::undefinedAtom;
 				auto s = asAtomHandler::AVM1toString(name, wrk);
@@ -1675,7 +1733,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					m.name_s_id=nameID;
 					m.isAttribute = false;
 
-					auto cls = context->scope->getVariableByMultiname
+					auto cls = context->getScope()->getVariableByMultiname
 					(
 						originalclip,
 						m,
@@ -1730,10 +1788,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				m.name_type = multiname::NAME_STRING;
 				m.name_s_id = nameID;
 
-				if (asAtomHandler::hasPropertyByMultiname(context->scope->getLocals(),m, true, false, wrk))
+				if (asAtomHandler::hasPropertyByMultiname(context->getScope()->getLocals(),m, true, false, wrk))
 				{
 					auto atom = asAtomHandler::undefinedAtom;
-					context->scope->defineLocalByMultiname(m, atom, CONST_ALLOWED, wrk);
+					context->getScope()->defineLocalByMultiname(m, atom, CONST_ALLOWED, wrk);
 				}
 				ASATOM_DECREF(name);
 				break;
@@ -2578,7 +2636,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					}
 					clip = newTarget != nullptr ? newTarget : clip->AVM1getRoot();
 				}
-				context->scope->setTargetScope(clip);
+				context->getScope()->setTargetScope(clip);
 				break;
 			}
 			case 0x8c: // ActionGotoLabel
@@ -2633,9 +2691,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				code.assign(it,it+codesize);
 				it += codesize;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction2 "<<name<<" "<<paramcount<<" "<<flag1<<flag2<<flag3<<flag4<<flag5<<flag6<<flag7<<flag8<<flag9<<" "<<codesize);
-				if (!flag7 && context->scope)
-					context->scope->addStoredMember();
-				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,context,funcparamnames,code,flag7 ? NullRef : context->scope,registernumber,flag1, flag2, flag3, flag4, flag5, flag6, flag7, flag8, flag9);
+				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,context,funcparamnames,code,flag7 ? nullptr : context->getScope(),registernumber,flag1, flag2, flag3, flag4, flag5, flag6, flag7, flag8, flag9);
 				//Create the prototype object
 				ASObject* pr =new_asobject(f->getSystemState()->worker);
 				pr->addStoredMember();
@@ -2680,9 +2736,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionWith "<<codesize<<" "<<asAtomHandler::toDebugString(obj));
 				++curdepth;
 				scopestackstop[curdepth] = itend;
-				context->scope = _MNR(new AVM1Scope
+				context->getScope()->incRef();
+				ASATOM_ADDSTOREDMEMBER(context->getScope()->getLocals());
+
+				context->setScope(new AVM1Scope
 								(
-									context->scope,
+									context->getScope(),
 									obj
 								));
 				break;
@@ -2862,9 +2921,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				code.assign(it,it+codesize);
 				it += codesize;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction "<<name<<" "<<paramcount);
-				if (context->scope)
-					context->scope->addStoredMember();
-				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,context,paramnames,code,context->scope);
+				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,context,paramnames,code,context->getScope());
 				//Create the prototype object
 				ASObject* pr = new_asobject(f->getSystemState()->worker);
 				f->prototype = asAtomHandler::fromObject(pr);
@@ -3097,19 +3154,15 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		}
 		++context->actionsExecuted;
 	}
-
-	if (context->scope)
-		context->scope->clearScope();
 	if (scope && isClosure)
 	{
 		scope->incRef();
-		scope->addStoredMember();
-		context->scope = _MR(scope);
+		context->setScope(scope);
 	}
 	else
 	{
-		context->scope.reset();
-		context->globalScope.reset();
+		context->setScope(nullptr);
+		context->setGlobalScope(nullptr);
 	}
 
 	for (uint32_t i = 0; i < 256; i++)
@@ -3137,9 +3190,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		{
 			LOG(LOG_ERROR,"AVM1: unhandled exception:"<<context->exceptionthrown->toDebugString());
 			context->exceptionthrown->decRef();
+			context->exceptionthrown=nullptr;
 		}
-		else
+		else if (wrk->AVM1callStack.back() != context)
+		{
 			wrk->AVM1callStack.back()->exceptionthrown=context->exceptionthrown;
-		context->exceptionthrown=nullptr;
+			context->exceptionthrown=nullptr;
+		}
 	}
 }

@@ -67,40 +67,33 @@ enum class AVM1ScopeClass
 class AVM1Scope : public RefCountable
 {
 private:
-	_NR<AVM1Scope> parent;
+	AVM1Scope* parent;
 	AVM1ScopeClass _class;
 	asAtom values;
 	uint32_t storedmembercount;
-
-	// Replaces the current local scope object with another object.
-	void setLocals(asAtom newLocals);
 public:
 	// Contructs/Creates an arbitrary scope.
 	AVM1Scope
 	(
-		_NR<AVM1Scope> _parent,
+		AVM1Scope* _parent,
 		const AVM1ScopeClass& type,
-		asAtom _values,
-		bool valuesrefcounted=false
-	) : parent(_parent), _class(type), values(_values),storedmembercount(1)
+		asAtom _values
+	):
+		parent(_parent),
+		_class(type),
+		values(_values),
+		storedmembercount(0)
 	{
-		ASObject* o = asAtomHandler::getObject(values);
-		if (o)
-		{
-			if(!valuesrefcounted)
-				o->incRef();
-			o->addStoredMember();
-		}
 	}
 
 	// Constructs a global scope (A parentless scope).
 	AVM1Scope(Global* globals);
 
 	// Constructs a target/timeline scope.
-	AVM1Scope(const _R<AVM1Scope>& _parent, DisplayObject* clip);
+	AVM1Scope(AVM1Scope* _parent, DisplayObject* clip);
 
 	// Constructs a child/local scope of another scope.
-	AVM1Scope(const _R<AVM1Scope>& _parent, ASWorker* wrk);
+	AVM1Scope(AVM1Scope* _parent, ASWorker* wrk);
 
 	// Constructs a `with` scope, used as the scope in a `with` block.
 	//
@@ -108,7 +101,7 @@ public:
 	// unqualified references will attempt to resolve that object first.
 	AVM1Scope
 	(
-		const _R<AVM1Scope>& parent,
+		AVM1Scope* parent,
 		asAtom withObj
 	) : AVM1Scope(parent, AVM1ScopeClass::With, withObj) {}
 
@@ -116,56 +109,26 @@ public:
 	(
 		other.parent,
 		other._class,
-		asAtomHandler::invalidAtom
+		other.values
 	)
 	{
-		setLocals(other.values);
 	}
 
 	AVM1Scope& operator=(const AVM1Scope& other)
 	{
 		parent = other.parent;
 		_class = other._class;
-		setLocals(other.values);
+		values = other.values;
 		return *this;
 	}
 
-	~AVM1Scope()
-	{
-	}
-
-	// Creates a global scope (A parentless scope).
-	static AVM1Scope makeGlobalScope(Global* globals)
-	{
-		return AVM1Scope(globals);
-	}
-
-	// Creates a child/local scope of another scope.
-	static AVM1Scope makeLocalScope(const _R<AVM1Scope>& parent, ASWorker* wrk)
-	{
-		return AVM1Scope(parent, wrk);
-	}
-
-	// Creates a target/timeline scope.
-	static AVM1Scope makeTargetScope(const _R<AVM1Scope>& parent, DisplayObject* clip)
-	{
-		return AVM1Scope(parent, clip);
-	}
-
-	// Creates a `with` scope, used as the scope in a `with` block.
-	//
-	// `with` blocks add an object to the top of the scope chain, so that
-	// unqualified references will attempt to resolve that object first.
-	static AVM1Scope makeWithScope(const _R<AVM1Scope>& parent, asAtom withObj)
-	{
-		return AVM1Scope(parent, withObj);
-	}
+	~AVM1Scope();
 
 	// Replaces the target/timeline scope with another object.
 	void setTargetScope(DisplayObject* clip);
 
 	// Returns the parent scope.
-	_NR<AVM1Scope> getParentScope() const { return parent; }
+	AVM1Scope* getParentScope() const { return parent; }
 
 	// Returns the current local scope object.
 	asAtom getLocals() const { return values; }
@@ -183,14 +146,14 @@ public:
 	template<typename F>
 	void forEachScope(F&& callback) const
 	{
-		if (callback(*this) && !parent.isNull())
+		if (callback(*this) && parent)
 			parent->forEachScope(callback);
 	}
 
 	template<typename F>
 	void forEachScope(F&& callback)
 	{
-		if (callback(*this) && !parent.isNull())
+		if (callback(*this) && parent)
 			parent->forEachScope(callback);
 	}
 
@@ -280,6 +243,7 @@ public:
 	);
 	void addStoredMember()
 	{
+		assert((int)storedmembercount<this->getRefCount());
 		++storedmembercount;
 	}
 	void removeStoredMember()
@@ -287,7 +251,6 @@ public:
 		assert(storedmembercount);
 		--storedmembercount;
 	}
-	void clearScope();
 
 	// Deletes a variable from the scope.
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk);

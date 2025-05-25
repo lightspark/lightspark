@@ -41,7 +41,7 @@ protected:
 	std::vector<uint32_t> paramnames;
 	std::vector<uint8_t> paramregisternumbers;
 	std::vector<asAtom> implementedinterfaces;
-	_NR<AVM1Scope> scope;
+	AVM1Scope* scope;
 	bool preloadParent;
 	bool preloadRoot;
 	bool suppressSuper;
@@ -51,7 +51,7 @@ protected:
 	bool suppressThis;
 	bool preloadThis;
 	bool preloadGlobal;
-	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a,const _NR<AVM1Scope>& _scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false);
+	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a, AVM1Scope* _scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false);
 	~AVM1Function();
 	method_info* getMethodInfo() const override { return nullptr; }
 	IFunction* clone(ASWorker* wrk) override
@@ -72,10 +72,10 @@ public:
 		if (needsSuper() || getSWFVersion() < 7)
 		{
 			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,&newsuper,isInternalCall);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,&newsuper,isInternalCall);
 		}
 		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,nullptr,isInternalCall);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,nullptr,isInternalCall);
 		if (isInternalCall)
 			checkInternalException();
  	}
@@ -85,10 +85,10 @@ public:
 		if (needsSuper() || getSWFVersion() < 7)
 		{
 			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,&newsuper,true);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,&newsuper,true);
 		}
 		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope.getPtr(),false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,nullptr,true);
+			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,nullptr,true);
 		checkInternalException();
 		return nullptr;
 	}

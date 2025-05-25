@@ -267,10 +267,8 @@ bool MovieClip::destruct()
 		avm1loader->removeStoredMember();
 	avm1loader = nullptr;
 	auto avm1ctxt = getAVM1Context();
-	if (avm1ctxt->scope)
-		avm1ctxt->scope.reset();
-	if (avm1ctxt->globalScope)
-		avm1ctxt->globalScope.reset();
+	avm1ctxt->setScope(nullptr);
+	avm1ctxt->setGlobalScope(nullptr);
 	return Sprite::destruct();
 }
 
@@ -290,10 +288,8 @@ void MovieClip::finalize()
 		avm1loader->removeStoredMember();
 	avm1loader = nullptr;
 	auto avm1ctxt = getAVM1Context();
-	if (avm1ctxt->scope)
-		avm1ctxt->scope.reset();
-	if (avm1ctxt->globalScope)
-		avm1ctxt->globalScope.reset();
+	avm1ctxt->setScope(nullptr);
+	avm1ctxt->setGlobalScope(nullptr);
 	Sprite::finalize();
 }
 
@@ -310,6 +306,9 @@ void MovieClip::prepareShutdown()
 			o->prepareShutdown();
 		it++;
 	}
+	auto avm1ctxt = getAVM1Context();
+	avm1ctxt->setScope(nullptr);
+	avm1ctxt->setGlobalScope(nullptr);
 	if (avm1loader)
 		avm1loader->prepareShutdown();
 }
@@ -328,10 +327,10 @@ bool MovieClip::countCylicMemberReferences(garbagecollectorstate &gcstate)
 	if (avm1loader)
 		ret = avm1loader->countAllCylicMemberReferences(gcstate) || ret;
 	auto avm1ctxt = getAVM1Context();
-	if (avm1ctxt->scope)
-		ret |= avm1ctxt->scope->countAllCyclicMemberReferences(gcstate);
-	if (avm1ctxt->globalScope)
-		ret |= avm1ctxt->globalScope->countAllCyclicMemberReferences(gcstate);
+	if (avm1ctxt->getScope())
+		ret |= avm1ctxt->getScope()->countAllCyclicMemberReferences(gcstate);
+	if (avm1ctxt->getGlobalScope())
+		ret |= avm1ctxt->getGlobalScope()->countAllCyclicMemberReferences(gcstate);
 
 	return ret;
 }
@@ -1065,9 +1064,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	auto it = wrk->AVM1callStack.rbegin();
 	while (it != wrk->AVM1callStack.rend())
 	{
-		if ((*it)->scope->getLocalsPtr()->is<DisplayObject>())
+		if ((*it)->getScope()->getLocalsPtr()->is<DisplayObject>())
 		{
-			appDomain = (*it)->scope->getLocalsPtr()->as<DisplayObject>()->loadedFrom;
+			appDomain = (*it)->getScope()->getLocalsPtr()->as<DisplayObject>()->loadedFrom;
 			break;
 		}
 		++it;

@@ -142,7 +142,7 @@ protected:
 	ASPROPERTY_GETTER_SETTER(bool, enabled);
 public:
 	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
-	void constructionComplete(bool _explicit = false) override;
+	void constructionComplete(bool _explicit = false, bool forInitAction = false) override;
 	void beforeConstruction(bool _explicit = false) override;
 	void afterConstruction(bool _explicit = false) override;
 	RunState state;
@@ -173,6 +173,8 @@ public:
 	ASFUNCTION_ATOM(gotoAndPlay);
 	ASFUNCTION_ATOM(prevFrame);
 	ASFUNCTION_ATOM(nextFrame);
+	ASFUNCTION_ATOM(prevScene);
+	ASFUNCTION_ATOM(nextScene);
 	ASFUNCTION_ATOM(_getCurrentFrame);
 	ASFUNCTION_ATOM(_getCurrentFrameLabel);
 	ASFUNCTION_ATOM(_getCurrentLabel);
@@ -208,7 +210,7 @@ public:
 	void AVM1ExecuteFrameActionsFromLabel(const tiny_string &label);
 	void AVM1ExecuteFrameActions(uint32_t frame);
 	void AVM1AddScriptEvents();
-	void AVM1HandleConstruction();
+	void AVM1HandleConstruction(bool forInitAction);
 	bool getAVM1Loaded() const { return isAVM1Loaded; }
 	MovieClip* AVM1CloneSprite(asAtom target, uint32_t Depth, ASObject* initobj);
 

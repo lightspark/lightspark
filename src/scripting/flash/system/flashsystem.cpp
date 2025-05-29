@@ -907,7 +907,6 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,getQualifiedDefinitionNames)
 	for(uint32_t j=0;j<th->globalScopes.size();j++)
 	{
 		auto vars = th->globalScopes[j]->getVariables();
-		th->globalScopes[j]->dumpVariables();
 		for (auto it = vars->Variables.cbegin(); it != vars->Variables.cend(); ++it)
 		{
 			if ((*it).second.ns.kind == PRIVATE_NAMESPACE || (*it).second.ns.nsNameId == BUILTIN_STRINGS::STRING_AS3VECTOR)

@@ -1978,6 +1978,10 @@ LocalConnectionEvent::LocalConnectionEvent(uint32_t _nameID, uint32_t _methodID,
 	}
 }
 
+BroadcastEvent::BroadcastEvent(const tiny_string& _eventname): Event(nullptr,nullptr,"BroadcastEvent"),eventname(_eventname)
+{
+}
+
 LocalConnectionEvent::~LocalConnectionEvent()
 {
 	for (uint32_t i = 0; i < numargs; i++)

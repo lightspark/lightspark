@@ -129,21 +129,7 @@ void SystemState::unregisterFrameListener(DisplayObject* obj)
 
 void SystemState::addBroadcastEvent(const tiny_string& event)
 {
-	// NOTE: We make a copy here, since in single threaded mode, a
-	// listener may be removed while calling `addEvent()`.
-	std::set<DisplayObject*> tmpListeners = frameListeners;
-	{
-		Locker l(mutexFrameListeners);
-		if (frameListeners.empty())
-			return;
-		tmpListeners = frameListeners;
-	}
-	_R<Event> e(Class<Event>::getInstanceS(this->worker,event));
-	for (auto it : tmpListeners)
-	{
-		it->incRef();
-		getVm(this)->addEvent(_MR(it),e);
-	}
+	getVm(this)->addEvent(NullRef,_MR(new (unaccountedMemory) BroadcastEvent(event)));
 }
 
 void SystemState::handleBroadcastEvent(const tiny_string& event)
@@ -2027,7 +2013,8 @@ void ParseThread::parseSWF(UI8 ver)
 					/* No locking required, as the last frames is not
 					 * commited to the vm yet.
 					 */
-					root->addFrameLabel(root->frames.size()-1,static_cast<const FrameLabelTag*>(tag)->Name);
+					if (!root->hasScenes()) // tag is ignored if main timeline has scenes
+						root->addFrameLabel(root->frames.size()-1,static_cast<const FrameLabelTag*>(tag)->Name);
 					empty=false;
 					delete tag;
 					break;
@@ -2393,7 +2380,7 @@ void SystemState::tick()
 
 	currentVm->setIdle(false);
 
-	if (mainClip && mainClip->applicationDomain->getFrameRate() > 0)
+	if (mainClip && mainClip->isConstructed() && mainClip->applicationDomain->getFrameRate() > 0)
 	{
 		/* Step 0: Set current frame number to the next frame
 		 * Step 1: declare new objects */

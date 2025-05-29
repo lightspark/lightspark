@@ -36,6 +36,7 @@ friend class ApplicationDomain;
 private:
 	bool parsingIsFailed;
 	bool waitingforparser;
+	bool hasDefineSceneAndFrameLabelDataTag;
 	RGB Background;
 	int avm1level;
 
@@ -56,7 +57,7 @@ public:
 	void finalize() override;
 	bool hasFinishedLoading() override { return ACQUIRE_READ(finishedLoading); }
 	bool isWaitingForParser() { return waitingforparser; }
-	void constructionComplete(bool _explicit = false) override;
+	void constructionComplete(bool _explicit = false, bool forInitAction = false) override;
 	void afterConstruction(bool _explicit = false) override;
 	bool needsActionScript3() const override;
 	ParseThread* parsethread;
@@ -93,6 +94,8 @@ public:
 	void AVM1checkInitActions(MovieClip *sprite);
 	int AVM1getLevel() const { return avm1level; }
 	void AVM1setLevel(int level) { avm1level = level; }
+	inline bool hasScenes() const { return hasDefineSceneAndFrameLabelDataTag; }
+	inline void setHasScenes() { hasDefineSceneAndFrameLabelDataTag=true; }
 };
 
 }

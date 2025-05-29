@@ -33,7 +33,8 @@ using namespace lightspark;
 
 RootMovieClip::RootMovieClip(ASWorker* wrk, LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
 	MovieClip(wrk,c),
-	parsingIsFailed(false),waitingforparser(false),Background(0xFF,0xFF,0xFF),avm1level(0),
+	parsingIsFailed(false),waitingforparser(false),hasDefineSceneAndFrameLabelDataTag(false),
+	Background(0xFF,0xFF,0xFF),avm1level(0),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
 	this->avm1focusrect=asAtomHandler::falseAtom;
@@ -136,7 +137,7 @@ void RootMovieClip::commitFrame(bool another)
 	}
 }
 
-void RootMovieClip::constructionComplete(bool _explicit)
+void RootMovieClip::constructionComplete(bool _explicit, bool forInitAction)
 {
 	if(isConstructed())
 		return;
@@ -158,7 +159,7 @@ void RootMovieClip::constructionComplete(bool _explicit)
 		}
 		else
 		{
-			MovieClip::constructionComplete(_explicit);
+			MovieClip::constructionComplete(_explicit,forInitAction);
 			if (this==getInstanceWorker()->rootClip.getPtr())
 			{
 				incRef();
@@ -177,15 +178,30 @@ void RootMovieClip::constructionComplete(bool _explicit)
 		getSystemState()->stage->insertLegacyChildAt(-16384, this, false, false);
 	}
 
-	MovieClip::constructionComplete(_explicit);
+	MovieClip::constructionComplete(_explicit,forInitAction);
 
 	this->setOnStage(true,true);
-	getSystemState()->addFrameTick(getSystemState());
 }
 void RootMovieClip::afterConstruction(bool _explicit)
 {
 	DisplayObject::afterConstruction(_explicit);
-	executeFrameScript();
+	// ensure addedToStage event is executed after construction of root is complete
+	_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
+	if(isVmThread())
+	{
+		ABCVm::publicHandleEvent(this,e);
+		getSystemState()->handleBroadcastEvent("frameConstructed");
+		executeFrameScript();
+		getSystemState()->handleBroadcastEvent("exitFrame");
+	}
+	else
+	{
+		this->incRef();
+		getVm(getSystemState())->addEvent(_MR(this),e);
+	}
+	if (this==getSystemState()->mainClip)
+		getSystemState()->addFrameTick(getSystemState());
+
 }
 
 bool RootMovieClip::needsActionScript3() const

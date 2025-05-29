@@ -1321,12 +1321,15 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
 			// root clips are added to stage after the builtin MovieClip is constructed, but before the constructor call is completed.
 			// So the EventListeners for "addedToStage" may not be registered yet and we can't execute the event directly
-			if(isVmThread()	&& !this->is<RootMovieClip>())
-				ABCVm::publicHandleEvent(this,e);
-			else
+			if (!this->is<RootMovieClip>())
 			{
-				this->incRef();
-				getVm(getSystemState())->addEvent(_MR(this),e);
+				if(isVmThread())
+					ABCVm::publicHandleEvent(this,e);
+				else
+				{
+					this->incRef();
+					getVm(getSystemState())->addEvent(_MR(this),e);
+				}
 			}
 		}
 		else if(onStage==false)
@@ -2186,7 +2189,7 @@ bool DisplayObject::needsActionScript3() const
 	return !this->loadedFrom || this->loadedFrom->usesActionScript3;
 }
 
-void DisplayObject::constructionComplete(bool _explicit)
+void DisplayObject::constructionComplete(bool _explicit, bool forInitAction)
 {
 	RELEASE_WRITE(constructed,true);
 	if (!placedByActionScript && needsActionScript3() && getParent() != nullptr)

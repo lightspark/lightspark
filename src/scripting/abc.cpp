@@ -1272,6 +1272,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				m_sys->handleLocalConnectionEvent(ev);
 				break;
 			}
+			case BROADCAST_EVENT:
+			{
+				BroadcastEvent* ev=static_cast<BroadcastEvent*>(e.second.getPtr());
+				LOG(LOG_CALLS,"BroadcastEvent:"<<ev->eventname);
+				m_sys->handleBroadcastEvent(ev->eventname);
+				break;
+			}
 			case IDLE_EVENT:
 			{
 				m_sys->setFramePhase(FramePhase::IDLE);

@@ -3110,6 +3110,8 @@ DefineSceneAndFrameLabelDataTag::DefineSceneAndFrameLabelDataTag(RECORDHEADER h,
 
 void DefineSceneAndFrameLabelDataTag::execute(RootMovieClip* root) const
 {
+	if (SceneCount)
+		root->setHasScenes();
 	for(size_t i=0;i<SceneCount;++i)
 	{
 		root->addScene(i,Offset[i],Name[i]);
@@ -3278,7 +3280,7 @@ void AVM1InitActionTag::execute(RootMovieClip *root) const
 	MovieClip* clip = sprite->instance(nullptr)->as<MovieClip>();
 	clip->beforeConstruction(true);
 	clip->state.last_FP=0; // avoid declaring the first frame
-	clip->constructionComplete(true);
+	clip->constructionComplete(true,true);
 	clip->afterConstruction(true);
 	root->AVM1checkInitActions(clip);
 	clip->decRef();

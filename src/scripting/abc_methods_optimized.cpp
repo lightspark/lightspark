@@ -7641,7 +7641,7 @@ void ABCVm::abc_coerce_constant(call_context* context)
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
-		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(getSys()));
+		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(context->sys));
 		return;
 	}
 	if (!type->coerce(context->worker,res))
@@ -7658,7 +7658,7 @@ void ABCVm::abc_coerce_local(call_context* context)
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
-		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(getSys()));
+		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(context->sys));
 		return;
 	}
 	if (!type->coerce(context->worker,res))
@@ -7675,7 +7675,7 @@ void ABCVm::abc_coerce_constant_localresult(call_context* context)
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
-		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(getSys()));
+		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(context->sys));
 		return;
 	}
 	if (!type->coerce(context->worker,res))
@@ -7692,7 +7692,7 @@ void ABCVm::abc_coerce_local_localresult(call_context* context)
 	if (type == nullptr)
 	{
 		LOG(LOG_ERROR,"coerce: type not found:"<< *mn);
-		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(getSys()));
+		createError<TypeError>(context->worker,kClassNotFoundError,mn->qualifiedString(context->sys));
 		return;
 	}
 

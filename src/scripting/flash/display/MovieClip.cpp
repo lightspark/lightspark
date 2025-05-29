@@ -56,7 +56,7 @@ void FrameLabel::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(FrameLabel,_getFrame)
 {
 	FrameLabel* th=asAtomHandler::as<FrameLabel>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->frame);
+	asAtomHandler::setUInt(ret,wrk,th->frame+1);
 }
 
 ASFUNCTIONBODY_ATOM(FrameLabel,_getName)
@@ -78,6 +78,11 @@ void Scene_data::addFrameLabel(uint32_t frame, const tiny_string& label)
 		if(fl.frame > frame)
 		{
 			labels.insert(j,FrameLabel_data(frame,label));
+			return;
+		}
+		else if(fl.frame == frame)
+		{
+			// ignore new name, is that correct?
 			return;
 		}
 	}
@@ -183,15 +188,17 @@ void FrameContainer::addToFrame(DisplayListTag* t)
  */
 void FrameContainer::addFrameLabel(uint32_t frame, const tiny_string& label)
 {
+	uint32_t startframe=0;
 	for(size_t i=0; i<scenes.size();++i)
 	{
 		if(frame < scenes[i].startframe)
 		{
-			scenes[i-1].addFrameLabel(frame,label);
+			scenes[i-1].addFrameLabel(frame-startframe,label);
 			return;
 		}
+		startframe=scenes[i].startframe;
 	}
-	scenes.back().addFrameLabel(frame,label);
+	scenes.back().addFrameLabel(frame-startframe,label);
 }
 
 void MovieClip::sinit(Class_base* c)
@@ -213,6 +220,8 @@ void MovieClip::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("gotoAndPlay","",c->getSystemState()->getBuiltinFunction(gotoAndPlay),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prevFrame","",c->getSystemState()->getBuiltinFunction(prevFrame),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("nextFrame","",c->getSystemState()->getBuiltinFunction(nextFrame),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("prevScene","",c->getSystemState()->getBuiltinFunction(prevScene),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("nextScene","",c->getSystemState()->getBuiltinFunction(nextScene),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("addFrameScript","",c->getSystemState()->getBuiltinFunction(addFrameScript),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, enabled,Boolean);
 }
@@ -368,19 +377,19 @@ uint32_t MovieClip::getFrameIdByLabel(const tiny_string& label, const tiny_strin
 		{
 			for(size_t j=0;j<scenes[i].labels.size();++j)
 				if(scenes[i].labels[j].name == label || scenes[i].labels[j].name.lowercase() == label.lowercase())
-					return scenes[i].labels[j].frame;
+					return scenes[i].labels[j].frame+scenes[i].startframe;
 		}
 	}
 	else
 	{
 		//Find frame in the named scene only
-		const Scene_data *scene = getScene(sceneName);
-		if (scene)
+		for(size_t i=0;i<scenes.size();++i)
 		{
-			for(size_t j=0;j<scene->labels.size();++j)
+			if (scenes[i].name == sceneName)
 			{
-				if(scene->labels[j].name == label || scene->labels[j].name.lowercase() == label.lowercase())
-					return scene->labels[j].frame;
+				for(size_t j=0;j<scenes[i].labels.size();++j)
+					if(scenes[i].labels[j].name == label || scenes[i].labels[j].name.lowercase() == label.lowercase())
+						return scenes[i].labels[j].frame+scenes[i].startframe;
 			}
 		}
 	}
@@ -500,7 +509,6 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	{
 		tiny_string label = asAtomHandler::toString(args[0],getInstanceWorker());
 		number_t ret=0;
-
 		if (Integer::fromStringFlashCompatible(label.raw_buf(),ret,10,true))
 			dest = getFrameIdByNumber(ret-1, sceneName);
 		else
@@ -624,6 +632,46 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 	th->runGoto(newframe);
 }
 
+ASFUNCTIONBODY_ATOM(MovieClip,nextScene)
+{
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	assert_and_throw(th->state.FP<th->getFramesLoaded());
+	if (th->hasFinishedLoading() && th->state.FP == th->getFramesLoaded()-1)
+		return;
+	bool newframe = !th->hasFinishedLoading() || th->state.FP != th->getFramesLoaded()-1;
+	uint32_t scene = th->getCurrentScene();
+	uint32_t nextframe=0;
+	for(size_t i=0;i<=scene+1 && i < th->scenes.size() ;++i)
+		nextframe += th->scenes[i].startframe;
+	if (scene == th->scenes.size()-1)
+		++nextframe;
+
+	th->state.next_FP = nextframe;
+	th->state.explicit_FP=true;
+	th->state.stop_FP=false;
+	th->runGoto(newframe);
+}
+
+ASFUNCTIONBODY_ATOM(MovieClip,prevScene)
+{
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	assert_and_throw(th->state.FP<th->getFramesLoaded());
+	if (th->hasFinishedLoading() && th->state.FP == 0)
+		return;
+	bool newframe = th->state.FP != 0;
+	uint32_t scene = th->getCurrentScene();
+	uint32_t prevframe=0;
+	if (scene != 0)
+	{
+		for(size_t i=0;i<scene-1;++i)
+			prevframe += th->scenes[i].startframe;
+	}
+	th->state.next_FP = prevframe;
+	th->state.explicit_FP=true;
+	th->state.stop_FP=false;
+	th->runGoto(newframe);
+}
+
 ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
@@ -647,7 +695,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getScenes)
 		if(i == th->scenes.size()-1)
 			numFrames = th->totalFrames_unreliable - th->scenes[i].startframe;
 		else
-			numFrames = th->scenes[i].startframe - th->scenes[i+1].startframe;
+			numFrames = th->scenes[i+1].startframe - th->scenes[i].startframe;
 		asAtom v = asAtomHandler::fromObject(Class<Scene>::getInstanceS(wrk,th->scenes[i],numFrames));
 		res->set(i, v,false,false);
 	}
@@ -672,7 +720,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentScene)
 	if(curScene == th->scenes.size()-1)
 		numFrames = th->totalFrames_unreliable - th->scenes[curScene].startframe;
 	else
-		numFrames = th->scenes[curScene].startframe - th->scenes[curScene+1].startframe;
+		numFrames = th->scenes[curScene+1].startframe - th->scenes[curScene].startframe;
 
 	ret = asAtomHandler::fromObject(Class<Scene>::getInstanceS(wrk,th->scenes[curScene],numFrames));
 }
@@ -690,11 +738,13 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrameLabel)
 	for(size_t i=0;i<th->scenes.size();++i)
 	{
 		for(size_t j=0;j<th->scenes[i].labels.size();++j)
-			if(th->scenes[i].labels[j].frame == th->state.FP)
+		{
+			if(th->scenes[i].labels[j].frame+th->scenes[i].startframe == th->state.FP)
 			{
 				ret = asAtomHandler::fromObject(abstract_s(wrk,th->scenes[i].labels[j].name));
 				return;
 			}
+		}
 	}
 	asAtomHandler::setNull(ret);
 }
@@ -709,7 +759,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabel)
 			break;
 		for(size_t j=0;j<th->scenes[i].labels.size();++j)
 		{
-			if(th->scenes[i].labels[j].frame > th->state.FP)
+			if(th->scenes[i].labels[j].frame+th->scenes[i].startframe > th->state.FP)
 				break;
 			if(!th->scenes[i].labels[j].name.empty())
 				label = th->scenes[i].labels[j].name;
@@ -719,7 +769,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabel)
 	if(label.empty())
 		asAtomHandler::setNull(ret);
 	else
-		ret = asAtomHandler::fromObject(abstract_s(wrk,label));
+		ret = asAtomHandler::fromStringID(wrk->getSystemState()->getUniqueStringId(label));
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabels)
@@ -771,6 +821,7 @@ void MovieClip::afterLegacyInsert()
 		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 		getClass()->handleConstruction(obj,nullptr,0,true);
 	}
+	lastratio = this->Ratio;
 	Sprite::afterLegacyInsert();
 }
 
@@ -1401,12 +1452,13 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 	}
 }
 
-void MovieClip::AVM1HandleConstruction()
+void MovieClip::AVM1HandleConstruction(bool forInitAction)
 {
 	if (inAVM1Attachment || constructorCallComplete)
 		return;
 	setConstructIndicator();
-	getSystemState()->stage->AVM1AddDisplayObject(this);
+	if (!forInitAction)
+		getSystemState()->stage->AVM1AddDisplayObject(this);
 	setConstructorCallComplete();
 	AVM1Function* constr = this->getInstanceWorker()->AVM1getClassConstructor(this);
 	if (constr)
@@ -1521,6 +1573,11 @@ void MovieClip::initFrame()
 {
 	if (!needsActionScript3())
 		return;
+	if (!isConstructed() && !state.stop_FP && state.last_FP==-1)
+	{
+		// ensure frame is advanced in first tick after construction
+		state.next_FP=1;
+	}
 	/* Set last_FP to reflect the frame that we have initialized currently.
 	 * This must be set before the constructor of this MovieClip is run,
 	 * or it will call initFrame(). */
@@ -1727,14 +1784,14 @@ void MovieClip::advanceFrame(bool implicit)
 	markedForLegacyDeletion=false;
 }
 
-void MovieClip::constructionComplete(bool _explicit)
+void MovieClip::constructionComplete(bool _explicit, bool forInitAction)
 {
-	Sprite::constructionComplete(_explicit);
+	Sprite::constructionComplete(_explicit,forInitAction);
 
 	/* If this object was 'new'ed from AS code, the first
 	 * frame has not been initalized yet, so init the frame
 	 * now */
-	if(state.last_FP == -1)
+	if(state.last_FP == -1 && !forInitAction)// && this !=  getSystemState()->mainClip)
 	{
 		advanceFrame(true);
 		if (getSystemState()->getFramePhase() != FramePhase::ADVANCE_FRAME)
@@ -1749,7 +1806,7 @@ void MovieClip::constructionComplete(bool _explicit)
 	{
 		getSystemState()->stage->executeFrameScript();
 	}
-	AVM1HandleConstruction();
+	AVM1HandleConstruction(forInitAction);
 }
 void MovieClip::beforeConstruction(bool _explicit)
 {

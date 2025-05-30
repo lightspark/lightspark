@@ -2,6 +2,8 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* implement support for playing ScaleForm (*.gfx) files
+	* improved support for scenes
 	* add flatpak build
 	* execute most BitmapData drawing commands on GPU
 	* implement drag/drop for AVM1

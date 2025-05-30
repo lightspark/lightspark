@@ -1666,6 +1666,10 @@ FILE_TYPE ParseThread::recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t
 		return FT_JPEG;
 	else if(c1=='G' && c2=='I' && c3=='F' && c4=='8')
 		return FT_GIF;
+	else if(c1=='G' && c2=='F' && c3=='X') // scaleform file
+		return FT_SWF;
+	else if(c1=='C' && c2=='F' && c3=='X') // compressed scaleform file
+		return FT_COMPRESSED_SWF;
 	else
 		return FT_UNKNOWN;
 }

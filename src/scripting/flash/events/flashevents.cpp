@@ -182,7 +182,8 @@ ASFUNCTIONBODY_ATOM(Event,_isDefaultPrevented)
 ASFUNCTIONBODY_ATOM(Event,_preventDefault)
 {
 	Event* th=asAtomHandler::as<Event>(obj);
-	th->defaultPrevented = true;
+	if (th->cancelable)
+		th->defaultPrevented = true;
 }
 
 ASFUNCTIONBODY_ATOM(Event,formatToString)
@@ -850,7 +851,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,_hasEventListener)
 ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 {
 	EventDispatcher* th=asAtomHandler::as<EventDispatcher>(obj);
-	
+
 	if (asAtomHandler::isNull(args[1])) // it seems that null is allowed as function
 		return;
 	if(!asAtomHandler::isString(args[0]) || !asAtomHandler::isFunction(args[1]))
@@ -941,7 +942,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)
 	else
 		e->setTarget(obj);
 	ABCVm::publicHandleEvent(th, e);
-	asAtomHandler::setBool(ret,true);
+	asAtomHandler::setBool(ret,!e->defaultPrevented);
 }
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,_constructor)
@@ -980,6 +981,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	//Create a temporary copy of the listeners, as the list can be modified during the calls
 	vector<listener> tmpListener(h->second.begin(),h->second.end());
 	l.release();
+	std::sort(tmpListener.begin(),tmpListener.end());
 	// listeners may be removed during the call to a listener, so we have to incref them before the call
 	// TODO how to handle listeners that are removed during the call to a listener, should they really be executed anyway?
 	for(unsigned int i=0;i<tmpListener.size();i++)
@@ -989,7 +991,7 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	}
 	for(unsigned int i=0;i<tmpListener.size();i++)
 	{
-		if( (e->eventPhase == EventPhase::BUBBLING_PHASE && tmpListener[i].use_capture)
+		if( (e->eventPhase != EventPhase::CAPTURING_PHASE && tmpListener[i].use_capture)
 		||  (e->eventPhase == EventPhase::CAPTURING_PHASE && !tmpListener[i].use_capture))
 		{
 			ASATOM_DECREF(tmpListener[i].f);

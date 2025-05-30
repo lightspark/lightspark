@@ -870,10 +870,17 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			dispatcher->as<ASSocket>()->setBytesAvailable(event->as<ProgressEvent>()->bytesLoaded);
 	}
 
+	EventDispatcher* realdispatcher=dispatcher;
 	std::deque<DisplayObject*> parents;
 	//Only set the default target is it's not overridden
 	if(asAtomHandler::isInvalid(event->target))
 		event->setTarget(asAtomHandler::fromObject(dispatcher));
+	else
+	{
+		ASObject* t = asAtomHandler::getObject(event->target);
+		if (t && t->is<EventDispatcher>())
+			realdispatcher = t->as<EventDispatcher>();
+	}
 	/** rollOver/Out are special: according to spec
 	http://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/display/InteractiveObject.html?
 	filter_flash=cs5&filter_flashplayer=10.2&filter_air=2.6#event:rollOver
@@ -889,7 +896,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	//This is to take care of rollOver/Out
 	bool doTarget = true;
 	//capture phase
-	if(dispatcher->classdef && dispatcher->classdef->isSubClass(Class<DisplayObject>::getClass(dispatcher->getSystemState())))
+	if(realdispatcher->classdef && realdispatcher->classdef->isSubClass(Class<DisplayObject>::getClass(dispatcher->getSystemState())))
 	{
 		event->eventPhase = EventPhase::CAPTURING_PHASE;
 		//We fetch the relatedObject in the case of rollOver/Out
@@ -950,7 +957,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		//The standard behavior
 		else
 		{
-			DisplayObject* cur = dispatcher->as<DisplayObject>();
+			DisplayObject* cur = realdispatcher->as<DisplayObject>();
 			while(true)
 			{
 				if(!cur->getParent())
@@ -977,8 +984,8 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 		event->eventPhase = EventPhase::AT_TARGET;
 		if (!event->immediatePropagationStopped && !event->propagationStopped)
 		{
-			dispatcher->incRef();
-			event->currentTarget=_MNR(dispatcher);
+			realdispatcher->incRef();
+			event->currentTarget=_MNR(realdispatcher);
 			dispatcher->handleEvent(event);
 			event->currentTarget=NullRef;
 		}

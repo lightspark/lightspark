@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/toplevel/Global.h"
+#include "scripting/toplevel/toplevel.h"
 #include "scripting/class.h"
 #include "abc.h"
 
@@ -60,6 +61,16 @@ multiname *Global::setVariableByMultiname(multiname &name, asAtom &o, CONST_ALLO
 		LOG_CALL("Access to " << name << ", running script init");
 		asAtom v = asAtomHandler::fromObject(this);
 		context->runScriptInit(scriptId,v);
+	}
+	if (allowConst == CONST_ALLOWED &&
+			asAtomHandler::is<SyntheticFunction>(o) &&
+			asAtomHandler::as<SyntheticFunction>(o)->isFromNewFunction())
+	{
+		// value is a function created via newfunction and set via initproperty
+		// -> closure is set to this global object (see ruffle test avm2/eventdispatcher_dispatchevent_this)
+		this->incRef();
+		this->addStoredMember();
+		asAtomHandler::as<SyntheticFunction>(o)->closure_this = asAtomHandler::fromObjectNoPrimitive(this);
 	}
 	return setVariableByMultiname_intern(name,o,allowConst,this->getClass(),alreadyset,wrk);
 }

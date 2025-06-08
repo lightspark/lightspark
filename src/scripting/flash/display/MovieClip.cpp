@@ -1750,7 +1750,7 @@ void MovieClip::advanceFrame(bool implicit)
 	{
 		if(hasFinishedLoading())
 		{
-			if (getFramesLoaded() != 0)
+			if (getFramesLoaded() > 1)
 				LOG(LOG_ERROR,"state.next_FP >= getFramesLoaded:"<< state.next_FP<<" "<<getFramesLoaded() <<" "<<toDebugString()<<" "<<getTagID());
 			state.next_FP = state.FP;
 		}

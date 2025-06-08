@@ -155,7 +155,6 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		// this is a call to this method during preloading, it can happen when constructing objects for optimization detection
 		return;
 	}
-	assert(wrk == getWorker());
 	auto prev_cur_recursion = wrk->cur_recursion;
 	call_context* saved_cc = wrk->incStack(obj,this);
 	if (codeStatus != method_body_info::PRELOADED && codeStatus != method_body_info::USED)
@@ -178,6 +177,9 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		{
 			mi->cc.localslots[i] = &mi->cc.locals[i];
 		}
+		if (mi->maxLocalNumbers)
+			mi->cc.localNumbers = new number_t[mi->maxLocalNumbers];
+
 	}
 	if (saved_cc && saved_cc->exceptionthrown)
 	{
@@ -284,6 +286,8 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		{
 			cc->localslots[i] = &cc->locals[i];
 		}
+		if (mi->maxLocalNumbers)
+			cc->localNumbers = g_newa(number_t,mi->maxLocalNumbers);
 	}
 	else
 	{
@@ -301,6 +305,15 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	wrk->callStack.push_back(cc);
 	/* Set the current global object, each script in each DoABCTag has its own */
 	wrk->currentCallContext = cc;
+	if (saved_cc)
+	{
+		// set local number values for arguments
+		for (uint32_t i = 0; i < numArgs; i++)
+		{
+			if (asAtomHandler::isLocalNumber(args[i]))
+				asAtomHandler::setNumber(args[i],wrk,asAtomHandler::getLocalNumber(saved_cc,args[i]),i);
+		}
+	}
 
 	cc->locals[0]=obj;
 
@@ -513,22 +526,14 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		}
 		break;
 	}
-	wrk->decStack(saved_cc);
-	wrk->callStack.pop_back();
 #ifndef NDEBUG
 	if (wrk->isPrimordial)
 		Log::calls_indent--;
 #endif
 
 	ret.uintval = cc->locals[mi->body->getReturnValuePos()].uintval;
-	ASATOM_INCREF(ret);
-
-	if (coerceresult || mi->needscoerceresult)
-	{
-		asAtom v = ret;
-		if (asAtomHandler::isValid(ret) && mi->returnType->coerce(getInstanceWorker(),ret))
-			ASATOM_DECREF(v);
-	}
+	if (!asAtomHandler::localNumberToGlobalNumber(wrk,ret))
+		ASATOM_INCREF(ret);
 
 	//The stack may be not clean, is this a programmer/compiler error?
 	if(cc->stackp != cc->stack)
@@ -573,6 +578,15 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 			this->removeStoredMember();
 		else
 			this->decRef();
+	}
+	wrk->decStack(saved_cc);
+	wrk->callStack.pop_back();
+
+	if (coerceresult || mi->needscoerceresult)
+	{
+		asAtom v = ret;
+		if (asAtomHandler::isValid(ret) && mi->returnType->coerce(getInstanceWorker(),ret))
+			ASATOM_DECREF(v);
 	}
 	if (recursive_call)
 		delete cc;

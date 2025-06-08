@@ -47,6 +47,7 @@ URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const 
 	method(m),url(u),data(d),requestHeaders(nullptr),contentType("application/x-www-form-urlencoded"),
 	appDomain(_appDomain)
 {
+	asAtomHandler::localNumberToGlobalNumber(wrk,data);
 	ASATOM_ADDSTOREDMEMBER(data);
 	if (_appDomain==nullptr)
 		appDomain = c->getSystemState()->mainClip->applicationDomain.getPtr();
@@ -582,6 +583,7 @@ void URLLoader::threadFinished(IThreadJob *finishedJob)
 void URLLoader::setData(asAtom newData)
 {
 	Locker l(spinlock);
+	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),newData);
 	ASATOM_ADDSTOREDMEMBER(newData);
 	data=newData;
 }
@@ -2713,7 +2715,8 @@ ASFUNCTIONBODY_ATOM(Responder,_constructor)
 	Responder* th=Class<Responder>::cast(asAtomHandler::getObject(obj));
 	assert_and_throw(argslen==1 || argslen==2);
 	assert_and_throw(asAtomHandler::isFunction(args[0]));
-	ASATOM_INCREF(args[0]);
+	if (!asAtomHandler::localNumberToGlobalNumber(wrk,args[0]))
+		ASATOM_INCREF(args[0]);
 	th->result = args[0];
 	if(argslen==2 && asAtomHandler::isFunction(args[1]))
 	{

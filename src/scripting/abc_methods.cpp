@@ -1030,7 +1030,7 @@ void ABCVm::abc_convert_i(call_context* context)
 	LOG_CALL("convert_i:"<<asAtomHandler::toDebugString(*pval));
 	if(!asAtomHandler::isInteger(*pval))
 	{
-		int32_t v= asAtomHandler::toIntStrict(*pval);
+		int32_t v= asAtomHandler::toIntStrict(context->worker,*pval);
 		ASATOM_DECREF_POINTER(pval);
 		asAtomHandler::setInt(*pval,context->worker,v);
 	}
@@ -1067,6 +1067,16 @@ void ABCVm::abc_convert_b(call_context* context)
 	asAtomHandler::convert_b(*pval,true);
 	++(context->exec_pos);
 }
+void ABCVm::abc_coerce_o(call_context* context)
+{
+	// according to https://konghack.com/content/19-avm2instructions, this undocumented opcode only converts undefined to null
+	LOG_CALL("coerce_o");
+	RUNTIME_STACK_POINTER_CREATE(context,pval);
+	if (asAtomHandler::isUndefined(*pval))
+		*pval = asAtomHandler::nullAtom;
+	++(context->exec_pos);
+}
+
 void ABCVm::abc_convert_o(call_context* context)
 {
 	//convert_o
@@ -1158,7 +1168,7 @@ void ABCVm::abc_negate(call_context* context)
 	{
 		number_t ret=-(asAtomHandler::toNumber(*pval));
 		ASATOM_DECREF_POINTER(pval);
-		asAtomHandler::setNumber(*pval,context->worker, ret);
+		*pval = asAtomHandler::fromNumber(context->worker,ret,false);
 	}
 	++(context->exec_pos);
 }

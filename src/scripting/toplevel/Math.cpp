@@ -215,7 +215,7 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 			break;
 		case T_NUMBER:
 		{
-			number_t n = asAtomHandler::toNumber(a);
+			number_t n = asAtomHandler::getNumber(wrk,a);
 			if (n  == 0.)
 				asAtomHandler::setInt(ret,wrk,(int32_t)0);
 			else

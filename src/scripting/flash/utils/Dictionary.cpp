@@ -176,6 +176,7 @@ void Dictionary::getKeyFromMultiname(const multiname& name,asAtom& key)
 }
 multiname *Dictionary::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
+	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	assert_and_throw(implEnable);
 	asAtom key=asAtomHandler::invalidAtom;
 	getKeyFromMultiname(name,key);

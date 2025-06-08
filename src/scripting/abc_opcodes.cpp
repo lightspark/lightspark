@@ -2497,7 +2497,7 @@ void ABCVm::newObject(call_context* th, int n)
 		if (!isInt && asAtomHandler::isString(*name))
 			isInt = Array::isIntegerWithoutLeadingZeros(asAtomHandler::toString(*name,th->worker));
 		ASATOM_DECREF_POINTER(name);
-		ret->setDynamicVariableNoCheck(nameid,*value,isInt);
+		ret->setDynamicVariableNoCheck(nameid,*value,isInt,th->worker);
 	}
 
 	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(ret));

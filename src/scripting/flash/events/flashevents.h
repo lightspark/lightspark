@@ -93,8 +93,8 @@ class WaitableEvent : public Event
 private:
 	bool handled;
 public:
-	WaitableEvent(const tiny_string& t = "Event", bool b=false, bool c=false)
-		: Event(nullptr,nullptr,t,b,c,SUBTYPE_WAITABLE_EVENT), handled(false) {}
+	WaitableEvent(ASWorker* wrk, const tiny_string& t = "Event", bool b=false, bool c=false)
+		: Event(wrk,nullptr,t,b,c,SUBTYPE_WAITABLE_EVENT), handled(false) {}
 	void wait();
 	void signal();
 	void finalize() override ;
@@ -591,7 +591,7 @@ public:
 class IdleEvent: public WaitableEvent
 {
 public:
-	IdleEvent(): WaitableEvent("IdleEvent") {}
+	IdleEvent(ASWorker* wrk): WaitableEvent(wrk,"IdleEvent") {}
 	EVENT_TYPE getEventType() const override { return IDLE_EVENT; }
 };
 
@@ -602,7 +602,7 @@ public:
 	uint32_t y;
 	HIT_TYPE type;
 	_NR<DisplayObject> dispobj;
-	GetMouseTargetEvent(uint32_t _x, uint32_t _y, HIT_TYPE _type);
+	GetMouseTargetEvent(ASWorker* wrk, uint32_t _x, uint32_t _y, HIT_TYPE _type);
 	EVENT_TYPE getEventType() const override { return GETMOUSETARGET_EVENT; }
 };
 

@@ -253,13 +253,22 @@ public:
 		ASATOM_DECREF_POINTER(arg1);
 		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getInstanceWorker(),ret,false));
 	}
-	static FORCE_INLINE void loadFloat(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1)
+	static FORCE_INLINE void loadFloat(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1, uint16_t resultlocalnumber=UINT16_MAX)
 	{
 		uint32_t addr=asAtomHandler::toUInt(arg1);
 		number_t res=appDomain->readFromDomainMemory<float>(addr);
-		asAtom oldret = ret;
-		if (asAtomHandler::replaceNumber(ret,appDomain->getInstanceWorker(),res))
-			ASATOM_DECREF(oldret);
+		ASObject* oldret = asAtomHandler::getObject(ret);
+		if (resultlocalnumber != UINT16_MAX)
+		{
+			asAtomHandler::setNumber(ret,appDomain->getInstanceWorker(),res,resultlocalnumber);
+			if (oldret)
+				oldret->decRef();
+		}
+		else if (asAtomHandler::replaceNumber(ret,appDomain->getInstanceWorker(),res))
+		{
+			if (oldret)
+				oldret->decRef();
+		}
 	}
 	static FORCE_INLINE void loadDouble(ApplicationDomain* appDomain,call_context *th)
 	{
@@ -269,13 +278,22 @@ public:
 		ASATOM_DECREF_POINTER(arg1);
 		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getInstanceWorker(),res,false));
 	}
-	static FORCE_INLINE void loadDouble(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1)
+	static FORCE_INLINE void loadDouble(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1, uint16_t resultlocalnumber=UINT16_MAX)
 	{
 		uint32_t addr=asAtomHandler::toUInt(arg1);
 		number_t res=appDomain->readFromDomainMemory<double>(addr);
-		asAtom oldret = ret;
-		if (asAtomHandler::replaceNumber(ret,appDomain->getInstanceWorker(),res))
-			ASATOM_DECREF(oldret);
+		ASObject* oldret = asAtomHandler::getObject(ret);
+		if (resultlocalnumber != UINT16_MAX)
+		{
+			asAtomHandler::setNumber(ret,appDomain->getInstanceWorker(),res,resultlocalnumber);
+			if (oldret)
+				oldret->decRef();
+		}
+		else if (asAtomHandler::replaceNumber(ret,appDomain->getInstanceWorker(),res))
+		{
+			if (oldret)
+				oldret->decRef();
+		}
 	}
 
 	static FORCE_INLINE void storeFloat(ApplicationDomain* appDomain,call_context *th)

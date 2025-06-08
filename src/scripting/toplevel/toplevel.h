@@ -216,11 +216,14 @@ public:
 	 * This executes a C++ function.
 	 * It consumes _no_ references of obj and args
 	 */
-	FORCE_INLINE void call(asAtom& ret, ASWorker* wrk,asAtom& obj, asAtom* args, uint32_t num_args)
+	FORCE_INLINE void call(asAtom& ret, ASWorker* wrk,asAtom& obj, asAtom* args, uint32_t num_args, uint16_t resultlocalnumberpos=UINT16_MAX)
 	{
 #ifdef PROFILING_SUPPORT
 		uint64_t t1 = compat_get_thread_cputime_us();
 #endif
+		if (resultlocalnumberpos != UINT16_MAX)
+			asAtomHandler::setNumber(ret,wrk,numeric_limits<double>::quiet_NaN(),resultlocalnumberpos);
+
 		/*
 		 * We do not enforce ABCVm::limits.max_recursion here.
 		 * This should be okey, because there is no infinite recursion

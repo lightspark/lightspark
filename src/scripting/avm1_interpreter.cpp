@@ -1825,7 +1825,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					asAtom value = PopStack(stack);
 					asAtom name = PopStack(stack);
 					uint32_t nameid=asAtomHandler::toStringId(name,wrk);
-					ret->setDynamicVariableNoCheck(nameid,value,asAtomHandler::isInteger(name));
+					ret->setDynamicVariableNoCheck(nameid,value,asAtomHandler::isInteger(name),wrk);
 				}
 				ASATOM_DECREF(na);
 				PushStack(stack,asAtomHandler::fromObject(ret));

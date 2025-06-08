@@ -334,7 +334,7 @@ _NR<InteractiveObject> InputThread::getMouseTarget(uint32_t x, uint32_t y, HIT_T
 	try
 	{
 		// get mouse target in VM thread to avoid inconsistencies in hittesting on TokenContainers
-		_R<GetMouseTargetEvent> ev  = _MR(new (m_sys->unaccountedMemory) GetMouseTargetEvent(x,y,type));
+		_R<GetMouseTargetEvent> ev  = _MR(new (m_sys->unaccountedMemory) GetMouseTargetEvent(m_sys->worker, x,y,type));
 		if (m_sys->currentVm->prependEvent(NullRef, ev))
 			ev->wait();
 		if(!ev->dispobj.isNull() && ev->dispobj->is<InteractiveObject>())

@@ -121,7 +121,7 @@ void EngineData::runInTrueMainThread(SystemState* sys, MainThreadCallback func)
 void EngineData::runInMainThread(SystemState* sys, MainThreadCallback func)
 {
 	if (!isEventLoopThread())
-		getSys()->pushEvent(LSExecEvent(func));
+		sys->pushEvent(LSExecEvent(func));
 	else
 		func(sys);
 }
@@ -317,10 +317,9 @@ static int mainloop_runner(IEventLoop* th)
 		EngineData::mainthread_running = true;
 		//EngineData::mainthread_initialized.signal();
 		Optional<LSEventStorage> event;
-		while (event = th->waitEvent(getSys()), event.hasValue())
+		SystemState* sys = getSys();
+		while (event = th->waitEvent(sys), event.hasValue())
 		{
-			SystemState* sys = getSys();
-
 			if (EngineData::mainloop_handleevent(*event, sys))
 			{
 				delete th;

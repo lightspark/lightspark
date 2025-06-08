@@ -897,7 +897,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 		case NORMAL_METHOD:
 		{
 			asAtom v = asAtomHandler::fromObject(o);
-			obj->setVarNoCoerce(v);
+			obj->setVarNoCoerce(v,getInstanceWorker());
 			break;
 		}
 		case GETTER_METHOD:
@@ -1250,6 +1250,7 @@ void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multina
 		ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id, bool isenumerable)
 {
 	check();
+	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	Variables.initializeVar(name, o, typemname, context, traitKind,this,slot_id,isenumerable);
 }
 
@@ -1268,6 +1269,7 @@ variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const n
 	{
 		traitTypemname=_t;
 	}
+	assert(!asAtomHandler::isLocalNumber(var));
 	ASObject* o = asAtomHandler::getObject(var);
 	if (o && !o->getConstant())
 		o->addStoredMember();
@@ -1290,6 +1292,8 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 			return;
 	}
 	asAtom oldvar = var;
+	if (asAtomHandler::localNumberToGlobalNumber(wrk,v))
+		_isrefcounted=true;
 	var=v;
 	if(isrefcounted && asAtomHandler::isObject(oldvar))
 	{
@@ -1548,7 +1552,7 @@ ASFUNCTIONBODY_ATOM(ASObject,hasOwnProperty)
 			break;
 		case T_NUMBER:
 			name.name_type=multiname::NAME_NUMBER;
-			name.name_d = asAtomHandler::toNumber(args[0]);
+			name.name_d = asAtomHandler::getNumber(wrk,args[0]);
 			break;
 		default:
 			name.name_type=multiname::NAME_STRING;
@@ -2421,7 +2425,7 @@ void ASObject::dumpObjectCounters(uint32_t threshhold)
 #endif
 ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE st):
 	objfreelist(c ? c->getFreeList(wrk) : nullptr),
-	classdef(c),proxyMultiName(nullptr),sys(c?c->sys:nullptr),worker(wrk),gcNext(nullptr),gcPrev(nullptr),
+	classdef(c),proxyMultiName(nullptr),sys(c?c->sys: wrk && wrk != this ? wrk->getSystemState() :nullptr),worker(wrk),gcNext(nullptr),gcPrev(nullptr),
 	stringId(UINT32_MAX),storedmembercount(0),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
 	markedforgarbagecollection(false),deletedingarbagecollection(false),implEnable(true)
 {
@@ -2631,6 +2635,7 @@ bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	ret = Variables.countCylicMemberReferences(gcstate,this) || ret;
 	return ret;
 }
+
 bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	if (gcstate.stopped)
@@ -3624,7 +3629,7 @@ asAtom asAtomHandler::fromString(SystemState* sys, const tiny_string& s)
 	return a;
 }
 
-void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult, bool coercearguments, bool isAVM1InternalCall)
+void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult, bool coercearguments, bool isAVM1InternalCall, uint16_t resultlocalnumberpos)
 {
 	if (USUALLY_FALSE(!asAtomHandler::isFunction(caller)))
 	{
@@ -3661,7 +3666,7 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 	{
 		// when calling builtin functions, normally no refcounting is needed
 		// if it is, it has to be done inside the called function
-		getObjectNoCheck(caller)->as<Function>()->call(ret,wrk, c, args, num_args);
+		getObjectNoCheck(caller)->as<Function>()->call(ret,wrk, c, args, num_args,resultlocalnumberpos);
 	}
 	if (args_refcounted)
 	{
@@ -3685,12 +3690,16 @@ multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const m
 			simplegetter = Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
 			canCache = asAtomHandler::isValid(ret);
 			break;
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		{
-			switch (a.uintval&0x70)
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_BOOL_BIT:
 					simplegetter = Class<Boolean>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
+					canCache = asAtomHandler::isValid(ret);
+					break;
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					simplegetter = Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
 					canCache = asAtomHandler::isValid(ret);
 					break;
 				default:
@@ -3777,12 +3786,14 @@ Class_base *asAtomHandler::getClass(const asAtom& a,SystemState* sys,bool follow
 		case ATOM_U_INTEGERPTR:
 		case ATOM_NUMBERPTR:
 			return Class<Number>::getRef(sys).getPtr()->as<Class_base>();
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		{
-			switch (a.uintval&0x70)
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_BOOL_BIT:
 					return Class<Boolean>::getRef(sys).getPtr()->as<Class_base>();
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					return Class<Number>::getRef(sys).getPtr()->as<Class_base>();
 				default:
 					return nullptr;
 			}
@@ -3803,7 +3814,7 @@ bool asAtomHandler::canCacheMethod(asAtom& a,const multiname* name)
 		case ATOM_INTEGER:
 		case ATOM_UINTEGER:
 		case ATOM_NUMBERPTR:
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		case ATOM_STRINGID:
 			return true;
 		case ATOM_OBJECTPTR:
@@ -3845,9 +3856,17 @@ void asAtomHandler::fillMultiname(asAtom& a, ASWorker* wrk, multiname &name)
 			name.name_type = multiname::NAME_NUMBER;
 			name.name_d = toNumber(a);
 			break;
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
-			name.name_type=multiname::NAME_OBJECT;
-			name.name_o=a;
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+			if (asAtomHandler::isLocalNumber(a))
+			{
+				name.name_type = multiname::NAME_NUMBER;
+				name.name_d = getNumber(wrk,a);
+			}
+			else
+			{
+				name.name_type=multiname::NAME_OBJECT;
+				name.name_o=a;
+			}
 			break;
 		case ATOM_STRINGID:
 			name.name_type = multiname::NAME_STRING;
@@ -3900,9 +3919,9 @@ std::string asAtomHandler::toDebugString(const asAtom a)
 #endif
 			return ret;
 		}
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		{
-			switch (a.uintval&0x70)
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_NULL_BIT:
 					return "Null";
@@ -3910,6 +3929,8 @@ std::string asAtomHandler::toDebugString(const asAtom a)
 					return "Undefined";
 				case ATOMTYPE_BOOL_BIT:
 					return Integer::toString((a.uintval&0x80)>>7)+"b";
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					return Number::toString(getLocalNumber(getCallContext(getWorker()),a))+":ln("+UInteger::toString(a.uintval>>8)+")";
 				default:
 					return "Invalid";
 			}
@@ -4100,13 +4121,25 @@ bool asAtomHandler::isTypelate(asAtom& a,asAtom& t)
 	return real_ret;
 }
 
+number_t asAtomHandler::getLocalNumber(call_context* cc,const asAtom& a)
+{
+	assert((a.uintval&0xf) == (ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER|ATOMTYPE_LOCALNUMBER_BIT));
+	uint32_t index = a.uintval>>8;
+	assert(index < cc->mi->maxLocalNumbers);
+	return cc->localNumbers[index];
+}
+int32_t asAtomHandler::localNumbertoInt(ASWorker* wrk, const asAtom& a)
+{
+	return Number::toInt(getLocalNumber(getCallContext(wrk),a));
+}
+
 void asAtomHandler::getStringView(tiny_string& res, const asAtom& a, ASWorker* wrk)
 {
 	switch(a.uintval&0x7)
 	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		{
-			switch (a.uintval&0x70)
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_NULL_BIT:
 					res = "null";
@@ -4116,6 +4149,9 @@ void asAtomHandler::getStringView(tiny_string& res, const asAtom& a, ASWorker* w
 					return;
 				case ATOMTYPE_BOOL_BIT:
 					res = a.uintval&0x80 ? "true" : "false";
+					return;
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					res = Number::toString(getLocalNumber(getCallContext(wrk),a));
 					return;
 				default:
 					res = "";
@@ -4157,9 +4193,9 @@ tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk, bool fromAVM
 {
 	switch(a.uintval&0x7)
 	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		{
-			switch (a.uintval&0x70)
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_NULL_BIT:
 					return "null";
@@ -4171,6 +4207,8 @@ tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk, bool fromAVM
 					if (wrk->AVM1getSwfVersion() < 5)
 						return a.uintval&0x80 ? "1" : "0";
 					return a.uintval&0x80 ? "true" : "false";
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					return Number::toString(getLocalNumber(getCallContext(wrk),a));
 				default:
 					return "";
 			}
@@ -4221,9 +4259,9 @@ tiny_string asAtomHandler::toLocaleString(const asAtom& a, ASWorker* wrk)
 {
 	switch(a.uintval&0x7)
 	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		{
-			switch (a.uintval&0x70)
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_NULL_BIT:
 					return "null";
@@ -4231,6 +4269,8 @@ tiny_string asAtomHandler::toLocaleString(const asAtom& a, ASWorker* wrk)
 					return "undefined";
 				case ATOMTYPE_BOOL_BIT:
 					return "[object Boolean]";
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					return Number::toString(getLocalNumber(getCallContext(wrk),a));
 				default:
 					return "";
 			}
@@ -4320,9 +4360,9 @@ tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk, bool for
 	auto swfVersion = wrk->AVM1getSwfVersion();
 	switch (a.uintval & 0x7)
 	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		{
-			switch (a.uintval & 0x70)
+			switch (a.uintval & ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_NULL_BIT:
 					return "null";
@@ -4337,6 +4377,8 @@ tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk, bool for
 					if (swfVersion < 5)
 						return a.uintval & 0x80 ? "1" : "0";
 					return a.uintval & 0x80 ? "true" : "false";
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					return Number::toString(getLocalNumber(getCallContext(wrk),a));
 				default:
 					return "";
 			}
@@ -4395,9 +4437,9 @@ void asAtomHandler::convert_b(asAtom& a, bool refcounted)
 	bool v = false;
 	switch(a.uintval&0x7)
 	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		{
-			switch (a.uintval&0x70)
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_NULL_BIT:
 				case ATOMTYPE_UNDEFINED_BIT:
@@ -4405,6 +4447,12 @@ void asAtomHandler::convert_b(asAtom& a, bool refcounted)
 					break;
 				case ATOMTYPE_BOOL_BIT:
 					return;
+				case ATOMTYPE_LOCALNUMBER_BIT:
+				{
+					number_t r = getLocalNumber(getCallContext(getWorker()),a) ;
+					v= !std::isnan(r) && r!= 0.0 ;
+					break;
+				}
 				default:
 					return;
 			}
@@ -4450,8 +4498,8 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 	else if((isInteger(a) || isUInteger(a) || isNumber(a)) &&
 			(isNumber(v2) || isInteger(v2) || isUInteger(v2)))
 	{
-		double num1=toNumber(a);
-		double num2=toNumber(v2);
+		double num1=getNumber(wrk,a);
+		double num2=getNumber(wrk,v2);
 		LOG_CALL("addN " << num1 << '+' << num2<<" "<<toDebugString(a)<<" "<<toDebugString(v2));
 		if (forceint)
 			setInt(a,wrk,num1+num2);
@@ -4506,7 +4554,8 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 			return false;
 		}
 		else
-		{//If none of the above apply, convert both to primitives with no hint
+		{
+			//If none of the above apply, convert both to primitives with no hint
 			asAtom val1p=asAtomHandler::invalidAtom;
 			bool isrefcounted1;
 			val1->toPrimitive(val1p,isrefcounted1);
@@ -4514,7 +4563,8 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 			bool isrefcounted2;
 			val2->toPrimitive(val2p,isrefcounted2);
 			if(is<ASString>(val1p) || is<ASString>(val2p))
-			{//If one is String, convert both to strings and concat
+			{
+				//If one is String, convert both to strings and concat
 				string as(toString(val1p,wrk).raw_buf());
 				string bs(toString(val2p,wrk).raw_buf());
 				if (isrefcounted1)
@@ -4531,9 +4581,10 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 					a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(wrk,as+bs))|ATOM_STRINGPTR;
 			}
 			else
-			{//Convert both to numbers and add
-				number_t num1=toNumber(val1p);
-				number_t num2=toNumber(val2p);
+			{
+				//Convert both to numbers and add
+				number_t num1=getNumber(wrk,val1p);
+				number_t num2=getNumber(wrk,val2p);
 				if (isrefcounted1)
 					ASATOM_DECREF(val1p);
 				if (isrefcounted2)
@@ -4555,7 +4606,7 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 	}
 	return true;
 }
-void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v2, bool forceint)
+void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v2, bool forceint, uint16_t resultlocalnumberpos)
 {
 	//Implement ECMA add algorithm, for XML and default (see avm2overview)
 
@@ -4573,18 +4624,24 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 		else if (res >= 0 && res < (1<<29))
 			setUInt(ret,wrk,res);
 		else
-			setNumber(ret,wrk,res);
+			setNumber(ret,wrk,res,resultlocalnumberpos);
 	}
 	else if((isInteger(v1) || isUInteger(v1) || isNumber(v1)) &&
 			(isNumber(v2) || isInteger(v2) || isUInteger(v2)))
 	{
-		double num1=toNumber(v1);
-		double num2=toNumber(v2);
+		double num1=getNumber(wrk,v1);
+		double num2=getNumber(wrk,v2);
 		LOG_CALL("addN replace " << num1 << '+' << num2<<" "<<toDebugString(v1)<<" "<<toDebugString(v2)<<" "<<forceint);
 		ASObject* o = getObject(ret);
 		if (forceint)
 		{
 			setInt(ret,wrk,num1+num2);
+			if (o)
+				o->decRef();
+		}
+		else if (resultlocalnumberpos != UINT16_MAX)
+		{
+			setNumber(ret,wrk,num1+num2,resultlocalnumberpos);
 			if (o)
 				o->decRef();
 		}
@@ -4637,7 +4694,8 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 			//no decRef is needed
 		}
 		else
-		{//If none of the above apply, convert both to primitives with no hint
+		{
+			//If none of the above apply, convert both to primitives with no hint
 			asAtom val1p=asAtomHandler::invalidAtom;
 			bool isrefcounted1;
 			val1->toPrimitive(val1p,isrefcounted1);
@@ -4645,7 +4703,8 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 			asAtom val2p=asAtomHandler::invalidAtom;
 			val2->toPrimitive(val2p,isrefcounted2);
 			if(is<ASString>(val1p) || is<ASString>(val2p))
-			{//If one is String, convert both to strings and concat
+			{
+				//If one is String, convert both to strings and concat
 				string as(toString(val1p,wrk).raw_buf());
 				string bs(toString(val2p,wrk).raw_buf());
 				if (isrefcounted1)
@@ -4663,9 +4722,10 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 					ret.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(wrk,as+bs))|ATOM_STRINGPTR;
 			}
 			else
-			{//Convert both to numbers and add
-				number_t num1=toNumber(val1p);
-				number_t num2=toNumber(val2p);
+			{
+				//Convert both to numbers and add
+				number_t num1=getNumber(wrk,val1p);
+				number_t num2=getNumber(wrk,val2p);
 				if (isrefcounted1)
 					ASATOM_DECREF(val1p);
 				if (isrefcounted2)
@@ -4675,6 +4735,12 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 				if (forceint)
 				{
 					setInt(ret,wrk,num1+num2);
+					if (o)
+						o->decRef();
+				}
+				else if (resultlocalnumberpos != UINT16_MAX)
+				{
+					setNumber(ret,wrk,num1+num2,resultlocalnumberpos);
 					if (o)
 						o->decRef();
 				}
@@ -4754,8 +4820,8 @@ void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 		case ATOM_UINTEGER:
 			UInteger::serializeValue(out,asAtomHandler::getUInt(a));
 			break;
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
-			switch (a.uintval&0xf0)
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_UNDEFINED_BIT: // UNDEFINED
 					if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
@@ -4768,6 +4834,9 @@ void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 						out->writeByte(amf0_null_marker);
 					else
 						out->writeByte(null_marker);
+					break;
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					Number::serializeValue(out,getLocalNumber(getCallContext(wrk),a));
 					break;
 				default: // BOOL
 					if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
@@ -4815,16 +4884,26 @@ bool asAtomHandler::Boolean_concrete_object(asAtom& a)
 	return lightspark::Boolean_concrete(getObject(a));
 }
 
-void asAtomHandler::setNumber(asAtom& a, ASWorker* w, number_t val)
+void asAtomHandler::setNumber(asAtom& a, ASWorker* wrk, number_t val, uint16_t localnumberpos)
 {
+	if (localnumberpos == UINT16_MAX && asAtomHandler::isLocalNumber(a))
+		localnumberpos = a.uintval>>8;
+	if (localnumberpos != UINT16_MAX)
+	{
+		assert(wrk->currentCallContext);
+		assert(localnumberpos < wrk->currentCallContext->mi->maxLocalNumbers);
+		wrk->currentCallContext->localNumbers[localnumberpos]=val;
+		a.uintval=localnumberpos<<8 | ATOMTYPE_LOCALNUMBER_BIT;
+		return;
+	}
 	if (std::isnan(val))
-		a.uintval = w->getSystemState()->nanAtom.uintval;
+		a.uintval = wrk->getSystemState()->nanAtom.uintval;
 	else
-		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(w,val))|ATOM_NUMBERPTR;
+		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(wrk,val))|ATOM_NUMBERPTR;
 }
 bool asAtomHandler::replaceNumber(asAtom& a, ASWorker* w, number_t val)
 {
-	if (isNumber(a) && getObject(a)->isLastRef())
+	if ((a.uintval&0x7)==ATOM_NUMBERPTR && getObject(a)->isLastRef())
 	{
 		as<Number>(a)->setNumber(val);
 		return false;
@@ -4842,16 +4921,16 @@ void asAtomHandler::replace(asAtom& a, ASObject *obj)
 	switch(obj->getObjectType())
 	{
 		case T_INVALID:
-			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL;
+			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER;
 			break;
 		case T_UNDEFINED:
-			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL | ATOMTYPE_UNDEFINED_BIT;
+			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER | ATOMTYPE_UNDEFINED_BIT;
 			break;
 		case T_NULL:
-			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL | ATOMTYPE_NULL_BIT;
+			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER | ATOMTYPE_NULL_BIT;
 			break;
 		case T_BOOLEAN:
-			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL | ATOMTYPE_BOOL_BIT | (obj->toInt() ? 0x80: 0);
+			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER | ATOMTYPE_BOOL_BIT | (obj->toInt() ? 0x80: 0);
 			break;
 		case T_NUMBER:
 			a.uintval=ATOM_NUMBERPTR | (LIGHTSPARK_ATOM_VALTYPE)obj;
@@ -4886,10 +4965,12 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 						return TUNDEFINED;
 					return ((a.intval>>3) < toNumber(v2))?TTRUE:TFALSE;
 				case ATOM_STRINGID:
+					if(std::isnan(toNumber(v2)))
+						return TUNDEFINED;
 					return ((a.intval>>3) < toNumber(v2))?TTRUE:TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				{
-					switch (v2.uintval&0x70)
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
 							return ((a.intval>>3) < 0)?TTRUE:TFALSE;
@@ -4897,6 +4978,13 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return TUNDEFINED;
 						case ATOMTYPE_BOOL_BIT:
 							return ((a.intval>>3) < (int32_t)((v2.uintval&0x80)>>7))?TTRUE:TFALSE;
+						case ATOMTYPE_LOCALNUMBER_BIT:
+						{
+							number_t n = getLocalNumber(getCallContext(w),v2);
+							if(std::isnan(n))
+								return TUNDEFINED;
+							return ((a.intval>>3) < n)?TTRUE:TFALSE;
+						}
 						default: // INVALID
 							return TUNDEFINED;
 					}
@@ -4919,10 +5007,12 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 						return TUNDEFINED;
 					return ((a.uintval>>3) < toNumber(v2))?TTRUE:TFALSE;
 				case ATOM_STRINGID:
+					if(std::isnan(toNumber(v2)))
+						return TUNDEFINED;
 					return ((a.uintval>>3) < toNumber(v2))?TTRUE:TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				{
-					switch (v2.uintval&0x70)
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
 							return TFALSE;
@@ -4930,6 +5020,10 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return TUNDEFINED;
 						case ATOMTYPE_BOOL_BIT:
 							return ((a.uintval>>3) < ((v2.uintval&0x80)>>7))?TTRUE:TFALSE;
+						case ATOMTYPE_LOCALNUMBER_BIT:
+							if(std::isnan(getLocalNumber(getCallContext(w),v2)))
+								return TUNDEFINED;
+							return ((a.uintval>>3) < getLocalNumber(getCallContext(w),v2))?TTRUE:TFALSE;
 						default: // INVALID
 							return TUNDEFINED;
 					}
@@ -4954,10 +5048,12 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 						return TUNDEFINED;
 					return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
 				case ATOM_STRINGID:
+					if(std::isnan(toNumber(v2)))
+						return TUNDEFINED;
 					return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				{
-					switch (v2.uintval&0x70)
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
 							return (toNumber(a) < 0)?TTRUE:TFALSE;
@@ -4965,6 +5061,10 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return TUNDEFINED;
 						case ATOMTYPE_BOOL_BIT:
 							return (toNumber(a) < toInt(v2))?TTRUE:TFALSE;
+						case ATOMTYPE_LOCALNUMBER_BIT:
+							if(std::isnan(getLocalNumber(getCallContext(w),v2)))
+								return TUNDEFINED;
+							return (toNumber(a) < getLocalNumber(getCallContext(w),v2))?TTRUE:TFALSE;
 						default: // INVALID
 							return TUNDEFINED;
 					}
@@ -4974,9 +5074,9 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 			}
 			break;
 		}
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		{
-			switch (a.uintval&0x70)
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_NULL_BIT:
 				{
@@ -4991,9 +5091,9 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							if(std::isnan(toNumber(v2)))
 								return TUNDEFINED;
 							return (0 < toNumber(v2))?TTRUE:TFALSE;
-						case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 						{
-							switch (v2.uintval&0x70)
+							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 							{
 								case ATOMTYPE_NULL_BIT:
 									return TFALSE;
@@ -5001,6 +5101,10 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 									return TUNDEFINED;
 								case ATOMTYPE_BOOL_BIT:
 									return (0 < (v2.uintval&0x80)>>7)?TTRUE:TFALSE;
+								case ATOMTYPE_LOCALNUMBER_BIT:
+									if(std::isnan(getLocalNumber(getCallContext(w),v2)))
+										return TUNDEFINED;
+									return (0 < getLocalNumber(getCallContext(w),v2))?TTRUE:TFALSE;
 								default: // INVALID
 									return TUNDEFINED;
 							}
@@ -5017,6 +5121,8 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 					switch (v2.uintval&0x7)
 					{
 						case ATOM_STRINGID:
+							if(std::isnan(toNumber(v2)))
+								return TUNDEFINED;
 							return (toInt(a) < toNumber(v2))?TTRUE:TFALSE;
 						case ATOM_INTEGER:
 							return ((int32_t)(a.uintval&0x80)>>7 < (v2.intval>>3))?TTRUE:TFALSE;
@@ -5026,16 +5132,20 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							if(std::isnan(toNumber(v2)))
 								return TUNDEFINED;
 							return ((a.uintval&0x80)>>7 < toNumber(v2))?TTRUE:TFALSE;
-						case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 						{
-							switch (v2.uintval&0x70)
+							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 							{
 								case ATOMTYPE_NULL_BIT:
-									return ((a.uintval&0x80)>>7)?TTRUE:TFALSE;
+									return TFALSE;
 								case ATOMTYPE_UNDEFINED_BIT:
 									return TUNDEFINED;
 								case ATOMTYPE_BOOL_BIT:
 									return ((a.uintval&0x80)>>7 < (v2.uintval&0x80)>>7)?TTRUE:TFALSE;
+								case ATOMTYPE_LOCALNUMBER_BIT:
+									if(std::isnan(getLocalNumber(getCallContext(w),v2)))
+										return TUNDEFINED;
+									return ((a.uintval&0x80)>>7 < getLocalNumber(getCallContext(w),v2))?TTRUE:TFALSE;
 								default: // INVALID
 									return TUNDEFINED;
 							}
@@ -5045,6 +5155,45 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 					}
 					break;
 				}
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					if(std::isnan(getLocalNumber(getCallContext(w),a)))
+						return TUNDEFINED;
+					switch (v2.uintval&0x7)
+					{
+						case ATOM_INTEGER:
+							return (getLocalNumber(getCallContext(w),a) < (v2.intval>>3))?TTRUE:TFALSE;
+						case ATOM_UINTEGER:
+							return (getLocalNumber(getCallContext(w),a) < (v2.uintval>>3))?TTRUE:TFALSE;
+						case ATOM_NUMBERPTR:
+							if(std::isnan(toNumber(v2)))
+								return TUNDEFINED;
+							return (getLocalNumber(getCallContext(w),a) < toNumber(v2))?TTRUE:TFALSE;
+						case ATOM_STRINGID:
+							if(std::isnan(toNumber(v2)))
+								return TUNDEFINED;
+							return (getLocalNumber(getCallContext(w),a) < toNumber(v2))?TTRUE:TFALSE;
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+						{
+							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
+							{
+								case ATOMTYPE_NULL_BIT:
+									return (getLocalNumber(getCallContext(w),a) < 0)?TTRUE:TFALSE;
+								case ATOMTYPE_UNDEFINED_BIT:
+									return TUNDEFINED;
+								case ATOMTYPE_BOOL_BIT:
+									return (getLocalNumber(getCallContext(w),a) < toInt(v2))?TTRUE:TFALSE;
+								case ATOMTYPE_LOCALNUMBER_BIT:
+									if(std::isnan(getLocalNumber(getCallContext(w),v2)))
+										return TUNDEFINED;
+									return (getLocalNumber(getCallContext(w),a) < getLocalNumber(getCallContext(w),v2))?TTRUE:TFALSE;
+								default: // INVALID
+									return TUNDEFINED;
+							}
+						}
+						default:
+							break;
+					}
+					break;
 				default: // INVALID
 					return TUNDEFINED;
 			}
@@ -5059,19 +5208,33 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 						return ((a.uintval>>3) < (v2.uintval>>3))?TTRUE:TFALSE;
 					return toString(a,w) < toString(v2,w) ? TTRUE : TFALSE;
 				case ATOM_INTEGER:
+					if(std::isnan(toNumber(a)))
+						return TUNDEFINED;
+					return (toNumber(a) < (v2.intval>>3))?TTRUE:TFALSE;
 				case ATOM_UINTEGER:
+					if(std::isnan(toNumber(a)))
+						return TUNDEFINED;
+					return (toNumber(a) < (v2.uintval>>3))?TTRUE:TFALSE;
 				case ATOM_STRINGPTR:
 					return toString(a,w) < toString(v2,w) ? TTRUE : TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				{
-					switch (v2.uintval&0x70)
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
+							if(std::isnan(toNumber(a)))
+								return TUNDEFINED;
 							return (toNumber(a) < 0)?TTRUE:TFALSE;
 						case ATOMTYPE_UNDEFINED_BIT:
 							return TUNDEFINED;
 						case ATOMTYPE_BOOL_BIT:
+							if(std::isnan(toNumber(a)))
+								return TUNDEFINED;
 							return (toNumber(a) < toInt(v2))?TTRUE:TFALSE;
+						case ATOMTYPE_LOCALNUMBER_BIT:
+							if(std::isnan(getNumber(w,v2)))
+								return TUNDEFINED;
+							return (getNumber(w,a) < getNumber(w,v2))?TTRUE:TFALSE;
 						default: // INVALID
 							return TUNDEFINED;
 					}
@@ -5100,7 +5263,7 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				case ATOM_UINTEGER:
 				case ATOM_STRINGID:
 					return toString(a,w) < toString(v2,w) ? TTRUE : TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 					return getObject(a)->isLessAtom(v2);
 				default:
 					break;
@@ -5119,9 +5282,9 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 					if(std::isnan(toNumber(v2)))
 						return TUNDEFINED;
 					return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				{
-					switch (v2.uintval&0x70)
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
 							return (toNumber(a) < 0)?TTRUE:TFALSE;
@@ -5129,6 +5292,10 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return TUNDEFINED;
 						case ATOMTYPE_BOOL_BIT:
 							return (toNumber(a) < (int32_t)((v2.uintval&0x80)>>7))?TTRUE:TFALSE;
+						case ATOMTYPE_LOCALNUMBER_BIT:
+							if(std::isnan(getNumber(w,v2)))
+								return TUNDEFINED;
+							return (getNumber(w,a) < getNumber(w,v2))?TTRUE:TFALSE;
 						default: // INVALID
 							return TUNDEFINED;
 					}
@@ -5142,7 +5309,7 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 		{
 			switch (v2.uintval&0x7)
 			{
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				case ATOM_STRINGID:
 				case ATOM_INTEGER:
 				case ATOM_UINTEGER:
@@ -5186,9 +5353,9 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				case ATOM_U_INTEGERPTR:
 				case ATOM_NUMBERPTR:
 					return (a.intval>>3)==toNumber(v2);
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				{
-					switch (v2.uintval&0x70)
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
 							return false;
@@ -5196,6 +5363,8 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return false;
 						case ATOMTYPE_BOOL_BIT:
 							return (a.intval>>3)==toInt(v2);
+						case ATOMTYPE_LOCALNUMBER_BIT:
+							return (a.intval>>3)==getLocalNumber(getCallContext(w),v2);
 						default: // INVALID
 							return false;
 					}
@@ -5219,9 +5388,9 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				case ATOM_NUMBERPTR:
 				case ATOM_U_INTEGERPTR:
 					return (a.uintval>>3)==toUInt(v2);
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				{
-					switch (v2.uintval&0x70)
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
 							return false;
@@ -5229,6 +5398,8 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return false;
 						case ATOMTYPE_BOOL_BIT:
 							return (a.uintval>>3)==toUInt(v2);
+						case ATOMTYPE_LOCALNUMBER_BIT:
+							return (a.uintval>>3)==getUInt(w,v2);
 						default: // INVALID
 							return false;
 					}
@@ -5253,9 +5424,9 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				case ATOM_STRINGID:
 				case ATOM_STRINGPTR:
 					return toNumber(a)==toNumber(v2);
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				{
-					switch (v2.uintval&0x70)
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
 							return false;
@@ -5263,6 +5434,8 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return false;
 						case ATOMTYPE_BOOL_BIT:
 							return toNumber(a)==toNumber(v2);
+						case ATOMTYPE_LOCALNUMBER_BIT:
+							return toNumber(a) == getLocalNumber(getCallContext(w),v2);
 						default: // INVALID
 							return false;
 					}
@@ -5282,9 +5455,9 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 					return getObject(a)->toInt64()==toInt64(v2);
 				case ATOM_NUMBERPTR:
 					return getObject(a)->toInt64()==toNumber(v2);
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				{
-					switch (v2.uintval&0x70)
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
 							return false;
@@ -5292,6 +5465,8 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return false;
 						case ATOMTYPE_BOOL_BIT:
 							return getObject(a)->toInt64()==toInt64(v2);
+						case ATOMTYPE_LOCALNUMBER_BIT:
+							return toInt64(a) == getLocalNumber(getCallContext(w),v2);
 						default: // INVALID
 							return false;
 					}
@@ -5304,23 +5479,23 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 			}
 			break;
 		}
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		{
-			switch (a.uintval&0x70)
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_NULL_BIT:
 				case ATOMTYPE_UNDEFINED_BIT:
 				{
 					switch (v2.uintval&0x7)
 					{
-						case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 						{
-							switch (v2.uintval&0x70)
+							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 							{
 								case ATOMTYPE_NULL_BIT:
 								case ATOMTYPE_UNDEFINED_BIT:
 									return true;
-								default: // BOOL
+								default: // BOOL/localnum
 									return false;
 							}
 						}
@@ -5343,15 +5518,43 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 						case ATOM_UINTEGER:
 						case ATOM_NUMBERPTR:
 							return (bool)((a.uintval&0x80)>>7)==toNumber(v2);
-						case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 						{
-							switch (v2.uintval&0x70)
+							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 							{
 								case ATOMTYPE_NULL_BIT:
 								case ATOMTYPE_UNDEFINED_BIT:
 									return false;
 								case ATOMTYPE_BOOL_BIT:
 									return (a.uintval&0x80)>>7==(v2.uintval&0x80)>>7;
+								case ATOMTYPE_LOCALNUMBER_BIT:
+									return (bool)((a.uintval&0x80)>>7)==getLocalNumber(getCallContext(w),v2);
+								default: // INVALID
+									return false;
+							}
+						}
+						default:
+							return toObject(v2,w)->isEqual(toObject(a,w));
+					}
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					switch (v2.uintval&0x7)
+					{
+						case ATOM_STRINGID:
+						case ATOM_INTEGER:
+						case ATOM_UINTEGER:
+						case ATOM_NUMBERPTR:
+							return getLocalNumber(getCallContext(w),a)==toNumber(v2);
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+						{
+							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
+							{
+								case ATOMTYPE_NULL_BIT:
+								case ATOMTYPE_UNDEFINED_BIT:
+									return false;
+								case ATOMTYPE_BOOL_BIT:
+									return getLocalNumber(getCallContext(w),a)==(v2.uintval&0x80)>>7;
+								case ATOMTYPE_LOCALNUMBER_BIT:
+									return getLocalNumber(getCallContext(w),a) == getLocalNumber(getCallContext(w),v2);
 								default: // INVALID
 									return false;
 							}
@@ -5367,15 +5570,17 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 		{
 			switch (v2.uintval&0x7)
 			{
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				{
-					switch (v2.uintval&0x70)
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
 						case ATOMTYPE_UNDEFINED_BIT:
 							return false;
 						case ATOMTYPE_BOOL_BIT:
 							return (bool)((v2.uintval&0x80)>>7)==toNumber(a);
+						case ATOMTYPE_LOCALNUMBER_BIT:
+							return toNumber(a) == getLocalNumber(getCallContext(w),v2);
 						default: // INVALID
 							return false;
 					}
@@ -5395,15 +5600,17 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 		{
 			switch (v2.uintval&0x7)
 			{
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 				{
-					switch (v2.uintval&0x70)
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
 						case ATOMTYPE_UNDEFINED_BIT:
 							return false;
 						case ATOMTYPE_BOOL_BIT:
 							return (bool)((v2.uintval&0x80)>>7)==toNumber(a);
+						case ATOMTYPE_LOCALNUMBER_BIT:
+							return toNumber(a) == getLocalNumber(getCallContext(w),v2);
 						default: // INVALID
 							return false;
 					}
@@ -5430,8 +5637,17 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 			}
 			switch (v2.uintval&0x7)
 			{
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL:
-					return getObject(a)->isEqual(toObject(v2,w));
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+				{
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
+					{
+						case ATOMTYPE_LOCALNUMBER_BIT:
+							return toNumber(a) == getLocalNumber(getCallContext(w),v2);
+						default:
+							return getObject(a)->isEqual(toObject(v2,w));
+					}
+					break;
+				}
 				case ATOM_STRINGID:
 				{
 					asAtom primitive=asAtomHandler::invalidAtom;
@@ -5523,6 +5739,25 @@ bool asAtomHandler::AVM1isEqualStrict(asAtom& a, asAtom& b, ASWorker* wrk)
 	}
 }
 
+call_context *asAtomHandler::getCallContext(ASWorker* wrk)
+{
+	return wrk->currentCallContext;
+}
+
+bool asAtomHandler::localNumberToGlobalNumber(ASWorker* wrk, asAtom &a)
+{
+	if (isLocalNumber(a))
+	{
+		number_t val = getLocalNumber(getCallContext(wrk),a);
+		if (std::isnan(val))
+			a.uintval = wrk->getSystemState()->nanAtom.uintval;
+		else
+			a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(wrk,val))|ATOM_NUMBERPTR;
+		return true;
+	}
+	return false;
+}
+
 // Implements ECMA-262 2nd edition, section 11.9.3. The abstract equality
 // comparison algorithm.
 bool asAtomHandler::AVM1isEqual(asAtom& v1, asAtom &v2, ASWorker* wrk)
@@ -5606,9 +5841,9 @@ ASObject *asAtomHandler::toObject(asAtom& a, ASWorker* wrk, bool isconstant)
 			// uints are internally treated as numbers, so create a Number instance
 			a.uintval = ((LIGHTSPARK_ATOM_VALTYPE)abstract_di(wrk,(a.uintval>>3)))|ATOM_NUMBERPTR;
 			break;
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
 		{
-			switch (a.uintval&0x70)
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_NULL_BIT:
 					return abstract_null(wrk->getSystemState());
@@ -5616,6 +5851,8 @@ ASObject *asAtomHandler::toObject(asAtom& a, ASWorker* wrk, bool isconstant)
 					return abstract_undefined(wrk->getSystemState());
 				case ATOMTYPE_BOOL_BIT:
 					return abstract_b(wrk->getSystemState(),(a.uintval & 0x80)>>7);
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					return abstract_d(wrk,getNumber(wrk,a));
 				default:
 					break;
 			}

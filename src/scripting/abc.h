@@ -133,6 +133,7 @@ public:
 	// indicates if the function code starts with getlocal_0/pushscope
 	bool needsscope;
 	bool needscoerceresult;
+	uint16_t maxLocalNumbers;
 	call_context cc;
 	method_info():
 #ifdef LLVM_ENABLED
@@ -142,7 +143,10 @@ public:
 		profTime(0),
 		validProfName(false),
 #endif
-		f(nullptr),context(nullptr),body(nullptr),returnType(nullptr),hasExplicitTypes(false),needsscope(false),needscoerceresult(true),cc(this)
+		f(nullptr),context(nullptr),body(nullptr),returnType(nullptr),
+		hasExplicitTypes(false),needsscope(false),needscoerceresult(true),
+		maxLocalNumbers(0),
+		cc(this)
 	{
 	}
 	~method_info()
@@ -171,6 +175,11 @@ public:
 		{
 			delete[] cc.localslots;
 			cc.localslots=nullptr;
+		}
+		if (cc.localNumbers)
+		{
+			delete[] cc.localNumbers;
+			cc.localNumbers=nullptr;
 		}
 	}
 };
@@ -980,6 +989,7 @@ private:
 	static void abc_convert_b_local_localresult(call_context* context);
 	static void abc_convert_b_constant_setslotnocoerce(call_context* context);
 	static void abc_convert_b_local_setslotnocoerce(call_context* context);
+	static void abc_coerce_o(call_context* context);
 	static void abc_convert_o(call_context* context);
 	static void abc_checkfilter(call_context* context);
 
@@ -1331,30 +1341,12 @@ private:
 	static void abc_callFunctionSyntheticOneArg_local_constant_localresult(call_context* context);
 	static void abc_callFunctionSyntheticOneArg_constant_local_localresult(call_context* context);
 	static void abc_callFunctionSyntheticOneArg_local_local_localresult(call_context* context);
-	static void abc_callFunctionBuiltinOneArgVoid_constant_constant(call_context* context);
-	static void abc_callFunctionBuiltinOneArgVoid_local_constant(call_context* context);
-	static void abc_callFunctionBuiltinOneArgVoid_constant_local(call_context* context);
-	static void abc_callFunctionBuiltinOneArgVoid_local_local(call_context* context);
-	static void abc_callFunctionBuiltinOneArg_constant_constant(call_context* context);
-	static void abc_callFunctionBuiltinOneArg_local_constant(call_context* context);
-	static void abc_callFunctionBuiltinOneArg_constant_local(call_context* context);
-	static void abc_callFunctionBuiltinOneArg_local_local(call_context* context);
-	static void abc_callFunctionBuiltinOneArg_constant_constant_localresult(call_context* context);
-	static void abc_callFunctionBuiltinOneArg_local_constant_localresult(call_context* context);
-	static void abc_callFunctionBuiltinOneArg_constant_local_localresult(call_context* context);
-	static void abc_callFunctionBuiltinOneArg_local_local_localresult(call_context* context);
 	static void abc_callFunctionSyntheticMultiArgsVoid_constant(call_context* context);
 	static void abc_callFunctionSyntheticMultiArgsVoid_local(call_context* context);
 	static void abc_callFunctionSyntheticMultiArgs_constant(call_context* context);
 	static void abc_callFunctionSyntheticMultiArgs_local(call_context* context);
 	static void abc_callFunctionSyntheticMultiArgs_constant_localResult(call_context* context);
 	static void abc_callFunctionSyntheticMultiArgs_local_localResult(call_context* context);
-	static void abc_callFunctionBuiltinMultiArgsVoid_constant(call_context* context);
-	static void abc_callFunctionBuiltinMultiArgsVoid_local(call_context* context);
-	static void abc_callFunctionBuiltinMultiArgs_constant(call_context* context);
-	static void abc_callFunctionBuiltinMultiArgs_local(call_context* context);
-	static void abc_callFunctionBuiltinMultiArgs_constant_localResult(call_context* context);
-	static void abc_callFunctionBuiltinMultiArgs_local_localResult(call_context* context);
 	static void abc_callFunctionSyntheticMultiArgs(call_context* context);
 	static void abc_callFunctionSyntheticMultiArgsVoid(call_context* context);
 

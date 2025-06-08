@@ -97,6 +97,8 @@ SET(LIBSPARK_SOURCES
   scripting/abc_interpreter.cpp
   scripting/abc_methods.cpp
   scripting/abc_methods_optimized.cpp
+  scripting/abc_methods_optimized_negate.cpp
+  scripting/abc_methods_optimized_functionbuiltin.cpp
   scripting/abc_optimizer.cpp
   scripting/abc_opcodes.cpp
   scripting/abctypes.cpp

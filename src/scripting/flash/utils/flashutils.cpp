@@ -117,7 +117,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 			c=asAtomHandler::as<Class_base>(args[0]);
 			break;
 		case T_NUMBER:
-			if (asAtomHandler::as<Number>(args[0])->isfloat)
+			if (asAtomHandler::isLocalNumber(args[0]) || asAtomHandler::as<Number>(args[0])->isfloat)
 				c=Class<Number>::getRef(wrk->getSystemState()).getPtr();
 			else if (asAtomHandler::toInt64(args[0]) > INT32_MIN && asAtomHandler::toInt64(args[0])< INT32_MAX)
 				c=Class<Integer>::getRef(wrk->getSystemState()).getPtr();

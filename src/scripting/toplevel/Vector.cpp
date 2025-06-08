@@ -1635,6 +1635,7 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset,wrk);
 	}
 	asAtom v = o;
+	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),v);
 	if (this->vec_type->coerce(getInstanceWorker(), o))
 		ASATOM_DECREF(v);
 	if(index < vec.size())
@@ -1682,6 +1683,7 @@ void Vector::setVariableByInteger(int index, asAtom &o, CONST_ALLOWED_FLAG allow
 	}
 	*alreadyset = false;
 	asAtom v = o;
+	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),v);
 	if (this->vec_type->coerce(getInstanceWorker(), o))
 		ASATOM_DECREF(v);
 	if(size_t(index) < vec.size())

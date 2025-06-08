@@ -744,7 +744,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,writeFloat)
 	ByteArray* th=asAtomHandler::as<ByteArray>(obj);
 	assert_and_throw(argslen==1);
 
-	float value = asAtomHandler::toNumber(args[0]);
+	float value = asAtomHandler::getNumber(wrk,args[0]);
 	uint32_t *intptr=reinterpret_cast<uint32_t*>(&value);
 	uint32_t value2=th->endianIn(*intptr);
 

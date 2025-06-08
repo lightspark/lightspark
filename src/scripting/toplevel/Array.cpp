@@ -2882,6 +2882,7 @@ Array::~Array()
 bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref, bool addmember)
 {
 	bool ret = true;
+	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	if(index<currentsize)
 	{
 		if (index < ARRAY_SIZE_THRESHOLD)

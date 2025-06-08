@@ -235,7 +235,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,get_attributes)
 	{
 		uint32_t attrName = wrk->getSystemState()->getUniqueStringId(it->name());
 		asAtom  attrValue = asAtomHandler::fromString(wrk->getSystemState(),it->value());
-		res->setDynamicVariableNoCheck(attrName,attrValue,false,!wrk->needsActionScript3());
+		res->setDynamicVariableNoCheck(attrName,attrValue,false,wrk,!wrk->needsActionScript3());
 	}
 }
 ASFUNCTIONBODY_ATOM(XMLNode,set_attributes)

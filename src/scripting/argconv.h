@@ -87,6 +87,7 @@ public:
 									  "?"); // TODO
 			return asAtomHandler::invalidAtom;
 		}
+		asAtomHandler::localNumberToGlobalNumber(wrk,obj);
 		ASATOM_ADDSTOREDMEMBER(obj);
 		return obj;
 	}
@@ -198,7 +199,7 @@ public:
 template<>
 inline number_t lightspark::ArgumentConversionAtom<number_t>::toConcrete(ASWorker* wrk,asAtom obj,const number_t& v)
 {
-	return asAtomHandler::toNumber(obj);
+	return asAtomHandler::getNumber(wrk,obj);
 }
 template<>
 inline number_t lightspark::ArgumentConversionAtom<number_t>::failValue() { return 0; }
@@ -220,7 +221,7 @@ inline void lightspark::ArgumentConversionAtom<bool>::cleanupOldValue(bool& oldv
 template<>
 inline uint32_t lightspark::ArgumentConversionAtom<uint32_t>::toConcrete(ASWorker* wrk,asAtom obj,const uint32_t& v)
 {
-	return asAtomHandler::toUInt(obj);
+	return asAtomHandler::getUInt(wrk,obj);
 }
 template<>
 inline uint32_t lightspark::ArgumentConversionAtom<uint32_t>::failValue() { return 0; }
@@ -263,7 +264,7 @@ inline void lightspark::ArgumentConversionAtom<tiny_string>::cleanupOldValue(tin
 template<>
 inline RGB lightspark::ArgumentConversionAtom<RGB>::toConcrete(ASWorker* wrk,asAtom obj,const RGB& v)
 {
-	return RGB(asAtomHandler::toUInt(obj));
+	return RGB(asAtomHandler::getUInt(wrk,obj));
 }
 template<>
 inline RGB lightspark::ArgumentConversionAtom<RGB>::failValue() { return RGB(); }
@@ -273,7 +274,7 @@ inline void lightspark::ArgumentConversionAtom<RGB>::cleanupOldValue(RGB& oldval
 template<>
 inline AS3KeyCode lightspark::ArgumentConversionAtom<AS3KeyCode>::toConcrete(ASWorker* wrk,asAtom obj,const AS3KeyCode& v)
 {
-	return AS3KeyCode(asAtomHandler::toUInt(obj));
+	return AS3KeyCode(asAtomHandler::getUInt(wrk,obj));
 }
 template<>
 inline AS3KeyCode lightspark::ArgumentConversionAtom<AS3KeyCode>::failValue() { return AS3KEYCODE_UNKNOWN; }

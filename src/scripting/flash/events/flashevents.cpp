@@ -256,16 +256,16 @@ ASFUNCTIONBODY_ATOM(Event,stopImmediatePropagation)
 
 void WaitableEvent::wait()
 {
-	if (getSys()->runSingleThreaded || isVmThread())
+	if (getSystemState()->runSingleThreaded || isVmThread())
 		return;
 	while (!handled)
-		getSys()->waitMainSignal();
+		getSystemState()->waitMainSignal();
 }
 
 void WaitableEvent::signal()
 {
 	handled = true;
-	getSys()->sendMainSignal();
+	getSystemState()->sendMainSignal();
 }
 
 void WaitableEvent::finalize()
@@ -1384,7 +1384,7 @@ ASFUNCTIONBODY_ATOM(HTTPStatusEvent,_constructor)
 }
 
 FunctionEvent::FunctionEvent(asAtom _f, asAtom _obj, asAtom* _args, uint32_t _numArgs):
-		WaitableEvent("FunctionEvent"),f(_f),obj(_obj),numArgs(_numArgs)
+		WaitableEvent(asAtomHandler::getObjectNoCheck(_f)->getInstanceWorker(),"FunctionEvent"),f(_f),obj(_obj),numArgs(_numArgs)
 {
 	args = new asAtom[numArgs];
 	uint32_t i;
@@ -1419,7 +1419,7 @@ FunctionAsyncEvent::~FunctionAsyncEvent()
 
 ExternalCallEvent::ExternalCallEvent(asAtom _f, ASObject* const* _args,
 	uint32_t _numArgs, ASObject** _result, bool* _thrown, tiny_string* _exception):
-		WaitableEvent("ExternalCallEvent"),
+		WaitableEvent(asAtomHandler::getObjectNoCheck(_f)->getInstanceWorker(), "ExternalCallEvent"),
 		f(_f),args(_args),result(_result),thrown(_thrown),exception(_exception),numArgs(_numArgs)
 {
 }
@@ -1993,7 +1993,7 @@ LocalConnectionEvent::~LocalConnectionEvent()
 	
 }
 
-GetMouseTargetEvent::GetMouseTargetEvent(uint32_t _x, uint32_t _y, HIT_TYPE _type): WaitableEvent("GetMouseTargetEvent"),x(_x),y(_y),type(_type)
+GetMouseTargetEvent::GetMouseTargetEvent(ASWorker* wrk,uint32_t _x, uint32_t _y, HIT_TYPE _type): WaitableEvent(wrk,"GetMouseTargetEvent"),x(_x),y(_y),type(_type)
 {
 }
 

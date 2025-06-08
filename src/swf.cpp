@@ -2419,7 +2419,7 @@ void SystemState::tick()
 	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) RenderFrameEvent()));
 
 	/* Step 9: we are idle now, so we can handle all input events */
-	_R<IdleEvent> idle = _MR(new (unaccountedMemory) IdleEvent());
+	_R<IdleEvent> idle = _MR(new (unaccountedMemory) IdleEvent(this->worker));
 	if (currentVm->addEvent(NullRef, idle) && !runSingleThreaded)
 		idle->wait();
 	if (runSingleThreaded)

@@ -23,6 +23,8 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "backends/rendering.h"
 #include "scripting/toplevel/Array.h"
+#include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/Number.h"
 
 
 using namespace std;
@@ -43,30 +45,30 @@ GradientBevelFilter::GradientBevelFilter(ASWorker* wrk,Class_base* c):
 }
 GradientBevelFilter::GradientBevelFilter(ASWorker* wrk,Class_base* c, const GRADIENTBEVELFILTER& filter):
 	BitmapFilter(wrk,c,SUBTYPE_GRADIENTBEVELFILTER),
-	angle(filter.Angle),
+	angle(filter.Angle*180.0/M_PI),
 	blurX(filter.BlurX),
 	blurY(filter.BlurY),
 	distance(filter.Distance),
 	knockout(filter.Knockout),
 	quality(filter.Passes),
 	strength(filter.Strength),
-	type(filter.InnerShadow ? "inner" : "outer") // TODO: is type set based on "onTop" ?
+	type(filter.OnTop ? "full" : filter.InnerShadow ? "inner" : "outer")
 {
 	if (filter.OnTop)
 		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter onTop flag");
+	colors = _MR(Class<Array>::getInstanceSNoArgs(wrk));
+	alphas = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 	if (filter.NumColors)
 	{
-		colors = _MR(Class<Array>::getInstanceSNoArgs(wrk));
-		alphas = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		for (uint8_t i = 0; i < filter.NumColors; i++)
 		{
 			colors->push(asAtomHandler::fromUInt(RGB(filter.GradientColors[i].Red,filter.GradientColors[i].Green,filter.GradientColors[i].Blue).toUInt()));
 			alphas->push(asAtomHandler::fromNumber(wrk,filter.GradientColors[i].af(),false));
 		}
 	}
+	ratios = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 	if (filter.NumColors)
 	{
-		ratios = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		for (uint8_t i = 0; i < filter.NumColors; i++)
 		{
 			ratios->push(asAtomHandler::fromUInt(filter.GradientRatio[i]));
@@ -78,30 +80,30 @@ GradientBevelFilter::GradientBevelFilter(ASWorker* wrk,Class_base* c, const GRAD
 void GradientBevelFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
-	REGISTER_GETTER_SETTER(c,alphas);
-	REGISTER_GETTER_SETTER(c,angle);
-	REGISTER_GETTER_SETTER(c,blurX);
-	REGISTER_GETTER_SETTER(c,blurY);
-	REGISTER_GETTER_SETTER(c,colors);
-	REGISTER_GETTER_SETTER(c,distance);
-	REGISTER_GETTER_SETTER(c,knockout);
-	REGISTER_GETTER_SETTER(c,quality);
-	REGISTER_GETTER_SETTER(c,ratios);
-	REGISTER_GETTER_SETTER(c,strength);
-	REGISTER_GETTER_SETTER(c,type);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,alphas,Array);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,angle,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,blurX,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,blurY,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,colors,Array);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,distance,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,knockout,Boolean);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,quality,Integer);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,ratios,Array);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,strength,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,type,ASString);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,alphas)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,angle)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,blurX)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,blurY)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,colors)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,distance)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,knockout)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,quality)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,ratios)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,strength)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(GradientBevelFilter,type)
+ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,alphas)
+ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,angle)
+ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,blurX)
+ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,blurY)
+ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,colors)
+ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,distance)
+ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,knockout)
+ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,quality)
+ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,ratios)
+ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,strength)
+ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,type)
 
 void GradientBevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
@@ -138,7 +140,9 @@ void GradientBevelFilter::prepareShutdown()
 ASFUNCTIONBODY_ATOM(GradientBevelFilter,_constructor)
 {
 	GradientBevelFilter *th = asAtomHandler::as<GradientBevelFilter>(obj);
-	ARG_CHECK(ARG_UNPACK(th->distance,4.0)(th->angle,45)(th->colors,NullRef)(th->alphas,NullRef)(th->ratios,NullRef)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false));
+	ARG_CHECK(ARG_UNPACK(th->distance,4.0)(th->angle,45)(th->colors,_MR(Class<Array>::getInstanceSNoArgs(wrk)))(th->alphas,_MR(Class<Array>::getInstanceSNoArgs(wrk)))(th->ratios,_MR(Class<Array>::getInstanceSNoArgs(wrk)))(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false));
+	th->alphas->resize(th->colors->size());
+	th->ratios->resize(th->colors->size());
 }
 
 bool GradientBevelFilter::compareFILTER(const FILTER& filter) const
@@ -224,7 +228,7 @@ void GradientBevelFilter::getRenderFilterArgs(uint32_t step,float* args) const
 		RGBA(),
 		strength,
 		distance,
-		angle
+		angle*M_PI/180.0
 	);
 }
 

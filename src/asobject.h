@@ -2310,8 +2310,8 @@ FORCE_INLINE bool asAtomHandler::increment(asAtom& a, ASWorker* wrk, bool replac
 				case ATOMTYPE_LOCALNUMBER_BIT:
 				{
 					number_t n = getLocalNumber(getCallContext(wrk),a);
-					if (std::isnan(n) || std::isinf(n))
-						a = fromNumber(wrk,n,false);
+					if (USUALLY_FALSE(std::isnan(n) || std::isinf(n)))
+						break;
 					else if(trunc(n) == n && n >= INT32_MIN && n < UINT32_MAX)
 					{
 						if (replace)
@@ -2321,10 +2321,8 @@ FORCE_INLINE bool asAtomHandler::increment(asAtom& a, ASWorker* wrk, bool replac
 						else
 							asAtomHandler::setUInt(a,wrk,n+1);
 					}
-					else if (replace)
-						return replaceNumber(a,wrk,n+1);
 					else
-						a = fromNumber(wrk,n+1,false);
+						setNumber(a,wrk,n+1);
 					break;
 				}
 				default:
@@ -2341,8 +2339,8 @@ FORCE_INLINE bool asAtomHandler::increment(asAtom& a, ASWorker* wrk, bool replac
 		case ATOM_NUMBERPTR:
 		{
 			number_t n = getObjectNoCheck(a)->toNumber();
-			if (std::isnan(n) || std::isinf(n))
-				setNumber(a,wrk,n);
+			if (USUALLY_FALSE(std::isnan(n) || std::isinf(n)))
+				break;
 			else if(trunc(n) == n && n >= INT32_MIN && n < UINT32_MAX)
 			{
 				if (replace)
@@ -2408,8 +2406,8 @@ FORCE_INLINE bool asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool replac
 				case ATOMTYPE_LOCALNUMBER_BIT:
 				{
 					number_t n = getLocalNumber(getCallContext(wrk),a);
-					if (std::isnan(n) || std::isinf(n))
-						a = fromNumber(wrk,n,false);
+					if (USUALLY_FALSE(std::isnan(n) || std::isinf(n)))
+						break;
 					else if(trunc(n) == n && n > INT32_MIN && n <= UINT32_MAX)
 					{
 						if (replace)
@@ -2419,10 +2417,8 @@ FORCE_INLINE bool asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool replac
 						else
 							asAtomHandler::setUInt(a,wrk,n-1);
 					}
-					else if (replace)
-						return replaceNumber(a,wrk,n-1);
 					else
-						a = fromNumber(wrk,n+1,false);
+						setNumber(a,wrk,n-1);
 					break;
 				}
 				default:
@@ -2447,8 +2443,8 @@ FORCE_INLINE bool asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool replac
 		case ATOM_NUMBERPTR:
 		{
 			number_t n = getObjectNoCheck(a)->toNumber();
-			if (std::isnan(n) || std::isinf(n))
-				setNumber(a,wrk,n);
+			if (USUALLY_FALSE(std::isnan(n) || std::isinf(n)))
+				break;
 			else if(trunc(n) == n && n > INT32_MIN && n <= UINT32_MAX)
 			{
 				if (replace)
@@ -2543,8 +2539,8 @@ FORCE_INLINE void asAtomHandler::subtract(asAtom& a, ASWorker* wrk, asAtom &v2, 
 	}
 	else
 	{
-		number_t num2=toNumber(v2);
-		number_t num1=toNumber(a);
+		number_t num2=getNumber(wrk,v2);
+		number_t num1=getNumber(wrk,a);
 
 		LOG_CALL("subtract " << num1 << '-' << num2);
 		if (forceint)
@@ -2614,8 +2610,8 @@ FORCE_INLINE void asAtomHandler::multiply(asAtom& a, ASWorker* wrk, asAtom &v2, 
 	}
 	else
 	{
-		double num1=toNumber(v2);
-		double num2=toNumber(a);
+		double num1=getNumber(wrk,v2);
+		double num2=getNumber(wrk,a);
 		LOG_CALL("multiply "  << num1 << '*' << num2);
 		if (forceint)
 			setInt(a,wrk,num1*num2);

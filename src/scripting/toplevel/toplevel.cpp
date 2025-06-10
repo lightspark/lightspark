@@ -177,9 +177,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		{
 			mi->cc.localslots[i] = &mi->cc.locals[i];
 		}
-		if (mi->maxLocalNumbers)
-			mi->cc.localNumbers = new number_t[mi->maxLocalNumbers];
-
+		mi->cc.localNumbers = new number_t[mi->body->getMaxLocalNumbers()];
 	}
 	if (saved_cc && saved_cc->exceptionthrown)
 	{
@@ -286,8 +284,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		{
 			cc->localslots[i] = &cc->locals[i];
 		}
-		if (mi->maxLocalNumbers)
-			cc->localNumbers = g_newa(number_t,mi->maxLocalNumbers);
+		cc->localNumbers = g_newa(number_t,mi->body->getMaxLocalNumbers());
 	}
 	else
 	{

@@ -4125,7 +4125,7 @@ number_t asAtomHandler::getLocalNumber(call_context* cc,const asAtom& a)
 {
 	assert((a.uintval&0xf) == (ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER|ATOMTYPE_LOCALNUMBER_BIT));
 	uint32_t index = a.uintval>>8;
-	assert(index < cc->mi->maxLocalNumbers);
+	assert(index < cc->mi->body->getMaxLocalNumbers());
 	return cc->localNumbers[index];
 }
 int32_t asAtomHandler::localNumbertoInt(ASWorker* wrk, const asAtom& a)
@@ -4891,7 +4891,7 @@ void asAtomHandler::setNumber(asAtom& a, ASWorker* wrk, number_t val, uint16_t l
 	if (localnumberpos != UINT16_MAX)
 	{
 		assert(wrk->currentCallContext);
-		assert(localnumberpos < wrk->currentCallContext->mi->maxLocalNumbers);
+		assert(localnumberpos < wrk->currentCallContext->mi->body->getMaxLocalNumbers());
 		wrk->currentCallContext->localNumbers[localnumberpos]=val;
 		a.uintval=localnumberpos<<8 | ATOMTYPE_LOCALNUMBER_BIT;
 		return;

@@ -2612,8 +2612,6 @@ multiname* method_info::returnTypeName() const
 istream& lightspark::operator>>(istream& in, method_info& v)
 {
 	in >> v.info;
-	// reserve space for local numbers in arguments
-	v.maxLocalNumbers=v.info.param_count;
 	return in;
 }
 

@@ -959,6 +959,7 @@ ASFUNCTIONBODY_GETTER_SETTER_STATIC(SoundMixer,soundTransform)
 ASFUNCTIONBODY_ATOM(SoundMixer,stopAll)
 {
 	wrk->getSystemState()->audioManager->stopAllSounds();
+	ret = asAtomHandler::undefinedAtom;
 }
 ASFUNCTIONBODY_ATOM(SoundMixer,computeSpectrum)
 {

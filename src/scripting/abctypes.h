@@ -305,13 +305,11 @@ struct preloadedcodedata
 		int32_t arg3_int;
 		uint32_t arg3_uint;
 	};
-	uint16_t localnumberpos;
 	preloadedcodedata():
 		func(nullptr),
 		cacheobj1(nullptr),
 		cacheobj2(nullptr),
-		cacheobj3(nullptr),
-		localnumberpos(UINT16_MAX)
+		cacheobj3(nullptr)
 	{}
 };
 struct localconstantslot
@@ -345,6 +343,7 @@ struct method_body_info
 	std::vector<preloadedcodedata> preloadedcode;
 	asAtom* localsinitialvalues;
 	inline uint16_t getReturnValuePos() const { return returnvaluepos; }
+	inline uint16_t getMaxLocalNumbers() const { return returnvaluepos+localresultcount+1; }
 };
 
 std::istream& operator>>(std::istream& in, u8& v);

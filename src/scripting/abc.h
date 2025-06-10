@@ -133,7 +133,6 @@ public:
 	// indicates if the function code starts with getlocal_0/pushscope
 	bool needsscope;
 	bool needscoerceresult;
-	uint16_t maxLocalNumbers;
 	call_context cc;
 	method_info():
 #ifdef LLVM_ENABLED
@@ -145,7 +144,6 @@ public:
 #endif
 		f(nullptr),context(nullptr),body(nullptr),returnType(nullptr),
 		hasExplicitTypes(false),needsscope(false),needscoerceresult(true),
-		maxLocalNumbers(0),
 		cc(this)
 	{
 	}

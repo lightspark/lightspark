@@ -823,8 +823,16 @@ void ABCVm::abc_setlocal(call_context* context)
 	assert(i <= context->mi->body->getReturnValuePos()+context->mi->body->localresultcount);
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
-		ASATOM_DECREF(context->locals[i]);
-		context->locals[i]=*obj;
+		if (asAtomHandler::isLocalNumber(*obj))
+		{
+			ASATOM_DECREF(context->locals[i]);
+			asAtomHandler::setNumber(context->locals[i],context->worker,asAtomHandler::getLocalNumber(context,*obj),i);
+		}
+		else
+		{
+			ASATOM_DECREF(context->locals[i]);
+			context->locals[i]=*obj;
+		}
 	}
 }
 void ABCVm::abc_getglobalscope(call_context* context)
@@ -1585,8 +1593,16 @@ void ABCVm::abc_setlocal_0(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
-		ASATOM_DECREF(context->locals[i]);
-		context->locals[i]=*obj;
+		if (asAtomHandler::isLocalNumber(*obj))
+		{
+			ASATOM_DECREF(context->locals[i]);
+			asAtomHandler::setNumber(context->locals[i],context->worker,asAtomHandler::getLocalNumber(context,*obj),i);
+		}
+		else
+		{
+			ASATOM_DECREF(context->locals[i]);
+			context->locals[i]=*obj;
+		}
 	}
 	++(context->exec_pos);
 }
@@ -1604,8 +1620,16 @@ void ABCVm::abc_setlocal_1(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
-		ASATOM_DECREF(context->locals[i]);
-		context->locals[i]=*obj;
+		if (asAtomHandler::isLocalNumber(*obj))
+		{
+			ASATOM_DECREF(context->locals[i]);
+			asAtomHandler::setNumber(context->locals[i],context->worker,asAtomHandler::getLocalNumber(context,*obj),i);
+		}
+		else
+		{
+			ASATOM_DECREF(context->locals[i]);
+			context->locals[i]=*obj;
+		}
 	}
 }
 void ABCVm::abc_setlocal_2(call_context* context)
@@ -1621,8 +1645,16 @@ void ABCVm::abc_setlocal_2(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
-		ASATOM_DECREF(context->locals[i]);
-		context->locals[i]=*obj;
+		if (asAtomHandler::isLocalNumber(*obj))
+		{
+			ASATOM_DECREF(context->locals[i]);
+			asAtomHandler::setNumber(context->locals[i],context->worker,asAtomHandler::getLocalNumber(context,*obj),i);
+		}
+		else
+		{
+			ASATOM_DECREF(context->locals[i]);
+			context->locals[i]=*obj;
+		}
 	}
 }
 void ABCVm::abc_setlocal_3(call_context* context)
@@ -1638,8 +1670,16 @@ void ABCVm::abc_setlocal_3(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
-		ASATOM_DECREF(context->locals[i]);
-		context->locals[i]=*obj;
+		if (asAtomHandler::isLocalNumber(*obj))
+		{
+			ASATOM_DECREF(context->locals[i]);
+			asAtomHandler::setNumber(context->locals[i],context->worker,asAtomHandler::getLocalNumber(context,*obj),i);
+		}
+		else
+		{
+			ASATOM_DECREF(context->locals[i]);
+			context->locals[i]=*obj;
+		}
 	}
 }
 void ABCVm::abc_debug(call_context* context)

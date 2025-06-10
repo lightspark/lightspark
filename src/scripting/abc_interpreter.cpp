@@ -2414,12 +2414,6 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
 			state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
 		}
-
-		if (restype && restype == Class<Number>::getRef(restype->getSystemState()).getPtr())
-		{
-			state.preloadedcode[preloadlocalpos].pcode.localnumberpos = state.mi->maxLocalNumbers;
-			state.mi->maxLocalNumbers++;
-		}
 		state.duplocalresult=true;
 	}
 	return res;

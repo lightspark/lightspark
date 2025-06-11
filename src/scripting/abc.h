@@ -1035,18 +1035,6 @@ private:
 	static void abc_bitnot(call_context* context);
 
 	static void abc_add(call_context* context); //0xa0
-	static void abc_add_constant_constant(call_context* context);
-	static void abc_add_local_constant(call_context* context);
-	static void abc_add_constant_local(call_context* context);
-	static void abc_add_local_local(call_context* context);
-	static void abc_add_constant_constant_localresult(call_context* context);
-	static void abc_add_local_constant_localresult(call_context* context);
-	static void abc_add_constant_local_localresult(call_context* context);
-	static void abc_add_local_local_localresult(call_context* context);
-	static void abc_add_constant_constant_setslotnocoerce(call_context* context);
-	static void abc_add_local_constant_setslotnocoerce(call_context* context);
-	static void abc_add_constant_local_setslotnocoerce(call_context* context);
-	static void abc_add_local_local_setslotnocoerce(call_context* context);
 	static void abc_subtract(call_context* context);
 	static void abc_subtract_constant_constant(call_context* context);
 	static void abc_subtract_local_constant(call_context* context);
@@ -1326,27 +1314,6 @@ private:
 
 	static void abc_callFunctionNoArgsVoid_constant(call_context* context);
 	static void abc_callFunctionNoArgsVoid_local(call_context* context);
-
-	static void abc_callFunctionSyntheticOneArgVoid_constant_constant(call_context* context);
-	static void abc_callFunctionSyntheticOneArgVoid_local_constant(call_context* context);
-	static void abc_callFunctionSyntheticOneArgVoid_constant_local(call_context* context);
-	static void abc_callFunctionSyntheticOneArgVoid_local_local(call_context* context);
-	static void abc_callFunctionSyntheticOneArg_constant_constant(call_context* context);
-	static void abc_callFunctionSyntheticOneArg_local_constant(call_context* context);
-	static void abc_callFunctionSyntheticOneArg_constant_local(call_context* context);
-	static void abc_callFunctionSyntheticOneArg_local_local(call_context* context);
-	static void abc_callFunctionSyntheticOneArg_constant_constant_localresult(call_context* context);
-	static void abc_callFunctionSyntheticOneArg_local_constant_localresult(call_context* context);
-	static void abc_callFunctionSyntheticOneArg_constant_local_localresult(call_context* context);
-	static void abc_callFunctionSyntheticOneArg_local_local_localresult(call_context* context);
-	static void abc_callFunctionSyntheticMultiArgsVoid_constant(call_context* context);
-	static void abc_callFunctionSyntheticMultiArgsVoid_local(call_context* context);
-	static void abc_callFunctionSyntheticMultiArgs_constant(call_context* context);
-	static void abc_callFunctionSyntheticMultiArgs_local(call_context* context);
-	static void abc_callFunctionSyntheticMultiArgs_constant_localResult(call_context* context);
-	static void abc_callFunctionSyntheticMultiArgs_local_localResult(call_context* context);
-	static void abc_callFunctionSyntheticMultiArgs(call_context* context);
-	static void abc_callFunctionSyntheticMultiArgsVoid(call_context* context);
 
 	static void abc_increment_i_local(call_context* context);
 	static void abc_increment_i_local_localresult(call_context* context);

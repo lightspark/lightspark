@@ -308,7 +308,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		for (uint32_t i = 0; i < numArgs; i++)
 		{
 			if (asAtomHandler::isLocalNumber(args[i]))
-				asAtomHandler::setNumber(args[i],wrk,asAtomHandler::getLocalNumber(saved_cc,args[i]),i);
+				asAtomHandler::setNumber(args[i],wrk,asAtomHandler::getLocalNumber(saved_cc,args[i]),i+1);
 		}
 	}
 
@@ -544,7 +544,8 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	}
 	for(asAtom* i=cc->locals+1;i< cc->lastlocal;++i)
 	{
-		LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
+		LOG_CALL("locals:"<<(i-cc->locals)<<" "<<asAtomHandler::toDebugString(*i));
+		assert(!asAtomHandler::isLocalNumber(*i)||(i->uintval>>8 == uint32_t(i-cc->locals)));
 		ASATOM_DECREF_POINTER(i);
 	}
 	if (cc->locals[0].uintval != obj.uintval)

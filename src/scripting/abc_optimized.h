@@ -30,7 +30,10 @@
 		return; \
 	} \
 	asAtom oldres = CONTEXT_GETLOCAL(context,pos);\
-	asAtomHandler::set(CONTEXT_GETLOCAL(context,pos),ret);\
+	if (asAtomHandler::isLocalNumber(ret)) \
+		asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,pos),context->worker,asAtomHandler::getLocalNumber(context,ret),pos);\
+	else \
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,pos),ret);\
 	ASATOM_DECREF(oldres);\
 }
 
@@ -65,6 +68,40 @@ void abc_negate_constant_localresult(call_context* context);
 void abc_negate_local_localresult(call_context* context);
 void abc_negate_constant_setslotnocoerce(call_context* context);
 void abc_negate_local_setslotnocoerce(call_context* context);
+
+void abc_add_constant_constant(call_context* context);
+void abc_add_local_constant(call_context* context);
+void abc_add_constant_local(call_context* context);
+void abc_add_local_local(call_context* context);
+void abc_add_constant_constant_localresult(call_context* context);
+void abc_add_local_constant_localresult(call_context* context);
+void abc_add_constant_local_localresult(call_context* context);
+void abc_add_local_local_localresult(call_context* context);
+void abc_add_constant_constant_setslotnocoerce(call_context* context);
+void abc_add_local_constant_setslotnocoerce(call_context* context);
+void abc_add_constant_local_setslotnocoerce(call_context* context);
+void abc_add_local_local_setslotnocoerce(call_context* context);
+
+void abc_callFunctionSyntheticOneArgVoid_constant_constant(call_context* context);
+void abc_callFunctionSyntheticOneArgVoid_local_constant(call_context* context);
+void abc_callFunctionSyntheticOneArgVoid_constant_local(call_context* context);
+void abc_callFunctionSyntheticOneArgVoid_local_local(call_context* context);
+void abc_callFunctionSyntheticOneArg_constant_constant(call_context* context);
+void abc_callFunctionSyntheticOneArg_local_constant(call_context* context);
+void abc_callFunctionSyntheticOneArg_constant_local(call_context* context);
+void abc_callFunctionSyntheticOneArg_local_local(call_context* context);
+void abc_callFunctionSyntheticOneArg_constant_constant_localresult(call_context* context);
+void abc_callFunctionSyntheticOneArg_local_constant_localresult(call_context* context);
+void abc_callFunctionSyntheticOneArg_constant_local_localresult(call_context* context);
+void abc_callFunctionSyntheticOneArg_local_local_localresult(call_context* context);
+void abc_callFunctionSyntheticMultiArgsVoid_constant(call_context* context);
+void abc_callFunctionSyntheticMultiArgsVoid_local(call_context* context);
+void abc_callFunctionSyntheticMultiArgs_constant(call_context* context);
+void abc_callFunctionSyntheticMultiArgs_local(call_context* context);
+void abc_callFunctionSyntheticMultiArgs_constant_localResult(call_context* context);
+void abc_callFunctionSyntheticMultiArgs_local_localResult(call_context* context);
+void abc_callFunctionSyntheticMultiArgs(call_context* context);
+void abc_callFunctionSyntheticMultiArgsVoid(call_context* context);
 }
 
 #endif /* SCRIPTING_ABC_OPTIMIZED_H */

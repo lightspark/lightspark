@@ -29,9 +29,9 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_constant_constant(call_contex
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = *instrptr->arg1_constant;
-	asAtom* value = instrptr->arg2_constant;
+	asAtom value = *instrptr->arg2_constant;
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
-	LOG_CALL("callFunctionBuiltinOneArgVoid_cc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionBuiltinOneArgVoid_cc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom ret = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
 	{
@@ -43,7 +43,7 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_constant_constant(call_contex
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	ASATOM_DECREF(ret);
 	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
@@ -53,9 +53,9 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_local_constant(call_context* 
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	asAtom* value = instrptr->arg2_constant;
+	asAtom value = *instrptr->arg2_constant;
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
-	LOG_CALL("callFunctionBuiltinOneArgVoid_lc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionBuiltinOneArgVoid_lc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom ret = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
 	{
@@ -67,7 +67,7 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_local_constant(call_context* 
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	ASATOM_DECREF(ret);
 	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
@@ -77,9 +77,9 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_constant_local(call_context* 
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = *instrptr->arg1_constant;
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
-	LOG_CALL("callFunctionOneBuiltinArgVoid_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionOneBuiltinArgVoid_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom ret = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
 	{
@@ -91,7 +91,7 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_constant_local(call_context* 
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	ASATOM_DECREF(ret);
 	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
@@ -101,9 +101,9 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_local_local(call_context* con
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
-	LOG_CALL("callFunctionBuiltinOneArgVoid_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionBuiltinOneArgVoid_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom ret = asAtomHandler::invalidAtom;
 	if(asAtomHandler::is<Null>(obj))
 	{
@@ -115,7 +115,7 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_local_local(call_context* con
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	ASATOM_DECREF(ret);
 	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
@@ -127,12 +127,12 @@ void lightspark::abc_callFunctionBuiltinOneArg_constant_constant(call_context* c
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = *instrptr->arg1_constant;
-	asAtom* value = instrptr->arg2_constant;
+	asAtom value = *instrptr->arg2_constant;
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
-	LOG_CALL("callFunctionBuiltinOneArg_cc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionBuiltinOneArg_cc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom ret = asAtomHandler::invalidAtom;
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	RUNTIME_STACK_PUSH(context,ret);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
@@ -142,12 +142,12 @@ void lightspark::abc_callFunctionBuiltinOneArg_local_constant(call_context* cont
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	asAtom* value = instrptr->arg2_constant;
+	asAtom value = *instrptr->arg2_constant;
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
-	LOG_CALL("callFunctionBuiltinOneArg_lc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionBuiltinOneArg_lc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom ret = asAtomHandler::invalidAtom;
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	RUNTIME_STACK_PUSH(context,ret);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
@@ -157,12 +157,12 @@ void lightspark::abc_callFunctionBuiltinOneArg_constant_local(call_context* cont
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = *instrptr->arg1_constant;
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
-	LOG_CALL("callFunctionOneBuiltinArg_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionOneBuiltinArg_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom ret = asAtomHandler::invalidAtom;
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	RUNTIME_STACK_PUSH(context,ret);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
@@ -172,12 +172,12 @@ void lightspark::abc_callFunctionBuiltinOneArg_local_local(call_context* context
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
-	LOG_CALL("callFunctionOneBuiltinArg_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionOneBuiltinArg_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom ret = asAtomHandler::invalidAtom;
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, value, 1);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	RUNTIME_STACK_PUSH(context,ret);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
@@ -187,12 +187,12 @@ void lightspark::abc_callFunctionBuiltinOneArg_constant_constant_localresult(cal
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = *instrptr->arg1_constant;
-	asAtom* value = instrptr->arg2_constant;
+	asAtom value = *instrptr->arg2_constant;
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
-	LOG_CALL("callFunctionBuiltinOneArg_ccl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionBuiltinOneArg_ccl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, value, 1,instrptr->local3.pos);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, &value, 1,instrptr->local3.pos);
 	ASATOM_DECREF(oldres);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
@@ -202,12 +202,12 @@ void lightspark::abc_callFunctionBuiltinOneArg_local_constant_localresult(call_c
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	asAtom* value = instrptr->arg2_constant;
+	asAtom value = *instrptr->arg2_constant;
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
-	LOG_CALL("callFunctionBuiltinOneArg_lcl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionBuiltinOneArg_lcl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, value, 1,instrptr->local3.pos);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, &value, 1,instrptr->local3.pos);
 	ASATOM_DECREF(oldres);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
@@ -217,12 +217,12 @@ void lightspark::abc_callFunctionBuiltinOneArg_constant_local_localresult(call_c
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = *instrptr->arg1_constant;
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
-	LOG_CALL("callFunctionOneBuiltinArg_cll " << instrptr->local_pos2<<"/"<<instrptr->local3.pos<<" "<<asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionOneBuiltinArg_cll " << instrptr->local_pos2<<"/"<<instrptr->local3.pos<<" "<<asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, value, 1,instrptr->local3.pos == instrptr->local_pos2 ? UINT16_MAX : instrptr->local3.pos);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, &value, 1,instrptr->local3.pos);
 	ASATOM_DECREF(oldres);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
@@ -232,12 +232,12 @@ void lightspark::abc_callFunctionBuiltinOneArg_local_local_localresult(call_cont
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
-	LOG_CALL("callFunctionOneBuiltinArg_lll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("callFunctionOneBuiltinArg_lll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, value, 1,instrptr->local3.pos == instrptr->local_pos2 ? UINT16_MAX : instrptr->local3.pos);
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, &value, 1,instrptr->local3.pos);
 	ASATOM_DECREF(oldres);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();

@@ -151,7 +151,7 @@ void TestRunner::tick()
 
 TestStatus TestRunner::test()
 {
-	if (!remainingTicks || isDone)
+	if (remainingTicks==0 ||(isDone && remainingTicks<0))
 	{
 		if (sys->runSingleThreaded)
 			sys->waitThreadpool();

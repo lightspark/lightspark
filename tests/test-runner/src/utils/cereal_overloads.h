@@ -150,9 +150,14 @@ namespace cereal
 #ifdef NDEBUG
 		loadVariant(archive, variant, fromVariantName(variant, type));
 #else
-		// HACK for some reason the string_view "type" is made invalid during fromVariantName() when in debug mode,
-		// so we work on a string copy instead.
-		std::string s(type);
+		// HACK for some reason the string_view "type" is made invalid during fromVariantName() when in debug mode.
+		// There seems to be a problem with allocating memory on the heap (even malloc doesn't work),
+		// so we allocate memory on stack
+		// this does only work on gcc, not on llvm
+		auto i=type.size();
+		char* c=g_newa(char,i);
+		memcpy(c,type.data(),i);
+		std::string s(c,i);
 		loadVariant(archive, variant, fromVariantName(variant, s));
 #endif
 	}

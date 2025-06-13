@@ -29,6 +29,7 @@
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Undefined.h"
+#include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/net/flashnet.h"
@@ -807,14 +808,6 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 		useWeakReference = asAtomHandler::Boolean_concrete(args[4]);
 
 	const tiny_string& eventName=asAtomHandler::toString(args[0],wrk);
-	if(wrk->isPrimordial // don't register frame listeners for background workers
-			&& th->is<DisplayObject>() && (eventName=="enterFrame"
-				|| eventName=="exitFrame"
-				|| eventName=="frameConstructed"
-				|| eventName=="render") )
-	{
-		th->getSystemState()->registerFrameListener(th->as<DisplayObject>());
-	}
 
 	{
 		Locker l(th->handlersMutex);
@@ -834,6 +827,12 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,addEventListener)
 											   && insertPointFunc->closure_this.uintval==newfunc->closure_this.uintval))
 				return; // don't register the same listener twice
 		}
+		if(wrk->isPrimordial // don't register frame listeners for background workers
+							   && th->is<DisplayObject>() && (eventName=="enterFrame"
+								   || eventName=="exitFrame"
+								   || eventName=="frameConstructed"
+								   || eventName=="render"))
+			th->as<DisplayObject>()->addBroadcastEventListener();
 		newfunc->incRef();
 		newfunc->addStoredMember();
 		listeners.push_back(newListener);
@@ -890,15 +889,12 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 			th->handlers.erase(h);
 	}
 
-	// Only unregister the enterFrame listener _after_ the handlers have been erased.
 	if(th->is<DisplayObject>() && (eventName=="enterFrame"
 					|| eventName=="exitFrame"
-					|| eventName=="frameConstructed")
-				&& (!th->hasEventListener("enterFrame")
-					&& !th->hasEventListener("exitFrame")
-					&& !th->hasEventListener("frameConstructed")) )
+					|| eventName=="frameConstructed"
+					|| eventName=="render"))
 	{
-		th->getSystemState()->unregisterFrameListener(th->as<DisplayObject>());
+		th->as<DisplayObject>()->removeBroadcastEventListener();
 	}
 }
 
@@ -1009,7 +1005,11 @@ void EventDispatcher::handleEvent(_R<Event> e)
 		}
 		asAtom arg0= asAtomHandler::fromObject(e.getPtr());
 		IFunction* func = asAtomHandler::as<IFunction>(tmpListener[i].f);
-		asAtom v = asAtomHandler::isValid(func->closure_this) ? func->closure_this : asAtomHandler::fromObject(this);
+		asAtom v = func->closure_this;
+		if (asAtomHandler::isInvalid(v) && func->is<SyntheticFunction>())
+			v = func->as<SyntheticFunction>()->func_scope->scope.back().object;
+		if (asAtomHandler::isInvalid(v))
+			v = e->getInstanceWorker()->getCurrentGlobalAtom(asAtomHandler::nullAtom);
 		asAtom ret=asAtomHandler::invalidAtom;
 		asAtomHandler::callFunction(tmpListener[i].f,tmpListener[i].worker,ret,v,&arg0,1,false);
 		ASATOM_DECREF(ret);

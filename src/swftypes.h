@@ -1652,6 +1652,7 @@ public:
 	bool gotoQueued;
 	bool creatingframe;
 	bool frameadvanced;
+	bool advancedByTick; // indicates if the MovieClip was advanced through normal tick (not through construction) at least once
 	RunState();
 	inline void reset()
 	{
@@ -1664,6 +1665,7 @@ public:
 		gotoQueued = false;
 		creatingframe = false;
 		frameadvanced = false;
+		advancedByTick=false;
 	}
 };
 class Activation_object;

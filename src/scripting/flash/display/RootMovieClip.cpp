@@ -93,7 +93,6 @@ RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk, LoaderInfo* li, _R<Appl
 {
 	Class_base* movieClipClass = Class<MovieClip>::getClass(getSys());
 	RootMovieClip* ret=new (movieClipClass->memoryAccount) RootMovieClip(wrk,li, appDomain, secDomain, movieClipClass);
-	ret->constructorCallComplete = true;
 	ret->loadedFrom=appDomain.getPtr();
 	return ret;
 }
@@ -190,9 +189,7 @@ void RootMovieClip::afterConstruction(bool _explicit)
 	if(isVmThread())
 	{
 		ABCVm::publicHandleEvent(this,e);
-		getSystemState()->handleBroadcastEvent("frameConstructed");
-		executeFrameScript();
-		getSystemState()->handleBroadcastEvent("exitFrame");
+		getSystemState()->runInnerGotoFrame(this);
 	}
 	else
 	{

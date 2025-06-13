@@ -515,6 +515,7 @@ public:
 	FORCE_INLINE bool isInGarbageCollection() const { return inGarbageCollection; }
 	inline bool inFinalization() const { return inFinalize; }
 	void registerConstantRef(ASObject* obj);
+	asAtom getCurrentGlobalAtom(const asAtom& defaultObj);
 	// these are needed keep track of native extension calls
 	std::list<asAtom> nativeExtensionAtomlist;
 	std::list<uint8_t*> nativeExtensionStringlist;

@@ -67,6 +67,7 @@ private:
 	AS_BLENDMODE blendMode;
 	// if true, this displayobject is the root object of a loaded file (swf or image)
 	bool isLoadedRoot;
+	bool inInitFrame;
 	bool filterlistHasChanged;
 	uint32_t ismaskCount; // number of DisplayObjects this is mask of
 	
@@ -105,6 +106,7 @@ private:
 	std::map<uint32_t,asAtom> avm1variables;
 	uint32_t avm1mouselistenercount;
 	uint32_t avm1framelistenercount;
+	uint32_t broadcastEventListenerCount;
 	void onSetScrollRect(_NR<Rectangle> oldValue);
 protected:
 	_NR<Rectangle> scalingGrid;
@@ -165,6 +167,7 @@ public:
 		setParent(nullptr);
 		removeAVM1Listeners();
 	}
+	void setNameOnParent();
 	void applyFilters(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley);
 	_NR<DisplayObject> invalidateQueueNext;
 	LoaderInfo* loaderInfo;
@@ -211,6 +214,7 @@ public:
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	MATRIX getMatrix(bool includeRotation = true) const;
 	bool isConstructed() const override;
+	bool isInInitFrame() const { return inInitFrame; }
 	/**
 	 * Generate a new IDrawable instance for this object
 	 * @param target The topmost object in the hierarchy that is being drawn. Such object
@@ -311,7 +315,10 @@ public:
 	DisplayObject* getClipMask() const { return clipMask; }
 	bool inMask() const;
 	bool belongsToMask() const;
-	
+	void addBroadcastEventListener();
+	void removeBroadcastEventListener();
+	bool hasBroadcastListeners() const { return broadcastEventListenerCount; }
+
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_getVisible);
 	ASFUNCTION_ATOM(_setVisible);

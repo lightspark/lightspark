@@ -118,13 +118,14 @@ ASWorker* lightspark::getWorker()
 void SystemState::registerFrameListener(DisplayObject* obj)
 {
 	Locker l(mutexFrameListeners);
-	frameListeners.insert(obj);
+	if (std::find(frameListeners.begin(),frameListeners.end(),obj) == frameListeners.end())
+		frameListeners.push_back(obj);
 }
 
 void SystemState::unregisterFrameListener(DisplayObject* obj)
 {
 	Locker l(mutexFrameListeners);
-	frameListeners.erase(obj);
+	frameListeners.remove(obj);
 }
 
 void SystemState::addBroadcastEvent(const tiny_string& event)
@@ -134,13 +135,13 @@ void SystemState::addBroadcastEvent(const tiny_string& event)
 
 void SystemState::handleBroadcastEvent(const tiny_string& event)
 {
-	std::set<DisplayObject*> tmplisteners; // work on copy of framelistners, as the list may change during event handling
+	std::list<DisplayObject*> tmplisteners; // work on copy of framelistners, as the list may change during event handling
 	{
 		Locker l(mutexFrameListeners);
 		for (auto it : frameListeners)
 		{
 			it->incRef();
-			tmplisteners.insert(it);
+			tmplisteners.push_back(it);
 		}
 	}
 	_R<Event> e(Class<Event>::getInstanceS(worker, event));
@@ -2251,11 +2252,11 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 	FramePhase oldPhase = getFramePhase();
 
 	setFramePhase(FramePhase::INIT_FRAME);
-	innerClip->initFrame();
+	stage->initFrame();
 	handleBroadcastEvent("frameConstructed");
 
 	setFramePhase(FramePhase::EXECUTE_FRAMESCRIPT);
-	innerClip->executeFrameScript();
+	stage->executeFrameScript();
 	for (auto it : removedFrameScripts)
 		it->executeFrameScript();
 

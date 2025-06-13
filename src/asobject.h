@@ -1464,6 +1464,7 @@ public:
 	inline void setConstructorCallComplete() { constructorCallComplete = true; }
 	inline void setIsInitialized(bool init=true) { traitsInitialized=init; }
 	inline bool getConstructIndicator() const { return constructIndicator; }
+	inline bool getConstructionComplete() const { return constructorCallComplete; }
 
 
 	void setIsEnumerable(const multiname& name, bool isEnum);

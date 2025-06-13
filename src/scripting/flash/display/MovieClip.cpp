@@ -556,7 +556,10 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 			state.gotoQueued = true;
 	}
 	else if (needsActionScript3())
+	{
+		state.gotoQueued = false;
 		getSystemState()->runInnerGotoFrame(this);
+	}
 }
 void MovieClip::runGoto(bool newFrame)
 {
@@ -1454,7 +1457,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 
 void MovieClip::AVM1HandleConstruction(bool forInitAction)
 {
-	if (inAVM1Attachment || constructorCallComplete)
+	if (needsActionScript3() || inAVM1Attachment || constructorCallComplete)
 		return;
 	setConstructIndicator();
 	if (!forInitAction)
@@ -1584,7 +1587,7 @@ void MovieClip::initFrame()
 	state.last_FP=state.FP;
 
 	/* call our own constructor, if necassary */
-	if (!isConstructed())
+	if (!getConstructionComplete())
 	{
 		// contrary to http://www.senocular.com/flash/tutorials/orderofoperations/
 		// the constructors of the children are _not_ really called bottom-up but in a "mixed" fashion:
@@ -1602,7 +1605,7 @@ void MovieClip::initFrame()
 		//      super();
 		//      // code here will be executed _after_ childclip was constructed
 		//  }
-		DisplayObject::initFrame();
+		Sprite::initFrame();
 	}
 	else if (!placedByActionScript || isConstructed())
 	{
@@ -1634,7 +1637,6 @@ void MovieClip::executeFrameScript()
 	if (!needsActionScript3())
 		return;
 	state.explicit_FP=false;
-	state.gotoQueued=false;
 	uint32_t f = frameScripts.count(state.FP) ? state.FP : UINT32_MAX;
 	if (f != UINT32_MAX && !markedForLegacyDeletion && !inExecuteFramescript)
 	{
@@ -1646,7 +1648,7 @@ void MovieClip::executeFrameScript()
 			asAtom v=asAtomHandler::invalidAtom;
 			asAtom closure_this = asAtomHandler::as<IFunction>(frameScripts[f])->closure_this;
 			if (asAtomHandler::isInvalid(closure_this))
-				closure_this=asAtomHandler::fromObject(this);
+				closure_this = getInstanceWorker()->getCurrentGlobalAtom(asAtomHandler::nullAtom);
 			ASATOM_INCREF(closure_this);
 			asAtom obj = closure_this;
 			ASATOM_INCREF(frameScripts[f]);
@@ -1673,7 +1675,10 @@ void MovieClip::executeFrameScript()
 	}
 
 	if (state.gotoQueued)
+	{
+		state.gotoQueued=false;
 		runGoto(true);
+	}
 	Sprite::executeFrameScript();
 }
 
@@ -1720,6 +1725,8 @@ void MovieClip::advanceFrame(bool implicit)
 {
 	if (implicit && !getSystemState()->mainClip->needsActionScript3() && state.frameadvanced && state.last_FP==-1)
 		return; // frame was already advanced after construction
+	if (state.last_FP!=-1)
+		state.advancedByTick=true;
 	checkSound(state.next_FP);
 	if (state.frameadvanced && state.explicit_FP)
 	{
@@ -1791,20 +1798,11 @@ void MovieClip::constructionComplete(bool _explicit, bool forInitAction)
 	/* If this object was 'new'ed from AS code, the first
 	 * frame has not been initalized yet, so init the frame
 	 * now */
-	if(state.last_FP == -1 && !forInitAction)// && this !=  getSystemState()->mainClip)
+	if(state.last_FP == -1 && !forInitAction)
 	{
 		advanceFrame(true);
 		if (getSystemState()->getFramePhase() != FramePhase::ADVANCE_FRAME)
 			initFrame();
-	}
-	// another weird behaviour of framescript execution:
-	// it seems that the framescripts are also executed if
-	// - we are in an inner goto
-	// - the builtin MovieClip constructor was called
-	// and before we continue executing the constructor of this clip?!?
-	if (getSystemState()->inInnerGoto())
-	{
-		getSystemState()->stage->executeFrameScript();
 	}
 	AVM1HandleConstruction(forInitAction);
 }
@@ -1814,6 +1812,8 @@ void MovieClip::beforeConstruction(bool _explicit)
 }
 void MovieClip::afterConstruction(bool _explicit)
 {
+	if (needsActionScript3())
+		setConstructorCallComplete();
 	Sprite::afterConstruction(_explicit);
 }
 

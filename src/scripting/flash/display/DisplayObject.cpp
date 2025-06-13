@@ -134,13 +134,36 @@ bool DisplayObject::belongsToMask() const
 	return false;
 }
 
+void DisplayObject::addBroadcastEventListener()
+{
+	if (broadcastEventListenerCount==0)
+	{
+		getSystemState()->registerFrameListener(this);
+		this->incRef();
+		this->addStoredMember();
+	}
+	++broadcastEventListenerCount;
+}
+
+void DisplayObject::removeBroadcastEventListener()
+{
+	assert(broadcastEventListenerCount);
+	--broadcastEventListenerCount;
+	if (broadcastEventListenerCount==0)
+	{
+		getSystemState()->unregisterFrameListener(this);
+		this->removeStoredMember();
+	}
+}
+
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
 	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),
-	isLoadedRoot(false),filterlistHasChanged(false),ismaskCount(0),maxfilterborder(0),ClipDepth(0),hasDefaultName(false),
+	isLoadedRoot(false),inInitFrame(false),
+	filterlistHasChanged(false),ismaskCount(0),maxfilterborder(0),ClipDepth(0),hasDefaultName(false),
 	hiddenPrevDisplayObject(nullptr),hiddenNextDisplayObject(nullptr),avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),cachedSurface(new CachedSurface()),
 	constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),
-	avm1mouselistenercount(0),avm1framelistenercount(0),
+	avm1mouselistenercount(0),avm1framelistenercount(0),broadcastEventListenerCount(0),
 	onStage(false),visible(true),
 	mask(nullptr),clipMask(nullptr),
 	invalidateQueueNext(),loaderInfo(nullptr),loadedFrom(nullptr),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
@@ -205,6 +228,7 @@ void DisplayObject::finalize()
 	needsTextureRecalculation=true;
 	avm1mouselistenercount=0;
 	avm1framelistenercount=0;
+	broadcastEventListenerCount=0;
 	EventDispatcher::finalize();
 }
 
@@ -246,6 +270,7 @@ bool DisplayObject::destruct()
 	alpha=1.0;
 	blendMode=BLENDMODE_NORMAL;
 	isLoadedRoot=false;
+	inInitFrame=false;
 	ClipDepth=0;
 	constructed=false;
 	useLegacyMatrix=true;
@@ -253,6 +278,7 @@ bool DisplayObject::destruct()
 	visible=true;
 	avm1mouselistenercount=0;
 	avm1framelistenercount=0;
+	broadcastEventListenerCount=0;
 	filters.reset();
 	legacy=false;
 	markedForLegacyDeletion=false;
@@ -280,6 +306,9 @@ void DisplayObject::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	EventDispatcher::prepareShutdown();
+	if (broadcastEventListenerCount)
+		getSystemState()->unregisterFrameListener(this);
+	broadcastEventListenerCount=0;
 
 	if (mask)
 		mask->prepareShutdown();
@@ -2157,8 +2186,9 @@ _NR<DisplayObject> DisplayObject::hitTest(const Vector2f& globalPoint, const Vec
  * This is called in vm's thread context */
 void DisplayObject::initFrame()
 {
-	if(!isConstructed() && getClass() && needsActionScript3())
+	if(!inInitFrame && !isConstructed() && getClass() && needsActionScript3())
 	{
+		inInitFrame=true;
 		asAtom o = asAtomHandler::fromObject(this);
 		getClass()->handleConstruction(o,nullptr,0,true);
 
@@ -2169,7 +2199,7 @@ void DisplayObject::initFrame()
 		 */
 		if(parent)
 		{
-			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"added"));
+			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"added",true));
 			ABCVm::publicHandleEvent(this,e);
 		}
 		if(onStage)
@@ -2177,6 +2207,7 @@ void DisplayObject::initFrame()
 			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
 			ABCVm::publicHandleEvent(this,e);
 		}
+		inInitFrame=false;
 	}
 }
 
@@ -2194,7 +2225,7 @@ void DisplayObject::constructionComplete(bool _explicit, bool forInitAction)
 	RELEASE_WRITE(constructed,true);
 	if (!placedByActionScript && needsActionScript3() && getParent() != nullptr)
 	{
-		_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"added"));
+		_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"added",true));
 		if (isVmThread())
 			ABCVm::publicHandleEvent(this, e);
 		else
@@ -2202,8 +2233,22 @@ void DisplayObject::constructionComplete(bool _explicit, bool forInitAction)
 			incRef();
 			getVm(getSystemState())->addEvent(_MR(this), e);
 		}
+		setNameOnParent();
 		if (isOnStage())
 			setOnStage(true, true);
+	}
+}
+void DisplayObject::setNameOnParent()
+{
+	if( this->name != BUILTIN_STRINGS::EMPTY && !this->hasDefaultName)
+	{
+		multiname objName(nullptr);
+		objName.name_type=multiname::NAME_STRING;
+		objName.name_s_id=this->name;
+		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+		this->incRef();
+		asAtom v = asAtomHandler::fromObject(this);
+		getParent()->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 	}
 }
 void DisplayObject::beforeConstruction(bool _explicit)
@@ -2389,7 +2434,7 @@ bool DisplayObject::skipCountCylicMemberReferences(garbagecollectorstate& gcstat
 		return true;
 	if (!getSystemState()->isShuttingDown())
 	{
-		if (isOnStage() || hiddenPrevDisplayObject || hiddenNextDisplayObject)
+		if (broadcastEventListenerCount || isOnStage() || hiddenPrevDisplayObject || hiddenNextDisplayObject)
 		{
 			// no need to count as we have at least one reference left if this object is still on stage or hidden
 			gcstate.ignoreCount(this);
@@ -2400,7 +2445,7 @@ bool DisplayObject::skipCountCylicMemberReferences(garbagecollectorstate& gcstat
 		DisplayObject* p = parent;
 		while (p)
 		{
-			if (gcstate.isIgnored(p) || p->hiddenPrevDisplayObject || p->hiddenNextDisplayObject)
+			if (p->hasBroadcastListeners() || gcstate.isIgnored(p) || p->hiddenPrevDisplayObject || p->hiddenNextDisplayObject)
 			{
 				// no need to count as the parent is already ignored
 				gcstate.ignoreCount(this);

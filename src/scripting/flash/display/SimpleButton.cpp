@@ -631,6 +631,43 @@ uint32_t SimpleButton::getTagID() const
 	return buttontag ? uint32_t(buttontag->getId()) : 0;
 }
 
+void SimpleButton::beforeConstruction(bool _explicit)
+{
+	if (needsActionScript3()
+			&& this->buttontag
+			&& this->buttontag->bindedTo)
+	{
+		// for some reason adobe seems to execute some kind of "inner goto" handling _before_ calling the builtin constructor of the button
+		// if the button is binded to a class
+		// see ruffle test avm2/button_nested_frame
+		getSystemState()->stage->initFrame();
+		getSystemState()->handleBroadcastEvent("frameConstructed");
+		setNameOnParent();
+		getSystemState()->stage->executeFrameScript();
+		getSystemState()->handleBroadcastEvent("exitFrame");
+	}
+	DisplayObjectContainer::beforeConstruction(_explicit);
+}
+
+void SimpleButton::constructionComplete(bool _explicit, bool forInitAction)
+{
+	DisplayObjectContainer::constructionComplete(_explicit,forInitAction);
+
+	if (needsActionScript3()
+			&& this->buttontag
+			&& !this->buttontag->bindedTo
+			&& this->states[STATE_UP].size()>1)
+	{
+		// for some reason adobe seems to execute some kind of "inner goto" handling _after_ calling the builtin constructor of the button
+		// if the button is _not_ binded to a class and the up state consist of more than one sprite
+		// see ruffle test avm2/button_nested_frame
+		getSystemState()->stage->initFrame();
+		getSystemState()->handleBroadcastEvent("frameConstructed");
+		getSystemState()->stage->executeFrameScript();
+		getSystemState()->handleBroadcastEvent("exitFrame");
+	}
+}
+
 ASFUNCTIONBODY_ATOM(SimpleButton,_constructor)
 {
 	/* This _must_ not call the DisplayObjectContainer
@@ -691,7 +728,6 @@ void SimpleButton::reflectState(BUTTONSTATE oldstate)
 void SimpleButton::resetStateToStart(BUTTONOBJECTTYPE type)
 {
 	// reset the MovieClips belonging to the current State to frame 0, so animations will start from the beginning when state has changed
-	asAtom arg = asAtomHandler::fromInt(0);
 	assert(this->dynamicDisplayList.empty());
 	if(this->needsActionScript3())
 	{
@@ -717,7 +753,10 @@ void SimpleButton::resetStateToStart(BUTTONOBJECTTYPE type)
 	{
 		DisplayObject* obj = (*it).second;
 		if (obj->is<MovieClip>())
-			obj->as<MovieClip>()->gotoAnd(&arg,1,false);
+		{
+			obj->as<MovieClip>()->state.next_FP=0;
+			obj->as<MovieClip>()->state.stop_FP=false;
+		}
 		obj->incRef();
 		if (this->needsActionScript3() && parentSprite[type]->is<DisplayObjectContainer>())
 		{

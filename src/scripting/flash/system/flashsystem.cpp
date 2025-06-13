@@ -1921,6 +1921,23 @@ void ASWorker::registerConstantRef(ASObject* obj)
 	constantrefmutex.unlock();
 }
 
+asAtom ASWorker::getCurrentGlobalAtom(const asAtom& defaultObj)
+{
+	// get the current Global object
+	asAtom ret = asAtomHandler::invalidAtom;
+	call_context* cc = currentCallContext;
+	if (!cc)
+		ret=defaultObj;
+	else if (cc->parent_scope_stack && cc->parent_scope_stack->scope.size() > 0)
+		ret = cc->parent_scope_stack->scope[0].object;
+	else
+	{
+		assert_and_throw(cc->curr_scope_stack > 0);
+		ret = cc->scope_stack[0];
+	}
+	return ret;
+}
+
 ASFUNCTIONBODY_GETTER(ASWorker, state)
 ASFUNCTIONBODY_GETTER(ASWorker, isPrimordial)
 

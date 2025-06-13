@@ -292,6 +292,7 @@ public:
 	bool allowAsMask() const override { return !isEmpty() || !graphics.isNull(); }
 	float getScaleFactor() const override { return this->scaling; }
 	std::string toDebugString() const override;
+	void initFrame() override;
 };
 
 struct AVM1scriptToExecute

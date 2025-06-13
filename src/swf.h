@@ -208,7 +208,7 @@ private:
 	Mutex profileDataSpinlock;
 
 	Mutex mutexFrameListeners;
-	std::set<DisplayObject*> frameListeners;
+	std::list<DisplayObject*> frameListeners;
 	/*
 	   The head of the invalidate queue
 	*/

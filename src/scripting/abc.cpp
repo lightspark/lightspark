@@ -1247,10 +1247,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				AdvanceFrameEvent* ev=static_cast<AdvanceFrameEvent*>(e.second.getPtr());
 				DisplayObject* clip = !ev->clip.isNull() ? ev->clip.getPtr() : m_sys->stage;
 				LOG(LOG_CALLS,"ADVANCE_FRAME");
-				if (clip->needsActionScript3())
-					clip->enterFrame(true);
-				else
-					clip->advanceFrame(true);
+				clip->advanceFrame(true);
 				m_sys->setFramePhase(FramePhase::NO_PHASE);
 				break;
 			}

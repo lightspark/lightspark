@@ -124,28 +124,9 @@ ASFUNCTIONBODY_ATOM(IFunction,apply)
 	{
 		//Validate parameters
 		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
-		{
-			//get the current global object
-			call_context* cc = wrk->currentCallContext;
-			if (!cc)
-			{
-				if (argslen == 0)
-					newObj=asAtomHandler::nullAtom;
-				else
-					newObj=args[0];
-			}
-			else if (cc->parent_scope_stack && cc->parent_scope_stack->scope.size() > 0)
-				newObj = cc->parent_scope_stack->scope[0].object;
-			else
-			{
-				assert_and_throw(cc->curr_scope_stack > 0);
-				newObj = cc->scope_stack[0];
-			}
-		}
+			newObj = wrk->getCurrentGlobalAtom(argslen==0 ? asAtomHandler::nullAtom : args[0]) ;
 		else
-		{
 			newObj=args[0];
-		}
 	}
 	if(argslen == 2 && !asAtomHandler::is<Null>(args[1]) && !asAtomHandler::is<Undefined>(args[1]))
 	{
@@ -188,28 +169,9 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 	if(asAtomHandler::isInvalid(newObj))
 	{
 		if(argslen==0 || asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
-		{
-			//get the current global object
-			call_context* cc = wrk->currentCallContext;
-			if (!cc)
-			{
-				if (argslen == 0)
-					newObj=asAtomHandler::nullAtom;
-				else
-					newObj=args[0];
-			}
-			else if (cc->parent_scope_stack && cc->parent_scope_stack->scope.size() > 0)
-				newObj = cc->parent_scope_stack->scope[0].object;
-			else
-			{
-				assert_and_throw(cc->curr_scope_stack > 0);
-				newObj = cc->scope_stack[0];
-			}
-		}
+			newObj = wrk->getCurrentGlobalAtom(argslen==0 ? asAtomHandler::nullAtom : args[0]) ;
 		else
-		{
 			newObj=args[0];
-		}
 	}
 	if(argslen > 1)
 	{

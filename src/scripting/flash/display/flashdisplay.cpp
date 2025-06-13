@@ -88,6 +88,7 @@ bool Sprite::destruct()
 	useHandCursor = true;
 	streamingsound=false;
 	hasMouse=false;
+	initializingFrame=false;
 	sound.reset();
 	soundtransform.reset();
 	return DisplayObjectContainer::destruct();
@@ -635,12 +636,7 @@ void Sprite::fillGraphicsData(Vector* v, bool recursive)
 
 ASFUNCTIONBODY_ATOM(Sprite,_constructor)
 {
-	Sprite* th=asAtomHandler::as<Sprite>(obj);
-	// it's possible that legacy MovieClips are defined as inherited directly from Sprite
-	// so we have to set initializingFrame here
-	th->initializingFrame = true; 
 	DisplayObjectContainer::_constructor(ret,wrk,obj,nullptr,0);
-	th->initializingFrame = false;
 }
 
 Graphics* Sprite::getGraphics()
@@ -664,6 +660,31 @@ void Sprite::handleMouseCursor(bool rollover)
 		getSystemState()->setMouseHandCursor(false);
 		hasMouse=false;
 	}
+}
+
+void Sprite::initFrame()
+{
+	if (!constructorCallComplete)
+	{
+		if (!initializingFrame)
+		{
+			// it's possible that legacy MovieClips are defined as inherited directly from Sprite
+			// so we have to set initializingFrame here
+			initializingFrame=true;
+			DisplayObjectContainer::initFrame();
+			initializingFrame=false;
+		}
+		else
+		{
+			for(auto it= dynamicDisplayList.begin();it!=dynamicDisplayList.end();it++)
+			{
+				if (!(*it)->isConstructed())
+					(*it)->setNameOnParent();
+			}
+		}
+	}
+	else
+		DisplayObjectContainer::initFrame();
 }
 
 string Sprite::toDebugString() const
@@ -887,7 +908,7 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 			}
 		}
 	}
-	if(obj->name != BUILTIN_STRINGS::EMPTY && !obj->hasDefaultName)
+	if((!loadedFrom->usesActionScript3 || obj->isConstructed()) && obj->name != BUILTIN_STRINGS::EMPTY && !obj->hasDefaultName)
 	{
 		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
@@ -1597,12 +1618,15 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 	//If there is a previous parent, purge the child from his list
 	if(child->getParent() && !getSystemState()->isInResetParentList(child))
 	{
-		//Child already in this container, set to new position
 		if(child->getParent()==this)
 		{
-			setChildIndexIntern(child,index);
-			child->decRef();
-			return;
+			if (this->getChildIndex(child) >= 0)
+			{
+				//Child already in this container, set to new position
+				setChildIndexIntern(child,index);
+				child->decRef();
+				return;
+			}
 		}
 		else
 		{
@@ -1627,6 +1651,15 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		}
 		child->addStoredMember();
 	}
+	_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"added",true));
+	if(isVmThread())
+		ABCVm::publicHandleEvent(child,e);
+	else
+	{
+		child->incRef();
+		getVm(getSystemState())->addEvent(_MR(child),e);
+	}
+
 	if (!onStage || child != getSystemState()->mainClip)
 		child->setOnStage(onStage,false,inskipping);
 	
@@ -1636,7 +1669,7 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 
 void DisplayObjectContainer::handleRemovedEvent(DisplayObject* child, bool keepOnStage, bool inskipping)
 {
-	_R<Event> e=_MR(Class<Event>::getInstanceS(child->getInstanceWorker(),"removed"));
+	_R<Event> e=_MR(Class<Event>::getInstanceS(child->getInstanceWorker(),"removed",true));
 	if (isVmThread())
 		ABCVm::publicHandleEvent(child, e);
 	else
@@ -1772,10 +1805,6 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChildAt)
 	d->incRef();
 	th->_addChildAt(d,index);
 
-	//Notify the object
-	d->incRef();
-	getVm(wrk->getSystemState())->addEvent(_MR(d),_MR(Class<Event>::getInstanceS(wrk,"added")));
-
 	//incRef again as the value is getting returned
 	d->incRef();
 	ret = asAtomHandler::fromObject(d);
@@ -1797,10 +1826,6 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChild)
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
 	d->incRef();
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
-
-	//Notify the object
-	d->incRef();
-	getVm(wrk->getSystemState())->addEvent(_MR(d),_MR(Class<Event>::getInstanceS(wrk,"added")));
 
 	d->incRef();
 	ret = asAtomHandler::fromObject(d);
@@ -2043,12 +2068,22 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getChildAt)
 	unsigned int index=asAtomHandler::toInt(args[0]);
 	if(index>=th->dynamicDisplayList.size())
 	{
+		if (!th->getConstructIndicator())
+		{
+			ret = asAtomHandler::nullAtom;
+			return;
+		}
 		createError<RangeError>(wrk,2025,"getChildAt: invalid index");
 		return;
 	}
 	auto it=th->dynamicDisplayList.begin();
 	for(unsigned int i=0;i<index;i++)
 		++it;
+	if (!(*it)->getConstructIndicator() && !(*it)->isInInitFrame())
+	{
+		ret = asAtomHandler::nullAtom;
+		return;
+	}
 	(*it)->incRef();
 	ret = asAtomHandler::fromObject(*it);
 }
@@ -2061,7 +2096,6 @@ int DisplayObjectContainer::getChildIndex(DisplayObject* child)
 	{
 		if(it == dynamicDisplayList.end())
 		{
-			createError<ArgumentError>(getInstanceWorker(),2025,"getChildIndex: child not in list");
 			return -1;
 		}
 		if(*it == child)
@@ -2084,7 +2118,11 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getChildIndex)
 	//Cast to object
 	DisplayObject* d= asAtomHandler::as<DisplayObject>(args[0]);
 
-	asAtomHandler::setInt(ret,wrk,th->getChildIndex(d));
+	int index = th->getChildIndex(d);
+	if (index == -1)
+		createError<ArgumentError>(wrk,2025,"getChildIndex: child not in list");
+	else
+		asAtomHandler::setInt(ret,wrk,index);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getObjectsUnderPoint)
@@ -2257,7 +2295,10 @@ void DisplayObjectContainer::declareFrame(bool implicit)
  * This is called in vm's thread context */
 void DisplayObjectContainer::initFrame()
 {
-	/* init the frames and call constructors of our children first */
+	/* call our own constructor, if necassary */
+	DisplayObject::initFrame();
+
+	/* init the frames and call constructors of our children */
 
 	// elements of the dynamicDisplayList may be removed during initFrame() calls,
 	// so we create a temporary list containing all elements
@@ -2266,8 +2307,6 @@ void DisplayObjectContainer::initFrame()
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
 		(*it)->initFrame();
-	/* call our own constructor, if necassary */
-	DisplayObject::initFrame();
 }
 
 void DisplayObjectContainer::executeFrameScript()

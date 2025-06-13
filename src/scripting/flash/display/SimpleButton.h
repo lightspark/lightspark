@@ -82,6 +82,8 @@ public:
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	uint32_t getTagID() const override;
+	void beforeConstruction(bool _explicit = false) override;
+	void constructionComplete(bool _explicit = false, bool forInitAction = false) override;
 	void addDisplayObject(BUTTONOBJECTTYPE state, uint32_t depth, DisplayObject* o);
 
 	static void sinit(Class_base* c);

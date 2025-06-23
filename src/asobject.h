@@ -1533,6 +1533,23 @@ FORCE_INLINE void variables_map::setDynamicVarNoCheck(uint32_t nameID, asAtom& v
 FORCE_INLINE void variable::setVarNoCoerce(asAtom &v, ASWorker* wrk)
 {
 	asAtom oldvar = var;
+	if (asAtomHandler::isNumber(var)
+		&& asAtomHandler::isNumber(v)
+		&& !asAtomHandler::getObjectNoCheck(var)->getConstant())
+	{
+		// fast replace for local numbers
+		if (asAtomHandler::replaceNumber(var,wrk,asAtomHandler::getNumber(wrk,v)))
+		{
+			asAtomHandler::getObjectNoCheck(var)->addStoredMember();
+			if(isrefcounted && asAtomHandler::isObject(oldvar))
+			{
+				LOG_CALL("remove old var no coerce:"<<asAtomHandler::toDebugString(oldvar));
+				asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
+			}
+			isrefcounted=true;
+		}
+		return;
+	}
 	bool needsref = !asAtomHandler::localNumberToGlobalNumber(wrk,v);
 	var=v;
 	if(isrefcounted && asAtomHandler::isObject(oldvar))

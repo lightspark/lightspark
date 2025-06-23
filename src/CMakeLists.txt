@@ -98,6 +98,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_methods.cpp
   scripting/abc_methods_optimized.cpp
   scripting/abc_methods_optimized_add.cpp
+  scripting/abc_methods_optimized_getslot.cpp
   scripting/abc_methods_optimized_negate.cpp
   scripting/abc_methods_optimized_functionbuiltin.cpp
   scripting/abc_methods_optimized_functionsynthetic.cpp

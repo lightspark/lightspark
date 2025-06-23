@@ -3586,87 +3586,6 @@ void ABCVm::abc_callFunctionNoArgsVoid_local(call_context* context)
 	ASATOM_DECREF(ret);
 	++(context->exec_pos);
 }
-void ABCVm::abc_getslot_constant(call_context* context)
-{
-	preloadedcodedata* instrptr = context->exec_pos++;
-	uint32_t t = instrptr->arg2_uint;
-	asAtom* pval = instrptr->arg1_constant;
-	asAtom ret=asAtomHandler::getObject(*pval)->getSlotNoCheck(t);
-	LOG_CALL("getSlot_c " << t << " " << asAtomHandler::toDebugString(ret));
-	ASATOM_INCREF(ret);
-	RUNTIME_STACK_PUSH(context,ret);
-}
-void ABCVm::abc_getslot_local(call_context* context)
-{
-	preloadedcodedata* instrptr = context->exec_pos++;
-	uint32_t t = instrptr->arg2_uint;
-	ASObject* obj = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	if (!obj)
-	{
-		createError<TypeError>(context->worker,kConvertNullToObjectError);
-		return;
-	}
-	asAtom res = obj->getSlotNoCheck(t);
-	LOG_CALL("getSlot_l " << t << " " << asAtomHandler::toDebugString(res));
-	ASATOM_INCREF(res);
-	RUNTIME_STACK_PUSH(context,res);
-}
-void ABCVm::abc_getslot_constant_localresult(call_context* context)
-{
-	preloadedcodedata* instrptr = context->exec_pos++;
-	uint32_t t = instrptr->arg2_uint;
-	asAtom res = asAtomHandler::getObject(*instrptr->arg1_constant)->getSlotNoCheck(t);
-	ASATOM_INCREF(res);
-	replacelocalresult(context,instrptr->local3.pos,res);
-	LOG_CALL("getSlot_cl " << t << " " << asAtomHandler::toDebugString(res)<<" "<<asAtomHandler::toDebugString(*instrptr->arg1_constant));
-}
-void ABCVm::abc_getslot_local_localresult(call_context* context)
-{
-	preloadedcodedata* instrptr = context->exec_pos++;
-	uint32_t t = instrptr->arg2_uint;
-	if (!asAtomHandler::isObject(CONTEXT_GETLOCAL(context,instrptr->local_pos1)))
-	{
-		createError<TypeError>(context->worker,kConvertNullToObjectError);
-		return;
-	}
-	ASObject* obj = asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	asAtom res = obj->getSlotNoCheck(t);
-	asAtom o = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	if (o.uintval != res.uintval)
-	{
-		ASATOM_INCREF(res);
-		replacelocalresult(context,instrptr->local3.pos,res);
-	}
-	LOG_CALL("getSlot_ll " << t << " " <<instrptr->local_pos1<<":"<< asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local_pos1))<<" "<< asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,instrptr->local3.pos)));
-}
-void ABCVm::abc_getslot_constant_setslotnocoerce(call_context* context)
-{
-	uint32_t tget = context->exec_pos->arg2_uint;
-	asAtom res = asAtomHandler::getObject(*context->exec_pos->arg1_constant)->getSlotNoCheck(tget);
-	LOG_CALL("getSlot_cs " << tget << " " << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos)));
-
-	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
-	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
-	++(context->exec_pos);
-}
-void ABCVm::abc_getslot_local_setslotnocoerce(call_context* context)
-{
-	uint32_t tget = context->exec_pos->arg2_uint;
-	if (!asAtomHandler::isObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)))
-	{
-		createError<TypeError>(context->worker,kConvertNullToObjectError);
-		return;
-	}
-	ASObject* objget = asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1));
-	asAtom res = objget->getSlotNoCheck(tget);
-	LOG_CALL("getSlot_ls " << tget << " " <<context->exec_pos->local_pos1<<":"<< asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<" "<< asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos)));
-
-	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
-	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
-	++(context->exec_pos);
-}
 void ABCVm::abc_setslot_constant_constant(call_context* context)
 {
 	asAtom v1 = *context->exec_pos->arg1_constant;
@@ -7085,33 +7004,6 @@ void ABCVm::abc_hasnext2_iftrue(call_context* context)
 		++(context->exec_pos);
 }
 
-void ABCVm::abc_getSlotFromScopeObject(call_context* context)
-{
-	preloadedcodedata* instrptr = context->exec_pos++;
-	uint32_t t = instrptr->arg1_uint;
-	uint32_t tslot = instrptr->arg2_uint;
-	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
-	ASObject* obj = asAtomHandler::getObjectNoCheck(context->scope_stack[t]);
-	asAtom res = obj->getSlotNoCheck(tslot);
-	LOG_CALL("getSlotFromScopeObject " << t << " " << tslot<<" "<< asAtomHandler::toDebugString(res) << " "<< obj->toDebugString());
-	ASATOM_INCREF(res);
-	RUNTIME_STACK_PUSH(context,res);
-}
-void ABCVm::abc_getSlotFromScopeObject_localresult(call_context* context)
-{
-	preloadedcodedata* instrptr = context->exec_pos++;
-	uint32_t t = instrptr->arg1_uint;
-	uint32_t tslot = instrptr->arg2_uint;
-	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
-	ASObject* obj = asAtomHandler::getObjectNoCheck(context->scope_stack[t]);
-	asAtom res = obj->getSlotNoCheck(tslot);
-	LOG_CALL("getSlotFromScopeObject_l " << t << " " << tslot<<" "<< asAtomHandler::toDebugString(res) << " "<< obj->toDebugString()<<" "<<instrptr->local3.pos);
-	if (res.uintval != CONTEXT_GETLOCAL(context,instrptr->local3.pos).uintval)
-	{
-		ASATOM_INCREF(res);
-		replacelocalresult(context,instrptr->local3.pos,res);
-	}
-}
 void ABCVm::abc_nextname_constant_constant(call_context* context)
 {
 	LOG_CALL("nextname_cc");

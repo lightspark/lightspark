@@ -102,6 +102,15 @@ void abc_callFunctionSyntheticMultiArgs_constant_localResult(call_context* conte
 void abc_callFunctionSyntheticMultiArgs_local_localResult(call_context* context);
 void abc_callFunctionSyntheticMultiArgs(call_context* context);
 void abc_callFunctionSyntheticMultiArgsVoid(call_context* context);
+
+void abc_getslot_constant(call_context* context);
+void abc_getslot_local(call_context* context);
+void abc_getslot_constant_localresult(call_context* context);
+void abc_getslot_local_localresult(call_context* context);
+void abc_getslot_constant_setslotnocoerce(call_context* context);
+void abc_getslot_local_setslotnocoerce(call_context* context);
+void abc_getSlotFromScopeObject(call_context* context);
+void abc_getSlotFromScopeObject_localresult(call_context* context);
 }
 
 #endif /* SCRIPTING_ABC_OPTIMIZED_H */

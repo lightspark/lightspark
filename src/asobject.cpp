@@ -1292,6 +1292,23 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 			return;
 	}
 	asAtom oldvar = var;
+	if (asAtomHandler::isNumber(var)
+		&& asAtomHandler::isNumber(v)
+		&& !asAtomHandler::getObjectNoCheck(var)->getConstant())
+	{
+		// fast replace for local numbers
+		if (asAtomHandler::replaceNumber(var,wrk,asAtomHandler::getNumber(wrk,v)))
+		{
+			asAtomHandler::getObjectNoCheck(var)->addStoredMember();
+			if(isrefcounted && asAtomHandler::isObject(oldvar))
+			{
+				LOG_CALL("remove old var:"<<asAtomHandler::toDebugString(oldvar));
+				asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
+			}
+			isrefcounted=true;
+		}
+		return;
+	}
 	if (asAtomHandler::localNumberToGlobalNumber(wrk,v))
 		_isrefcounted=true;
 	var=v;
@@ -2571,6 +2588,7 @@ bool ASObject::handleGarbageCollection()
 			}
 			else if (((*it)->gccounter.ignore || (*it)->getConstant() || (*it)->gccounter.count!=(uint32_t)(*it)->getRefCount()) && (*it)->gccounter.hasmember)
 			{
+				LOG(LOG_CALLS,"handleGarbageCollection stopped:"<<this<<" "<<this->getRefCount()<<"/"<<this->storedmembercount<<" "<<(*it)<<" "<<(*it)->gccounter.count<<"/"<<(*it)->getRefCount()<<" "<<(*it)->gccounter.hasmember);
 				c = UINT32_MAX;
 				if (!(*it)->gccounter.ignore && (*it)->isMarkedForGarbageCollection() && !deletedingarbagecollection)
 				{

@@ -608,7 +608,12 @@ void ABCVm::abc_returnvoid(call_context* context)
 }
 void ABCVm::abc_returnvalue(call_context* context)
 {
-	RUNTIME_STACK_POP(context,context->locals[context->mi->body->getReturnValuePos()]);
+	asAtom v;
+	RUNTIME_STACK_POP(context,v);
+	if (asAtomHandler::isLocalNumber(v))
+		asAtomHandler::setNumber(context->locals[context->mi->body->getReturnValuePos()],context->worker,asAtomHandler::getLocalNumber(context,v),context->mi->body->getReturnValuePos());
+	else
+		asAtomHandler::set(context->locals[context->mi->body->getReturnValuePos()],v);
 	LOG_CALL("returnValue " << asAtomHandler::toDebugString(context->locals[context->mi->body->getReturnValuePos()]));
 	++(context->exec_pos);
 }

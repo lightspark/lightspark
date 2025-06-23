@@ -19,7 +19,6 @@
 #define FLASH_CONCURRENT_CONDITION_H
 
 #include "asobject.h"
-#include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/concurrent/Mutex.h"
 
 namespace lightspark

@@ -138,16 +138,6 @@ public:
 	LSModifier getModifiers() const { return modifiers; }
 };
 
-class FocusEvent: public Event
-{
-public:
-	FocusEvent(ASWorker* wrk, Class_base* c);
-	FocusEvent(ASWorker* wrk, Class_base* c, tiny_string _type,_NR<InteractiveObject> _relatedObject=NullRef);
-	static void sinit(Class_base*);
-	ASFUNCTION_ATOM(_constructor);
-	ASPROPERTY_GETTER_SETTER(_NR<InteractiveObject>, relatedObject);
-};
-
 class FullScreenEvent: public Event
 {
 public:

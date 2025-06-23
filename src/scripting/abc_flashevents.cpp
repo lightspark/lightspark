@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/events/FocusEvent.h"
 
 #include "scripting/toplevel/Global.h"
 #include "scripting/class.h"

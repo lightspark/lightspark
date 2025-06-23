@@ -22,6 +22,7 @@
 #include "scripting/flash/display/Stage3D.h"
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display3d/flashdisplay3d.h"
+#include "scripting/flash/events/FocusEvent.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/ui/keycodes.h"
@@ -587,7 +588,24 @@ void Stage::setTabFocusTarget(bool next)
 		newfocustarget = it->second;
 	}
 	if (newfocustarget && newfocustarget->is<InteractiveObject>())
+	{
+		_NR<InteractiveObject> oldfocus;
+		if (currentfocustarget && currentfocustarget->is<InteractiveObject>())
+		{
+			currentfocustarget->incRef();
+			oldfocus = _NR<InteractiveObject>(currentfocustarget->as<InteractiveObject>());
+		}
+		// it seems that focus events are executed directly
+		auto e = _MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"keyFocusChange",true, oldfocus,AS3KEYCODE_TAB,!next));
+		if(isVmThread())
+			ABCVm::publicHandleEvent(newfocustarget,e);
+		else
+		{
+			newfocustarget->incRef();
+			getVm(getSystemState())->addEvent(_MR(newfocustarget),e);
+		}
 		setFocusTarget(newfocustarget->as<InteractiveObject>());
+	}
 }
 void Stage::setFocusTarget(InteractiveObject* f)
 {
@@ -595,32 +613,44 @@ void Stage::setFocusTarget(InteractiveObject* f)
 	if (f==focus || (f && !f->isFocusable()))
 		return;
 	InteractiveObject* oldfocus = focus;
-	if (focus)
+	focus = f;
+	if (oldfocus)
 	{
-		focus->lostFocus();
+		oldfocus->lostFocus();
 		_NR<InteractiveObject> focusrel;
 		if (f && f!=this && !f->is<RootMovieClip>())
 		{
 			f->incRef();
 			focusrel=_MR(f);
 		}
-		focus->incRef();
-		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusOut",focusrel)));
+
+		auto e = _MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusOut",false,focusrel));
+		// it seems that focus events are executed directly
+		if(isVmThread())
+			ABCVm::publicHandleEvent(oldfocus,e);
+		else
+			getVm(getSystemState())->addEvent(_MR(oldfocus),e);
 	}
-	focus = f;
 	if (focus)
 	{
 		focus->incRef();
 		focus->addStoredMember();
 		focus->gotFocus();
 		_NR<InteractiveObject> focusrel;
-		if (oldfocus && oldfocus!=this && !oldfocus->is<RootMovieClip>())
+		if (oldfocus && oldfocus!=this)
 		{
 			oldfocus->incRef();
 			focusrel=_MR(oldfocus);
 		}
-		focus->incRef();
-		getVm(getSystemState())->addEvent(_MR(focus),_MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusIn",focusrel)));
+		auto e = _MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusIn",false,focusrel));
+		// it seems that focus events are executed directly
+		if(isVmThread())
+			ABCVm::publicHandleEvent(focus,e);
+		else
+		{
+			focus->incRef();
+			getVm(getSystemState())->addEvent(_MR(focus),e);
+		}
 	}
 	l.release();
 	if (oldfocus)

@@ -1386,10 +1386,15 @@ bool DisplayObjectContainer::fillTabStopsAutomatic(std::map<int32_t, DisplayObje
 	{
 		if (!(*it)->isVisible() || !(*it)->isOnStage() || !(*it)->is<InteractiveObject>())
 			continue;
+		bool tabenabled = true;
 		InteractiveObject* o = (*it)->as<InteractiveObject>();
-		if (!o->is<RootMovieClip>() && !o->tabEnabled && (!o->is<Sprite>() || !o->as<Sprite>()->buttonMode))
-			continue;
-		if (o->tabIndex>=0)
+		if (o->is<Sprite>() && !o->as<Sprite>()->buttonMode && !o->tabEnabled)
+			tabenabled=false;
+		if (!o->isFocusable())
+			tabenabled=false;
+		if (!o->is<DisplayObjectContainer>() && !o->tabEnabled)
+			tabenabled=false;
+		if (o->tabIndex>=0 && tabenabled)
 		{
 			hasTabIndices=true;
 			return false;
@@ -1404,9 +1409,12 @@ bool DisplayObjectContainer::fillTabStopsAutomatic(std::map<int32_t, DisplayObje
 				continue;
 			}
 		}
-		Vector2f globalpoint=o->localToGlobal(Vector2f());
-		distancemap.insert(make_pair(globalpoint.y*getSystemState()->stage->internalGetWidth()+globalpoint.x,o));
-		filled=true;
+		if (tabenabled)
+		{
+			Vector2f globalpoint=o->localToGlobal(Vector2f());
+			distancemap.insert(make_pair(globalpoint.y*getSystemState()->stage->internalGetWidth()+globalpoint.x,o));
+			filled=true;
+		}
 	}
 	return filled;
 }

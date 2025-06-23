@@ -21,7 +21,6 @@
 #define SCRIPTING_FLASH_UI_CONTEXTMENUITEM_H
 
 #include "asobject.h"
-#include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/display/NativeMenuItem.h"
 
 namespace lightspark

@@ -1,6 +1,9 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
+    Copyright (C) 2009-2013  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2025  Ludger Krämer <dbluelle@onlinehome.de>
+
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -15,30 +18,29 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef FLASH_CONCURRENT_MUTEX_H
-#define FLASH_CONCURRENT_MUTEX_H
+#ifndef SCRIPTING_FLASH_EVENTS_FOCUSEVENT_H
+#define SCRIPTING_FLASH_EVENTS_FOCUSEVENT_H 1
 
-#include "asobject.h"
-#include "threading.h"
+#include "scripting/flash/events/flashevents.h"
 
 namespace lightspark
 {
 
-class ASMutex: public ASObject
+class FocusEvent: public Event
 {
-private:
-	Mutex mutex;
-	int lockcount;
-
 public:
-	ASMutex(ASWorker* wrk,Class_base* c);
+	FocusEvent(ASWorker* wrk, Class_base* c);
+	FocusEvent(ASWorker* wrk, Class_base* c, tiny_string _type,bool _cancelable, _NR<InteractiveObject> _relatedObject=NullRef,uint32_t _keyCode=0, bool _shiftKey=false);
 	static void sinit(Class_base*);
-	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION_ATOM(_lock);
-	ASFUNCTION_ATOM(_unlock);
-	ASFUNCTION_ATOM(_trylock);
-	int getLockCount() { return lockcount; }
+    ASFUNCTION_ATOM(_constructor);
+    ASFUNCTION_ATOM(_toString);
+	ASPROPERTY_GETTER_SETTER(_NR<InteractiveObject>, relatedObject);
+	ASPROPERTY_GETTER_SETTER(uint32_t, keyCode);
+	ASPROPERTY_GETTER_SETTER(bool, shiftKey);
+	ASPROPERTY_GETTER_SETTER(tiny_string, direction);
+    ASPROPERTY_GETTER_SETTER(bool, isRelatedObjectInaccessible);
 };
 
+
 }
-#endif // FLASH_CONCURRENT_MUTEX_H
+#endif /* SCRIPTING_FLASH_EVENTS_FOCUSEVENT_H */

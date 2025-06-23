@@ -27,9 +27,7 @@
 #include "platforms/engineutils.h"
 #include "swftypes.h"
 #include "smartrefs.h"
-#include "forwards/scripting/flash/events/flashevents.h"
 #include "scripting/flash/ui/keycodes.h"
-#include "forwards/scripting/flash/events/flashevents.h"
 #include <vector>
 #include <deque>
 #include <set>
@@ -43,6 +41,7 @@ class SystemState;
 class InteractiveObject;
 class Sprite;
 class MouseEvent;
+class KeyboardEvent;
 
 class InputThread
 {

@@ -817,9 +817,15 @@ ASFUNCTIONBODY_ATOM(TextField, _setter_type)
 	ARG_CHECK(ARG_UNPACK(value));
 
 	if (value == "dynamic")
+	{
 		th->type = ET_READ_ONLY;
+		th->tabEnabled=false;
+	}
 	else if (value == "input")
+	{
 		th->type = ET_EDITABLE;
+		th->tabEnabled=true;
+	}
 	else
 		createError<ArgumentError>(wrk,kInvalidEnumError, "type");
 }

@@ -22,6 +22,7 @@
 #include "scripting/flash/display/Loader.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/toplevel/AVM1Function.h"
+#include "scripting/toplevel/Number.h"
 #include "scripting/avm1/avm1display.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"
@@ -167,6 +168,13 @@ void RootMovieClip::constructionComplete(bool _explicit, bool forInitAction)
 			}
 			else if (this->loaderInfo && this->loaderInfo->getLoader())
 				this->loaderInfo->getLoader()->setContent(this);
+			if (needsActionScript3())
+			{
+				tiny_string s = "root";
+				s += Number::toString(DisplayObject::getDepth());
+				this->name = getSystemState()->getUniqueStringId("root1");
+				this->hasDefaultName=true;
+			}
 		}
 		return;
 	}
@@ -175,6 +183,11 @@ void RootMovieClip::constructionComplete(bool _explicit, bool forInitAction)
 		// add to stage before continuing construction to make sure stage is available from AS code
 		incRef();
 		getSystemState()->stage->insertLegacyChildAt(-16384, this, false, false);
+	}
+	if (needsActionScript3())
+	{
+		this->name = getSystemState()->getUniqueStringId("root1");
+		this->hasDefaultName=true;
 	}
 
 	MovieClip::constructionComplete(_explicit,forInitAction);
@@ -198,7 +211,6 @@ void RootMovieClip::afterConstruction(bool _explicit)
 	}
 	if (this==getSystemState()->mainClip)
 		getSystemState()->addFrameTick(getSystemState());
-
 }
 
 bool RootMovieClip::needsActionScript3() const

@@ -283,35 +283,6 @@ void EventPhase::sinit(Class_base* c)
 	c->setVariableAtomByQName("AT_TARGET",nsNameAndKind(),asAtomHandler::fromUInt(AT_TARGET),DECLARED_TRAIT);
 }
 
-FocusEvent::FocusEvent(ASWorker* wrk, Class_base* c)
-	:Event(wrk,c, "focusEvent",true),relatedObject(NullRef)
-{
-	subtype=SUBTYPE_FOCUSEVENT;
-}
-
-FocusEvent::FocusEvent(ASWorker* wrk, Class_base* c, tiny_string _type, _NR<InteractiveObject> _relatedObject)
-	:Event(wrk,c, _type,true),relatedObject(_relatedObject)
-{
-	subtype=SUBTYPE_FOCUSEVENT;
-}
-
-void FocusEvent::sinit(Class_base* c)
-{	
-	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("FOCUS_IN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"focusIn"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("FOCUS_OUT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"focusOut"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("MOUSE_FOCUS_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseFocusChange"),DECLARED_TRAIT);
-	c->setVariableAtomByQName("KEY_FOCUS_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"keyFocusChange"),DECLARED_TRAIT);
-	REGISTER_GETTER_RESULTTYPE(c,relatedObject,InteractiveObject);
-}
-ASFUNCTIONBODY_GETTER_SETTER(FocusEvent,relatedObject)
-
-ASFUNCTIONBODY_ATOM(FocusEvent,_constructor)
-{
-	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(ret,wrk,obj,args,baseClassArgs);
-}
-
 MouseEvent::MouseEvent(ASWorker* wrk, Class_base* c)
  : Event(wrk,c, "mouseEvent",false,false,SUBTYPE_MOUSE_EVENT), modifiers(LSModifier::None),buttonDown(false), delta(1), localX(0), localY(0), stageX(0), stageY(0), relatedObject(NullRef)
 {

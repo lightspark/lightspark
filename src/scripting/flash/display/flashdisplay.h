@@ -280,10 +280,6 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, useHandCursor);
 	ASFUNCTION_ATOM(getSoundTransform);
 	ASFUNCTION_ATOM(setSoundTransform);
-	int getDepth() const
-	{
-		return 0;
-	}
 	void refreshSurfaceState() override;
 	IDrawable* invalidate(bool smoothing) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;

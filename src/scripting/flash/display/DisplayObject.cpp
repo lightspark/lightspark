@@ -435,12 +435,32 @@ void DisplayObject::sinit(Class_base* c)
 	IBitmapDrawable::linkTraits(c);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_STRINGID_CB(DisplayObject,name,onSetName)
+ASFUNCTIONBODY_SETTER_STRINGID_CB(DisplayObject,name,onSetName)
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties)
 ASFUNCTIONBODY_GETTER_SETTER_CB(DisplayObject,scrollRect,onSetScrollRect)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, metaData)
+
+ASFUNCTIONBODY_ATOM(DisplayObject,_getter_name)
+{
+	if(!asAtomHandler::is<DisplayObject>(obj))
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Function applied to wrong object");
+		return;
+	}
+	if(argslen != 0)
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"Arguments provided in getter");
+		return;
+	}
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	if (th->needsActionScript3() && th->name == BUILTIN_STRINGS::EMPTY)
+		ret = asAtomHandler::nullAtom;
+	else
+		ret = asAtomHandler::fromStringID(th->name);
+
+}
 
 void DisplayObject::onSetName(uint32_t oldName)
 {

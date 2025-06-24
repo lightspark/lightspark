@@ -56,10 +56,10 @@ void FocusEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("MOUSE_FOCUS_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"mouseFocusChange"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("KEY_FOCUS_CHANGE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"keyFocusChange"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	REGISTER_GETTER_RESULTTYPE(c,relatedObject,InteractiveObject);
-	REGISTER_GETTER_RESULTTYPE(c,keyCode,UInteger);
-	REGISTER_GETTER_RESULTTYPE(c,shiftKey,Boolean);
-	REGISTER_GETTER_RESULTTYPE(c,isRelatedObjectInaccessible,Boolean);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,relatedObject,InteractiveObject);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,keyCode,UInteger);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,shiftKey,Boolean);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,isRelatedObjectInaccessible,Boolean);
 }
 ASFUNCTIONBODY_GETTER_SETTER(FocusEvent,relatedObject)
 ASFUNCTIONBODY_GETTER_SETTER(FocusEvent,keyCode)

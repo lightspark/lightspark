@@ -1621,16 +1621,22 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 }
 
 ParseThread::ParseThread(istream& in, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain, Loader *_loader, tiny_string srcurl)
-  : version(0),applicationDomain(appDomain),securityDomain(secDomain),
-    f(in),uncompressingFilter(nullptr),backend(nullptr),bytearraybuf(nullptr),loader(_loader),
+  : version(0),uncompressedsize(0),
+	applicationDomain(appDomain),securityDomain(secDomain),
+    f(in),uncompressingFilter(nullptr),
+	backend(nullptr),
+	loader(_loader),
     parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 }
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
-  : version(0),applicationDomain(NullRef),securityDomain(NullRef), //The domains are not needed since the system state create them itself
-    f(in),uncompressingFilter(nullptr),backend(nullptr),bytearraybuf(nullptr),loader(nullptr),
+  : version(0),uncompressedsize(0),
+	applicationDomain(NullRef),securityDomain(NullRef), //The domains are not needed since the system state create them itself
+    f(in),uncompressingFilter(nullptr),
+	backend(nullptr),
+	loader(nullptr),
     parsedObject(NullRef),url(),fileType(FT_UNKNOWN)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
@@ -1638,7 +1644,6 @@ ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
 	if (root)
 	{
 		root->parsethread=this;
-		bytearraybuf= f.rdbuf();
 	}
 }
 
@@ -1685,11 +1690,13 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 	version=ver;
 	root->applicationDomain->version=version;
 	f >> FileLength;
+	uncompressedsize = 8+FileLength; // 8 bytes for magic bytes, version and FileLength
 	//Enable decompression if needed
 	if(fileType==FT_SWF)
 	{
 		LOG(LOG_INFO, "Uncompressed SWF file: Version " << (int)version);
-		root->loaderInfo->setBytesTotal(FileLength);
+		if (root == root->getSystemState()->mainClip)
+			root->loaderInfo->setBytesTotal(FileLength);
 	}
 	else
 	{
@@ -1712,7 +1719,8 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 		}
 		f.rdbuf(uncompressingFilter);
 		// the first 8 bytes from the header are always uncompressed (magic bytes + FileLength)
-		root->loaderInfo->setBytesTotal(FileLength-8);
+		if (root == root->getSystemState()->mainClip)
+			root->loaderInfo->setBytesTotal(FileLength-8);
 	}
 
 	f >> FrameSize >> FrameRate >> FrameCount;
@@ -2165,6 +2173,7 @@ void ParseThread::parseExtensions(RootMovieClip* root)
 
 void ParseThread::parseBitmap()
 {
+	backend=f.rdbuf();
 	LoaderInfo* li=loader->getContentLoaderInfo();
 	switch (fileType)
 	{
@@ -2192,6 +2201,7 @@ void ParseThread::parseBitmap()
 	}
 	if (li)
 		li->setComplete();
+	uncompressedsize = f.tellg();
 }
 
 _NR<DisplayObject> ParseThread::getParsedObject()
@@ -2210,11 +2220,31 @@ void ParseThread::setRootMovie(RootMovieClip *root)
 
 void ParseThread::getSWFByteArray(ByteArray* ba)
 {
-	istream f2(bytearraybuf);
-	f2.seekg(0,ios_base::end);
-	uint32_t len = f2.tellg();
-	f2.seekg(0);
-	f2.read((char*)ba->getBuffer(len,true),len);
+	istream f2(backend);
+	uint32_t len = uncompressedsize;
+	if (uncompressingFilter)
+	{
+		//skip header
+		UI8 tmp;
+		f2>>tmp;
+		f2>>tmp;
+		f2>>tmp;
+		f2>>tmp;
+		// write header for uncompressed swf
+		ba->writeByte('S');
+		ba->writeByte('W');
+		ba->writeByte('F');
+		ba->writeByte((uint8_t)version);
+		// write filelength
+		f2>>tmp;ba->writeByte(tmp);
+		f2>>tmp;ba->writeByte(tmp);
+		f2>>tmp;ba->writeByte(tmp);
+		f2>>tmp;ba->writeByte(tmp);
+		f2.rdbuf(uncompressingFilter);
+		f2.read((char*)ba->getBuffer(len-8,true)+8,len-8);
+	}
+	else
+		f2.read((char*)ba->getBuffer(len,true),len);
 }
 
 RootMovieClip* ParseThread::getRootMovie() const

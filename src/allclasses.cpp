@@ -74,6 +74,8 @@
 #include "scripting/flash/display3d/flashdisplay3d.h"
 #include "scripting/flash/display3d/flashdisplay3dtextures.h"
 #include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/events/FocusEvent.h"
+#include "scripting/flash/events/HttpStatusEvent.h"
 #include "scripting/flash/filesystem/flashfilesystem.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/filters/BevelFilter.h"

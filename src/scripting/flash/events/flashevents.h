@@ -157,14 +157,6 @@ public:
 	tiny_string statuscode;
 };
 
-class HTTPStatusEvent: public Event
-{
-public:
-	HTTPStatusEvent(ASWorker* wrk, Class_base* c):Event(wrk,c){}
-	static void sinit(Class_base*);
-	ASFUNCTION_ATOM(_constructor);
-};
-
 class TextEvent: public Event
 {
 protected:
@@ -353,6 +345,8 @@ public:
 	void clearEventListeners();
 	// is called when a new event is added to the event queue
 	virtual void onNewEvent(Event* ev){}
+	// is called before an event is handled by the event queue
+	virtual void beforeHandleEvent(Event* ev) {}
 	// is called after an event was handled by the event queue
 	virtual void afterHandleEvent(Event* ev) {}
 	static void sinit(Class_base*);

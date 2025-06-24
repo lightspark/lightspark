@@ -27,6 +27,7 @@ namespace lightspark
 {
 class Loader;
 class SecurityDomain;
+class ParseThread;
 
 class LoaderInfo: public EventDispatcher, public ILoadable
 {
@@ -36,6 +37,8 @@ public:
 	ASPROPERTY_GETTER(_NR<ASObject>,parameters);
 	ASPROPERTY_GETTER(tiny_string, contentType);
 private:
+	ParseThread* local_pt;
+	streambuf *sbuf;
 	uint32_t bytesLoaded;
 	uint32_t bytesLoadedPublic; // bytes loaded synchronized with ProgressEvent
 	uint32_t bytesTotal;
@@ -47,7 +50,7 @@ private:
 	_NR<ByteArray> bytesData;
 	ProgressEvent* progressEvent;
 	Mutex spinlock;
-	enum LOAD_STATUS { STARTED=0, INIT_SENT, COMPLETE };
+	enum LOAD_STATUS { LOAD_START=0, LOAD_OPENED, LOAD_PROGRESSING, LOAD_DOWNLOAD_DONE, LOAD_INIT_SENT, LOAD_COMPLETE };
 	LOAD_STATUS loadStatus;
 	/*
 	 * sendInit should be called with the spinlock held
@@ -65,12 +68,16 @@ public:
 	ASPROPERTY_GETTER(number_t,frameRate);
 	LoaderInfo(ASWorker*,Class_base* c);
 	LoaderInfo(ASWorker*, Class_base* c, Loader* l);
+	void parseData(streambuf* _sbuf);
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+	void beforeHandleEvent(Event* ev) override;
 	void afterHandleEvent(Event* ev) override;
 	void addLoaderEvent(Event* ev);
+	void setOpened();
+	_NR<DisplayObject> getParsedObject() const;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getLoaderURL);

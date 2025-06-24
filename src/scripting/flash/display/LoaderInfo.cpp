@@ -25,6 +25,7 @@
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/Loader.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/flash/events/HttpStatusEvent.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
@@ -34,8 +35,9 @@ using namespace lightspark;
 
 LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
+	local_pt(nullptr),sbuf(nullptr),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(nullptr),content(nullptr),bytesData(NullRef),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(nullptr),content(nullptr),bytesData(NullRef),progressEvent(nullptr),loadStatus(LOAD_START),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
@@ -47,8 +49,9 @@ LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),appli
 
 LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, Loader* l):EventDispatcher(wrk,c),applicationDomain(NullRef),securityDomain(NullRef),
 	contentType("application/x-shockwave-flash"),
+	local_pt(nullptr),sbuf(nullptr),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),content(nullptr),bytesData(NullRef),progressEvent(nullptr),loadStatus(STARTED),actionScriptVersion(3),swfVersion(0),
+	loader(l),content(nullptr),bytesData(NullRef),progressEvent(nullptr),loadStatus(LOAD_START),actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	if (loader)
@@ -61,6 +64,15 @@ LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, Loader* l):EventDispatcher(
 	parameters = _MR(new_asobject(wrk));
 	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(wrk));
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
+}
+
+void LoaderInfo::parseData(streambuf *_sbuf)
+{
+	sbuf=_sbuf;
+	istream s(sbuf);
+
+	local_pt = new ParseThread(s,applicationDomain,securityDomain,loader,url);
+	local_pt->execute();
 }
 
 void LoaderInfo::sinit(Class_base* c)
@@ -100,6 +112,13 @@ ASFUNCTIONBODY_GETTER(LoaderInfo,frameRate)
 bool LoaderInfo::destruct()
 {
 	Locker l(spinlock);
+	if (sbuf)
+		delete sbuf;
+	sbuf = nullptr;
+	if(local_pt)
+		delete local_pt;
+	local_pt=nullptr;
+
 	sharedEvents.reset();
 	if (loader)
 		loader->removeStoredMember();
@@ -114,7 +133,7 @@ bool LoaderInfo::destruct()
 	bytesLoaded = 0;
 	bytesLoadedPublic = 0;
 	bytesTotal = 0;
-	loadStatus =STARTED;
+	loadStatus =LOAD_START;
 	actionScriptVersion = 3;
 	swfVersion = 0;
 	childAllowsParent = true;
@@ -132,6 +151,12 @@ bool LoaderInfo::destruct()
 void LoaderInfo::finalize()
 {
 	Locker l(spinlock);
+	if (sbuf)
+		delete sbuf;
+	sbuf = nullptr;
+	if(local_pt)
+		delete local_pt;
+	local_pt=nullptr;
 	sharedEvents.reset();
 	if (loader)
 		loader->removeStoredMember();
@@ -186,6 +211,13 @@ bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	return ret;
 }
 
+void LoaderInfo::beforeHandleEvent(Event* ev)
+{
+	if (ev->is<ProgressEvent>() && loadStatus == LOAD_OPENED)
+		loadStatus = LOAD_PROGRESSING;
+	else if (ev->is<ProgressEvent>() && ev->as<ProgressEvent>()->bytesLoaded == ev->as<ProgressEvent>()->bytesTotal)
+		loadStatus = LOAD_DOWNLOAD_DONE;
+}
 void LoaderInfo::afterHandleEvent(Event* ev)
 {
 	Locker l(spinlock);
@@ -194,6 +226,7 @@ void LoaderInfo::afterHandleEvent(Event* ev)
 		progressEvent->decRef();
 		progressEvent=nullptr;
 	}
+
 	auto it = loaderevents.find(ev);
 	if (it != loaderevents.end())
 	{
@@ -217,6 +250,20 @@ void LoaderInfo::addLoaderEvent(Event* ev)
 	}
 }
 
+void LoaderInfo::setOpened()
+{
+	loadStatus = LOAD_OPENED;
+	if (bytesData.isNull())
+		bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));
+}
+
+_NR<DisplayObject> LoaderInfo::getParsedObject() const
+{
+	if (local_pt)
+		return local_pt->getParsedObject();
+	return NullRef;
+}
+
 void LoaderInfo::resetState()
 {
 	Locker l(spinlock);
@@ -225,13 +272,13 @@ void LoaderInfo::resetState()
 	bytesTotal=0;
 	if(!bytesData.isNull())
 		bytesData->setLength(0);
-	loadStatus=STARTED;
+	loadStatus=LOAD_START;
 }
 
 void LoaderInfo::setComplete()
 {
 	Locker l(spinlock);
-	if (loadStatus==STARTED)
+	if (loadStatus< LOAD_INIT_SENT)
 	{
 		sendInit();
 	}
@@ -264,7 +311,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 	{
 		spinlock.lock();
 		bytesLoaded=b;
-		if(getVm(getSystemState()))
+		if(getVm(getSystemState()) && loadStatus >= LOAD_OPENED)
 		{
 			// make sure that the event queue is not flooded with progressEvents
 			if (!progressEvent)
@@ -274,7 +321,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 				this->incRef();
 				progressEvent->incRef();
 				spinlock.unlock();
-				getVm(getSystemState())->addIdleEvent(_MR(this),_MR(progressEvent));
+				getVm(getSystemState())->addEvent(_MR(this),_MR(progressEvent));
 			}
 			else
 			{
@@ -288,7 +335,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 					this->addLoaderEvent(progressEvent);
 					this->incRef();
 					progressEvent->incRef();
-					getVm(getSystemState())->addIdleEvent(_MR(this),_MR(progressEvent));
+					getVm(getSystemState())->addEvent(_MR(this),_MR(progressEvent));
 					spinlock.unlock();
 				}
 				else
@@ -307,20 +354,27 @@ void LoaderInfo::sendInit()
 	auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"init");
 	if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
 		this->addLoaderEvent(ev);
-	assert(loadStatus==STARTED);
-	loadStatus=INIT_SENT;
+	assert(loadStatus<LOAD_INIT_SENT);
+	loadStatus=LOAD_INIT_SENT;
 	checkSendComplete();
 }
 void LoaderInfo::checkSendComplete()
 {
-	if(loadStatus==INIT_SENT && bytesTotal && bytesLoaded==bytesTotal)
+	if(loadStatus==LOAD_INIT_SENT && bytesTotal && bytesLoaded==bytesTotal)
 	{
+		if (!this->url.empty())
+		{
+			this->incRef();
+			auto ev = Class<HTTPStatusEvent>::getInstanceS(getInstanceWorker());
+			if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
+				this->addLoaderEvent(ev);
+		}
 		//The clip is also complete now
 		this->incRef();
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"complete");
 		if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
 			this->addLoaderEvent(ev);
-		loadStatus=COMPLETE;
+		loadStatus=LOAD_COMPLETE;
 	}
 }
 
@@ -390,7 +444,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getURL)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 
-	if (th->url.empty())
+	if (th->url.empty()	|| th->loadStatus < LOAD_INIT_SENT)
 		ret = asAtomHandler::nullAtom;
 	else
 		ret = asAtomHandler::fromObject(abstract_s(wrk,th->url));
@@ -407,25 +461,36 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesTotal)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 
-	asAtomHandler::setUInt(ret,wrk,th->bytesTotal);
+	if (th->loadStatus == LOAD_START || th->loadStatus==LOAD_OPENED)
+		asAtomHandler::setUInt(ret,wrk,0);
+	else
+		asAtomHandler::setUInt(ret,wrk,th->bytesTotal);
 }
 
 bool LoaderInfo::fillBytesData(ByteArray* data)
 {
+	if (this->loadStatus < LOAD_OPENED)
+		return false;
+	if (bytesData.isNull())
+		bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));
+	if (this->loadStatus < LOAD_DOWNLOAD_DONE)
+		return true;
 	if (data)
 	{
-		if (bytesData.isNull())
-			bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));
 		bytesData->setLength(0);
 		bytesData->append(data->getBufferNoCheck(),data->getLength());
 		return true;
 	}
 	else if (!loader) //th is the LoaderInfo of the main clip
 	{
-		if (bytesData.isNull())
-			bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));
 		if (bytesData->getLength() == 0 && getSystemState()->mainClip->parsethread)
 			getSystemState()->mainClip->parsethread->getSWFByteArray(bytesData.getPtr());
+		return true;
+	}
+	else if (local_pt)
+	{
+		if (loadStatus >= LOAD_OPENED)
+			local_pt->getSWFByteArray(bytesData.getPtr());
 		return true;
 	}
 	else if (loader->getContent())

@@ -936,8 +936,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,_constructor)
 
 void EventDispatcher::handleEvent(_R<Event> e)
 {
-	check();
-	e->check();
+	beforeHandleEvent(e.getPtr());
 	Locker l(handlersMutex);
 	map<tiny_string, list<listener> >::iterator h=handlers.find(e->type);
 	if(h==handlers.end())
@@ -1337,21 +1336,6 @@ void AVM1InitActionEvent::executeActions()
 
 ShutdownEvent::ShutdownEvent():Event(nullptr,nullptr, "shutdownEvent")
 {
-}
-
-void HTTPStatusEvent::sinit(Class_base* c)
-{
-	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("HTTP_STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"httpStatus"),DECLARED_TRAIT);
-
-	// Value is undefined and not "httpResponseStatus" like stated in documentation
-	c->setVariableAtomByQName("HTTP_RESPONSE_STATUS",nsNameAndKind(),asAtomHandler::fromObject(c->getSystemState()->getUndefinedRef()),DECLARED_TRAIT);
-}
-
-ASFUNCTIONBODY_ATOM(HTTPStatusEvent,_constructor)
-{
-	uint32_t baseClassArgs=imin(argslen,3);
-	Event::_constructor(ret,wrk,obj,args,baseClassArgs);
 }
 
 FunctionEvent::FunctionEvent(asAtom _f, asAtom _obj, asAtom* _args, uint32_t _numArgs):

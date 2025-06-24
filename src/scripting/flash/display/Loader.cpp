@@ -83,10 +83,18 @@ void LoaderThread::execute()
 			// downloader will be deleted in jobFence
 			return;
 		}
+		loaderInfo->setOpened();
 		auto ev = Class<Event>::getInstanceS(loader->getInstanceWorker(),"open");
+		// it seems an additional ProgressEvent is always added at the start of loading from an URL (see ruffle test avm2/large_preload_from_url)
+		ProgressEvent* p = Class<ProgressEvent>::getInstanceS(loader->getInstanceWorker(),0,downloader->getLength());
 		loaderInfo->incRef();
 		if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev)))
 			loaderInfo->addLoaderEvent(ev);
+		loaderInfo->incRef();
+		if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(p)))
+			loaderInfo->addLoaderEvent(ev);
+		loaderInfo->setBytesTotal(downloader->getLength());
+		loaderInfo->setBytesLoaded(downloader->getReceivedLength());
 	}
 	else if(source==BYTES)
 	{
@@ -94,7 +102,6 @@ void LoaderThread::execute()
 		auto ev = Class<Event>::getInstanceS(loader->getInstanceWorker(),"open");
 		// it seems an additional ProgressEvent is always added at the start of loading a ByteArray (see ruffle test avm2/large_preload_from_bytes)
 		ProgressEvent* p = Class<ProgressEvent>::getInstanceS(loader->getInstanceWorker(),0,bytes->getLength());
-		loaderInfo->fillBytesData(bytes.getPtr());
 		loaderInfo->incRef();
 		if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev)))
 			loaderInfo->addLoaderEvent(ev);
@@ -114,14 +121,8 @@ void LoaderThread::execute()
 //		close(fd);
 //		g_free(name_used);
 	}
+	this->loaderInfo->parseData(sbuf);
 
-	istream s(sbuf);
-	ParseThread local_pt(s,loaderInfo->applicationDomain,loaderInfo->securityDomain,loader,url.getParsedURL());
-	local_pt.execute();
-
-	// Delete the bytes container (cache reader or bytes_buf)
-	delete sbuf;
-	sbuf = nullptr;
 	if (source==URL) {
 		//Acquire the lock to ensure consistency in threadAbort
 		Locker l(downloaderLock);
@@ -132,7 +133,7 @@ void LoaderThread::execute()
 
 	bytes.reset();
 
-	_NR<DisplayObject> obj=local_pt.getParsedObject();
+	_NR<DisplayObject> obj=loaderInfo->getParsedObject();
 	if(obj.isNull())
 	{
 		// The stream did not contain RootMovieClip or Bitmap

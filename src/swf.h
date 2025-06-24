@@ -593,6 +593,7 @@ class DLL_PUBLIC ParseThread: public IThreadJob
 {
 public:
 	int version;
+	uint32_t uncompressedsize;
 	// Parse an object from stream. The type is detected
 	// automatically. After parsing the new object is available
 	// from getParsedObject().
@@ -615,7 +616,6 @@ private:
 	std::istream& f;
 	uncompressing_filter* uncompressingFilter;
 	std::streambuf* backend;
-	std::streambuf* bytearraybuf;
 	Loader *loader;
 	_NR<DisplayObject> parsedObject;
 	Mutex objectSpinlock;

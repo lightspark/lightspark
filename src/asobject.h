@@ -1632,6 +1632,7 @@ class GradientBevelFilter;
 class GraphicsEndFill;
 class GraphicsPath;
 class GraphicsSolidFill;
+class HttpStatusEvent;
 class IFunction;
 class Integer;
 class InteractiveObject;
@@ -1763,7 +1764,21 @@ template<> inline bool ASObject::is<DropShadowFilter>() const { return subtype==
 template<> inline bool ASObject::is<EastAsianJustifier>() const { return subtype==SUBTYPE_EASTASIANJUSTIFIER; }
 template<> inline bool ASObject::is<ElementFormat>() const { return subtype==SUBTYPE_ELEMENTFORMAT; }
 template<> inline bool ASObject::is<EvalError>() const { return subtype==SUBTYPE_EVALERROR; }
-template<> inline bool ASObject::is<Event>() const { return subtype==SUBTYPE_EVENT || subtype==SUBTYPE_WAITABLE_EVENT || subtype==SUBTYPE_PROGRESSEVENT || subtype==SUBTYPE_KEYBOARD_EVENT || subtype==SUBTYPE_MOUSE_EVENT || subtype==SUBTYPE_SAMPLEDATA_EVENT || subtype == SUBTYPE_THROTTLE_EVENT || subtype == SUBTYPE_CONTEXTMENUEVENT || subtype == SUBTYPE_GAMEINPUTEVENT || subtype == SUBTYPE_NATIVEWINDOWBOUNDSEVENT || subtype == SUBTYPE_FOCUSEVENT; }
+template<> inline bool ASObject::is<Event>() const
+{
+	return subtype == SUBTYPE_EVENT
+			|| subtype == SUBTYPE_WAITABLE_EVENT
+			|| subtype == SUBTYPE_PROGRESSEVENT
+			|| subtype == SUBTYPE_KEYBOARD_EVENT
+			|| subtype == SUBTYPE_MOUSE_EVENT
+			|| subtype == SUBTYPE_SAMPLEDATA_EVENT
+			|| subtype == SUBTYPE_THROTTLE_EVENT
+			|| subtype == SUBTYPE_CONTEXTMENUEVENT
+			|| subtype == SUBTYPE_GAMEINPUTEVENT
+			|| subtype == SUBTYPE_NATIVEWINDOWBOUNDSEVENT
+			|| subtype == SUBTYPE_FOCUSEVENT
+			|| subtype == SUBTYPE_HTTPSTATUSEVENT;
+}
 template<> inline bool ASObject::is<ExtensionContext>() const { return subtype==SUBTYPE_EXTENSIONCONTEXT; }
 template<> inline bool ASObject::is<FontDescription>() const { return subtype==SUBTYPE_FONTDESCRIPTION; }
 template<> inline bool ASObject::is<FileMode>() const { return subtype==SUBTYPE_FILEMODE; }
@@ -1782,6 +1797,7 @@ template<> inline bool ASObject::is<GradientBevelFilter>() const { return subtyp
 template<> inline bool ASObject::is<GraphicsEndFill>() const { return subtype==SUBTYPE_GRAPHICSENDFILL; }
 template<> inline bool ASObject::is<GraphicsPath>() const { return subtype==SUBTYPE_GRAPHICSPATH; }
 template<> inline bool ASObject::is<GraphicsSolidFill>() const { return subtype==SUBTYPE_GRAPHICSSOLIDFILL; }
+template<> inline bool ASObject::is<HttpStatusEvent>() const { return subtype==SUBTYPE_HTTPSTATUSEVENT; }
 template<> inline bool ASObject::is<IFunction>() const { return type==T_FUNCTION; }
 template<> inline bool ASObject::is<IndexBuffer3D>() const { return subtype==SUBTYPE_INDEXBUFFER3D; }
 template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }

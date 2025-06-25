@@ -106,6 +106,7 @@ private:
 	};
 
 	size_t rootNameLength() const;
+	int compareImpl(const Path& other) const;
 
 	static constexpr ValueType genericSeparator = U'/';
 	StringType path;
@@ -132,53 +133,122 @@ public:
 		Auto,
 	};
 
-	Path();
-	Path(const Path& other);
-	Path(Path&& other);
+	Path() = default;
+	Path(const Path& other) = default;
+	Path(Path&& other) = default;
 
 	// TODO: Add locale based versions.
-	Path(const StringType& str, const Format& fmt = Format::Auto);
-	Path(StringType&& str, const Format& fmt = Format::Auto);
+	Path
+	(
+		const StringType& str,
+		const Format& fmt = Format::Auto
+	) : path(str) { postprocessPath(fmt); }
+
+	Path
+	(
+		StringType&& str,
+		const Format& fmt = Format::Auto
+	) : path(std::move(str)) { postprocessPath(fmt); }
 
 	template<typename InputIter>
-	Path(InputIter first, InputIter last, const Format& fmt = Format::Auto);
+	Path
+	(
+		InputIter first,
+		InputIter last,
+		const Format& fmt = Format::Auto
+	) : Path(StringType(first, last), fmt) {}
 
-	~Path();
+	~Path() {}
 
-	Path& operator=(const Path& other);
-	Path& operator=(Path&& other);
-	Path& operator=(const ValueType& other);
-	Path& operator=(const StringType& other);
-	Path& operator=(StringType&& other);
+	Path& operator=(const Path& other) = default;
+	Path& operator=(Path&& other) = default;
+	Path& operator=(StringType&& other) { return assign(std::move(other)); }
+	template<typename T>
+	Path& operator=(const T& other) { return assign(other); }
 
-	Path& assign(const ValueType& other);
-	Path& assign(const StringType& other);
-	Path& assign(StringType&& other);
+	Path& assign(const Path& other) { return *this = other; }
+	Path& assign(StringType&& other)
+	{
+		path = std:move(other);
+		postprocessPath(Format::NativeFormat);
+		return *this;
+	}
+
+	template<typename T>
+	Path& assign(const T& other)
+	{
+		path = toUTF8(other);
+		postprocessPath(Format::NativeFormat);
+		return *this;
+	}
+
 	template<typename InputIter>
-	Path& assign(InputIter first, InputIter last);
+	Path& assign(InputIter first, InputIter last)
+	{
+		path = StringType(first, last);
+		postprocessPath(Format::NativeFormat);
+	}
 
 	Path& operator/=(const Path& other);
-	Path& operator/=(const StringType& other);
-	Path& operator/=(const ValueType& other);
+	template<typename T>
+	Path& operator/=(const T& other) { return *this /= Path(other); }
 
-	Path& append(const Path& other);
-	Path& append(const StringType& other);
-	Path& append(const ValueType& other);
+	Path& append(const Path& other) { return *this /= other; }
+	template<typename T>
+	Path& append(const T& other) { return append(Path(other)); }
 	template<typename InputIter>
-	Path& append(InputIter first, InputIter last);
+	Path& append(InputIter first, InputIter last)
+	{
+		return append(StringType(first, last));
+	}
 
-	Path& operator+=(const Path& other);
-	Path& operator+=(const StringType& other);
-	Path& operator+=(const ValueType& other);
+	Path& operator+=(const Path& other)
+	{
+		path += other.path;
+		postprocessPath(Format::NativeFormat);
+		return *this;
+	}
 
-	Path& concat(const Path& other);
-	Path& concat(const StringType& other);
-	Path& concat(const ValueType& other);
+	Path& operator+=(const ValueType& other)
+	{
+		if (path.empty() || path.endsWith(nativeSeparator))
+			path += other == genericSeparator ? nativeSeparator : other;
+
+		checkLongPath();
+	}
+	
+
+	template<typename T>
+	Path& operator+=(const T& other) { return *this += Path(other); }
+
+	Path& concat(const Path& other) { return *this += other; }
+	template<typename T>
+	Path& concat(const T& other) { return concat(Path(other)); }
 	template<typename InputIter>
-	Path& concat(InputIter first, InputIter last);
+	Path& concat(InputIter first, InputIter last)
+	{
+		#if 1
+		return *this += Path(first, last);
+		#elif 1
+		path += StringType(first, last);
+		postprocessPath(Format::NativeFormat);
+		return *this;
+		#else
+		return concat(StringType(first, last));
+		#endif
+	}
 
-	void clear();
-	void swap(Path& other);
+	void clear()
+	{
+		path.clear();
+		prefixLength = 0;
+	}
+
+	void swap(Path& other)
+	{
+		std::swap(path, other.path);
+		std::swap(prefixLength, other.prefixLength);
+	}
 
 	Path& makeNative();
 	Path& makePreferred();
@@ -186,13 +256,16 @@ public:
 	Path& replaceFilename(const Path& path);
 	Path& replaceExtension(const Path& path = Path());
 
-	const StringType& getNativeStr() const;
+	const StringType& getNativeStr() const { return path; }
 	const StringType& getGenericStr() const;
-	const StringType& getStr() const;
-	operator StringType() const;
+	const StringType& getStr() const { return getNativeStr(); }
+	operator StringType() const { return getNativeStr(); }
 
 	int compare(const Path& other) const;
-	int compare(const StringType& other) const;
+	int compare(const StringType& other) const
+	{
+		return compare(Path(other));
+	}
 
 	Path getRootName() const;
 	Path getRootDir() const;

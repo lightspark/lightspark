@@ -1173,11 +1173,11 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		LOG_CALL("Calling the setter "<<obj->type<<" "<<obj->slotid);
 		//One argument can be passed without creating an array
 		ASObject* target=this;
-		asAtom* arg1 = &o;
+		asAtom arg1 = o;
 
 		asAtom v =asAtomHandler::fromObject(target);
 		asAtom ret=asAtomHandler::invalidAtom;
-		asAtomHandler::callFunction(obj->setter,wrk,ret,v,arg1,1,false,true,true,true);
+		asAtomHandler::callFunction(obj->setter,wrk,ret,v,&arg1,1,false,true,true,true);
 		if (asAtomHandler::is<SyntheticFunction>(obj->setter))
 			retval = asAtomHandler::as<SyntheticFunction>(obj->setter)->getSimpleName();
 		ASATOM_DECREF(ret);

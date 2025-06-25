@@ -221,7 +221,10 @@ public:
 #ifdef PROFILING_SUPPORT
 		uint64_t t1 = compat_get_thread_cputime_us();
 #endif
-		if (resultlocalnumberpos != UINT16_MAX)
+		// prepare result as NaN local number if
+		// result will be local number and it will not replace the same previous local number
+		if (resultlocalnumberpos != UINT16_MAX &&
+				(!asAtomHandler::isLocalNumber(ret) || ret.uintval>>8 != resultlocalnumberpos))
 			asAtomHandler::setNumber(ret,wrk,numeric_limits<double>::quiet_NaN(),resultlocalnumberpos);
 
 		/*

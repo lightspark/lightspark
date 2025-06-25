@@ -443,8 +443,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getSharedEvents)
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getURL)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
-
-	if (th->url.empty()	|| th->loadStatus < LOAD_INIT_SENT)
+	if (th->url.empty()	|| (th->loadStatus < LOAD_INIT_SENT && th->loader))
 		ret = asAtomHandler::nullAtom;
 	else
 		ret = asAtomHandler::fromObject(abstract_s(wrk,th->url));

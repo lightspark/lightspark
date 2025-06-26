@@ -250,8 +250,10 @@ public:
 		std::swap(prefixLength, other.prefixLength);
 	}
 
-	Path& makeNative();
-	Path& makePreferred();
+	// NOTE: Because we always use `Format::Generic` internally, this has
+	// to be a no-op.
+	Path& makeNative() { return *this; }
+	Path& makePreferred() { return makeNative(); }
 	Path& removeFilename();
 	Path& replaceFilename(const Path& path);
 	Path& replaceExtension(const Path& path = Path());
@@ -277,46 +279,45 @@ public:
 	Path getStem() const;
 	Path getExtension() const;
 
-	bool empty() const;
-	bool hasRootName() const;
+	bool empty() const { return path.empty(); }
+	bool hasRootName() const { return rootNameLength() > 0; }
 	bool hasRootDir() const;
-	bool hasRoot() const;
+	bool hasRoot() const { return hasRootName() || hasRootDir(); }
 	bool hasRelativePath() const;
-	bool hasParent() const;
+	bool hasParent() const { return !getParent().empty(); }
 	bool hasFilename() const;
-	bool hasStem() const;
-	bool hasExtension() const;
+	bool hasStem() const { return !getStem().empty(); }
+	bool hasExtension() const { return !getExtension().empty(); }
 
 	bool isAbsolute() const;
-	bool isRelative() const;
+	bool isRelative() const { return !isAbsolute(); }
 
 	Path lexicallyNormal() const;
 	Path lexicallyRelative(const Path& base) const;
 	Path lexicallyProximate(const Path& base) const;
 
-	Iter begin() const;
-	Iter end() const;
+	Iter begin() const { return Iter(*this, path.begin()); }
+	Iter end() const { return Iter(*this, path.end()); }
 
-	bool operator==(const Path& other) const;
-	bool operator!=(const Path& other) const;
-	bool operator<(const Path& other) const;
-	bool operator<=(const Path& other) const;
-	bool operator>(const Path& other) const;
-	bool operator>=(const Path& other) const;
+	bool operator==(const Path& other) const { return !compare(other); }
+	bool operator!=(const Path& other) const { return compare(other); }
+	bool operator<(const Path& other) const { return compare(other) < 0; }
+	bool operator<=(const Path& other) const { return compare(other) <= 0; }
+	bool operator>(const Path& other) const { return compare(other) > 0; }
+	bool operator>=(const Path& other) const { return compare(other) >= 0; }
 
-	Path operator/(const Path& other);
-	Path operator/(const StringType& other);
-	Path operator/(const ValueType& other);
+	Path operator/(const Path& other) const { return Path(*this) /= other; }
 
-	Path operator+(const Path& other);
-	Path operator+(const StringType& other);
-	Path operator+(const ValueType& other);
+	Path operator+(const Path& other) const { return Path(*this) += other; }
 
-	bool exists() const;
+	bool exists() const { return FileSystem::exists(*this); }
 	bool isHiddenFile() const;
-	bool isDir() const;
-	bool isFile() const;
-	bool contains(const Path& path) const;
+	bool isDir() const { return FileSystem::isDir(*this); }
+	bool isFile() const { return FileSystem::isFile(*this); }
+	bool contains(const Path& _path) const
+	{
+		return path.contains(_path.path);
+	}
 };
 
 };

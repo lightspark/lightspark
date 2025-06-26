@@ -26,6 +26,7 @@
 #include <SDL.h>
 #include <sys/time.h>
 #include <unordered_map>
+#include <queue>
 #ifdef _WIN32
 #	include <windef.h>
 #endif
@@ -33,6 +34,7 @@
 namespace lightspark
 {
 class ThreadProfile;
+class Bitmap;
 
 class DLL_PUBLIC RenderThread: public ITickJob, public GLRenderContext
 {
@@ -100,7 +102,7 @@ private:
 
 	volatile bool renderToBitmapContainerNeeded;
 	Mutex mutexRenderToBitmapContainer;
-	_NR<BitmapContainer> bitmapContainerToRenderTo;
+	std::queue<_NR<BitmapContainer>> bitmapContainerToRenderTo;
 
 	std::list<uint32_t> texturesToDelete;
 
@@ -148,7 +150,7 @@ public:
 	void signalSurfaceRefresh();
 
 	void readPixelsToBimapContainer(_NR<BitmapContainer> bm);
-	void renderBitmap(BitmapContainer* bm);
+	void renderBitmap(BitmapContainer* bm, Bitmap* tempBitmap, bool wait);
 
 	/**
 		Allocates a chunk from the shared texture

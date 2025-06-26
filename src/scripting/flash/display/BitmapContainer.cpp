@@ -38,6 +38,7 @@ extern void nanoVGUpdateImage(int image, const unsigned char* data, EngineData* 
 BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
 	data(reporter_allocator<uint8_t>(m)),
 	hasModifiedData(false),hasModifiedTexture(false),needsclear(true),
+	currentrenderdata(0),
 	renderevent(0),
 	nanoVGImageHandle(-1),cachedCairoPattern(nullptr)
 {
@@ -304,12 +305,12 @@ void BitmapContainer::setModifiedTexture(bool modified)
 
 void BitmapContainer::addRenderCall(RenderDisplayObjectToBitmapContainer& call)
 {
-	renderdata.rendercalls.push_back(call);
+	getRenderData()->rendercalls.push(call);
 }
 
-void BitmapContainer::flushRenderCalls(RenderThread* renderthread)
+void BitmapContainer::flushRenderCalls(RenderThread* renderthread, Bitmap* tempBitmap, bool wait)
 {
-	renderthread->renderBitmap(this);
+	renderthread->renderBitmap(this,tempBitmap, wait);
 }
 
 void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)

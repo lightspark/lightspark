@@ -26,12 +26,14 @@
 #include "smartrefs.h"
 #include "swftypes.h"
 #include <vector>
+#include <queue>
 #include "backends/graphics.h"
 #include "threading.h"
 #include "3rdparty/nanovg/src/nanovg.h"
 
 namespace lightspark
 {
+class Bitmap;
 struct RenderDisplayObjectToBitmapContainer
 {
 	MATRIX initialMatrix;
@@ -49,9 +51,11 @@ struct BitmapContainerRenderData
 {
 	std::list<ITextureUploadable*> uploads;
 	std::list<RefreshableSurface> surfacesToRefresh;
-	std::list<RenderDisplayObjectToBitmapContainer> rendercalls;
+	std::queue<RenderDisplayObjectToBitmapContainer> rendercalls;
+	Bitmap* temporaryBitmap;
 	bool readpixels:1;
 	bool needscopy:1;
+	bool needswait:1;
 };
 
 class BitmapFilter;
@@ -77,8 +81,15 @@ protected:
 	bool hasModifiedData;
 	bool hasModifiedTexture;
 	bool needsclear;
+	ATOMIC_INT32(currentrenderdata);
+	BitmapContainerRenderData renderdata[2];
 public:
-	BitmapContainerRenderData renderdata;
+	BitmapContainerRenderData* getRenderData() { return &renderdata[currentrenderdata];}
+	BitmapContainerRenderData* swapRenderData()
+	{
+		currentrenderdata=1-currentrenderdata;
+		return &renderdata[1-currentrenderdata];
+	}
 	Semaphore renderevent;
 	TextureChunk bitmaptexture;
 	int nanoVGImageHandle;
@@ -143,7 +154,7 @@ public:
 	void setNeedsClear(bool clear) { needsclear=clear; }
 	bool getNeedsClear() const { return needsclear; }
 	void addRenderCall(RenderDisplayObjectToBitmapContainer& call);
-	void flushRenderCalls(RenderThread* renderthread);
+	void flushRenderCalls(RenderThread* renderthread, Bitmap* tempBitmap=nullptr, bool wait=true);
 };
 
 }

@@ -20,6 +20,7 @@
 #include "scripting/abc.h"
 #include "scripting/class.h"
 #include "scripting/flash/geom/Rectangle.h"
+#include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapContainer.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/Stage.h"
@@ -282,160 +283,170 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 
 	if (renderToBitmapContainerNeeded)
 	{
-		Locker l(mutexRenderToBitmapContainer);
-		BitmapContainer* bmc = bitmapContainerToRenderTo.getPtr();
-		assert(bmc);
-		// upload all needed bitmaps to gpu
-		auto itup = bmc->renderdata.uploads.begin();
-		while (itup != bmc->renderdata.uploads.end())
+		mutexRenderToBitmapContainer.lock();
+		while (!bitmapContainerToRenderTo.empty())
 		{
-			ITextureUploadable* u = *itup;
-			u->upload(true);
-			TextureChunk& tex=u->getTexture();
-			if(newTextureNeeded)
-				handleNewTexture();
-			uint32_t w,h;
-			u->sizeNeeded(w,h);
-			u->contentScale(tex.xContentScale, tex.yContentScale);
-			u->contentOffset(tex.xOffset, tex.yOffset);
-			loadChunkBGRA(tex, w, h, u->upload(false));
-			u->uploadFence();
-			itup = bmc->renderdata.uploads.erase(itup);
-		}
-		// refresh all surfaces
-		auto itsur = bmc->renderdata.surfacesToRefresh.begin();
-		while (itsur != bmc->renderdata.surfacesToRefresh.end())
-		{
-			itsur->displayobject->updateCachedSurface(itsur->drawable);
-			delete itsur->drawable;
-			itsur = bmc->renderdata.surfacesToRefresh.erase(itsur);
-		}
-		bmc->setModifiedTexture(false);
-		int w = bmc->getWidth();
-		int h = bmc->getHeight();
-		if (bmc->renderdata.readpixels)
-		{
-			assert(bmc->nanoVGImageHandle>=0);
-			engineData->exec_glBindTexture_GL_TEXTURE_2D(nanoVGGetTextureID(bmc->nanoVGImageHandle,engineData));
+			BitmapContainer* bmc = bitmapContainerToRenderTo.front().getPtr();
+			bitmapContainerToRenderTo.pop();
+			assert(bmc);
+			BitmapContainerRenderData* renderdata = bmc->swapRenderData();
+			// upload all needed bitmaps to gpu
+			auto itup = renderdata->uploads.begin();
+			while (itup != renderdata->uploads.end())
+			{
+				ITextureUploadable* u = *itup;
+				u->upload(true);
+				TextureChunk& tex=u->getTexture();
+				if(newTextureNeeded)
+					handleNewTexture();
+				uint32_t w,h;
+				u->sizeNeeded(w,h);
+				u->contentScale(tex.xContentScale, tex.yContentScale);
+				u->contentOffset(tex.xOffset, tex.yOffset);
+				loadChunkBGRA(tex, w, h, u->upload(false));
+				u->uploadFence();
+				itup = renderdata->uploads.erase(itup);
+			}
+			// refresh all surfaces
+			auto itsur = renderdata->surfacesToRefresh.begin();
+			while (itsur != renderdata->surfacesToRefresh.end())
+			{
+				itsur->displayobject->updateCachedSurface(itsur->drawable);
+				delete itsur->drawable;
+				itsur = renderdata->surfacesToRefresh.erase(itsur);
+			}
+			bmc->setModifiedTexture(false);
+			int w = bmc->getWidth();
+			int h = bmc->getHeight();
+			if (renderdata->readpixels)
+			{
+				assert(bmc->nanoVGImageHandle>=0);
+				engineData->exec_glBindTexture_GL_TEXTURE_2D(nanoVGGetTextureID(bmc->nanoVGImageHandle,engineData));
 #if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
-			uint32_t fbo = engineData->exec_glGenFramebuffer();
-			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(fbo);
-			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(nanoVGGetTextureID(bmc->nanoVGImageHandle,engineData));
-			engineData->exec_glReadPixels_GL_BGRA(bmc->getWidth(), bmc->getHeight(), bmc->getData());
-			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
-			engineData->exec_glDeleteFramebuffers(1, &fbo);
+				uint32_t fbo = engineData->exec_glGenFramebuffer();
+				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(fbo);
+				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(nanoVGGetTextureID(bmc->nanoVGImageHandle,engineData));
+				engineData->exec_glReadPixels_GL_BGRA(bmc->getWidth(), bmc->getHeight(), bmc->getData());
+				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+				engineData->exec_glDeleteFramebuffers(1, &fbo);
 #else
-			engineData->exec_glGetTexImage_GL_TEXTURE_2D(bmc->getData());
+				engineData->exec_glGetTexImage_GL_TEXTURE_2D(bmc->getData());
 #endif
-		}
-		else
-		{
-			if (bmc->nanoVGImageHandle<0)
-				nanoVGCreateImage(bmc,engineData);
-			// setup texture to render to
-			uint32_t bmTextureID;
-			engineData->exec_glFrontFace(false);
-			engineData->exec_glDrawBuffer_GL_BACK();
-			engineData->exec_glUseProgram(gpu_program);
-			bmTextureID = nanoVGGetTextureID(bmc->nanoVGImageHandle,engineData);
-			engineData->exec_glBindTexture_GL_TEXTURE_2D(bmTextureID);
-			// upload current content of bitmap container (no need for locking the bitmapcontainer as the worker thread is waiting until rendering is done)
-			if (bmc->getModifiedData())
-			{
-				bmc->setModifiedData(false);
-				engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0,w,h,0,bmc->getData());
-			}
-			int nanoVGoriginalImage = -1;
-			int nanoVGnewImage=-1;
-			if (bmc->renderdata.needscopy)
-			{
-				// the texture to render to is used during rendering, so we create a new texture
-				// and delete the old one at the end
-				nanoVGoriginalImage = bmc->nanoVGImageHandle;
-				nanoVGnewImage = nanoVGCreateImageFromData(w,h,bmc->getData(),engineData);
-				assert(nanoVGnewImage>=0);
-				bmTextureID = nanoVGGetTextureID(nanoVGnewImage,engineData);
-			}
-			uint32_t bmframebuffer = engineData->exec_glGenFramebuffer();
-			engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
-			engineData->exec_glBindTexture_GL_TEXTURE_2D(bmTextureID);
-			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(bmframebuffer);
-			uint32_t bmrenderbuffer = engineData->exec_glGenRenderbuffer();
-			engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(bmrenderbuffer);
-			if (engineData->supportPackedDepthStencil)
-			{
-				engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(w,h);
-				engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(bmrenderbuffer);
 			}
 			else
 			{
-				engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(w, h);
-				engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(bmrenderbuffer);
-			}
-			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
-			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
-			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(bmTextureID);
-			engineData->exec_glClear(CLEARMASK::STENCIL);
-			baseFramebuffer=bmframebuffer;
-			baseRenderbuffer=bmrenderbuffer;
-			flipvertical=false; // avoid flipping resulting image vertically (as is done for normal rendering)
-			setViewPort(w,h,false);
+				if (bmc->nanoVGImageHandle<0)
+					nanoVGCreateImage(bmc,engineData);
+				// setup texture to render to
+				uint32_t bmTextureID;
+				engineData->exec_glFrontFace(false);
+				engineData->exec_glDrawBuffer_GL_BACK();
+				engineData->exec_glUseProgram(gpu_program);
+				bmTextureID = nanoVGGetTextureID(bmc->nanoVGImageHandle,engineData);
+				engineData->exec_glBindTexture_GL_TEXTURE_2D(bmTextureID);
+				// upload current content of bitmap container (no need for locking the bitmapcontainer as the worker thread is waiting until rendering is done)
+				if (bmc->getModifiedData())
+				{
+					bmc->setModifiedData(false);
+					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0,w,h,0,bmc->getData());
+				}
+				int nanoVGoriginalImage = -1;
+				int nanoVGnewImage=-1;
+				if (renderdata->needscopy)
+				{
+					// the texture to render to is used during rendering, so we create a new texture
+					// and delete the old one at the end
+					nanoVGoriginalImage = bmc->nanoVGImageHandle;
+					nanoVGnewImage = nanoVGCreateImageFromData(w,h,bmc->getData(),engineData);
+					assert(nanoVGnewImage>=0);
+					bmTextureID = nanoVGGetTextureID(nanoVGnewImage,engineData);
+				}
+				uint32_t bmframebuffer = engineData->exec_glGenFramebuffer();
+				engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+				engineData->exec_glBindTexture_GL_TEXTURE_2D(bmTextureID);
+				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(bmframebuffer);
+				uint32_t bmrenderbuffer = engineData->exec_glGenRenderbuffer();
+				engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(bmrenderbuffer);
+				if (engineData->supportPackedDepthStencil)
+				{
+					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(w,h);
+					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(bmrenderbuffer);
+				}
+				else
+				{
+					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(w, h);
+					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(bmrenderbuffer);
+				}
+				engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+				engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(bmTextureID);
+				engineData->exec_glClear(CLEARMASK::STENCIL);
+				baseFramebuffer=bmframebuffer;
+				baseRenderbuffer=bmrenderbuffer;
+				flipvertical=false; // avoid flipping resulting image vertically (as is done for normal rendering)
+				setViewPort(w,h,false);
 
-			auto it = bmc->renderdata.rendercalls.begin();
-			while (it != bmc->renderdata.rendercalls.end())
-			{
-				if (it->hasClipRect)
-					engineData->exec_glScissor(it->clipRect.Xmin,
-											it->clipRect.Ymin,
-											(it->clipRect.Xmax-it->clipRect.Xmin),
-											(it->clipRect.Ymax-it->clipRect.Ymin)
-											);
-				if (it->needsfill)
+				while (!renderdata->rendercalls.empty())
 				{
-					bmc->setNeedsClear(false);
-					engineData->exec_glClearColor(
-								it->backgroundcolor.rf(),
-								it->backgroundcolor.gf(),
-								it->backgroundcolor.bf(),
-								it->backgroundcolor.af()
-					);
-					engineData->exec_glClear(CLEARMASK::COLOR);
+					RenderDisplayObjectToBitmapContainer& container = renderdata->rendercalls.front();
+					if (container.hasClipRect)
+						engineData->exec_glScissor(container.clipRect.Xmin,
+												   container.clipRect.Ymin,
+												   (container.clipRect.Xmax-container.clipRect.Xmin),
+												   (container.clipRect.Ymax-container.clipRect.Ymin)
+												   );
+					if (container.needsfill)
+					{
+						bmc->setNeedsClear(false);
+						engineData->exec_glClearColor(
+									container.backgroundcolor.rf(),
+									container.backgroundcolor.gf(),
+									container.backgroundcolor.bf(),
+									container.backgroundcolor.af()
+									);
+						engineData->exec_glClear(CLEARMASK::COLOR);
+					}
+					if (container.cachedsurface)
+					{
+						// render DisplayObject to texture
+						container.cachedsurface->Render(m_sys,*this,&container.initialMatrix,&container);
+					}
+					renderdata->rendercalls.pop();
+					engineData->exec_glDisable_GL_SCISSOR_TEST();
+					resetCurrentFrameBuffer();
 				}
-				if (it->cachedsurface)
-				{
-					// render DisplayObject to texture
-					it->cachedsurface->Render(m_sys,*this,&it->initialMatrix,&(*it));
-				}
-				it = bmc->renderdata.rendercalls.erase(it);
-				engineData->exec_glDisable_GL_SCISSOR_TEST();
+				// reset everything for normal rendering
+				baseFramebuffer=0;
+				baseRenderbuffer=0;
+				flipvertical=true;
 				resetCurrentFrameBuffer();
-			}
-			// reset everything for normal rendering
-			baseFramebuffer=0;
-			baseRenderbuffer=0;
-			flipvertical=true;
-			resetCurrentFrameBuffer();
-			resetViewPort();
-			engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+				resetViewPort();
+				engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 
-			// cleanup
-			engineData->exec_glDeleteFramebuffers(1,&bmframebuffer);
-			engineData->exec_glDeleteRenderbuffers(1,&bmrenderbuffer);
-			if (nanoVGnewImage >= 0)
+				// cleanup
+				engineData->exec_glDeleteFramebuffers(1,&bmframebuffer);
+				engineData->exec_glDeleteRenderbuffers(1,&bmrenderbuffer);
+				if (nanoVGnewImage >= 0)
+				{
+					// set bitmapcontainer texture to new resulting texture and delete original
+					assert(nanoVGoriginalImage>=0);
+					bmc->nanoVGImageHandle=nanoVGnewImage;
+					nanoVGDeleteImage(nanoVGoriginalImage,engineData);
+				}
+			}
+			bmc->setModifiedTexture(true);
+			// destroy temporary bitmap used for rendering
+			if (renderdata->temporaryBitmap)
+				renderdata->temporaryBitmap->decRef();
+			if (renderdata->needswait)
 			{
-				// set bitmapcontainer texture to new resulting texture and delete original
-				assert(nanoVGoriginalImage>=0);
-				bmc->nanoVGImageHandle=nanoVGnewImage;
-				nanoVGDeleteImage(nanoVGoriginalImage,engineData);
+				// signal to waiting worker thread that rendering is complete
+				bmc->renderevent.signal();
 			}
 		}
-		// signal to waiting worker thread that rendering is complete
-		bmc->setModifiedTexture(true);
-		bmc->renderevent.signal();
+		mutexRenderToBitmapContainer.unlock();
 		renderToBitmapContainerNeeded=false;
-		return true;
 	}
-
 	if(USUALLY_FALSE(m_sys->isOnError()))
 	{
 		renderErrorPage(this, m_sys->standalone);
@@ -1713,15 +1724,18 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 		engineData->exec_glTexSubImage2D_GL_TEXTURE_2D(0, blockX, blockY, sizeX, sizeY, data_clamp);
 	}
 }
+
 void RenderThread::readPixelsToBimapContainer(_NR<BitmapContainer> bm)
 {
 	if(m_sys->isShuttingDown() || !EngineData::enablerendering)
 		return;
-	bm->flushRenderCalls(this); // ensure we get the current state of the bitmapcontainer
+	bm->flushRenderCalls(this,nullptr); // ensure we get the current state of the bitmapcontainer
 	mutexRenderToBitmapContainer.lock();
-	bm->renderdata.readpixels=true;
+	bm->getRenderData()->readpixels=true;
+	bm->getRenderData()->needswait=true;
+	bm->getRenderData()->temporaryBitmap=nullptr;
 	bm->incRef();
-	bitmapContainerToRenderTo=_MR(bm);
+	bitmapContainerToRenderTo.push(_MR(bm));
 	renderToBitmapContainerNeeded=true;
 	mutexRenderToBitmapContainer.unlock();
 	event.signal();
@@ -1729,22 +1743,28 @@ void RenderThread::readPixelsToBimapContainer(_NR<BitmapContainer> bm)
 	bm->setModifiedTexture(false);
 }
 
-void RenderThread::renderBitmap(BitmapContainer* bm)
+void RenderThread::renderBitmap(BitmapContainer* bm, Bitmap* tempBitmap, bool wait)
 {
 	if(m_sys->isShuttingDown() || !EngineData::enablerendering)
 		return;
 	mutexRenderToBitmapContainer.lock();
-	if (bm->renderdata.rendercalls.empty())
+	if (bm->getRenderData()->rendercalls.empty())
 	{
 		mutexRenderToBitmapContainer.unlock();
 		return;
 	}
-	bm->renderdata.readpixels=false;
+	bm->getRenderData()->readpixels=false;
+	bm->getRenderData()->needswait=wait;
+	bm->getRenderData()->temporaryBitmap=tempBitmap;
+
 	bm->incRef();
-	bitmapContainerToRenderTo=_MR(bm);
+	bitmapContainerToRenderTo.push(_MR(bm));
 	renderToBitmapContainerNeeded=true;
 	mutexRenderToBitmapContainer.unlock();
-	event.signal();
-	bm->renderevent.wait(); // wait until render thread has completed rendering to BitmapContainer
+	if (wait)
+	{
+		event.signal();
+		bm->renderevent.wait(); // wait until render thread has completed rendering to BitmapContainer
+	}
 }
 

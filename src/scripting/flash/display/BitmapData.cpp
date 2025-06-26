@@ -259,7 +259,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	th->notifyUsers();
 }
 
-void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, Rectangle* clipRect, bool needscopy,RGBA* fillcolor )
+void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, Rectangle* clipRect, bool needscopy, RGBA* fillcolor)
 {
 	RenderDisplayObjectToBitmapContainer r;
 	r.initialMatrix = initialMatrix;
@@ -279,10 +279,10 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 	if (clipRect)
 		r.clipRect=clipRect->getRect();
 	if (d)
-		d->invalidateForRenderToBitmap(&pixels->renderdata,smoothing);
+		d->invalidateForRenderToBitmap(pixels->getRenderData(),smoothing);
 	if (d)
 		r.cachedsurface = d->getCachedSurface();
-	pixels->renderdata.needscopy=needscopy;
+	pixels->getRenderData()->needscopy=needscopy;
 	pixels->addRenderCall(r);
 }
 
@@ -326,7 +326,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 	}
 	else if(drawable->is<BitmapData>())
 	{
-		// fast path: use temporary Bitmap to render BitmapData
+		// fast path: use temporary Bitmap to render BitmapData (bitmap will be destroyed in renderthread)
 		d = Class<Bitmap>::getInstanceSNoArgs(wrk);
 		d->as<Bitmap>()->setupTemporaryBitmap(drawable->as<BitmapData>());
 		needscopy=drawable->as<BitmapData>()->getBitmapContainer() == th->getBitmapContainer();
@@ -358,10 +358,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 		}
 		th->drawDisplayObject(d, initialMatrix,smoothing,bl,ctransform.getPtr(),clipRect.getPtr(),needscopy);
 		if (th->users.empty())
-			th->pixels->flushRenderCalls(th->getSystemState()->getRenderThread());
+			th->pixels->flushRenderCalls(th->getSystemState()->getRenderThread(),drawable->is<BitmapData>() ? d->as<Bitmap>() : nullptr);
 	}
-	if(drawable->is<BitmapData>())
-		d->decRef();
 	th->notifyUsers();
 }
 ASFUNCTIONBODY_ATOM(BitmapData,draw)
@@ -537,16 +535,15 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 	if(!alphaBitmapData.isNull())
 		LOG(LOG_NOT_IMPLEMENTED, "BitmapData.copyPixels doesn't support alpha bitmap");
 
-	// use temporary Bitmap to copy BitmapData on GPU
+	// use temporary Bitmap to copy BitmapData on GPU (bitmap will be destroyed in renderthread)
 	Bitmap* d = Class<Bitmap>::getInstanceSNoArgs(wrk);
 	d->setupTemporaryBitmap(source.getPtr());
 	d->scrollRect=sourceRect;
 	MATRIX m;
 	m.translate(destPoint->getX(),destPoint->getY());
 	th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer());
-	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
+	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread(),d);
 
-	d->decRef();
 	th->notifyUsers();
 }
 
@@ -819,6 +816,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,scroll)
 
 	if (x!=0 && y!=0 && copyWidth > 0 && copyHeight > 0)
 	{
+		// use temporary Bitmap to scroll BitmapData on GPU (bitmap will be destroyed in renderthread)
 		Bitmap* d = Class<Bitmap>::getInstanceSNoArgs(wrk);
 		d->setupTemporaryBitmap(th);
 		Rectangle* rcScroll = Class<Rectangle>::getInstanceSNoArgs(wrk);
@@ -828,7 +826,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,scroll)
 		rcScroll->height = copyHeight;
 		d->scrollRect=_MR(rcScroll);
 		th->drawDisplayObject(d, MATRIX(),false,BLENDMODE_NORMAL,nullptr,nullptr,true);
-		d->decRef();
+		th->pixels->getRenderData()->temporaryBitmap=d;
 		th->notifyUsers();
 	}
 }
@@ -1394,7 +1392,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 		createError<TypeError>(wrk,kNullPointerError,"filter");
 	else
 	{
-		// use temporary Bitmap to render filter on GPU
+		// use temporary Bitmap to render filter on GPU (bitmap will be destroyed in renderthread)
 		Bitmap* d = Class<Bitmap>::getInstanceSNoArgs(wrk);
 		d->setupTemporaryBitmap(sourceBitmapData.getPtr());
 		d->setFilter(filter.getPtr());
@@ -1402,8 +1400,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 		MATRIX m;
 		m.translate(destPoint->getX(),destPoint->getY());
 		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,sourceBitmapData->getBitmapContainer()==th->getBitmapContainer());
-		th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
-		d->decRef();
+		th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread(),d);
 		th->notifyUsers();
 	}
 }

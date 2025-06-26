@@ -303,7 +303,7 @@ protected:
 	IFunction* clone(ASWorker* wrk) override;
 public:
 	~SyntheticFunction() {}
-	void call(ASWorker* wrk, asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args, bool coerceresult, bool coercearguments);
+	void call(ASWorker* wrk, asAtom &ret, asAtom& obj, asAtom *args, uint32_t num_args, bool coerceresult, bool coercearguments, uint16_t resultlocalnumberpos=UINT16_MAX);
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;

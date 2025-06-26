@@ -144,7 +144,7 @@ void dumpFunctionCallCount(bool builtinonly = false,uint32_t mincallcount=0, uin
  * by ABCVm::executeFunction() or through JIT.
  * It consumes one reference of obj and one of each arg
  */
-void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs, bool coerceresult, bool coercearguments)
+void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs, bool coerceresult, bool coercearguments, uint16_t resultlocalnumberpos)
 {
 #ifdef PROFILING_SUPPORT
 	uint64_t t1 = compat_get_thread_cputime_us();
@@ -528,9 +528,18 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		Log::calls_indent--;
 #endif
 
-	ret.uintval = cc->locals[mi->body->getReturnValuePos()].uintval;
-	if (!asAtomHandler::localNumberToGlobalNumber(wrk,ret))
-		ASATOM_INCREF(ret);
+	if (saved_cc && resultlocalnumberpos!= UINT16_MAX && mi->returnType==Class<Number>::getRef(getSystemState()).getPtr())
+	{
+		// result is stored as local number
+		saved_cc->localNumbers[resultlocalnumberpos]=asAtomHandler::getNumber(wrk,cc->locals[mi->body->getReturnValuePos()]);
+		ret.uintval=resultlocalnumberpos<<8 | ATOMTYPE_LOCALNUMBER_BIT;
+	}
+	else
+	{
+		ret.uintval = cc->locals[mi->body->getReturnValuePos()].uintval;
+		if (!asAtomHandler::localNumberToGlobalNumber(wrk,ret))
+			ASATOM_INCREF(ret);
+	}
 
 	//The stack may be not clean, is this a programmer/compiler error?
 	if(cc->stackp != cc->stack)

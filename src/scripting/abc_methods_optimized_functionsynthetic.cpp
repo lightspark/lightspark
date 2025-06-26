@@ -165,7 +165,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_constant_constant_localresult(c
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArg_ccl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0);
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0,instrptr->local3.pos);
 	ASATOM_DECREF(oldres);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
@@ -181,7 +181,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_local_constant_localresult(call
 	LOG_CALL("callFunctionSyntheticOneArg_lcl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	ASATOM_INCREF(obj); // ensure that obj stays valid during call
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0);
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0,instrptr->local3.pos);
 	ASATOM_DECREF(obj);
 	ASATOM_DECREF(oldres);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
@@ -198,7 +198,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_constant_local_localresult(call
 	LOG_CALL("callFunctionSyntheticOneArg_cll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	ASATOM_INCREF(value);
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0);
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0,instrptr->local3.pos);
 	ASATOM_DECREF(oldres);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
@@ -215,7 +215,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_local_local_localresult(call_co
 	ASATOM_INCREF(obj); // ensure that obj stays valid during call
 	ASATOM_INCREF(value);
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0);
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0,instrptr->local3.pos);
 	ASATOM_DECREF(obj);
 	ASATOM_DECREF(oldres);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
@@ -386,7 +386,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_constant_localResult(call_co
 	}
 	// local result pos is stored in the context->exec_pos of the last argument
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,context->exec_pos->local3.pos);
 	ASATOM_DECREF(oldres);
 	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
@@ -414,7 +414,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_local_localResult(call_conte
 	}
 	// local result pos is stored in the context->exec_pos of the last argument
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,context->exec_pos->local3.pos);
 	ASATOM_DECREF(oldres);
 	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();

@@ -34,7 +34,7 @@ using namespace std;
 using namespace lightspark;
 
 Dictionary::Dictionary(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_DICTIONARY),
-	data(std::less<dictType::key_type>(), reporter_allocator<dictType::value_type>(c->memoryAccount)),weakkeys(false)
+	weakkeys(false)
 {
 }
 
@@ -43,7 +43,7 @@ void Dictionary::finalize()
 	auto it=data.begin();
 	while (it != data.end())
 	{
-		asAtom key = it->first;
+		asAtom key = it->first.key;
 		ASObject* obj = asAtomHandler::getObject(it->second);
 		it = data.erase(it);
 		ASATOM_REMOVESTOREDMEMBER(key);
@@ -58,7 +58,7 @@ bool Dictionary::destruct()
 	auto it=data.begin();
 	while (it != data.end())
 	{
-		asAtom key = it->first;
+		asAtom key = it->first.key;
 		ASObject* obj = asAtomHandler::getObject(it->second);
 		it = data.erase(it);
 		ASATOM_REMOVESTOREDMEMBER(key);
@@ -76,7 +76,7 @@ void Dictionary::prepareShutdown()
 	ASObject::prepareShutdown();
 	for (auto it=data.begin() ; it != data.end(); ++it)
 	{
-		ASObject* k = asAtomHandler::getObject(it->first);
+		ASObject* k = asAtomHandler::getObject(it->first.key);
 		if (k)
 			k->prepareShutdown();
 		ASObject* o = asAtomHandler::getObject(it->second);
@@ -105,15 +105,10 @@ ASFUNCTIONBODY_ATOM(Dictionary,_toJSON)
 
 Dictionary::dictType::iterator Dictionary::findKey(asAtom o)
 {
-	Dictionary::dictType::iterator it = data.begin();
-	for(; it!=data.end(); ++it)
-	{
-		asAtom key = it->first;
-		if (asAtomHandler::isEqualStrict(key,getInstanceWorker(),o))
-			return it;
-	}
-
-	return data.end();
+	asAtomStrict a;
+	a.key=o;
+	a.wrk=getInstanceWorker();
+	return data.find(a);
 }
 
 void Dictionary::setVariableByMultiname_i(multiname& name, int32_t value,ASWorker* wrk)
@@ -212,7 +207,7 @@ multiname *Dictionary::setVariableByMultiname(multiname& name, asAtom& o, CONST_
 		ASObject* obj = asAtomHandler::getObject(o);
 		if (obj)
 			obj->addStoredMember();
-		data.insert(make_pair(key,o));
+		data.insert(make_pair(asAtomStrict { key, getInstanceWorker() },o));
 		enumeratedKeys.push_back(key);
 	}
 	return nullptr;
@@ -232,15 +227,15 @@ bool Dictionary::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 			obj->removeStoredMember();
 		for (auto iten = enumeratedKeys.begin(); iten != enumeratedKeys.end(); iten++)
 		{
-			if ((*iten).uintval == it->first.uintval)
+			if ((*iten).uintval == it->first.key.uintval)
 			{
 				// don't erase, as we might be inside a "hasnext" loop and have to keep the index valid
 				*iten = asAtomHandler::invalidAtom;
 				break;
 			}
 		}
+		ASATOM_REMOVESTOREDMEMBER(it->first.key);
 		data.erase(it);
-		ASATOM_REMOVESTOREDMEMBER(it->first);
 	}
 	else if (name.name_type==multiname::NAME_STRING && getClass() && getClass()->isSealed)
 		return false;
@@ -334,7 +329,7 @@ void Dictionary::nextValue(asAtom& ret,uint32_t index)
 	else
 	{
 		asAtom key = enumeratedKeys[index-1];
-		ret = data.find(key)->second;
+		ret = findKey(key)->second;
 		ASATOM_INCREF(ret);
 	}
 }
@@ -344,8 +339,8 @@ bool Dictionary::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	for (auto it = data.begin(); it != data.end(); it++)
 	{
-		if (asAtomHandler::isObject(it->first))
-			ret = asAtomHandler::getObjectNoCheck(it->first)->countAllCylicMemberReferences(gcstate) || ret;
+		if (asAtomHandler::isObject(it->first.key))
+			ret = asAtomHandler::getObjectNoCheck(it->first.key)->countAllCylicMemberReferences(gcstate) || ret;
 		if (asAtomHandler::isObject(it->second))
 			ret = asAtomHandler::getObjectNoCheck(it->second)->countAllCylicMemberReferences(gcstate) || ret;
 	}
@@ -361,7 +356,7 @@ tiny_string Dictionary::toString()
 	{
 		if(it != data.begin())
 			retstr << ", ";
-		retstr << "{" << asAtomHandler::toString(it->first,getInstanceWorker()) << ", " << asAtomHandler::toString(it->second,getInstanceWorker()) << "}";
+		retstr << "{" << asAtomHandler::toString(it->first.key,getInstanceWorker()) << ", " << asAtomHandler::toString(it->second,getInstanceWorker()) << "}";
 		++it;
 	}
 	retstr << "}";

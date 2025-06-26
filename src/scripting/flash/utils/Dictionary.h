@@ -22,16 +22,33 @@
 
 #include "compat.h"
 #include "swftypes.h"
-
+#include "asobject.h"
 
 namespace lightspark
 {
-
+struct asAtomStrict {
+	asAtom key;
+	ASWorker* wrk;
+	inline bool operator==(const asAtomStrict& r) const
+	{
+		asAtom a1 = key;
+		asAtom a2 = r.key;
+		bool res=asAtomHandler::isEqualStrict(a1,wrk,a2);
+		return res;
+	}
+};
+struct asAtomStrictHash
+{
+	std::size_t operator()(const asAtomStrict& s) const noexcept
+	{
+		return s.key.uintval>>3;
+	}
+};
 class Dictionary: public ASObject
 {
 friend class ABCVm;
 private:
-	typedef std::map<asAtom, asAtom> dictType;
+	typedef std::unordered_map<asAtomStrict, asAtom,asAtomStrictHash> dictType;
 	dictType data;
 	dictType::iterator findKey(asAtom o);
 	std::vector<asAtom> enumeratedKeys;

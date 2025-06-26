@@ -281,7 +281,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		return true;
 	}
 
-	if (renderToBitmapContainerNeeded)
+	if (ACQUIRE_READ(renderToBitmapContainerNeeded))
 	{
 		mutexRenderToBitmapContainer.lock();
 		while (!bitmapContainerToRenderTo.empty())
@@ -444,8 +444,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				bmc->renderevent.signal();
 			}
 		}
+		RELEASE_WRITE(renderToBitmapContainerNeeded,false);
 		mutexRenderToBitmapContainer.unlock();
-		renderToBitmapContainerNeeded=false;
 	}
 	if(USUALLY_FALSE(m_sys->isOnError()))
 	{
@@ -1736,9 +1736,9 @@ void RenderThread::readPixelsToBimapContainer(_NR<BitmapContainer> bm)
 	bm->getRenderData()->temporaryBitmap=nullptr;
 	bm->incRef();
 	bitmapContainerToRenderTo.push(_MR(bm));
-	renderToBitmapContainerNeeded=true;
-	mutexRenderToBitmapContainer.unlock();
+	RELEASE_WRITE(renderToBitmapContainerNeeded,true);
 	event.signal();
+	mutexRenderToBitmapContainer.unlock();
 	bm->renderevent.wait(); // wait until render thread has completed reading pixels to BitmapContainer
 	bm->setModifiedTexture(false);
 }
@@ -1759,12 +1759,14 @@ void RenderThread::renderBitmap(BitmapContainer* bm, Bitmap* tempBitmap, bool wa
 
 	bm->incRef();
 	bitmapContainerToRenderTo.push(_MR(bm));
-	renderToBitmapContainerNeeded=true;
-	mutexRenderToBitmapContainer.unlock();
+	RELEASE_WRITE(renderToBitmapContainerNeeded,true);
 	if (wait)
 	{
 		event.signal();
+		mutexRenderToBitmapContainer.unlock();
 		bm->renderevent.wait(); // wait until render thread has completed rendering to BitmapContainer
 	}
+	else
+		mutexRenderToBitmapContainer.unlock();
 }
 

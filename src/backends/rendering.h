@@ -100,7 +100,7 @@ private:
 	Mutex mutexRefreshSurfaces;
 	std::list<RefreshableSurface> surfacesToRefresh;
 
-	volatile bool renderToBitmapContainerNeeded;
+	ACQUIRE_RELEASE_FLAG(renderToBitmapContainerNeeded);
 	Mutex mutexRenderToBitmapContainer;
 	std::queue<_NR<BitmapContainer>> bitmapContainerToRenderTo;
 

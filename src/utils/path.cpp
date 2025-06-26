@@ -67,6 +67,28 @@ Path& Path::operator/=(const Path& other)
 	return *this;
 }
 
+Path& Path::removeFilename()
+{
+	if (hasFilename())
+		path = path.stripSuffix(getFilename().path);
+	return *this;
+}
+
+Path& Path::replaceFilename(const Path& path)
+{
+	return removeFilename().append(path);
+}
+
+Path& Path::replaceExtension(const Path& _path)
+{
+	if (hasExtension())
+		path = path.stripSuffix(getExtension().path);
+
+	if (!_path.startsWith("."))
+		path += '.';
+	return concat(_path);
+}
+
 const StringType& Path::getGenericStr() const
 {
 	auto ret = path;
@@ -105,4 +127,186 @@ int Path::compare(const Path& other) const
 	#else
 	return compareImpl(other);
 	#endif
+}
+
+Path Path::getRootName() const
+{
+	return Path
+	(
+		path.substr(prefixLength, rootNameLength()),
+		Format::Native
+	);
+}
+
+Path Path::getRootDir() const
+{
+	if (!hasRootDir())
+		return Path();
+	return Path(nativeSeparator, Format::Native);
+}
+
+Path Path::getRoot() const
+{
+	return Path
+	(
+		getRootName().getStr() + getRootDir().getStr(),
+		Format::Native
+	);
+}
+
+Path Path::getRelative() const
+{
+	auto rootLen = prefixLength + rootNameLength() + hasRootDir();
+	return Path
+	(
+		path.substr(std::min(rootLen, path.numChars))
+		Format::Generic
+	);
+}
+
+Path Path::getParent() const
+{
+	auto rootLen = prefixLength + rootNameLength() + hasRootDir();
+	if (rootLen >= path.numChars())
+		return *this;
+	if (empty())
+		return Path();
+	
+	auto it = end().dec(path.end());
+	auto it2 = std::next(path.begin(), rootLen)
+	if (std::distance(it, it2) <= 0 && *it != nativeSeparator)
+		--it;
+	return Path(path.begin(), it, Format::Native);
+}
+
+Path Path::getFilename() const
+{
+	return hasRelativePath() ? Path(*--end()) : Path();
+}
+
+Path Path::getStem() const
+{
+	auto filename = getFilename().getNativeStr();
+	if (filename == "." || filename == "..")
+		return Path(filename, Format::Native);
+
+	auto pos = filename.rfind('.');
+	if (pos == StringType::npos || !pos)
+		return Path(filename, Format::Native);
+
+	return Path(filename.substr(0, pos), Format::Native);
+}
+
+Path Path::getExtension() const
+{
+	auto filename = getFilename();
+	if (filename.empty())
+		return Path();
+	auto pos = filename.path.rfind('.');
+	if (pos == StringType::npos || !pos || filename.path == "..")
+		return Path();
+
+	return Path(filename.path.substr(pos), Format::Native);
+}
+
+bool Path::hasRootDir() const
+{
+	auto rootLen = prefixLength + rootNameLength();
+	return path.numChars() > rootLen && path[rootLen] == nativeSeparator;
+}
+bool Path::hasRelativePath() const
+{
+	auto rootLen = prefixLength + rootNameLength() + hasRootDir();
+	return rootLen < path.numChars();
+}
+
+bool Path::hasFilename() const
+{
+	return hasRelativePath() && !getFilename.empty();
+}
+
+Path Path::lexicallyNormal() const
+{
+	Path ret;
+	bool lastParentDir = false;
+
+	auto appendRet = [&](const StringType& str)
+	{
+		if (!str.empty() || !lastParentDir)
+			ret /= str;
+		lastParentDir = str == "..";
+	};
+
+	for (auto str : *this)
+	{
+		if (str == ".")
+		{
+			ret /= "";
+			continue;
+		}
+
+		if (str != ".." || ret.empty())
+		{
+			appendRet(str);
+			continue;
+		}
+		if (ret == getRoot())
+			continue;
+		if (*(--ret.end()) == "..")
+		{
+			ret.path = ret.path.stripSuffix(nativeSeparator);
+			ret.removeFilename();
+			continue;
+		}
+
+		appendRet(str);
+	}
+
+	if (ret.empty())
+		return ".";
+	return ret;
+}
+
+Path Path::lexicallyRelative(const Path& base) const
+{
+	if (getRootName() != base.getRootName())
+		return Path();
+	if (isAbsolute() != base.isAbsolute())
+		return Path();
+	if (!hasRootDir() && base.hasRootDir())
+		return Path();
+
+	auto it = begin();
+	auto it2 = base.begin();
+	for (; it != end() && it2 != base.end() && *it == *it2; ++it, ++it2);
+
+	if (it == end() && it2 == base.end())
+		return Path(".");
+
+	ssize_t count = 0;
+	for (const auto& elem : InputIterRange<ConstIter>(it2, base.end()))
+	{
+		if (elem == "..")
+			count--;
+		else if (!elem.empty() && elem != ".")
+			count++;
+	}
+
+	if (!count && (it == end() || it->empty()))
+		return Path(".");
+	if (count < 0)
+		return Path();
+
+	Path ret;
+	for (size_t i = 0; i < count; ++i)
+		ret /= "..";
+	for (const auto& elem : InputIterRange<ConstIter>(it, end()))
+		ret /= elem;
+	return ret;
+}
+
+Path Path::lexicallyProximate(const Path& base) const
+{
+	Path ret = lexicallyRelative(base);
+	return ret.empty() ? *this : ret;
 }

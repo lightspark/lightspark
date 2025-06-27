@@ -183,7 +183,15 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 		}
 	}
 	if (asAtomHandler::is<Class_base>(obj))
-		asAtomHandler::as<Class_base>(obj)->generator(wrk,ret,newArgs,newArgsLen);
+	{
+		if (wrk->needsActionScript3())
+		{
+			ret = asAtomHandler::undefinedAtom;
+			createError<TypeError>(wrk,kCallOfNonFunctionError);
+		}
+		else
+			asAtomHandler::as<Class_base>(obj)->generator(wrk,ret,newArgs,newArgsLen);
+	}
 	else if (asAtomHandler::is<IFunction>(obj))
 		asAtomHandler::callFunction(obj,wrk,ret,newObj,newArgs,newArgsLen,false);
 	else

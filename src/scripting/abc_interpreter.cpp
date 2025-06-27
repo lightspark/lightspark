@@ -1504,7 +1504,6 @@ bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden)
 			return false;
 	}
 	return !objtype->isInterface && // it's not an interface
-		objtype->isSealed && // it's sealed
 		(
 		!objtype->is<Class_inherit>() || // type is builtin class
 		ignoreoverridden ||
@@ -1551,7 +1550,6 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 	uint32_t argsneeded=0;
 
 	uint32_t dupskipped=UINT32_MAX;
-	set<int> localresultaddedindex;
 	bool candup=false;
 	while (state.jumptargets.find(pos) == state.jumptargets.end() && keepchecking)
 	{
@@ -5052,6 +5050,65 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							ASATOM_DECREF(o);
 					}
 				}
+				else if (function->isStatic && !function->fromNewFunction && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic))
+				{
+					// check for variables declared outside of a class (in a global object)
+					bool done=false;
+					if(!function->func_scope.isNull()) // check scope stack
+					{
+						auto it=function->func_scope->scope.rbegin();
+						while(it!=function->func_scope->scope.rend())
+						{
+							if(it->considerDynamic)
+								break;
+							ASObject* scope = asAtomHandler::toObject(it->object,wrk);
+							variable* v = scope->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+							if (function->getSystemState()->getStringFromUniqueId(function->functionname)=="_wrap_b2Body_GetAngle")
+							{
+								int x=0;
+								//scope->dumpVariables();
+							}
+							if (v)
+							{
+								if (v->kind == TRAIT_KIND::CONSTANT_TRAIT)
+								{
+									addCachedConstant(state,mi, v->var,code);
+									if (v->isResolved && dynamic_cast<const Class_base*>(v->type))
+										resulttype = (Class_base*)v->type;
+									typestack.push_back(typestackentry(resulttype,false));
+									done=true;
+									break;
+								}
+								else if (v->kind==DECLARED_TRAIT)
+								{
+									// property is static variable from global
+									resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
+									state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+									asAtom clAtom = asAtomHandler::fromObjectNoPrimitive(scope);
+									addCachedConstant(state,state.mi,clAtom,code);
+									if (v->slotid)
+									{
+										// convert to getslot on global
+										setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,false,ABC_OP_OPTIMZED_GETSLOT_SETSLOT);
+										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint =v->slotid-1;
+									}
+									else
+									{
+										// convert to getprop on class
+										setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,0x66,code,true, false,resulttype,p,true,false,false,false);
+										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
+									}
+									typestack.push_back(typestackentry(resulttype,false));
+									done=true;
+									break;
+								}
+							}
+							++it;
+						}
+					}
+					if (done)
+						break;
+				}
 #endif
 				state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX);
 				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
@@ -7339,7 +7396,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											{
 												if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::isInvalid(asAtomHandler::as<IFunction>(v->var)->closure_this))
 												{
-													if (asAtomHandler::is<SyntheticFunction>(v->var) && asAtomHandler::as<SyntheticFunction>(v->var)->inClass)
+													if (asAtomHandler::is<SyntheticFunction>(v->var) && (asAtomHandler::as<SyntheticFunction>(v->var)->inClass || fromglobal))
 													{
 														state.preloadedcode.at(oppos).opcode = (opcode == 0x4f ? ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_MULTIARGS);
 														state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
@@ -8178,10 +8235,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x23://nextvalue
-				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_NEXTVALUE,opcode,code,false,false,true,code.tellg());
+			{
+				Class_base* resulttype=nullptr;
+#ifdef ENABLE_OPTIMIZATION
+				ASObject* obj = typestack.at(typestack.size()-2).obj;
+				if (obj && obj->is<Vector>())
+					resulttype = obj->as<Vector>()->getType();
+#endif
+				setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_NEXTVALUE,opcode,code,false,false,true,code.tellg(),resulttype);
 				removetypestack(typestack,2);
-				typestack.push_back(typestackentry(nullptr,false));
+				typestack.push_back(typestackentry(resulttype,false));
 				break;
+			}
 			case 0x77://convert_o
 			case 0x78://checkfilter
 				state.preloadedcode.push_back((uint32_t)opcode);

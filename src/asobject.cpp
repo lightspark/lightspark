@@ -3670,7 +3670,7 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 				ASATOM_INCREF(args[i]);
 			ASATOM_INCREF(obj); // ensure we have a reference to the calling object as it may be decreffed during the call
 		}
-		getObjectNoCheck(caller)->as<SyntheticFunction>()->call(wrk,ret,c, args, num_args,coerceresult,coercearguments);
+		getObjectNoCheck(caller)->as<SyntheticFunction>()->call(wrk,ret,c, args, num_args,coerceresult,coercearguments,resultlocalnumberpos);
 		ASATOM_DECREF(c);
 		return;
 	}

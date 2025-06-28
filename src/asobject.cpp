@@ -1311,6 +1311,7 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 	}
 	if (asAtomHandler::localNumberToGlobalNumber(wrk,v))
 		_isrefcounted=true;
+	assert(!asAtomHandler::isLocalNumber(v));
 	var=v;
 	if(isrefcounted && asAtomHandler::isObject(oldvar))
 	{
@@ -5769,6 +5770,21 @@ bool asAtomHandler::localNumberToGlobalNumber(ASWorker* wrk, asAtom &a)
 		number_t val = getLocalNumber(getCallContext(wrk),a);
 		if (std::isnan(val))
 			a.uintval = wrk->getSystemState()->nanAtom.uintval;
+		else if (Number::isInteger(val))
+		{
+			if (val == 0.0 && std::signbit(val))
+				a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(wrk,val))|ATOM_NUMBERPTR;
+			else
+#ifdef LIGHTSPARK_64
+			if (val >= INT32_MIN && val <= INT32_MAX)
+				a.intval = ((int64_t)val<<3)|ATOM_INTEGER;
+#else
+			if (val >=-(1<<28)  && val <=(1<<28))
+				a.intval = ((int32_t)val<<3)|ATOM_INTEGER;
+#endif
+			else
+				a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(wrk,val))|ATOM_NUMBERPTR;
+		}
 		else
 			a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(wrk,val))|ATOM_NUMBERPTR;
 		return true;

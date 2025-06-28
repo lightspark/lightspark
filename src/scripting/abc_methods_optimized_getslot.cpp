@@ -55,8 +55,20 @@ void lightspark::abc_getslot_constant_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos++;
 	uint32_t t = instrptr->arg2_uint;
 	asAtom res = asAtomHandler::getObject(*instrptr->arg1_constant)->getSlotNoCheck(t);
-	ASATOM_INCREF(res);
-	REPLACELOCALRESULT(context,instrptr->local3.pos,res);
+	asAtom o = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	if (o.uintval != res.uintval)
+	{
+		if (asAtomHandler::isNumber(res))
+		{
+			ASATOM_DECREF(o);
+			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker,asAtomHandler::getNumber(context->worker,res),instrptr->local3.pos);
+		}
+		else
+		{
+			ASATOM_INCREF(res);
+			REPLACELOCALRESULT(context,instrptr->local3.pos,res);
+		}
+	}
 	LOG_CALL("getSlot_cl " << t << " " << asAtomHandler::toDebugString(res)<<" "<<asAtomHandler::toDebugString(*instrptr->arg1_constant));
 }
 void lightspark::abc_getslot_local_localresult(call_context* context)

@@ -147,8 +147,8 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("writeShort","",c->getSystemState()->getBuiltinFunction(writeShort),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(ByteArray::_toString),DYNAMIC_TRAIT);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,shareable,Boolean);
-	c->setDeclaredMethodByQName("atomicCompareAndSwapIntAt","",c->getSystemState()->getBuiltinFunction(atomicCompareAndSwapIntAt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("atomicCompareAndSwapLength","",c->getSystemState()->getBuiltinFunction(atomicCompareAndSwapLength),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("atomicCompareAndSwapIntAt","",c->getSystemState()->getBuiltinFunction(atomicCompareAndSwapIntAt,3,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("atomicCompareAndSwapLength","",c->getSystemState()->getBuiltinFunction(atomicCompareAndSwapLength,2,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toJSON",AS3,c->getSystemState()->getBuiltinFunction(_toJSON),DYNAMIC_TRAIT);
 
 	c->addImplementedInterface(InterfaceClass<IDataInput>::getClass(c->getSystemState()));

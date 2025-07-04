@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/abc_optimized.h"
+#include "scripting/abc_optimized_functionbuiltin.h"
 #include "scripting/class.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/Error.h"
@@ -147,6 +148,16 @@ void lightspark::abc_callFunctionBuiltinOneArg_local_constant(call_context* cont
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionBuiltinOneArg_lc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom ret = asAtomHandler::invalidAtom;
+	if(asAtomHandler::is<Null>(obj))
+	{
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		return;
+	}
+	if (asAtomHandler::is<Undefined>(obj))
+	{
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		return;
+	}
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	RUNTIME_STACK_PUSH(context,ret);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)

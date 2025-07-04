@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/abc_optimized.h"
+#include "scripting/abc_optimized_getslot.h"
 #include "scripting/class.h"
 #include "scripting/toplevel/Error.h"
 

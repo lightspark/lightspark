@@ -2410,13 +2410,13 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 	{
 		for(int i=0;i<m;++i)
 			ASATOM_DECREF(args[i]);
-		ASATOM_DECREF(obj);
 		if (asAtomHandler::is<Undefined>(obj))
 			createError<TypeError>(th->worker,kConvertUndefinedToObjectError);
 		else if (asAtomHandler::isPrimitive(obj))
 			createError<TypeError>(th->worker,kConstructOfNonFunctionError);
 		else
 			createError<ReferenceError>(th->worker,kUndefinedVarError, name->normalizedNameUnresolved(th->sys));
+		ASATOM_DECREF(obj);
 		return;
 	}
 	LOG_CALL("Constructing "<<asAtomHandler::toDebugString(o));
@@ -2882,6 +2882,8 @@ void ABCVm::newClass(call_context* th, int n)
 	if (th->mi->context->instances[n].isInterface())
 		th->mi->context->applicationDomain->SetAllClassLinks();
 	ret->setConstructIndicator();
+	ret->setIsInitialized();
+
 	//Remove the class to the ones being currently defined in this context
 	th->mi->context->applicationDomain->classesBeingDefined.erase(mname);
 }

@@ -17,24 +17,20 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_ABC_OPTIMIZED_H
-#define SCRIPTING_ABC_OPTIMIZED_H 1
+#ifndef SCRIPTING_ABC_OPTIMIZED_NEGATE_H
+#define SCRIPTING_ABC_OPTIMIZED_NEGATE_H 1
 
 #include "scripting/abcutils.h"
 #include "scripting/abctypes.h"
 
-#define REPLACELOCALRESULT(context,pos,ret) { \
-	if (USUALLY_FALSE(context->exceptionthrown)) \
-	{ \
-		ASATOM_DECREF(ret); \
-		return; \
-	} \
-	asAtom oldres = CONTEXT_GETLOCAL(context,pos);\
-	if (asAtomHandler::isLocalNumber(ret)) \
-		asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,pos),context->worker,asAtomHandler::getLocalNumber(context,ret),pos);\
-	else \
-		asAtomHandler::set(CONTEXT_GETLOCAL(context,pos),ret);\
-	ASATOM_DECREF(oldres);\
+namespace lightspark
+{
+void abc_negate_constant(call_context* context);
+void abc_negate_local(call_context* context);
+void abc_negate_constant_localresult(call_context* context);
+void abc_negate_local_localresult(call_context* context);
+void abc_negate_constant_setslotnocoerce(call_context* context);
+void abc_negate_local_setslotnocoerce(call_context* context);
 }
 
-#endif /* SCRIPTING_ABC_OPTIMIZED_H */
+#endif /* SCRIPTING_ABC_OPTIMIZED_NEGATE_H */

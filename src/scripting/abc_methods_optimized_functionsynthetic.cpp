@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/abc_optimized.h"
+#include "scripting/abc_optimized_functionsynthetic.h"
 #include "scripting/toplevel/toplevel.h"
 
 using namespace std;

@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/abc_optimized.h"
+#include "scripting/abc_optimized_bitnot.h"
 
 using namespace std;
 using namespace lightspark;

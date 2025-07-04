@@ -80,8 +80,13 @@ void Global::registerBuiltin(const char* name, const char* ns, _R<ASObject> o, N
 	o->incRef();
 	o->setRefConstant();
 	if (o->is<Class_base>())
+	{
 		o->as<Class_base>()->setGlobalScope(this);
+		o->setConstructIndicator();
+		o->setIsInitialized();
+	}
 	setVariableByQName(name,nsNameAndKind(getSystemState(),ns,nskind),o.getPtr(),CONSTANT_TRAIT);
+
 }
 
 void Global::checkScriptInit()

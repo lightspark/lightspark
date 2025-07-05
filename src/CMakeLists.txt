@@ -95,6 +95,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_codesynt.cpp
   scripting/abc_fast_interpreter.cpp
   scripting/abc_interpreter.cpp
+  scripting/abc_interpreter_helper.cpp
   scripting/abc_methods.cpp
   scripting/abc_methods_optimized.cpp
   scripting/abc_methods_optimized_add.cpp

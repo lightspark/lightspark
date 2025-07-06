@@ -65,19 +65,50 @@ public:
 		using difference_type = DiffType;
 		using iterator_category = IterCategory;
 
-		Iter();
-		Iter(const Path& path, const ConstStrIter& pos);
+		Iter() = default;
+		Iter(const Path& path, const ConstStrIter& pos) :
+		first(path.path.begin()),
+		last(path.path.end()),
+		prefix(std::next(first, path.prefixLength)),
+		root
+		(
+			path.hasRootDir() ?
+			std::next(first, path.prefixLength + path.rootNameLength()) :
+			last
+		),
+		iter(pos)
+		{
+			if (pos != last)
+				updateCurrent();
+		}
 
 		Iter& operator++();
-		Iter operator++(int);
-		Iter& operator--();
-		Iter operator--(int);
+		Iter operator++(int)
+		{
+			auto it = *this;
+			++(*this);
+			return it;
+		}
 
-		bool operator==(const Iter& other) const;
-		bool operator!=(const Iter& other) const;
+		Iter& operator--()
+		{
+			iter = dec(iter);
+			updateCurrent();
+			return *this;
+		}
 
-		Ref operator*() const;
-		Ptr operator->() const;
+		Iter operator--(int)
+		{
+			auto it = *this;
+			--(*this);
+			return it;
+		}
+
+		bool operator==(const Iter& other) const { return iter == other.iter; }
+		bool operator!=(const Iter& other) const { return iter != other.iter; }
+
+		Ref operator*() const { return current; }
+		Ptr operator->() const { return &current }
 	};
 
 	using iterator = Iter;

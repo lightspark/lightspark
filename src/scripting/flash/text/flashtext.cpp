@@ -1716,7 +1716,7 @@ void TextField::UpdateVariableBinding(asAtom v)
 {
 	inUpdateVarBinding = true;
 	tiny_string s = asAtomHandler::toString(v,getInstanceWorker());
-	if (tag->isHTML())
+	if (!s.empty() && tag->isHTML())
 		setHtmlText(s);
 	else
 		updateText(s);

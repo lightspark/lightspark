@@ -157,7 +157,7 @@ void DisplayObject::removeBroadcastEventListener()
 }
 
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),alpha(1.0),blendMode(BLENDMODE_NORMAL),
+	sx(1),sy(1),blendMode(BLENDMODE_NORMAL),
 	isLoadedRoot(false),inInitFrame(false),
 	filterlistHasChanged(false),ismaskCount(0),maxfilterborder(0),ClipDepth(0),hasDefaultName(false),
 	hiddenPrevDisplayObject(nullptr),hiddenNextDisplayObject(nullptr),avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),cachedSurface(new CachedSurface()),
@@ -267,7 +267,6 @@ bool DisplayObject::destruct()
 	rotation=0;
 	sx=1;
 	sy=1;
-	alpha=1.0;
 	blendMode=BLENDMODE_NORMAL;
 	isLoadedRoot=false;
 	inInitFrame=false;
@@ -955,7 +954,7 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 	state->depth = this->getDepth();
 	state->isMask = this->ismaskCount || this->getClipDepth();
 	state->visible = this->visible;
-	state->alpha = this->alpha;
+	state->alpha = this->clippedAlpha();
 	state->allowAsMask = this->allowAsMask();
 	state->maxfilterborder = this->getMaxFilterBorder();
 	if (this->filterlistHasChanged)
@@ -1083,13 +1082,12 @@ MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot, bool fromcurrentre
  * necessary bounded.) */
 float DisplayObject::clippedAlpha() const
 {
-	float a = alpha;
+	float a = 1.0;
 	if (!this->colorTransform.isNull())
 	{
-		if (alpha != 1.0 && this->colorTransform->alphaMultiplier != 1.0)
-			a = alpha * this->colorTransform->alphaMultiplier /256.;
+		a = this->colorTransform->alphaMultiplier;
 		if (this->colorTransform->alphaOffset != 0)
-			a = alpha + this->colorTransform->alphaOffset /256.;
+			a += this->colorTransform->alphaOffset /256.;
 	}
 	return dmin(dmax(a, 0.), 1.);
 }
@@ -2178,7 +2176,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 
 _NR<DisplayObject> DisplayObject::hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
-	if((!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && (!isMask() || !getClipDepth()))
+	if((!((visible && this->clippedAlpha()>0.0) || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && (!isMask() || !getClipDepth()))
 		return NullRef;
 
 	const auto& mask = this->mask ? this->mask : this->clipMask;
@@ -3907,8 +3905,7 @@ void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> o
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=nameID;
 		obj->incRef();
-		bool alreadyset;
-		setVariableByMultiname(objName,v, CONST_ALLOWED,&alreadyset,loadedFrom->getInstanceWorker());
+		bool alreadyset = AVM1setVariableByMultiname(objName,v, CONST_ALLOWED,loadedFrom->getInstanceWorker());
 		if (alreadyset)
 			ASATOM_DECREF(v);
 	}

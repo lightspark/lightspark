@@ -63,7 +63,6 @@ private:
 	number_t tx,ty,tz;
 	number_t rotation;
 	number_t sx,sy,sz;
-	float alpha;
 	AS_BLENDMODE blendMode;
 	// if true, this displayobject is the root object of a loaded file (swf or image)
 	bool isLoadedRoot;

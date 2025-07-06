@@ -26,6 +26,7 @@
 #include "plugin/include/npplat.h"
 #include <cstdio>
 #include <cstdlib>
+#include <glib.h>
 
 extern NPNetscapeFuncs NPNFuncs;
 

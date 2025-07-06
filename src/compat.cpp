@@ -50,6 +50,7 @@
 #endif
 #ifndef _WIN32
 #include <errno.h> // for errno
+#include <signal.h> // for kill
 #endif
 
 using namespace std;
@@ -110,13 +111,12 @@ TimeSpec compat_now()
 #endif
 }
 
-int kill_child(GPid childPid)
+int kill_child(int childPid)
 {
 #ifdef _WIN32
 	TerminateProcess(childPid, 0);
 #else
 	kill(childPid, SIGTERM);
-	g_spawn_close_pid(childPid);
 #endif
 	return 0;
 }

@@ -55,7 +55,7 @@ extern void nvgDeleteGL2(NVGcontext* ctx);
 #endif
 }
 //The interpretation of texture data change with the endianness
-#if G_BYTE_ORDER == G_BIG_ENDIAN
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
 #define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_INT_8_8_8_8_REV
 #else
 #define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_BYTE

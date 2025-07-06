@@ -49,8 +49,7 @@
 	#include <io.h> //for close(), unlink()
 #endif
 
-
-#include <glib.h>
+#include <SDL.h>
 #include <cstdlib>
 
 
@@ -179,7 +178,7 @@ inline T gcdTmpl(T a, T b)
 namespace lightspark
 {
 	class TimeSpec;
-};
+}
 
 uint64_t compat_perfcount();
 uint64_t compat_perffreq();
@@ -193,11 +192,11 @@ DLL_PUBLIC void compat_nsleep(uint64_t ns);
 uint64_t compat_get_thread_cputime_us();
 
 /* byte order */
-#if G_BYTE_ORDER == G_BIG_ENDIAN
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
 
 inline uint32_t LittleEndianToSignedHost24(uint32_t x)
 {
-	uint32_t ret=GINT32_FROM_LE(x);
+	uint32_t ret=SDL_Swap32(x);
 	assert(ret<0x1000000);
 	//Sign extend
 	if(ret&0x800000)
@@ -208,7 +207,7 @@ inline uint32_t LittleEndianToSignedHost24(uint32_t x)
 inline uint32_t LittleEndianToUnsignedHost24(uint32_t x)
 {
 	assert(x<0x1000000);
-	uint32_t ret=GINT32_FROM_LE(x);
+	uint32_t ret=SDL_Swap32(x);
 	return ret;
 }
 
@@ -228,9 +227,14 @@ inline uint32_t BigEndianToUnsignedHost24(uint32_t x)
 	assert(x<0x1000000);
 	return x;
 }
+#define LS_UINT16_TO_LE(x) SDL_Swap16(x)
+#define LS_UINT16_TO_BE(x) (x)
+#define LS_UINT32_TO_LE(x) SDL_Swap32(x)
+#define LS_UINT32_TO_BE(x) (x)
+#define LS_UINT64_TO_LE(x) SDL_Swap64(x)
+#define LS_UINT64_TO_BE(x) (x)
 
-
-#else //__BYTE_ORDER == __LITTLE_ENDIAN
+#else //SDL_BYTEORDER == SDL_BIG_ENDIAN
 inline uint32_t LittleEndianToSignedHost24(uint32_t x)
 {
 	assert(x<0x1000000);
@@ -249,7 +253,7 @@ inline uint32_t BigEndianToSignedHost24(uint32_t x)
 {
 	assert(x<0x1000000);
 	//Discard the lowest byte, as it was the highest
-	uint32_t ret=GINT32_FROM_BE(x)>>8;
+	uint32_t ret=SDL_Swap32(x)>>8;
 	//Sign extend
 	if(ret&0x800000)
 		ret|=0xff000000;
@@ -260,10 +264,17 @@ inline uint32_t BigEndianToUnsignedHost24(uint32_t x)
 {
 	assert(x<0x1000000);
 	//Discard the lowest byte, as it was the highest
-	uint32_t ret=GINT32_FROM_BE(x)>>8;
+	uint32_t ret=SDL_Swap32(x)>>8;
 	return ret;
 }
-#endif // __BYTE_ORDER == __BIG_ENDIAN
+#define LS_UINT16_TO_LE(x) (x)
+#define LS_UINT16_TO_BE(x) SDL_Swap16(x)
+#define LS_UINT32_TO_LE(x) (x)
+#define LS_UINT32_TO_BE(x) SDL_Swap32(x)
+#define LS_UINT64_TO_LE(x) (x)
+#define LS_UINT64_TO_BE(x) SDL_Swap64(x)
+
+#endif //SDL_BYTEORDER == SDL_BIG_ENDIAN
 
 /* spawning */
 #ifdef _WIN32
@@ -273,6 +284,6 @@ typedef void* HANDLE;
 HANDLE compat_spawn(char** args, int* stdinfd);
 #endif
 
-int kill_child(GPid p);
+int kill_child(int p);
 
 #endif /* COMPAT_H */

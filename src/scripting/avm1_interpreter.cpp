@@ -2816,7 +2816,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						}
 						case 7:
 						{
-							uint32_t d=GUINT32_FROM_LE(*(uint32_t*)&(*it));
+							uint32_t d=LS_UINT32_TO_LE(*(uint32_t*)&(*it));
 							it+=4;
 							len-=4;
 							asAtom a = asAtomHandler::fromInt((int32_t)d);

@@ -32,7 +32,6 @@
 #include "scripting/flash/errors/flasherrors.h"
 #include <sstream>
 #include <zlib.h>
-#include <glib.h>
 #include <lzma.h>
 
 using namespace std;
@@ -632,7 +631,7 @@ void ByteArray::writeSharedObject(ASObject* obj, const tiny_string& name, ASWork
 	map<const Class_base*, uint32_t> traitsMap;
 	obj->serializeDynamicProperties(this, stringMap, objMap,traitsMap,wrk,true,true);
 	setPosition(sizepos);
-	writeUnsignedInt(GUINT32_TO_BE(getLength()-6));
+	writeUnsignedInt(LS_UINT32_TO_BE(getLength()-6));
 	setPosition(0);
 }
 

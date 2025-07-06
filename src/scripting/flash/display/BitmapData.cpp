@@ -222,7 +222,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 
 
 	uint32_t *pixelArray=new uint32_t[width*height];
-	uint32_t c=GUINT32_TO_BE(fillColor); // fromRGB expects big endian data
+	uint32_t c=LS_UINT32_TO_BE(fillColor); // fromRGB expects big endian data
 	if(!transparent)
 	{
 		uint8_t *alpha=reinterpret_cast<uint8_t *>(&c);
@@ -240,7 +240,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 			res |= ((((fillColor >> 8 ) &0xff) * alpha +0x7f)/0xff) << 8;
 			res |= ((((fillColor >> 16) &0xff) * alpha +0x7f)/0xff) << 16;
 			res |= alpha<<24;
-			c= GUINT32_TO_BE(res);
+			c= LS_UINT32_TO_BE(res);
 		}
 	}
 	for(uint32_t i=0; i<(uint32_t)(width*height); i++)

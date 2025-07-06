@@ -818,13 +818,13 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 						break;
 				}
 				// ffmpeg always returns decoded data in native endian format, so we have to convert to the target endian setting
-#if G_BYTE_ORDER == G_BIG_ENDIAN
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
 				if (target->getLittleEndian())
 				{
 					for (int32_t i = 0; i < min(readcount,bytelength); i+=4)
 					{
 						uint32_t* u = (uint32_t*)(&data[i]);
-						*u = GUINT32_TO_LE(*u);
+						*u = LS_UINT32_TO_LE(*u);
 					}
 				}
 #else
@@ -833,7 +833,7 @@ ASFUNCTIONBODY_ATOM(Sound,extract)
 					for (int32_t i = 0; i < min(readcount,bytelength); i+=4)
 					{
 						uint32_t* u = (uint32_t*)(&data[i]);
-						*u = GUINT32_TO_BE(*u);
+						*u = LS_UINT32_TO_BE(*u);
 					}
 				}
 #endif
@@ -889,7 +889,7 @@ void Sound::requestSampleDataEvent(size_t position)
 	RELEASE_WRITE(sampledataprocessed,false);
 	// request more data
 	_NR<ByteArray> data = _MR(Class<ByteArray>::getInstanceS(getInstanceWorker()));
-#if G_BYTE_ORDER == G_LITTLE_ENDIAN
+#if SDL_BYTEORDER == SDL_LIL_ENDIAN
 	data->setLittleEndian(true);
 #endif
 	incRef();

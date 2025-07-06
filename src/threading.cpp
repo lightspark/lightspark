@@ -23,6 +23,7 @@
 #include "exceptions.h"
 #include "logger.h"
 #include "compat.h"
+#include <glib.h>
 
 using namespace lightspark;
 

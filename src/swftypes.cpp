@@ -26,7 +26,6 @@
 #include <stdlib.h>
 #include <cmath>
 #include <cairo.h>
-#include <glib.h>
 #include <iomanip>
 #include <algorithm>
 

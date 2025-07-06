@@ -41,45 +41,45 @@ class FileStream: public EventDispatcher
 	FORCE_INLINE uint16_t endianIn(uint16_t value)
 	{
 		if(littleEndian)
-			return GUINT16_TO_LE(value);
+			return LS_UINT16_TO_LE(value);
 		else
-			return GUINT16_TO_BE(value);
+			return LS_UINT16_TO_BE(value);
 	}
 	FORCE_INLINE uint32_t endianIn(uint32_t value)
 	{
 		if(littleEndian)
-			return GUINT32_TO_LE(value);
+			return LS_UINT32_TO_LE(value);
 		else
-			return GUINT32_TO_BE(value);
+			return LS_UINT32_TO_BE(value);
 	}
 	FORCE_INLINE uint64_t endianIn(uint64_t value)
 	{
 		if(littleEndian)
-			return GUINT64_TO_LE(value);
+			return LS_UINT64_TO_LE(value);
 		else
-			return GUINT64_TO_BE(value);
+			return LS_UINT64_TO_BE(value);
 	}
 
 	FORCE_INLINE uint16_t endianOut(uint16_t value)
 	{
 		if(littleEndian)
-			return GUINT16_FROM_LE(value);
+			return LS_UINT16_TO_LE(value);
 		else
-			return GUINT16_FROM_BE(value);
+			return LS_UINT16_TO_BE(value);
 	}
 	FORCE_INLINE uint32_t endianOut(uint32_t value)
 	{
 		if(littleEndian)
-			return GUINT32_FROM_LE(value);
+			return LS_UINT32_TO_LE(value);
 		else
-			return GUINT32_FROM_BE(value);
+			return LS_UINT32_TO_BE(value);
 	}
 	FORCE_INLINE uint64_t endianOut(uint64_t value)
 	{
 		if(littleEndian)
-			return GUINT64_FROM_LE(value);
+			return LS_UINT64_TO_LE(value);
 		else
-			return GUINT64_FROM_BE(value);
+			return LS_UINT64_TO_BE(value);
 	}
 	
 public:

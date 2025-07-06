@@ -723,21 +723,21 @@ inline std::istream& operator>>(std::istream& s, SI16_SWF& v)
 inline std::istream & operator>>(std::istream &s, SI16_FLV& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=GINT16_FROM_BE(v.val);
+	v.val=LS_UINT16_TO_BE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI16_SWF& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=GUINT16_FROM_LE(v.val);
+	v.val=LS_UINT16_TO_LE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI16_FLV& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=GUINT16_FROM_BE(v.val);
+	v.val=LS_UINT16_TO_BE(v.val);
 	return s;
 }
 
@@ -776,14 +776,14 @@ inline std::istream& operator>>(std::istream& s, SI24_FLV& v)
 inline std::istream& operator>>(std::istream& s, UI32_SWF& v)
 {
 	s.read((char*)&v.val,4);
-	v.val=GUINT32_FROM_LE(v.val);
+	v.val=LS_UINT32_TO_LE(v.val);
 	return s;
 }
 
 inline std::istream& operator>>(std::istream& s, UI32_FLV& v)
 {
 	s.read((char*)&v.val,4);
-	v.val=GUINT32_FROM_BE(v.val);
+	v.val=LS_UINT32_TO_BE(v.val);
 	return s;
 }
 

@@ -1788,7 +1788,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				m.name_type = multiname::NAME_STRING;
 				m.name_s_id = nameID;
 
-				if (asAtomHandler::hasPropertyByMultiname(context->getScope()->getLocals(),m, true, false, wrk))
+				if (!asAtomHandler::hasPropertyByMultiname(context->getScope()->getLocals(),m, true, false, wrk))
 				{
 					auto atom = asAtomHandler::undefinedAtom;
 					context->getScope()->defineLocalByMultiname(m, atom, CONST_ALLOWED, wrk);

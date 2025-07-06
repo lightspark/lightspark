@@ -23,9 +23,103 @@
 using namespace lightspark;
 namespace fs = FileSystem;
 
+using ConstStrIter = Path::ConstStrIter;
 using StringType = Path::StringType;
 using ValueType = Path::ValueType;
 using Format = Path::Format;
+
+ConstStrIter Path::Iter::inc(const ConstStrIter& pos) const
+{
+	if (pos == last)
+		return pos;
+
+	auto it = pos;
+	bool fromStart = it == first || it == prefix;
+	if (fromStart && it == first && std::distance(prefix, first) <= 0)
+		return prefix;
+	else if (*it++ != nativeSeparator)
+	{
+		// Handle implementation specific stuff.
+		auto ret = incImpl(it);
+		return ret != last ? ret : std::find(it, last, nativeSeparator);
+	}
+
+	// The only way to be on a separator, is if it's either a network
+	// name, or the root directory.
+	if (it == last || *it != nativeSeparator)
+		return it;
+
+	auto next = std::next(it);
+	if (!fromStart || (next != last && *next == nativeSeparator))
+	{
+		// Skip any extra separators.
+		for (; it != last && *it == nativeSeparator; ++it);
+		return it;
+	}
+	// Found a leading double separator, treat it, and everything upto
+	// the next separator as a single unit.
+	return std::find(++it, last, nativeSeparator);
+}
+
+ConstStrIter Path::Iter::dec(const ConstStrIter& pos) const
+{
+	if (pos == first)
+		return pos;
+
+	auto it = std::prev(pos);
+
+	// If this is the root separator, or a trailing separator, then we're
+	// done.
+	if (it == root || (pos == last && *it == nativeSeparator))
+		return it;
+
+	// Handle implementation specific stuff.
+	it = decImpl(it);
+
+	// Check if this is a network name.
+	auto _first = first;
+	auto dist = std::distance(first, it);
+	if (dist == 2 && *_first++ == nativeSeparator && *_first == nativeSeparator)
+		return std::prev(it, 2);
+	return it;
+}
+
+void Path::Iter::updateCurrent()
+{
+	bool clearCurrent = iter == last ||
+	(
+		iter != first &&
+		*iter == nativeSeparator && iter != root &&
+		std::next(iter) == last
+	);
+
+	if (clearCurrent)
+		current.clear();
+	else
+		current.assign(iter, inc(iter));
+}
+
+Path::Iter& Path::Iter::operator++()
+{
+	auto incCond = [&](const ConstStrIter& it)
+	{
+		return
+		(
+			// Didn't reach the end.
+			it != last &&
+			// It isn't the root position.
+			it != root &&
+			// We're on a separator.
+			*it == nativeSeparator &&
+			// The separator isn't the last character.
+			std::next(iter) != last
+		);
+	};
+
+	for (iter = inc(iter); incCond(iter); ++iter);
+	updateCurrent();
+	return *this;
+}
 
 Path& Path::operator/=(const Path& other)
 {

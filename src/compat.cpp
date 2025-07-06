@@ -111,15 +111,19 @@ TimeSpec compat_now()
 #endif
 }
 
-int kill_child(int childPid)
-{
 #ifdef _WIN32
+int kill_child(HANDLE childPid)
+{
 	TerminateProcess(childPid, 0);
-#else
-	kill(childPid, SIGTERM);
-#endif
 	return 0;
 }
+#else
+int kill_child(int childPid)
+{
+	kill(childPid, SIGTERM);
+	return 0;
+}
+#endif
 
 #ifdef WIN32
 // Based on code from https://github.com/TurtleMan64/usleep-windows

@@ -282,8 +282,11 @@ inline uint32_t BigEndianToUnsignedHost24(uint32_t x)
 const char* getExectuablePath();
 typedef void* HANDLE;
 HANDLE compat_spawn(char** args, int* stdinfd);
+int kill_child(HANDLE childPid);
+#else
+int kill_child(int childPid);
 #endif
 
-int kill_child(int p);
+
 
 #endif /* COMPAT_H */

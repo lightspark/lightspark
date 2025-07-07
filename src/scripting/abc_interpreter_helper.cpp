@@ -43,7 +43,35 @@ preloadstate::preloadstate(SyntheticFunction* _f, ASWorker* _w):function(_f),wor
 {
 
 }
-
+uint32_t skipIgnorables(memorystream& code,uint32_t p)
+{
+	uint32_t pos = p-1;
+	bool done = false;
+	while (!done)
+	{
+		uint8_t b = code.peekbyteFromPosition(pos);
+		switch (b)
+		{
+			case 0x01://bkpt
+			case 0x02://nop
+			case 0x82://coerce_a
+			case 0x09://label
+			case 0x76://convert_b
+				pos++;
+				break;
+			case 0xf0://debugline
+			case 0xf1://debugfile
+			case 0xf2://bkptline
+				pos = code.skipu30FromPosition(pos);
+				pos++;
+				break;
+			default:
+				done=true;
+				break;
+		}
+	}
+	return pos;
+}
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
 	if (b == 0x10) // jump
@@ -1206,10 +1234,20 @@ bool setupInstructionTwoArgumentsNoResult(preloadstate& state,int operator_start
 	hasoperands = state.operandlist.size() >= 2;
 	if (hasoperands)
 	{
+		auto op2 = state.operandlist.at(state.operandlist.size()-1);
+		auto op1 = state.operandlist.at(state.operandlist.size()-2);
+		// remove preloaded code for both operands in the correct order
+		if (op1.preloadedcodepos < op2.preloadedcodepos)
+		{
+			op2.removeArg(state);
+			op1.removeArg(state);
+		}
+		else
+		{
+			op1.removeArg(state);
+			op2.removeArg(state);
+		}
 		auto it = state.operandlist.end();
-		(--it)->removeArg(state);// remove arg2
-		(--it)->removeArg(state);// remove arg1
-		it = state.operandlist.end();
 		// optimized opcodes are in order CONSTANT/CONSTANT, LOCAL/CONSTANT, CONSTANT/LOCAL, LOCAL/LOCAL
 		state.preloadedcode.emplace_back();
 		(--it)->fillCode(state,1,state.preloadedcode.size()-1,true,&operator_start);
@@ -2451,6 +2489,7 @@ void optimizedup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 						auto it = state.jumptargets.find(jumppos);
 						while (it != state.jumptargets.end())
 						{
+							jumppos = skipIgnorables(code,jumppos);
 							int skipdup = code.peekbyteFromPosition(jumppos-1) ==0x2a ? 1 : 0; //dup
 							if (code.peekbyteFromPosition(jumppos-1+skipdup) ==0x11)//iftrue
 							{
@@ -2462,8 +2501,9 @@ void optimizedup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 										(*it).second--;
 								}
 								dupskippable= lastskipdup;
-								jump += code.peeks24FromPosition(jumppos+skipdup)+3+1+skipdup;
-								jumppos = pos+jump+3+1;
+								int32_t jumpdelta = code.peeks24FromPosition(jumppos+skipdup);
+								jump += jumpdelta+3+1+skipdup;
+								jumppos += jumpdelta+3+1+skipdup;
 								it = state.jumptargets.find(jumppos);
 								numjumps++;
 							}
@@ -2519,6 +2559,7 @@ void optimizedup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 						auto it = state.jumptargets.find(jumppos);
 						while (it != state.jumptargets.end())
 						{
+							jumppos = skipIgnorables(code,jumppos);
 							int skipdup = code.peekbyteFromPosition(jumppos-1) ==0x2a ? 1 : 0; //dup
 							if (code.peekbyteFromPosition(jumppos-1+skipdup) ==0x12)//iffalse
 							{
@@ -2530,8 +2571,9 @@ void optimizedup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 										(*it).second--;
 								}
 								dupskippable= lastskipdup;
-								jump += code.peeks24FromPosition(jumppos+skipdup)+3+1+skipdup;
-								jumppos = pos+jump+3+1;
+								int32_t jumpdelta = code.peeks24FromPosition(jumppos+skipdup);
+								jump += jumpdelta+3+1+skipdup;
+								jumppos += jumpdelta+3+1+skipdup;
 								it = state.jumptargets.find(jumppos);
 								numjumps++;
 							}

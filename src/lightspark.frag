@@ -396,7 +396,10 @@ void main()
 	vbase = clamp(vbase*colorTransformMultiply+colorTransformAdd,0.0,1.0);
 
 
-	if (blendMode==13.0) {//BLENDMODE_OVERLAY
+	if (blendMode==10.0) {//BLENDMODE_INVERT
+		vec4 vblenddst = texture2D(g_tex_blend,ls_TexCoords[1].xy);
+		vbase.rgb = vbase.rgb * (1.0 - vblenddst.a) + vblenddst.rgb * (1.0 - vbase.a) + vbase.a * vblenddst.a * (1.0 - vblenddst.rgb / vblenddst.a), vbase.a + vblenddst.a * (1.0 - vbase.a);
+	} else if (blendMode==13.0) {//BLENDMODE_OVERLAY
 		vec4 vblenddst = texture2D(g_tex_blend,ls_TexCoords[1].xy);
 		vbase = applyBlendMode(vbase,vblenddst,blendOverlay(vblenddst.rgb,vbase.rgb));
 	} else if (blendMode==14.0) {//BLENDMODE_HARDLIGHT

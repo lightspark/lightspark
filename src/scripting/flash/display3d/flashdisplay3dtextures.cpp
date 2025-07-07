@@ -735,7 +735,8 @@ bool TextureBase::destruct()
 		action.udata2 = textureframebuffer;
 		action.udata3 = depthRenderBuffer;
 		action.fdata[0] = stencilRenderBuffer;
-		context->addAction(action);
+		if (context)
+			context->addAction(action);
 	}
 	textureID=UINT32_MAX;
 	depthRenderBuffer = UINT32_MAX;

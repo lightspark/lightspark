@@ -1143,7 +1143,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					if (asAtomHandler::is<AVM1Function>(ev->f))
 						asAtomHandler::as<AVM1Function>(ev->f)->call(&result,&ev->obj,ev->args,ev->numArgs);
 					else
-						asAtomHandler::callFunction(ev->f,getWorker(),result,ev->obj,ev->args,ev->numArgs,true);
+						asAtomHandler::callFunction(ev->f,getWorker(),result,ev->obj,ev->args,ev->numArgs,false);
 					ASATOM_DECREF(result);
 				}
 				catch(ASObject* exception)

@@ -1137,16 +1137,6 @@ abc_function ABCVm::abcfunctions[]={
 };
 
 
-
-
-
-
-
-
-
-
-
-
 void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 {
 	method_info* mi=function->mi;
@@ -5658,6 +5648,15 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
 						&& (state.operandlist.back().objtype == Class<ASString>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()))
 					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				else if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size()>0 && state.operandlist.back().type != OP_LOCAL && state.operandlist.back().type != OP_CACHED_SLOT)
+				{
+					// constant atom can be coerced directly
+					asAtom res = *state.mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
+					Class<ASString>::getClass(function->getSystemState())->coerce(wrk,res);
+					state.operandlist.back().removeArg(state);
+					state.operandlist.pop_back();
+					addCachedConstant(state,mi, res,code);
+				}
 				else
 #endif
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_COERCES,opcode,code,true,true,Class<ASString>::getRef(function->getSystemState()).getPtr(),code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_COERCES_SETSLOT);

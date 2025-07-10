@@ -43,9 +43,8 @@ preloadstate::preloadstate(SyntheticFunction* _f, ASWorker* _w):function(_f),wor
 {
 
 }
-uint32_t skipIgnorables(memorystream& code,uint32_t p)
+uint32_t skipIgnorables(memorystream& code,uint32_t pos)
 {
-	uint32_t pos = p-1;
 	bool done = false;
 	while (!done)
 	{

@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2025  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -155,10 +156,11 @@ namespace cereal
 		// so we allocate memory on stack
 		// this does only work on gcc, not on llvm
 		auto i=type.size();
-		char* c=g_newa(char,i);
+		char* c=new char[i];
 		memcpy(c,type.data(),i);
 		std::string s(c,i);
 		loadVariant(archive, variant, fromVariantName(variant, s));
+		delete[] c;
 #endif
 	}
 

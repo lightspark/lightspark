@@ -552,7 +552,7 @@ public:
 		};
 		float_reader dummy;
 		dummy.dump = *(uint32_t*)data;
-		dummy.dump=GINT32_FROM_LE(dummy.dump);
+		dummy.dump=LS_UINT32_TO_LE(dummy.dump);
 		val=dummy.value;
 	}
 };
@@ -584,7 +584,7 @@ public:
 		*p++ = data[1];
 		*p++ = data[2];
 		*p++ = data[3];
-		dummy.dump=GINT64_FROM_LE(dummy.dump);
+		dummy.dump=LS_UINT64_TO_LE(dummy.dump);
 		val=dummy.value;
 	}
 };
@@ -716,7 +716,7 @@ inline std::istream& operator>>(std::istream& s, UI8& v)
 inline std::istream& operator>>(std::istream& s, SI16_SWF& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=GINT16_FROM_LE(v.val);
+	v.val=LS_UINT16_TO_LE(v.val);
 	return s;
 }
 
@@ -825,7 +825,7 @@ inline std::istream& operator>>(std::istream& s, FLOAT& v)
 	};
 	float_reader dummy;
 	s.read((char*)&dummy.dump,4);
-	dummy.dump=GINT32_FROM_LE(dummy.dump);
+	dummy.dump=LS_UINT32_TO_LE(dummy.dump);
 	v.val=dummy.value;
 	return s;
 }
@@ -841,7 +841,7 @@ inline std::istream& operator>>(std::istream& s, DOUBLE& v)
 	// "Wacky format" is 45670123. Thanks to Gnash for reversing :-)
 	s.read(((char*)&dummy.dump)+4,4);
 	s.read(((char*)&dummy.dump),4);
-	dummy.dump=GINT64_FROM_LE(dummy.dump);
+	dummy.dump=LS_UINT64_TO_LE(dummy.dump);
 	v.val=dummy.value;
 	return s;
 }
@@ -849,13 +849,13 @@ inline std::istream& operator>>(std::istream& s, DOUBLE& v)
 inline std::istream& operator>>(std::istream& s, FIXED& v)
 {
 	s.read((char*)&v.val,4);
-	v.val=GINT32_FROM_LE(v.val);
+	v.val=LS_UINT32_TO_LE(v.val);
 	return s;
 }
 inline std::istream& operator>>(std::istream& s, FIXED8& v)
 {
 	s.read((char*)&v.val,2);
-	v.val=GINT16_FROM_LE(v.val);
+	v.val=LS_UINT16_TO_LE(v.val);
 	return s;
 }
 

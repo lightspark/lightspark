@@ -21,6 +21,7 @@
 #define SCRIPTING_TOPLEVEL_DATE_H 1
 
 #include "asobject.h"
+#include <glib.h>
 
 namespace lightspark
 {

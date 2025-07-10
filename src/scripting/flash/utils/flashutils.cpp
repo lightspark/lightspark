@@ -35,7 +35,6 @@
 #include "scripting/flash/display/DisplayObject.h"
 #include <sstream>
 #include <zlib.h>
-#include <glib.h>
 
 using namespace std;
 using namespace lightspark;

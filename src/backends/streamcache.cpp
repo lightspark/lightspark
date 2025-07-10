@@ -19,7 +19,6 @@
 
 #include <string.h>
 #include <unistd.h>
-#include <glib.h>
 #include "backends/streamcache.h"
 #include "backends/config.h"
 #include "exceptions.h"

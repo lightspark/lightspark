@@ -32,7 +32,6 @@
 #include <cctype>
 #include <cerrno>
 
-#include <glib.h>
 
 #include "scripting/abc.h"
 #include "scripting/toplevel/toplevel.h"

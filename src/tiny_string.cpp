@@ -260,21 +260,116 @@ bool tiny_string::operator!=(const char* r) const
 	return !(*this==r);
 }
 
-char* tiny_string::strchr(char c) const
+char* tiny_string::strchr(uint32_t c) const
 {
-	//TODO: does this handle '\0' in middle of buf gracefully?
-	return g_utf8_strchr(buf, numBytes(), c);
+	if (isASCII && !hasNull)
+		return ::strchr(buf,c);
+	uint32_t pos = 0;
+	auto it = this->begin();
+	while (it != this->end())
+	{
+		if(*it == c)
+			return buf+pos;
+		++it;
+		++pos;
+	}
+	return nullptr;
 }
 
-char* tiny_string::strchrr(char c) const
+char* tiny_string::strchrr(uint32_t c) const
 {
-	//TODO: does this handle '\0' in middle of buf gracefully?
-	return g_utf8_strrchr(buf, numBytes(), c);
+	if (isASCII && !hasNull)
+		return ::strrchr(buf,c);
+	uint32_t pos = 0;
+	uint32_t foundpos=UINT32_MAX;
+	auto it = this->begin();
+	while (it != this->end())
+	{
+		if(*it == c)
+			foundpos = pos;
+		++it;
+		++pos;
+	}
+	if (foundpos != UINT32_MAX)
+		return buf+foundpos;
+	return nullptr;
 }
 
 tiny_string::operator std::string() const
 {
 	return std::string(buf,stringSize-1);
+}
+
+uint32_t tiny_string::unicodeToUTF8(uint32_t c, char* buf)
+{
+	uint32_t stringSize = 0;
+	bool isASCII = c<0x80;
+	if (isASCII)
+	{
+		buf[0] = c&0xff;
+		stringSize = 2;
+	}
+	else
+	{
+		if (c < 0x800)
+		{
+			buf[0] = (c >> 6) | 0xc0;
+			buf[1] = (c & 0x3f) | 0x80;
+			stringSize = 3;
+		}
+		else if (c < 0x10000)
+		{
+			buf[0] = (c >> 12) | 0xe0;
+			buf[1] = ((c >> 6) & 0x3f) | 0x80;
+			buf[2] = (c & 0x3f) | 0x80;
+			stringSize = 4;
+		}
+		else
+		{
+			buf[0] = (c >> 18) | 0xf0;
+			buf[1] = ((c >> 12) & 0x3f) | 0x80;
+			buf[2] = ((c >> 6) & 0x3f) | 0x80;
+			buf[3] = (c & 0x3f) | 0x80;
+			stringSize = 5;
+		}
+	}
+	return stringSize;
+}
+
+bool tiny_string::unicodeIsWhiteSpace(uint32_t c)
+{
+	// list of unicode whitespace characters taken from https://en.wikipedia.org/wiki/Whitespace_character
+	switch (c)
+	{
+		case 0x0009:
+		case 0x000A:
+		case 0x000B:
+		case 0x000C:
+		case 0x000D:
+		case 0x0020:
+		case 0x0085:
+		case 0x00A0:
+		case 0x1680:
+		case 0x2000:
+		case 0x2001:
+		case 0x2002:
+		case 0x2003:
+		case 0x2004:
+		case 0x2005:
+		case 0x2006:
+		case 0x2007:
+		case 0x2008:
+		case 0x2009:
+		case 0x200A:
+		case 0x2028:
+		case 0x2029:
+		case 0x202F:
+		case 0x205F:
+		case 0x3000:
+			return true;
+		default:
+			return false;
+	}
 }
 
 bool tiny_string::contains(const tiny_string& str) const
@@ -337,12 +432,28 @@ uint32_t tiny_string::find(const tiny_string& needle, uint32_t start) const
 		const char* p = strstr(buf+start,needle.raw_buf());
 		return (p ? p-buf : npos);
 	}
-	gchar* gp = g_utf8_offset_to_pointer(buf,start);
-	gchar* found =g_strstr_len(gp,-1,needle.raw_buf());
-	if(found == nullptr)
-		return npos;
-	else
-		return start + g_utf8_pointer_to_offset(gp,found);
+	uint32_t needlesize = needle.numChars();
+	uint32_t needlebytesize = needle.numBytes();
+	uint32_t pos =0;
+	auto it = this->begin();
+	if(start != npos && start < numChars())
+	{
+		// skip "start" characters
+		while (start)
+		{
+			++it;
+			--start;
+			++pos;
+		}
+	}
+	while (it != this->end() && pos+needlesize <= numChars())
+	{
+		if (memcmp(it.ptr(), needle.raw_buf(), needlebytesize)==0)
+			return pos;
+		++pos;
+		++it;
+	}
+	return npos;
 }
 bool tiny_string::getLine(uint32_t& byteindex, tiny_string& line)
 {
@@ -440,18 +551,22 @@ bool tiny_string::getLine(uint32_t& byteindex, tiny_string& line)
 
 uint32_t tiny_string::rfind(const tiny_string& needle, uint32_t start) const
 {
-	//TODO: omit copy into std::string
-	size_t bytestart;
+	uint32_t needlebytesize = needle.numBytes();
+	uint32_t pos =0;
+	auto it = this->begin();
 	if(start == npos)
-		bytestart = std::string::npos;
-	else
-		bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
-
-	size_t bytepos = std::string(*this).rfind(needle.raw_buf(),bytestart,needle.numBytes());
-	if(bytepos == std::string::npos)
-		return npos;
-	else
-		return g_utf8_pointer_to_offset(buf,buf+bytepos);
+		start = numChars();
+	if (needle.empty())
+		return start;
+	uint32_t foundpos=npos;
+	while (it != this->end() && pos <= start && pos+needlebytesize <= this->numBytes())
+	{
+		if (memcmp(it.ptr(), needle.raw_buf(), needlebytesize)==0)
+			foundpos = pos;
+		++pos;
+		++it;
+	}
+	return foundpos;
 }
 
 uint32_t tiny_string::findFirst(const tiny_string& str, uint32_t start) const
@@ -606,22 +721,7 @@ void tiny_string::init()
 tiny_string tiny_string::fromChar(uint32_t c)
 {
 	tiny_string ret;
-	ret.buf = ret._buf_static;
-	ret.type = STATIC;
-	ret.isASCII = c<0x80;
-	if (ret.isASCII)
-	{
-		ret.buf[0] = c&0xff;
-		ret.stringSize = 2;
-	}
-	else
-	{
-		ret.stringSize =  g_unichar_to_utf8(c,ret.buf) + 1;
-	}
-	ret.buf[ret.stringSize-1] = '\0';
-	ret.hasNull = c == 0;
-	ret.isInteger = c >= '0' && c <= '9';
-	ret.numchars = 1;
+	ret.setChar(c);
 	return ret;
 }
 
@@ -632,8 +732,9 @@ tiny_string& tiny_string::replace(uint32_t pos1, uint32_t n1, const tiny_string&
 		n1 = numChars()-pos1;
 	if (isASCII)
 		return replace_bytes(pos1, n1, o);
-	uint32_t bytestart = g_utf8_offset_to_pointer(buf,pos1)-buf;
-	uint32_t byteend = g_utf8_offset_to_pointer(buf,pos1+n1)-buf;
+	uint32_t bytestart = 0;
+	uint32_t byteend = 0;
+	getByteRange(pos1,n1,bytestart,byteend);
 	return replace_bytes(bytestart, byteend-bytestart, o);
 }
 
@@ -691,16 +792,53 @@ tiny_string tiny_string::substr_bytes(uint32_t start, uint32_t len, bool resulti
 	return ret;
 }
 
+void tiny_string::getByteRange(uint32_t start, uint32_t len,uint32_t& bytestart, uint32_t& byteend) const
+{
+	bytestart = 0;
+	byteend = 0;
+	uint32_t pos =0;
+	auto it = this->begin();
+	if (start+len == numChars())
+	{
+		byteend = numBytes();
+		while (it != this->end())
+		{
+			if (pos <= start)
+				bytestart = it.ptr()-buf;
+			else
+				break;
+			++it;
+			++pos;
+		}
+	}
+	else
+	{
+		while (it != this->end())
+		{
+			if (pos <= start)
+				bytestart = it.ptr()-buf;
+			if (pos <= start+len)
+				byteend = it.ptr()-buf;
+			else
+				break;
+			++it;
+			++pos;
+		}
+	}
+}
 tiny_string tiny_string::substr(uint32_t start, uint32_t len) const
 {
 	assert_and_throw(start <= numChars());
 	if(len > numChars()-start)
 		len = numChars()-start;
+	if (len==0)
+		return tiny_string();
 	if (isASCII)
 		return substr_bytes(start, len);
-	uint32_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
-	uint32_t byteend = g_utf8_offset_to_pointer(buf+bytestart,len) - (buf+bytestart);
-	return substr_bytes(bytestart, byteend,byteend-bytestart == len && !this->hasNull);
+	uint32_t bytestart = 0;
+	uint32_t byteend = 0;
+	getByteRange(start,len,bytestart,byteend);
+	return substr_bytes(bytestart, byteend-bytestart,byteend-bytestart == len && !this->hasNull);
 }
 
 tiny_string tiny_string::substr(uint32_t start, const CharIterator& end) const
@@ -708,7 +846,18 @@ tiny_string tiny_string::substr(uint32_t start, const CharIterator& end) const
 	if (isASCII)
 		return substr_bytes(start, (end.buf_ptr - buf)-start);
 	assert_and_throw(start < numChars());
-	uint32_t bytestart = g_utf8_offset_to_pointer(buf,start) - buf;
+	uint32_t bytestart = 0;
+	uint32_t pos =0;
+	auto it = this->begin();
+	while (it != this->end())
+	{
+		if (pos < start)
+			bytestart = it.ptr()-buf;
+		else
+			break;
+		++it;
+		++pos;
+	}
 	uint32_t byteend = end.buf_ptr - buf;
 	return substr_bytes(bytestart, byteend-bytestart);
 }
@@ -745,7 +894,6 @@ std::list<tiny_string> tiny_string::split(uint32_t delimiter) const
 			pos = end+1;
 		}
 	}
-	
 	return res;
 }
 
@@ -1333,17 +1481,15 @@ uint32_t unicharToLower(uint32_t ch)
 
 tiny_string tiny_string::lowercase() const
 {
-	// have to loop manually, because g_utf8_strdown doesn't
-	// handle nul-chars
 	tiny_string ret;
 	uint32_t allocated = 2*numBytes()+7;
 	ret.createBuffer(allocated);
 	char *p = ret.buf;
 	uint32_t len = 0;
-	for (CharIterator it=begin(); it!=end(); it++)
+	for (CharIterator it=begin(); it!=end(); ++it)
 	{
-		gunichar c = unicharToLower(*it);
-		gint n = g_unichar_to_utf8(c, p);
+		uint32_t c = unicharToLower(*it);
+		uint32_t n = unicodeToUTF8(c, p)-1;
 		p += n;
 		len += n;
 	}
@@ -1355,8 +1501,6 @@ tiny_string tiny_string::lowercase() const
 
 tiny_string tiny_string::uppercase() const
 {
-	// have to loop manually, because g_utf8_strup doesn't
-	// handle nul-chars
 	tiny_string ret;
 	uint32_t allocated = 2*numBytes()+7;
 	ret.createBuffer(allocated);
@@ -1364,8 +1508,8 @@ tiny_string tiny_string::uppercase() const
 	uint32_t len = 0;
 	for (CharIterator it=begin(); it!=end(); it++)
 	{
-		gunichar c = unicharToUpper(*it);
-		gint n = g_unichar_to_utf8(c, p);
+		uint32_t c = unicharToUpper(*it);
+		uint32_t n = unicodeToUTF8(c, p)-1;
 		p += n;
 		len += n;
 	}
@@ -1381,12 +1525,14 @@ int tiny_string::strcasecmp(tiny_string& s2) const
 {
 	if (this->isASCII && s2.isASCII)
 		return ::strcasecmp(this->raw_buf(),s2.raw_buf());
-	char* str1 = g_utf8_casefold(this->raw_buf(),this->numBytes());
-	char* str2 = g_utf8_casefold(s2.raw_buf(),s2.numBytes());
-	int ret = g_utf8_collate(str1,str2);
-	g_free(str1);
-	g_free(str2);
-	return ret;
+	tiny_string str1 = this->lowercase();
+	tiny_string str2 = s2.lowercase();
+	if (str1 < str2)
+		return -1;
+	else if (str1==str2)
+		return 0;
+	else
+		return 1;
 }
 
 bool tiny_string::caselessEquals(const tiny_string& str) const
@@ -1416,7 +1562,16 @@ uint32_t tiny_string::bytePosToIndex(uint32_t bytepos) const
 	if (isASCII)
 		return bytepos;
 
-	return g_utf8_pointer_to_offset(raw_buf(), raw_buf() + bytepos);
+	uint32_t index = 0;
+	auto it = this->begin();
+	while (it != this->end())
+	{
+		if (it.ptr()-buf >= bytepos)
+			return index;
+		++it;
+		++index;
+	}
+	return UINT32_MAX;
 }
 
 CharIterator tiny_string::begin()
@@ -1508,23 +1663,25 @@ void tiny_string::getTrimPositions(uint32_t& start, uint32_t& end) const
 	end = stringSize-1;
 	if (empty())
 		return;
-	while (start < stringSize)
+	if (isASCII)
 	{
-		uint8_t c = buf[start];
-		if (c&0x80) //check for unicode whitspace character
+		while (start < stringSize)
 		{
-			if (!g_unichar_isspace(g_utf8_get_char(buf+start)))
+			uint8_t c = buf[start];
+			if (!isspace(c))
 				break;
-			while (c&0x80) // skip utf8 bytes
-			{
-				c=c<<1;
-				start++;
-			}
+			++start;
 		}
-		else if (!isspace(c))
-			break;
-		else
-			start++;
+	}
+	else
+	{
+		while (start < stringSize)
+		{
+			CharIterator chIt(buf+start);
+			if (!unicodeIsWhiteSpace(*chIt))
+				break;
+			++start;
+		}
 	}
 	while (end > start)
 	{
@@ -1536,7 +1693,8 @@ void tiny_string::getTrimPositions(uint32_t& start, uint32_t& end) const
 				end--;
 			}
 			while (((buf[end])&0xc0) == 0x80); // skip utf8 bytes
-			if (!g_unichar_isspace(g_utf8_get_char(buf+end+1)))
+			CharIterator chIt(buf+end+1);
+			if (!unicodeIsWhiteSpace(*chIt))
 				break;
 		}
 		else if (!isspace(c))

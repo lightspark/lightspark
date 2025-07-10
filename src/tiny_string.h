@@ -21,12 +21,11 @@
 #define TINY_STRING_H 1
 
 #include <cstring>
+#include <cctype>
 #include <cstdint>
 #include <ostream>
 #include <limits>
 #include <list>
-/* for utf8 handling */
-#include <glib.h>
 #include "compat.h"
 #include <functional>
 
@@ -54,17 +53,47 @@ class CharIterator /*: public forward_iterator<uint32_t>*/
 friend class tiny_string;
 private:
 	char* buf_ptr;
+	uint32_t getChar() const
+	{
+		if ((*buf_ptr & 0x80)==0x00)
+			return uint32_t(*buf_ptr);
+		if ((*buf_ptr & 0xe0)==0xc0)
+			return ((uint32_t(*buf_ptr) << 6) & 0x7ff)
+				+ (uint32_t(*(buf_ptr+1)) & 0x3f);
+		if ((*buf_ptr & 0xf0)==0xe0)
+			return ((uint32_t(*buf_ptr) << 12) & 0xffff)
+				+ ((uint32_t(*(buf_ptr+1)) << 6) & 0xfff)
+				+ (uint32_t(*(buf_ptr+2)) & 0x3f);
+		if ((*buf_ptr & 0xf8)==0xf0)
+			return ((uint32_t(*buf_ptr) << 18) & 0x1fffff)
+				+ ((uint32_t(*(buf_ptr+1)) << 12) & 0x3ffff)
+				+ ((uint32_t(*(buf_ptr+2)) << 6) & 0xfff)
+				+ (uint32_t(*(buf_ptr+3)) & 0x3f);
+		return UINT32_MAX;
+	}
 public:
 	CharIterator() : buf_ptr(nullptr) {}
 	CharIterator(char* buf) : buf_ptr(buf) {}
 	/* Return the utf8-character value */
 	uint32_t operator*() const
 	{
-		return g_utf8_get_char(buf_ptr);
+		return getChar();
 	}
 	CharIterator& operator++() //prefix
 	{
-		buf_ptr = g_utf8_next_char(buf_ptr);
+		if (*buf_ptr & 0x80)
+		{
+			if ((*buf_ptr & 0xf8)==0xf0)
+				buf_ptr+=4;
+			else if ((*buf_ptr & 0xf0)==0xe0)
+				buf_ptr+=3;
+			else if ((*buf_ptr & 0xe0)==0xc0)
+				buf_ptr+=2;
+			else
+				++buf_ptr;
+		}
+		else
+			++buf_ptr;
 		return *this;
 	}
 	CharIterator operator++(int) // postfix
@@ -81,17 +110,21 @@ public:
 	/* returns true if the current character is a digit */
 	bool isdigit() const
 	{
-		return g_unichar_isdigit(g_utf8_get_char(buf_ptr));
+		return ::isdigit(*buf_ptr);
 	}
 	/* return the value of the current character interpreted as decimal digit,
 	 * i.e. '7' -> 7
 	 */
 	int32_t digit_value() const
 	{
-		return g_unichar_digit_value(g_utf8_get_char(buf_ptr));
+		return *buf_ptr-'0';
 	}
 	bool isValid() const { return buf_ptr; }
 	inline char* ptr() const { return buf_ptr; }
+	bool isValidUTF8() const
+	{
+		return getChar() != UINT32_MAX;
+	}
 };
 
 /*
@@ -208,11 +241,25 @@ public:
 	}
 	inline void checkValidUTF()
 	{
-		if (!isASCII && !g_utf8_validate(buf,numBytes(),nullptr))
+		if (!isASCII)
 		{
-			// string is not valid UTF8, we treat it as ascii
-			isASCII = true;
-			numchars = stringSize-1;
+			CharIterator it = this->begin();
+			bool isvalid = true;
+			while (it != this->end())
+			{
+				if (!it.isValidUTF8())
+				{
+					isvalid=false;
+					break;
+				}
+				it++;
+			}
+			if (!isvalid)
+			{
+				// string is not valid UTF8, we treat it as ascii
+				isASCII = true;
+				numchars = stringSize-1;
+			}
 		}
 	}
 
@@ -230,8 +277,8 @@ public:
 	tiny_string substr_bytes(uint32_t start, uint32_t len, bool resultisascii=false) const;
 	/* finds the first occurence of char in the utf-8 string
 	 * Return NULL if not found, else ptr to beginning of first occurence of c */
-	char* strchr(char c) const;
-	char* strchrr(char c) const;
+	char* strchr(uint32_t c) const;
+	char* strchrr(uint32_t c) const;
 	/*explicit*/ operator std::string() const;
 
 	FORCE_INLINE void setValue(const char* s,int _numbytes, int _numchars, bool _isASCII, bool _hasNull, bool _isInteger, bool copy)
@@ -261,6 +308,8 @@ public:
 		hasNull=_hasNull;
 		isInteger=_isInteger;
 	}
+	static uint32_t unicodeToUTF8(uint32_t c,char* buf);
+	static bool unicodeIsWhiteSpace(uint32_t c);
 	FORCE_INLINE void setChar(uint32_t c)
 	{
 		if (type != STATIC)
@@ -272,7 +321,7 @@ public:
 			stringSize = 2;
 		}
 		else
-			stringSize =  g_unichar_to_utf8(c,buf) + 1;
+			stringSize = unicodeToUTF8(c,buf);
 		buf[stringSize-1] = '\0';
 		hasNull = c == 0;
 		isInteger = c >= '0' && c <= '9';
@@ -290,7 +339,13 @@ public:
 	{
 		if (isASCII)
 			return buf[idx];
-		return g_utf8_get_char(g_utf8_offset_to_pointer(buf,idx));
+		auto it = this->begin();
+		uint32_t i = 0;
+		while (i++ < idx)
+		{
+			++it;
+		}
+		return *it;
 	}
 	/* start is an index of characters.
 	 * returns index of character */
@@ -370,6 +425,8 @@ public:
 
 	// encodes all null bytes instring to xml notation ("&#x0;")
 	tiny_string encodeNull() const;
+	// returns start/end byte position from character index/length pair
+	void getByteRange(uint32_t start, uint32_t len, uint32_t& bytestart, uint32_t& byteend) const;
 };
 
 template<typename T, EnableIf<std::is_unsigned<T>::value, bool>>

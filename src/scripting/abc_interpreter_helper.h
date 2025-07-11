@@ -181,7 +181,8 @@ bool checkInitializeLocalToConstant(preloadstate& state,int32_t value);
 void removeInitializeLocalToConstant(preloadstate& state,int32_t value);
 bool getLexFindClass(preloadstate& state, multiname* name, bool checkfuncscope,std::vector<typestackentry>& typestack,memorystream& code);
 void preloadFunction_secondPass(preloadstate& state);
-void optimizedup(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, lightspark::Class_base** lastlocalresulttype,	std::map<int32_t,int32_t>& jumppositions,std::map<int32_t,int32_t>& jumpstartpositions);
+void preload_dup(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, lightspark::Class_base** lastlocalresulttype,std::map<int32_t,int32_t>& jumppositions,std::map<int32_t,int32_t>& jumpstartpositions);
+void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack,memorystream& code,int opcode,Class_base** lastlocalresulttype,uint8_t prevopcode);
 }
 #define ABC_OP_OPTIMZED_INCREMENT 0x00000100
 #define ABC_OP_OPTIMZED_DECREMENT 0x00000102

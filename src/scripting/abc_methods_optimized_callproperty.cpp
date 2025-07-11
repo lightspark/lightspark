@@ -883,14 +883,14 @@ void lightspark::abc_callpropvoidStaticName_constant_local(call_context* context
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 
-	asAtom* args=&CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom args=CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	multiname* name=context->exec_pos->cachedmultiname2;
 	(++(context->exec_pos));
 
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callPropvoidStaticName_cl " << *name);
 	asAtom ret=asAtomHandler::invalidAtom;
-	callprop_intern(context,ret,obj,args,1,name,context->exec_pos,false,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
+	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos,false,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(ret);
 	++(context->exec_pos);
 }
@@ -899,14 +899,14 @@ void lightspark::abc_callpropvoidStaticName_local_local(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	(++(context->exec_pos));
 
-	asAtom* args=&CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom args=CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	multiname* name=context->exec_pos->cachedmultiname2;
 	(++(context->exec_pos));
 
 	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	LOG_CALL( "callPropvoidStaticName_ll " << *name);
 	asAtom ret=asAtomHandler::invalidAtom;
-	callprop_intern(context,ret,obj,args,1,name,context->exec_pos,false,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
+	callprop_intern(context,ret,obj,&args,1,name,context->exec_pos,false,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(ret);
 
 	++(context->exec_pos);
@@ -1108,12 +1108,12 @@ void lightspark::abc_callpropertySlotVar_constant_local(call_context* context)
 	bool coerce = ((++(context->exec_pos))->local2.flags&ABC_OP_COERCED)==0;
 	uint32_t slot_id=context->exec_pos->local2.pos;
 
-	asAtom* args=&CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom args=CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callPropertySlotVar_cl " << slot_id);
 	asAtom ret=asAtomHandler::invalidAtom;
-	callprop_intern_slotvar(context,ret,obj,args,1,slot_id,context->exec_pos,false,true,coerce);
+	callprop_intern_slotvar(context,ret,obj,&args,1,slot_id,context->exec_pos,false,true,coerce);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);
@@ -1124,12 +1124,12 @@ void lightspark::abc_callpropertySlotVar_local_local(call_context* context)
 	bool coerce = ((++(context->exec_pos))->local2.flags&ABC_OP_COERCED)==0;
 	uint32_t slot_id=context->exec_pos->local2.pos;
 
-	asAtom* args=&CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom args=CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
 	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	LOG_CALL( "callPropertySlotVar_ll " << slot_id<<" "<<instrptr->local_pos1<<" "<<instrptr->local_pos2<<" "<<asAtomHandler::toDebugString(obj)<<" "<<asAtomHandler::toDebugString(*args));
+	LOG_CALL( "callPropertySlotVar_ll " << slot_id<<" "<<instrptr->local_pos1<<" "<<instrptr->local_pos2<<" "<<asAtomHandler::toDebugString(obj)<<" "<<asAtomHandler::toDebugString(args));
 	asAtom ret=asAtomHandler::invalidAtom;
-	callprop_intern_slotvar(context,ret,obj,args,1,slot_id,context->exec_pos,false,true,coerce);
+	callprop_intern_slotvar(context,ret,obj,&args,1,slot_id,context->exec_pos,false,true,coerce);
 	RUNTIME_STACK_PUSH(context,ret);
 
 	++(context->exec_pos);

@@ -795,26 +795,6 @@ private:
 	static void abc_callstatic(call_context* context);
 	static void abc_callsuper(call_context* context);
 	static void abc_callproperty(call_context* context);
-	static void abc_callpropertyStaticName(call_context* context);
-	static void abc_callpropertyStaticName_localresult(call_context* context);
-	static void abc_callpropertyStaticNameCached(call_context* context);
-	static void abc_callpropertyStaticNameCached_localResult(call_context* context);
-	static void abc_callpropertyStaticNameCached_constant(call_context* context);
-	static void abc_callpropertyStaticNameCached_local(call_context* context);
-	static void abc_callpropertyStaticNameCached_constant_localResult(call_context* context);
-	static void abc_callpropertyStaticNameCached_local_localResult(call_context* context);
-	static void abc_callpropertyStaticName_constant_constant(call_context* context);
-	static void abc_callpropertyStaticName_local_constant(call_context* context);
-	static void abc_callpropertyStaticName_constant_local(call_context* context);
-	static void abc_callpropertyStaticName_local_local(call_context* context);
-	static void abc_callpropertyStaticName_constant_constant_localresult(call_context* context);
-	static void abc_callpropertyStaticName_local_constant_localresult(call_context* context);
-	static void abc_callpropertyStaticName_constant_local_localresult(call_context* context);
-	static void abc_callpropertyStaticName_local_local_localresult(call_context* context);
-	static void abc_callpropertyStaticName_constant(call_context* context);
-	static void abc_callpropertyStaticName_local(call_context* context);
-	static void abc_callpropertyStaticName_constant_localresult(call_context* context);
-	static void abc_callpropertyStaticName_local_localresult(call_context* context);
 	
 	static void abc_returnvoid(call_context* context);
 	static void abc_returnvalue(call_context* context);
@@ -834,18 +814,7 @@ private:
 	static void abc_constructpropStaticName_local_localresult(call_context* context);
 	static void abc_callproplex(call_context* context);
 	static void abc_callsupervoid(call_context* context);
-	static void abc_callpropvoid(call_context* context);
-	static void abc_callpropvoidStaticName(call_context* context);
-	static void abc_callpropvoidStaticNameCached(call_context* context);
-	static void abc_callpropvoidStaticNameCached_constant(call_context* context);
-	static void abc_callpropvoidStaticNameCached_local(call_context* context);
-	static void abc_callpropvoidStaticName_constant_constant(call_context* context);
-	static void abc_callpropvoidStaticName_local_constant(call_context* context);
-	static void abc_callpropvoidStaticName_constant_local(call_context* context);
-	static void abc_callpropvoidStaticName_local_local(call_context* context);
-	static void abc_callpropvoidStaticName_constant(call_context* context);
-	static void abc_callpropvoidStaticName_local(call_context* context);
-	
+	static void abc_callpropvoid(call_context* context);	
 	
 	static void abc_sxi1(call_context* context); // 0x50
 	static void abc_sxi1_constant(call_context* context);

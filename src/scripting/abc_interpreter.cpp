@@ -24,6 +24,7 @@
 #include "scripting/abc_interpreter_helper.h"
 #include "scripting/abc_optimized_add.h"
 #include "scripting/abc_optimized_bitnot.h"
+#include "scripting/abc_optimized_callproperty.h"
 #include "scripting/abc_optimized_coerce_s.h"
 #include "scripting/abc_optimized_convert_s.h"
 #include "scripting/abc_optimized_functionbuiltin.h"

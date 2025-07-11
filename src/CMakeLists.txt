@@ -102,6 +102,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_methods_optimized.cpp
   scripting/abc_methods_optimized_add.cpp
   scripting/abc_methods_optimized_bitnot.cpp
+  scripting/abc_methods_optimized_callproperty.cpp
   scripting/abc_methods_optimized_coerce_s.cpp
   scripting/abc_methods_optimized_convert_s.cpp
   scripting/abc_methods_optimized_getslot.cpp

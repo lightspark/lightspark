@@ -829,6 +829,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 
 	const tiny_string& eventName=asAtomHandler::toString(args[0],wrk);
 
+	bool removed = false;
 	bool useCapture=false;
 	if(argslen>=3)
 		useCapture=asAtomHandler::Boolean_concrete(args[2]);
@@ -851,6 +852,7 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 				assert(listenerfunc != nullptr);
 				it = h->second.erase(it);
 				listenerfunc->removeStoredMember();
+				removed=true;
 				break;
 			}
 			else
@@ -860,13 +862,11 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 			th->handlers.erase(h);
 	}
 
-	if(th->is<DisplayObject>() && (eventName=="enterFrame"
+	if(removed && th->is<DisplayObject>() && (eventName=="enterFrame"
 					|| eventName=="exitFrame"
 					|| eventName=="frameConstructed"
 					|| eventName=="render"))
-	{
 		th->as<DisplayObject>()->removeBroadcastEventListener();
-	}
 }
 
 ASFUNCTIONBODY_ATOM(EventDispatcher,dispatchEvent)

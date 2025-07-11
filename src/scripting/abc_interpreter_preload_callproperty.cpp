@@ -28,6 +28,7 @@
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/toplevel/Global.h"
 #include "parsing/streams.h"
 
 using namespace std;
@@ -70,6 +71,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 			}
 			fromglobal= v != nullptr;
 		}
+		uint32_t instancevarSlotID=0;
 		if (!v && typestack.size() >= operationcount)
 		{
 			bool isoverridden=false;
@@ -107,6 +109,24 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 				if (v && !asAtomHandler::is<SyntheticFunction>(v->var))
 					v=nullptr;
 			}
+			if (!v && cls && cls->is<Class_base>())
+			{
+				asAtom otmp = asAtomHandler::invalidAtom;
+				// property may be a slot variable
+				if (cls != Class_object::getRef(state.function->getSystemState()).getPtr()
+						&& cls != Class<Global>::getRef(state.function->getSystemState()).getPtr())
+					cls->as<Class_base>()->getInstance(state.worker,otmp,false,nullptr,0);
+				ASObject* obj = asAtomHandler::getObject(otmp);
+				if (obj)
+				{
+					cls->as<Class_base>()->setupDeclaredTraits(obj,false);
+					v = obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
+					if (v && v->slotid)
+						instancevarSlotID=v->slotid;
+					v=nullptr;
+					obj->decRef();
+				}
+			}
 			if (v)
 			{
 				if (asAtomHandler::is<SyntheticFunction>(v->var) && (fromglobal || (asAtomHandler::as<SyntheticFunction>(v->var)->inClass && asAtomHandler::as<SyntheticFunction>(v->var)->inClass == cls)))
@@ -143,6 +163,19 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 				switch (argcountcheckglobal)
 				{
 					case 0:
+						if (instancevarSlotID)
+						{
+							if ((opcode == 0x4f && setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_SLOTVAR_NOARGS,opcode,code,p)) ||
+							   ((opcode == 0x46 && setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLPROPERTY_SLOTVAR_NOARGS,opcode,code,true,false,resulttype,p,true))))
+							{
+								state.preloadedcode.push_back(0);
+								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local2.pos = instancevarSlotID-1;
+							}
+							removetypestack(typestack,argcount+state.mi->context->constant_pool.multinames[t].runtimeargs+1);
+							if (opcode == 0x46)
+								typestack.push_back(typestackentry(resulttype,false));
+							break;
+						}
 						if (state.operandlist.size() > 0
 								&& (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_CONSTANT || state.operandlist.back().type == OP_CACHED_SLOT)
 								&& state.operandlist.back().objtype)
@@ -226,6 +259,19 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 						break;
 					case 1:
 					{
+						if (instancevarSlotID)
+						{
+							if ((opcode == 0x4f && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_SLOTVAR,opcode,code)) ||
+							   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_SLOTVAR,opcode,code,false,false,true,p,resulttype))))
+							{
+								state.preloadedcode.push_back(0);
+								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local2.pos = instancevarSlotID-1;
+							}
+							removetypestack(typestack,argcount+state.mi->context->constant_pool.multinames[t].runtimeargs+1);
+							if (opcode == 0x46)
+								typestack.push_back(typestackentry(resulttype,false));
+							break;
+						}
 						bool isGenerator=false;
 						bool generatorneedsconversion=false;
 						if (typestack.size() > 1 &&
@@ -526,13 +572,23 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 										}
 									}
 								}
-								state.preloadedcode.at(oppos).opcode = (opcode == 0x4f ? ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS_CACHED_CALLER:ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS_CACHED_CALLER);
-								state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
-								state.preloadedcode.at(oppos).pcode.local2.flags = (skipcoerce ? ABC_OP_COERCED : 0);
-								if (fromglobal && v)
+								if (instancevarSlotID)
 								{
-									state.preloadedcode.at(oppos).pcode.local2.flags |= ABC_OP_FROMGLOBAL;
-									state.preloadedcode.at(oppos).pcode.cachedvar3 = v;
+									state.preloadedcode.at(oppos).opcode = (opcode == 0x4f ? ABC_OP_OPTIMZED_CALLPROPVOID_SLOTVAR_MULTIARGS_CACHED_CALLER:ABC_OP_OPTIMZED_CALLPROPERTY_SLOTVAR_MULTIARGS_CACHED_CALLER);
+									state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
+									state.preloadedcode.at(oppos).pcode.local2.flags = (skipcoerce ? ABC_OP_COERCED : 0);
+									state.preloadedcode.at(oppos).pcode.local3.pos = instancevarSlotID-1;
+								}
+								else
+								{
+									state.preloadedcode.at(oppos).opcode = (opcode == 0x4f ? ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS_CACHED_CALLER:ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME_MULTIARGS_CACHED_CALLER);
+									state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
+									state.preloadedcode.at(oppos).pcode.local2.flags = (skipcoerce ? ABC_OP_COERCED : 0);
+									if (fromglobal && v)
+									{
+										state.preloadedcode.at(oppos).pcode.local2.flags |= ABC_OP_FROMGLOBAL;
+										state.preloadedcode.at(oppos).pcode.cachedvar3 = v;
+									}
 								}
 								it->removeArg(state);
 								oppos = state.preloadedcode.size()-1-argcount;

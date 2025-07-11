@@ -310,6 +310,73 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 	LOG_CALL("End of calling " << *name<<" "<<asAtomHandler::toDebugString(ret));
 }
 
+FORCE_INLINE void callprop_intern_slotvar(call_context* context,asAtom& ret,asAtom& obj,asAtom* args, uint32_t argsnum,uint32_t slot_id,preloadedcodedata* cacheptr,bool refcounted, bool needreturn, bool coercearguments)
+{
+	assert(context->worker==getWorker());
+	if(asAtomHandler::is<Null>(obj))
+	{
+		LOG(LOG_ERROR,"trying to call property on null:"<<slot_id);
+		createError<TypeError>(context->worker,kConvertNullToObjectError);
+		if (refcounted)
+		{
+			for(uint32_t i=0;i<argsnum;i++)
+				ASATOM_DECREF(args[i]);
+			ASATOM_DECREF(obj);
+		}
+		return;
+	}
+	if (asAtomHandler::is<Undefined>(obj))
+	{
+		LOG(LOG_ERROR,"trying to call property on undefined3:"<<slot_id);
+		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
+		if (refcounted)
+		{
+			for(uint32_t i=0;i<argsnum;i++)
+				ASATOM_DECREF(args[i]);
+			ASATOM_DECREF(obj);
+		}
+		return;
+	}
+	assert(asAtomHandler::isObject(obj));
+	asAtom o=asAtomHandler::invalidAtom;
+	o = asAtomHandler::getObject(obj)->getSlotNoCheck(slot_id);
+	ASATOM_INCREF(o);
+
+	if(asAtomHandler::is<IFunction>(o))
+	{
+		asAtom closure = asAtomHandler::getClosureAtom(o,obj);
+		if (refcounted && closure.uintval != obj.uintval && asAtomHandler::as<IFunction>(o)->clonedFrom)
+			ASATOM_INCREF(closure);
+		asAtomHandler::callFunction(o,context->worker,ret,closure,args,argsnum,refcounted,needreturn && coercearguments,coercearguments);
+		if (needreturn && asAtomHandler::isInvalid(ret))
+			ret = asAtomHandler::undefinedAtom;
+		if (refcounted && closure.uintval != obj.uintval)
+			ASATOM_DECREF(obj);
+	}
+	else if(asAtomHandler::is<Class_base>(o))
+	{
+		asAtomHandler::as<Class_base>(o)->generator(context->worker,ret,args,argsnum);
+		if (refcounted)
+		{
+			for(uint32_t i=0;i<argsnum;i++)
+				ASATOM_DECREF(args[i]);
+			ASATOM_DECREF(obj);
+		}
+	}
+	else if(asAtomHandler::is<RegExp>(o))
+		RegExp::exec(ret,context->worker,o,args,argsnum);
+	else
+	{
+		LOG(LOG_ERROR,"trying to call an object as a function:"<<asAtomHandler::toDebugString(o) <<" on "<<asAtomHandler::toDebugString(obj));
+		createError<TypeError>(context->worker,kCallOfNonFunctionError, "Object");
+		ASATOM_DECREF(o);
+		return;
+	}
+
+	LOG_CALL("End of calling " << asAtomHandler::toDebugString(o)<<" "<<asAtomHandler::toDebugString(ret));
+	ASATOM_DECREF(o);
+}
+
 void lightspark::abc_callpropertyStaticName(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
@@ -870,5 +937,445 @@ void lightspark::abc_callpropvoidStaticName_local(call_context* context)
 	callprop_intern(context,ret,obj,nullptr,0,name,context->exec_pos,false,false,false);
 	ASATOM_DECREF(ret);
 
+	++(context->exec_pos);
+}
+
+
+void lightspark::abc_callpropvoidSlotVarCached_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t argcount = instrptr->local2.pos;
+	asAtom* args = g_newa(asAtom,argcount);
+	uint32_t slot_id=instrptr->local3.pos;
+	LOG_CALL( "callPropvoid_SlotVarCached_c " << slot_id<<" "<<argcount);
+	for (uint32_t i = argcount; i > 0 ; i--)
+	{
+		(++(context->exec_pos));
+		if (context->exec_pos->arg2_uint == OPERANDTYPES::OP_LOCAL || context->exec_pos->arg2_uint == OPERANDTYPES::OP_CACHED_SLOT)
+			args[i-1] = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+		else
+			args[i-1] = *context->exec_pos->arg1_constant;
+	}
+	asAtom obj = *(++context->exec_pos)->arg2_constant;
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,args,argcount,slot_id,instrptr,false,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	ASATOM_DECREF(ret);
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropvoidSlotVarCached_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t argcount = instrptr->local2.pos;
+	asAtom* args = g_newa(asAtom,argcount);
+	uint32_t slot_id=instrptr->local3.pos;
+	LOG_CALL( "callPropvoid_SlotVarCached_l " << slot_id<<" "<<argcount);
+	for (uint32_t i = argcount; i > 0 ; i--)
+	{
+		(++(context->exec_pos));
+		if (context->exec_pos->arg2_uint == OPERANDTYPES::OP_LOCAL || context->exec_pos->arg2_uint == OPERANDTYPES::OP_CACHED_SLOT)
+			args[i-1] = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+		else
+			args[i-1] = *context->exec_pos->arg1_constant;
+	}
+	asAtom obj = CONTEXT_GETLOCAL(context,(++context->exec_pos)->local_pos2);
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,args,argcount,slot_id,instrptr,false,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	ASATOM_DECREF(ret);
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropvoidSlotVar_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom args=*instrptr->arg2_constant;
+	(++(context->exec_pos));
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom obj= *instrptr->arg1_constant;
+	LOG_CALL( "callPropvoidSlotVar_cc " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,&args,1,slot_id,context->exec_pos,false,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
+	ASATOM_DECREF(ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropvoidSlotVar_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom args=*instrptr->arg2_constant;
+	(++(context->exec_pos));
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	LOG_CALL( "callPropvoidSlotVar_lc " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,&args,1,slot_id,context->exec_pos,false,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
+	ASATOM_DECREF(ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropvoidSlotVar_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom* args=&CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	(++(context->exec_pos));
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom obj= *instrptr->arg1_constant;
+	LOG_CALL( "callPropvoidSlotVar_cl " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,args,1,slot_id,context->exec_pos,false,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
+	ASATOM_DECREF(ret);
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropvoidSlotVar_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	asAtom* args=&CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	(++(context->exec_pos));
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	LOG_CALL( "callPropvoidSlotVar_ll " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,args,1,slot_id,context->exec_pos,false,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
+	ASATOM_DECREF(ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropvoidSlotVar_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom obj= *instrptr->arg1_constant;
+	LOG_CALL( "callPropvoidSlotVar_noargs_c " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,nullptr,0,slot_id,context->exec_pos,false,false,false);
+	ASATOM_DECREF(ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropvoidSlotVar_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	LOG_CALL( "callPropvoidSlotVar_noargs_l " <<asAtomHandler::toDebugString(obj)<< " " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,nullptr,0,slot_id,context->exec_pos,false,false,false);
+	ASATOM_DECREF(ret);
+
+	++(context->exec_pos);
+}
+
+void lightspark::abc_callpropertySlotVar_constant_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool coerce = ((++(context->exec_pos))->local2.flags&ABC_OP_COERCED)==0;
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom args=*instrptr->arg2_constant;
+	asAtom obj= *instrptr->arg1_constant;
+	LOG_CALL( "callPropertySlotVar_cc " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,&args,1,slot_id,context->exec_pos,false,true,coerce);
+	RUNTIME_STACK_PUSH(context,ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVar_local_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool coerce = ((++(context->exec_pos))->local2.flags&ABC_OP_COERCED)==0;
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom args=*instrptr->arg2_constant;
+
+	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	LOG_CALL( "callPropertySlotVar_lc " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,&args,1,slot_id,context->exec_pos,false,true,coerce);
+	RUNTIME_STACK_PUSH(context,ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVar_constant_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool coerce = ((++(context->exec_pos))->local2.flags&ABC_OP_COERCED)==0;
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom* args=&CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+
+	asAtom obj= *instrptr->arg1_constant;
+	LOG_CALL( "callPropertySlotVar_cl " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,args,1,slot_id,context->exec_pos,false,true,coerce);
+	RUNTIME_STACK_PUSH(context,ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVar_local_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool coerce = ((++(context->exec_pos))->local2.flags&ABC_OP_COERCED)==0;
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom* args=&CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+
+	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	LOG_CALL( "callPropertySlotVar_ll " << slot_id<<" "<<instrptr->local_pos1<<" "<<instrptr->local_pos2<<" "<<asAtomHandler::toDebugString(obj)<<" "<<asAtomHandler::toDebugString(*args));
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,args,1,slot_id,context->exec_pos,false,true,coerce);
+	RUNTIME_STACK_PUSH(context,ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVar_constant_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool coerce = ((++(context->exec_pos))->local2.flags&ABC_OP_COERCED)==0;
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom args=*instrptr->arg2_constant;
+
+	asAtom obj= *instrptr->arg1_constant;
+	LOG_CALL( "callPropertySlotVar_ccl " << slot_id);
+	asAtom res=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,res,obj,&args,1,slot_id,context->exec_pos,false,true,coerce);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,res);
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVar_local_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool coerce = ((++(context->exec_pos))->local2.flags&ABC_OP_COERCED)==0;
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom args=*instrptr->arg2_constant;
+
+	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	LOG_CALL( "callPropertySlotVar_lcl " << slot_id);
+	asAtom res=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,res,obj,&args,1,slot_id,context->exec_pos,false,true,coerce);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,res);
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVar_constant_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool coerce = ((++(context->exec_pos))->local2.flags&ABC_OP_COERCED)==0;
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom* args=&CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+
+	asAtom obj= *instrptr->arg1_constant;
+	LOG_CALL( "callPropertySlotVar_cll " << slot_id);
+	asAtom res=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,res,obj,args,1,slot_id,context->exec_pos,false,true,coerce);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,res);
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVar_local_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	bool coerce = ((++(context->exec_pos))->local2.flags&ABC_OP_COERCED)==0;
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom* args=&CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+
+	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	LOG_CALL( "callPropertySlotVar_lll " << slot_id);
+	asAtom res=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,res,obj,args,1,slot_id,context->exec_pos,false,true,coerce);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,res);
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVar_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+
+	asAtom obj= *instrptr->arg1_constant;
+	LOG_CALL( "callPropertySlotVar_noargs_c " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	callprop_intern_slotvar(context,ret,obj,nullptr,0,slot_id,context->exec_pos,false,true,false);
+	RUNTIME_STACK_PUSH(context,ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVar_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+
+	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	LOG_CALL( "callPropertySlotVar_noargs_l " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && asAtomHandler::is<SyntheticFunction>(context->exec_pos->cachedvar3->var))
+	{
+		asAtom closure = asAtomHandler::getClosureAtom(context->exec_pos->cachedvar3->var,obj);
+		asAtomHandler::callFunction(context->exec_pos->cachedvar3->var,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
+	}
+	else
+		callprop_intern_slotvar(context,ret,obj,nullptr,0,slot_id,context->exec_pos,false,true,false);
+	RUNTIME_STACK_PUSH(context,ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVar_constant_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+
+	asAtom obj= *instrptr->arg1_constant;
+	LOG_CALL( "callPropertySlotVar_noargs_c_lr " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && asAtomHandler::is<SyntheticFunction>(context->exec_pos->cachedvar3->var))
+	{
+		asAtom closure = asAtomHandler::getClosureAtom(context->exec_pos->cachedvar3->var,obj);
+		asAtomHandler::callFunction(context->exec_pos->cachedvar3->var,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
+	}
+	else
+		callprop_intern_slotvar(context,ret,obj,nullptr,0,slot_id,context->exec_pos,false,true,false);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVar_local_localresult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	(++(context->exec_pos));
+	uint32_t slot_id=context->exec_pos->local2.pos;
+
+	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	LOG_CALL( "callPropertySlotVar_noargs_l_lr " << slot_id);
+	asAtom ret=asAtomHandler::invalidAtom;
+	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && asAtomHandler::is<SyntheticFunction>(context->exec_pos->cachedvar3->var))
+	{
+		asAtom closure = asAtomHandler::getClosureAtom(context->exec_pos->cachedvar3->var,obj);
+		asAtomHandler::callFunction(context->exec_pos->cachedvar3->var,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
+	}
+	else
+		callprop_intern_slotvar(context,ret,obj,nullptr,0,slot_id,context->exec_pos,false,true,false);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,ret);
+
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVarCached_constant(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t argcount = instrptr->local2.pos;
+	asAtom* args = g_newa(asAtom,argcount);
+	uint32_t slot_id=instrptr->local3.pos;
+	LOG_CALL( "callProperty_SlotVarCached_c " << slot_id<<" "<<argcount);
+	for (uint32_t i = argcount; i > 0 ; i--)
+	{
+		(++(context->exec_pos));
+		if (context->exec_pos->arg2_uint == OPERANDTYPES::OP_LOCAL || context->exec_pos->arg2_uint == OPERANDTYPES::OP_CACHED_SLOT)
+			args[i-1] = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+		else
+			args[i-1] = *context->exec_pos->arg1_constant;
+	}
+	asAtom obj = *(++context->exec_pos)->arg2_constant;
+	asAtom ret=asAtomHandler::invalidAtom;
+	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && asAtomHandler::is<SyntheticFunction>(instrptr->cachedvar3->var))
+	{
+		asAtom closure = asAtomHandler::getClosureAtom(instrptr->cachedvar3->var,obj);
+		asAtomHandler::callFunction(instrptr->cachedvar3->var,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	}
+	else
+		callprop_intern_slotvar(context,ret,obj,args,argcount,slot_id,instrptr,false,true,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVarCached_local(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t argcount = instrptr->local2.pos;
+	asAtom* args = g_newa(asAtom,argcount);
+	uint32_t slot_id=instrptr->local3.pos;
+	LOG_CALL( "callProperty_SlotVarCached_l " << slot_id<<" "<<argcount);
+	for (uint32_t i = argcount; i > 0 ; i--)
+	{
+		(++(context->exec_pos));
+		if (context->exec_pos->arg2_uint == OPERANDTYPES::OP_LOCAL || context->exec_pos->arg2_uint == OPERANDTYPES::OP_CACHED_SLOT)
+			args[i-1] = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+		else
+			args[i-1] = *context->exec_pos->arg1_constant;
+	}
+	asAtom obj = CONTEXT_GETLOCAL(context,(++context->exec_pos)->local_pos2);
+	asAtom ret=asAtomHandler::invalidAtom;
+	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && asAtomHandler::is<SyntheticFunction>(instrptr->cachedvar3->var))
+	{
+		asAtom closure = asAtomHandler::getClosureAtom(instrptr->cachedvar3->var,obj);
+		asAtomHandler::callFunction(instrptr->cachedvar3->var,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	}
+	else
+		callprop_intern_slotvar(context,ret,obj,args,argcount,slot_id,instrptr,false,true,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	RUNTIME_STACK_PUSH(context,ret);
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVarCached_constant_localResult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t argcount = instrptr->local2.pos;
+	asAtom* args = g_newa(asAtom,argcount);
+	uint32_t slot_id=instrptr->local3.pos;
+	LOG_CALL( "callProperty_SlotVarCached_cl " << slot_id<<" "<<argcount);
+	for (uint32_t i = argcount; i > 0 ; i--)
+	{
+		(++(context->exec_pos));
+		if (context->exec_pos->arg2_uint == OPERANDTYPES::OP_LOCAL || context->exec_pos->arg2_uint == OPERANDTYPES::OP_CACHED_SLOT)
+			args[i-1] = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+		else
+			args[i-1] = *context->exec_pos->arg1_constant;
+	}
+	asAtom obj = *(++context->exec_pos)->arg2_constant;
+	asAtom ret=asAtomHandler::invalidAtom;
+	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && asAtomHandler::is<SyntheticFunction>(instrptr->cachedvar3->var))
+	{
+		asAtom closure = asAtomHandler::getClosureAtom(instrptr->cachedvar3->var,obj);
+		asAtomHandler::callFunction(instrptr->cachedvar3->var,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	}
+	else
+		callprop_intern_slotvar(context,ret,obj,args,argcount,slot_id,instrptr,false,true,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	REPLACELOCALRESULT(context,context->exec_pos->local3.pos,ret);
+	++(context->exec_pos);
+}
+void lightspark::abc_callpropertySlotVarCached_local_localResult(call_context* context)
+{
+	preloadedcodedata* instrptr = context->exec_pos;
+	uint32_t argcount = instrptr->local2.pos;
+	asAtom* args = g_newa(asAtom,argcount);
+	uint32_t slot_id=instrptr->local3.pos;
+	LOG_CALL( "callProperty_SlotVarCached_ll " << slot_id<<" "<<argcount);
+	for (uint32_t i = argcount; i > 0 ; i--)
+	{
+		(++(context->exec_pos));
+		if (context->exec_pos->arg2_uint == OPERANDTYPES::OP_LOCAL || context->exec_pos->arg2_uint == OPERANDTYPES::OP_CACHED_SLOT)
+			args[i-1] = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
+		else
+			args[i-1] = *context->exec_pos->arg1_constant;
+	}
+	asAtom obj = CONTEXT_GETLOCAL(context,(++context->exec_pos)->local_pos2);
+	asAtom ret=asAtomHandler::invalidAtom;
+	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && asAtomHandler::is<SyntheticFunction>(instrptr->cachedvar3->var))
+	{
+		asAtom closure = asAtomHandler::getClosureAtom(instrptr->cachedvar3->var,obj);
+		asAtomHandler::callFunction(instrptr->cachedvar3->var,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	}
+	else
+		callprop_intern_slotvar(context,ret,obj,args,argcount,slot_id,instrptr,false,true,(instrptr->local2.flags&ABC_OP_COERCED)==0);
+	REPLACELOCALRESULT(context,context->exec_pos->local3.pos,ret);
 	++(context->exec_pos);
 }

@@ -1115,8 +1115,8 @@ abc_function ABCVm::abcfunctions[]={
 	abc_convert_s_local_localresult,
 	abc_convert_s_constant_setslotnocoerce,// 0x3a4 ABC_OP_OPTIMZED_CONVERTS_SETSLOT
 	abc_convert_s_local_setslotnocoerce,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_callpropvoidSlotVar_constant,// 0x3a6 ABC_OP_OPTIMZED_CALLPROPVOID_SLOTVAR_NOARGS
+	abc_callpropvoidSlotVar_local,
 
 	abc_coerce_s_constant,// 0x3a8 ABC_OP_OPTIMZED_COERCES
 	abc_coerce_s_local,
@@ -1124,13 +1124,31 @@ abc_function ABCVm::abcfunctions[]={
 	abc_coerce_s_local_localresult,
 	abc_coerce_s_constant_setslotnocoerce,// 0x3ac ABC_OP_OPTIMZED_COERCES_SETSLOT
 	abc_coerce_s_local_setslotnocoerce,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_callpropvoidSlotVarCached_constant,// 0x3ae ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS_CACHED_CALLER
+	abc_callpropvoidSlotVarCached_local,
 
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
-	abc_invalidinstruction,
+	abc_callpropvoidSlotVar_constant_constant,// 0x3b0 ABC_OP_OPTIMZED_CALLPROPVOID_SLOTVAR
+	abc_callpropvoidSlotVar_local_constant,
+	abc_callpropvoidSlotVar_constant_local,
+	abc_callpropvoidSlotVar_local_local,
+	abc_callpropertySlotVar_constant,// 0x3b4 ABC_OP_OPTIMZED_CALLPROPERTY_SLOTVAR_NOARGS
+	abc_callpropertySlotVar_local,
+	abc_callpropertySlotVar_constant_localresult,
+	abc_callpropertySlotVar_local_localresult,
+
+	abc_callpropertySlotVar_constant_constant,// 0x3b8 ABC_OP_OPTIMZED_CALLPROPERTY_SLOTVAR
+	abc_callpropertySlotVar_local_constant,
+	abc_callpropertySlotVar_constant_local,
+	abc_callpropertySlotVar_local_local,
+	abc_callpropertySlotVar_constant_constant_localresult,
+	abc_callpropertySlotVar_local_constant_localresult,
+	abc_callpropertySlotVar_constant_local_localresult,
+	abc_callpropertySlotVar_local_local_localresult,
+
+	abc_callpropertySlotVarCached_constant,// 0x3c0 ABC_OP_OPTIMZED_CALLPROPERTY_SLOTVAR_MULTIARGS_CACHED_CALLER
+	abc_callpropertySlotVarCached_local,
+	abc_callpropertySlotVarCached_constant_localResult,
+	abc_callpropertySlotVarCached_local_localResult,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,

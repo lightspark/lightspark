@@ -56,6 +56,33 @@ void abc_callpropvoidStaticName_constant_local(call_context* context);
 void abc_callpropvoidStaticName_local_local(call_context* context);
 void abc_callpropvoidStaticName_constant(call_context* context);
 void abc_callpropvoidStaticName_local(call_context* context);
+
+void abc_callpropvoidSlotVarCached_constant(call_context* context);
+void abc_callpropvoidSlotVarCached_local(call_context* context);
+void abc_callpropvoidSlotVar_constant_constant(call_context* context);
+void abc_callpropvoidSlotVar_local_constant(call_context* context);
+void abc_callpropvoidSlotVar_constant_local(call_context* context);
+void abc_callpropvoidSlotVar_local_local(call_context* context);
+void abc_callpropvoidSlotVar_constant(call_context* context);
+void abc_callpropvoidSlotVar_local(call_context* context);
+
+void abc_callpropertySlotVar_constant_constant(call_context* context);
+void abc_callpropertySlotVar_local_constant(call_context* context);
+void abc_callpropertySlotVar_constant_local(call_context* context);
+void abc_callpropertySlotVar_local_local(call_context* context);
+void abc_callpropertySlotVar_constant_constant_localresult(call_context* context);
+void abc_callpropertySlotVar_local_constant_localresult(call_context* context);
+void abc_callpropertySlotVar_constant_local_localresult(call_context* context);
+void abc_callpropertySlotVar_local_local_localresult(call_context* context);
+void abc_callpropertySlotVar_constant(call_context* context);
+void abc_callpropertySlotVar_local(call_context* context);
+void abc_callpropertySlotVar_constant_localresult(call_context* context);
+void abc_callpropertySlotVar_local_localresult(call_context* context);
+void abc_callpropertySlotVarCached_constant(call_context* context);
+void abc_callpropertySlotVarCached_local(call_context* context);
+void abc_callpropertySlotVarCached_constant_localResult(call_context* context);
+void abc_callpropertySlotVarCached_local_localResult(call_context* context);
+
 }
 
 #endif /* SCRIPTING_ABC_OPTIMIZED_CALLPROPERTY_H */

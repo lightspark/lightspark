@@ -1910,6 +1910,8 @@ void ParseThread::parseSWF(UI8 ver)
 		auto vm = root->getSystemState()->currentVm;
 		if (vm != nullptr && !vm->hasEverStarted())
 			vm->start();
+		if (root->loaderInfo)
+			root->loaderInfo->setOpened();
 
 		bool done=false;
 		bool empty=true;

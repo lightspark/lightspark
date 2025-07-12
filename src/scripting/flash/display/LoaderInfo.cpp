@@ -252,9 +252,20 @@ void LoaderInfo::addLoaderEvent(Event* ev)
 
 void LoaderInfo::setOpened()
 {
+	if (loadStatus >= LOAD_OPENED)
+		return;
 	loadStatus = LOAD_OPENED;
 	if (bytesData.isNull())
 		bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));
+	auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"open");
+	// it seems an additional ProgressEvent is always added at the start of loading (see ruffle test avm2/large_preload_from_*)
+	ProgressEvent* p = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),0,bytesTotal);
+	this->incRef();
+	if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
+		addLoaderEvent(ev);
+	this->incRef();
+	if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
+		addLoaderEvent(p);
 }
 
 _NR<DisplayObject> LoaderInfo::getParsedObject() const

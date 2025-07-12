@@ -83,35 +83,16 @@ void LoaderThread::execute()
 			// downloader will be deleted in jobFence
 			return;
 		}
-		loaderInfo->setOpened();
-		auto ev = Class<Event>::getInstanceS(loader->getInstanceWorker(),"open");
-		// it seems an additional ProgressEvent is always added at the start of loading from an URL (see ruffle test avm2/large_preload_from_url)
-		ProgressEvent* p = Class<ProgressEvent>::getInstanceS(loader->getInstanceWorker(),0,downloader->getLength());
-		loaderInfo->incRef();
-		if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev)))
-			loaderInfo->addLoaderEvent(ev);
-		loaderInfo->incRef();
-		if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(p)))
-			loaderInfo->addLoaderEvent(ev);
 		loaderInfo->setBytesTotal(downloader->getLength());
 		loaderInfo->setBytesLoaded(downloader->getReceivedLength());
+		loaderInfo->setOpened();
 	}
 	else if(source==BYTES)
 	{
 		assert_and_throw(bytes->bytes);
-		auto ev = Class<Event>::getInstanceS(loader->getInstanceWorker(),"open");
-		// it seems an additional ProgressEvent is always added at the start of loading a ByteArray (see ruffle test avm2/large_preload_from_bytes)
-		ProgressEvent* p = Class<ProgressEvent>::getInstanceS(loader->getInstanceWorker(),0,bytes->getLength());
-		loaderInfo->incRef();
-		if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev)))
-			loaderInfo->addLoaderEvent(ev);
-		loaderInfo->incRef();
-		if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(p)))
-			loaderInfo->addLoaderEvent(ev);
-
 		loaderInfo->setBytesTotal(bytes->getLength());
 		loaderInfo->setBytesLoaded(bytes->getLength());
-
+		loaderInfo->setOpened();
 		sbuf = new bytes_buf(bytes->bytes,bytes->getLength());
 
 // extract embedded swf to separate file

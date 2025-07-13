@@ -778,6 +778,16 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x18://ifge
 			case 0x19://ifstricteq
 			case 0x1a://ifstrictne
+				if (argsneeded>=2)
+				{
+					pos += 3;
+					b = code.peekbyteFromPosition(pos);
+					pos++;
+					argsneeded-=2;
+				}
+				else
+					keepchecking=false;
+				break;
 			case 0x3a://si8
 			case 0x3b://si16
 			case 0x3c://si32

@@ -20,6 +20,7 @@
 #include "scripting/abc.h"
 #include "scripting/abc_optimized.h"
 #include "scripting/abc_optimized_setproperty.h"
+#include "scripting/toplevel/Vector.h"
 
 
 using namespace std;
@@ -135,34 +136,34 @@ void lightspark::abc_setPropertyStaticName_constant_local(call_context* context)
 	(++(context->exec_pos));
 	multiname* name=context->exec_pos->cachedmultiname2;
 	asAtom* obj = instrptr->arg1_constant;
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
-	LOG_CALL("setProperty_scl " << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("setProperty_scl " << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 
 	if(asAtomHandler::isNull(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertNullToObjectError);
 		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
-	ASATOM_INCREF_POINTER(value);
+	ASATOM_INCREF(value);
 	bool alreadyset=false;
 	multiname* simplesettername = nullptr;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		simplesettername =o->setVariableByMultiname(*name,*value,CONST_ALLOWED,&alreadyset,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		simplesettername =o->setVariableByMultiname(*name,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (simplesettername)
 		context->exec_pos->cachedmultiname2 = simplesettername;
 	if (alreadyset || context->exceptionthrown)
-		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF(value);
 	++(context->exec_pos);
 }
 void lightspark::abc_setPropertyStaticName_local_local(call_context* context)
@@ -171,35 +172,35 @@ void lightspark::abc_setPropertyStaticName_local_local(call_context* context)
 	(++(context->exec_pos));
 	multiname* name=context->exec_pos->cachedmultiname2;
 	asAtom* obj = &CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
-	LOG_CALL("setProperty_sll " << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("setProperty_sll " << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 
 	if(asAtomHandler::isNull(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on null:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertNullToObjectError);
 		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
 	ASObject* o = asAtomHandler::toObject(*obj,context->worker);
 	o->incRef(); // this is neccessary for reference counting in case of exception thrown in setVariableByMultiname
-	ASATOM_INCREF_POINTER(value);
+	ASATOM_INCREF(value);
 	bool alreadyset=false;
 	multiname* simplesettername = nullptr;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		simplesettername =o->setVariableByMultiname(*name,*value,CONST_ALLOWED,&alreadyset,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		simplesettername =o->setVariableByMultiname(*name,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		simplesettername =o->setVariableByMultiname(*name,value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (simplesettername)
 		context->exec_pos->cachedmultiname2 = simplesettername;
 	if (alreadyset || context->exceptionthrown)
-		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF(value);
 	o->decRef(); // this is neccessary for reference counting in case of exception thrown in setVariableByMultiname
 	++(context->exec_pos);
 }
@@ -320,19 +321,19 @@ void lightspark::abc_setPropertyInteger_constant_constant_local(call_context* co
 	(++(context->exec_pos));
 	asAtom* obj = instrptr->arg3_constant;
 	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
-	LOG_CALL("setProperty_i_ccl " << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("setProperty_i_ccl " << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 
 	if(asAtomHandler::isNull(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertNullToObjectError);
 		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
@@ -340,14 +341,14 @@ void lightspark::abc_setPropertyInteger_constant_constant_local(call_context* co
 	ASObject* o = asAtomHandler::getObject(*obj);
 	if (!o)
 		o = asAtomHandler::toObject(*obj,context->worker);
-	ASATOM_INCREF_POINTER(value);
+	ASATOM_INCREF(value);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
-		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF(value);
 	++(context->exec_pos);
 }
 void lightspark::abc_setPropertyInteger_constant_local_local(call_context* context)
@@ -356,34 +357,34 @@ void lightspark::abc_setPropertyInteger_constant_local_local(call_context* conte
 	(++(context->exec_pos));
 	asAtom* obj = instrptr->arg3_constant;
 	int index = asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
-	LOG_CALL("setProperty_i_cll " << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("setProperty_i_cll " << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 
 	if(asAtomHandler::isNull(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertNullToObjectError);
 		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
 
-	ASATOM_INCREF_POINTER(value);
+	ASATOM_INCREF(value);
 	ASObject* o = asAtomHandler::getObject(*obj);
 	if (!o)
 		o = asAtomHandler::toObject(*obj,context->worker);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
-		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF(value);
 	++(context->exec_pos);
 }
 void lightspark::abc_setPropertyInteger_local_constant_constant(call_context* context)
@@ -464,34 +465,34 @@ void lightspark::abc_setPropertyInteger_local_constant_local(call_context* conte
 	(++(context->exec_pos));
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
-	LOG_CALL("setProperty_i_lcl " << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("setProperty_i_lcl " << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 
 	if(asAtomHandler::isNull(obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertNullToObjectError);
 		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
 
-	ASATOM_INCREF_POINTER(value);
+	ASATOM_INCREF(value);
 	ASObject* o = asAtomHandler::getObject(obj);
 	if (!o)
 		o = asAtomHandler::toObject(obj,context->worker);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
-		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF(value);
 	++(context->exec_pos);
 }
 void lightspark::abc_setPropertyInteger_local_local_local(call_context* context)
@@ -500,34 +501,34 @@ void lightspark::abc_setPropertyInteger_local_local_local(call_context* context)
 	(++(context->exec_pos));
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	int index = asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
-	LOG_CALL("setProperty_i_lll " << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value)<<" "<<instrptr->local_pos1);
+	LOG_CALL("setProperty_i_lll " << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value)<<" "<<instrptr->local_pos1);
 
 	if(asAtomHandler::isNull(obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertNullToObjectError);
 		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
 
-	ASATOM_INCREF_POINTER(value);
+	ASATOM_INCREF(value);
 	ASObject* o = asAtomHandler::getObject(obj);
 	if (!o)
 		o = asAtomHandler::toObject(obj,context->worker);
 	bool alreadyset=false;
 	if (context->exec_pos->local3.pos == 0x68)//initproperty
-		o->setVariableByInteger(index,*value,CONST_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,value,CONST_ALLOWED,&alreadyset,context->worker);
 	else//Do not allow to set contant traits
-		o->setVariableByInteger(index,*value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
+		o->setVariableByInteger(index,value,CONST_NOT_ALLOWED,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
-		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF(value);
 	++(context->exec_pos);
 }
 
@@ -604,31 +605,31 @@ void lightspark::abc_setPropertyIntegerVector_constant_constant_local(call_conte
 	(++(context->exec_pos));
 	asAtom* obj = instrptr->arg3_constant;
 	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
-	LOG_CALL("setProperty_iv_ccl " << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("setProperty_iv_ccl " << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 
 	if(asAtomHandler::isNull(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		ASATOM_DECREF_POINTER(value);
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
+		ASATOM_DECREF(value);
 		createError<TypeError>(context->worker,kConvertNullToObjectError);
 		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
-		ASATOM_DECREF_POINTER(value);
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
+		ASATOM_DECREF(value);
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
 
-	ASATOM_INCREF_POINTER(value);
+	ASATOM_INCREF(value);
 	Vector* o = asAtomHandler::as<Vector>(*obj);
 	bool alreadyset=false;
-	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset,context->worker);
+	o->setVariableByIntegerNoCoerce(index,value,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
-		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF(value);
 	++(context->exec_pos);
 }
 void lightspark::abc_setPropertyIntegerVector_constant_local_local(call_context* context)
@@ -637,29 +638,29 @@ void lightspark::abc_setPropertyIntegerVector_constant_local_local(call_context*
 	(++(context->exec_pos));
 	asAtom* obj = instrptr->arg3_constant;
 	int index = asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
-	LOG_CALL("setProperty_iv_cll " << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("setProperty_iv_cll " << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 
 	if(asAtomHandler::isNull(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertNullToObjectError);
 		return;
 	}
 	if (asAtomHandler::isUndefined(*obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(*obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
 
-	ASATOM_INCREF_POINTER(value);
+	ASATOM_INCREF(value);
 	Vector* o = asAtomHandler::as<Vector>(*obj);
 	bool alreadyset=false;
-	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset,context->worker);
+	o->setVariableByIntegerNoCoerce(index,value,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
-		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF(value);
 	++(context->exec_pos);
 }
 void lightspark::abc_setPropertyIntegerVector_local_constant_constant(call_context* context)
@@ -734,29 +735,29 @@ void lightspark::abc_setPropertyIntegerVector_local_constant_local(call_context*
 	(++(context->exec_pos));
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	int index = asAtomHandler::getInt(*instrptr->arg1_constant);
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
-	LOG_CALL("setProperty_iv_lcl " << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+	LOG_CALL("setProperty_iv_lcl " << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 
 	if(asAtomHandler::isNull(obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertNullToObjectError);
 		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
 
-	ASATOM_INCREF_POINTER(value);
+	ASATOM_INCREF(value);
 	Vector* o = asAtomHandler::as<Vector>(obj);
 	bool alreadyset=false;
-	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset,context->worker);
+	o->setVariableByIntegerNoCoerce(index,value,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
-		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF(value);
 	++(context->exec_pos);
 }
 void lightspark::abc_setPropertyIntegerVector_local_local_local(call_context* context)
@@ -765,28 +766,28 @@ void lightspark::abc_setPropertyIntegerVector_local_local_local(call_context* co
 	(++(context->exec_pos));
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	int index = asAtomHandler::getInt(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	asAtom* value = &CONTEXT_GETLOCAL(context,instrptr->local_pos2);
+	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 
-	LOG_CALL("setProperty_iv_lll " << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value)<<" "<<instrptr->local_pos1);
+	LOG_CALL("setProperty_iv_lll " << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value)<<" "<<instrptr->local_pos1);
 
 	if(asAtomHandler::isNull(obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on null:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertNullToObjectError);
 		return;
 	}
 	if (asAtomHandler::isUndefined(obj))
 	{
-		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(*value));
+		LOG(LOG_ERROR,"calling setProperty on undefined:" << index << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
 
-	ASATOM_INCREF_POINTER(value);
+	ASATOM_INCREF(value);
 	Vector* o = asAtomHandler::as<Vector>(obj);
 	bool alreadyset=false;
-	o->setVariableByIntegerNoCoerce(index,*value,&alreadyset,context->worker);
+	o->setVariableByIntegerNoCoerce(index,value,&alreadyset,context->worker);
 	if (alreadyset || context->exceptionthrown)
-		ASATOM_DECREF_POINTER(value);
+		ASATOM_DECREF(value);
 	++(context->exec_pos);
 }

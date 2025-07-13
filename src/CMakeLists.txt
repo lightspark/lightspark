@@ -109,6 +109,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_methods_optimized_negate.cpp
   scripting/abc_methods_optimized_functionbuiltin.cpp
   scripting/abc_methods_optimized_functionsynthetic.cpp
+  scripting/abc_methods_optimized_setproperty.cpp
   scripting/abc_optimizer.cpp
   scripting/abc_opcodes.cpp
   scripting/abctypes.cpp

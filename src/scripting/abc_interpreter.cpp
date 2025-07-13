@@ -31,6 +31,7 @@
 #include "scripting/abc_optimized_functionsynthetic.h"
 #include "scripting/abc_optimized_getslot.h"
 #include "scripting/abc_optimized_negate.h"
+#include "scripting/abc_optimized_setproperty.h"
 #include "scripting/class.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASString.h"

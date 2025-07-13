@@ -255,6 +255,7 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 			for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
 			{
 				asAtom o = *i;
+				asAtomHandler::localNumberToGlobalNumber(wrk,o);
 				if (!type->coerce(wrk,o))
 					ASATOM_INCREF(o);
 				ASObject* obj = asAtomHandler::getObject(o);
@@ -834,6 +835,7 @@ asAtom Vector::getDefaultValue()
 bool Vector::checkValue(asAtom& o, bool allowconversion,bool* isNewObject)
 {
 	asAtom oldValue = o;
+	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	if (!vec_type->coerceForTemplate(getInstanceWorker(),o,allowconversion))
 	{
 		Class_base* cls = dynamic_cast<Class_base*>(vec_type);

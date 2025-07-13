@@ -308,6 +308,7 @@ public:
 		*alreadyset=false;
 		if(size_t(index) < vec.size())
 		{
+			asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 			if (vec[index].uintval != o.uintval)
 			{
 				ASObject* obj = asAtomHandler::getObject(vec[index]);
@@ -323,6 +324,7 @@ public:
 		}
 		else if(!fixed && size_t(index) == vec.size())
 		{
+			asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 			ASObject* obj = asAtomHandler::getObject(o);
 			if (obj)
 				obj->addStoredMember();
@@ -367,6 +369,7 @@ public:
 	{
 		if (index < size())
 		{
+			asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),v);
 			ASObject* obj = asAtomHandler::getObject(vec[index]);
 			if (obj)
 				obj->removeStoredMember();

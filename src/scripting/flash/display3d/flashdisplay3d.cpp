@@ -269,11 +269,9 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		}
 		case RENDER_DELETEPROGRAM:
 		{
-			//action.dataobject = Program3D
-			Program3D* p = action.dataobject->as<Program3D>();
+			//action.udata1 = gpu program ID
 			engineData->exec_glUseProgram(0);
-			engineData->exec_glDeleteProgram(p->gpu_program);
-			p->gpu_program = UINT32_MAX;
+			engineData->exec_glDeleteProgram(action.udata1);
 			break;
 		}
 		case RENDER_SETVERTEXBUFFER:
@@ -363,14 +361,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_DYNAMIC_DRAW(buffer->data.size()*sizeof(uint16_t),buffer->data.data());
 			else
 				engineData->exec_glBufferData_GL_ELEMENT_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->data.size()*sizeof(uint16_t),buffer->data.data());
-			break;
-		}
-		case RENDER_DELETEINDEXBUFFER:
-		{
-			//action.dataobject = VertexBuffer3D
-			IndexBuffer3D* buffer = action.dataobject->as<IndexBuffer3D>();
-			if (buffer && buffer->bufferID != UINT32_MAX)
-				engineData->exec_glDeleteBuffers(1,&buffer->bufferID);
 			break;
 		}
 		case RENDER_DELETEBUFFER:
@@ -547,14 +537,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 					engineData->exec_glBufferData_GL_ARRAY_BUFFER_GL_STATIC_DRAW(buffer->numVertices*buffer->data32PerVertex*sizeof(float),buffer->data.data());
 				engineData->exec_glBindBuffer_GL_ARRAY_BUFFER(0);
 			}
-			break;
-		}
-		case RENDER_DELETEVERTEXBUFFER:
-		{
-			//action.dataobject = VertexBuffer3D
-			VertexBuffer3D* buffer = action.dataobject->as<VertexBuffer3D>();
-			if (buffer && buffer->bufferID != UINT32_MAX)
-				engineData->exec_glDeleteBuffers(1,&buffer->bufferID);
 			break;
 		}
 		case RENDER_SETSTENCILREFERENCEVALUE:
@@ -1112,6 +1094,19 @@ void Context3D::prepareShutdown()
 	}
 }
 
+void Context3D::deleteBuffer(uint32_t bufferID)
+{
+	if (bufferID != UINT32_MAX)
+	{
+		rendermutex.lock();
+		renderaction action;
+		action.action =RENDER_ACTION::RENDER_DELETEBUFFER;
+		action.udata1 = bufferID;
+		addAction(action);
+		rendermutex.unlock();
+	}
+}
+
 
 ASFUNCTIONBODY_GETTER(Context3D,backBufferHeight)
 ASFUNCTIONBODY_GETTER(Context3D,backBufferWidth)
@@ -1249,6 +1244,9 @@ ASFUNCTIONBODY_ATOM(Context3D,createVertexBuffer)
 		return;
 	}
 	VertexBuffer3D* buffer = Class<VertexBuffer3D>::getInstanceS(wrk,th, numVertices,data32PerVertex,bufferUsage);
+	buffer->incRef();
+	buffer->addStoredMember();
+	th->vectorbufferlist.insert(buffer);
 	th->addAction(RENDER_ACTION::RENDER_CREATEVERTEXBUFFER,buffer);
 	ret = asAtomHandler::fromObject(buffer);
 }
@@ -1264,6 +1262,9 @@ ASFUNCTIONBODY_ATOM(Context3D,createIndexBuffer)
 		return;
 	}
 	IndexBuffer3D* buffer = Class<IndexBuffer3D>::getInstanceS(wrk,th,numVertices,bufferUsage);
+	buffer->incRef();
+	buffer->addStoredMember();
+	th->indexbufferlist.insert(buffer);
 	th->addAction(RENDER_ACTION::RENDER_CREATEINDEXBUFFER,buffer);
 	ret = asAtomHandler::fromObject(buffer);
 }
@@ -2037,19 +2038,28 @@ IndexBuffer3D::IndexBuffer3D(ASWorker* wrk,Class_base* c, Context3D* ctx,int num
 
 bool IndexBuffer3D::destruct()
 {
-	if (context && bufferID != UINT32_MAX)
-	{
-		renderaction action;
-		action.action =RENDER_ACTION::RENDER_DELETEBUFFER;
-		action.udata1 = bufferID;
-		context->addAction(action);
-	}
+	if (context)
+		context->deleteBuffer(bufferID);
+	context=nullptr;
+	bufferID=UINT32_MAX;
+	disposed=false;
+	data.clear();
+	bufferUsage.clear();
 	return ASObject::destruct();
+}
+
+void IndexBuffer3D::finalize()
+{
+	if (context)
+		context->deleteBuffer(bufferID);
+	context=nullptr;
+	ASObject::finalize();
 }
 
 void IndexBuffer3D::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uploadFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadFromByteArray),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uploadFromVector","",c->getSystemState()->getBuiltinFunction(uploadFromVector),NORMAL_METHOD,true);
@@ -2058,8 +2068,8 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,dispose)
 {
 	IndexBuffer3D* th = asAtomHandler::as<IndexBuffer3D>(obj);
 	th->disposed=true;
-	if (th->context && th->bufferID != UINT32_MAX)
-		th->context->addAction(RENDER_ACTION::RENDER_DELETEINDEXBUFFER,th);
+	if (th->context)
+		th->context->deleteBuffer(th->bufferID);
 }
 ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromByteArray)
 {
@@ -2126,15 +2136,61 @@ ASFUNCTIONBODY_ATOM(IndexBuffer3D,uploadFromVector)
 void Program3D::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("upload","",c->getSystemState()->getBuiltinFunction(upload),NORMAL_METHOD,true);
+}
+
+bool Program3D::destruct()
+{
+	if (context && gpu_program != UINT32_MAX)
+	{
+		context->rendermutex.lock();
+		renderaction action;
+		action.action =RENDER_ACTION::RENDER_DELETEPROGRAM;
+		action.udata1 = gpu_program;
+		context->addAction(action);
+		context->rendermutex.unlock();
+	}
+	context=nullptr;
+	gpu_program=UINT32_MAX;
+	vcPositionScale=UINT32_MAX;
+	disposed=false;
+	vertexprogram.clear();
+	fragmentprogram.clear();
+	samplerState.clear();
+	vertexregistermap.clear();
+	vertexattributes.clear();
+	fragmentregistermap.clear();
+	fragmentattributes.clear();
+	return ASObject::destruct();
+}
+void Program3D::finalize()
+{
+	if (context && gpu_program != UINT32_MAX)
+	{
+		context->rendermutex.lock();
+		renderaction action;
+		action.action =RENDER_ACTION::RENDER_DELETEPROGRAM;
+		action.udata1 = gpu_program;
+		context->addAction(action);
+		context->rendermutex.unlock();
+	}
+	context=nullptr;
+	ASObject::finalize();
 }
 
 ASFUNCTIONBODY_ATOM(Program3D,dispose)
 {
 	Program3D* th = asAtomHandler::as<Program3D>(obj);
-	th->context->addAction(RENDER_ACTION::RENDER_DELETEPROGRAM,th);
+	th->context->rendermutex.lock();
+	renderaction action;
+	action.action =RENDER_ACTION::RENDER_DELETEPROGRAM;
+	action.udata1 = th->gpu_program;
+	th->gpu_program=UINT32_MAX;
+	th->context->addAction(action);
 	th->disposed=true;
+	th->context->rendermutex.unlock();
 }
 ASFUNCTIONBODY_ATOM(Program3D,upload)
 {
@@ -2170,21 +2226,31 @@ VertexBuffer3D::VertexBuffer3D(ASWorker* wrk,Class_base *c, Context3D *ctx, int 
 	data.resize(numVertices*data32PerVertex);
 }
 
+void VertexBuffer3D::finalize()
+{
+	if (context)
+		context->deleteBuffer(bufferID);
+	context=nullptr;
+	bufferID=UINT32_MAX;
+	ASObject::finalize();
+}
 bool VertexBuffer3D::destruct()
 {
-	if (context && bufferID != UINT32_MAX)
-	{
-		renderaction action;
-		action.action =RENDER_ACTION::RENDER_DELETEBUFFER;
-		action.udata1 = bufferID;
-		context->addAction(action);
-	}
+	if (context)
+		context->deleteBuffer(bufferID);
+	context=nullptr;
+	numVertices=0;
+	data32PerVertex=0;
+	disposed=false;
+	bufferID=UINT32_MAX;
+	data.clear();
 	return ASObject::destruct();
 }
 
 void VertexBuffer3D::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uploadFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadFromByteArray),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uploadFromVector","",c->getSystemState()->getBuiltinFunction(uploadFromVector),NORMAL_METHOD,true);
@@ -2194,8 +2260,8 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,dispose)
 	VertexBuffer3D* th = asAtomHandler::as<VertexBuffer3D>(obj);
 	th->data.clear();
 	th->disposed=true;
-	if (th->context && th->bufferID != UINT32_MAX)
-		th->context->addAction(RENDER_ACTION::RENDER_DELETEVERTEXBUFFER,th);
+	if (th->context)
+		th->context->deleteBuffer(th->bufferID);
 }
 ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromByteArray)
 {

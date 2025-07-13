@@ -108,8 +108,8 @@ enum RENDER_ACTION { RENDER_CLEAR,RENDER_CONFIGUREBACKBUFFER,RENDER_RENDERTOBACK
 					 RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX,RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR,RENDER_SETTEXTUREAT,
 					 RENDER_SETBLENDFACTORS,RENDER_SETDEPTHTEST,RENDER_SETCULLING,RENDER_GENERATETEXTURE,RENDER_LOADTEXTURE,RENDER_LOADCUBETEXTURE,
 					 RENDER_SETSCISSORRECTANGLE, RENDER_SETCOLORMASK, RENDER_SETSAMPLERSTATE, RENDER_DELETETEXTURE,
-					 RENDER_CREATEINDEXBUFFER,RENDER_UPLOADINDEXBUFFER,RENDER_DELETEINDEXBUFFER,
-					 RENDER_CREATEVERTEXBUFFER,RENDER_UPLOADVERTEXBUFFER,RENDER_DELETEVERTEXBUFFER,
+					 RENDER_CREATEINDEXBUFFER,RENDER_UPLOADINDEXBUFFER,
+					 RENDER_CREATEVERTEXBUFFER,RENDER_UPLOADVERTEXBUFFER,
 				     RENDER_SETSTENCILREFERENCEVALUE,RENDER_SETSTENCILACTIONS};
 struct renderaction
 {
@@ -182,7 +182,7 @@ protected:
 	void loadTexture(TextureBase* tex, uint32_t level);
 	void loadCubeTexture(CubeTexture* tex, uint32_t miplevel, uint32_t side);
 	void init(Stage3D* s);
-	public:
+public:
 	Mutex rendermutex;
 	Context3D(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
@@ -191,6 +191,7 @@ protected:
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	void prepareShutdown() override;
 
+	void deleteBuffer(uint32_t bufferID);
 	void addAction(RENDER_ACTION type, ASObject* dataobject);
 	void addAction(renderaction action);
 	void addTextureToUpload(TextureBase* tex)
@@ -348,6 +349,7 @@ public:
 	IndexBuffer3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_INDEXBUFFER3D),bufferID(UINT32_MAX),disposed(false){}
 	IndexBuffer3D(ASWorker* wrk,Class_base* c, Context3D* ctx,int _numVertices,tiny_string _bufferUsage);
 	bool destruct() override;
+	void finalize() override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(dispose);
 	ASFUNCTION_ATOM(uploadFromByteArray);
@@ -374,6 +376,8 @@ public:
 	Program3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_PROGRAM3D),gpu_program(UINT32_MAX),vcPositionScale(UINT32_MAX),disposed(false){}
 	Program3D(ASWorker* wrk,Class_base* c,Context3D* _ct):ASObject(wrk,c,T_OBJECT,SUBTYPE_PROGRAM3D),context(_ct),gpu_program(UINT32_MAX),vcPositionScale(UINT32_MAX),disposed(false){}
 	static void sinit(Class_base* c);
+	bool destruct() override;
+	void finalize() override;
 	ASFUNCTION_ATOM(dispose);
 	ASFUNCTION_ATOM(upload);
 };
@@ -392,6 +396,8 @@ public:
 	VertexBuffer3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_VERTEXBUFFER3D),context(nullptr),numVertices(0),data32PerVertex(0),disposed(false),bufferID(UINT32_MAX){}
 	VertexBuffer3D(ASWorker* wrk,Class_base* c, Context3D* ctx,int _numVertices,int32_t _data32PerVertex,tiny_string _bufferUsage);
 	bool destruct() override;
+	void finalize() override;
+
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(dispose);
 	ASFUNCTION_ATOM(uploadFromByteArray);

@@ -334,6 +334,7 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 		else
 		{
 			asAtom v = args[pos];
+			asAtomHandler::localNumberToGlobalNumber(wrk,v);
 			if (!th->vec_type->coerce(th->getInstanceWorker(),v))
 				ASATOM_INCREF(v);
 			ASObject* obj = asAtomHandler::getObject(v);
@@ -1559,6 +1560,7 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 	if(index < vec.size())
 	{
 		ret = vec[index];
+		assert (!asAtomHandler::isLocalNumber(ret));
 		if (!(opt & NO_INCREF))
 			ASATOM_INCREF(ret);
 	}
@@ -1575,6 +1577,7 @@ GET_VARIABLE_RESULT Vector::getVariableByInteger(asAtom &ret, int index, GET_VAR
 	if (index >=0 && uint32_t(index) < size())
 	{
 		ret = vec[index];
+		assert (!asAtomHandler::isLocalNumber(ret));
 		if (!(opt & NO_INCREF))
 			ASATOM_INCREF(ret);
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
@@ -1636,8 +1639,8 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 		}
 		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset,wrk);
 	}
+	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	asAtom v = o;
-	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),v);
 	if (this->vec_type->coerce(getInstanceWorker(), o))
 		ASATOM_DECREF(v);
 	if(index < vec.size())
@@ -1684,8 +1687,8 @@ void Vector::setVariableByInteger(int index, asAtom &o, CONST_ALLOWED_FLAG allow
 		return;
 	}
 	*alreadyset = false;
+	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	asAtom v = o;
-	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),v);
 	if (this->vec_type->coerce(getInstanceWorker(), o))
 		ASATOM_DECREF(v);
 	if(size_t(index) < vec.size())

@@ -1675,6 +1675,8 @@ void ASWorker::execute()
 	istream s(sbuf);
 	parsemutex.lock();
 	parser = new ParseThread(s,_MR(Class<ApplicationDomain>::getInstanceS(this,_MR(getSystemState()->systemDomain))),getSystemState()->mainClip->securityDomain,loader.getPtr(),"");
+	parser->setForBackgroundWorker(swf->getLength());
+
 	parsemutex.unlock();
 	getSystemState()->addWorker(this);
 	this->incRef();

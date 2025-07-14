@@ -1623,10 +1623,11 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 ParseThread::ParseThread(istream& in, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain, Loader *_loader, tiny_string srcurl)
   : version(0),uncompressedsize(0),
 	applicationDomain(appDomain),securityDomain(secDomain),
-    f(in),uncompressingFilter(nullptr),
+	f(in),uncompressingFilter(nullptr),
 	backend(nullptr),
 	loader(_loader),
-    parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN)
+	parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN),
+	backgroundWorkerFileLength(0)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 }
@@ -1637,7 +1638,8 @@ ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
     f(in),uncompressingFilter(nullptr),
 	backend(nullptr),
 	loader(nullptr),
-    parsedObject(NullRef),url(),fileType(FT_UNKNOWN)
+	parsedObject(NullRef),url(),fileType(FT_UNKNOWN),
+	backgroundWorkerFileLength(0)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	setRootMovie(root);
@@ -1689,38 +1691,47 @@ void ParseThread::parseSWFHeader(RootMovieClip *root, UI8 ver)
 
 	version=ver;
 	root->applicationDomain->version=version;
-	f >> FileLength;
-	uncompressedsize = 8+FileLength; // 8 bytes for magic bytes, version and FileLength
-	//Enable decompression if needed
-	if(fileType==FT_SWF)
+	if (backgroundWorkerFileLength)
 	{
-		LOG(LOG_INFO, "Uncompressed SWF file: Version " << (int)version);
-		if (root == root->getSystemState()->mainClip)
-			root->loaderInfo->setBytesTotal(FileLength);
+		// it seems that swf files used for background worker don't contain the swf header
+		root->fileLength = backgroundWorkerFileLength;
+		root->loaderInfo->setBytesTotal(backgroundWorkerFileLength);
 	}
 	else
 	{
-		//The file is compressed, create a filtering streambuf
-		backend=f.rdbuf();
-		if(fileType==FT_COMPRESSED_SWF)
+		f >> FileLength;
+		uncompressedsize = FileLength;
+		//Enable decompression if needed
+		if(fileType==FT_SWF)
 		{
-			LOG(LOG_INFO, "zlib compressed SWF file: Version " << (int)version);
-			uncompressingFilter = new zlib_filter(backend);
-		}
-		else if(fileType==FT_LZMA_COMPRESSED_SWF)
-		{
-			LOG(LOG_INFO, "lzma compressed SWF file: Version " << (int)version);
-			uncompressingFilter = new liblzma_filter(backend);
+			LOG(LOG_INFO, "Uncompressed SWF file: Version " << (int)version);
+			if (root == root->getSystemState()->mainClip)
+				root->loaderInfo->setBytesTotal(FileLength);
 		}
 		else
 		{
-			// not reached
-			assert(false);
+			//The file is compressed, create a filtering streambuf
+			backend=f.rdbuf();
+			if(fileType==FT_COMPRESSED_SWF)
+			{
+				LOG(LOG_INFO, "zlib compressed SWF file: Version " << (int)version);
+				uncompressingFilter = new zlib_filter(backend);
+			}
+			else if(fileType==FT_LZMA_COMPRESSED_SWF)
+			{
+				LOG(LOG_INFO, "lzma compressed SWF file: Version " << (int)version);
+				uncompressingFilter = new liblzma_filter(backend);
+			}
+			else
+			{
+				// not reached
+				assert(false);
+			}
+			f.rdbuf(uncompressingFilter);
+			// the first 8 bytes from the header are always uncompressed (magic bytes + FileLength)
+			if (root == root->getSystemState()->mainClip)
+				root->loaderInfo->setBytesTotal(FileLength-8);
 		}
-		f.rdbuf(uncompressingFilter);
-		// the first 8 bytes from the header are always uncompressed (magic bytes + FileLength)
-		if (root == root->getSystemState()->mainClip)
-			root->loaderInfo->setBytesTotal(FileLength-8);
 	}
 
 	f >> FrameSize >> FrameRate >> FrameCount;
@@ -1746,20 +1757,29 @@ void ParseThread::execute()
 	tls_set(parse_thread_tls,this);
 	try
 	{
-		UI8 Signature[4];
-		f >> Signature[0] >> Signature[1] >> Signature[2] >> Signature[3];
-		fileType=recognizeFile(Signature[0],Signature[1],Signature[2],Signature[3]);
-		if(fileType==FT_UNKNOWN)
-			throw ParseException("Not a supported file");
-		else if(fileType==FT_PNG || fileType==FT_JPEG || fileType==FT_GIF)
+		if (backgroundWorkerFileLength)
 		{
-			f.putback(Signature[3]).putback(Signature[2]).
-			  putback(Signature[1]).putback(Signature[0]);
-			parseBitmap();
+			// it seems that background worker swf files don't contain an swf header (?)
+			// so we skip magic bytes and length and treat data as uncompressed swf
+			parseSWF(applicationDomain->getSystemState()->getSwfVersion());
 		}
 		else
 		{
-			parseSWF(Signature[3]);
+			UI8 Signature[4];
+			f >> Signature[0] >> Signature[1] >> Signature[2] >> Signature[3];
+			fileType=recognizeFile(Signature[0],Signature[1],Signature[2],Signature[3]);
+			if(fileType==FT_UNKNOWN)
+				throw ParseException("Not a supported file");
+			else if(fileType==FT_PNG || fileType==FT_JPEG || fileType==FT_GIF)
+			{
+				f.putback(Signature[3]).putback(Signature[2]).
+						putback(Signature[1]).putback(Signature[0]);
+				parseBitmap();
+			}
+			else
+			{
+				parseSWF(Signature[3]);
+			}
 		}
 	}
 	catch(ParseException& e)
@@ -1825,7 +1845,7 @@ void ParseThread::parseSWF(UI8 ver)
 	{
 		LoaderInfo* li= loader->getContentLoaderInfo();
 		root=RootMovieClip::getInstance(applicationDomain->getInstanceWorker(),li, applicationDomain, securityDomain);
-		if (!applicationDomain->getInstanceWorker()->isPrimordial)
+		if (backgroundWorkerFileLength)
 		{
 			root->incRef();
 			applicationDomain->getInstanceWorker()->rootClip = _MR(root);
@@ -2223,30 +2243,47 @@ void ParseThread::setRootMovie(RootMovieClip *root)
 void ParseThread::getSWFByteArray(ByteArray* ba)
 {
 	istream f2(backend);
+	f2.seekg(0,std::ios::beg);
 	uint32_t len = uncompressedsize;
-	if (uncompressingFilter)
+
+	switch (this->fileType)
 	{
-		//skip header
-		UI8 tmp;
-		f2>>tmp;
-		f2>>tmp;
-		f2>>tmp;
-		f2>>tmp;
-		// write header for uncompressed swf
-		ba->writeByte('S');
-		ba->writeByte('W');
-		ba->writeByte('F');
-		ba->writeByte((uint8_t)version);
-		// write filelength
-		f2>>tmp;ba->writeByte(tmp);
-		f2>>tmp;ba->writeByte(tmp);
-		f2>>tmp;ba->writeByte(tmp);
-		f2>>tmp;ba->writeByte(tmp);
-		f2.rdbuf(uncompressingFilter);
-		f2.read((char*)ba->getBuffer(len-8,true)+8,len-8);
+		case FT_SWF:
+		case FT_COMPRESSED_SWF:
+		{
+			//skip header
+			UI8 tmp;
+			f2>>tmp;
+			f2>>tmp;
+			f2>>tmp;
+			f2>>tmp;
+			// skip filelength
+			f2>>tmp;
+			f2>>tmp;
+			f2>>tmp;
+			f2>>tmp;
+			uncompressing_filter* tmpfilter = nullptr;
+			if (this->fileType == FT_LZMA_COMPRESSED_SWF)
+			{
+				tmpfilter = new liblzma_filter(backend);
+				f2.rdbuf(tmpfilter);
+			}
+			else if (this->fileType == FT_COMPRESSED_SWF)
+			{
+				tmpfilter = new zlib_filter(backend);
+				f2.rdbuf(tmpfilter);
+			}
+			uint8_t* buf = ba->getBuffer(len,true);
+			f2.read((char*)buf,len);
+			ba->setPosition(0);
+			if (tmpfilter)
+				delete tmpfilter;
+			break;
+		}
+		default:
+			f2.read((char*)ba->getBuffer(len,true),len);
+			break;
 	}
-	else
-		f2.read((char*)ba->getBuffer(len,true),len);
 }
 
 RootMovieClip* ParseThread::getRootMovie() const

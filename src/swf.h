@@ -611,6 +611,7 @@ public:
 	_NR<SecurityDomain> securityDomain;
 	void getSWFByteArray(ByteArray* ba);
 	void addExtensions(std::vector<tiny_string>& ext) { extensions = ext; }
+	void setForBackgroundWorker(uint32_t filelength) { backgroundWorkerFileLength=filelength; }
 private:
 	std::vector<tiny_string> extensions;
 	std::istream& f;
@@ -621,6 +622,7 @@ private:
 	Mutex objectSpinlock;
 	tiny_string url;
 	FILE_TYPE fileType;
+	uint32_t backgroundWorkerFileLength;
 	void threadAbort() override;
 	void jobFence() override {}
 	void parseSWFHeader(RootMovieClip *root, UI8 ver);

@@ -483,7 +483,7 @@ bool LoaderInfo::fillBytesData(ByteArray* data)
 		return false;
 	if (bytesData.isNull())
 		bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));
-	if (this->loadStatus < LOAD_DOWNLOAD_DONE)
+	if (loader && this->loadStatus < LOAD_DOWNLOAD_DONE)
 		return true;
 	if (data)
 	{

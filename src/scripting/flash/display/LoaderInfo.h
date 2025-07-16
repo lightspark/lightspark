@@ -46,12 +46,14 @@ private:
 	tiny_string loaderURL;
 	_NR<EventDispatcher> sharedEvents;
 	Loader* loader;
-	DisplayObject* content; // this reference is needed for garbage collection
+	DisplayObject* content;
 	_NR<ByteArray> bytesData;
 	ProgressEvent* progressEvent;
 	Mutex spinlock;
 	enum LOAD_STATUS { LOAD_START=0, LOAD_OPENED, LOAD_PROGRESSING, LOAD_DOWNLOAD_DONE, LOAD_INIT_SENT, LOAD_COMPLETE };
 	LOAD_STATUS loadStatus;
+	bool fromByteArray;
+	bool hasavm1target;
 	/*
 	 * sendInit should be called with the spinlock held
 	 */
@@ -76,8 +78,8 @@ public:
 	void beforeHandleEvent(Event* ev) override;
 	void afterHandleEvent(Event* ev) override;
 	void addLoaderEvent(Event* ev);
-	void setOpened();
-	_NR<DisplayObject> getParsedObject() const;
+	void setOpened(bool fromBytes);
+	DisplayObject* getParsedObject() const;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getLoaderURL);
@@ -107,8 +109,12 @@ public:
 	void setFrameRate(number_t f) { frameRate=f; }
 	void setComplete();
 	void setContent(DisplayObject* c);
+	void setAVM1Target(bool avm1target) { hasavm1target = avm1target; }
 	bool fillBytesData(ByteArray* data);
 	Loader* getLoader() const { return loader; }
+	DisplayObject* getContent() const { return content; }
+	bool isFromByteArray() const { return fromByteArray; }
+	bool hasAVM1Target() const { return hasavm1target; }
 };
 
 }

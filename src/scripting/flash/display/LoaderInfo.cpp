@@ -37,7 +37,11 @@ LoaderInfo::LoaderInfo(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),appli
 	contentType("application/x-shockwave-flash"),
 	local_pt(nullptr),sbuf(nullptr),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(nullptr),content(nullptr),bytesData(NullRef),progressEvent(nullptr),loadStatus(LOAD_START),actionScriptVersion(3),swfVersion(0),
+	loader(nullptr),content(nullptr),bytesData(NullRef),progressEvent(nullptr),
+	loadStatus(LOAD_START),
+	fromByteArray(false),
+	hasavm1target(false),
+	actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
 	subtype=SUBTYPE_LOADERINFO;
@@ -51,14 +55,13 @@ LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, Loader* l):EventDispatcher(
 	contentType("application/x-shockwave-flash"),
 	local_pt(nullptr),sbuf(nullptr),
 	bytesLoaded(0),bytesLoadedPublic(0),bytesTotal(0),sharedEvents(NullRef),
-	loader(l),content(nullptr),bytesData(NullRef),progressEvent(nullptr),loadStatus(LOAD_START),actionScriptVersion(3),swfVersion(0),
+	loader(l),content(nullptr),bytesData(NullRef),progressEvent(nullptr),
+	loadStatus(LOAD_START),
+	fromByteArray(false),
+	hasavm1target(false),
+	actionScriptVersion(3),swfVersion(0),
 	childAllowsParent(true),uncaughtErrorEvents(NullRef),parentAllowsChild(true),frameRate(0)
 {
-	if (loader)
-	{
-		loader->incRef();
-		loader->addStoredMember();
-	}
 	subtype=SUBTYPE_LOADERINFO;
 	sharedEvents=_MR(Class<EventDispatcher>::getInstanceS(wrk));
 	parameters = _MR(new_asobject(wrk));
@@ -115,13 +118,8 @@ bool LoaderInfo::destruct()
 	if (sbuf)
 		delete sbuf;
 	sbuf = nullptr;
-	if(local_pt)
-		delete local_pt;
-	local_pt=nullptr;
 
 	sharedEvents.reset();
-	if (loader)
-		loader->removeStoredMember();
 	loader=nullptr;
 	if (content)
 		content->removeStoredMember();
@@ -145,6 +143,9 @@ bool LoaderInfo::destruct()
 	assert(!progressEvent);
 	progressEvent=nullptr;
 	loaderevents.clear();
+	if(local_pt)
+		delete local_pt;
+	local_pt=nullptr;
 	return EventDispatcher::destruct();
 }
 
@@ -158,8 +159,6 @@ void LoaderInfo::finalize()
 		delete local_pt;
 	local_pt=nullptr;
 	sharedEvents.reset();
-	if (loader)
-		loader->removeStoredMember();
 	loader=nullptr;
 	if (content)
 		content->removeStoredMember();
@@ -195,8 +194,6 @@ void LoaderInfo::prepareShutdown()
 		parameters->prepareShutdown();
 	if (uncaughtErrorEvents)
 		uncaughtErrorEvents->prepareShutdown();
-	if (loader)
-		loader->prepareShutdown();
 	if (content)
 		content->prepareShutdown();
 }
@@ -204,8 +201,6 @@ void LoaderInfo::prepareShutdown()
 bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
-	if (loader)
-		ret = loader->countAllCylicMemberReferences(gcstate) || ret;
 	if (content)
 		ret = content->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
@@ -217,6 +212,8 @@ void LoaderInfo::beforeHandleEvent(Event* ev)
 		loadStatus = LOAD_PROGRESSING;
 	else if (ev->is<ProgressEvent>() && ev->as<ProgressEvent>()->bytesLoaded == ev->as<ProgressEvent>()->bytesTotal)
 		loadStatus = LOAD_DOWNLOAD_DONE;
+	else if (ev->type=="unload" && this->content && !this->content->needsActionScript3())
+		this->content->AVM1HandleEvent(this,ev);
 }
 void LoaderInfo::afterHandleEvent(Event* ev)
 {
@@ -250,29 +247,49 @@ void LoaderInfo::addLoaderEvent(Event* ev)
 	}
 }
 
-void LoaderInfo::setOpened()
+void LoaderInfo::setOpened(bool fromBytes)
 {
 	if (loadStatus >= LOAD_OPENED)
 		return;
-	loadStatus = LOAD_OPENED;
+	fromByteArray = fromBytes;
+	if (fromByteArray)
+		loadStatus = LOAD_DOWNLOAD_DONE;
+	else
+		loadStatus = LOAD_OPENED;
+
 	if (bytesData.isNull())
 		bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));
-	auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"open");
 	// it seems an additional ProgressEvent is always added at the start of loading (see ruffle test avm2/large_preload_from_*)
 	ProgressEvent* p = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),0,bytesTotal);
-	this->incRef();
-	if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
-		addLoaderEvent(ev);
-	this->incRef();
-	if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
-		addLoaderEvent(p);
+	if (!fromByteArray)
+	{
+		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"open");
+		this->incRef();
+		if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
+			addLoaderEvent(ev);
+		this->incRef();
+		if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
+			addLoaderEvent(p);
+	}
+	else
+	{
+		if (isVmThread())
+		{
+			this->incRef();
+			getVm(getSystemState())->publicHandleEvent(this,_MR(p));
+		}
+		else
+		{
+			this->incRef();
+			if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
+				addLoaderEvent(p);
+		}
+	}
 }
 
-_NR<DisplayObject> LoaderInfo::getParsedObject() const
+DisplayObject* LoaderInfo::getParsedObject() const
 {
-	if (local_pt)
-		return local_pt->getParsedObject();
-	return NullRef;
+	return content;
 }
 
 void LoaderInfo::resetState()
@@ -311,10 +328,7 @@ void LoaderInfo::setContent(DisplayObject* c)
 		content->removeStoredMember();
 	content=c;
 	if (content)
-	{
-		content->incRef();
 		content->addStoredMember();
-	}
 }
 void LoaderInfo::setBytesLoaded(uint32_t b)
 {
@@ -324,33 +338,50 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 		bytesLoaded=b;
 		if(getVm(getSystemState()) && loadStatus >= LOAD_OPENED)
 		{
-			// make sure that the event queue is not flooded with progressEvents
-			if (!progressEvent)
+			if (fromByteArray)
 			{
-				progressEvent = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal);
-				this->addLoaderEvent(progressEvent);
+				assert(bytesLoaded==bytesTotal);
+				ProgressEvent* p = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal);
 				this->incRef();
-				progressEvent->incRef();
-				spinlock.unlock();
-				getVm(getSystemState())->addEvent(_MR(this),_MR(progressEvent));
+
+				if (isVmThread())
+					getVm(getSystemState())->publicHandleEvent(this,_MR(p));
+				else
+				{
+					if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
+						addLoaderEvent(p);
+				}
 			}
 			else
 			{
-				// event already exists, we only update the values
-				Locker l(progressEvent->accesmutex);
-				progressEvent->bytesLoaded = bytesLoaded;
-				progressEvent->bytesTotal = bytesTotal;
-				// if event is already in event queue, we don't need to add it again
-				if (!progressEvent->queued)
+				// make sure that the event queue is not flooded with progressEvents
+				if (!progressEvent)
 				{
+					progressEvent = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal);
 					this->addLoaderEvent(progressEvent);
 					this->incRef();
 					progressEvent->incRef();
-					getVm(getSystemState())->addEvent(_MR(this),_MR(progressEvent));
 					spinlock.unlock();
+					getVm(getSystemState())->addEvent(_MR(this),_MR(progressEvent));
 				}
 				else
-					spinlock.unlock();
+				{
+					// event already exists, we only update the values
+					Locker l(progressEvent->accesmutex);
+					progressEvent->bytesLoaded = bytesLoaded;
+					progressEvent->bytesTotal = bytesTotal;
+					// if event is already in event queue, we don't need to add it again
+					if (!progressEvent->queued)
+					{
+						this->addLoaderEvent(progressEvent);
+						this->incRef();
+						progressEvent->incRef();
+						getVm(getSystemState())->addEvent(_MR(this),_MR(progressEvent));
+						spinlock.unlock();
+					}
+					else
+						spinlock.unlock();
+				}
 			}
 			checkSendComplete();
 		}
@@ -361,9 +392,17 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 
 void LoaderInfo::sendInit()
 {
+	// loader.content has to be set before "init" event is dispatched
+	if (loader && content)
+	{
+		// we have a loader, so it is not the main clip
+		content->incRef();
+		loader->incRef();
+		getVm(loader->getSystemState())->addEvent(NullRef,_MR(new (loader->getSystemState()->unaccountedMemory) SetLoaderContentEvent(_MR(content), _MR(loader))));
+	}
 	this->incRef();
 	auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"init");
-	if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
+	if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
 		this->addLoaderEvent(ev);
 	assert(loadStatus<LOAD_INIT_SENT);
 	loadStatus=LOAD_INIT_SENT;
@@ -377,13 +416,14 @@ void LoaderInfo::checkSendComplete()
 		{
 			this->incRef();
 			auto ev = Class<HTTPStatusEvent>::getInstanceS(getInstanceWorker());
-			if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
+			if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
 				this->addLoaderEvent(ev);
 		}
+
 		//The clip is also complete now
 		this->incRef();
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"complete");
-		if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
+		if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
 			this->addLoaderEvent(ev);
 		loadStatus=LOAD_COMPLETE;
 	}
@@ -454,7 +494,9 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getSharedEvents)
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getURL)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
-	if (th->url.empty()	|| (th->loadStatus < LOAD_INIT_SENT && th->loader))
+	if (th->fromByteArray && th->loadStatus >= LOAD_INIT_SENT)
+		ret = asAtomHandler::fromString(wrk->getSystemState(),"file:///");
+	else if (th->url.empty() || (th->loadStatus < LOAD_INIT_SENT && th->loader))
 		ret = asAtomHandler::nullAtom;
 	else
 		ret = asAtomHandler::fromObject(abstract_s(wrk,th->url));

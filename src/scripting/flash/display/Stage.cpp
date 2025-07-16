@@ -827,6 +827,24 @@ void Stage::AVM1AddScriptToExecute(AVM1scriptToExecute& script)
 	avm1scriptstoexecute.push_back(script);
 }
 
+void Stage::AVM1SetLevelRoot(int level, RootMovieClip* root)
+{
+	avm1MapLevelToRoot[level]=root;
+}
+
+void Stage::AVM1removeLevelRoot(int level)
+{
+	avm1MapLevelToRoot.erase(level);
+}
+
+RootMovieClip* Stage::AVM1getLevelRoot(int level)
+{
+	auto it = avm1MapLevelToRoot.find(level);
+	if (it != avm1MapLevelToRoot.end())
+		return it->second;
+	return nullptr;
+}
+
 void Stage::enterFrame(bool implicit)
 {
 	std::vector<_R<DisplayObject>> list;

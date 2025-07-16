@@ -1215,6 +1215,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				else
 					res = context->getVariable(thisObj, originalclip, clip, s);
 
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetVariable done "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(res));
 				ASATOM_DECREF(name);
 				PushStack(stack,res);
 				break;
@@ -2540,7 +2541,31 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				tiny_string s2((const char*)&(*it));
 				it += s2.numBytes()+1;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetURL "<<s1<<" "<<s2);
-				clip->getSystemState()->openPageInBrowser(s1,s2);
+				if (s2.startsWith("_level"))
+				{
+					if (s1 != "")
+					{
+						asAtom obj = asAtomHandler::fromObject(clip);
+						int level =0;
+						s2.substr(6,UINT32_MAX).toNumber(level);
+						asAtom args[2];
+						args[0] = asAtomHandler::fromString(wrk->getSystemState(),s1);
+						args[1] = asAtomHandler::fromInt(level);
+						asAtom ret = asAtomHandler::invalidAtom;
+						MovieClip::AVM1LoadMovieNum(ret,wrk,obj,args,2);
+					}
+					else
+					{
+						asAtom obj = context->getVariable(thisObj, originalclip, clip, s2);
+						asAtom ret = asAtomHandler::invalidAtom;
+						if (asAtomHandler::is<MovieClip>(obj))
+							MovieClip::AVM1UnloadMovie(ret,wrk,obj,nullptr,0);
+						else
+							LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetURL clip not found "<<s1<<" "<<s2<<" "<<asAtomHandler::toDebugString(obj));
+					}
+				}
+				else
+					clip->getSystemState()->openPageInBrowser(s1,s2);
 				break;
 			}
 			case 0x87: // ActionStoreRegister

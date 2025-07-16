@@ -50,6 +50,7 @@
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Number.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/avm1/avm1display.h"
 #include <algorithm>
 #include <array>
@@ -1146,10 +1147,12 @@ tiny_string DisplayObject::AVM1GetPath(bool dotnotation)
 	}
 	else if (is<RootMovieClip>())
 	{
-		// TODO: Add a depth member, and return `_level{depth}` if we
-		// don't have a parent.
 		if (dotnotation)
-			res += "_level0";
+		{
+			int lvl =as<RootMovieClip>()->AVM1getLevel();
+			res += "_level";
+			res += Integer::toString(lvl);
+		}
 	}
 	return res;
 }
@@ -2786,16 +2789,7 @@ static int parseLevelId(const tiny_string& digits)
 // there.
 DisplayObject* DisplayObject::getLevel(int levelID) const
 {
-	auto stage = AVM1getStage();
-	if (stage == nullptr)
-		return nullptr;
-	if (!stage->is<DisplayObjectContainer>())
-		return nullptr;
-	auto stageContainer = stage->as<DisplayObjectContainer>();
-	levelID -= 16384;
-	if (!stageContainer->hasLegacyChildAt(levelID))
-		return nullptr;
-	return stageContainer->getLegacyChildAt(levelID);
+	return getSystemState()->stage->AVM1getLevelRoot(levelID);
 }
 
 asAtom DisplayObject::resolvePathProperty(const tiny_string& name, ASWorker* wrk)

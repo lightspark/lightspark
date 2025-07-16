@@ -93,7 +93,7 @@ public:
 	void AVM1registerInitActionTag(uint32_t spriteID, AVM1InitActionTag* tag);
 	void AVM1checkInitActions(MovieClip *sprite);
 	int AVM1getLevel() const { return avm1level; }
-	void AVM1setLevel(int level) { avm1level = level; }
+	void AVM1setLevel(int level);
 	inline bool hasScenes() const { return hasDefineSceneAndFrameLabelDataTag; }
 	inline void setHasScenes() { hasDefineSceneAndFrameLabelDataTag=true; }
 };

@@ -40,6 +40,7 @@ public:
 	void execute() override;
 	LoaderThread(_R<URLRequest> request, Loader* loader);
 	LoaderThread(_R<ByteArray> bytes, Loader* loader);
+	Loader* getLoader() const { return loader; }
 };
 
 class Loader: public DisplayObjectContainer, public IDownloaderThreadListener
@@ -52,7 +53,6 @@ private:
 	std::list<IThreadJob *> jobs;
 	URLInfo url;
 	LoaderInfo* contentLoaderInfo;
-	void unload();
 	bool loaded;
 	bool allowCodeImport;
 	int avm1level;
@@ -89,6 +89,8 @@ public:
 	void AVM1setup(int level, ASObject* container);
 	int AVM1getLevel() const { return avm1level; }
 	void loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _avm1target=nullptr);
+	void addJob(LoaderThread* t);
+	void unload();
 };
 
 }

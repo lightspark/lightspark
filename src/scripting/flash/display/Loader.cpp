@@ -61,7 +61,7 @@ void LoaderThread::execute()
 			return;
 
 		sbuf = cache->createReader();
-		
+
 		// Wait for some data, making sure our check for failure is working
 		sbuf->sgetc(); // peek one byte
 		if(downloader->hasEmptyAnswer())
@@ -85,14 +85,13 @@ void LoaderThread::execute()
 		}
 		loaderInfo->setBytesTotal(downloader->getLength());
 		loaderInfo->setBytesLoaded(downloader->getReceivedLength());
-		loaderInfo->setOpened();
+		loaderInfo->setOpened(false);
 	}
 	else if(source==BYTES)
 	{
 		assert_and_throw(bytes->bytes);
 		loaderInfo->setBytesTotal(bytes->getLength());
-		loaderInfo->setBytesLoaded(bytes->getLength());
-		loaderInfo->setOpened();
+		loaderInfo->setOpened(true);
 		sbuf = new bytes_buf(bytes->bytes,bytes->getLength());
 
 // extract embedded swf to separate file
@@ -114,8 +113,8 @@ void LoaderThread::execute()
 
 	bytes.reset();
 
-	_NR<DisplayObject> obj=loaderInfo->getParsedObject();
-	if(obj.isNull())
+	DisplayObject* res=loaderInfo->getParsedObject();
+	if(!res)
 	{
 		// The stream did not contain RootMovieClip or Bitmap
 		if(!threadAborting)
@@ -127,19 +126,11 @@ void LoaderThread::execute()
 		}
 		return;
 	}
-	DisplayObject* res = obj.getPtr();
 	if (loader && res && (!res->is<RootMovieClip>() || res->as<RootMovieClip>()->hasFinishedLoading()))
 	{
 		if (res->is<RootMovieClip>())
 		{
 			res->as<RootMovieClip>()->AVM1setLevel(loader->AVM1getLevel());
-		}
-		if (res != loader->getSystemState()->mainClip)
-		{
-			res->incRef();
-			loader->incRef();
-			getVm(loader->getSystemState())->addBufferEvent(NullRef,_MR(new (loader->getSystemState()->unaccountedMemory) SetLoaderContentEvent(_MR(res), _MR(loader))));
-			getVm(loader->getSystemState())->addEvent(NullRef, _MR(new (loader->getSystemState()->unaccountedMemory) FlushEventBufferEvent(false,true)));
 		}
 	}
 }
@@ -218,6 +209,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 	}
 	this->url=r->getRequestURL();
 	this->contentLoaderInfo->setURL(this->url.getParsedURL());
+	this->contentLoaderInfo->setAVM1Target(this->avm1target);
 	this->contentLoaderInfo->resetState();
 	//Check if a security domain has been manually set
 	SecurityDomain* secDomain=nullptr;
@@ -301,17 +293,30 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 
 	r->incRef();
 	LoaderThread *thread=new LoaderThread(_MR(r), this);
-	if (!getSystemState()->runSingleThreaded)
+	if (this->needsActionScript3())
 	{
-		Locker l(this->spinlock);
-		this->jobs.push_back(thread);
-		this->getSystemState()->addJob(thread);
+		if (!getSystemState()->runSingleThreaded)
+		{
+			Locker l(this->spinlock);
+			this->jobs.push_back(thread);
+			this->getSystemState()->addJob(thread);
+		}
+		else
+		{
+			thread->execute();
+			thread->jobFence();
+		}
 	}
 	else
 	{
-		thread->execute();
-		thread->jobFence();
+		_R<LoadMovieEvent> event=_MR(new (getSystemState()->unaccountedMemory) LoadMovieEvent(thread));
+		getVm(getSystemState())->addEvent(NullRef,event);
 	}
+}
+
+void Loader::addJob(LoaderThread* t)
+{
+	this->jobs.push_back(t);
 }
 ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 {
@@ -347,9 +352,17 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 		bytes = _MR(b);
 
 		LoaderThread *thread=new LoaderThread(_MR(bytes), th);
-		Locker l(th->spinlock);
-		th->jobs.push_back(thread);
-		wrk->getSystemState()->addJob(thread);
+		if (!isVmThread())
+		{
+			Locker l(th->spinlock);
+			th->jobs.push_back(thread);
+			th->getSystemState()->addJob(thread);
+		}
+		else
+		{
+			thread->execute();
+			thread->jobFence();
+		}
 	}
 	else
 		LOG(LOG_INFO, "Empty ByteArray passed to Loader.loadBytes");
@@ -384,10 +397,10 @@ void Loader::unload()
 			(*j)->threadAbort();
 
 		content_copy=content;
-		
+
 		content = nullptr;
 	}
-	
+
 	if(loaded)
 	{
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"unload");
@@ -516,7 +529,7 @@ void Loader::threadFinished(IThreadJob* finishedJob)
 
 void Loader::setContent(DisplayObject* o)
 {
-	if (o->isOnStage())
+	if (o->isOnStage() || content==o || (content && o->getParent()==content))
 		return;
 	{
 		Locker l(mutexDisplayList);
@@ -525,6 +538,8 @@ void Loader::setContent(DisplayObject* o)
 
 	{
 		Locker l(spinlock);
+		if (content)
+			content->removeStoredMember();
 		if (needsActionScript3() && o->is<RootMovieClip>() && o != getSystemState()->mainClip && !o->as<RootMovieClip>()->needsActionScript3())
 		{
 			AVM1Movie* m = Class<AVM1Movie>::getInstanceS(getInstanceWorker());
@@ -580,7 +595,7 @@ void Loader::setContent(DisplayObject* o)
 		o->loaderInfo->setComplete();
 }
 
-LoaderInfo* Loader::getContentLoaderInfo() 
+LoaderInfo* Loader::getContentLoaderInfo()
 {
 	return contentLoaderInfo;
 }

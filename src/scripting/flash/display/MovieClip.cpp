@@ -25,6 +25,7 @@
 #include "scripting/argconv.h"
 #include "scripting/avm1/avm1display.h"
 #include "scripting/avm1/avm1text.h"
+#include "scripting/flash/display/Loader.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Point.h"
 #include "scripting/flash/geom/Rectangle.h"
@@ -970,6 +971,37 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			}
 		}
 	}
+	if (this->loaderInfo && dispatcher == this->loaderInfo && this->loaderInfo->getContent()==this)
+	{
+		if (this->actions)
+		{
+			for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
+			{
+				if (e->type == "unload" && it->EventFlags.ClipEventUnload)
+				{
+					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+				}
+			}
+		}
+		if (e->type == "unload")
+		{
+			if (!this->is<DisplayObject>() || this->is<MovieClip>())
+			{
+				asAtom func=asAtomHandler::invalidAtom;
+				multiname m(nullptr);
+				m.name_type=multiname::NAME_STRING;
+				m.isAttribute = false;
+				asAtom ret=asAtomHandler::invalidAtom;
+				asAtom obj = asAtomHandler::fromObject(this);
+				ASWorker* wrk = getInstanceWorker();
+				m.name_s_id=BUILTIN_STRINGS::STRING_ONUNLOAD;
+				AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+				if (asAtomHandler::is<AVM1Function>(func))
+					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
+				ASATOM_DECREF(func);
+			}
+		}
+	}
 }
 
 void MovieClip::AVM1AfterAdvance()
@@ -998,7 +1030,8 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 		clipactions.AllEventFlags.ClipEventKeyPress)
 		getSystemState()->stage->AVM1AddKeyboardListener(this);
 
-	if (clipactions.AllEventFlags.ClipEventLoad)
+	if (clipactions.AllEventFlags.ClipEventLoad ||
+			clipactions.AllEventFlags.ClipEventUnload)
 		getSystemState()->stage->AVM1AddEventListener(this);
 	if (clipactions.AllEventFlags.ClipEventEnterFrame)
 	{
@@ -1406,6 +1439,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	if (th->loaderInfo && th->loaderInfo->hasAVM1Target())
+		th->loaderInfo->getLoader()->unload();
 	th->setOnStage(false,false);
 	th->tokens=nullptr;
 }

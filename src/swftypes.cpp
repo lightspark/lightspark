@@ -941,7 +941,7 @@ std::istream& lightspark::operator>>(std::istream& s, FILLSTYLE& v)
 		{
 			try
 			{
-				const DictionaryTag* dict=getParseThread()->getRootMovie()->applicationDomain->dictionaryLookup(bitmapId);
+				const DictionaryTag* dict=getParseThread()->getApplicationDomain()->dictionaryLookup(bitmapId);
 				const BitmapTag* b = dynamic_cast<const BitmapTag*>(dict);
 				if(!b)
 				{
@@ -1535,8 +1535,6 @@ std::istream& lightspark::operator>>(std::istream& s, CLIPEVENTFLAGS& v)
 		v.ClipEventDragOut=UB(1,bs);
 		UB(8,bs);
 	}
-	if (v.ClipEventUnload)
-		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventUnload not handled");
 	if (v.ClipEventDragOver)
 		LOG(LOG_NOT_IMPLEMENTED,"CLIPEVENTFLAG ClipEventDragOver not handled");
 	if (v.ClipEventData)

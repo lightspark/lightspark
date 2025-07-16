@@ -596,29 +596,27 @@ public:
 	uint32_t uncompressedsize;
 	// Parse an object from stream. The type is detected
 	// automatically. After parsing the new object is available
-	// from getParsedObject().
+	// from LoaderInfo::getParsedObject().
 	ParseThread(std::istream& in, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain, Loader *loader, tiny_string url) DLL_PUBLIC;
 	// Parse a clip from stream into root. The stream must be an
 	// SWF file.
 	ParseThread(std::istream& in, RootMovieClip *root) DLL_PUBLIC;
 	~ParseThread();
 	FILE_TYPE getFileType() const { return fileType; }
-	_NR<DisplayObject> getParsedObject();
-	RootMovieClip* getRootMovie() const;
 	static FILE_TYPE recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4);
 	void execute() override;
-	_NR<ApplicationDomain> applicationDomain;
-	_NR<SecurityDomain> securityDomain;
 	void getSWFByteArray(ByteArray* ba);
 	void addExtensions(std::vector<tiny_string>& ext) { extensions = ext; }
 	void setForBackgroundWorker(uint32_t filelength) { backgroundWorkerFileLength=filelength; }
+	ApplicationDomain* getApplicationDomain() const;
 private:
+	SystemState* sys;
 	std::vector<tiny_string> extensions;
 	std::istream& f;
 	uncompressing_filter* uncompressingFilter;
 	std::streambuf* backend;
 	Loader *loader;
-	_NR<DisplayObject> parsedObject;
+	DisplayObject* parsedObject;
 	Mutex objectSpinlock;
 	tiny_string url;
 	FILE_TYPE fileType;
@@ -628,7 +626,6 @@ private:
 	void parseSWFHeader(RootMovieClip *root, UI8 ver);
 	void parseSWF(UI8 ver);
 	void parseBitmap();
-	void setRootMovie(RootMovieClip *root);
 	void parseExtensions(RootMovieClip* root);
 };
 

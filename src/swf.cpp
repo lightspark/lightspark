@@ -198,7 +198,8 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 									   "__proto__","target","flash.events:IEventDispatcher","addEventListener","removeEventListener","dispatchEvent","hasEventListener",
 									   "onConnect","onData","onClose","onSelect",
 									   "add","alpha","darken","difference","erase","hardlight","invert","layer","lighten","multiply","overlay","screen","subtract",
-									   "text","null","true","false","global","init","onSetFocus","onResize","movieclip","caller","callee","arguments"
+									   "text","null","true","false","global","init","onSetFocus","onResize","movieclip","caller","callee","arguments",
+									   "onUnload"
 									  };
 
 extern uint32_t asClassCount;
@@ -377,6 +378,7 @@ SystemState::SystemState
 	stage=Class<Stage>::getInstanceS(this->worker);
 	stage->setRefConstant();
 	stage->setRoot(_MR(mainClip));
+	mainClip->AVM1setLevel(0); // has to be done after the stage is constructed
 	worker->stage=stage;
 	//Get starting time
 	startTime=getCurrentTime_ms();
@@ -1622,42 +1624,38 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 
 ParseThread::ParseThread(istream& in, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain, Loader *_loader, tiny_string srcurl)
   : version(0),uncompressedsize(0),
-	applicationDomain(appDomain),securityDomain(secDomain),
+	sys(appDomain->getSystemState()),
 	f(in),uncompressingFilter(nullptr),
 	backend(nullptr),
 	loader(_loader),
-	parsedObject(NullRef),url(srcurl),fileType(FT_UNKNOWN),
+	parsedObject(RootMovieClip::getInstance(appDomain->getInstanceWorker(),loader->getContentLoaderInfo(), appDomain, secDomain)),url(srcurl),fileType(FT_UNKNOWN),
 	backgroundWorkerFileLength(0)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
+	loader->getContentLoaderInfo()->setContent(parsedObject);
 }
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
   : version(0),uncompressedsize(0),
-	applicationDomain(NullRef),securityDomain(NullRef), //The domains are not needed since the system state create them itself
+	sys(root->getSystemState()),
     f(in),uncompressingFilter(nullptr),
 	backend(nullptr),
 	loader(nullptr),
-	parsedObject(NullRef),url(),fileType(FT_UNKNOWN),
+	parsedObject(root),
+	url(),fileType(FT_UNKNOWN),
 	backgroundWorkerFileLength(0)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
-	setRootMovie(root);
-	if (root)
-	{
-		root->parsethread=this;
-	}
+	root->parsethread=this;
 }
 
 ParseThread::~ParseThread()
 {
 	if(uncompressingFilter)
 	{
-		//Restore the istream
-		f.rdbuf(backend);
 		delete uncompressingFilter;
+		uncompressingFilter=nullptr;
 	}
-	parsedObject.reset();
 }
 
 FILE_TYPE ParseThread::recognizeFile(uint8_t c1, uint8_t c2, uint8_t c3, uint8_t c4)
@@ -1759,9 +1757,11 @@ void ParseThread::execute()
 	{
 		if (backgroundWorkerFileLength)
 		{
+			if (loader && !loader->needsActionScript3())
+				loader->setContent(parsedObject);
 			// it seems that background worker swf files don't contain an swf header (?)
 			// so we skip magic bytes and length and treat data as uncompressed swf
-			parseSWF(applicationDomain->getSystemState()->getSwfVersion());
+			parseSWF(sys->getSwfVersion());
 		}
 		else
 		{
@@ -1778,6 +1778,8 @@ void ParseThread::execute()
 			}
 			else
 			{
+				if (loader && !loader->needsActionScript3())
+					loader->setContent(parsedObject);
 				parseSWF(Signature[3]);
 			}
 		}
@@ -1785,18 +1787,20 @@ void ParseThread::execute()
 	catch(ParseException& e)
 	{
 		Locker l(objectSpinlock);
-		parsedObject = NullRef;
+		parsedObject = nullptr;
 		// Set system error only for main SWF. Loader classes
 		// handle error for loaded SWFs.
 		if(!loader)
 		{
 			LOG(LOG_ERROR,"Exception in ParseThread " << e.cause);
-			getSys()->setError(e.cause, SystemState::ERROR_PARSING);
+			sys->setError(e.cause, SystemState::ERROR_PARSING);
 		}
+		else
+			loader->getContentLoaderInfo()->setContent(nullptr);
 	}
 	catch(ScriptLimitException& e)
 	{
-		auto vm = getRootMovie()->getSystemState()->currentVm;
+		auto vm = sys->currentVm;
 		if (vm != nullptr)
 			vm->halted = true;
 		LOG(LOG_ERROR, "Script limit error in ParseThread. Reason: " << e.cause);
@@ -1805,7 +1809,7 @@ void ParseThread::execute()
 	catch(LightsparkException& e)
 	{
 		LOG(LOG_ERROR,"Exception in ParseThread " << e.cause);
-		getSys()->setError(e.cause, SystemState::ERROR_PARSING);
+		sys->setError(e.cause, SystemState::ERROR_PARSING);
 	}
 	catch(ASObject* e)
 	{
@@ -1821,7 +1825,7 @@ void ParseThread::execute()
 			s << "Unhandled ActionScript exception in ParseThread " << e->toString();
 		else
 			s << "Unhandled ActionScript exception in ParseThread (no type)";
-		getSys()->setError(s.str(), SystemState::ERROR_PARSING);
+		sys->setError(s.str(), SystemState::ERROR_PARSING);
 	}
 	catch(std::exception& e)
 	{
@@ -1840,26 +1844,22 @@ void ParseThread::parseSWF(UI8 ver)
 	}
 
 	objectSpinlock.lock();
-	RootMovieClip* root=nullptr;
-	if(parsedObject.isNull())
+	assert (parsedObject->is<RootMovieClip>());
+	RootMovieClip* root = parsedObject->as<RootMovieClip>();
+	if(loader)
 	{
 		LoaderInfo* li= loader->getContentLoaderInfo();
-		root=RootMovieClip::getInstance(applicationDomain->getInstanceWorker(),li, applicationDomain, securityDomain);
+		root = parsedObject->as<RootMovieClip>();
 		if (backgroundWorkerFileLength)
 		{
 			root->incRef();
-			applicationDomain->getInstanceWorker()->rootClip = _MR(root);
-			applicationDomain->getInstanceWorker()->stage = Class<Stage>::getInstanceSNoArgs(applicationDomain->getInstanceWorker());
+			li->getInstanceWorker()->rootClip = _MR(root);
+			li->getInstanceWorker()->stage = Class<Stage>::getInstanceSNoArgs(li->getInstanceWorker());
 			root->incRef();
-			applicationDomain->getInstanceWorker()->stage->setRoot(_MR(root));
+			li->getInstanceWorker()->stage->setRoot(_MR(root));
 		}
-		parsedObject=_MNR(root);
 		if(!url.empty())
 			root->setOrigin(url, "");
-	}
-	else
-	{
-		root=getRootMovie();
 	}
 	objectSpinlock.unlock();
 
@@ -1931,7 +1931,7 @@ void ParseThread::parseSWF(UI8 ver)
 		if (vm != nullptr && !vm->hasEverStarted())
 			vm->start();
 		if (root->loaderInfo)
-			root->loaderInfo->setOpened();
+			root->loaderInfo->setOpened(false);
 
 		bool done=false;
 		bool empty=true;
@@ -2193,6 +2193,13 @@ void ParseThread::parseExtensions(RootMovieClip* root)
 	}
 }
 
+ApplicationDomain* ParseThread::getApplicationDomain() const
+{
+	if (parsedObject && parsedObject->is<RootMovieClip>())
+		return parsedObject->as<RootMovieClip>()->applicationDomain.getPtr();
+	return nullptr;
+}
+
 void ParseThread::parseBitmap()
 {
 	backend=f.rdbuf();
@@ -2211,33 +2218,22 @@ void ParseThread::parseBitmap()
 		default:
 			break;
 	}
-	_NR<Bitmap> tmp;
+	Bitmap* tmp=nullptr;
 	if (loader->needsActionScript3())
-		tmp = _MNR(Class<Bitmap>::getInstanceS(loader->getInstanceWorker(),li, &f, fileType));
+		tmp = Class<Bitmap>::getInstanceS(loader->getInstanceWorker(),li, &f, fileType);
 	else
-		tmp = _MNR(Class<AVM1Bitmap>::getInstanceS(loader->getInstanceWorker(),li, &f, fileType));
+		tmp = Class<AVM1Bitmap>::getInstanceS(loader->getInstanceWorker(),li, &f, fileType);
 	{
 		Locker l(objectSpinlock);
+		li->setContent(tmp);
 		parsedObject=tmp;
+		if (loader && !loader->needsActionScript3())
+			loader->setContent(parsedObject);
 		tmp->setNeedsTextureRecalculation();
 	}
 	if (li)
 		li->setComplete();
 	uncompressedsize = f.tellg();
-}
-
-_NR<DisplayObject> ParseThread::getParsedObject()
-{
-	Locker l(objectSpinlock);
-	return parsedObject;
-}
-
-void ParseThread::setRootMovie(RootMovieClip *root)
-{
-	Locker l(objectSpinlock);
-	assert(root);
-	root->incRef();
-	parsedObject=_MNR(root);
 }
 
 void ParseThread::getSWFByteArray(ByteArray* ba)
@@ -2286,20 +2282,11 @@ void ParseThread::getSWFByteArray(ByteArray* ba)
 	}
 }
 
-RootMovieClip* ParseThread::getRootMovie() const
-{
-	return dynamic_cast<RootMovieClip*>(parsedObject.getPtr());
-}
-
 void ParseThread::threadAbort()
 {
 	Locker l(objectSpinlock);
-	if(parsedObject.isNull())
-		return;
-	RootMovieClip* root=getRootMovie();
-	if(root==nullptr)
-		return;
-	root->parsingFailed();
+	if(parsedObject && parsedObject->is<RootMovieClip>())
+		parsedObject->as<RootMovieClip>()->parsingFailed();
 }
 
 

@@ -35,7 +35,7 @@ using namespace lightspark;
 RootMovieClip::RootMovieClip(ASWorker* wrk, LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
 	MovieClip(wrk,c),
 	parsingIsFailed(false),waitingforparser(false),hasDefineSceneAndFrameLabelDataTag(false),
-	Background(0xFF,0xFF,0xFF),avm1level(0),
+	Background(0xFF,0xFF,0xFF),avm1level(-1),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
 	this->avm1focusrect=asAtomHandler::falseAtom;
@@ -166,8 +166,6 @@ void RootMovieClip::constructionComplete(bool _explicit, bool forInitAction)
 				getInstanceWorker()->stage->_addChildAt(this,0);
 				this->setOnStage(true,true);
 			}
-			else if (this->loaderInfo && this->loaderInfo->getLoader())
-				this->loaderInfo->getLoader()->setContent(this);
 			if (needsActionScript3())
 			{
 				tiny_string s = "root";
@@ -362,6 +360,7 @@ bool RootMovieClip::destruct()
 	waitingforparser=false;
 	avm1focusrect=asAtomHandler::falseAtom;
 	parsethread=nullptr;
+	AVM1setLevel(-1);
 	return MovieClip::destruct();
 }
 void RootMovieClip::finalize()
@@ -414,5 +413,20 @@ void RootMovieClip::AVM1checkInitActions(MovieClip* sprite)
 		avm1InitActionTags.erase(it);
 		t->executeDirect(sprite);
 		delete t;
+	}
+}
+
+void RootMovieClip::AVM1setLevel(int level)
+{
+	if (level < 0)
+	{
+		if (avm1level >= 0)
+			getSystemState()->stage->AVM1removeLevelRoot(avm1level);
+		avm1level = level;
+	}
+	else
+	{
+		getSystemState()->stage->AVM1SetLevelRoot(level,this);
+		avm1level = level;
 	}
 }

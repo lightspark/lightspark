@@ -56,6 +56,7 @@ private:
 	void executeAVM1Scripts(bool implicit);
 	Mutex DisplayObjectRemovedMutex;
 	unordered_set<DisplayObject*> removedDisplayObjects;
+	map<int,RootMovieClip*> avm1MapLevelToRoot;
 protected:
 	virtual void eventListenerAdded(const tiny_string& eventName) override;
 public:
@@ -140,6 +141,9 @@ public:
 	void AVM1AddDisplayObject(DisplayObject* dobj);
 	void AVM1RemoveDisplayObject(DisplayObject* dobj);
 	void AVM1AddScriptToExecute(AVM1scriptToExecute& script);
+	void AVM1SetLevelRoot(int level, RootMovieClip* root);
+	void AVM1removeLevelRoot(int level);
+	RootMovieClip* AVM1getLevelRoot(int level);
 };
 
 class StageScaleMode: public ASObject

@@ -328,7 +328,8 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 			//throw ParseException("Malformed SWF file");
 		}
 
-		root->loaderInfo->setBytesLoaded(f.tellg());
+		if (!root->loaderInfo->isFromByteArray())
+			root->loaderInfo->setBytesLoaded(f.tellg());
 	}
 	if (datatag)
 	{
@@ -3462,10 +3463,7 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 				worker->incRef();
 				getVm(root->getSystemState())->addEvent(_MR(worker),_MR(Class<Event>::getInstanceS(root->getInstanceWorker(),"workerState")));
 			}
-			else if (!isSysRoot)
-				getVm(root->getSystemState())->addBufferEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
-			else
-				getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
+			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
 		}
 		else
 		{
@@ -3477,10 +3475,7 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 			if (tag == nullptr)
 				return;
 			root->applicationDomain->addBinding(className, tag);
-			if (!isSysRoot)
-				getVm(root->getSystemState())->addBufferEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(tag,className)));
-			else
-				getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(tag,className)));
+			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(tag,className)));
 		}
 	}
 }

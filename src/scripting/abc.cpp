@@ -1333,6 +1333,23 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				m_sys->flushInvalidationQueue();
 				break;
 			}
+			case LOADMOVIE_EVENT:
+			{
+				LoadMovieEvent* ev=static_cast<LoadMovieEvent*>(e.second.getPtr());
+				LOG(LOG_CALLS,"LoadMovieEvent");
+				LoaderThread* thread = ev->getThread();
+				if (!m_sys->runSingleThreaded)
+				{
+					thread->getLoader()->addJob(thread);
+					m_sys->addJob(thread);
+				}
+				else
+				{
+					thread->execute();
+					thread->jobFence();
+				}
+				break;
+			}
 			case PARSE_RPC_MESSAGE:
 			{
 				ParseRPCMessageEvent* ev=static_cast<ParseRPCMessageEvent*>(e.second.getPtr());
@@ -1544,6 +1561,13 @@ Class_inherit* ABCVm::findClassInherit(const string& s, ApplicationDomain* appDo
 
 void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
 {
+	if (base.getPtr() != base->getSystemState()->mainClip
+			&& !base->isOnStage()
+			&& base->loaderInfo->hasAVM1Target())
+	{
+		base->setConstructorCallComplete();
+		return; // loader was removed from stage. clip is ignored
+	}
 	Class_inherit* derived_class_tmp = findClassInherit(s, base->applicationDomain.getPtr());
 	if(!derived_class_tmp)
 		return;

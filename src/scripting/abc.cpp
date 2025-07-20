@@ -307,18 +307,24 @@ multiname* ABCContext::s_getMultiname(ABCContext* th, asAtom& n, ASObject* n2, i
  * with the next invocation of getMultinameImpl if
  * getMultinameRTData(midx) != 0.
  */
-multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int midx,bool isrefcounted)
+multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int midx, bool isrefcounted, bool docache)
 {
 	if (constant_pool.multiname_count == 0)
-		return NULL;
+		return nullptr;
 	multiname* ret;
 	multiname_info* m=&constant_pool.multinames[midx];
 
 	/* If this multiname is not cached, resolve its static parts */
-	if(m->cached==NULL)
+	if(m->cached==nullptr || !docache)
 	{
-		m->cached=new (getVm(applicationDomain->getSystemState())->vmDataMemory) multiname(getVm(applicationDomain->getSystemState())->vmDataMemory);
-		ret=m->cached;
+		ret=new (getVm(applicationDomain->getSystemState())->vmDataMemory) multiname(getVm(applicationDomain->getSystemState())->vmDataMemory);
+		if (docache)
+			m->cached=ret;
+		else
+		{
+			// remember non-cached multinames and destroy them when this ABCContext is destructed
+			multinames_created.push_back(ret);
+		}
 		if(midx==0)
 		{
 			ret->name_s_id=BUILTIN_STRINGS::ANY;
@@ -456,9 +462,10 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 				throw UnsupportedException("Multiname to String not implemented");
 		}
 	}
+	else
+		ret=m->cached;
 
 	/* Now resolve its dynamic parts */
-	ret=m->cached;
 	if(midx==0 || ret->isStatic)
 		return ret;
 	switch(m->kind)
@@ -723,6 +730,11 @@ ABCContext::ABCContext(ApplicationDomain* appDomain,SecurityDomain* secDomain, i
 
 ABCContext::~ABCContext()
 {
+	while (!multinames_created.empty())
+	{
+		delete multinames_created.front();
+		multinames_created.pop_front();
+	}
 }
 
 #ifdef PROFILING_SUPPORT

@@ -258,6 +258,7 @@ public:
 	std::vector<asAtom> constantAtoms_byte;
 	std::vector<asAtom> constantAtoms_short;
 	std::unordered_map<uint32_t,asAtom> constantAtoms_cached;
+	std::list<multiname*> multinames_created;
 	ATOMIC_INT32(atomsCachedMaxID);
 	uint32_t addCachedConstantAtom(asAtom a);
 	/**
@@ -306,7 +307,7 @@ public:
 	}
 	
 	multiname* getMultiname(unsigned int m, call_context* th);
-	multiname* getMultinameImpl(asAtom& rt1, ASObject* rt2, unsigned int m, bool isrefcounted = true);
+	multiname* getMultinameImpl(asAtom& rt1, ASObject* rt2, unsigned int m, bool isrefcounted = true, bool docache=true);
 	void buildInstanceTraits(ASObject* obj, int class_index);
 	ABCContext(ApplicationDomain* appDomain,SecurityDomain* secDomain, std::istream& in, ABCVm* vm) DLL_PUBLIC;
 	~ABCContext();

@@ -2146,11 +2146,25 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				bool found = false;
 				bool done=false;
 				multiname* name=mi->context->getMultiname(t,nullptr);
+				if (!name
+						&& mi->context->constant_pool.multinames[t].runtimeargs==1
+						&& state.operandlist.size() > 0
+						&& state.operandlist.back().type != OPERANDTYPES::OP_LOCAL
+						&& state.operandlist.back().type != OPERANDTYPES::OP_CACHED_SLOT)
+				{
+					asAtom o = *mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
+					name = mi->context->getMultinameImpl(o,nullptr,t);
+					if (name)
+					{
+						state.operandlist.back().removeArg(state);
+						state.operandlist.pop_back();
+					}
+				}
 				bool isborrowed = false;
 				variable* v = nullptr;
 				Class_base* cls = function->inClass;
 				asAtom otmp = asAtomHandler::invalidAtom;
-				if (name && name->isStatic)
+				if (name)
 				{
 					if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 					{
@@ -2932,7 +2946,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								}
 								clearOperands(state,false,&lastlocalresulttype);
 							}
-							removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+2);
+							removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
 							break;
 						default:
 							state.preloadedcode.push_back((uint32_t)opcode);
@@ -4383,26 +4397,45 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #ifdef ENABLE_OPTIMIZATION
 				if (state.jumptargets.find(p) == state.jumptargets.end())
 				{
-					switch (mi->context->constant_pool.multinames[t].runtimeargs)
+					int runtimeargs = mi->context->constant_pool.multinames[t].runtimeargs;
+					multiname* name = nullptr;
+					if (runtimeargs==0)
+						name = mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
+					else if (runtimeargs==1
+							&& state.operandlist.size() > 1
+							&& state.operandlist.back().type != OPERANDTYPES::OP_LOCAL
+							&& state.operandlist.back().type != OPERANDTYPES::OP_CACHED_SLOT)
+					{
+						asAtom o = *mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
+						name = mi->context->getMultinameImpl(o,nullptr,t,true,false);
+						if (name)
+						{
+							state.operandlist.back().removeArg(state);
+							state.operandlist.pop_back();
+							removetypestack(typestack,1);
+							runtimeargs=0;
+						}
+					}
+					switch (runtimeargs)
 					{
 						case 0:
 						{
-							multiname* name = mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
 							Class_base* resulttype = nullptr;
 							if (state.operandlist.size() > 0 && state.operandlist.back().type != OP_LOCAL && state.operandlist.back().type != OP_CACHED_SLOT)
 							{
 								asAtom* a = mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
-								if (asAtomHandler::getObject(*a))
+								ASObject* obj = asAtomHandler::getObject(*a);
+								if (obj)
 								{
 									bool isborrowed=false;
-									variable* v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,asAtomHandler::getObject(*a)->getClass(),nullptr,&isborrowed,false,wrk);
+									variable* v = obj->findVariableByMultiname(*name,obj->getClass(),nullptr,&isborrowed,false,wrk);
 									if (v && v->kind == CONSTANT_TRAIT && asAtomHandler::isInvalid(v->getter) )
 									{
 										state.operandlist.back().removeArg(state);
 										state.operandlist.pop_back();
 										addCachedConstant(state,mi, v->var,code);
 										addname = false;
-										removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+										removetypestack(typestack,runtimeargs+1);
 										typestack.push_back(typestackentry(asAtomHandler::getClass(v->var,function->getSystemState()),isborrowed|| asAtomHandler::isClass(v->var)));
 										break;
 									}
@@ -4417,28 +4450,28 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										typestack.push_back(typestackentry(resulttype,false));
 										break;
 									}
-									if (v && asAtomHandler::is<Class_base>(*a) && v->kind==DECLARED_TRAIT && !isborrowed)
+									if (v && obj->is<Class_base>() && v->kind==DECLARED_TRAIT && !isborrowed)
 									{
 										if (asAtomHandler::is<IFunction>(v->var)) // in function declarations the resulttype of the function is stored in v->type
 											resulttype = Class<IFunction>::getRef(function->getSystemState()).getPtr();
 										else
 											resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
 									}
-									if (v && v->slotid && (!typestack.back().obj || !typestack.back().classvar) && (!asAtomHandler::is<Class_base>(*a) || v->kind!=INSTANCE_TRAIT))
+									if (v && v->slotid && (!typestack.back().obj || !typestack.back().classvar) && (!obj->is<Class_base>() || v->kind!=INSTANCE_TRAIT))
 									{
 										Class_base* resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
-										if (asAtomHandler::getObject(*a)->is<Global>())
+										if (obj->is<Global>())
 										{
 											// ensure init script is run
 											asAtom ret = asAtomHandler::invalidAtom;
-											asAtomHandler::getObject(*a)->getVariableByMultiname(ret,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX),wrk);
+											obj->getVariableByMultiname(ret,*name,GET_VARIABLE_OPTION(DONT_CALL_GETTER|FROM_GETLEX),wrk);
 											ASATOM_DECREF(ret);
 										}
 										if (setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_GETSLOT_SETSLOT))
 										{
 											state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint =v->slotid-1;
 											addname = false;
-											removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+											removetypestack(typestack,runtimeargs+1);
 											typestack.push_back(typestackentry(resulttype,false));
 											break;
 										}
@@ -4462,7 +4495,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											lastlocalresulttype = resulttype;
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = asAtomHandler::getObject(v->getter);
 										addname = false;
-										removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+										removetypestack(typestack,runtimeargs+1);
 										typestack.push_back(typestackentry(resulttype,false));
 										break;
 									}
@@ -4487,7 +4520,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 												lastlocalresulttype = resulttype;
 											state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = asAtomHandler::getObject(v->getter);
 											addname = false;
-											removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+											removetypestack(typestack,runtimeargs+1);
 											typestack.push_back(typestackentry(resulttype,false));
 											break;
 										}
@@ -4535,7 +4568,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											state.operandlist.pop_back();
 											addCachedConstant(state,mi, v->var,code);
 											addname = false;
-											removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+											removetypestack(typestack,runtimeargs+1);
 											typestack.push_back(typestackentry(asAtomHandler::getClass(v->var,function->getSystemState()),asAtomHandler::isClass(v->var)));
 											break;
 										}
@@ -4551,7 +4584,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 													state.operandlist.pop_back();
 													addname = false;
 													addCachedSlot(state,index,v->slotid,code,resulttype);
-													removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+													removetypestack(typestack,runtimeargs+1);
 													typestack.push_back(typestackentry(resulttype,false));
 													ASATOM_DECREF(o);
 													break;
@@ -4565,7 +4598,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 													lastlocalresulttype = resulttype;
 												addname = false;
 												ASATOM_DECREF(o);
-												removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+												removetypestack(typestack,runtimeargs+1);
 												typestack.push_back(typestackentry(resulttype,false));
 												break;
 											}
@@ -4580,7 +4613,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 													lastlocalresulttype = resulttype;
 												state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
 												ASATOM_DECREF(o);
-												removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+												removetypestack(typestack,runtimeargs+1);
 												typestack.push_back(typestackentry(resulttype,false));
 												break;
 											}
@@ -4598,7 +4631,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								addname = false;
 							}
 							state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
-							removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+							removetypestack(typestack,runtimeargs+1);
 							typestack.push_back(typestackentry(resulttype,false));
 							break;
 						}
@@ -4632,14 +4665,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									addname = false;
 								}
 							}
-							removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+							removetypestack(typestack,runtimeargs+1);
 							typestack.push_back(typestackentry(resulttype,false));
 							break;
 						}
 						default:
 							state.preloadedcode.push_back((uint32_t)opcode);
 							clearOperands(state,true,&lastlocalresulttype);
-							removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+							removetypestack(typestack,runtimeargs+1);
 							typestack.push_back(typestackentry(nullptr,false));
 							break;
 					}

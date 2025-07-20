@@ -97,7 +97,7 @@ string ASObject::toDebugString() const
 	if (this->getConstant())
 		sprintf(buf,"(%p%s)",this,this->isConstructed()?"":" not constructed");
 	else
-		sprintf(buf,"(%p/%d/%d/%d%s)",this,this->getRefCount(),this->storedmembercount,this->getConstant(),this->isConstructed()?"":" not constructed");
+		sprintf(buf,"(%p/%d/%d/%d%s%s)",this,this->getRefCount(),this->storedmembercount,this->getConstant(),this->isConstructed()?"":" not constructed",this->markedforgarbagecollection?" gc":"");
 	ret += buf;
 #endif
 	return ret;
@@ -890,6 +890,8 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 			cls->addoverriddenmethod(nameId);
 			cls = cls->super.getPtr();
 		}
+		if (isBorrowed)
+			this->as<Class_base>()->setupBorrowedSlot(nameId,obj);
 	}
 	obj->min_swfversion = min_swfversion;
 	switch(type)

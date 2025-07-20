@@ -1125,7 +1125,7 @@ abc_function ABCVm::abcfunctions[]={
 	abc_coerce_s_local_localresult,
 	abc_coerce_s_constant_setslotnocoerce,// 0x3ac ABC_OP_OPTIMZED_COERCES_SETSLOT
 	abc_coerce_s_local_setslotnocoerce,
-	abc_callpropvoidSlotVarCached_constant,// 0x3ae ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME_MULTIARGS_CACHED_CALLER
+	abc_callpropvoidSlotVarCached_constant,// 0x3ae ABC_OP_OPTIMZED_CALLPROPVOID_SLOTVAR_MULTIARGS_CACHED_CALLER
 	abc_callpropvoidSlotVarCached_local,
 
 	abc_callpropvoidSlotVar_constant_constant,// 0x3b0 ABC_OP_OPTIMZED_CALLPROPVOID_SLOTVAR
@@ -1150,6 +1150,33 @@ abc_function ABCVm::abcfunctions[]={
 	abc_callpropertySlotVarCached_local,
 	abc_callpropertySlotVarCached_constant_localResult,
 	abc_callpropertySlotVarCached_local_localResult,
+	abc_callpropvoidBorrowedSlot_constant,// 0x3c4 ABC_OP_OPTIMZED_CALLPROPVOID_BORROWEDSLOT_NOARGS
+	abc_callpropvoidBorrowedSlot_local,
+	abc_callpropvoidBorrowedSlotCached_constant,// 0x3c6 ABC_OP_OPTIMZED_CALLPROPVOID_BORROWEDSLOT_MULTIARGS_CACHED_CALLER
+	abc_callpropvoidBorrowedSlotCached_local,
+
+	abc_callpropertyBorrowedSlot_constant_constant,// 0x3c8 ABC_OP_OPTIMZED_CALLPROPERTY_BORROWEDSLOT
+	abc_callpropertyBorrowedSlot_local_constant,
+	abc_callpropertyBorrowedSlot_constant_local,
+	abc_callpropertyBorrowedSlot_local_local,
+	abc_callpropertyBorrowedSlot_constant_constant_localresult,
+	abc_callpropertyBorrowedSlot_local_constant_localresult,
+	abc_callpropertyBorrowedSlot_constant_local_localresult,
+	abc_callpropertyBorrowedSlot_local_local_localresult,
+
+	abc_callpropertyBorrowedSlot_constant,// 0x3d0 ABC_OP_OPTIMZED_CALLPROPERTY_BORROWEDSLOT_NOARGS
+	abc_callpropertyBorrowedSlot_local,
+	abc_callpropertyBorrowedSlot_constant_localresult,
+	abc_callpropertyBorrowedSlot_local_localresult,
+	abc_callpropvoidBorrowedSlot_constant_constant,// 0x3d4 ABC_OP_OPTIMZED_CALLPROPVOID_BORROWEDSLOT
+	abc_callpropvoidBorrowedSlot_local_constant,
+	abc_callpropvoidBorrowedSlot_constant_local,
+	abc_callpropvoidBorrowedSlot_local_local,
+
+	abc_callpropertyBorrowedSlotCached_constant,// 0x3d8 ABC_OP_OPTIMZED_CALLPROPERTY_BORROWEDSLOT_MULTIARGS_CACHED_CALLER
+	abc_callpropertyBorrowedSlotCached_local,
+	abc_callpropertyBorrowedSlotCached_constant_localResult,
+	abc_callpropertyBorrowedSlotCached_local_localResult,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -3126,6 +3153,10 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									))
 						{
 							variable* v = asAtomHandler::getObjectNoCheck(*o)->getSlotVar(t);
+							resulttype = asAtomHandler::getObject(*o)->getSlotType(t,state.mi->context);
+							if (resulttype && !resulttype->isConstructed())
+								resulttype=nullptr;
+
 							asAtom cval = v->var;
 							if (!asAtomHandler::isNull(cval) && !asAtomHandler::isUndefined(cval)
 									&& (v->kind == TRAIT_KIND::CONSTANT_TRAIT
@@ -3135,7 +3166,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								it->removeArg(state);
 								state.operandlist.pop_back();
 								addCachedConstant(state,mi, cval,code);
-								resulttype = asAtomHandler::getObject(*o)->getSlotType(t,state.mi->context);
 								typestack.push_back(typestackentry(resulttype,false));
 								break;
 							}

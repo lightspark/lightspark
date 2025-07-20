@@ -266,6 +266,7 @@ void Class_base::copyBorrowedTraits(Class_base* src)
 				existingvar->setter = v.setter;
 				ASATOM_INCREF(v.setter);
 			}
+			setupBorrowedSlot(existingvar->nameStringID,existingvar);
 			continue;
 		}
 		v.issealed = src->isSealed;
@@ -273,6 +274,7 @@ void Class_base::copyBorrowedTraits(Class_base* src)
 		ASATOM_INCREF(v.getter);
 		ASATOM_INCREF(v.setter);
 		borrowedVariables.Variables.insert(make_pair(i->first,v));
+		setupBorrowedSlot(v.nameStringID,&v);
 	}
 }
 
@@ -1235,6 +1237,33 @@ void Class_base::removeAllDeclaredProperties()
 {
 	Variables.removeAllDeclaredProperties();
 	borrowedVariables.removeAllDeclaredProperties();
+}
+
+void Class_base::setupBorrowedSlot(uint32_t nameID, variable* var)
+{
+	uint32_t slotID = findBorrowedSlotID(nameID);
+	if (slotID==UINT32_MAX)
+	{
+		slotID=borrowedVariableSlots.size();
+		borrowedVariableNameSlotMap[nameID]=slotID;
+		borrowedVariableSlots.push_back(var);
+	}
+	else
+	{
+		if (borrowedVariableSlots.size() <= slotID)
+			borrowedVariableSlots.resize(slotID+1);
+		borrowedVariableSlots[slotID]=var;
+	}
+}
+
+uint32_t Class_base::findBorrowedSlotID(uint32_t nameID)
+{
+	auto it = borrowedVariableNameSlotMap.find(nameID);
+	if (it != borrowedVariableNameSlotMap.end())
+		return (*it).second;
+	if (super)
+		return super->findBorrowedSlotID(nameID);
+	return UINT32_MAX;
 }
 
 multiname* Class_base::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)

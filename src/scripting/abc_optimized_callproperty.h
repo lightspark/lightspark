@@ -83,6 +83,32 @@ void abc_callpropertySlotVarCached_local(call_context* context);
 void abc_callpropertySlotVarCached_constant_localResult(call_context* context);
 void abc_callpropertySlotVarCached_local_localResult(call_context* context);
 
+void abc_callpropvoidBorrowedSlotCached_constant(call_context* context);
+void abc_callpropvoidBorrowedSlotCached_local(call_context* context);
+void abc_callpropvoidBorrowedSlot_constant(call_context* context);
+void abc_callpropvoidBorrowedSlot_local(call_context* context);
+void abc_callpropvoidBorrowedSlot_constant_constant(call_context* context);
+void abc_callpropvoidBorrowedSlot_local_constant(call_context* context);
+void abc_callpropvoidBorrowedSlot_constant_local(call_context* context);
+void abc_callpropvoidBorrowedSlot_local_local(call_context* context);
+
+void abc_callpropertyBorrowedSlot_constant(call_context* context);
+void abc_callpropertyBorrowedSlot_local(call_context* context);
+void abc_callpropertyBorrowedSlot_constant_localresult(call_context* context);
+void abc_callpropertyBorrowedSlot_local_localresult(call_context* context);
+void abc_callpropertyBorrowedSlot_constant_constant(call_context* context);
+void abc_callpropertyBorrowedSlot_local_constant(call_context* context);
+void abc_callpropertyBorrowedSlot_constant_local(call_context* context);
+void abc_callpropertyBorrowedSlot_local_local(call_context* context);
+void abc_callpropertyBorrowedSlot_constant_constant_localresult(call_context* context);
+void abc_callpropertyBorrowedSlot_local_constant_localresult(call_context* context);
+void abc_callpropertyBorrowedSlot_constant_local_localresult(call_context* context);
+void abc_callpropertyBorrowedSlot_local_local_localresult(call_context* context);
+void abc_callpropertyBorrowedSlotCached_constant(call_context* context);
+void abc_callpropertyBorrowedSlotCached_local(call_context* context);
+void abc_callpropertyBorrowedSlotCached_constant_localResult(call_context* context);
+void abc_callpropertyBorrowedSlotCached_local_localResult(call_context* context);
+
 }
 
 #endif /* SCRIPTING_ABC_OPTIMIZED_CALLPROPERTY_H */

@@ -4323,10 +4323,9 @@ void ABCVm::abc_add_i_local_constant_localresult(call_context* context)
 			&& !asAtomHandler::isObject(oldres)))
 	{
 		// fast path for common case that both arguments are ints and the result doesn't overflow
-		asAtom res = asAtomHandler::fromInt(context->exec_pos->arg2_int);
 		LOG_CALL("add_i_lcl_fast");
-		res.intval += arg1.intval-ATOM_INTEGER;
-		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		int ret = context->exec_pos->arg2_int + asAtomHandler::getInt(arg1);
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),asAtomHandler::fromInt(ret));
 	}
 	else
 	{
@@ -4356,10 +4355,9 @@ void ABCVm::abc_add_i_constant_local_localresult(call_context* context)
 			&& !asAtomHandler::isObject(oldres)))
 	{
 		// fast path for common case that both arguments are ints and the result doesn't overflow
-		asAtom res = asAtomHandler::fromInt(context->exec_pos->arg1_int);
 		LOG_CALL("add_i_cll_fast");
-		res.intval += arg2.intval-ATOM_INTEGER;
-		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		int ret = context->exec_pos->arg1_int+asAtomHandler::getInt(arg2);
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),asAtomHandler::fromInt(ret));
 	}
 	else
 	{
@@ -4391,8 +4389,8 @@ void ABCVm::abc_add_i_local_local_localresult(call_context* context)
 	{
 		// fast path for common case that both arguments are ints and the result doesn't overflow
 		LOG_CALL("add_i_lll_fast");
-		res.intval += arg2.intval-ATOM_INTEGER;
-		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
+		int ret = asAtomHandler::getInt(res)+asAtomHandler::getInt(arg2);
+		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),asAtomHandler::fromInt(ret));
 	}
 	else
 	{

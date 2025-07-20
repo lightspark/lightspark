@@ -72,6 +72,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 			fromglobal= v != nullptr;
 		}
 		uint32_t instancevarSlotID=0;
+		uint32_t classBorrowedSlotID=UINT32_MAX;
 		if (!v && typestack.size() >= operationcount)
 		{
 			bool isoverridden=false;
@@ -148,8 +149,10 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 						}
 					}
 				}
-				if (isoverridden) // method is overridden, so we can not further optimize it
+				if (isoverridden)
 				{
+					if (cls && cls->is<Class_base>())
+						classBorrowedSlotID = cls->as<Class_base>()->findBorrowedSlotID(name->name_s_id);
 					func=nullptr;
 					v=nullptr;
 				}
@@ -176,6 +179,20 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 								typestack.push_back(typestackentry(resulttype,false));
 							break;
 						}
+						if (classBorrowedSlotID != UINT32_MAX)
+						{
+							if ((opcode == 0x4f && setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_BORROWEDSLOT_NOARGS,opcode,code,p)) ||
+							   ((opcode == 0x46 && setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CALLPROPERTY_BORROWEDSLOT_NOARGS,opcode,code,true,false,resulttype,p,true))))
+							{
+								state.preloadedcode.push_back(0);
+								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local2.pos = classBorrowedSlotID;
+							}
+							removetypestack(typestack,argcount+state.mi->context->constant_pool.multinames[t].runtimeargs+1);
+							if (opcode == 0x46)
+								typestack.push_back(typestackentry(resulttype,false));
+							break;
+						}
+
 						if (state.operandlist.size() > 0
 								&& (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_CONSTANT || state.operandlist.back().type == OP_CACHED_SLOT)
 								&& state.operandlist.back().objtype)
@@ -272,6 +289,19 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 								typestack.push_back(typestackentry(resulttype,false));
 							break;
 						}
+						if (classBorrowedSlotID != UINT32_MAX)
+						{
+							if ((opcode == 0x4f && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_BORROWEDSLOT,opcode,code)) ||
+							   ((opcode == 0x46 && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_BORROWEDSLOT,opcode,code,false,false,true,p,resulttype))))
+							{
+								state.preloadedcode.push_back(0);
+								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local2.pos = classBorrowedSlotID;
+							}
+							removetypestack(typestack,argcount+state.mi->context->constant_pool.multinames[t].runtimeargs+1);
+							if (opcode == 0x46)
+								typestack.push_back(typestackentry(resulttype,false));
+							break;
+						}
 						bool isGenerator=false;
 						bool generatorneedsconversion=false;
 						if (typestack.size() > 1 &&
@@ -291,7 +321,16 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							{
 								// function is a class generator, we can use it as the result type
 								resulttype = asAtomHandler::as<Class_base>(func);
-								if (resulttype == Class<Boolean>::getRef(state.function->getSystemState()).getPtr())
+								if (resulttype == Class<ASObject>::getRef(state.function->getSystemState()).getPtr())
+								{
+									// Object generator can be skipped
+									if (state.operandlist.size() > 1)
+									{
+										isGenerator=true;
+										generatorneedsconversion = false;
+									}
+								}
+								else if (resulttype == Class<Boolean>::getRef(state.function->getSystemState()).getPtr())
 								{
 									// Boolean generator can be skipped or turned into convert_b
 									if (state.operandlist.size() > 1)
@@ -578,6 +617,13 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 									state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
 									state.preloadedcode.at(oppos).pcode.local2.flags = (skipcoerce ? ABC_OP_COERCED : 0);
 									state.preloadedcode.at(oppos).pcode.local3.pos = instancevarSlotID-1;
+								}
+								else if (classBorrowedSlotID != UINT32_MAX)
+								{
+									state.preloadedcode.at(oppos).opcode = (opcode == 0x4f ? ABC_OP_OPTIMZED_CALLPROPVOID_BORROWEDSLOT_MULTIARGS_CACHED_CALLER:ABC_OP_OPTIMZED_CALLPROPERTY_BORROWEDSLOT_MULTIARGS_CACHED_CALLER);
+									state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
+									state.preloadedcode.at(oppos).pcode.local2.flags = (skipcoerce ? ABC_OP_COERCED : 0);
+									state.preloadedcode.at(oppos).pcode.local3.pos = classBorrowedSlotID;
 								}
 								else
 								{

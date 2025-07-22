@@ -346,6 +346,7 @@ public:
 	inline bool isClassInit() { return classInit; }
 	inline bool isScriptInit() { return scriptInit; }
 	inline uint32_t getMethodNumber() { return methodnumber; }
+	inline void setSimpleGetterSetter(multiname* m) { simpleGetterOrSetterName = m; }
 };
 
 /*

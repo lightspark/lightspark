@@ -98,6 +98,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_interpreter_helper.cpp
   scripting/abc_interpreter_preload_callproperty.cpp
   scripting/abc_interpreter_preload_dup.cpp
+  scripting/abc_interpreter_preload_getlex.cpp
   scripting/abc_methods.cpp
   scripting/abc_methods_optimized.cpp
   scripting/abc_methods_optimized_add.cpp

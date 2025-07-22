@@ -146,7 +146,7 @@ private:
 	mutable std::vector<Class_base*> interfaces_added;
 	std::unordered_set<uint32_t> overriddenmethods;
 	std::unordered_map<Class_base*,bool> subclasses_map;
-	std::unordered_map<uint32_t,uint32_t> borrowedVariableNameSlotMap;
+	std::map<QName,uint32_t> borrowedVariableNameSlotMap;
 	std::vector<variable*> borrowedVariableSlots;
 	nsNameAndKind protected_ns;
 	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns, ApplicationDomain* appdomain);
@@ -266,8 +266,8 @@ public:
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk) override;
 	variable* findVariableByMultiname(const multiname& name, Class_base* cls, uint32_t* nsRealID, bool* isborrowed, bool considerdynamic, ASWorker* wrk) override;
-	void setupBorrowedSlot(uint32_t nameID, variable *var);
-	uint32_t findBorrowedSlotID(uint32_t nameID);
+	void setupBorrowedSlot(variable *var);
+	uint32_t findBorrowedSlotID(variable *var);
 	variable* getVariableByBorrowedSlot(uint32_t slot_id)
 	{
 		assert(slot_id < borrowedVariableSlots.size());

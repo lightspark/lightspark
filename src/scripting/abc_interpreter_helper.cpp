@@ -683,6 +683,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					keepchecking=false;
 				break;
 			}
+			case 0x45://callsuper
+			case 0x4e://callsupervoid
 			case 0x4a://constructprop
 			case 0x4f://callpropvoid
 			case 0x46://callproperty
@@ -948,6 +950,8 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				clearOperands(state,false,nullptr,checkchanged);
 			break;
 		}
+		case 0x45://callsuper
+		case 0x4e://callsupervoid
 		case 0x4a://constructprop
 		case 0x4f://callpropvoid
 		case 0x46://callproperty
@@ -1167,11 +1171,11 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			state.defaultlocaltypescacheable.push_back(true);
 			// set optimized opcode to corresponding opcode with local result
 			state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
+			state.preloadedcode[preloadpos].hasLocalResult=true;
 			state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 			state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
 			state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
 			state.lastlocalresultpos=UINT32_MAX;
-
 		}
 		state.duplocalresult=true;
 	}
@@ -1540,21 +1544,59 @@ bool checkmatchingLastObjtype(preloadstate& state, Type* resulttype, Class_base*
 }
 void addOperand(preloadstate& state,operands& op,memorystream& code)
 {
-	if (op.type == OP_CACHED_SLOT)
+	uint32_t opcode=0;
+	switch (op.type)
 	{
-		state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDSLOT);
-		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-		state.preloadedcode.back().pcode.arg3_uint = op.index;
-		state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));
+		case OP_LOCAL:
+			opcode = 0x62;//getlocal
+			break;
+		case OP_CACHED_SLOT:
+			opcode = ABC_OP_OPTIMZED_PUSHCACHEDSLOT;
+			break;
+		case OP_CACHED_CONSTANT:
+			opcode = ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT;
+			break;
+		case OP_DOUBLE:
+			opcode = 0x2f;//pushdouble
+			break;
+		case OP_UNDEFINED:
+			opcode = 0x21;//pushundefined
+			break;
+		case OP_BYTE:
+			opcode = 0x24;//pushbyte
+			break;
+		case OP_SHORT:
+			opcode = 0x25;//pushshort
+			break;
+		case OP_TRUE:
+			opcode = 0x26;//pushtrue
+			break;
+		case OP_FALSE:
+			opcode = 0x27;//pushfalse
+			break;
+		case OP_NAN:
+			opcode = 0x28;//pushnan
+			break;
+		case OP_STRING:
+			opcode = 0x2c;//pushstring
+			break;
+		case OP_INTEGER:
+			opcode = 0x2d;//pushint
+			break;
+		case OP_UINTEGER:
+			opcode = 0x2e;//pushuint
+			break;
+		case OP_NAMESPACE:
+			opcode = 0x31;//pushnamespace
+			break;
+		case OP_NULL:
+			opcode = 0x20;//pushnull
+			break;
 	}
-	else
-	{
-		state.preloadedcode.push_back(0x62); //getlocal
-		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-		state.preloadedcode.back().pcode.arg3_uint = op.index;
-		state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));
-	}
-
+	state.preloadedcode.push_back(opcode);
+	state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+	state.preloadedcode.back().pcode.arg3_uint = op.index;
+	state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));
 }
 void addCachedConstant(preloadstate& state,method_info* mi, asAtom& val,memorystream& code)
 {

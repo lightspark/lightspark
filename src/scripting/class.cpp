@@ -170,9 +170,8 @@ void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, a
 			instancefactory->setRefConstant();
 		}
 	}
-	else
+	else if (super)
 	{
-		assert_and_throw(super);
 		//Our super should not construct, we are going to do it ourselves
 		super->getInstance(worker,ret,false,nullptr,0,realClass);
 		if (instancefactory.isNull() && this->bindingchecked)

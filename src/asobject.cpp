@@ -891,7 +891,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 			cls = cls->super.getPtr();
 		}
 		if (isBorrowed)
-			this->as<Class_base>()->setupBorrowedSlot(nameId,obj);
+			this->as<Class_base>()->setupBorrowedSlot(obj);
 	}
 	obj->min_swfversion = min_swfversion;
 	switch(type)

@@ -4044,20 +4044,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			}
-			case 0x45://callsuper
-			{
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				int32_t t = code.readu30();
-				state.preloadedcode.back().pcode.arg1_int = t;
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				int32_t t2 = code.readu30();
-				state.preloadedcode.back().pcode.arg2_int = t2;
-				clearOperands(state,true,&lastlocalresulttype);
-				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+t2+1);
-				typestack.push_back(typestackentry(nullptr,false));
-				break;
-			}
 			case 0x4c://callproplex
 			{
 				state.preloadedcode.push_back((uint32_t)opcode);
@@ -4071,19 +4057,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+t2+1);
 				typestack.push_back(typestackentry(nullptr,false));
-				break;
-			}
-			case 0x4e://callsupervoid
-			{
-				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				int32_t t = code.readu30();
-				state.preloadedcode.back().pcode.arg1_uint=t;
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				int32_t t2 = code.readu30();
-				state.preloadedcode.back().pcode.arg2_uint=t2;
-				clearOperands(state,true,&lastlocalresulttype);
-				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+t2+1);
 				break;
 			}
 			case 0x35://li8
@@ -4361,6 +4334,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				}
 				break;
 			}
+			case 0x45://callsuper
+				preload_callprop(state,typestack,code,opcode,&lastlocalresulttype,prevopcode);
+				break;
+			case 0x4e://callsupervoid
+				preload_callprop(state,typestack,code,opcode,&lastlocalresulttype,prevopcode);
+				break;
 			case 0x46://callproperty
 			case 0x4f://callpropvoid
 				preload_callprop(state,typestack,code,opcode,&lastlocalresulttype,prevopcode);
@@ -4446,7 +4425,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											lastlocalresulttype = resulttype;
 										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = asAtomHandler::getObject(v->getter);
 										addname = false;
-										removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
+										removetypestack(typestack,runtimeargs+1);
 										typestack.push_back(typestackentry(resulttype,false));
 										break;
 									}

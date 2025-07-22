@@ -41,7 +41,13 @@ struct preloadedcodebuffer
 	bool cachedslot1;
 	bool cachedslot2;
 	bool cachedslot3;
-	preloadedcodebuffer(uint32_t d=0):pcode(),opcode(d),operator_start(d),operator_setslot(UINT32_MAX),cachedslot1(false),cachedslot2(false),cachedslot3(false){}
+	bool hasLocalResult;
+	preloadedcodebuffer(uint32_t d=0):pcode(),opcode(d),
+		operator_start(d),operator_setslot(UINT32_MAX),
+		cachedslot1(false),cachedslot2(false),cachedslot3(false),
+		hasLocalResult(false)
+	{
+	}
 };
 struct preloadstate
 {

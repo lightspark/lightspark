@@ -587,7 +587,7 @@ void ABCVm::abc_callstatic(call_context* context)
 }
 void ABCVm::abc_callsuper(call_context* context)
 {
-	uint32_t t = context->exec_pos->arg1_uint;
+	uint32_t t = (++(context->exec_pos))->arg1_uint;
 	uint32_t t2 = context->exec_pos->arg2_uint;
 	callSuper(context,t,t2,nullptr,true);
 	++(context->exec_pos);
@@ -640,7 +640,7 @@ void ABCVm::abc_callproplex(call_context* context)
 }
 void ABCVm::abc_callsupervoid(call_context* context)
 {
-	uint32_t t = context->exec_pos->arg1_uint;
+	uint32_t t = (++(context->exec_pos))->arg1_uint;
 	uint32_t t2 = context->exec_pos->arg2_uint;
 	callSuper(context,t,t2,nullptr,false);
 	++(context->exec_pos);

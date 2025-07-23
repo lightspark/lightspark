@@ -86,6 +86,25 @@ Activation_object* lightspark::new_activationObject(ASWorker* wrk)
 	return ret;
 }
 
+Catchscope_object* lightspark::new_catchscopeObject(ASWorker* wrk, method_info* mi, uint32_t exceptionnumber)
+{
+	Class_base* c=Class<ASObject>::getClass(wrk->getSystemState());
+	Catchscope_object* ret = wrk->freelist_catchscopeobject.getObjectFromFreeList()->as<Catchscope_object>();
+	if (!ret)
+	{
+		ret=new (c->memoryAccount) Catchscope_object(wrk,c);
+		assert_and_throw(ret);
+	}
+	ret->resetCached();
+	ret->setIsInitialized();
+	ret->constructionComplete();
+	ret->setConstructIndicator();
+	multiname* name = mi->context->getMultiname(mi->body->exceptions[exceptionnumber].var_name, nullptr);
+	multiname* tname = mi->context->getMultiname(mi->body->exceptions[exceptionnumber].exc_type, nullptr);
+	ret->initializeVariableByMultiname(*name,asAtomHandler::undefinedAtom,tname,mi->context,TRAIT_KIND::DYNAMIC_TRAIT,1,true);
+	return ret;
+}
+
 asAtom lightspark::new_AVM1SuperObject(asAtom o,ASObject* super, ASWorker* wrk)
 {
 	Class_base* c=Class<ASObject>::getClass(wrk->getSystemState());

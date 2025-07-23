@@ -1267,6 +1267,7 @@ public:
 	}
 	/*
 	 * Called by ABCVm::buildTraits to create DECLARED_TRAIT or CONSTANT_TRAIT and set their type
+	 * and by new_catchscopeObject to initialize first slot for exception object
 	 */
 	void initializeVariableByMultiname(multiname &name, asAtom& o, multiname* typemname,
 			ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id, bool isenumerable);
@@ -1592,6 +1593,7 @@ class BitmapFilter;
 class Boolean;
 class BlurFilter;
 class ByteArray;
+class Catchscope_object;
 class Class_inherit;
 class ColorTransform;
 class ColorMatrixFilter;
@@ -1742,6 +1744,7 @@ template<> inline bool ASObject::is<BitmapFilter>() const { return subtype==SUBT
 template<> inline bool ASObject::is<Boolean>() const { return type==T_BOOLEAN; }
 template<> inline bool ASObject::is<BlurFilter>() const { return subtype==SUBTYPE_BLURFILTER; }
 template<> inline bool ASObject::is<ByteArray>() const { return subtype==SUBTYPE_BYTEARRAY; }
+template<> inline bool ASObject::is<Catchscope_object>() const { return subtype==SUBTYPE_CATCHSCOPEOBJECT; }
 template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<Class_inherit>() const { return subtype==SUBTYPE_INHERIT; }
 template<> inline bool ASObject::is<ColorTransform>() const { return subtype==SUBTYPE_COLORTRANSFORM; }

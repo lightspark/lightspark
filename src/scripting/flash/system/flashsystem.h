@@ -422,6 +422,7 @@ public:
 	asfreelist* freelist;
 	asfreelist freelist_syntheticfunction;
 	asfreelist freelist_activationobject;
+	asfreelist freelist_catchscopeobject;
 	asfreelist freelist_asobject;
 
 	ASWorker(SystemState* s); // constructor for primordial worker only to be used in SystemState constructor

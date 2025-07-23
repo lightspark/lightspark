@@ -31,6 +31,7 @@
 #include "scripting/abc_optimized_functionsynthetic.h"
 #include "scripting/abc_optimized_getslot.h"
 #include "scripting/abc_optimized_negate.h"
+#include "scripting/abc_optimized_newcatch.h"
 #include "scripting/abc_optimized_setproperty.h"
 #include "scripting/class.h"
 #include "scripting/toplevel/toplevel.h"
@@ -1211,6 +1212,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 	}
 	if (!function->getMethodInfo()->returnType)
 		function->checkParamTypes();
+	function->checkExceptionTypes();
 	state.localtypes.push_back(function->inClass);
 	state.defaultlocaltypes.push_back(function->inClass);
 	state.defaultlocaltypescacheable.push_back(true);
@@ -1228,6 +1230,16 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 	{
 		state.canlocalinitialize.push_back(true);
 	}
+#ifdef ENABLE_OPTIMIZATION
+	if (!mi->body->exceptions.empty())
+	{
+		// reserve first local result for exception object if exception is caught
+		mi->body->localresultcount++;
+		state.localtypes.push_back(nullptr);
+		state.defaultlocaltypes.push_back(nullptr);
+		state.defaultlocaltypescacheable.push_back(true);
+	}
+#endif
 
 	auto itex = mi->body->exceptions.begin();
 	while (itex != mi->body->exceptions.end())
@@ -1679,6 +1691,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 	memorystream code(mi->body->code.data(), code_len);
 	std::list<scope_entry> scopelist;
 	Activation_object* activationobject=nullptr;
+	std::list<Catchscope_object*> catchscopelist;
 	int dup_indicator=0;
 	bool opcode_skipped=false;
 	bool coercereturnvalue=false;
@@ -1687,12 +1700,21 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 	opcode=0;
 	while(!code.atend())
 	{
-		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		state.refreshOldNewPosition(code);
+		state.atexceptiontarget=false;
 		if (state.jumptargets.find(code.tellg()) != state.jumptargets.end())
 			state.canlocalinitialize.clear();
 		while (itcurEx != mi->body->exceptions.end() && itcurEx->target == code.tellg())
 		{
-			typestack.push_back(typestackentry(nullptr,false));
+#ifdef ENABLE_OPTIMIZATION
+			// set exception object via getlocal
+			state.preloadedcode.push_back((uint32_t)0x62);//getlocal
+			uint32_t value = state.mi->body->getReturnValuePos()+1; // first localresult is reserved for exception catch
+			state.preloadedcode.back().pcode.arg3_uint=value;
+			state.operandlist.push_back(operands(OP_LOCAL,itcurEx->exc_class,value,1,state.preloadedcode.size()-1));
+			state.atexceptiontarget=true;
+#endif
+			typestack.push_back(typestackentry(itcurEx->exc_class,false));
 			itcurEx++;
 		}
 		uint8_t prevopcode=opcode;
@@ -1728,7 +1750,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs);
 				typestack.push_back(typestackentry(nullptr,false));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg3_uint=t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -1741,7 +1763,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
 				typestack.push_back(typestackentry(nullptr,false));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg3_uint=t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -1752,7 +1774,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				assert_and_throw(t < mi->context->constant_pool.multiname_count);
 				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg3_uint=t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -1762,7 +1784,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				uint32_t t = code.readu30();
 				typestack.push_back(typestackentry(nullptr,false));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg1_uint = t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -1837,7 +1859,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				removetypestack(typestack,t+2);
 				typestack.push_back(typestackentry(nullptr,false));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg1_uint = t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -1889,7 +1911,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				removetypestack(typestack,t+1);
 				typestack.push_back(typestackentry(nullptr,false));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg3_uint=t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -1906,7 +1928,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				{
 					case 0:
 						state.preloadedcode.push_back((uint32_t)opcode);
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						state.preloadedcode.back().pcode.arg3_uint=t;
 						if (checkForLocalResult(state,code,0,resulttype))
 							state.preloadedcode[state.preloadedcode.size()-1].pcode.func = abc_newobject_noargs_localresult;
@@ -1922,7 +1944,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #endif
 				{
 					state.preloadedcode.push_back((uint32_t)opcode);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					state.preloadedcode.back().pcode.arg3_uint=t;
 					clearOperands(state,true,&lastlocalresulttype);
 				}
@@ -1934,7 +1956,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				removetypestack(typestack,t);
 				typestack.push_back(typestackentry(nullptr,false));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg3_uint=t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -1945,19 +1967,32 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				removetypestack(typestack,1);
 				typestack.push_back(typestackentry(nullptr,false));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg3_uint=t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			}
 			case 0x5a://newcatch
 			{
-				uint32_t t = code.readu30();
-				typestack.push_back(typestackentry(Class<ASObject>::getRef(function->getSystemState()).getPtr(),false));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				state.preloadedcode.back().pcode.arg3_uint=t;
-				clearOperands(state,true,&lastlocalresulttype);
+				state.refreshOldNewPosition(code);
+				uint32_t t = code.readu30();
+#ifdef ENABLE_OPTIMIZATION
+				Catchscope_object* catchscope = new_catchscopeObject(wrk,state.mi, t);
+				catchscopelist.push_back(catchscope);
+				typestack.push_back(typestackentry(catchscope,false));
+				if (checkForLocalResult(state,code,0,nullptr))
+				{
+					state.operandlist.at(state.operandlist.size()-1).instance = catchscope;
+					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func=abc_newcatch_localresult;
+					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint=t;
+				}
+				else
+#endif
+				{
+					state.preloadedcode.back().pcode.arg3_uint=t;
+					clearOperands(state,true,&lastlocalresulttype);
+				}
 				break;
 			}
 			case 0x6e://getglobalSlot
@@ -1965,7 +2000,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				uint32_t t = code.readu30();
 				typestack.push_back(typestackentry(nullptr,false));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg1_uint=t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -1978,7 +2013,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs+1);
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg1_uint=t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -1988,7 +2023,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				uint32_t t = code.readu30();
 				removetypestack(typestack,1);
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg1_uint=t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -2004,7 +2039,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				removetypestack(typestack,1);
 				typestack.push_back(typestackentry(nullptr,false));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg1_uint=t;
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -2018,7 +2053,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					state.preloadedcode.push_back(ABC_OP_OPTIMZED_INCLOCAL_I);
 					state.preloadedcode.back().pcode.arg1_uint = t;
 					state.preloadedcode.back().pcode.arg2_uint = 1;
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					setOperandModified(state,OP_LOCAL,t);
 					clearOperands(state,true,&lastlocalresulttype);
 				}
@@ -2033,7 +2068,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					state.preloadedcode.push_back(ABC_OP_OPTIMZED_DECLOCAL_I);
 					state.preloadedcode.back().pcode.arg1_uint = t;
 					state.preloadedcode.back().pcode.arg2_uint = 1;
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					setOperandModified(state,OP_LOCAL,t);
 					clearOperands(state,true,&lastlocalresulttype);
 				}
@@ -2042,7 +2077,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x08://kill
 			{
 				int32_t p = code.tellg();
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				uint32_t t = code.readu30();
 #ifdef ENABLE_OPTIMIZATION
 				if (state.jumptargets.find(p) != state.jumptargets.end())
@@ -2070,7 +2105,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x94://declocal
 			{
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				uint32_t t = code.readu30();
 				state.preloadedcode.back().pcode.arg1_uint=t;
 				setOperandModified(state,OP_LOCAL,t);
@@ -2080,7 +2115,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x06://dxns
 			{
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg3_uint = code.readu30();
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
@@ -2089,21 +2124,20 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				removetypestack(typestack,1);
 				scopelist.push_back(scope_entry(asAtomHandler::invalidAtom,true));
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x1d://popscope
 				if (!scopelist.empty())
 					scopelist.pop_back();
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x49://constructsuper
 			{
 				int32_t p = code.tellg();
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				uint32_t t =code.readu30();
 				removetypestack(typestack,t+1);
 #ifdef ENABLE_OPTIMIZATION
@@ -2134,8 +2168,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x5d://findpropstrict
 			{
 				int32_t p = code.tellg();
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				uint32_t t =code.readu30();
 				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs);
 				ASObject* resulttype = nullptr;
@@ -2202,7 +2235,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							if ((!function->isStatic || function == function->inClass->getConstructor()) && (isborrowed || v->kind == INSTANCE_TRAIT))
 							{
 								state.preloadedcode.push_back((uint32_t)0xd0); // convert to getlocal_0
-								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+								state.refreshOldNewPosition(code);
 								state.operandlist.push_back(operands(OP_LOCAL,function->inClass, 0,1,state.preloadedcode.size()-1));
 								typestack.push_back(typestackentry(function->inClass,isborrowed));
 								ASATOM_DECREF(otmp);
@@ -2281,7 +2314,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									break;
 								}
 								state.preloadedcode.push_back((uint32_t)ABC_OP_OPTIMZED_GETFUNCSCOPEOBJECT);
-								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+								state.refreshOldNewPosition(code);
 								if (checkForLocalResult(state,code,0,obj->is<Class_base>() ? nullptr : obj->getClass()))
 								{
 									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func=abc_getfuncscopeobject_localresult;
@@ -2327,7 +2360,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				if (scopepos!= UINT32_MAX)
 				{
 					state.preloadedcode.push_back((uint32_t)0x65); //getscopeobject
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					if (checkForLocalResult(state,code,0,nullptr))
 					{
 						state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func=abc_getscopeobject_localresult;
@@ -2358,7 +2391,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #endif
 				{
 					state.preloadedcode.push_back((uint32_t)opcode);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					state.preloadedcode.back().pcode.local3.pos=t;
 					clearOperands(state,true,&lastlocalresulttype);
 				}
@@ -2494,7 +2527,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 											// set slotid into local3.flags of current opcode
 											state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local3.flags |=v->slotid-1;
 
-											state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+											state.refreshOldNewPosition(code);
 											if (!state.operandlist.empty())
 												state.operandlist.pop_back();
 										}
@@ -2643,10 +2676,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				assert_and_throw(value < mi->body->getReturnValuePos());
 				removeInitializeLocalToConstant(state,value);
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg3_uint=value;
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				state.operandlist.push_back(operands(OP_LOCAL,state.localtypes[value],value,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(state.localtypes[value],false));
 				break;
@@ -2702,7 +2734,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x65://getscopeobject
 			{
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				uint32_t t =code.readu30();
 #ifdef ENABLE_OPTIMIZATION
 				assert_and_throw(t < scopelist.size());
@@ -2711,13 +2743,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					++it;
 				asAtom a = (it)->object;
 				Class_base* resulttype = nullptr;
-				if (asAtomHandler::is<Activation_object>(a))
+				if (asAtomHandler::is<Activation_object>(a)
+						|| asAtomHandler::is<Catchscope_object>(a))
 					resulttype = Class<ASObject>::getRef(function->getSystemState()).getPtr();
 				int32_t p = code.tellg();
 				if (state.jumptargets.find(p) == state.jumptargets.end() && code.peekbyteFromPosition(p) == 0x6c)//getslot
 				{
 					// common case getScopeObject followed by getSlot (accessing variables of ActivationObject)
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					code.readbyte();
 					int32_t tslot =code.readu30();
 					assert_and_throw(tslot);
@@ -2738,8 +2771,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				typestack.push_back(typestackentry(resulttype,false));
 				if (checkForLocalResult(state,code,0,resulttype))
 				{
-					if (asAtomHandler::is<Activation_object>(a))
-						state.operandlist.at(state.operandlist.size()-1).instance = asAtomHandler::as<Activation_object>(a);
+					if (asAtomHandler::is<Activation_object>(a)
+							|| asAtomHandler::is<Catchscope_object>(a))
+						state.operandlist.at(state.operandlist.size()-1).instance = asAtomHandler::getObjectNoCheck(a);
 					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func=abc_getscopeobject_localresult;
 					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint=t;
 				}
@@ -2755,8 +2789,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			{
 				removetypestack(typestack,1);
 				int32_t p = code.tellg();
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				int32_t t =code.readu30();
 				assert_and_throw(t);
 				Class_base* resulttype = nullptr;
@@ -2764,14 +2797,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				if (state.operandlist.size() > 0)
 				{
 					auto it = state.operandlist.rbegin();
-					bool isactivationobj = it->instance && it->instance->is<Activation_object>();
+					bool hasslotresult = it->instance && (it->instance->is<Activation_object>() || it->instance->is<Catchscope_object>());
 					if (it->type == OP_LOCAL)
 					{
 						if (state.unchangedlocals.find(it->index) != state.unchangedlocals.end())
 						{
 							it->removeArg(state);
 							state.operandlist.pop_back();
-							if (isactivationobj)
+							if (hasslotresult)
 								resulttype = it->instance->getSlotType(t,state.mi->context);
 							else if (it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
 							{
@@ -2821,7 +2854,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							}
 						}
 					}
-					if (isactivationobj)
+					if (hasslotresult)
 					{
 						resulttype = it->instance->getSlotType(t,state.mi->context);
 					}
@@ -2854,8 +2887,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			{
 				removetypestack(typestack,2);
 				int32_t p = code.tellg();
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				int32_t t =code.readu30();
 				if (!setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SETSLOT,opcode,code))
 					clearOperands(state,true,&lastlocalresulttype);
@@ -2993,9 +3025,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					if (code.peekbyte() == 0x30) // pushscope
 					{
 						// function begins with getlocal_0 and pushscope, can be skipped
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						code.readbyte();
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						mi->needsscope=true;
 						scopelist.push_back(scope_entry(function->inClass ? asAtomHandler::fromObjectNoPrimitive(function->inClass) : asAtomHandler::invalidAtom,false));
 						break;
@@ -3005,15 +3037,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				{
 					// this may happen in unreachable obfuscated code, so we just ignore the opcode
 					LOG(LOG_ERROR,"preload getlocal with argument > local_count:"<<mi->body->local_count<<" "<<hex<<(int)opcode);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-					if (state.jumptargets.find(p) != state.jumptargets.end())
-						clearOperands(state,true,&lastlocalresulttype);
+					state.refreshOldNewPosition(code);
+					state.checkClearOperands(p,&lastlocalresulttype);
 				}
 #endif
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.refreshOldNewPosition(code);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				state.operandlist.push_back(operands(OP_LOCAL,state.localtypes[((uint32_t)opcode)-0xd0],((uint32_t)opcode)-0xd0,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(state.localtypes[((uint32_t)opcode)-0xd0],false));
 				break;
@@ -3028,7 +3058,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			{
 				//skip
 				int32_t p = code.tellg();
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 				{
 					state.jumptargeteresulttypes.erase(p+1);
@@ -3043,7 +3073,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			{
 				//skip
 				int32_t p = code.tellg();
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				code.readu30();
 				if (state.jumptargets.find(p) != state.jumptargets.end())
 				{
@@ -3097,7 +3127,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						&& state.jumptargets.find(pstart) == state.jumptargets.end())
 				{
 					// jump follows throw opcode and is no jump target -> unreachable, jump can be skipped
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					opcode_skipped=true;
 					break;
 				}
@@ -3123,7 +3153,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					jumppositions[state.preloadedcode.size()] = j;
 					jumpstartpositions[state.preloadedcode.size()] = code.tellg();
 					state.preloadedcode.push_back((uint32_t)opcode);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					// skip unreachable code
 					for (int32_t i = 0; i < nextreachable; i++)
 						code.readbyte();
@@ -3139,14 +3169,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						state.jumptargets[p+j+1]--;
 					else
 						state.jumptargets.erase(p+j+1);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					opcode_skipped=true;
 				}
 #else
 				jumppositions[state.preloadedcode.size()] = j;
 				jumpstartpositions[state.preloadedcode.size()] = code.tellg();
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 #endif
 				break;
@@ -3164,14 +3194,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					// iftrue following pushtrue is always true, so the following code is unreachable
 					if (j > 0 && prevopcode==0x26) //pushtrue
 					{
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						skipunreachablecode(state,code);
 						auto it = state.jumptargets.find(code.tellg()+1);
 						if (it != state.jumptargets.end() && it->second > 1)
 							state.jumptargets[code.tellg()+1]--;
 						else
 							state.jumptargets.erase(code.tellg()+1);
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						if (int(code.tellg())-p1 >= j)
 						{
 							// remove pushtrue
@@ -3207,14 +3237,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					// iffalse following pushfalse is always true, so the following code is unreachable
 					if (j > 0 && prevopcode==0x27) //pushfalse
 					{
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						skipunreachablecode(state,code);
 						auto it = state.jumptargets.find(code.tellg()+1);
 						if (it != state.jumptargets.end() && it->second > 1)
 							state.jumptargets[code.tellg()+1]--;
 						else
 							state.jumptargets.erase(code.tellg()+1);
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						if (int(code.tellg())-p1 >= j)
 						{
 							// remove pushfalse
@@ -3258,14 +3288,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 													  ,*function->mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-2].type,state.operandlist[state.operandlist.size()-2].index)
 													  ))
 					{
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						skipunreachablecode(state,code);
 						auto it = state.jumptargets.find(code.tellg()+1);
 						if (it != state.jumptargets.end() && it->second > 1)
 							state.jumptargets[code.tellg()+1]--;
 						else
 							state.jumptargets.erase(code.tellg()+1);
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						if (int(code.tellg())-p1 >= j)
 						{
 							// remove the two arguments
@@ -3316,14 +3346,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 													   ,*function->mi->context->getConstantAtom(state.operandlist[state.operandlist.size()-2].type,state.operandlist[state.operandlist.size()-2].index)
 													   ))
 					{
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						skipunreachablecode(state,code);
 						auto it = state.jumptargets.find(code.tellg()+1);
 						if (it != state.jumptargets.end() && it->second > 1)
 							state.jumptargets[code.tellg()+1]--;
 						else
 							state.jumptargets.erase(code.tellg()+1);
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						if (int(code.tellg())-p1 >= j)
 						{
 							// remove the two arguments
@@ -3407,17 +3437,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				int32_t p = code.tellg()-1;
 				if (setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_LOOKUPSWITCH,opcode,code,code.tellg()))
 					state.oldnewpositions[p] = (int32_t)state.preloadedcode.size()-1;
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				switchpositions[state.preloadedcode.size()] = code.reads24();
 				switchstartpositions[state.preloadedcode.size()] = p;
 				state.preloadedcode.push_back(0);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				uint32_t count = code.readu30();
 				state.preloadedcode.push_back(0);
 				state.preloadedcode.back().pcode.arg3_uint=count;
 				for(unsigned int i=0;i<count+1;i++)
 				{
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					switchpositions[state.preloadedcode.size()] = code.reads24();
 					switchstartpositions[state.preloadedcode.size()] = p;
 					state.preloadedcode.push_back(0);
@@ -3463,8 +3493,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.preloadedcode.push_back((uint32_t)opcode);
 				uint8_t index = value;
 				state.preloadedcode.back().pcode.arg3_int=value;
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				if (state.jumptargets.find(code.tellg()) != state.jumptargets.end() && code.peekbyte() == 0x74)//convert_u
 				{
 					state.operandlist.push_back(operands(OP_UINTEGER,Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),(uint32_t)value,1,state.preloadedcode.size()-1));
@@ -3490,8 +3519,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.preloadedcode.push_back((uint32_t)opcode);
 				uint16_t index = value;
 				state.preloadedcode.back().pcode.arg3_int=value;
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				state.operandlist.push_back(operands(OP_SHORT,Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),index,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
 				break;
@@ -3505,9 +3533,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				}
 				int32_t p = code.tellg();
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.refreshOldNewPosition(code);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				state.operandlist.push_back(operands(OP_TRUE, Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),0,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(function->getSystemState()).getPtr(),false));
 				break;
@@ -3521,9 +3548,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				}
 				int32_t p = code.tellg();
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.refreshOldNewPosition(code);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				state.operandlist.push_back(operands(OP_FALSE, Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),0,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(function->getSystemState()).getPtr(),false));
 				break;
@@ -3537,9 +3563,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				}
 				int32_t p = code.tellg();
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.refreshOldNewPosition(code);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				state.operandlist.push_back(operands(OP_NAN, Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),0,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Number>::getRef(function->getSystemState()).getPtr(),false));
 				break;
@@ -3555,8 +3580,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				}
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.preloadedcode.back().pcode.arg3_uint = value;
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				state.operandlist.push_back(operands(OP_STRING,Class<ASString>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<ASString>::getRef(function->getSystemState()).getPtr(),false));
 				break;
@@ -3572,8 +3596,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				}
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.preloadedcode.back().pcode.arg3_uint = value;
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				state.operandlist.push_back(operands(OP_INTEGER,Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Integer>::getRef(function->getSystemState()).getPtr(),false));
 				break;
@@ -3589,8 +3612,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				}
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.preloadedcode.back().pcode.arg3_uint = value;
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				state.operandlist.push_back(operands(OP_UINTEGER,Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<UInteger>::getRef(function->getSystemState()).getPtr(),false));
 				break;
@@ -3606,8 +3628,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				}
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.preloadedcode.back().pcode.arg3_uint = value;
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				state.operandlist.push_back(operands(OP_DOUBLE,Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Number>::getRef(function->getSystemState()).getPtr(),false));
 				break;
@@ -3631,8 +3652,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				}
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.preloadedcode.back().pcode.arg3_uint = value;
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				state.operandlist.push_back(operands(OP_NAMESPACE,Class<Namespace>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),value,1,state.preloadedcode.size()-1));
 				typestack.push_back(typestackentry(Class<Namespace>::getRef(function->getSystemState()).getPtr(),false));
 				break;
@@ -3640,9 +3660,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x32://hasnext2
 			{
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg1_uint = code.readu30();
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg2_uint = code.readu30();
 				Class_base* resulttype = Class<Boolean>::getRef(function->getSystemState()).getPtr();
 #ifdef ENABLE_OPTIMIZATION
@@ -3650,12 +3670,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				if (state.jumptargets.find(p) == state.jumptargets.end() && code.peekbyteFromPosition(p) == 0x11) //iftrue
 				{
 					// common case hasnext2 followed by iftrue (for each loop)
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					code.readbyte();
 					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func=abc_hasnext2_iftrue;
 					jumppositions[state.preloadedcode.size()-1] = code.reads24();
 					jumpstartpositions[state.preloadedcode.size()-1] = code.tellg();
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					clearOperands(state,true,&lastlocalresulttype);
 				}
 				else if (checkForLocalResult(state,code,0,resulttype))
@@ -3670,9 +3690,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x44://callstatic
 			{
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.arg1_uint = code.readu30();
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				int32_t t = code.readu30();
 				state.preloadedcode.back().pcode.arg2_int = t;
 				clearOperands(state,true,&lastlocalresulttype);
@@ -3683,11 +3703,11 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x4c://callproplex
 			{
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.push_back(0);
 				uint32_t t = code.readu30();
 				state.preloadedcode.back().pcode.arg1_uint = t;
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				uint32_t t2 = code.readu30();
 				state.preloadedcode.back().pcode.arg2_uint = t2;
 				clearOperands(state,true,&lastlocalresulttype);
@@ -3797,7 +3817,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			{
 				state.canlocalinitialize.clear();
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				skipunreachablecode(state,code);
 				break;
@@ -3846,7 +3866,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				{
 					// if localresult of previous action is put into returnvalue, we can skip this opcode
 					opcode_skipped=true;
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 				}
 				else
 #endif
@@ -3983,8 +4003,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x64://getglobalscope
 			{
 				int32_t p = code.tellg();
-				if (state.jumptargets.find(p) != state.jumptargets.end())
-					clearOperands(state,true,&lastlocalresulttype);
+				state.checkClearOperands(p,&lastlocalresulttype);
 				ASObject* resulttype=nullptr;
 #ifdef ENABLE_OPTIMIZATION
 				if (function->func_scope.getPtr() && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic))
@@ -4315,7 +4334,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
 						&& state.operandlist.back().objtype == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 				else
 #endif
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTI,opcode,code,true,true,Class<Integer>::getRef(function->getSystemState()).getPtr(),code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTI_SETSLOT);
@@ -4331,7 +4350,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
 						&& (state.operandlist.back().objtype == Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()
 							|| state.preloadedcode.back().opcode==0x24))//pushbyte
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 				else
 #endif
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTU,opcode,code,true,true,Class<UInteger>::getRef(function->getSystemState()).getPtr(),code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTU_SETSLOT);
@@ -4339,7 +4358,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				typestack.push_back(typestackentry(Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x75://convert_d
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
@@ -4352,7 +4371,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						&& (state.operandlist.back().objtype == Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()
 							|| state.operandlist.back().objtype == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()
 							|| state.operandlist.back().objtype == Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()))
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 				else
 #endif
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTD,opcode,code,true,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTD_SETSLOT);
@@ -4371,7 +4390,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					  code.peekbyte() == 0x12 || //iffalse
 					  code.peekbyte() == 0x96    //not
 					  )))
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 				else
 #endif
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTB,opcode,code,true,true,Class<Boolean>::getRef(function->getSystemState()).getPtr(),code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTB_SETSLOT);
@@ -4563,7 +4582,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x03://throw
 				state.canlocalinitialize.clear();
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,1);
 				skipunreachablecode(state,code);
@@ -4579,13 +4598,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #endif
 				{
 					state.preloadedcode.push_back((uint32_t)opcode);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					clearOperands(state,true,&lastlocalresulttype);
 				}
 				removetypestack(typestack,1);
 				break;
 			case 0x2b://swap
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 #ifdef ENABLE_OPTIMIZATION
 				if (state.operandlist.size()>1
 						&& state.jumptargets.find(code.tellg()) == state.jumptargets.end())
@@ -4604,7 +4623,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x57://newactivation
 			{
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				activationobject = new_activationObject(wrk);
 				activationobject->Variables.Variables.reserve(mi->body->trait_count);
@@ -4674,7 +4693,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				break;
 			case 0xc4://negate_i
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,1);
 				typestack.push_back(typestackentry(Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
@@ -4692,7 +4711,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0xac://strictequals
 			case 0xb4://in
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,2);
 				typestack.push_back(typestackentry(Class<Boolean>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
@@ -4718,13 +4737,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x77://convert_o
 			case 0x78://checkfilter
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,1);
 				typestack.push_back(typestackentry(nullptr,false));
 				break;
 			case 0x70://convert_s
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
@@ -4733,7 +4752,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
 						&& (state.operandlist.back().objtype == Class<ASString>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()))
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 				else
 #endif
 					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_CONVERTS,opcode,code,true,true,Class<ASString>::getRef(function->getSystemState()).getPtr(),code.tellg(),true,false,false,true,ABC_OP_OPTIMZED_CONVERTS_SETSLOT);
@@ -4741,7 +4760,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				typestack.push_back(typestackentry(Class<ASString>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
 				break;
 			case 0x85://coerce_s
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
@@ -4750,7 +4769,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
 						&& (state.operandlist.back().objtype == Class<ASString>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()))
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 				else if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size()>0 && state.operandlist.back().type != OP_LOCAL && state.operandlist.back().type != OP_CACHED_SLOT)
 				{
 					// constant atom can be coerced directly
@@ -4774,7 +4793,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0x71://esc_xelem
 			case 0x72://esc_xattr
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,1);
 				typestack.push_back(typestackentry(nullptr,false));
@@ -4842,24 +4861,24 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				break;
 			case 0xf3://timestamp
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x07://dxnslate
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,1);
 				break;
 			case 0x1f://hasnext
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				removetypestack(typestack,1);
 				break;
 			case 0x89://coerce_o
 				state.preloadedcode.push_back((uint32_t)opcode);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			default:
@@ -4874,7 +4893,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 		}
 	}
 	mi->needscoerceresult = coercereturnvalue;
-	state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+	state.refreshOldNewPosition(code);
 	// also add position for end of code, as it seems that jumps to this position are allowed
 	state.oldnewpositions[code.tellg()+1] = (int32_t)state.preloadedcode.size();
 
@@ -4948,5 +4967,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 	}
 	if (activationobject)
 		activationobject->decRef();
+	for (auto it = catchscopelist.begin(); it != catchscopelist.end(); it++)
+		(*it)->decRef();
 }
 

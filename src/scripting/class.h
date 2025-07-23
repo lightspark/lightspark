@@ -116,6 +116,7 @@ Prototype* new_functionPrototype(ASWorker* wrk, Class_base* functionClass, _NR<P
 Function_object* new_functionObject(asAtom p, ASWorker* wrk);
 ObjectConstructor* new_objectConstructor(Class_base* cls,uint32_t length);
 Activation_object* new_activationObject(ASWorker* wrk);
+Catchscope_object* new_catchscopeObject(ASWorker* wrk, lightspark::method_info* mi, uint32_t exceptionnumber);
 asAtom new_AVM1SuperObject(asAtom o, ASObject* super, ASWorker* wrk);
 
 template<class T,std::size_t N>

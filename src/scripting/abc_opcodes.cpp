@@ -2537,17 +2537,16 @@ void ABCVm::getDescendants(call_context* th, int n)
 			assert_and_throw(asAtomHandler::isFunction(o));
 			
 			//Create a new array
-			asAtom* proxyArgs=g_newa(asAtom, 1);
 			ASObject* namearg = abstract_s(th->worker, name->normalizedName(th->worker));
 			namearg->setProxyProperty(*name);
-			proxyArgs[0]=asAtomHandler::fromObject(namearg);
+			asAtom proxyArgs=asAtomHandler::fromObject(namearg);
 
 			//We now suppress special handling
 			LOG_CALL("Proxy::getDescendants "<<*name<<" "<<asAtomHandler::toDebugString(o));
 			ASATOM_INCREF(o);
 			asAtom v = asAtomHandler::fromObject(obj);
 			asAtom ret=asAtomHandler::invalidAtom;
-			asAtomHandler::callFunction(o,th->worker,ret,v,proxyArgs,1,true);
+			asAtomHandler::callFunction(o,th->worker,ret,v,&proxyArgs,1,true);
 			LOG_CALL("Proxy::getDescendants done " << *name<<" "<<asAtomHandler::toDebugString(o));
 			ASATOM_DECREF(o);
 			RUNTIME_STACK_PUSH(th,ret);
@@ -3086,13 +3085,8 @@ ASObject* ABCVm::pushString(call_context* th, int n)
 
 ASObject* ABCVm::newCatch(call_context* th, int n)
 {
-	ASObject* catchScope = new_asobject(th->worker);
 	assert_and_throw(n >= 0 && (unsigned int)n < th->mi->body->exceptions.size());
-	multiname* name = th->mi->context->getMultiname(th->mi->body->exceptions[n].var_name, nullptr);
-	catchScope->setVariableByMultiname(*name, asAtomHandler::undefinedAtom,CONST_NOT_ALLOWED,nullptr,th->worker);
-	variable* v = catchScope->findVariableByMultiname(*name,nullptr,nullptr,nullptr,true,th->worker);
-	catchScope->initSlot(1, v);
-	return catchScope;
+	return new_catchscopeObject(th->worker,th->mi,n);
 }
 
 void ABCVm::newArray(call_context* th, int n)

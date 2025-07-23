@@ -529,7 +529,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 								// re-add last operand if it is not the result of the previous operation
 								if (reuseoperand || generatorneedsconversion)
 									addOperand(state,op,code);
-								state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+								state.refreshOldNewPosition(code);
 								if (generatorneedsconversion)
 								{
 									// replace call to generator with optimized convert_i/convert_d

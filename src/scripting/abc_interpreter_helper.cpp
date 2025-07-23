@@ -39,9 +39,26 @@ using namespace lightspark;
 
 namespace lightspark
 {
-preloadstate::preloadstate(SyntheticFunction* _f, ASWorker* _w):function(_f),worker(_w),mi(_f->getMethodInfo()),lastlocalresultpos(UINT32_MAX),duplocalresult(false)
+preloadstate::preloadstate(SyntheticFunction* _f, ASWorker* _w):
+	function(_f),worker(_w),
+	mi(_f->getMethodInfo()),
+	lastlocalresultpos(UINT32_MAX),
+	duplocalresult(false),
+	atexceptiontarget(false)
 {
 
+}
+
+void preloadstate::refreshOldNewPosition(memorystream& code)
+{
+	if (!atexceptiontarget)
+		oldnewpositions[code.tellg()] = (int32_t)preloadedcode.size();
+}
+
+void preloadstate::checkClearOperands(uint32_t p, Class_base** lastlocalresulttype)
+{
+	if (!atexceptiontarget && jumptargets.find(p) != jumptargets.end())
+		clearOperands(*this,true,lastlocalresulttype);
 }
 void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bool jumpInCode)
 {
@@ -75,7 +92,7 @@ void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bo
 			b = code.peekbyteFromPosition(pos);
 			if (jumpInCode)
 			{
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				code.seekg(pos);
 				state.oldnewpositions[code.tellg()+1] = (int32_t)state.preloadedcode.size();
 			}
@@ -178,7 +195,7 @@ void setForceInt(preloadstate& state,memorystream& code,Class_base** resulttype)
 	switch (code.peekbyte())
 	{
 		case 0x73://convert_i
-			state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+			state.refreshOldNewPosition(code);
 			code.readbyte();
 			// falls through
 		case 0x35://li8
@@ -1201,14 +1218,14 @@ bool setupInstructionOneArgumentNoResult(preloadstate& state,int operator_start,
 		it = state.operandlist.end();
 		state.preloadedcode.push_back(operator_start);
 		(--it)->fillCode(state,0,state.preloadedcode.size()-1,true);
-		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		state.refreshOldNewPosition(code);
 		state.operandlist.pop_back();
 	}
 	else
 #endif
 	{
 		state.preloadedcode.push_back((uint32_t)opcode);
-		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		state.refreshOldNewPosition(code);
 	}
 	return hasoperands;
 }
@@ -1238,7 +1255,7 @@ bool setupInstructionTwoArgumentsNoResult(preloadstate& state,int operator_start
 		(--it)->fillCode(state,1,state.preloadedcode.size()-1,true,&operator_start);
 		(--it)->fillCode(state,0,state.preloadedcode.size()-1,true,&operator_start);
 		state.preloadedcode.back().pcode.func = ABCVm::abcfunctions[operator_start];
-		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		state.refreshOldNewPosition(code);
 		state.operandlist.pop_back();
 		state.operandlist.pop_back();
 	}
@@ -1246,7 +1263,7 @@ bool setupInstructionTwoArgumentsNoResult(preloadstate& state,int operator_start
 #endif
 	{
 		state.preloadedcode.push_back((uint32_t)opcode);
-		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		state.refreshOldNewPosition(code);
 	}
 	return hasoperands;
 }
@@ -1267,7 +1284,7 @@ bool setupInstructionOneArgument(preloadstate& state,int operator_start,int opco
 		(--it)->fillCode(state,0,state.preloadedcode.size()-1,constantsallowed,nullptr,&operator_start_setslot);
 		if (useargument_for_skip)
 			skiptype = it->objtype;
-		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		state.refreshOldNewPosition(code);
 		state.operandlist.pop_back();
 	}
 	else
@@ -1279,21 +1296,21 @@ bool setupInstructionOneArgument(preloadstate& state,int operator_start,int opco
 			case 0x73://convert_i
 				if (!constantsallowed || skiptype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
 				{
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					code.readbyte();
 				}
 				break;
 			case 0x74://convert_u
 				if (!constantsallowed || skiptype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
 				{
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					code.readbyte();
 				}
 				break;
 			case 0x75://convert_d
 				if (!constantsallowed || skiptype == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()  || skiptype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || skiptype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
 				{
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					code.readbyte();
 				}
 				break;
@@ -1301,19 +1318,19 @@ bool setupInstructionOneArgument(preloadstate& state,int operator_start,int opco
 			case 0x85://coerce_s
 				if (!constantsallowed || skiptype == Class<ASString>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()  || skiptype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr() || skiptype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
 				{
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					code.readbyte();
 				}
 				break;
 			case 0x76://convert_b
 				if (!constantsallowed || skiptype == Class<Boolean>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
 				{
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					code.readbyte();
 				}
 				break;
 			case 0x82://coerce_a
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				code.readbyte();
 				break;
 		}
@@ -1401,7 +1418,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 				asAtomHandler::getObjectNoCheck(res)->setRefConstant();
 			uint32_t value = state.mi->context->addCachedConstantAtom(res);
 			state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
-			state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+			state.refreshOldNewPosition(code);
 			state.preloadedcode.back().pcode.arg3_uint=value;
 			state.operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(res,state.mi->context->applicationDomain->getSystemState()), value,1,state.preloadedcode.size()-1));
 			return true;
@@ -1417,7 +1434,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 		Class_base* op1type = it->objtype;
 		(--it)->fillCode(state,0,state.preloadedcode.size()-1,true,nullptr,&operator_start_setslot);
 		Class_base* op2type = it->objtype;
-		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		state.refreshOldNewPosition(code);
 		state.operandlist.pop_back();
 		state.operandlist.pop_back();
 		switch (operator_start)
@@ -1594,7 +1611,7 @@ void addOperand(preloadstate& state,operands& op,memorystream& code)
 			break;
 	}
 	state.preloadedcode.push_back(opcode);
-	state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+	state.refreshOldNewPosition(code);
 	state.preloadedcode.back().pcode.arg3_uint = op.index;
 	state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));
 }
@@ -1604,7 +1621,7 @@ void addCachedConstant(preloadstate& state,method_info* mi, asAtom& val,memoryst
 		asAtomHandler::getObject(val)->setRefConstant();
 	uint32_t value = mi->context->addCachedConstantAtom(val);
 	state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDCONSTANT);
-	state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+	state.refreshOldNewPosition(code);
 	state.preloadedcode.back().pcode.arg3_uint=value;
 	state.operandlist.push_back(operands(OP_CACHED_CONSTANT,asAtomHandler::getClass(val,mi->context->applicationDomain->getSystemState()),value,1,state.preloadedcode.size()-1));
 }
@@ -1625,7 +1642,7 @@ void addCachedSlot(preloadstate& state, uint32_t localpos, uint32_t slotid,memor
 		state.mi->body->localconstantslots.push_back(sl);
 	}
 	state.preloadedcode.push_back(ABC_OP_OPTIMZED_PUSHCACHEDSLOT);
-	state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+	state.refreshOldNewPosition(code);
 	state.preloadedcode.back().pcode.arg3_uint = value;
 	state.operandlist.push_back(operands(OP_CACHED_SLOT,resulttype,value,1,state.preloadedcode.size()-1));
 }
@@ -1824,7 +1841,7 @@ bool checkforpostfix(preloadstate& state,memorystream& code,uint32_t startpos,st
 					state.preloadedcode.push_back(postfix_opcode);
 					state.preloadedcode.back().pcode.arg1_uint = localpos;
 					state.preloadedcode.back().pcode.local3.pos = loc;
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					setOperandModified(state,OP_LOCAL,localpos);
 					code.seekg(pos);
 					return true;
@@ -1913,7 +1930,7 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 				{
 					// comparison operator is followed by iftrue/iffalse, can be optimized into comparison operator with jump (e.g. equals->ifeq/ifne)
 					code.seekg(pos);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					uint8_t b = code.readbyte();
 					assert(b== 0x11 || b== 0x12);
 					code.reads24();
@@ -1931,7 +1948,7 @@ void setupInstructionComparison(preloadstate& state,int operator_start,int opcod
 					if (multiconditions)
 					{
 						// iftrue/iffalse is followed by pop, skip it
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						code.readbyte();
 					}
 					return;
@@ -1992,7 +2009,7 @@ void setupInstructionIncDecInteger(preloadstate& state,memorystream& code,std::v
 			state.preloadedcode.push_back(opcode == 0xc0 ? ABC_OP_OPTIMZED_INCLOCAL_I : ABC_OP_OPTIMZED_DECLOCAL_I); //inclocal_i/declocal_i
 			state.preloadedcode.back().pcode.arg1_uint = t;
 			state.preloadedcode.back().pcode.arg2_uint = 1;
-			state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+			state.refreshOldNewPosition(code);
 			if (code.readbyte() == 0x63) //setlocal
 				code.readbyte();
 			state.operandlist.pop_back();
@@ -2121,7 +2138,7 @@ bool getLexFindClass(preloadstate& state, multiname* name, bool checkfuncscope,s
 			state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX_FROMSLOT);
 			state.preloadedcode.back().pcode.arg1_uint=slotid;
 			state.preloadedcode.back().pcode.arg2_int=-1;
-			state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+			state.refreshOldNewPosition(code);
 			checkForLocalResult(state,code,1,nullptr);
 			typestack.push_back(typestackentry(nullptr,false));
 			if (r & GETVAR_ISNEWOBJECT)

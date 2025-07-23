@@ -34,6 +34,7 @@
 
 
 #include "scripting/abc.h"
+#include "scripting/abc_interpreter_helper.h" // for ENABLE_OPTIMIZATION
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/display/Stage.h"
@@ -457,20 +458,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				exception_info_abc& exc=mi->body->exceptions[i];
 				if (pos < exc.from || pos > exc.to)
 					continue;
-				bool ok = false;
-				if (!exc.exc_class)
-				{
-					multiname* name=mi->context->getMultiname(exc.exc_type, nullptr);
-					if(name->name_s_id == BUILTIN_STRINGS::ANY)
-						ok = true;
-					else
-					{
-						Type* t = Type::getTypeFromMultiname(name,mi->context,true);
-						exc.exc_class = (Class_base*)dynamic_cast<const Class_base*>(t);
-					}
-				}
-				if (!ok && exc.exc_class)
-					ok = excobj->getClass() && excobj->getClass()->isSubClass(exc.exc_class);
+				bool ok = !exc.exc_class || (excobj->getClass() && excobj->getClass()->isSubClass(exc.exc_class));
 				LOG_CALL("f=" << exc.from << " t=" << exc.to << " type=" << mi->context->getMultiname(exc.exc_type, nullptr));
 				if (ok)
 				{
@@ -478,7 +466,13 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 					no_handler = false;
 					cc->exec_pos = mi->body->preloadedcode.data()+exc.target;
 					cc->runtime_stack_clear();
+#ifdef ENABLE_OPTIMIZATION
+					// first local result is reserved for exception object
+					excobj->incRef();
+					cc->locals[cc->mi->body->getReturnValuePos()+1] = asAtomHandler::fromObject(excobj);
+#else
 					*(cc->stackp++)=asAtomHandler::fromObject(excobj);
+#endif
 					while (cc->curr_scope_stack)
 					{
 						--cc->curr_scope_stack;
@@ -714,6 +708,23 @@ void SyntheticFunction::checkParamTypes(bool opportunistic)
 
 	Type* t = Type::getTypeFromMultiname(mi->returnTypeName(), mi->context,opportunistic);
 	mi->returnType = t;
+}
+
+void SyntheticFunction::checkExceptionTypes()
+{
+	for (unsigned int i=0;i<mi->body->exceptions.size();i++)
+	{
+		if (!mi->body->exceptions[i].exc_class)
+		{
+			multiname* name=mi->context->getMultiname(mi->body->exceptions[i].exc_type, nullptr);
+			if(name->name_s_id != BUILTIN_STRINGS::ANY)
+			{
+				Type* t = Type::getTypeFromMultiname(name,mi->context,true);
+				mi->body->exceptions[i].exc_class = (Class_base*)dynamic_cast<const Class_base*>(t);
+			}
+		}
+	}
+
 }
 
 bool SyntheticFunction::canSkipCoercion(int param, Class_base *cls)

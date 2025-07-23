@@ -1477,7 +1477,6 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 		if (typemname->isStatic && typemname->cachedType == nullptr)
 			typemname->cachedType = type;
 	}
-	assert(traitKind==DECLARED_TRAIT || traitKind==CONSTANT_TRAIT || traitKind == INSTANCE_TRAIT);
 	if (asAtomHandler::getObject(value))
 		cloneable = false;
 

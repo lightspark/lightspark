@@ -34,8 +34,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 {
 	Class_base* resulttype = nullptr;
 	int32_t p = code.tellg();
-	if (state.jumptargets.find(p) != state.jumptargets.end())
-		clearOperands(state,true,lastlocalresulttype);
+	state.checkClearOperands(p,lastlocalresulttype);
 	uint32_t t =code.readu30();
 	multiname* name=state.mi->context->getMultiname(t,nullptr);
 	if (!name || !name->isStatic)
@@ -44,6 +43,28 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 		return;
 	}
 #ifdef ENABLE_OPTIMIZATION
+	// check for entry on exception scope
+	for (auto it = scopelist.rbegin(); it != scopelist.rend(); it++)
+	{
+		if (it->considerDynamic)
+			break;
+		ASObject* obj = asAtomHandler::getObject(it->object);
+		if (obj && obj->is<Catchscope_object>())
+		{
+			variable* v = obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,true,state.worker);
+			if (v && v->slotid==1) // slotid 1 always contains the thrown exception object in the Catchscope_object
+			{
+				resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
+				// set exception object via getlocal
+				state.preloadedcode.push_back((uint32_t)0x62);//getlocal
+				uint32_t value = state.mi->body->getReturnValuePos()+1; // first localresult is reserved for exception catch
+				state.preloadedcode.back().pcode.arg3_uint=value;
+				state.operandlist.push_back(operands(OP_LOCAL,nullptr,value,1,state.preloadedcode.size()-1));
+				typestack.push_back(typestackentry(resulttype,false));
+				return;
+			}
+		}
+	}
 	if (state.function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 	{
 		if (state.function->isStatic && state.function != state.function->inClass->getConstructor())
@@ -63,7 +84,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 				{
 					// property is static variable from class
 					resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					asAtom clAtom = asAtomHandler::fromObjectNoPrimitive(state.function->inClass);
 					addCachedConstant(state,state.mi,clAtom,code);
 					if (v->slotid)
@@ -120,7 +141,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 					// property is getter from class
 					resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
 					state.preloadedcode.push_back((uint32_t)0xd0);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					state.operandlist.push_back(operands(OP_LOCAL,state.function->inClass, 0,1,state.preloadedcode.size()-1));
 					if (state.function->inClass->isInterfaceMethod(*name) ||
 						(state.function->inClass->is<Class_inherit>() && state.function->inClass->as<Class_inherit>()->hasoverriddenmethod(name)))
@@ -144,7 +165,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 					// property is variable from class
 					resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
 					state.preloadedcode.push_back((uint32_t)0xd0);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					state.operandlist.push_back(operands(OP_LOCAL,state.function->inClass, 0,1,state.preloadedcode.size()-1));
 					if (state.function->inClass->is<Class_inherit>()
 						&& !state.function->inClass->as<Class_inherit>()->hasoverriddenmethod(name)
@@ -188,7 +209,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 				{
 					// property is static variable from class
 					resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
-					state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+					state.refreshOldNewPosition(code);
 					asAtom clAtom = asAtomHandler::fromObjectNoPrimitive(cls);
 					addCachedConstant(state,state.mi,clAtom,code);
 					if (v->slotid)
@@ -256,7 +277,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 						state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX_FROMSLOT);
 						state.preloadedcode.back().pcode.arg1_uint=v->slotid;
 						state.preloadedcode.back().pcode.arg2_int=num;
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						checkForLocalResult(state,code,1,nullptr);
 						typestack.push_back(typestackentry(nullptr,false));
 						found=true;
@@ -358,7 +379,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 						}
 						// property is static variable from global
 						resulttype = (Class_base*)(v->isResolved ? dynamic_cast<const Class_base*>(v->type):nullptr);
-						state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+						state.refreshOldNewPosition(code);
 						asAtom clAtom = asAtomHandler::fromObjectNoPrimitive(scope);
 						addCachedConstant(state,state.mi,clAtom,code);
 						if (v->slotid)
@@ -386,7 +407,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 	}
 #endif
 	state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX);
-	state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+	state.refreshOldNewPosition(code);
 	state.preloadedcode[state.preloadedcode.size()-1].pcode.cachedmultiname2=name;
 	if (!checkForLocalResult(state,code,0,resulttype))
 	{

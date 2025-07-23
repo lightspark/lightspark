@@ -133,6 +133,15 @@ public:
 	}
 };
 
+class Catchscope_object: public ASObject
+{
+public:
+	Catchscope_object(ASWorker* wrk, Class_base* c) : ASObject(wrk,c,T_OBJECT,SUBTYPE_CATCHSCOPEOBJECT)
+	{
+		objfreelist = &wrk->freelist_catchscopeobject;
+	}
+};
+
 /* Special object returned when new func() syntax is used.
  * This object looks for properties on the prototype object that is passed in the constructor
  */
@@ -341,6 +350,7 @@ public:
 	}
 	Class_base* getReturnType(bool opportunistic=false) override;
 	void checkParamTypes(bool opportunistic=false);
+	void checkExceptionTypes();
 	bool canSkipCoercion(int param, Class_base* cls);
 	inline bool isFromNewFunction() { return fromNewFunction; }
 	inline bool isClassInit() { return classInit; }

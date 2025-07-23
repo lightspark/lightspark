@@ -52,6 +52,7 @@ struct preloadedcodebuffer
 struct preloadstate
 {
 	std::vector<operands> operandlist;
+	// map from position in original code to position in optimized code
 	std::map<int32_t,int32_t> oldnewpositions;
 	std::map<int32_t,int32_t> jumptargets;
 	// result type from the top of the typestack at start of jump
@@ -69,7 +70,10 @@ struct preloadstate
 	std::vector<preloadedcodebuffer> preloadedcode;
 	uint32_t lastlocalresultpos;
 	bool duplocalresult;
+	bool atexceptiontarget;
 	preloadstate(SyntheticFunction* _f, ASWorker* _w);
+	void refreshOldNewPosition(memorystream& code);
+	void checkClearOperands(uint32_t p,Class_base** lastlocalresulttype);
 };
 
 struct operands

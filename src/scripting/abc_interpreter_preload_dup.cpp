@@ -71,7 +71,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 	if (state.jumptargets.find(p) != state.jumptargets.end())
 	{
 		state.preloadedcode.push_back((uint32_t)opcode);
-		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		state.refreshOldNewPosition(code);
 		clearOperands(state,true,lastlocalresulttype);
 		typestack.push_back(typestack.back());
 		return;
@@ -321,7 +321,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 				state.operandlist.pop_back();
 				state.canlocalinitialize.clear();
 				state.preloadedcode.push_back(opcode_optimized);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.local_pos1 = op.index;
 				state.preloadedcode.back().cachedslot1 = op.type == OP_CACHED_SLOT;
 				jumppositions[state.preloadedcode.size()-1] = jump;
@@ -336,7 +336,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 			{
 				op.removeArg(state);
 				state.preloadedcode.push_back(opcode_optimized);
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.local_pos1 = op.index;
 				state.preloadedcode.back().cachedslot1 = op.type == OP_CACHED_SLOT;
 				state.preloadedcode.back().pcode.local_pos2 = num;
@@ -350,7 +350,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 				removeOperands(state,false,nullptr,1);
 				state.preloadedcode.push_back(0x62);//getlocal
 				state.preloadedcode.back().pcode.arg3_uint = num2;
-				state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+				state.refreshOldNewPosition(code);
 				state.operandlist.push_back(operands(OP_LOCAL,restype,num2,1,state.preloadedcode.size()-1));
 				state.operandlist.back().duparg1=true;
 				return;
@@ -367,7 +367,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 			uint32_t val = state.preloadedcode[preloadedcodepos].pcode.arg3_uint;
 			state.preloadedcode.push_back(state.preloadedcode[preloadedcodepos].opcode);
 			state.preloadedcode.back().pcode.arg3_uint=val;
-			state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+			state.refreshOldNewPosition(code);
 			state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));
 		}
 	}
@@ -375,7 +375,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 #endif
 	{
 		state.preloadedcode.push_back((uint32_t)opcode);
-		state.oldnewpositions[code.tellg()] = (int32_t)state.preloadedcode.size();
+		state.refreshOldNewPosition(code);
 	}
 	typestack.push_back(typestack.back());
 }

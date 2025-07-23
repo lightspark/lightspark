@@ -107,6 +107,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_methods_optimized_coerce_s.cpp
   scripting/abc_methods_optimized_convert_s.cpp
   scripting/abc_methods_optimized_getslot.cpp
+  scripting/abc_methods_optimized_newcatch.cpp
   scripting/abc_methods_optimized_negate.cpp
   scripting/abc_methods_optimized_functionbuiltin.cpp
   scripting/abc_methods_optimized_functionsynthetic.cpp

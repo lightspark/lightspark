@@ -194,6 +194,7 @@ void preloadFunction_secondPass(preloadstate& state);
 void preload_dup(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, lightspark::Class_base** lastlocalresulttype,std::map<int32_t,int32_t>& jumppositions,std::map<int32_t,int32_t>& jumpstartpositions);
 void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack,memorystream& code,int opcode,Class_base** lastlocalresulttype,uint8_t prevopcode);
 void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, lightspark::Class_base** lastlocalresulttype,std::list<scope_entry>& scopelist,uint32_t simple_getter_opcode_pos);
+void preload_setproperty(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, Class_base** lastlocalresulttype, uint32_t simple_setter_opcode_pos);
 }
 #define ABC_OP_OPTIMZED_INCREMENT 0x00000100
 #define ABC_OP_OPTIMZED_DECREMENT 0x00000102

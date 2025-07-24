@@ -99,6 +99,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_interpreter_preload_callproperty.cpp
   scripting/abc_interpreter_preload_dup.cpp
   scripting/abc_interpreter_preload_getlex.cpp
+  scripting/abc_interpreter_preload_setproperty.cpp
   scripting/abc_methods.cpp
   scripting/abc_methods_optimized.cpp
   scripting/abc_methods_optimized_add.cpp
@@ -112,6 +113,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_methods_optimized_functionbuiltin.cpp
   scripting/abc_methods_optimized_functionsynthetic.cpp
   scripting/abc_methods_optimized_setproperty.cpp
+  scripting/abc_methods_optimized_setslot.cpp
   scripting/abc_optimizer.cpp
   scripting/abc_opcodes.cpp
   scripting/abctypes.cpp

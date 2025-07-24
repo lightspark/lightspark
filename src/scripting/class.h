@@ -228,6 +228,9 @@ public:
 			ret->initStandardProps();
 			if (ClassName<T>::isAVM1)
 				ret->AVM1initPrototype();
+			ret->setIsInitialized();
+			ret->constructionComplete();
+			ret->setConstructIndicator();
 		}
 		else
 			ret=static_cast<Class<T>*>(*retAddr);

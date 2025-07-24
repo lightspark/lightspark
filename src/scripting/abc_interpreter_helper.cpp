@@ -26,6 +26,7 @@
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Boolean.h"
+#include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/Namespace.h"
 #include "scripting/toplevel/Number.h"
@@ -2154,7 +2155,7 @@ bool getLexFindClass(preloadstate& state, multiname* name, bool checkfuncscope,s
 		{
 			addCachedConstant(state,state.mi, o,code);
 			Class_base* cls = asAtomHandler::getClass(o,state.function->getSystemState());
-			typestack.push_back(typestackentry(cls,true));
+			typestack.push_back(typestackentry(cls,false));
 			return true;
 		}
 	}
@@ -2446,6 +2447,45 @@ void preloadFunction_secondPass(preloadstate& state)
 		}
 	}
 #endif
+}
+
+variable* getTempVariableFromClass(Class_base* cls, asAtom& otmp, multiname* name, ASWorker* wrk)
+{
+	if (cls->is<Class_inherit>())
+		cls->as<Class_inherit>()->checkScriptInit();
+
+	if (cls != Class_object::getRef(cls->getSystemState()).getPtr()
+		&& cls != Class<Global>::getRef(cls->getSystemState()).getPtr()
+		&& !cls->isInterface)
+		cls->getInstance(wrk,otmp,false,nullptr,0);
+	ASObject* obj = asAtomHandler::getObject(otmp);
+	if (obj)
+	{
+		cls->setupDeclaredTraits(obj,false);
+		return obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
+	}
+	return nullptr;
+}
+
+Class_base* getSlotResultTypeFromClass(Class_base* cls, uint32_t slot_id, preloadstate& state)
+{
+	asAtom otmp = asAtomHandler::invalidAtom;
+	if (cls->is<Class_inherit>())
+		cls->as<Class_inherit>()->checkScriptInit();
+
+	if (cls != Class_object::getRef(cls->getSystemState()).getPtr()
+		&& cls != Class<Global>::getRef(cls->getSystemState()).getPtr()
+		&& !cls->isInterface)
+		cls->getInstance(state.worker,otmp,false,nullptr,0);
+	ASObject* obj = asAtomHandler::getObject(otmp);
+	if (obj)
+	{
+		cls->setupDeclaredTraits(obj,false);
+		Class_base* resulttype = obj->getSlotType(slot_id,state.mi->context);
+		obj->decRef();
+		return resulttype;
+	}
+	return nullptr;
 }
 
 }

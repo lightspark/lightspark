@@ -2203,14 +2203,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
 					{
 						// property may be a slot variable, so check the class instance first
-						if (cls != Class_object::getRef(function->getSystemState()).getPtr())
-							cls->getInstance(wrk,otmp,false,nullptr,0);
-						ASObject* obj = asAtomHandler::getObject(otmp);
-						if (obj)
-						{
-							cls->setupDeclaredTraits(obj,false);
-							v = obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
-						}
+						v = getTempVariableFromClass(cls,otmp,name,wrk);
 						if (v)
 							isborrowed=true;
 						else
@@ -2555,16 +2548,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								if (it->objtype->is<Class_inherit>())
 									it->objtype->as<Class_inherit>()->checkScriptInit();
 								// check if we can replace getProperty by getSlot
-								asAtom o = asAtomHandler::invalidAtom;
-								if (it->objtype != Class_object::getRef(function->getSystemState()).getPtr())
-									it->objtype->getInstance(wrk,o,false,nullptr,0);
-								ASObject* obj = asAtomHandler::getObject(o);
-								if (obj)
-								{
-									it->objtype->setupDeclaredTraits(obj);
-									resulttype = obj->getSlotType(t,state.mi->context);
-									obj->decRef();
-								}
+								resulttype = getSlotResultTypeFromClass(it->objtype, t, state);
 							}
 							addCachedSlot(state,it->index,t,code,resulttype);
 							typestack.push_back(typestackentry(resulttype,false));
@@ -2606,17 +2590,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					{
 						if (it->objtype->is<Class_inherit>())
 							it->objtype->as<Class_inherit>()->checkScriptInit();
-						// check if we can replace getProperty by getSlot
-						asAtom o = asAtomHandler::invalidAtom;
-						if (it->objtype != Class_object::getRef(function->getSystemState()).getPtr())
-							it->objtype->getInstance(wrk,o,false,nullptr,0);
-						ASObject* obj =asAtomHandler::getObject(o);
-						if (obj)
-						{
-							it->objtype->setupDeclaredTraits(obj);
-							resulttype = obj->getSlotType(t,state.mi->context);
-							obj->decRef();
-						}
+						resulttype = getSlotResultTypeFromClass(it->objtype, t, state);
 					}
 				}
 #endif
@@ -3916,7 +3890,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									{
 										// check if we can replace getProperty by getSlot
 										variable* v = nullptr;
-										asAtom o = asAtomHandler::invalidAtom;
+										asAtom otmp = asAtomHandler::invalidAtom;
 										if (isClassOperator)
 										{
 											asAtom* a = mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
@@ -3925,18 +3899,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 												v=nullptr;
 										}
 										else
-										{
-											if (state.operandlist.back().objtype->is<Class_inherit>())
-												state.operandlist.back().objtype->as<Class_inherit>()->checkScriptInit();
-											if (state.operandlist.back().objtype != Class_object::getRef(function->getSystemState()).getPtr())
-												state.operandlist.back().objtype->getInstance(wrk,o,false,nullptr,0);
-											ASObject* obj = asAtomHandler::getObject(o);
-											if (obj)
-											{
-												state.operandlist.back().objtype->setupDeclaredTraits(obj);
-												v = obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
-											}
-										}
+											v = getTempVariableFromClass(state.operandlist.back().objtype,otmp,name,state.worker);
 										if (v && v->kind == CONSTANT_TRAIT
 												&& asAtomHandler::isInvalid(v->getter)
 												 && asAtomHandler::isValid(v->var)
@@ -3964,7 +3927,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 													addCachedSlot(state,index,v->slotid,code,resulttype);
 													removetypestack(typestack,runtimeargs+1);
 													typestack.push_back(typestackentry(resulttype,false));
-													ASATOM_DECREF(o);
+													ASATOM_DECREF(otmp);
 													break;
 												}
 											}
@@ -3975,7 +3938,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 												if (state.operandlist.empty()) // indicates that checkforlocalresult returned false
 													lastlocalresulttype = resulttype;
 												addname = false;
-												ASATOM_DECREF(o);
+												ASATOM_DECREF(otmp);
 												removetypestack(typestack,runtimeargs+1);
 												typestack.push_back(typestackentry(resulttype,false));
 												break;
@@ -3990,14 +3953,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 												else
 													lastlocalresulttype = resulttype;
 												state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
-												ASATOM_DECREF(o);
+												ASATOM_DECREF(otmp);
 												removetypestack(typestack,runtimeargs+1);
 												typestack.push_back(typestackentry(resulttype,false));
 												break;
 											}
 										}
 										else
-											ASATOM_DECREF(o);
+											ASATOM_DECREF(otmp);
 									}
 								}
 							}

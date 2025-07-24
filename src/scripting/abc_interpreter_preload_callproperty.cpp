@@ -147,21 +147,11 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 			{
 				asAtom otmp = asAtomHandler::invalidAtom;
 				// property may be a slot variable
-				if (cls != Class_object::getRef(state.function->getSystemState()).getPtr()
-					&& cls != Class<Global>::getRef(state.function->getSystemState()).getPtr()
-					&& !cls->as<Class_base>()->isInterface
-					)
-					cls->as<Class_base>()->getInstance(state.worker,otmp,false,nullptr,0);
-				ASObject* obj = asAtomHandler::getObject(otmp);
-				if (obj)
-				{
-					cls->as<Class_base>()->setupDeclaredTraits(obj,false);
-					v = obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
-					if (v && v->slotid)
-						instancevarSlotID=v->slotid;
-					v=nullptr;
-					obj->decRef();
-				}
+				v = getTempVariableFromClass(cls->as<Class_base>(),otmp,name,state.worker);
+				if (v && v->slotid)
+					instancevarSlotID=v->slotid;
+				v=nullptr;
+				ASATOM_DECREF(otmp);
 			}
 			if (v)
 			{
@@ -424,7 +414,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							auto it = state.operandlist.rbegin();
 							Class_base* argtype = it->objtype;
 							it++;
-							if (canCallFunctionDirect((*it),name))
+							if (canCallFunctionDirect((*it),name,needSuper))
 							{
 								if (!fromglobal
 									&& v

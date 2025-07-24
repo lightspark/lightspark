@@ -21,6 +21,7 @@
 #include "scripting/abc.h"
 #include "compat.h"
 #include "scripting/abc_interpreter_helper.h"
+#include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/class.h"
 #include "parsing/streams.h"
@@ -113,14 +114,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 			if (!cls->hasoverriddenmethod(name))
 			{
 				// property may be a slot variable, so check the class instance first
-				if (cls != Class_object::getRef(state.function->getSystemState()).getPtr())
-					cls->getInstance(state.worker,otmp,false,nullptr,0);
-				ASObject* obj = asAtomHandler::getObject(otmp);
-				if (obj)
-				{
-					cls->setupDeclaredTraits(obj,false);
-					v = obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
-				}
+				v = getTempVariableFromClass(cls->as<Class_base>(),otmp,name,state.worker);
 				if (v)
 					isborrowed=true;
 			}
@@ -171,17 +165,9 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 						&& !state.function->inClass->as<Class_inherit>()->hasoverriddenmethod(name)
 						&& v->slotid)
 					{
-						asAtom o = asAtomHandler::invalidAtom;
-						if (cls != Class_object::getRef(state.function->getSystemState()).getPtr())
-							cls->getInstance(state.worker,o,false,nullptr,0);
-						ASObject* obj = asAtomHandler::getObject(o);
-						variable* v1 = nullptr;
-						if (obj)
-						{
-							cls->setupDeclaredTraits(obj,false);
-							v1 = obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
-						}
-						if (!asAtomHandler::isPrimitive(o) && v1 && v1->slotid)
+						asAtom otmp = asAtomHandler::invalidAtom;
+						variable* v1 = getTempVariableFromClass(cls->as<Class_base>(),otmp,name,state.worker);
+						if (!asAtomHandler::isPrimitive(otmp) && v1 && v1->slotid)
 						{
 							// convert to getslot on local[0]
 							setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,false,ABC_OP_OPTIMZED_GETSLOT_SETSLOT);
@@ -193,7 +179,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 							setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME,0x66,code,true, false,resulttype,p,true,false,false,false);
 							state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cachedmultiname2 = name;
 						}
-						ASATOM_DECREF(o);
+						ASATOM_DECREF(otmp);
 					}
 					else
 					{

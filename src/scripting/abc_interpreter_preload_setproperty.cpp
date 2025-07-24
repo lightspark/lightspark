@@ -87,29 +87,23 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 						}
 					}
 					if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT || it->type == OP_CACHED_SLOT)
-						&& it->objtype && !it->objtype->isInterface && it->objtype->isInitialized() && it->objtype->isSealed
+						&& it->objtype && !it->objtype->isInterface && it->objtype->isInitialized()
 						&& (!typestack[typestack.size()-2].obj || !typestack[typestack.size()-2].classvar))
 					{
-						asAtom o = asAtomHandler::invalidAtom;
-						if (it->objtype->is<Class_inherit>())
-							it->objtype->as<Class_inherit>()->checkScriptInit();
-						if (it->objtype != Class_object::getRef(state.function->getSystemState()).getPtr())
-							it->objtype->getInstance(state.worker,o,false,nullptr,0);
 						// check if we can replace setProperty by setSlot
-						ASObject* obj = asAtomHandler::getObject(o);
+						asAtom otmp = asAtomHandler::invalidAtom;
 						variable* v = nullptr;
-						if (obj)
-						{
-							it->objtype->setupDeclaredTraits(obj,false);
-							v = obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
-						}
+						if (typestack[typestack.size()-2].obj && typestack[typestack.size()-2].obj->is<Global>())
+							v = typestack[typestack.size()-2].obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
+						else
+							v = getTempVariableFromClass(it->objtype,otmp,name,state.worker);
 						if (!v && it->objtype->is<Class_inherit>())
 						{
 							v = it->objtype->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
 							if (v && v->kind != DECLARED_TRAIT)
 								v=nullptr;
 						}
-						if (!asAtomHandler::isPrimitive(o) && v && v->slotid)
+						if (!asAtomHandler::isPrimitive(otmp) && v && v->slotid)
 						{
 							// we can skip coercing when setting the slot value if
 							// - contenttype is the same as the variable type or
@@ -168,12 +162,12 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 							}
 							else
 								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint =v->slotid-1;
-							ASATOM_DECREF(o);
+							ASATOM_DECREF(otmp);
 							removetypestack(typestack,state.mi->context->constant_pool.multinames[t].runtimeargs+2);
 							break;
 						}
 						else
-							ASATOM_DECREF(o);
+							ASATOM_DECREF(otmp);
 					}
 				}
 				if (setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_SETPROPERTY_STATICNAME,opcode,code))

@@ -191,6 +191,8 @@ bool checkInitializeLocalToConstant(preloadstate& state,int32_t value);
 void removeInitializeLocalToConstant(preloadstate& state,int32_t value);
 bool getLexFindClass(preloadstate& state, multiname* name, bool checkfuncscope,std::vector<typestackentry>& typestack,memorystream& code);
 void preloadFunction_secondPass(preloadstate& state);
+variable* getTempVariableFromClass(Class_base* cls, asAtom& otmp, multiname* name, ASWorker* wrk);
+Class_base* getSlotResultTypeFromClass(Class_base* cls, uint32_t slot_id, preloadstate& state);
 void preload_dup(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, lightspark::Class_base** lastlocalresulttype,std::map<int32_t,int32_t>& jumppositions,std::map<int32_t,int32_t>& jumpstartpositions);
 void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack,memorystream& code,int opcode,Class_base** lastlocalresulttype,uint8_t prevopcode);
 void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, lightspark::Class_base** lastlocalresulttype,std::list<scope_entry>& scopelist,uint32_t simple_getter_opcode_pos);

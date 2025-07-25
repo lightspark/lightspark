@@ -51,8 +51,8 @@ public:
 	Exception
 	(
 		const std::string& _cause,
-		const Path& _path1, const,
-		std::error_code& code
+		const Path& _path1,
+		const std::error_code& code
 	) : Exception(_cause, code), path1(_path1)
 	{
 		if (path1.empty())
@@ -63,15 +63,46 @@ public:
 	Exception
 	(
 		const std::string& _cause,
-		const Path& _path1, const,
-		const Path& _path2, const,
-		std::error_code& code
-	) : Exception(_cause, code, _path1)path2(_path2)
+		const Path& _path1,
+		const Path& _path2,
+		const std::error_code& code
+	) : Exception(_cause, _path1, code), path2(_path2)
 	{
 		if (path2.empty())
 			return;
-		cause += ": '" + path2.getStr() + '\'';
+		cause += ", '" + path2.getStr() + '\'';
 	}
+
+	Exception(const std::error_code& code) : Exception(code.message(), code) {}
+
+	Exception
+	(
+		const Path& path1,
+		const std::error_code& code
+	) : Exception(code.message(), path1, code) {}
+
+	Exception
+	(
+		const Path& path1,
+		const Path& path2,
+		const std::error_code& code
+	) : Exception(code.message(), path1, path2, code) {}
+
+	Exception(const std::errc& code) : Exception(std::make_error_code(code)) {}
+
+	Exception
+	(
+		const Path& path1,
+		const std::errc& code
+	) : Exception(path1, std::make_error_code(code)) {}
+
+
+	Exception
+	(
+		const Path& path1,
+		const Path& path2,
+		const std::errc& code
+	) : Exception(path1, path2, std::make_error_code(code)) {}
 
 	const Path& getPath1() const { return path1; }
 	const Path& getPath2() const { return path2; }

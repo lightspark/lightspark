@@ -826,7 +826,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,scroll)
 		rcScroll->height = copyHeight;
 		d->scrollRect=_MR(rcScroll);
 		th->drawDisplayObject(d, MATRIX(),false,BLENDMODE_NORMAL,nullptr,nullptr,true);
-		th->pixels->getRenderData()->temporaryBitmap=d;
+		th->pixels->addTemporaryBitmap(th->getSystemState()->getRenderThread(),d);
 		th->notifyUsers();
 	}
 }

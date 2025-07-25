@@ -1630,6 +1630,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					context->isCaseSensitive()
 				);
 
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineLocal done "<<asAtomHandler::toDebugString(name)<<" " <<asAtomHandler::toDebugString(value));
 				if (context->getScope()->defineLocalByMultiname
 				(
 					m,
@@ -1638,7 +1639,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					wrk
 				))
 					ASATOM_DECREF(value);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineLocal done "<<asAtomHandler::toDebugString(name)<<" " <<asAtomHandler::toDebugString(value));
 				ASATOM_DECREF(name);
 				break;
 			}

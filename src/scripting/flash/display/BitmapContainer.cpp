@@ -269,7 +269,10 @@ bool BitmapContainer::checkTextureForUpload(SystemState* sys)
 	if (nanoVGImageHandle >= 0)
 	{
 		if (this->hasModifiedData)
+		{
 			nanoVGUpdateImage(nanoVGImageHandle,currentcolortransform.isIdentity() ? getData() : getDataColorTransformed(),sys->getEngineData());
+			setModifiedData(false);
+		}
 	}
 	else
 	{
@@ -311,6 +314,10 @@ void BitmapContainer::addRenderCall(RenderDisplayObjectToBitmapContainer& call)
 void BitmapContainer::flushRenderCalls(RenderThread* renderthread, Bitmap* tempBitmap, bool wait)
 {
 	renderthread->renderBitmap(this,tempBitmap, wait);
+}
+void BitmapContainer::addTemporaryBitmap(RenderThread* renderthread, Bitmap* tempBitmap)
+{
+	renderthread->addTemporaryBitmap(this,tempBitmap);
 }
 
 void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)
@@ -382,7 +389,14 @@ uint32_t BitmapContainer::getPixel(int32_t x, int32_t y,bool premultiplied)
 	}
 	else
 	{
-		uint8_t* d = getCurrentData();
+		uint8_t* d=nullptr;
+		if (hasModifiedData)
+		{
+			// avoid roundtrip to RenderThread as we already have the current data in memory
+			d = (uint8_t*)data.data();
+		}
+		else
+			d = getCurrentData();
 		p=*(reinterpret_cast<const uint32_t *>(&d[y*stride + 4*x]));
 	}
 	if (!premultiplied)

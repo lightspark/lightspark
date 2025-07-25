@@ -199,6 +199,12 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 								state.preloadedcode.push_back(0);
 								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local2.pos = instancevarSlotID-1;
 							}
+							else
+							{
+								state.preloadedcode.push_back(0);
+								state.preloadedcode.back().pcode.arg1_uint=t;
+								state.preloadedcode.back().pcode.arg2_uint=argcount;
+							}
 							removetypestack(typestack,argcount+state.mi->context->constant_pool.multinames[t].runtimeargs+1);
 							if (needResult)
 								typestack.push_back(typestackentry(resulttype,false));
@@ -211,6 +217,12 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							{
 								state.preloadedcode.push_back(0);
 								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local2.pos = classBorrowedSlotID;
+							}
+							else
+							{
+								state.preloadedcode.push_back(0);
+								state.preloadedcode.back().pcode.arg1_uint=t;
+								state.preloadedcode.back().pcode.arg2_uint=argcount;
 							}
 							removetypestack(typestack,argcount+state.mi->context->constant_pool.multinames[t].runtimeargs+1);
 							if (needResult)
@@ -316,6 +328,12 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 								state.preloadedcode.push_back(0);
 								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local2.pos = instancevarSlotID-1;
 							}
+							else
+							{
+								state.preloadedcode.push_back(0);
+								state.preloadedcode.back().pcode.arg1_uint=t;
+								state.preloadedcode.back().pcode.arg2_uint=argcount;
+							}
 							removetypestack(typestack,argcount+state.mi->context->constant_pool.multinames[t].runtimeargs+1);
 							if (needResult)
 								typestack.push_back(typestackentry(resulttype,false));
@@ -328,6 +346,12 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							{
 								state.preloadedcode.push_back(0);
 								state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local2.pos = classBorrowedSlotID;
+							}
+							else
+							{
+								state.preloadedcode.push_back(0);
+								state.preloadedcode.back().pcode.arg1_uint=t;
+								state.preloadedcode.back().pcode.arg2_uint=argcount;
 							}
 							removetypestack(typestack,argcount+state.mi->context->constant_pool.multinames[t].runtimeargs+1);
 							if (needResult)

@@ -50,6 +50,7 @@
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/avm1/avm1display.h"
+#include "utils/array.h"
 #include <algorithm>
 #include <array>
 
@@ -2760,12 +2761,6 @@ void DisplayObject::setPropertyByIndex(size_t idx, const asAtom& val, ASWorker* 
 			break;
 	}
 	ASATOM_DECREF(value);
-}
-
-template<typename T, typename... Args>
-constexpr std::array<T, sizeof...(Args) + 1> makeArray(const T& arg, Args&&... args)
-{
-	return std::array<T, sizeof...(Args) + 1> { arg, args... };
 }
 
 // NOTE: Can't use `tiny_string` here because it isn't `constexpr`.

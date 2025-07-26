@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <fstream>
 #include <unistd.h>
 
 #include "utils/filesystem.h"
@@ -45,6 +46,17 @@ Path fs::absolute(const Path& path)
 	}
 	else
 		return (path.hasRootDir() ? base.getRootName() : base) / path;
+}
+
+bool fs::Detail::copyFile(const Path& from, const Path& to, bool overwrite)
+{
+	std::ifstream is(from, std::ios_base::binary | std::ios_base::trunc);
+	std::ofstream os(to, std::ios_base::binary);
+	if (!overwrite && !os.fail())
+		throw Exception(from, to, std::errc(errno));
+	if (!is.eof() && (os << is.rdbuf()).fail())
+		throw Exception(from, to, std::errc::io_error);
+	return true;
 }
 
 Path fs::currentPath()

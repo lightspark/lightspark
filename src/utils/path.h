@@ -292,6 +292,7 @@ public:
 	const StringType& getNativeStr() const { return path; }
 	const StringType& getGenericStr() const;
 	const StringType& getStr() const { return getNativeStr(); }
+	const ValueType* rawBuf() const { return getNativeStr().raw_buf(); }
 	operator StringType() const { return getNativeStr(); }
 
 	int compare(const Path& other) const;

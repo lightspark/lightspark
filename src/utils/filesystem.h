@@ -492,6 +492,13 @@ Path weaklyCanonical(const Path& path);
 void createHardLink(const Path& to, const Path& newHardLink);
 size_t hardLinkCount(const Path& path);
 
+namespace Detail
+{
+
+bool copyFile(const Path& from, const Path& to, bool overwrite);
+
+};
+
 };
 
 namespace std

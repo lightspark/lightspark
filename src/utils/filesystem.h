@@ -23,6 +23,7 @@
 #include "compat.h"
 #include "tiny_string.h"
 #include "utils/path.h"
+#include "utils/timespec.h"
 
 namespace lightspark
 {
@@ -200,6 +201,18 @@ class FileStatus
 private:
 	FileType type;
 	Perms perms;
+
+	size_t size { size_t(-1) };
+	size_t hardLinks { size_t(-1) };
+	TimeSpec lastWriteTime;
+
+	friend FileStatus status(const Path& path);
+	void setSize(size_t _size) { size = _size; }
+	void setHardLinks(size_t _hardLinks) { hardLinks = _hardLinks; }
+	void setLastWriteTime(const TimeSpec& _lastWriteTime)
+	{
+		lastWriteTime = _lastWriteTime;
+	}
 public:
 	FileStatus
 	(
@@ -219,6 +232,10 @@ public:
 
 	const FileType& getType() const { return type; }
 	const Perms& getPerms() const { return perms; }
+
+	const size_t getSize() const { return size; }
+	const size_t getHardLinks() const { return hardLinks; }
+	const TimeSpec& getLastWriteTime() const { return lastWriteTime; }
 
 	bool operator==(const FileStatus& other) const noexcept
 	{

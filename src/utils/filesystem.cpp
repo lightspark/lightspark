@@ -75,3 +75,106 @@ Path fs::canonical(const Path& path)
 
 	return ret;
 }
+
+void fs::copy(const Path& from, const Path& to)
+{
+	copy(from, to, CopyOptions::None);
+}
+
+void fs::copy(const Path& from, const Path& to, const CopyOptions& options)
+{
+	bool handleSymlinks = options &
+	(
+		CopyOptions::SkipSymlinks |
+		CopyOptions::CopySymlinks |
+		CopyOptions::CreateSymlinks |
+	);
+
+	FileStatus statusFrom = handleSymlinks ? symlinkStatus(from) : status(from);
+
+	if (!statusFrom.exists())
+		throw Exception(path, std::errc::no_such_file_or_directory);
+
+	FileStatus statusTo = handleSymlinks ? symlinkStatus(to) : status(to);
+
+	bool isInvalid =
+	(
+		statusFrom.isOther() ||
+		statusTo.isOther() ||
+		(statusFrom.isDir() && statusTo.isFile()) ||
+		(statusTo.exists() && equivalent(from, to))
+	);
+	if (isInvalid)
+		throw Exception(from, to, std::errc::invalid_argument);
+	switch (statusFrom.getType())
+	{
+		case FileType::Symlink:
+			if (options & CopyOptions::SkipSymlinks)
+				break;
+
+			if (statusTo.exists() || !(options & CopyOptions::CopySymlinks))
+				throw Exception(from, to, std::errc::invalid_argument);
+			copySymlink(from, to);
+			break;
+		case FileType::Regular:
+			if (options & CopyOptions::DirsOnly)
+				break;
+			if (options & CopyOptions::CreateSymlinks)
+				createSymlink(from.isAbsolute() ? from : canonical(from), to);
+			else if (options & CopyOptions::CreateHardLinks)
+				createHardLink(from, to);
+			else if (statusTo.isDir())
+				copyFile(from, to / from.getFilename());
+			else
+				copyFile(from, to);
+		case FileType::Directory:
+			#ifdef USE_LWG_2936
+			if (options & CopyOptions::CreateSymlinks)
+				throw Exception(from, to, std::errc::is_a_directory);
+			#endif
+			if (options != CopyOptions::None && (options & CopyOptions::Recursive))
+				break;
+			if (!statusTo.exists())
+				createDir(to, from);
+			for (auto it = DirIter(from); it != DirIter(); it.inc())
+			{
+				copy
+				(
+					it->path(),
+					to / it->path().getFilename(),
+					options | CopyOptions(0x8000)
+				);
+			}
+			break;
+		default:
+			throw Exception(from, to, std::errc::invalid_argument);
+			break;
+	}
+}
+
+void fs::copyFile(const Path& from, const Path& to)
+{
+	copyFile(from, to, CopyOptions::None);
+}
+
+bool fs::copyFile(const Path& from, const Path& to, const CopyOptions& options)
+{
+	FileStatus statusFrom = status(from);
+	FileStatus statusTo = status(to);
+
+	bool overwrite = false;
+
+	if (!statusFrom.isFile())
+		return false;
+	if (statusTo.exists())
+	{
+		if (options & CopyOptions::SkipExisting)
+			throw Exception(from, to, std::errc::file_exists);
+		auto fromTime = statusFrom.getLastWriteTime();
+		auto toTime = statusTo.getLastWriteTime();
+		if ((options & CopyOptions::UpdateExisting) && fromTime <= toTime)
+			return false;
+		overwrite = true;
+	}
+	return Detail::copyFile(from, to, overwrite);
+}

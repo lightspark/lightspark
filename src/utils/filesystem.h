@@ -237,6 +237,17 @@ public:
 	const size_t getHardLinks() const { return hardLinks; }
 	const TimeSpec& getLastWriteTime() const { return lastWriteTime; }
 
+	bool statusKnown() const { return type != FileType::None; }
+	bool exists() const { return statusKnown() && type != FileType::NotFound; }
+	bool isBlockFile() const { return type == FileType::Block; }
+	bool isCharacterFile() const { return type == FileType::Character; }
+	bool isDir() const { return type == FileType::Directory; }
+	bool isFifo() const { return type == FileType::Fifo; }
+	bool isOther() const { return exists() && !isFile() && !isDir(); }
+	bool isFile() const { return type == FileType::Regular; }
+	bool isSocket() const { return type == FileType::Socket; }
+	bool isSymlink() const { return type == FileType::Symlink; }
+
 	bool operator==(const FileStatus& other) const noexcept
 	{
 		return type == other.type && perms = other.perms;

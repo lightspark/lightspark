@@ -1581,6 +1581,7 @@ class ASQName;
 class ASString;
 class ASWorker;
 class AVM1Function;
+class AVM1LoadVars;
 class AVM1MovieClip;
 class AVM1MovieClipLoader;
 class AVM1Sound;
@@ -1731,6 +1732,7 @@ template<> inline bool ASObject::is<ASQName>() const { return type==T_QNAME; }
 template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
 template<> inline bool ASObject::is<ASWorker>() const { return subtype==SUBTYPE_WORKER; }
 template<> inline bool ASObject::is<AVM1Function>() const { return subtype==SUBTYPE_AVM1FUNCTION; }
+template<> inline bool ASObject::is<AVM1LoadVars>() const { return subtype == SUBTYPE_AVM1LOADVARS; }
 template<> inline bool ASObject::is<AVM1Movie>() const { return subtype == SUBTYPE_AVM1MOVIE; }
 template<> inline bool ASObject::is<AVM1MovieClip>() const { return subtype == SUBTYPE_AVM1MOVIECLIP; }
 template<> inline bool ASObject::is<AVM1MovieClipLoader>() const { return subtype == SUBTYPE_AVM1MOVIECLIPLOADER; }
@@ -1869,7 +1871,7 @@ template<> inline bool ASObject::is<UninitializedError>() const { return subtype
 template<> inline bool ASObject::is<URIError>() const { return subtype == SUBTYPE_URIERROR; }
 template<> inline bool ASObject::is<URLLoader>() const { return subtype == SUBTYPE_URLLOADER; }
 template<> inline bool ASObject::is<URLRequest>() const { return subtype == SUBTYPE_URLREQUEST; }
-template<> inline bool ASObject::is<URLVariables>() const { return subtype == SUBTYPE_URLVARIABLES; }
+template<> inline bool ASObject::is<URLVariables>() const { return subtype == SUBTYPE_URLVARIABLES || subtype == SUBTYPE_AVM1LOADVARS; }
 template<> inline bool ASObject::is<Vector>() const { return subtype==SUBTYPE_VECTOR; }
 template<> inline bool ASObject::is<Vector3D>() const { return subtype==SUBTYPE_VECTOR3D; }
 template<> inline bool ASObject::is<VerifyError>() const { return subtype==SUBTYPE_VERIFYERROR; }

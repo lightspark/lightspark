@@ -48,11 +48,17 @@ class AVM1LoadVars: public URLVariables
 {
 	URLLoader* loader;
 public:
-	AVM1LoadVars(ASWorker* wrk,Class_base* c):URLVariables(wrk,c),loader(nullptr){}
+	AVM1LoadVars(ASWorker* wrk,Class_base* c):URLVariables(wrk,c),loader(nullptr)
+	{
+		subtype=SUBTYPE_AVM1LOADVARS;
+	}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(sendAndLoad);
 	ASFUNCTION_ATOM(load);
+	ASFUNCTION_ATOM(getBytesLoaded);
+	ASFUNCTION_ATOM(getBytesTotal);
+	ASFUNCTION_ATOM(loaded);
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;

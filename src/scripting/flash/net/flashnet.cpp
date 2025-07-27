@@ -617,6 +617,7 @@ ASFUNCTIONBODY_ATOM(URLLoader,_constructor)
 
 ASFUNCTIONBODY_ATOM(URLLoader,load)
 {
+	ret = asAtomHandler::falseAtom;// only needed for AVM1, in AVM2 this method has no result
 	URLLoader* th=asAtomHandler::as<URLLoader>(obj);
 	ASObject* arg=asAtomHandler::getObject(args[0]);
 	URLRequest* urlRequest=Class<URLRequest>::dyncast(arg);
@@ -651,6 +652,7 @@ ASFUNCTIONBODY_ATOM(URLLoader,load)
 	URLLoaderThread *job=new URLLoaderThread(_MR(urlRequest), _MR(th));
 	th->getSystemState()->addJob(job);
 	th->job=job;
+	ret = asAtomHandler::trueAtom; // only needed for AVM1, in AVM2 this method has no result
 }
 
 ASFUNCTIONBODY_ATOM(URLLoader,close)

@@ -3272,10 +3272,17 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_localToGlobal)
 	number_t tempx, tempy;
 
 	th->localToGlobal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy,false);
+	ASATOM_DECREF(x);
+	ASATOM_DECREF(y);
 	asAtomHandler::setNumber(x,wrk,tempx);
 	asAtomHandler::setNumber(y,wrk,tempy);
-	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,nullptr,wrk);
-	pt->setVariableByMultiname(my,y,CONST_ALLOWED,nullptr,wrk);
+	bool alreadyset=false;
+	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,&alreadyset,wrk);
+	if (alreadyset)
+		ASATOM_DECREF(x);
+	pt->setVariableByMultiname(my,y,CONST_ALLOWED,&alreadyset,wrk);
+	if (alreadyset)
+		ASATOM_DECREF(y);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_globalToLocal)
@@ -3302,10 +3309,17 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_globalToLocal)
 	number_t tempx, tempy;
 
 	th->globalToLocal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy,false);
+	ASATOM_DECREF(x);
+	ASATOM_DECREF(y);
 	asAtomHandler::setNumber(x,wrk,tempx);
 	asAtomHandler::setNumber(y,wrk,tempy);
-	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,nullptr,wrk);
-	pt->setVariableByMultiname(my,y,CONST_ALLOWED,nullptr,wrk);
+	bool alreadyset=false;
+	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,&alreadyset,wrk);
+	if (alreadyset)
+		ASATOM_DECREF(x);
+	pt->setVariableByMultiname(my,y,CONST_ALLOWED,&alreadyset,wrk);
+	if (alreadyset)
+		ASATOM_DECREF(y);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesLoaded)
 {

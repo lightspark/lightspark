@@ -50,15 +50,23 @@ void AVM1LoadVars::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, URLVariables, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("sendAndLoad","",c->getSystemState()->getBuiltinFunction(sendAndLoad),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,true);
+	c->prototype->setDeclaredMethodByQName("sendAndLoad","",c->getSystemState()->getBuiltinFunction(sendAndLoad),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getBytesLoaded","",c->getSystemState()->getBuiltinFunction(getBytesLoaded),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getBytesTotal","",c->getSystemState()->getBuiltinFunction(getBytesTotal),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("loaded","",c->getSystemState()->getBuiltinFunction(loaded),GETTER_METHOD,false);
 }
+
 ASFUNCTIONBODY_ATOM(AVM1LoadVars,_constructor)
 {
 }
+
 ASFUNCTIONBODY_ATOM(AVM1LoadVars,sendAndLoad)
 {
 	AVM1LoadVars* th = asAtomHandler::as<AVM1LoadVars>(obj);
+	ret = asAtomHandler::falseAtom;
+	if (argslen<2)
+		return;
 	tiny_string strurl;
 	tiny_string method;
 	asAtom target = asAtomHandler::nullAtom;
@@ -77,13 +85,19 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,sendAndLoad)
 		asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
 		asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(t->loader);
 		URLLoader::load(ret,wrk,loaderobj,&urlarg,1);
+		if (ret.uintval == asAtomHandler::trueAtom.uintval)
+			t->incRef(); // keep target alive until the download is done, will be decreffed in AVM1HandleEvent
+		req->decRef();
 	}
-	else
+	else if (!asAtomHandler::isUndefined(target) && !asAtomHandler::isNull(target))
 		LOG(LOG_NOT_IMPLEMENTED,"LoadVars.sendAndLoad with target "<<asAtomHandler::toDebugString(target));
 }
 ASFUNCTIONBODY_ATOM(AVM1LoadVars,load)
 {
 	AVM1LoadVars* th = asAtomHandler::as<AVM1LoadVars>(obj);
+	ret = asAtomHandler::falseAtom;
+	if (argslen==0)
+		return;
 	tiny_string strurl;
 	ARG_CHECK(ARG_UNPACK(strurl));
 
@@ -96,8 +110,33 @@ ASFUNCTIONBODY_ATOM(AVM1LoadVars,load)
 	asAtom urlarg = asAtomHandler::fromObjectNoPrimitive(req);
 	asAtom loaderobj = asAtomHandler::fromObjectNoPrimitive(th->loader);
 	URLLoader::load(ret,wrk,loaderobj,&urlarg,1);
+	if (ret.uintval == asAtomHandler::trueAtom.uintval)
+		th->incRef(); // keep this alive until the download is done, will be decreffed in AVM1HandleEvent
 	req->decRef();
 }
+
+ASFUNCTIONBODY_ATOM(AVM1LoadVars,getBytesLoaded)
+{
+	AVM1LoadVars* th = asAtomHandler::as<AVM1LoadVars>(obj);
+	if (th->loader)
+		ret = asAtomHandler::fromUInt(th->loader->bytesLoaded);
+}
+ASFUNCTIONBODY_ATOM(AVM1LoadVars,getBytesTotal)
+{
+	AVM1LoadVars* th = asAtomHandler::as<AVM1LoadVars>(obj);
+	if (th->loader)
+		ret = asAtomHandler::fromUInt(th->loader->bytesTotal);
+}
+ASFUNCTIONBODY_ATOM(AVM1LoadVars,loaded)
+{
+	AVM1LoadVars* th = asAtomHandler::as<AVM1LoadVars>(obj);
+	ret = asAtomHandler::falseAtom;
+	if (th->loader &&
+		th->loader->bytesTotal &&
+		th->loader->bytesLoaded == th->loader->bytesTotal)
+		ret = asAtomHandler::trueAtom;
+}
+
 void AVM1LoadVars::finalize()
 {
 	getSystemState()->stage->AVM1RemoveEventListener(this);
@@ -163,10 +202,12 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				else
 					args[0] = asAtomHandler::nullAtom;
 				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
-				asAtomHandler::as<AVM1Function>(func)->decRef();
+				ASATOM_DECREF(func);
 			}
 			else
 			{
+				ASATOM_DECREF(func);
+				func = asAtomHandler::invalidAtom;
 				m.name_s_id=BUILTIN_STRINGS::STRING_ONLOAD;
 				getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 				if (asAtomHandler::is<AVM1Function>(func))
@@ -186,7 +227,8 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 								mdata.isAttribute = false;
 								tiny_string key =spl2.front();
 								mdata.name_s_id = getSystemState()->getUniqueStringId(key);
-								asAtom value = asAtomHandler::fromString(getSystemState(),spl2.back());
+								tiny_string v = URLInfo::decode(spl2.back(),URLInfo::ENCODE_ESCAPE);
+								asAtom value = asAtomHandler::fromString(getSystemState(),v);
 								this->setVariableByMultiname(mdata,value,CONST_ALLOWED,nullptr,this->getInstanceWorker());
 							}
 						}
@@ -196,9 +238,10 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					asAtom args[1];
 					args[0] = e->type == "complete" ? asAtomHandler::trueAtom : asAtomHandler::falseAtom;
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
-					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
+				ASATOM_DECREF(func);
 			}
+			this->decRef(); // was increffed in load/sendAndLoad
 		}
 	}
 }

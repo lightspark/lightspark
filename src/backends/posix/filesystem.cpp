@@ -165,6 +165,26 @@ void fs::setLastWriteTime(const Path& path, const TimeSpec& newTime)
 		throw Exception(path, std::errc(errno));
 }
 
+void fs::Detail::setPerms
+(
+	const Path& path,
+	const Perms& perms,
+	const PermOptions& opts,
+	const FileStatus& fileStatus
+)
+{
+	using PermOpts = PermOptions;
+	#if _POSIX_C_SOURCE >= 200809L
+	int flag = opts & PermOpts::NoFollow ? AT_SYMLINK_NOFOLLOW : 0;
+	if (fchmodat(AT_FDCWD, path.rawBuf(), mode_t(perms), flag) < 0)
+	#else
+	if ((opts & PermOpts::NoFollow) && fileStatus.isSymlink())
+		throw Exception(path, std::errc::not_supported);
+	if (chmod(path.rawBuf(), mode_t(perms)) < 0)
+	#endif
+		throw Exception(path, std::errc(errno));
+}
+
 void fs::remove(const Path& path)
 {
 	if (!::remove(path.rawBuf()))

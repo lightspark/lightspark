@@ -475,7 +475,7 @@ bool isSocket(const Path& path);
 bool isSymlink(const Path& path);
 TimeSpec getLastWriteTime(const Path& path);
 void setLastWriteTime(const Path& path, const TimeSpec& newTime);
-void getPerms(const Path& path, const Perms& perms, const PermOptions& opts = PermOptions::Replace);
+void setPerms(const Path& path, const Perms& perms, const PermOptions& opts = PermOptions::Replace);
 Path proximate(const Path& path, const Path& base = currentPath());
 Path readSymlink(const Path& path);
 Path relative(const Path& path, const Path& base = currentPath());
@@ -497,6 +497,7 @@ namespace Detail
 bool copyFile(const Path& from, const Path& to, bool overwrite);
 bool createDir(const Path& path, const Path& attrs);
 void createSymlink(const path& to, const path& newSymlink, bool toDir)
+void setPerms(const Path& path, const Perms& perms, const PermOptions& opts, const FileStatus& fileStatus);
 
 };
 

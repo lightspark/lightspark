@@ -303,3 +303,21 @@ TimeSpec fs::getLastWriteTime(const Path& path)
 {
 	return status(path).getLastWriteTime();
 }
+
+void setPerms(const Path& path, const Perms& perms, const PermOptions& opts)
+{
+	using PermOpts = PermOptions;
+	if (!(opts & (PermOpts::Replace | PermOpts::Add | PermOpts::Remove)))
+		throw Exception(path, std::errc::invalid_argument);
+
+	auto fileStatus = symlinkStatus(path);
+	bool addPerms = opts & PermOpts::Add;
+	bool removePerms = opts & PermOpts::Remove;
+
+	if (addPerms && !removePerms)
+		perms |= fileStatus.getPerms();
+	else if (removePerms && !addPerms)
+		perms &= ~fileStatus.getPerms();
+
+	Detail::setPerms(path, perms, opts, fileStatus);
+}

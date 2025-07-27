@@ -144,6 +144,27 @@ size_t fs::fileSize(const Path& path)
 	return fileStat.st_size;
 }
 
+void fs::setLastWriteTime(const Path& path, const TimeSpec& newTime)
+{
+	#if _POSIX_C_SOURCE >= 200809L
+	timespec times[2];
+	times[0] = TimeSpec::fromNs(UTIME_OMIT);
+	times[1] = newTime;
+	if (utimensat(AT_FDCWD, path.rawBuf(), times, 0) < 0)
+	#else
+	struct stat fileStat;
+	if (stat(path.rawBuf(), &fileStat) < 0)
+		throw Exception(path, std::errc(errno));
+
+	utimbuf times;
+	times.modtime = newTime.getSecs();
+	times.actime = fileStat.st_atime;
+
+	if (utime(path.rawBuf(), &times) < 0)
+	#endif
+		throw Exception(path, std::errc(errno));
+}
+
 void fs::remove(const Path& path)
 {
 	if (!::remove(path.rawBuf()))

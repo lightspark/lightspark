@@ -248,3 +248,58 @@ void fs::createSymlink(const path& to, const path& newSymlink)
 {
 	Detail::createSymlink(to, newSymlink, false);
 }
+
+bool fs::exists(const Path& path)
+{
+	return status(path).exists();
+}
+
+bool fs::isBlockFile(const Path& path)
+{
+	return status(path).isBlockFile();
+}
+
+bool fs::isCharacterFile(const Path& path)
+{
+	return status(path).isCharacterFile();
+}
+
+bool fs::isDir(const Path& path)
+{
+	return status(path).isDir();
+}
+
+bool fs::isEmpty(const Path& path)
+{
+	return isDir(path) ? DirIter(path) == DirIter() : !fileSize(path);
+}
+
+bool fs::isFifo(const Path& path)
+{
+	return status(path).isFifo();
+}
+
+bool fs::isOther(const Path& path)
+{
+	return status(path).isOther();
+}
+
+bool fs::isFile(const Path& path)
+{
+	return status(path).isFile();
+}
+
+bool fs::isSocket(const Path& path)
+{
+	return status(path).isSocket();
+}
+
+bool fs::isSymlink(const Path& path)
+{
+	return status(path).isSymlink();
+}
+
+TimeSpec fs::getLastWriteTime(const Path& path)
+{
+	return status(path).getLastWriteTime();
+}

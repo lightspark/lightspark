@@ -456,8 +456,7 @@ bool copyFile(const Path& from, const Path& to);
 bool copyFile(const Path& from, const Path& to, const CopyOptions& options);
 void copySymlink(const Path& symlink, const Path& newSymlink);
 bool createDirs(const Path& path);
-bool createDir(const Path& path);
-bool createDir(const Path& path, const Path& attrs);
+bool createDir(const Path& path, const Path& attrs = Path());
 void createDirSymlink(const Path& to, const Path& newSymlink);
 void createSymlink(const path& to, const path& new_symlink);
 Path currentPath();
@@ -496,6 +495,7 @@ namespace Detail
 {
 
 bool copyFile(const Path& from, const Path& to, bool overwrite);
+bool createDir(const Path& path, const Path& attrs);
 
 };
 

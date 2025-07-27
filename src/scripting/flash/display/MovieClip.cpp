@@ -20,6 +20,8 @@
 #include <list>
 
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/FrameContainer.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "parsing/tags.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
@@ -34,173 +36,8 @@
 #include "scripting/toplevel/Integer.h"
 #include "scripting/flash/ui/keycodes.h"
 
-#define FRAME_NOT_FOUND 0xffffffff //Used by getFrameIdBy*
-
 using namespace std;
 using namespace lightspark;
-
-FrameLabel::FrameLabel(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
-{
-}
-
-FrameLabel::FrameLabel(ASWorker* wrk, Class_base* c, const FrameLabel_data& data):ASObject(wrk,c),FrameLabel_data(data)
-{
-}
-
-void FrameLabel::sinit(Class_base* c)
-{
-	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("frame","",c->getSystemState()->getBuiltinFunction(_getFrame),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",c->getSystemState()->getBuiltinFunction(_getName),GETTER_METHOD,true);
-}
-
-ASFUNCTIONBODY_ATOM(FrameLabel,_getFrame)
-{
-	FrameLabel* th=asAtomHandler::as<FrameLabel>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->frame+1);
-}
-
-ASFUNCTIONBODY_ATOM(FrameLabel,_getName)
-{
-	FrameLabel* th=asAtomHandler::as<FrameLabel>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(wrk,th->name));
-}
-
-/*
- * Adds a frame label to the internal vector and keep
- * the vector sorted with respect to frame
- */
-void Scene_data::addFrameLabel(uint32_t frame, const tiny_string& label)
-{
-	for(vector<FrameLabel_data>::iterator j=labels.begin();
-		j != labels.end();++j)
-	{
-		FrameLabel_data& fl = *j;
-		if(fl.frame > frame)
-		{
-			labels.insert(j,FrameLabel_data(frame,label));
-			return;
-		}
-		else if(fl.frame == frame)
-		{
-			// ignore new name, is that correct?
-			return;
-		}
-	}
-
-	labels.push_back(FrameLabel_data(frame,label));
-}
-
-Scene::Scene(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
-{
-}
-
-Scene::Scene(ASWorker* wrk, Class_base* c, const Scene_data& data, uint32_t _numFrames):ASObject(wrk,c),Scene_data(data),numFrames(_numFrames)
-{
-}
-
-void Scene::sinit(Class_base* c)
-{
-	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("labels","",c->getSystemState()->getBuiltinFunction(_getLabels,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",c->getSystemState()->getBuiltinFunction(_getName,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("numFrames","",c->getSystemState()->getBuiltinFunction(_getNumFrames,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-}
-
-ASFUNCTIONBODY_ATOM(Scene,_getLabels)
-{
-	Scene* th=asAtomHandler::as<Scene>(obj);
-	Array* res = Class<Array>::getInstanceSNoArgs(wrk);
-	res->resize(th->labels.size());
-	for(size_t i=0; i<th->labels.size(); ++i)
-	{
-		asAtom v = asAtomHandler::fromObject(Class<FrameLabel>::getInstanceS(wrk,th->labels[i]));
-		res->set(i, v,false,false);
-	}
-	ret = asAtomHandler::fromObject(res);
-}
-
-ASFUNCTIONBODY_ATOM(Scene,_getName)
-{
-	Scene* th=asAtomHandler::as<Scene>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(wrk,th->name));
-}
-
-ASFUNCTIONBODY_ATOM(Scene,_getNumFrames)
-{
-	Scene* th=asAtomHandler::as<Scene>(obj);
-	ret = asAtomHandler::fromUInt(th->numFrames);
-}
-
-void Frame::destroyTags()
-{
-	auto it=blueprint.begin();
-	for(;it!=blueprint.end();++it)
-		delete (*it);
-}
-
-void Frame::execute(DisplayObjectContainer* displayList, bool inskipping, std::vector<_R<DisplayObject>>& removedFrameScripts)
-{
-	auto it=blueprint.begin();
-	for(;it!=blueprint.end();++it)
-	{
-		RemoveObject2Tag* obj = static_cast<RemoveObject2Tag*>(*it);
-		if (obj != nullptr && displayList->hasLegacyChildAt(obj->getDepth()))
-		{
-			DisplayObject* child = displayList->getLegacyChildAt(obj->getDepth());
-			child->incRef();
-			removedFrameScripts.push_back(_MR(child));
-		}
-		(*it)->execute(displayList,inskipping);
-	}
-	displayList->checkClipDepth();
-}
-void Frame::AVM1executeActions(MovieClip* clip)
-{
-	auto it=blueprint.begin();
-	for(;it!=blueprint.end();++it)
-	{
-		if ((*it)->getType() == AVM1ACTION_TAG)
-			(*it)->execute(clip,false);
-	}
-}
-
-FrameContainer::FrameContainer():framesLoaded(0)
-{
-	frames.emplace_back(Frame());
-	scenes.resize(1);
-}
-
-FrameContainer::FrameContainer(const FrameContainer& f):frames(f.frames),scenes(f.scenes),framesLoaded((int)f.framesLoaded)
-{
-}
-
-/* This runs in parser thread context,
- * but no locking is needed here as it only accesses the last frame.
- * See comment on the 'frames' member. */
-void FrameContainer::addToFrame(DisplayListTag* t)
-{
-	frames.back().blueprint.push_back(t);
-}
-/**
- * Find the scene to which the given frame belongs and
- * adds the frame label to that scene.
- * The labels of the scene will stay sorted by frame.
- */
-void FrameContainer::addFrameLabel(uint32_t frame, const tiny_string& label)
-{
-	uint32_t startframe=0;
-	for(size_t i=0; i<scenes.size();++i)
-	{
-		if(frame < scenes[i].startframe)
-		{
-			scenes[i-1].addFrameLabel(frame-startframe,label);
-			return;
-		}
-		startframe=scenes[i].startframe;
-	}
-	scenes.back().addFrameLabel(frame-startframe,label);
-}
 
 void MovieClip::sinit(Class_base* c)
 {
@@ -230,15 +67,17 @@ void MovieClip::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
-  ,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
-  ,actions(nullptr),totalFrames_unreliable(1),enabled(true),avm1loader(nullptr)
+	,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
+	,framecontainer(nullptr)
+	,actions(nullptr),totalFrames_unreliable(1),enabled(true),avm1loader(nullptr)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
 
-MovieClip::MovieClip(ASWorker* wrk, Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID):Sprite(wrk,c),FrameContainer(f),fromDefineSpriteTag(defineSpriteTagID),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
-  ,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
-  ,actions(nullptr),totalFrames_unreliable(frames.size()),enabled(true),avm1loader(nullptr)
+MovieClip::MovieClip(ASWorker* wrk, Class_base* c, FrameContainer* f, uint32_t defineSpriteTagID):Sprite(wrk,c),fromDefineSpriteTag(defineSpriteTagID),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
+	,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
+	,framecontainer(f)
+	,actions(nullptr),totalFrames_unreliable(f->getFramesLoaded()),enabled(true),avm1loader(nullptr)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	//For sprites totalFrames_unreliable is the actual frame count
@@ -247,10 +86,9 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c, const FrameContainer& f, uint
 
 bool MovieClip::destruct()
 {
-	frames.clear();
+	framecontainer=nullptr;
 	inAVM1Attachment=false;
 	isAVM1Loaded=false;
-	setFramesLoaded(0);
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())
 	{
@@ -265,10 +103,6 @@ bool MovieClip::destruct()
 	totalFrames_unreliable = 1;
 	inExecuteFramescript=false;
 
-	scenes.clear();
-	setFramesLoaded(0);
-	frames.emplace_back(Frame());
-	scenes.resize(1);
 	state.reset();
 	actions=nullptr;
 
@@ -284,7 +118,7 @@ bool MovieClip::destruct()
 
 void MovieClip::finalize()
 {
-	frames.clear();
+	framecontainer=nullptr;
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())
 	{
@@ -292,11 +126,15 @@ void MovieClip::finalize()
 		it++;
 	}
 	frameScripts.clear();
-	scenes.clear();
 	state.reset();
 	if (avm1loader)
 		avm1loader->removeStoredMember();
 	avm1loader = nullptr;
+	for (auto it = this->AVM1FrameContexts.begin(); it != this->AVM1FrameContexts.end(); it++)
+	{
+		it->second.setScope(nullptr);
+		it->second.setGlobalScope(nullptr);
+	}
 	auto avm1ctxt = getAVM1Context();
 	avm1ctxt->setScope(nullptr);
 	avm1ctxt->setGlobalScope(nullptr);
@@ -336,79 +174,21 @@ bool MovieClip::countCylicMemberReferences(garbagecollectorstate &gcstate)
 	}
 	if (avm1loader)
 		ret = avm1loader->countAllCylicMemberReferences(gcstate) || ret;
-	auto avm1ctxt = getAVM1Context();
-	if (avm1ctxt->getScope())
-		ret |= avm1ctxt->getScope()->countAllCyclicMemberReferences(gcstate);
-	if (avm1ctxt->getGlobalScope())
-		ret |= avm1ctxt->getGlobalScope()->countAllCyclicMemberReferences(gcstate);
-
+	if (!needsActionScript3())
+	{
+		for (auto it = this->AVM1FrameContexts.begin(); it != this->AVM1FrameContexts.end(); it++)
+		{
+			if (it->second.getScope())
+				ret |= it->second.getScope()->countAllCyclicMemberReferences(gcstate);
+			if (it->second.getGlobalScope())
+				ret |= it->second.getGlobalScope()->countAllCyclicMemberReferences(gcstate);
+		}
+		if (avm1context.getScope())
+			ret |= avm1context.getScope()->countAllCyclicMemberReferences(gcstate);
+		if (avm1context.getGlobalScope())
+			ret |= avm1context.getGlobalScope()->countAllCyclicMemberReferences(gcstate);
+	}
 	return ret;
-}
-/* Returns a Scene_data pointer for a scene called sceneName, or for
- * the current scene if sceneName is empty. Returns nullptr, if not found.
- */
-const Scene_data *MovieClip::getScene(const tiny_string &sceneName) const
-{
-	if (sceneName.empty())
-	{
-		return scenes.empty() ? nullptr : &scenes[getCurrentScene()];
-	}
-	else
-	{
-		//Find scene by name
-		for (auto it=scenes.begin(); it!=scenes.end(); ++it)
-		{
-			if (it->name == sceneName)
-				return &*it;
-		}
-	}
-
-	return nullptr;  //Not found!
-}
-
-/* Return global frame index for a named frame. If sceneName is not
- * empty, return a frame only if it belong to the named scene.
- */
-uint32_t MovieClip::getFrameIdByLabel(const tiny_string& label, const tiny_string& sceneName) const
-{
-	if (sceneName.empty())
-	{
-		//Find frame in any scene
-		for(size_t i=0;i<scenes.size();++i)
-		{
-			for(size_t j=0;j<scenes[i].labels.size();++j)
-				if(scenes[i].labels[j].name == label || scenes[i].labels[j].name.lowercase() == label.lowercase())
-					return scenes[i].labels[j].frame+scenes[i].startframe;
-		}
-	}
-	else
-	{
-		//Find frame in the named scene only
-		for(size_t i=0;i<scenes.size();++i)
-		{
-			if (scenes[i].name == sceneName)
-			{
-				for(size_t j=0;j<scenes[i].labels.size();++j)
-					if(scenes[i].labels[j].name == label || scenes[i].labels[j].name.lowercase() == label.lowercase())
-						return scenes[i].labels[j].frame+scenes[i].startframe;
-			}
-		}
-	}
-
-	return FRAME_NOT_FOUND;
-}
-
-/* Return global frame index for frame i (zero-based) in a scene
- * called sceneName. If sceneName is empty, use the current scene.
- */
-uint32_t MovieClip::getFrameIdByNumber(uint32_t i, const tiny_string& sceneName) const
-{
-	const Scene_data *sceneData = getScene(sceneName);
-	if (!sceneData)
-		return FRAME_NOT_FOUND;
-
-	//Should we check if the scene has at least i frames?
-	return sceneData->startframe + i;
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
@@ -464,7 +244,7 @@ void MovieClip::setPlaying()
 		state.stop_FP=false;
 		if (!needsActionScript3() && state.next_FP == state.FP)
 		{
-			if (state.FP == getFramesLoaded()-1)
+			if (state.FP == framecontainer->getFramesLoaded()-1)
 				state.next_FP = 0;
 			else
 				state.next_FP++;
@@ -504,16 +284,16 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 		if(inFrameNo == 0)
 			inFrameNo = 1;
 
-		dest = getFrameIdByNumber(inFrameNo-1, sceneName);
+		dest = framecontainer->getFrameIdByNumber(inFrameNo-1, sceneName,state.FP);
 	}
 	else
 	{
 		tiny_string label = asAtomHandler::toString(args[0],getInstanceWorker());
 		number_t ret=0;
 		if (Integer::fromStringFlashCompatible(label.raw_buf(),ret,10,true))
-			dest = getFrameIdByNumber(ret-1, sceneName);
+			dest = framecontainer->getFrameIdByNumber(ret-1, sceneName,state.FP);
 		else
-			dest = getFrameIdByLabel(label, sceneName);
+			dest = framecontainer->getFrameIdByLabel(label, sceneName);
 
 		if(dest==FRAME_NOT_FOUND)
 		{
@@ -524,14 +304,14 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	if (dest!=FRAME_NOT_FOUND)
 	{
 		next_FP=dest;
-		while(next_FP >= getFramesLoaded())
+		while(next_FP >= framecontainer->getFramesLoaded())
 		{
 			if (hasFinishedLoading() || getSystemState()->runSingleThreaded || isMainThread())
 			{
-				if (next_FP >= getFramesLoaded())
+				if (next_FP >= framecontainer->getFramesLoaded())
 				{
-					LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << getFramesLoaded() << " on "<<this->toDebugString()<<" "<<this->getTagID());
-					next_FP = getFramesLoaded()-1;
+					LOG(LOG_ERROR, next_FP << "= next_FP >= state.max_FP = " << framecontainer->getFramesLoaded() << " on "<<this->toDebugString()<<" "<<this->getTagID());
+					next_FP = framecontainer->getFramesLoaded()-1;
 				}
 				break;
 			}
@@ -579,9 +359,16 @@ void MovieClip::runGoto(bool newFrame)
 	}
 	getSystemState()->runInnerGotoFrame(this, removedFrameScripts);
 }
+
+AVM1context* MovieClip::AVM1getCurrentFrameContext()
+{
+
+	auto it = AVM1FrameContexts.insert(make_pair(state.FP,AVM1context())).first;
+	return &it->second;
+}
 void MovieClip::AVM1gotoFrameLabel(const tiny_string& label,bool stop, bool switchplaystate)
 {
-	uint32_t dest=getFrameIdByLabel(label, "");
+	uint32_t dest=framecontainer->getFrameIdByLabel(label, "");
 	if(dest==FRAME_NOT_FOUND)
 	{
 		LOG(LOG_ERROR, "gotoFrameLabel: label not found:" <<label);
@@ -617,9 +404,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,gotoAndPlay)
 ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	assert_and_throw(th->state.FP<th->getFramesLoaded());
-	bool newframe = !th->hasFinishedLoading() || th->state.FP != th->getFramesLoaded()-1;
-	th->state.next_FP = th->hasFinishedLoading() && th->state.FP == th->getFramesLoaded()-1 ? th->state.FP : th->state.FP+1;
+	assert_and_throw(th->state.FP<th->framecontainer->getFramesLoaded());
+	bool newframe = !th->hasFinishedLoading() || th->state.FP != th->framecontainer->getFramesLoaded()-1;
+	th->state.next_FP = th->hasFinishedLoading() && th->state.FP == th->framecontainer->getFramesLoaded()-1 ? th->state.FP : th->state.FP+1;
 	th->state.explicit_FP=true;
 	th->state.stop_FP=true;
 	th->runGoto(newframe);
@@ -628,7 +415,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextFrame)
 ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	assert_and_throw(th->state.FP<th->getFramesLoaded());
+	assert_and_throw(th->state.FP<th->framecontainer->getFramesLoaded());
 	bool newframe = th->state.FP != 0;
 	th->state.next_FP = th->state.FP == 0 ? th->state.FP : th->state.FP-1;
 	th->state.explicit_FP=true;
@@ -639,18 +426,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevFrame)
 ASFUNCTIONBODY_ATOM(MovieClip,nextScene)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	assert_and_throw(th->state.FP<th->getFramesLoaded());
-	if (th->hasFinishedLoading() && th->state.FP == th->getFramesLoaded()-1)
+	assert_and_throw(th->state.FP<th->framecontainer->getFramesLoaded());
+	if (th->hasFinishedLoading() && th->state.FP == th->framecontainer->getFramesLoaded()-1)
 		return;
-	bool newframe = !th->hasFinishedLoading() || th->state.FP != th->getFramesLoaded()-1;
-	uint32_t scene = th->getCurrentScene();
-	uint32_t nextframe=0;
-	for(size_t i=0;i<=scene+1 && i < th->scenes.size() ;++i)
-		nextframe += th->scenes[i].startframe;
-	if (scene == th->scenes.size()-1)
-		++nextframe;
-
-	th->state.next_FP = nextframe;
+	bool newframe = !th->hasFinishedLoading() || th->state.FP != th->framecontainer->getFramesLoaded()-1;
+	th->state.next_FP = th->framecontainer->nextScene(th->state.FP);
 	th->state.explicit_FP=true;
 	th->state.stop_FP=false;
 	th->runGoto(newframe);
@@ -659,18 +439,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,nextScene)
 ASFUNCTIONBODY_ATOM(MovieClip,prevScene)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	assert_and_throw(th->state.FP<th->getFramesLoaded());
+	assert_and_throw(th->state.FP<th->framecontainer->getFramesLoaded());
 	if (th->hasFinishedLoading() && th->state.FP == 0)
 		return;
 	bool newframe = th->state.FP != 0;
-	uint32_t scene = th->getCurrentScene();
-	uint32_t prevframe=0;
-	if (scene != 0)
-	{
-		for(size_t i=0;i<scene-1;++i)
-			prevframe += th->scenes[i].startframe;
-	}
-	th->state.next_FP = prevframe;
+	th->state.next_FP = th->framecontainer->prevScene(th->state.FP);
 	th->state.explicit_FP=true;
 	th->state.stop_FP=false;
 	th->runGoto(newframe);
@@ -679,7 +452,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevScene)
 ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->getFramesLoaded());
+	asAtomHandler::setUInt(ret,wrk,th->framecontainer->getFramesLoaded());
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getTotalFrames)
@@ -691,104 +464,38 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getTotalFrames)
 ASFUNCTIONBODY_ATOM(MovieClip,_getScenes)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	Array* res = Class<Array>::getInstanceSNoArgs(wrk);
-	res->resize(th->scenes.size());
-	uint32_t numFrames;
-	for(size_t i=0; i<th->scenes.size(); ++i)
-	{
-		if(i == th->scenes.size()-1)
-			numFrames = th->totalFrames_unreliable - th->scenes[i].startframe;
-		else
-			numFrames = th->scenes[i+1].startframe - th->scenes[i].startframe;
-		asAtom v = asAtomHandler::fromObject(Class<Scene>::getInstanceS(wrk,th->scenes[i],numFrames));
-		res->set(i, v,false,false);
-	}
-	ret = asAtomHandler::fromObject(res);
-}
-
-uint32_t MovieClip::getCurrentScene() const
-{
-	for(size_t i=0;i<scenes.size();++i)
-	{
-		if(state.FP < scenes[i].startframe)
-			return i-1;
-	}
-	return scenes.size()-1;
+	ret = th->framecontainer->getScenes(wrk,th->totalFrames_unreliable);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentScene)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	uint32_t numFrames;
-	uint32_t curScene = th->getCurrentScene();
-	if(curScene == th->scenes.size()-1)
-		numFrames = th->totalFrames_unreliable - th->scenes[curScene].startframe;
-	else
-		numFrames = th->scenes[curScene+1].startframe - th->scenes[curScene].startframe;
-
-	ret = asAtomHandler::fromObject(Class<Scene>::getInstanceS(wrk,th->scenes[curScene],numFrames));
+	ret = th->framecontainer->createCurrentScene(wrk,th->state.FP,th->totalFrames_unreliable);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	//currentFrame is 1-based and relative to current scene
-	asAtomHandler::setInt(ret,wrk,th->state.FP+1 - th->scenes[th->getCurrentScene()].startframe);
+	asAtomHandler::setInt(ret,wrk,th->state.FP+1 - th->framecontainer->getCurrentSceneStartFrame(th->state.FP));
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrameLabel)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	for(size_t i=0;i<th->scenes.size();++i)
-	{
-		for(size_t j=0;j<th->scenes[i].labels.size();++j)
-		{
-			if(th->scenes[i].labels[j].frame+th->scenes[i].startframe == th->state.FP)
-			{
-				ret = asAtomHandler::fromObject(abstract_s(wrk,th->scenes[i].labels[j].name));
-				return;
-			}
-		}
-	}
-	asAtomHandler::setNull(ret);
+	ret = th->framecontainer->getCurrentFrameLabel(wrk,th->state.FP);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabel)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	tiny_string label;
-	for(size_t i=0;i<th->scenes.size();++i)
-	{
-		if(th->scenes[i].startframe > th->state.FP)
-			break;
-		for(size_t j=0;j<th->scenes[i].labels.size();++j)
-		{
-			if(th->scenes[i].labels[j].frame+th->scenes[i].startframe > th->state.FP)
-				break;
-			if(!th->scenes[i].labels[j].name.empty())
-				label = th->scenes[i].labels[j].name;
-		}
-	}
-
-	if(label.empty())
-		asAtomHandler::setNull(ret);
-	else
-		ret = asAtomHandler::fromStringID(wrk->getSystemState()->getUniqueStringId(label));
+	ret = th->framecontainer->getCurrentLabel(wrk,th->state.FP);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentLabels)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	Scene_data& sc = th->scenes[th->getCurrentScene()];
-
-	Array* res = Class<Array>::getInstanceSNoArgs(wrk);
-	res->resize(sc.labels.size());
-	for(size_t i=0; i<sc.labels.size(); ++i)
-	{
-		asAtom v = asAtomHandler::fromObject(Class<FrameLabel>::getInstanceS(wrk,sc.labels[i]));
-		res->set(i, v,false,false);
-	}
-	ret = asAtomHandler::fromObject(res);
+	ret = th->framecontainer->getCurrentLabels(wrk,th->state.FP);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getIsPlaying)
@@ -800,22 +507,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getIsPlaying)
 ASFUNCTIONBODY_ATOM(MovieClip,_constructor)
 {
 	Sprite::_constructor(ret,wrk,obj,nullptr,0);
-}
-
-void MovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name)
-{
-	if(sceneNo == 0)
-	{
-		//we always have one scene, but this call may set its name
-		scenes[0].name = name;
-	}
-	else
-	{
-		assert(scenes.size() == sceneNo);
-		scenes.resize(sceneNo+1);
-		scenes[sceneNo].name = name;
-		scenes[sceneNo].startframe = startframe;
-	}
 }
 
 void MovieClip::afterLegacyInsert()
@@ -898,7 +589,7 @@ bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			}
 			if (exec)
 			{
-				ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+				ACTIONRECORD::executeActions(this,this->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
 			}
 		}
 	}
@@ -934,11 +625,11 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 					|| (e->type == "mouseMove" && it->EventFlags.ClipEventMouseMove)
 					)
 				{
-					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+					ACTIONRECORD::executeActions(this,this->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
 				}
 				if (this->dragged && it->EventFlags.ClipEventRelease && e->type == "mouseUp")
 				{
-					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+					ACTIONRECORD::executeActions(this,this->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
 				}
 				else if( dispobj &&
 					((e->type == "mouseUp" && it->EventFlags.ClipEventRelease && !this->dragged)
@@ -948,7 +639,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 					|| (e->type == "releaseOutside" && it->EventFlags.ClipEventReleaseOutside)
 					))
 				{
-					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+					ACTIONRECORD::executeActions(this,this->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
 				}
 			}
 		}
@@ -966,7 +657,7 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			{
 				if (e->type == "complete" && it->EventFlags.ClipEventLoad)
 				{
-					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+					ACTIONRECORD::executeActions(this,this->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
 				}
 			}
 		}
@@ -979,7 +670,7 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			{
 				if (e->type == "unload" && it->EventFlags.ClipEventUnload)
 				{
-					ACTIONRECORD::executeActions(this,this->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+					ACTIONRECORD::executeActions(this,this->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
 				}
 			}
 		}
@@ -1114,28 +805,13 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 
 void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
 {
-	uint32_t dest=getFrameIdByLabel(label, "");
+	uint32_t dest=framecontainer->getFrameIdByLabel(label, "");
 	if(dest==FRAME_NOT_FOUND)
 	{
 		LOG(LOG_INFO, "AVM1ExecuteFrameActionsFromLabel: label not found:" <<label);
 		return;
 	}
-	AVM1ExecuteFrameActions(dest);
-}
-
-void MovieClip::AVM1ExecuteFrameActions(uint32_t frame)
-{
-	auto it=frames.begin();
-	uint32_t i=0;
-	while(it != frames.end() && i < frame)
-	{
-		++i;
-		++it;
-	}
-	if (it != frames.end())
-	{
-		it->AVM1executeActions(this);
-	}
+	framecontainer->AVM1ExecuteFrameActions(dest,this);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
@@ -1548,21 +1224,7 @@ void MovieClip::declareFrame(bool implicit)
 		AVM1AddScriptEvents();
 	if (newFrame ||!state.frameadvanced)
 	{
-		if(getFramesLoaded())
-		{
-			auto iter=frames.begin();
-			uint32_t frame = state.FP;
-			removedFrameScripts.clear();
-			for(state.FP=0;state.FP<=frame;state.FP++)
-			{
-				if((int)frame < state.last_FP || (int)state.FP > state.last_FP)
-				{
-					iter->execute(this,state.FP!=frame,removedFrameScripts);
-				}
-				++iter;
-			}
-			state.FP = frame;
-		}
+		framecontainer->declareFrame(this);
 		if (newFrame)
 			state.frameadvanced=true;
 	}
@@ -1586,7 +1248,7 @@ void MovieClip::AVM1AddScriptEvents()
 				AVM1scriptToExecute script;
 				script.actions = &(*it).actions;
 				script.startactionpos = (*it).startactionpos;
-				script.avm1context = this->getCurrentFrame()->getAVM1Context();
+				script.avm1context = this->AVM1getCurrentFrameContext();
 				script.event_name_id = UINT32_MAX;
 				script.isEventScript = true;
 				this->incRef(); // will be decreffed after script handler was executed
@@ -1788,12 +1450,12 @@ void MovieClip::advanceFrame(bool implicit)
 	}
 
 	//If we have not yet loaded enough frames delay advancement
-	if(state.next_FP>=(uint32_t)getFramesLoaded())
+	if(state.next_FP>=(uint32_t)framecontainer->getFramesLoaded())
 	{
 		if(hasFinishedLoading())
 		{
-			if (getFramesLoaded() > 1)
-				LOG(LOG_ERROR,"state.next_FP >= getFramesLoaded:"<< state.next_FP<<" "<<getFramesLoaded() <<" "<<toDebugString()<<" "<<getTagID());
+			if (framecontainer->getFramesLoaded() > 1)
+				LOG(LOG_ERROR,"state.next_FP >= getFramesLoaded:"<< state.next_FP<<" "<<framecontainer->getFramesLoaded() <<" "<<toDebugString()<<" "<<getTagID());
 			state.next_FP = state.FP;
 		}
 		else
@@ -1806,13 +1468,13 @@ void MovieClip::advanceFrame(bool implicit)
 			lastFrameScriptExecuted=UINT32_MAX;
 		state.FP=state.next_FP;
 	}
-	if(implicit && !state.stop_FP && getFramesLoaded()>0)
+	if(implicit && !state.stop_FP && framecontainer->getFramesLoaded()>0)
 	{
 		if (hasFinishedLoading())
-			state.next_FP=imin(state.FP+1,getFramesLoaded()-1);
+			state.next_FP=imin(state.FP+1,framecontainer->getFramesLoaded()-1);
 		else
 			state.next_FP=state.FP+1;
-		if(hasFinishedLoading() && state.FP == getFramesLoaded()-1)
+		if(hasFinishedLoading() && state.FP == framecontainer->getFramesLoaded()-1)
 			state.next_FP = 0;
 	}
 	// ensure the legacy objects of the current frame are created
@@ -1835,6 +1497,8 @@ void MovieClip::constructionComplete(bool _explicit, bool forInitAction)
 	 * now */
 	if(state.last_FP == -1 && !forInitAction)
 	{
+		if (!framecontainer)
+			framecontainer=new FrameContainer();
 		advanceFrame(true);
 		if (getSystemState()->getFramePhase() != FramePhase::ADVANCE_FRAME)
 			initFrame();
@@ -1852,19 +1516,9 @@ void MovieClip::afterConstruction(bool _explicit)
 	Sprite::afterConstruction(_explicit);
 }
 
-Frame *MovieClip::getCurrentFrame()
+uint32_t MovieClip::getFrameCount()
 {
-	if (state.FP >= frames.size())
-	{
-		LOG(LOG_ERROR,"MovieClip.getCurrentFrame invalid frame:"<<state.FP<<" "<<frames.size()<<" "<<this->toDebugString());
-		throw RunTimeException("invalid current frame");
-	}
-	auto it = frames.begin();
-	uint32_t i = 0;
-	while (i < state.FP)
-	{
-		it++;
-		i++;
-	}
-	return &(*it);
+	if (framecontainer)
+		return framecontainer->getFramesSize();
+	return 0;
 }

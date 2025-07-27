@@ -22,7 +22,7 @@
 #include "backends/security.h"
 #include "scripting/abc.h"
 #include "scripting/flash/display/flashdisplay.h"
-#include "scripting/flash/display/MovieClip.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/NativeWindow.h"
 #include "scripting/flash/display/Stage3D.h"
 #include "scripting/flash/display/Stage.h"

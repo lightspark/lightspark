@@ -34,6 +34,7 @@
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Undefined.h"
+#include "scripting/flash/display/RootMovieClip.h"
 
 #include "scripting/abc.h"
 using namespace lightspark;

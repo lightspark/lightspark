@@ -27,6 +27,7 @@
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/XML.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 #include <algorithm>
 

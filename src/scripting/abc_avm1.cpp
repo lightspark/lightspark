@@ -29,6 +29,7 @@
 #include "scripting/avm1/avm1date.h"
 #include "scripting/avm1/avm1filter.h"
 #include "scripting/toplevel/Global.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/geom/Point.h"

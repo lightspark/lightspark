@@ -19,6 +19,7 @@
 
 #include "scripting/class.h"
 #include "scripting/flash/display/Shape.h"
+#include "scripting/flash/display/Graphics.h"
 #include "parsing/tags.h"
 
 using namespace std;

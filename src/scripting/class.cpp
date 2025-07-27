@@ -22,6 +22,7 @@
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Vector.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/class.h"
 #include "parsing/tags.h"
 

@@ -23,6 +23,7 @@
 #include "scripting/flash/display/bitmapencodingcolorspace.h"
 #include "scripting/flash/display/colorcorrection.h"
 #include "scripting/flash/display/ColorCorrectionSupport.h"
+#include "scripting/flash/display/FrameContainer.h"
 #include "scripting/flash/display/Graphics.h"
 #include "scripting/flash/display/GraphicsBitmapFill.h"
 #include "scripting/flash/display/GraphicsEndFill.h"

@@ -2033,7 +2033,7 @@ void ParseThread::parseSWF(UI8 ver)
 					 * locking in ctag->execute's implementation.
 					 * ABC_TAG's are an exception, as they require no locking.
 					 */
-					if (root->frames.size()!=1)
+					if (root->getFrameCount()!=1)
 					{
 						delete tag;
 						break;
@@ -2049,7 +2049,7 @@ void ParseThread::parseSWF(UI8 ver)
 					 * commited to the vm yet.
 					 */
 					if (!root->hasScenes()) // tag is ignored if main timeline has scenes
-						root->addFrameLabel(root->frames.size()-1,static_cast<const FrameLabelTag*>(tag)->Name);
+						root->addFrameLabel(root->getFrameCount()-1,static_cast<const FrameLabelTag*>(tag)->Name);
 					empty=false;
 					delete tag;
 					break;

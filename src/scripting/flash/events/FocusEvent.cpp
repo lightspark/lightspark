@@ -22,6 +22,7 @@
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/flash/display/flashdisplay.h"
 
 using namespace std;
 using namespace lightspark;

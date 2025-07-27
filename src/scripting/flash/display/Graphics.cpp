@@ -20,6 +20,7 @@
 #include "scripting/flash/display/Graphics.h"
 #include "scripting/flash/display/GraphicsPath.h"
 #include "scripting/flash/display/TokenContainer.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/IGraphicsData.h"

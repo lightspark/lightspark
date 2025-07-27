@@ -25,106 +25,13 @@
 
 namespace lightspark
 {
+class FrameContainer;
 
-struct FrameLabel_data
-{
-	FrameLabel_data() : frame(0) {}
-	FrameLabel_data(uint32_t _frame, tiny_string _name) : name(_name),frame(_frame){}
-	tiny_string name;
-	uint32_t frame;
-};
-
-class FrameLabel: public ASObject, public FrameLabel_data
-{
-public:
-	FrameLabel(ASWorker* wrk,Class_base* c);
-	FrameLabel(ASWorker* wrk,Class_base* c, const FrameLabel_data& data);
-	static void sinit(Class_base* c);
-	ASFUNCTION_ATOM(_getFrame);
-	ASFUNCTION_ATOM(_getName);
-};
-
-struct Scene_data
-{
-	Scene_data() : startframe(0) {}
-	//this vector is sorted with respect to frame
-	std::vector<FrameLabel_data> labels;
-	tiny_string name;
-	uint32_t startframe;
-	void addFrameLabel(uint32_t frame, const tiny_string& label);
-};
-
-class Scene: public ASObject, public Scene_data
-{
-	uint32_t numFrames;
-public:
-	Scene(ASWorker* wrk,Class_base* c);
-	Scene(ASWorker* wrk,Class_base* c, const Scene_data& data, uint32_t _numFrames);
-	static void sinit(Class_base* c);
-	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION_ATOM(_getLabels);
-	ASFUNCTION_ATOM(_getName);
-	ASFUNCTION_ATOM(_getNumFrames);
-};
-
-class Frame
-{
-friend class FrameContainer;
-private:
-	AVM1context avm1context;
-public:
-	inline AVM1context* getAVM1Context() { return &avm1context; }
-	std::list<DisplayListTag*> blueprint;
-	void execute(DisplayObjectContainer* displayList, bool inskipping, std::vector<_R<DisplayObject>>& removedFrameScripts);
-	void AVM1executeActions(MovieClip* clip);
-	/**
-	 * destroyTags must be called only by the tag destructor, not by
-	 * the objects that are instance of tags
-	 */
-	void destroyTags();
-};
-
-class FrameContainer
-{
-protected:
-	/* This list is accessed by both the vm thread and the parsing thread,
-	 * but the parsing thread only accesses frames.back(), while
-	 * the vm thread only accesses the frames before that frame (until
-	 * the parsing finished; then it can also access the last frame).
-	 * To make that easier for the vm thread, the member framesLoaded keep
-	 * track of how many frames the vm may access. Access to framesLoaded
-	 * is guarded by a spinlock.
-	 * For non-RootMovieClips, the parser fills the frames member before
-	 * handing the object to the vm, so there is no issue here.
-	 * RootMovieClips use the new_frame semaphore to wait
-	 * for a finished frame from the parser.
-	 * It cannot be implemented as std::vector, because then reallocation
-	 * would break concurrent access.
-	 */
-	std::list<Frame> frames;
-	std::vector<Scene_data> scenes;
-	void addToFrame(DisplayListTag *r);
-	void setFramesLoaded(uint32_t fl) { framesLoaded = fl; }
-	FrameContainer();
-	FrameContainer(const FrameContainer& f);
-private:
-	//No need for any lock, just make sure accesses are atomic
-	ATOMIC_INT32(framesLoaded);
-	AVM1context avm1context;
-public:
-	void addFrameLabel(uint32_t frame, const tiny_string& label);
-	uint32_t getFramesLoaded() { return framesLoaded; }
-	void setAvm1InitAction(AVM1InitActionTag* t);
-	inline AVM1context* getAVM1Context() { return &avm1context; }
-};
-
-class MovieClip: public Sprite, public FrameContainer
+class MovieClip: public Sprite
 {
 friend class Stage;
+friend class FrameContainer;
 private:
-	uint32_t getCurrentScene() const;
-	const Scene_data *getScene(const tiny_string &sceneName) const;
-	uint32_t getFrameIdByNumber(uint32_t i, const tiny_string& sceneName) const;
 	std::map<uint32_t,asAtom > frameScripts;
 	std::vector<_R<DisplayObject>> removedFrameScripts;
 	uint32_t fromDefineSpriteTag;
@@ -135,21 +42,24 @@ private:
 	bool isAVM1Loaded;
 	bool AVM1EventScriptsAdded;
 	void runGoto(bool newFrame);
+	AVM1context avm1context;
+	std::map<uint32_t,AVM1context> AVM1FrameContexts;
 protected:
+	FrameContainer* framecontainer;
 	const CLIPACTIONS* actions;
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
 	uint32_t totalFrames_unreliable;
 	ASPROPERTY_GETTER_SETTER(bool, enabled);
 public:
-	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
 	void constructionComplete(bool _explicit = false, bool forInitAction = false) override;
 	void beforeConstruction(bool _explicit = false) override;
 	void afterConstruction(bool _explicit = false) override;
 	RunState state;
 	AVM1MovieClipLoader* avm1loader;
-	Frame* getCurrentFrame();
+	uint32_t getFrameCount();
+	FrameContainer* getFrameContainer() const { return framecontainer; }
 	MovieClip(ASWorker* wrk,Class_base* c);
-	MovieClip(ASWorker* wrk,Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID);
+	MovieClip(ASWorker* wrk,Class_base* c, FrameContainer* f, uint32_t defineSpriteTagID);
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
@@ -195,7 +105,6 @@ public:
 	void afterLegacyInsert() override;
 	void afterLegacyDelete(bool inskipping) override;
 
-	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
 	uint32_t getTagID() const override { return fromDefineSpriteTag; }
 	void setupActions(const CLIPACTIONS& clipactions);
 
@@ -212,6 +121,8 @@ public:
 	void AVM1AddScriptEvents();
 	void AVM1HandleConstruction(bool forInitAction);
 	bool getAVM1Loaded() const { return isAVM1Loaded; }
+	inline AVM1context* getAVM1Context() { return &avm1context; }
+	AVM1context* AVM1getCurrentFrameContext();
 	MovieClip* AVM1CloneSprite(asAtom target, uint32_t Depth, ASObject* initobj);
 
 	ASFUNCTION_ATOM(AVM1AttachMovie);

@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/flash/display/FrameContainer.h"
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/Loader.h"
 #include "scripting/flash/geom/Rectangle.h"
@@ -26,6 +27,7 @@
 #include "scripting/avm1/avm1display.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"
+#include "parsing/tags.h"
 
 
 
@@ -38,6 +40,7 @@ RootMovieClip::RootMovieClip(ASWorker* wrk, LoaderInfo* li, _NR<ApplicationDomai
 	Background(0xFF,0xFF,0xFF),avm1level(-1),
 	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
 {
+	framecontainer = new FrameContainer();
 	this->avm1focusrect=asAtomHandler::falseAtom;
 	this->objfreelist=nullptr; // ensure RootMovieClips aren't reused to avoid conflicts with "normal" MovieClips
 	subtype=SUBTYPE_ROOTMOVIECLIP;
@@ -60,8 +63,7 @@ RootMovieClip::~RootMovieClip()
 
 void RootMovieClip::destroyTags()
 {
-	for(auto it=frames.begin();it!=frames.end();++it)
-		it->destroyTags();
+	framecontainer->destroyTags();
 }
 
 void RootMovieClip::parsingFailed()
@@ -113,11 +115,11 @@ bool RootMovieClip::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, n
 
 void RootMovieClip::commitFrame(bool another)
 {
-	setFramesLoaded(frames.size());
+	framecontainer->setFramesLoaded(framecontainer->getFramesSize());
 
 	if(another)
-		frames.push_back(Frame());
-	checkSound(frames.size());
+		framecontainer->addFrame();
+	checkSound(framecontainer->getFramesSize());
 
 	if(getFramesLoaded()==1 && applicationDomain->getFrameRate()!=0)
 	{
@@ -218,9 +220,8 @@ bool RootMovieClip::needsActionScript3() const
 }
 void RootMovieClip::revertFrame()
 {
-	//TODO: The next should be a regular assert
-	assert_and_throw(frames.size() && getFramesLoaded()==(frames.size()-1));
-	frames.pop_back();
+	assert(framecontainer->getFramesSize() && framecontainer->getFramesLoaded()==(framecontainer->getFramesSize()-1));
+	framecontainer->pop_frame();
 }
 
 RGB RootMovieClip::getBackground()
@@ -251,63 +252,6 @@ _NR<Stage> RootMovieClip::getStage()
 	else
 		return NullRef;
 }
-
-/*ASObject* RootMovieClip::getVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject*& owner)
-{
-	sem_wait(&mutex);
-	ASObject* ret=ASObject::getVariableByQName(name, ns, owner);
-	sem_post(&mutex);
-	return ret;
-}
-
-void RootMovieClip::setVariableByMultiname(multiname& name, asAtom o)
-{
-	sem_wait(&mutex);
-	ASObject::setVariableByMultiname(name,o);
-	sem_post(&mutex);
-}
-
-void RootMovieClip::setVariableByQName(const tiny_string& name, const tiny_string& ns, ASObject* o)
-{
-	sem_wait(&mutex);
-	ASObject::setVariableByQName(name,ns,o);
-	sem_post(&mutex);
-}
-
-void RootMovieClip::setVariableByString(const string& s, ASObject* o)
-{
-	abort();
-	//TODO: ActionScript2 support
-	string sub;
-	int f=0;
-	int l=0;
-	ASObject* target=this;
-	for(l;l<s.size();l++)
-	{
-		if(s[l]=='.')
-		{
-			sub=s.substr(f,l-f);
-			ASObject* next_target;
-			if(f==0 && sub=="__Packages")
-			{
-				next_target=&sys->cur_render_thread->vm.Global;
-				owner=&sys->cur_render_thread->vm.Global;
-			}
-			else
-				next_target=target->getVariableByQName(sub.c_str(),"",owner);
-
-			f=l+1;
-			if(!owner)
-			{
-				next_target=new Package;
-				target->setVariableByQName(sub.c_str(),"",next_target);
-			}
-			target=next_target;
-		}
-	}
-	sub=s.substr(f,l-f);
-	target->setVariableByQName(sub.c_str(),"",o);
-}*/
 
 /* This is run in vm's thread context */
 void RootMovieClip::initFrame()
@@ -355,6 +299,10 @@ void RootMovieClip::executeFrameScript()
 
 bool RootMovieClip::destruct()
 {
+	if (framecontainer)
+		delete framecontainer;
+	framecontainer = new FrameContainer();
+	framecontainer->addFrame();
 	applicationDomain.reset();
 	securityDomain.reset();
 	waitingforparser=false;
@@ -365,6 +313,9 @@ bool RootMovieClip::destruct()
 }
 void RootMovieClip::finalize()
 {
+	if (framecontainer)
+		delete framecontainer;
+	framecontainer=nullptr;
 	applicationDomain.reset();
 	securityDomain.reset();
 	parsethread=nullptr;
@@ -429,4 +380,25 @@ void RootMovieClip::AVM1setLevel(int level)
 		getSystemState()->stage->AVM1SetLevelRoot(level,this);
 		avm1level = level;
 	}
+}
+
+void RootMovieClip::addToFrame(DisplayListTag* t)
+{
+	assert(framecontainer);
+	framecontainer->addToFrame(t);
+}
+void RootMovieClip::addFrameLabel(uint32_t frame, const tiny_string& label)
+{
+	assert(framecontainer);
+	framecontainer->addFrameLabel(frame,label);
+}
+void RootMovieClip::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name)
+{
+	assert(framecontainer);
+	framecontainer->addScene(sceneNo,startframe,name);
+}
+uint32_t RootMovieClip::getFramesLoaded()
+{
+	assert(framecontainer);
+	return framecontainer->getFramesLoaded();
 }

@@ -23,7 +23,6 @@
 
 #include "backends/geometry.h"
 #include "scripting/flash/geom/Point.h"
-#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Error.h"

@@ -21,6 +21,7 @@
 #include "scripting/avm1/avm1display.h"
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/Loader.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/geom/flashgeom.h"

@@ -165,7 +165,7 @@ bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent 
 				if (c)
 				{
 					asAtom obj = asAtomHandler::fromObjectNoPrimitive(this->getParent());
-					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,nullptr,false,nullptr,&obj);
+					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->AVM1getCurrentFrameContext(),it->actions,it->startactionpos,nullptr,false,nullptr,&obj);
 				}
 			}
 		}
@@ -187,7 +187,7 @@ void SimpleButton::AVM1HandlePressedEvent(ASObject* dispatcher)
 				if (c)
 				{
 					asAtom obj = asAtomHandler::fromObjectNoPrimitive(this->getParent());
-					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos,nullptr,false,nullptr,&obj);
+					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->AVM1getCurrentFrameContext(),it->actions,it->startactionpos,nullptr,false,nullptr,&obj);
 				}
 			}
 		}
@@ -363,7 +363,7 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			while (c && !c->is<MovieClip>())
 				c = c->getParent();
 			if (c)
-				ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->getCurrentFrame()->getAVM1Context(),it->actions,it->startactionpos);
+				ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
 		}
 	}
 	return handled;

@@ -24,6 +24,7 @@
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/display/Loader.h"
 #include "scripting/flash/display/Stage.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/avm1/scope.h"
 #include "scripting/abc.h"
 #include "scripting/argconv.h"
@@ -40,6 +41,7 @@
 #include "scripting/toplevel/toplevel.h"
 #include "parsing/streams.h"
 #include "platforms/engineutils.h"
+#include "parsing/tags.h"
 #ifdef __APPLE__
 #include <stdlib.h>
 #else

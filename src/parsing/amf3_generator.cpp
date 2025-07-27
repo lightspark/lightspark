@@ -28,6 +28,7 @@
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/class.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/xml/flashxml.h"
 #include "toplevel/XML.h"
 #include <iostream>

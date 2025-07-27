@@ -19,6 +19,7 @@
 
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/Bitmap.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/avm1/avm1display.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"

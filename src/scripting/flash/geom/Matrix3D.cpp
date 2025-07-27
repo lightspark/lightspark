@@ -21,6 +21,7 @@
 #include "scripting/flash/geom/Matrix3D.h"
 #include "scripting/flash/geom/Vector3D.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"

@@ -25,17 +25,20 @@
 #include <iostream>
 #include "swftypes.h"
 #include "backends/geometry.h"
-#include "scripting/flash/display/flashdisplay.h"
-#include "scripting/flash/display/MovieClip.h"
+#include "backends/graphics.h"
 
 namespace lightspark
 {
 class Class_base;
 class RootMovieClip;
+class MovieClip;
 class ApplicationDomain;
 class DisplayObjectContainer;
 class DefineSpriteTag;
 class AdditionalDataTag;
+class StreamCache;
+class FrameContainer;
+class SoundChannel;
 
 enum TAGTYPE {TAG=0,DISPLAY_LIST_TAG,SHOW_TAG,CONTROL_TAG,DICT_TAG,FRAMELABEL_TAG,SYMBOL_CLASS_TAG,ACTION_TAG,ABC_TAG,END_TAG,
 			  AVM1ACTION_TAG,AVM1INITACTION_TAG,BUTTONSOUND_TAG, FILEATTRIBUTES_TAG,METADATA_TAG,BACKGROUNDCOLOR_TAG,ENABLEDEBUGGER_TAG,DEFINESCALINGGRID_TAG};
@@ -638,12 +641,13 @@ public:
 	DefineText2Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root) : DefineTextTag(h,in,root,2) {}
 };
 
-class DefineSpriteTag: public DictionaryTag, public FrameContainer
+class DefineSpriteTag: public DictionaryTag
 {
 private:
 	UI16_SWF SpriteID;
 	UI16_SWF FrameCount;
 	uint32_t soundstartframe;
+	FrameContainer* framecontainer;
 public:
 	SoundStreamHeadTag* soundheadtag;
 	DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
@@ -651,11 +655,7 @@ public:
 	int getId() const override { return SpriteID; }
 	ASObject* instance(Class_base* c=nullptr) override;
 	bool needsDefaultName() const override { return true; }
-	void setSoundStartFrame()
-	{
-		if (soundstartframe == UINT32_MAX)
-			soundstartframe=frames.size();
-	}
+	void setSoundStartFrame();
 };
 
 class ProtectTag: public ControlTag
@@ -797,7 +797,7 @@ private:
 	UB VideoFlagsDeblocking;
 	UB VideoFlagsSmoothing;
 	UI8 VideoCodecID;
-	vector<VideoFrameTag*> frames;
+	std::vector<VideoFrameTag*> frames;
 public:
 	DefineVideoStreamTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	~DefineVideoStreamTag();

@@ -37,8 +37,10 @@
 #include "parsing/streams.h"
 #include "scripting/class.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/flash/display/FrameContainer.h"
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/MorphShape.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/SimpleButton.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/media/flashmedia.h"
@@ -508,6 +510,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 	int dest=in.tellg();
 	dest+=h.getLength();
 
+	framecontainer = new FrameContainer();
+
 	soundheadtag=nullptr;
 	soundstartframe=UINT32_MAX;
 	in >> SpriteID >> FrameCount;
@@ -530,13 +534,13 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				delete tag;
 				throw ParseException("Dictionary tag inside a sprite. Should not happen.");
 			case DISPLAY_LIST_TAG:
-				addToFrame(static_cast<DisplayListTag*>(tag));
+				framecontainer->addToFrame(static_cast<DisplayListTag*>(tag));
 				empty=false;
 				break;
 			case SHOW_TAG:
 			{
 				delete tag;
-				frames.emplace_back(Frame());
+				framecontainer->addFrame();
 				empty=true;
 				break;
 			}
@@ -556,14 +560,14 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				delete tag;
 				break;
 			case FRAMELABEL_TAG:
-				addFrameLabel(frames.size()-1,static_cast<FrameLabelTag*>(tag)->Name);
+				framecontainer->addFrameLabel(framecontainer->getFramesSize()-1,static_cast<FrameLabelTag*>(tag)->Name);
 				delete tag;
 				empty=false;
 				break;
 			case AVM1ACTION_TAG:
 				if (!(static_cast<AVM1ActionTag*>(tag)->empty()))
 				{
-					addToFrame(static_cast<AVM1ActionTag*>(tag));
+					framecontainer->addToFrame(static_cast<AVM1ActionTag*>(tag));
 					empty=false;
 				}
 				break;
@@ -589,8 +593,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 			case END_TAG:
 				delete tag;
 				done=true;
-				if(empty && frames.size()!=FrameCount)
-					frames.pop_back();
+				if(empty && framecontainer->getFramesSize()!=FrameCount)
+					framecontainer->pop_frame();
 				break;
 		}
 		if (in.tellg() >= dest)
@@ -598,13 +602,13 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 	}
 	while(!done);
 
-	if(frames.size()!=FrameCount)
+	if(framecontainer->getFramesSize()!=FrameCount)
 	{
 		//This condition is not critical as Sprites are not executed while being parsed
 		LOG(LOG_CALLS,"Inconsistent frame count in Sprite ID " << SpriteID);
 	}
 
-	setFramesLoaded(frames.size());
+	framecontainer->setFramesLoaded(framecontainer->getFramesSize());
 	if (soundheadtag)
 		soundheadtag->SoundData->markFinished(true);
 	LOG(LOG_TRACE,"DefineSprite done for ID: " << SpriteID);
@@ -613,8 +617,8 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 DefineSpriteTag::~DefineSpriteTag()
 {
 	//This is the actual parsed tag so it also has to clean up the tag in the FrameContainer
-	for(auto it=frames.begin();it!=frames.end();++it)
-		it->destroyTags();
+	framecontainer->destroyTags();
+	delete framecontainer;
 }
 
 ASObject* DefineSpriteTag::instance(Class_base* c)
@@ -629,8 +633,8 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 	else
 		retClass=Class<MovieClip>::getClass(loadedFrom->getSystemState());
 	MovieClip* spr = !loadedFrom->usesActionScript3 ?
-				new (retClass->memoryAccount) AVM1MovieClip(loadedFrom->getInstanceWorker(),retClass, *this, this->getId()) :
-				new (retClass->memoryAccount) MovieClip(loadedFrom->getInstanceWorker(),retClass, *this, this->getId());
+				new (retClass->memoryAccount) AVM1MovieClip(loadedFrom->getInstanceWorker(),retClass, framecontainer, this->getId()) :
+				new (retClass->memoryAccount) MovieClip(loadedFrom->getInstanceWorker(),retClass, framecontainer, this->getId());
 	if (soundheadtag)
 		soundheadtag->setSoundChannel(spr);
 	if (soundstartframe != UINT32_MAX)
@@ -640,6 +644,12 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 	// spr->loadedFrom->AVM1checkInitActions(spr);
 	spr->setScalingGrid();
 	return spr;
+}
+
+void DefineSpriteTag::setSoundStartFrame()
+{
+	if (soundstartframe == UINT32_MAX)
+		soundstartframe=framecontainer->getFramesSize();
 }
 
 void lightspark::ignore(istream& i, int count)
@@ -3230,11 +3240,11 @@ AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, Ad
 
 void AVM1ActionTag::execute(DisplayObjectContainer* parent, bool inskipping)
 {
-	if (parent->is<MovieClip>() && !inskipping)// && !parent->as<MovieClip>()->state.stop_FP)
+	if (parent->is<MovieClip>() && !inskipping)
 	{
 		AVM1scriptToExecute script;
 		setActions(script);
-		script.avm1context = parent->as<MovieClip>()->getCurrentFrame()->getAVM1Context();
+		script.avm1context = parent->as<MovieClip>()->AVM1getCurrentFrameContext();
 		script.event_name_id = UINT32_MAX;
 		script.isEventScript = false;
 		parent->incRef(); // will be decreffed after script handler was executed

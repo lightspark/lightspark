@@ -36,6 +36,8 @@
 #include "scripting/flash/desktop/clipboardtransfermode.h"
 #include "scripting/flash/desktop/flashdesktop.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/FrameContainer.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/bitmapencodingcolorspace.h"

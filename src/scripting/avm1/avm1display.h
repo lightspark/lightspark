@@ -47,7 +47,7 @@ public:
 	{
 		subtype = SUBTYPE_AVM1MOVIECLIP;
 	}
-	AVM1MovieClip(ASWorker* wrk,Class_base* c, const FrameContainer& f, uint32_t defineSpriteTagID,uint32_t nameID=BUILTIN_STRINGS::EMPTY):MovieClip(wrk,c,f,defineSpriteTagID),droptarget(nullptr)
+	AVM1MovieClip(ASWorker* wrk,Class_base* c, FrameContainer* f, uint32_t defineSpriteTagID,uint32_t nameID=BUILTIN_STRINGS::EMPTY):MovieClip(wrk,c,f,defineSpriteTagID),droptarget(nullptr)
 	{
 		subtype = SUBTYPE_AVM1MOVIECLIP;
 		name=nameID;

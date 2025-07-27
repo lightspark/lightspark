@@ -20,9 +20,11 @@
 #include <cairo.h>
 #include "platforms/engineutils.h"
 #include "scripting/flash/display/TokenContainer.h"
+#include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/GraphicsSolidFill.h"
 #include "scripting/flash/display/GraphicsEndFill.h"
 #include "scripting/flash/display/GraphicsPath.h"
+#include "scripting/flash/display/DisplayObject.h"
 #include "scripting/toplevel/Vector.h"
 #include "swf.h"
 #include "scripting/flash/display/BitmapData.h"

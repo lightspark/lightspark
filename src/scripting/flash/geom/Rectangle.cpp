@@ -19,6 +19,7 @@
 
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/geom/Point.h"
+#include "scripting/flash/display/DisplayObject.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"

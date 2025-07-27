@@ -134,6 +134,7 @@ SET(LIBSPARK_SOURCES
   scripting/flash/display/DisplayObject.cpp
   scripting/flash/display/IBitmapDrawable.cpp
   scripting/flash/display/flashdisplay.cpp
+  scripting/flash/display/FrameContainer.cpp
   scripting/flash/display/TokenContainer.cpp
   scripting/flash/display/Graphics.cpp
   scripting/flash/display/GraphicsBitmapFill.cpp

@@ -21,6 +21,8 @@
 #include "scripting/class.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/display/flashdisplay.h"
+#include "scripting/flash/display/FrameContainer.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/toplevel/toplevel.h"
@@ -77,7 +79,6 @@ AVM1context::AVM1context(DisplayObject* target, SystemState* sys) :
 	callee(nullptr)
 {
 	globalScope->addStoredMember();
-	globalScope->incRef();
 	ASATOM_ADDSTOREDMEMBER(globalScope->getLocals());
 	scope = new AVM1Scope(globalScope, target);
 	scope->addStoredMember();
@@ -2600,8 +2601,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				uint32_t frame = uint32_t(*it++) | ((*it++)<<8);
 				uint32_t skipcount = (uint32_t)(*it++);
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionWaitForFrame "<<frame<<"/"<<clip->as<MovieClip>()->getFramesLoaded()<<" skip "<<skipcount);
-				if (clip->as<MovieClip>()->getFramesLoaded() <= frame && !clip->as<MovieClip>()->hasFinishedLoading())
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionWaitForFrame "<<frame<<"/"<<clip->as<MovieClip>()->getFrameContainer()->getFramesLoaded()<<" skip "<<skipcount);
+				if (clip->as<MovieClip>()->getFrameContainer()->getFramesLoaded() <= frame && !clip->as<MovieClip>()->hasFinishedLoading())
 				{
 					// frame not yet loaded, skip actions
 					while (skipcount && it != actionlist.end())
@@ -3000,7 +3001,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				{
 					uint32_t frame = asAtomHandler::toUInt(a);
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCall frame "<<frame);
-					clip->as<MovieClip>()->AVM1ExecuteFrameActions(frame);
+					clip->as<MovieClip>()->getFrameContainer()->AVM1ExecuteFrameActions(frame,clip->as<MovieClip>());
 				}
 				else
 				{
@@ -3067,13 +3068,13 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (asAtomHandler::isString(a))
 				{
 					tiny_string s = asAtomHandler::toString(a,wrk);
-					frame = clip->as<MovieClip>()->getFrameIdByLabel(s,"");
+					frame = clip->as<MovieClip>()->getFrameContainer()->getFrameIdByLabel(s,"");
 				}
 				else
 				{
 					frame = asAtomHandler::toUInt(a);
 				}
-				if (clip->as<MovieClip>()->getFramesLoaded() <= frame && !clip->as<MovieClip>()->hasFinishedLoading())
+				if (clip->as<MovieClip>()->getFrameContainer()->getFramesLoaded() <= frame && !clip->as<MovieClip>()->hasFinishedLoading())
 				{
 					// frame not yet loaded, skip actions
 					while (skipcount && it != actionlist.end())

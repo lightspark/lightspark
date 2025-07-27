@@ -20,7 +20,6 @@
 #ifndef SCRIPTING_FLASH_DISPLAY_ROOTMOVIECLIP_H
 #define SCRIPTING_FLASH_DISPLAY_ROOTMOVIECLIP_H 1
 
-#include "parsing/tags.h"
 #include "scripting/flash/display/MovieClip.h"
 
 
@@ -96,6 +95,11 @@ public:
 	void AVM1setLevel(int level);
 	inline bool hasScenes() const { return hasDefineSceneAndFrameLabelDataTag; }
 	inline void setHasScenes() { hasDefineSceneAndFrameLabelDataTag=true; }
+	void addToFrame(DisplayListTag* t);
+	void addFrameLabel(uint32_t frame, const tiny_string& label);
+	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
+	uint32_t getFramesLoaded();
+
 };
 
 }

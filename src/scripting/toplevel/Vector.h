@@ -21,7 +21,6 @@
 #define SCRIPTING_TOPLEVEL_VECTOR_H 1
 
 #include "scripting/flash/system/flashsystem.h"
-#include "scripting/flash/display/RootMovieClip.h"
 #include "class.h"
 
 namespace lightspark

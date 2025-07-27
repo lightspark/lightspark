@@ -226,3 +226,15 @@ bool fs::createDirs(const Path& path)
 	}
 	return didCreate;
 }
+
+bool fs::createDir(const Path& path, const Path& attrs)
+{
+	#ifdef USE_LWG_2936
+	if (status(path).exists())
+	#else
+	auto fileStatus = status(path);
+	if (fileStatus.exists() && fileStatus.isDir())
+	#endif
+		return false;
+	return Detail::createDir(path, attrs);
+}

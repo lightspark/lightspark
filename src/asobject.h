@@ -312,7 +312,7 @@ enum METHOD_TYPE { NORMAL_METHOD=0, SETTER_METHOD=1, GETTER_METHOD=2 };
 //for toPrimitive
 enum TP_HINT { NO_HINT, NUMBER_HINT, STRING_HINT };
 enum TRAIT_KIND { NO_CREATE_TRAIT=0, DECLARED_TRAIT=1, DYNAMIC_TRAIT=2, INSTANCE_TRAIT=5, CONSTANT_TRAIT=9 /* constants are also declared traits */ };
-enum GET_VARIABLE_RESULT {GETVAR_NORMAL=0x00, GETVAR_CACHEABLE=0x01, GETVAR_ISGETTER=0x02, GETVAR_ISCONSTANT=0x04, GETVAR_ISNEWOBJECT=0x08};
+enum GET_VARIABLE_RESULT {GETVAR_NORMAL=0x00, GETVAR_CACHEABLE=0x01, GETVAR_ISGETTER=0x02, GETVAR_ISCONSTANT=0x04, GETVAR_ISINCREFFED=0x08};
 enum GET_VARIABLE_OPTION {NONE=0x00, SKIP_IMPL=0x01, FROM_GETLEX=0x02, DONT_CALL_GETTER=0x04, NO_INCREF=0x08, DONT_CHECK_CLASS=0x10, DONT_CHECK_PROTOTYPE=0x20};
 
 // asAtom is a 32bit value (64bit on 64bit architecture):
@@ -1189,11 +1189,12 @@ public:
 		return getVariableByIntegerIntern(ret,index,opt,wrk);
 	}
 
-	std::pair<asAtom, uint8_t> AVM1searchPrototypeByMultiname
+	std::pair<asAtom, GET_VARIABLE_RESULT> AVM1searchPrototypeByMultiname
 	(
 		const multiname& name,
-		bool isSlashPath,
-		ASWorker* wrk
+		GET_VARIABLE_OPTION opt,
+		ASWorker* wrk,
+		bool isSlashPath
 	);
 	// AVM1 needs to check the "protoype" variable in addition to the normal behaviour
 	virtual GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath = true);

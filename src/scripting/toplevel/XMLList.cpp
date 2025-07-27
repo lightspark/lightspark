@@ -855,7 +855,7 @@ GET_VARIABLE_RESULT XMLList::getVariableByMultiname(asAtom& ret, const multiname
 			return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 
 		ret = asAtomHandler::fromObject(create(getInstanceWorker(),retnodes,this,name));
-		return GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT;
+		return GET_VARIABLE_RESULT::GETVAR_ISINCREFFED;
 	}
 	unsigned int index=0;
 	if(XML::isValidMultiname(getInstanceWorker(),name,index))
@@ -886,7 +886,7 @@ GET_VARIABLE_RESULT XMLList::getVariableByMultiname(asAtom& ret, const multiname
 			return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 
 		ret = asAtomHandler::fromObject(create(getInstanceWorker(),retnodes,this,name));
-		return GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT;
+		return GET_VARIABLE_RESULT::GETVAR_ISINCREFFED;
 	}
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }

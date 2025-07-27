@@ -2496,13 +2496,15 @@ void AVM1scriptToExecute::execute()
 		m.name_type=multiname::NAME_STRING;
 		m.isAttribute = false;
 		m.name_s_id= this->event_name_id;
-		clip->AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NO_INCREF,clip->getInstanceWorker(), false);
+		GET_VARIABLE_RESULT r = clip->AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NO_INCREF,clip->getInstanceWorker(), false);
 		if (asAtomHandler::is<AVM1Function>(func))
 		{
 			asAtom ret=asAtomHandler::invalidAtom;
 			asAtom obj = asAtomHandler::fromObjectNoPrimitive(clip);
 			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
 		}
+		if (r & GETVAR_ISINCREFFED)
+			ASATOM_DECREF(func);
 	}
 	clip->decRef(); // was increffed in AVM1AddScriptEvents
 }

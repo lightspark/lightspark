@@ -2142,7 +2142,7 @@ bool getLexFindClass(preloadstate& state, multiname* name, bool checkfuncscope,s
 			state.refreshOldNewPosition(code);
 			checkForLocalResult(state,code,1,nullptr);
 			typestack.push_back(typestackentry(nullptr,false));
-			if (r & GETVAR_ISNEWOBJECT)
+			if (r & GETVAR_ISINCREFFED)
 				ASATOM_DECREF(o);
 			return true;
 		}

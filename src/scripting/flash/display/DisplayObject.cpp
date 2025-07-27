@@ -2864,7 +2864,8 @@ GET_VARIABLE_RESULT DisplayObject::AVM1getVariableByMultiname
 
 	if (asAtomHandler::isValid(ret))
 	{
-		ASATOM_INCREF(ret);
+		if ((opt & GET_VARIABLE_OPTION::NO_INCREF)==0)
+			ASATOM_INCREF(ret);
 		return result;
 	}
 
@@ -2887,14 +2888,18 @@ GET_VARIABLE_RESULT DisplayObject::AVM1getVariableByMultiname
 			ret = asAtomHandler::fromObject(child->getParent());
 		else
 			ret = asAtomHandler::fromObject(child);
-		ASATOM_INCREF(ret);
+		if ((opt & GET_VARIABLE_OPTION::NO_INCREF)==0)
+			ASATOM_INCREF(ret);
 		return result;
 	}
 
 	// 4. Internal properties, such as `_x`, and `_y` (always case
 	// insensitive).
 	if (isInternalProp)
+	{
 		ret = getPropertyByName(s, wrk);
+		result = GETVAR_ISINCREFFED;
+	}
 
 	return result;
 }

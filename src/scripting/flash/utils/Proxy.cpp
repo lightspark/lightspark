@@ -85,7 +85,7 @@ multiname *Proxy::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOW
 	asAtomHandler::callFunction(proxySetter,wrk,ret,v,args,2,true);
 	assert_and_throw(asAtomHandler::isUndefined(ret));
 	implEnable=true;
-	if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+	if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
 		ASATOM_DECREF(proxySetter);
 	return nullptr;
 }
@@ -123,7 +123,7 @@ GET_VARIABLE_RESULT Proxy::getVariableByMultiname(asAtom& ret, const multiname& 
 	asAtom v = asAtomHandler::fromObject(this);
 	ASATOM_INCREF(v);
 	asAtomHandler::callFunction(o,getInstanceWorker(),ret,v,&arg,1,true);
-	if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+	if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
 		ASATOM_DECREF(o);
 	implEnable=true;
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
@@ -165,7 +165,7 @@ bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, 
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::callFunction(proxyHasProperty,getInstanceWorker(), ret,v,&arg,1,true);
 	implEnable=true;
-	if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+	if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
 		ASATOM_DECREF(proxyHasProperty);
 	return asAtomHandler::Boolean_concrete(ret);
 }
@@ -202,7 +202,7 @@ bool Proxy::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 	ASATOM_INCREF(v);
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::callFunction(proxyDeleter,getInstanceWorker(),ret,v,&arg,1,true);
-	if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+	if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
 		ASATOM_DECREF(proxyDeleter);
 	implEnable=true;
 	return asAtomHandler::Boolean_concrete(ret);
@@ -226,7 +226,7 @@ uint32_t Proxy::nextNameIndex(uint32_t cur_index)
 	asAtomHandler::callFunction(o,getInstanceWorker(),ret,v,&arg,1,false);
 	uint32_t newIndex=asAtomHandler::toInt(ret);
 	ASATOM_DECREF(ret);
-	if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+	if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
 		ASATOM_DECREF(o);
 	return newIndex;
 }
@@ -246,7 +246,7 @@ void Proxy::nextName(asAtom& ret,uint32_t index)
 	asAtom arg=asAtomHandler::fromUInt(index);
 	asAtom v = asAtomHandler::fromObject(this);
 	asAtomHandler::callFunction(o,getInstanceWorker(),ret,v,&arg,1,false);
-	if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+	if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
 		ASATOM_DECREF(o);
 }
 
@@ -265,7 +265,7 @@ void Proxy::nextValue(asAtom& ret,uint32_t index)
 	asAtom arg=asAtomHandler::fromUInt(index);
 	asAtom v = asAtomHandler::fromObject(this);
 	asAtomHandler::callFunction(o,getInstanceWorker(),ret,v,&arg,1,false);
-	if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+	if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
 		ASATOM_DECREF(o);
 }
 bool Proxy::isConstructed() const

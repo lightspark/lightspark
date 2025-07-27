@@ -1924,6 +1924,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		asAtom closure = asAtomHandler::getClosureAtom(obj->getter,asAtomHandler::fromObject(this));
 		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closure,wrk);
 		LOG_CALL("End of getter"<< ' ' << asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
+		// result of getter always adds a new ref
+		res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISINCREFFED);
 	}
 	else
 	{
@@ -1943,7 +1945,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<asAtomHandler::toDebugString(obj->var));
 				asAtomHandler::setFunction(ret,asAtomHandler::getObjectNoCheck(obj->var),asAtomHandler::fromObject(this),wrk);
 				// the function is always cloned
-				res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT);
+				res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISINCREFFED);
 			}
 		}
 		else
@@ -2023,11 +2025,12 @@ void ASObject::setRefConstant()
 	setConstant();
 }
 
-std::pair<asAtom, uint8_t> ASObject::AVM1searchPrototypeByMultiname
+std::pair<asAtom, GET_VARIABLE_RESULT> ASObject::AVM1searchPrototypeByMultiname
 (
 	const multiname& name,
-	bool isSlashPath,
-	ASWorker* wrk
+	GET_VARIABLE_OPTION opt,
+	ASWorker* wrk,
+	bool isSlashPath
 )
 {
 	ASObject* pr;
@@ -2052,32 +2055,30 @@ std::pair<asAtom, uint8_t> ASObject::AVM1searchPrototypeByMultiname
 			);
 		}
 
-		bool isGetter = pr->AVM1getVariableByMultiname
+		opt = GET_VARIABLE_OPTION(opt | GET_VARIABLE_OPTION::DONT_CALL_GETTER | GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
+
+		GET_VARIABLE_RESULT res = pr->AVM1getVariableByMultiname
 		(
 			ret,
 			name,
-			GET_VARIABLE_OPTION
-			(
-				GET_VARIABLE_OPTION::DONT_CALL_GETTER |
-				GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE
-			),
+			opt,
 			wrk,
 			isSlashPath
-		) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
-
-		if (isGetter)
+			);
+		if (res & GET_VARIABLE_RESULT::GETVAR_ISGETTER)
 		{
 			IFunction* f = asAtomHandler::as<IFunction>(ret);
 			auto thisObj = asAtomHandler::fromObject(this);
 			ret = asAtomHandler::invalidAtom;
 			f->callGetter(ret, thisObj, wrk);
-			return std::make_pair(ret, depth);
+			// result of getter always adds a new ref
+			return std::make_pair(ret, GETVAR_ISINCREFFED);
 		}
 		else if (asAtomHandler::isValid(ret))
-			return std::make_pair(ret, depth);
+			return std::make_pair(ret, res);
 	}
 
-	return std::make_pair(callResolveMethod(name.normalizedName(wrk), wrk), 0);
+	return std::make_pair(callResolveMethod(name.normalizedName(wrk), wrk), GETVAR_NORMAL);
 }
 
 GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath)
@@ -2108,8 +2109,9 @@ GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const mult
 	GET_VARIABLE_RESULT res = getVariableByMultiname(ret,name,opt,wrk);
 	if (asAtomHandler::isInvalid(ret) && !(opt & DONT_CHECK_PROTOTYPE))
 	{
-		auto pair = AVM1searchPrototypeByMultiname(name, isSlashPath, wrk);
+		auto pair = AVM1searchPrototypeByMultiname(name, opt, wrk,isSlashPath);
 		ret = pair.first;
+		res = pair.second;
 	}
 	return res;
 }

@@ -2550,7 +2550,7 @@ void ABCVm::getDescendants(call_context* th, int n)
 			LOG_CALL("Proxy::getDescendants done " << *name<<" "<<asAtomHandler::toDebugString(o));
 			ASATOM_DECREF(o);
 			RUNTIME_STACK_PUSH(th,ret);
-			if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+			if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
 				ASATOM_DECREF(o);
 			return;
 		}

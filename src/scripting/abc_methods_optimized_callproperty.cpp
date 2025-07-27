@@ -242,7 +242,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 					{
 						LOG(LOG_ERROR,"trying to call an object as a function:"<<asAtomHandler::toDebugString(o) <<" on "<<asAtomHandler::toDebugString(obj));
 						createError<TypeError>(context->worker,kCallOfNonFunctionError, "Object");
-						if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+						if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
 							ASATOM_DECREF(oproxy);
 						ASATOM_DECREF(o);
 						return;
@@ -268,7 +268,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 					ASATOM_DECREF(oproxy);
 				}
 				LOG_CALL("End of calling proxy custom caller " << *name << " "<<asAtomHandler::toDebugString(oproxy)<<" "<<res);
-				if (res & GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT)
+				if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
 					ASATOM_DECREF(oproxy);
 				return;
 			}

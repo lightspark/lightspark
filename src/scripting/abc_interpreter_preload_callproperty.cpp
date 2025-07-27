@@ -428,7 +428,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 								if (!resulttype)
 									LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method3:"<<*name<<" "<<typestack[typestack.size()-2].obj->toDebugString());
 							}
-							if (r & GETVAR_ISNEWOBJECT)
+							if (r & GETVAR_ISINCREFFED)
 							{
 								ASATOM_DECREF(func);
 							}

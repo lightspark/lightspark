@@ -1678,7 +1678,7 @@ GET_VARIABLE_RESULT XML::getVariableByMultiname(asAtom& ret, const multiname& na
 		//Lookup attribute
 		const XMLVector& attributes=getAttributesByMultiname(name,normalizedNameID);
 		ret = asAtomHandler::fromObject(XMLList::create(getInstanceWorker(),attributes,attributelist.getPtr(),name));
-		return GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT;
+		return GET_VARIABLE_RESULT::GETVAR_ISINCREFFED;
 	}
 	else if(XML::isValidMultiname(getInstanceWorker(),name,index))
 	{
@@ -1712,7 +1712,7 @@ GET_VARIABLE_RESULT XML::getVariableByMultiname(asAtom& ret, const multiname& na
 			if(res.empty() && (opt & FROM_GETLEX)!=0)
 				return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 			ret =asAtomHandler::fromObject(XMLList::create(getInstanceWorker(),res,this->getChildrenlist(),name));
-			return GET_VARIABLE_RESULT::GETVAR_ISNEWOBJECT;
+			return GET_VARIABLE_RESULT::GETVAR_ISINCREFFED;
 		}
 	}
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;

@@ -466,7 +466,7 @@ bool equivalent(const Path& a, const Path& b);
 size_t fileSize(const Path& path);
 bool isBlockFile(const Path& path);
 bool isCharacterFile(const Path& path);
-bool isDirectory(const Path& path);
+bool isDir(const Path& path);
 bool isEmpty(const Path& path);
 bool isFifo(const Path& path);
 bool isOther(const Path& path);

@@ -178,3 +178,51 @@ bool fs::copyFile(const Path& from, const Path& to, const CopyOptions& options)
 	}
 	return Detail::copyFile(from, to, overwrite);
 }
+
+void fs::copySymlink(const Path& symlink, const Path& newSymlink)
+{
+	auto to = readSymlink(symlink);
+
+	if (to.exists() && to.isDir())
+		createDirSymlink(to, newSymlink);
+	else
+		createSymlink(to, newSymlink);
+}
+
+bool fs::createDirs(const Path& path)
+{
+	bool didCreate = false;
+	auto rootLen =
+	(
+		path.prefixLength +
+		path.rootNameLength() +
+		path.hasRootDir()
+	);
+
+	Path current(path.getNativeStr().substr(0, rootLen));
+	Path dirs(path.getNativeStr().substr(rootLen));
+
+	for (auto part : dirs)
+	{
+		current /= part;
+		auto fileStatus = status(current);
+		#ifndef USE_LWG_2936
+		if (fileStatus.exists() && !fileStatus.isDir())
+			throw Exception(path, std::errc::file_exists);
+		#endif
+		if (fileStatus.exists())
+			continue;
+
+		try
+		{
+			createDir(current);
+		}
+		catch (...)
+		{
+			if (current.isDir())
+				std::rethrow_exception(std::current_exception());
+		}
+		didCreate = true;
+	}
+	return didCreate;
+}

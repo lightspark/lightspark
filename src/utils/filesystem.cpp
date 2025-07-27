@@ -238,3 +238,13 @@ bool fs::createDir(const Path& path, const Path& attrs)
 		return false;
 	return Detail::createDir(path, attrs);
 }
+
+void fs::createDirSymlink(const Path& to, const Path& newSymlink)
+{
+	Detail::createSymlink(to, newSymlink, true);
+}
+
+void fs::createSymlink(const path& to, const path& newSymlink)
+{
+	Detail::createSymlink(to, newSymlink, false);
+}

@@ -59,6 +59,22 @@ bool fs::Detail::copyFile(const Path& from, const Path& to, bool overwrite)
 	return true;
 }
 
+bool fs::Detail::createDir(const Path& path, const Path& attrs)
+{
+	auto attribs = mode_t(Perms::All);
+	if (!attrs.empty())
+	{
+		struct stat fileStat;
+		if (stat(attrs.rawBuf(), &fileStat) < 0)
+			throw Exception(path, std::errc(errno));
+		attribs = fileStat.st_mode;
+	}
+
+	if (mkdir(path.rawBuf(), attribs) < 0)
+		throw Exception(path, std::errc(errno));
+	return true;
+}
+
 Path fs::currentPath()
 {
 	auto pathLen = std::max<size_t>

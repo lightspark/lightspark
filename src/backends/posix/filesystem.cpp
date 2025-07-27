@@ -75,6 +75,13 @@ bool fs::Detail::createDir(const Path& path, const Path& attrs)
 	return true;
 }
 
+void fs::Detail::createSymlink(const path& to, const path& newSymlink, bool toDir)
+{
+	if (symlink(to.rawBuf(), newSymlink.rawBuf()) < 0)
+		throw Exception(to, newSymlink, std::errc(errno));
+
+}
+
 Path fs::currentPath()
 {
 	auto pathLen = std::max<size_t>

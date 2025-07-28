@@ -351,7 +351,7 @@ void ASSocket::connect(tiny_string host, int port)
 
 	// Check sandbox and policy file
 	size_t buflen = host.numBytes() + 22;
-	char *urlbuf = g_newa(char, buflen);
+	char *urlbuf = LS_STACKALLOC(char, buflen);
 	// TODO don't use "xmlsocket" as protocol for socket ?
 	snprintf(urlbuf, buflen, "xmlsocket://%s:%d", host.raw_buf(), port);
 	URLInfo url(urlbuf);

@@ -26,6 +26,7 @@
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/flash/system/flashsystem.h"
+#include <glib.h>
 
 using namespace lightspark;
 

@@ -28,6 +28,7 @@
 #include "parsing/tags.h"
 #include "swf.h"
 #include "platforms/engineutils.h"
+#include "backends/cachedsurface.h"
 
 #define MAX_LINE_WIDTH 1000000
 
@@ -1174,7 +1175,7 @@ void TextLine::updateSizes()
 	w = width;
 	h = height;
 	//Compute (text)width, (text)height
-	getTextSizes(this->getText(), w, h);
+	getTextSizes(getSystemState(),this->getText(), w, h);
 	textWidth = w;
 	textHeight = h;
 }
@@ -1272,24 +1273,24 @@ IDrawable* TextLine::invalidate(bool smoothing)
 		return nullptr;
 	if(width==0 || height==0)
 		return nullptr;
-	if(matrix.getScaleX() != 1 || matrix.getScaleY() != 1)
-		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<matrix.getScaleX()<<" "<<matrix.getScaleY()<<" "<<this->getText());
 	float xscale = getConcatenatedMatrix().getScaleX();
 	float yscale = getConcatenatedMatrix().getScaleY();
-	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
+	// use specialized Renderer from EngineData, if available, otherwise fallback to nanoVG text rendering
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,matrix, x, y, ceil(width), ceil(height),
 																					xscale,yscale,isMask,cacheAsBitmap, 1.0f,getConcatenatedAlpha(),
 																					ColorTransformBase(),
 																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode());
 	if (res != nullptr)
 		return res;
-	return new CairoPangoRenderer(*this,matrix,
-				x, y, ceil(width), ceil(height),
-				xscale,yscale,
-				isMask, cacheAsBitmap,
-				1.0f,getConcatenatedAlpha(),
-				ColorTransformBase(),
-				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),0);
+	this->resetNeedsTextureRecalculation();
+	res = new RefreshableDrawable(matrix.getTranslateX(),matrix.getTranslateY(), ceil(width), ceil(height)
+								  , matrix.getScaleX(), matrix.getScaleY()
+								  , isMask, cacheAsBitmap
+								  , 1.0, getConcatenatedAlpha()
+								  , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+	res->getState()->textdata = *this;
+	res->getState()->renderWithNanoVG = true;
+	return res;
 }
 
 _NR<DisplayObject> TextLine::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)

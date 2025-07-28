@@ -273,18 +273,18 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		cc->sys = getSystemState();
 		cc->worker=wrk;
 		cc->exceptionthrown = nullptr;
-		cc->locals= g_newa(asAtom, mi->body->getReturnValuePos()+1+mi->body->localresultcount);
-		cc->stack = g_newa(asAtom, mi->body->max_stack+1);
-		cc->scope_stack=g_newa(asAtom, mi->body->max_scope_depth);
-		cc->scope_stack_dynamic=g_newa(bool, mi->body->max_scope_depth);
+		cc->locals= LS_STACKALLOC(asAtom, mi->body->getReturnValuePos()+1+mi->body->localresultcount);
+		cc->stack = LS_STACKALLOC(asAtom, mi->body->max_stack+1);
+		cc->scope_stack=LS_STACKALLOC(asAtom, mi->body->max_scope_depth);
+		cc->scope_stack_dynamic=LS_STACKALLOC(bool, mi->body->max_scope_depth);
 		cc->max_stackp=cc->stackp+cc->mi->body->max_stack;
 		cc->lastlocal = cc->locals+mi->body->getReturnValuePos()+1+mi->body->localresultcount;
-		cc->localslots = g_newa(asAtom*,mi->body->localconstantslots.size()+mi->body->getReturnValuePos()+1+mi->body->localresultcount);
+		cc->localslots = LS_STACKALLOC(asAtom*,mi->body->localconstantslots.size()+mi->body->getReturnValuePos()+1+mi->body->localresultcount);
 		for (uint32_t i = 0; i < uint32_t(mi->body->getReturnValuePos()+1+mi->body->localresultcount); i++)
 		{
 			cc->localslots[i] = &cc->locals[i];
 		}
-		cc->localNumbers = g_newa(number_t,mi->body->getMaxLocalNumbers());
+		cc->localNumbers = LS_STACKALLOC(number_t,mi->body->getMaxLocalNumbers());
 	}
 	else
 	{

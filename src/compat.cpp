@@ -301,7 +301,6 @@ DLL_PUBLIC HINSTANCE g_hinstance = NULL;
 DEFDLLMAIN(gio);
 DEFDLLMAIN(glib);
 DEFDLLMAIN(atk);
-DEFDLLMAIN(pango);
 DEFDLLMAIN(gdk);
 DEFDLLMAIN(gtk);
 DEFDLLMAIN(cairo);
@@ -314,7 +313,6 @@ BOOL WINAPI DllMain (HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	//RUNDLLMAIN(glib); //taken care of by patches from mxe
 	//RUNDLLMAIN(cairo); //taken care of by patches from mxe
 	//RUNDLLMAIN(atk); //taken care of by patches from mxe
-	//RUNDLLMAIN(pango); //taken care of by patches from mxe
 	//RUNDLLMAIN(gdk); //taken care of by patches from mxe
 	//RUNDLLMAIN(gtk); //taken care of by patches from mxe
 	return TRUE;

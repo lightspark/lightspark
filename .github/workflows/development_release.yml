@@ -63,7 +63,7 @@
               mingw-w64-x86_64-ninja
               mingw-w64-x86_64-make
               mingw-w64-x86_64-cairo
-              mingw-w64-x86_64-pango
+              mingw-w64-x86_64-fontconfig
               mingw-w64-x86_64-libjpeg-turbo
               mingw-w64-x86_64-glew
               mingw-w64-x86_64-freetype
@@ -116,7 +116,7 @@
               mingw-w64-i686-ninja
               mingw-w64-i686-make
               mingw-w64-i686-cairo
-              mingw-w64-i686-pango
+              mingw-w64-i686-fontconfig
               mingw-w64-i686-libjpeg-turbo
               mingw-w64-i686-glew
               mingw-w64-i686-freetype

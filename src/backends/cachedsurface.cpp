@@ -38,6 +38,9 @@
 #include "3rdparty/nanovg/src/nanovg.h"
 #include "3rdparty/nanovg/src/nanovg_gl.h"
 #include <algorithm>
+#ifdef ENABLE_FONTCONFIG
+#include <fontconfig/fontconfig.h>
+#endif
 
 using namespace lightspark;
 
@@ -92,6 +95,7 @@ void SurfaceState::reset()
 	needsFilterRefresh=true;
 	needsLayer=false;
 	hasOpaqueBackground=false;
+	textdata.clear();
 }
 
 void SurfaceState::setupChildrenList(std::vector<DisplayObject*>& dynamicDisplayList)
@@ -108,7 +112,56 @@ void SurfaceState::setupChildrenList(std::vector<DisplayObject*>& dynamicDisplay
 			needsLayer=true;
 	}
 }
-
+int nanoVGdefaultFontID=-1;
+void nanoVGSetupFont(EngineData* engineData, TextData& tData)
+{
+	NVGcontext* nvgctxt = engineData ? engineData->nvgcontext : nullptr;
+	if (tData.nanoVGFontID<0)
+		tData.nanoVGFontID = nvgFindFont(nvgctxt,tData.font.raw_buf());
+#ifdef ENABLE_FONTCONFIG
+	if (tData.nanoVGFontID<0)
+	{
+		FcPattern *pat;
+		FcPattern *match;
+		FcResult   result;
+		pat = FcNameParse ((const FcChar8 *)tData.font.raw_buf());
+		FcConfigSubstitute (0, pat, FcMatchPattern);
+		FcConfigSetDefaultSubstitute (0, pat);
+		match = FcFontMatch (0, pat, &result);
+		if (result == FcResult::FcResultMatch)
+		{
+			FcChar8* fontfile = nullptr;
+			if (FcResultMatch == FcPatternGetString(match, FC_FILE, 0, &fontfile))
+				tData.nanoVGFontID = nvgCreateFont(nvgctxt,tData.font.raw_buf(),(const char*)fontfile);
+		}
+		FcPatternDestroy (pat);
+		FcPatternDestroy (match);
+	}
+#endif
+	if (tData.nanoVGFontID<0)
+	{
+		// fallback to default font
+		tData.nanoVGFontID=nanoVGdefaultFontID;
+	}
+}
+void nanoVGgetTextBounds(SystemState* sys, TextData& tData, const tiny_string& text, number_t& tw, number_t& th)
+{
+	if (sys->getRenderThread())
+		sys->getRenderThread()->mutexRendering.lock();
+	tw=0;
+	th=0;
+	if (sys->getEngineData()->nvgcontext)
+	{
+		if (tData.nanoVGFontID < 0)
+			nanoVGSetupFont(sys->getEngineData(),tData);
+		float bounds[4];
+		nvgTextBounds(sys->getEngineData()->nvgcontext,0,0,text.raw_buf(),nullptr,bounds);
+		tw = bounds[2]-bounds[0];
+		th = bounds[3]-bounds[1];
+	}
+	if (sys->getRenderThread())
+		sys->getRenderThread()->mutexRendering.unlock();
+}
 FORCE_INLINE bool isRepeating(FILL_STYLE_TYPE type)
 {
 	return type == FILL_STYLE_TYPE::NON_SMOOTHED_REPEATING_BITMAP || type == FILL_STYLE_TYPE::REPEATING_BITMAP;
@@ -466,6 +519,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 	}
 	ctxt.transformStack().pop();
 }
+
 void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisplayObjectToBitmapContainer* container)
 {
 	bool hasscrollrect = state->scrollRect.Xmin || state->scrollRect.Xmax || state->scrollRect.Ymin || state->scrollRect.Ymax;
@@ -481,7 +535,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 	if (state->renderWithNanoVG)
 	{
 		NVGcontext* nvgctxt = sys->getEngineData()->nvgcontext;
-		if (nvgctxt && !state->tokens.empty())
+		if (nvgctxt && (!state->tokens.empty() || state->textdata.getLineCount()))
 		{
 			if (state->alpha == 0)
 				return;
@@ -805,6 +859,39 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 			}
 			if (ctxt.isDrawingMask())
 				nvgEndClip(nvgctxt);
+			if (!state->textdata.embeddedFont && state->textdata.getLineCount())
+			{
+				NVGcolor textcolor =nvgRGB(state->textdata.textColor.Red,state->textdata.textColor.Green,state->textdata.textColor.Blue);
+				nvgFillColor(nvgctxt,textcolor);
+
+				if (state->textdata.nanoVGFontID < 0)
+					nanoVGSetupFont(sys->getEngineData(),state->textdata);
+				if (state->textdata.nanoVGFontID>=0)
+				{
+					nvgFontSize(nvgctxt,state->textdata.fontSize);
+					nvgFontFaceId(nvgctxt,state->textdata.nanoVGFontID);
+					for (auto it = state->textdata.textlines.begin(); it != state->textdata.textlines.end(); ++it)
+					{
+						ALIGNMENT al = it->format.align;
+						if (al == ALIGNMENT::AS_NONE)
+							al = this->state->textdata.align;
+						switch (al)
+						{
+							case ALIGNMENT::AS_LEFT:
+							case ALIGNMENT::AS_NONE:
+								nvgTextAlign(nvgctxt,NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+								break;
+							case ALIGNMENT::AS_CENTER:
+								nvgTextAlign(nvgctxt,NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+								break;
+							case ALIGNMENT::AS_RIGHT:
+								nvgTextAlign(nvgctxt,NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+								break;
+						}
+						nvgTextBox(nvgctxt,0,0,state->textdata.width,(*it).text.raw_buf(),nullptr);
+					}
+				}
+			}
 			if (renderneeded)
 			{
 				if (instroke)

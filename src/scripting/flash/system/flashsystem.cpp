@@ -50,6 +50,7 @@
 #include "3rdparty/pugixml/src/pugixml.hpp"
 
 #include <istream>
+#include <glib.h>
 
 using namespace lightspark;
 
@@ -169,8 +170,8 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getServerString)
 
 	SDL_DisplayMode screen;
 	if (wrk->getSystemState()->getEngineData()->getScreenData(&screen)) {
-		gint width = screen.w;
-		gint height = screen.h;
+		int width = screen.w;
+		int height = screen.h;
 		char buf[40];
 		snprintf(buf,40,"&R=%ix%i",width,height);
 		res += buf;

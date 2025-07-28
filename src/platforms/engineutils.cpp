@@ -26,7 +26,6 @@
 #include "backends/lsopengl.h"
 #include "backends/rendering.h"
 #include "backends/sdl/event_loop.h"
-#include <pango/pangocairo.h>
 #include "version.h"
 #include "abc.h"
 #include "class.h"
@@ -41,6 +40,17 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <imgui.h>
+#include <imgui_impl_sdl2.h>
+#ifdef ENABLE_GLES2
+#define IMGUI_IMPL_OPENGL_ES2
+#include <imgui_impl_opengl3.h>
+#elif defined(ENABLE_GLES3)
+#define IMGUI_IMPL_OPENGL_ES3
+#include <imgui_impl_opengl3.h>
+#else
+#include <imgui_impl_opengl2.h>
+#endif
 
 extern "C" {
 #if defined(ENABLE_GLES2)
@@ -53,6 +63,7 @@ extern void nvgDeleteGLES3(NVGcontext* ctx);
 extern NVGcontext* nvgCreateGL2(int flags);
 extern void nvgDeleteGL2(NVGcontext* ctx);
 #endif
+extern int nvgCreateFontMem(NVGcontext* ctx, const char* name, unsigned char* data, int ndata, int freeData);
 }
 //The interpretation of texture data change with the endianness
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
@@ -60,6 +71,8 @@ extern void nvgDeleteGL2(NVGcontext* ctx);
 #else
 #define GL_UNSIGNED_INT_8_8_8_8_HOST GL_UNSIGNED_BYTE
 #endif
+
+extern const char* getDefaultFontBase85();
 
 using namespace std;
 using namespace lightspark;
@@ -83,7 +96,7 @@ bool lightspark::isEventLoopThread()
 		return isMainThread();
 }
 
-EngineData::EngineData() : contextmenu(nullptr),contextmenurenderer(nullptr),sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr),
+EngineData::EngineData() : sdleventtickjob(nullptr),incontextmenu(false),incontextmenupreparing(false),widget(nullptr),
 	nvgcontext(nullptr),
 	width(0), height(0),needrenderthread(true),supportPackedDepthStencil(false),hasExternalFontRenderer(false),
 	startInFullScreenMode(false),startscalefactor(1.0)
@@ -140,8 +153,6 @@ bool EngineData::mainloop_handleevent(const LSEvent& event, SystemState* sys)
 		return false;
 	bool hasSys = sys != nullptr;
 	bool hasEngineData = hasSys && sys->getEngineData() != nullptr;
-	if (hasEngineData)
-		sys->getEngineData()->renderContextMenu();
 	bool isMiscType = true;
 	bool quit = event.visit(makeVisitor
 	(
@@ -162,12 +173,6 @@ bool EngineData::mainloop_handleevent(const LSEvent& event, SystemState* sys)
 		{
 			if (hasEngineData)
 				sys->getEngineData()->openContextMenuIntern(open.obj);
-			return false;
-		},
-		[&](const LSUpdateContextMenuEvent& update)
-		{
-			if (hasEngineData)
-				sys->getEngineData()->updateContextMenu(update.selectedItem);
 			return false;
 		},
 		[&](const LSSelectItemContextMenuEvent&)
@@ -256,10 +261,7 @@ bool EngineData::mainloop_handleevent(const LSEvent& event, SystemState* sys)
 				if (focus.focused)
 					sys->addBroadcastEvent("activate");
 				else
-				{
-					sys->getEngineData()->closeContextMenu();
 					sys->addBroadcastEvent("deactivate");
-				}
 			}
 		},
 		[&](const LSQuitEvent&) { sys->setShutdownFlag(); },
@@ -513,6 +515,8 @@ void EngineData::initGLEW()
 	initNanoVG();
 }
 
+extern int nanoVGdefaultFontID;
+
 void EngineData::initNanoVG()
 {
 #if defined(ENABLE_GLES2)
@@ -524,6 +528,14 @@ void EngineData::initNanoVG()
 #endif
 	if (nvgcontext == nullptr)
 		LOG(LOG_ERROR,"couldn't initialize nanovg");
+	else
+	{
+		// create default font for nanoVG text rendering
+		unsigned int buf_decompressed_size=0;
+		unsigned char* buf_decompressed_data = getUncompressedDefaultFont(buf_decompressed_size);
+
+		nanoVGdefaultFontID = nvgCreateFontMem(nvgcontext,"__lightspark_font__",buf_decompressed_data,buf_decompressed_size,0);
+	}
 }
 SDL_Window* EngineData::createMainSDLWidget(uint32_t w, uint32_t h)
 {
@@ -781,6 +793,7 @@ void EngineData::openContextMenuIntern(InteractiveObject *dispatcher)
 	contextmenuOwner= dispatcher->getCurrentContextMenuItems(currentcontextmenuitems);
 	openContextMenu();
 }
+
 void EngineData::openContextMenu()
 {
 	int x=0,y=0;
@@ -790,46 +803,147 @@ void EngineData::openContextMenu()
 	LOG(LOG_ERROR,"SDL2 version too old to get mouse position");
 	SDL_GetWindowPosition(widget,&x,&y);
 #endif
-	contextmenuheight = 0;
+	int contextmenuheight = 0;
 	for (uint32_t i = 0; i <currentcontextmenuitems.size(); i++)
 	{
 		NativeMenuItem* item = currentcontextmenuitems.at(i).getPtr();
-		contextmenuheight += item->isSeparator ? CONTEXTMENUSEPARATORHEIGHT : CONTEXTMENUITEMHEIGHT;
+		contextmenuheight += item->isSeparator ? 1 : CONTEXTMENUITEMHEIGHT;
 	}
 #if SDL_VERSION_ATLEAST(2, 0, 5)
-	contextmenu = SDL_CreateWindow("",x,y,CONTEXTMENUWIDTH,contextmenuheight,SDL_WINDOW_BORDERLESS|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS|SDL_WINDOW_POPUP_MENU);
+	SDL_Window* window = SDL_CreateWindow("",x,y,CONTEXTMENUWIDTH,contextmenuheight,SDL_WINDOW_OPENGL|SDL_WINDOW_BORDERLESS|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS|SDL_WINDOW_POPUP_MENU);
 #else
 	LOG(LOG_ERROR,"SDL2 version too old to create popup menu");
-	contextmenu = SDL_CreateWindow("",x,y,CONTEXTMENUWIDTH,contextmenuheight,SDL_WINDOW_BORDERLESS|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS);
+	SDL_Window* window = SDL_CreateWindow("",x,y,CONTEXTMENUWIDTH,contextmenuheight,SDL_WINDOW_OPENGL|SDL_WINDOW_BORDERLESS|SDL_WINDOW_SHOWN|SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MOUSE_FOCUS);
 #endif
-	contextmenurenderer = SDL_CreateRenderer(contextmenu,-1, SDL_RENDERER_ACCELERATED);
-	contextmenutexture = SDL_CreateTexture(contextmenurenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, CONTEXTMENUWIDTH, contextmenuheight);
-	contextmenupixels = new uint8_t[CONTEXTMENUWIDTH*contextmenuheight*4];
-	updateContextMenu(-1);
-}
-
-void EngineData::updateContextMenuFromMouse(uint32_t windowID, int mousey)
-{
-	int newselecteditem = -1;
-	int ypos = 0;
-	if (windowID == SDL_GetWindowID(contextmenu))
+	if (window == nullptr)
 	{
+		printf("Error: SDL_CreateWindow(): %s\n", SDL_GetError());
+		return;
+	}
+	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+	SDL_GL_MakeCurrent(window, gl_context);
+	SDL_GL_SetSwapInterval(1); // Enable vsync
+
+	SDL_SetWindowInputFocus(window);
+
+	// Setup Dear ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); (void)io;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+	io.IniFilename=nullptr;
+	io.Fonts->AddFontFromMemoryCompressedBase85TTF(Launcher::getDefaultFontBase85(), 14);
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsClassic();
+	ImGui::PushStyleVar(ImGuiStyleVar_ButtonTextAlign,ImVec2(0,0.5));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing,ImVec2(0,0));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize,1);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,ImVec2(0,0));
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize,0);
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,ImVec2(5,0));
+
+	ImGui::PushStyleColor(ImGuiCol_Button,ImVec4(0.9,0.9,0.9,1.0));
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered,ImVec4(0.5,0.5,0.5,1.0));
+	ImGui::PushStyleColor(ImGuiCol_Text,ImVec4(0.0,0.0,0.0,1.0));
+
+
+
+
+
+
+	// Setup Platform/Renderer backends
+	ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+#ifdef ENABLE_GLES2
+	ImGui_ImplOpenGL3_Init("#version 100");
+#elif defined(ENABLE_GLES3)
+	ImGui_ImplOpenGL3_Init("#version 100");
+#else
+	ImGui_ImplOpenGL2_Init();
+#endif
+	incontextmenu=true;
+	contextmenucurrentitem=-1;
+
+	// Main loop
+	bool done = false;
+	while (!done)
+	{
+		SDL_Event event;
+		while (SDL_PollEvent(&event))
+		{
+			ImGui_ImplSDL2_ProcessEvent(&event);
+			if (event.type == SDL_QUIT)
+				done = true;
+			if (event.type == SDL_WINDOWEVENT
+				&& event.window.event == SDL_WINDOWEVENT_CLOSE
+				&& event.window.windowID == SDL_GetWindowID(window))
+				done = true;
+			if (event.type == SDL_WINDOWEVENT
+				&& event.window.event == SDL_WINDOWEVENT_FOCUS_LOST
+				&& event.window.windowID == SDL_GetWindowID(window))
+				done = true;
+		}
+
+		// Start the Dear ImGui frame
+#if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
+		ImGui_ImplOpenGL3_NewFrame();
+#else
+		ImGui_ImplOpenGL2_NewFrame();
+#endif
+		ImGui_ImplSDL2_NewFrame();
+		ImGui::NewFrame();
+		ImGui::SetNextWindowSize(io.DisplaySize);
+		ImGui::SetNextWindowPos(ImVec2(0,0));
+
+		ImGui::Begin("Lightspark ContextMenu",nullptr,ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize);
+
 		for (uint32_t i = 0; i <currentcontextmenuitems.size(); i++)
 		{
 			NativeMenuItem* item = currentcontextmenuitems.at(i).getPtr();
 			if (item->isSeparator)
 			{
-				ypos+=CONTEXTMENUSEPARATORHEIGHT;
+				ImGui::PushStyleColor(ImGuiCol_Button,ImVec4(0,0,0,1.0));
+				ImGui::Button("##",ImVec2(CONTEXTMENUWIDTH,1.0));
+				ImGui::PopStyleColor();
 			}
 			else
 			{
-				if (mousey > ypos && mousey < ypos+CONTEXTMENUITEMHEIGHT)
-					newselecteditem = i;
-				ypos+=CONTEXTMENUITEMHEIGHT;
+				if (ImGui::Button(item->label.raw_buf(),ImVec2(CONTEXTMENUWIDTH,CONTEXTMENUITEMHEIGHT)))
+				{
+					contextmenucurrentitem=i;
+					done = true;
+				}
 			}
 		}
+		ImGui::End();
+
+		// Rendering
+		ImGui::Render();
+		glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+		glClearColor(0.0,0.0,0.0,1.0);
+		glClear(GL_COLOR_BUFFER_BIT);
+#if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#else
+		ImGui_ImplOpenGL2_RenderDrawData(ImGui::GetDrawData());
+#endif
+		SDL_GL_SwapWindow(window);
 	}
-	getSys()->pushEvent(LSUpdateContextMenuEvent(newselecteditem));
+
+	// Cleanup
+#if defined(ENABLE_GLES2) || defined(ENABLE_GLES3)
+	ImGui_ImplOpenGL3_Shutdown();
+#else
+	ImGui_ImplOpenGL2_Shutdown();
+#endif
+	ImGui_ImplSDL2_Shutdown();
+	ImGui::DestroyContext();
+
+	SDL_GL_DeleteContext(gl_context);
+	SDL_DestroyWindow(window);
+	incontextmenu=false;
+	selectContextMenuItemIntern();
 }
 
 void EngineData::selectContextMenuItem()
@@ -849,7 +963,6 @@ void EngineData::selectContextMenuItemIntern()
 		if (item->label == "Settings")
 		{
 			item->getSystemState()->getRenderThread()->inSettings=true;
-			closeContextMenu();
 			return;
 		}
 		if (item->label=="Save" ||
@@ -865,7 +978,6 @@ void EngineData::selectContextMenuItemIntern()
 			item->label=="Back" ||
 			item->label=="Print")
 		{
-			closeContextMenu();
 			tiny_string msg("context menu handling not implemented for \"");
 			msg += item->label;
 			msg += "\"";
@@ -874,7 +986,6 @@ void EngineData::selectContextMenuItemIntern()
 		}
 		else if (item->label=="About")
 		{
-			closeContextMenu();
 			tiny_string msg("Lightspark version ");
 			msg += VERSION;
 			SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION,"Lightspark",msg.raw_buf(),widget);
@@ -886,7 +997,6 @@ void EngineData::selectContextMenuItemIntern()
 			getVm(item->getSystemState())->addEvent(_MR(item),_MR(Class<ContextMenuEvent>::getInstanceS(item->getInstanceWorker(),"menuItemSelect",contextmenuDispatcher,contextmenuOwner)));
 		}
 	}
-	closeContextMenu();
 }
 
 SDL_Window* EngineData::createWidget(uint32_t w, uint32_t h)
@@ -896,94 +1006,6 @@ SDL_Window* EngineData::createWidget(uint32_t w, uint32_t h)
 	Launcher::setWindowIcon(window);
 	return window;
 }
-void EngineData::updateContextMenu(int newselecteditem)
-{
-	float bordercolor = 0.3;
-	float backgroundcolor = 0.9;
-	float selectedbackgroundcolor = 0.5;
-	float textcolor = 0.0;
-
-	contextmenucurrentitem=newselecteditem;
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(contextmenupixels, CAIRO_FORMAT_ARGB32, CONTEXTMENUWIDTH, contextmenuheight, cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, CONTEXTMENUWIDTH));
-	cairo_t* cr=cairo_create(cairoSurface);
-	cairo_surface_destroy(cairoSurface); /* cr has an reference to it */
-	cairo_set_source_rgb (cr, backgroundcolor, backgroundcolor,backgroundcolor);
-	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
-	cairo_paint(cr);
-	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-	cairo_set_antialias(cr,CAIRO_ANTIALIAS_DEFAULT);
-	cairo_set_source_rgb (cr, bordercolor, bordercolor, bordercolor);
-	cairo_set_line_width(cr, 2);
-	cairo_rectangle(cr, 1, 1, CONTEXTMENUWIDTH-2, contextmenuheight-2);
-	cairo_stroke(cr);
-
-	PangoLayout* layout = pango_cairo_create_layout(cr);
-	PangoFontDescription* desc = pango_font_description_new();
-	pango_font_description_set_family(desc, "Helvetica");
-	pango_font_description_set_size(desc, PANGO_SCALE*11);
-	pango_layout_set_font_description(layout, desc);
-	pango_font_description_free(desc);
-
-	int ypos = 0;
-	for (int32_t i = 0; i <(int)currentcontextmenuitems.size(); i++)
-	{
-		NativeMenuItem* item = currentcontextmenuitems.at(i).getPtr();
-		if (item->isSeparator)
-		{
-			cairo_set_source_rgb (cr, bordercolor, bordercolor, bordercolor);
-			cairo_set_line_width(cr, 1);
-			cairo_move_to(cr, 0, ypos+2);
-			cairo_line_to(cr, CONTEXTMENUWIDTH, ypos+2);
-			cairo_stroke(cr);
-			ypos+=CONTEXTMENUSEPARATORHEIGHT;
-		}
-		else
-		{
-			cairo_set_source_rgb (cr, backgroundcolor, backgroundcolor,backgroundcolor);
-			if (contextmenucurrentitem == i)
-				cairo_set_source_rgb (cr, selectedbackgroundcolor, selectedbackgroundcolor, selectedbackgroundcolor);
-			cairo_set_line_width(cr, 1);
-			cairo_rectangle(cr, 2, ypos, CONTEXTMENUWIDTH-4, ypos+CONTEXTMENUITEMHEIGHT);
-			cairo_fill(cr);
-			cairo_translate(cr, 10, ypos+(CONTEXTMENUITEMHEIGHT-11)/2);
-			cairo_set_source_rgb (cr, textcolor, textcolor,textcolor);
-			pango_layout_set_text(layout, item->label.raw_buf(), -1);
-			pango_cairo_show_layout(cr, layout);
-			cairo_translate(cr, -10, -(ypos+(CONTEXTMENUITEMHEIGHT-11)/2));
-			ypos+=CONTEXTMENUITEMHEIGHT;
-		}
-	}
-	g_object_unref(layout);
-	cairo_destroy(cr);
-	SDL_UpdateTexture(contextmenutexture, nullptr, contextmenupixels, CONTEXTMENUWIDTH*4);
-}
-
-void EngineData::closeContextMenu()
-{
-	incontextmenu=false;
-	if (contextmenu)
-	{
-		SDL_DestroyRenderer(contextmenurenderer);
-		SDL_DestroyWindow(contextmenu);
-		delete[] contextmenupixels;
-		contextmenupixels=nullptr;
-		contextmenu=nullptr;
-		contextmenurenderer=nullptr;
-		currentcontextmenuitems.clear();
-		contextmenuOwner.reset();
-	}
-}
-
-void EngineData::renderContextMenu()
-{
-	if (contextmenurenderer)
-	{
-		SDL_RenderCopy(contextmenurenderer, contextmenutexture, nullptr, nullptr);
-		SDL_RenderPresent(contextmenurenderer);
-	}
-}
-
-
 
 
 void EngineData::showMouseCursor(SystemState* /*sys*/)

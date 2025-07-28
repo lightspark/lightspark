@@ -67,6 +67,10 @@
 #include <curl/curl.h>
 #endif
 
+#ifdef ENABLE_FONTCONFIG
+#include <fontconfig/fontconfig.h>
+#endif
+
 #include "compat.h"
 
 #ifdef ENABLE_LIBAVCODEC
@@ -166,6 +170,9 @@ void SystemState::staticInit()
 	av_register_all();
 #endif
 #endif
+#ifdef ENABLE_FONTCONFIG
+	FcInit();
+#endif
 
 	// seed the random number generator
 	char *envvar = getenv("LIGHTSPARK_RANDOM_SEED");
@@ -187,6 +194,9 @@ void SystemState::staticDeinit()
 	delete Type::voidType;
 #ifdef ENABLE_CURL
 	curl_global_cleanup();
+#endif
+#ifdef ENABLE_FONTCONFIG
+	FcFini();
 #endif
 }
 

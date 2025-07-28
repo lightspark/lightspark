@@ -73,7 +73,7 @@ void ppExtScriptObject::handleExternalCall(ExtIdentifier &method_name, uint32_t 
 	externalcallresult = PP_MakeUndefined();
 	LOG(LOG_INFO,"ppExtScriptObject::handleExternalCall:"<< method_name.getString());
 	std::map<int64_t, std::unique_ptr<ExtObject>> objectsMap;
-	const ExtVariant** objArgs = g_newa(const ExtVariant*,argc);
+	const ExtVariant** objArgs = LS_STACKALLOC(const ExtVariant*,argc);
 	for (uint32_t i = 0; i < argc; i++)
 	{
 		objArgs[i]=new ppVariantObject(objectsMap,argv[i]);

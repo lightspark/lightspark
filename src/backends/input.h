@@ -95,7 +95,6 @@ private:
 	void sendKeyEvent(const LSKeyEvent& event, bool pressed);
 
 	int handleEvent(const LSEvent& event);
-	bool handleContextMenuEvent(const LSEvent& event);
 	Mutex inputDataSpinlock;
 	Vector2 mousePos;
 	Vector2 mousePosStart;

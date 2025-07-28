@@ -309,7 +309,7 @@ std::string XMLList::extractXMLDeclaration(const std::string& xml, std::string& 
 	size_t len = xml.length();
 	while (declEnd<len && declEnd != xml.npos)
 	{
-		if (g_unichar_isspace(xml[declEnd]))
+		if (tiny_string::unicodeIsWhiteSpace(xml[declEnd]))
 				declEnd++;
 		else
 		{

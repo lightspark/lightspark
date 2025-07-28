@@ -176,7 +176,7 @@ ASFUNCTIONBODY_ATOM(IFunction,_call)
 	if(argslen > 1)
 	{
 		newArgsLen=argslen-1;
-		newArgs=g_newa(asAtom, newArgsLen);
+		newArgs=LS_STACKALLOC(asAtom, newArgsLen);
 		for(unsigned int i=0;i<newArgsLen;i++)
 		{
 			newArgs[i]=args[i+1];

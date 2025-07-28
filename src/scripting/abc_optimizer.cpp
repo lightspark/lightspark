@@ -666,7 +666,7 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 				code >> t;
 				u30 count;
 				code >> count;
-				s24* offsets=g_newa(s24, count+1);
+				s24* offsets=LS_STACKALLOC(s24, count+1);
 				for(unsigned int i=0;i<count+1;i++)
 					code >> offsets[i];
 				curBlock->popStack(1);

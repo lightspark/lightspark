@@ -92,7 +92,7 @@ istream& lightspark::operator>>(istream& in, u16& v)
 {
 	uint16_t t;
 	in.read((char*)&t,2);
-	v.val=GINT16_FROM_LE(t);
+	v.val=LS_UINT16_TO_LE(t);
 	return in;
 }
 
@@ -105,7 +105,7 @@ istream& lightspark::operator>>(istream& in, d64& v)
 	};
 	double_reader dummy;
 	in.read((char*)&dummy.dump,8);
-	dummy.dump=GINT64_FROM_LE(dummy.dump);
+	dummy.dump=LS_UINT64_TO_LE(dummy.dump);
 	v.val=dummy.value;
 	return in;
 }

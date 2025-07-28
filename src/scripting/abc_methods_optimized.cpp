@@ -4874,7 +4874,7 @@ void callFunctionClassRegexp(call_context* context, asAtom& f, asAtom& obj, asAt
 {
 	obj = asAtomHandler::getClosureAtom(f,obj);
 	uint32_t argcount = context->exec_pos->local3.flags;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));
@@ -5402,7 +5402,7 @@ void ABCVm::constructpropMultiArgs_intern(call_context* context,asAtom& ret,asAt
 	context->explicitConstruction = true;
 
 	uint32_t argcount = context->exec_pos->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));

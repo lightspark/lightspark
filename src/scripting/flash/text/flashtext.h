@@ -113,7 +113,7 @@ private:
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	void defaultEventBehavior(_R<Event> e) override;
 	void updateText(const tiny_string& new_text);
-	//Computes and changes (text)width and (text)height using Pango
+	//Computes and changes (text)width and (text)height
 	void updateSizes();
 	tiny_string toHtmlText();
 	tiny_string compactHTMLWhiteSpace(const tiny_string&);
@@ -171,6 +171,7 @@ public:
 	float getScaleFactor() const override { return this->scaling; }
 	bool isInUpdateVarBinding() const { return inUpdateVarBinding; }
 	bool isFocusable() override;
+	void refreshSurfaceState() override;
 
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(appendText);

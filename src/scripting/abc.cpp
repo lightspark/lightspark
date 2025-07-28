@@ -1191,7 +1191,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 					asAtom* newArgs=nullptr;
 					if (ev->numArgs > 0)
 					{
-						newArgs=g_newa(asAtom, ev->numArgs);
+						newArgs=LS_STACKALLOC(asAtom, ev->numArgs);
 						for (uint32_t i = 0; i < ev->numArgs; i++)
 						{
 							newArgs[i] = asAtomHandler::fromObject(ev->args[i]);

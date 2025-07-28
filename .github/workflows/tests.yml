@@ -40,7 +40,7 @@
                   libavformat-dev \
                   libswresample-dev \
                   libcairo2-dev \
-                  libpango1.0-dev \
+                  libfontconfig-dev \
                   libpng-dev \
                   libjpeg-dev \
                   librtmp-dev \
@@ -77,7 +77,7 @@
                   mingw-w64-x86_64-ffmpeg 
                   mingw-w64-x86_64-rtmpdump 
                   mingw-w64-x86_64-cairo
-                  mingw-w64-x86_64-pango
+                  mingw-w64-x86_64-fontconfig
                   mingw-w64-x86_64-glew 
                   mingw-w64-x86_64-SDL2
                   mingw-w64-x86_64-libjpeg-turbo
@@ -110,7 +110,7 @@
                   mesa-glu \
                   xquartz \
                   glew \
-                  pango \
+                  fontconfig \
                   ffmpeg \
                   sdl2 \
                   libunwind-headers \

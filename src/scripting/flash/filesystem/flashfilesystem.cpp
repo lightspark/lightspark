@@ -28,6 +28,7 @@
 #include "scripting/argconv.h"
 #include "compat.h"
 #include "platforms/engineutils.h"
+#include <glib.h>
 
 using namespace lightspark;
 

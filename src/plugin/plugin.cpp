@@ -1054,7 +1054,7 @@ void PluginEventLoop::notify()
 	}, this);
 }
 
-PluginEngineData::PluginEngineData(nsPluginInstance *i, uint32_t w, uint32_t h, SystemState *_sys) : instance(i),inputHandlerId(0),sizeHandlerId(0),sys(_sys)
+PluginEngineData::PluginEngineData(nsPluginInstance *i, uint32_t w, uint32_t h, SystemState *_sys) : instance(i),sys(_sys)
 {
 	width = w;
 	height = h;
@@ -1179,7 +1179,7 @@ void PluginEngineData::DoSwapBuffers()
 		inRendering = true;
 		if (!mPixels)
 			mPixels = new unsigned char[width*height*4]; // 4 bytes for BGRA
-		char* buf = g_newa(char, width*height*4);
+		char* buf = LS_STACKALLOC(char, width*height*4);
 
 		glPixelStorei(GL_PACK_ALIGNMENT, 1);
 		glReadPixels(0,0,width, height, GL_BGRA, GL_UNSIGNED_BYTE, buf);

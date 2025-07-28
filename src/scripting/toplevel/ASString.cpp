@@ -29,6 +29,7 @@
 #include "scripting/toplevel/IFunction.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/RegExp.h"
+#include <glib.h>
 
 using namespace std;
 using namespace lightspark;

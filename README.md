@@ -25,8 +25,11 @@ In preparation for building Lightspark, you need development packages for:
 * sdl2
 * libjpeg
 * libavformat
-* pango
 * liblzma
+* fontconfig (optional)
+
+Lightspark won't be able to access the fonts installed in the system
+if the fontconfig development files are not installed.
 
 The following tools are also required:
 * cmake
@@ -36,7 +39,7 @@ The following tools are also required:
 To install these, run the following command(s):
 ### Ubuntu (tested on 21.10):
 ```
-sudo apt install git gcc g++ nasm cmake libcurl4-gnutls-dev libsdl2-dev libpango1.0-dev libcairo2-dev libavcodec-dev libswresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
+sudo apt install git gcc g++ nasm cmake libcurl4-gnutls-dev libsdl2-dev libfontconfig-dev libcairo2-dev libavcodec-dev libswresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
 ```
 
 ### Fedora (tested on 33):
@@ -49,7 +52,7 @@ sudo dnf builddep lightspark
 
 ### Archlinux
 ```
-sudo pacman -S ffmpeg pango rtmpdump glew sdl2 git cmake nasm
+sudo pacman -S ffmpeg fontconfig rtmpdump glew sdl2 git cmake nasm
 ```
 
 If you want commands for a distro not listed here, please [create an issue](https://github.com/lightspark/lightspark/issues) if it doesn't already exist.

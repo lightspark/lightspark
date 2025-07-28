@@ -43,7 +43,6 @@ struct LSInitEvent;
 struct LSExecEvent;
 struct LSContextMenuEvent;
 struct LSOpenContextMenuEvent;
-struct LSUpdateContextMenuEvent;
 struct LSSelectItemContextMenuEvent;
 struct LSRemovedFromStageEvent;
 struct LSUserEventImpl;

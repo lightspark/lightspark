@@ -24,6 +24,7 @@
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/utils/ByteArray.h"
+#include <glib.h>
 
 using namespace std;
 using namespace lightspark;

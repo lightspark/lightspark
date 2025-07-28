@@ -348,8 +348,8 @@ void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk
 	//The 4 corners of each texture are specified as the vertices of 2 triangles,
 	//so there are 6 vertices per quad, two of them duplicated (the diagonal)
 	//Allocate the data on the stack to reduce heap fragmentation
-	float *vertex_coords = g_newa(float,realchunkcount*12);
-	float *texture_coords = g_newa(float,realchunkcount*12);
+	float *vertex_coords = LS_STACKALLOC(float,realchunkcount*12);
+	float *texture_coords = LS_STACKALLOC(float,realchunkcount*12);
 	
 	const uint32_t blocksPerSide=largeTextureSize/CHUNKSIZE;
 	float realchunkwidth = cropwidth;

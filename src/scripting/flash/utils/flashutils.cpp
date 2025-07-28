@@ -342,7 +342,7 @@ ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 			o = asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<AVM1Function>(func)->getClip());
 	}
 	//Build arguments array
-	asAtom* callbackArgs = g_newa(asAtom,argslen-paramstart);
+	asAtom* callbackArgs = LS_STACKALLOC(asAtom,argslen-paramstart);
 	uint32_t i;
 	for(i=0; i<argslen-paramstart; i++)
 		callbackArgs[i] = args[i+paramstart];
@@ -359,7 +359,7 @@ ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 		return;
 
 	//Build arguments array
-	asAtom* callbackArgs = g_newa(asAtom,argslen-2);
+	asAtom* callbackArgs = LS_STACKALLOC(asAtom,argslen-2);
 	uint32_t i;
 	for(i=0; i<argslen-2; i++)
 		callbackArgs[i] = args[i+2];

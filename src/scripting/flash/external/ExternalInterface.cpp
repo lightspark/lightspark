@@ -108,7 +108,7 @@ ASFUNCTIONBODY_ATOM(ExternalInterface,call)
 	// TODO: Check security constraints & throw SecurityException
 
 	// Convert given arguments to ExtVariants
-	const ExtVariant** callArgs = g_newa(const ExtVariant*,argslen-1);
+	const ExtVariant** callArgs = LS_STACKALLOC(const ExtVariant*,argslen-1);
 	std::map<const ASObject*, std::unique_ptr<ExtObject>> objectsMap;
 	for(uint32_t i = 0; i < argslen-1; i++)
 	{

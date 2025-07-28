@@ -35,10 +35,10 @@
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "parsing/tags.h"
-#include <pango/pangocairo.h>
 
 using namespace lightspark;
 
+extern void nanoVGgetTextBounds(SystemState* sys, TextData& tData, const tiny_string& text, number_t& tw, number_t& th);
 void saveToPNG(uint8_t* data, uint32_t w, uint32_t h, const char* filename)
 {
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(data, CAIRO_FORMAT_ARGB32, w, h, w*4);
@@ -816,209 +816,6 @@ void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator
 	}
 }
 
-void CairoPangoRenderer::pangoLayoutFromData(PangoLayout* layout, const TextData& tData, const tiny_string& text)
-{
-	PangoFontDescription* desc;
-
-	if (tData.isPassword)
-	{
-		tiny_string pwtxt;
-		for (uint32_t i = 0; i < text.numChars(); i++)
-			pwtxt+="*";
-		pango_layout_set_text(layout, pwtxt.raw_buf(), -1);
-	}
-	else
-		pango_layout_set_text(layout, text.raw_buf(), -1);
-
-
-	/* setup font description */
-	desc = pango_font_description_new();
-	pango_font_description_set_family(desc, tData.font.raw_buf());
-	pango_font_description_set_absolute_size(desc, PANGO_SCALE*tData.fontSize);
-	pango_font_description_set_style(desc,tData.isItalic ? PANGO_STYLE_ITALIC : PANGO_STYLE_NORMAL);
-	pango_font_description_set_weight(desc,tData.isBold ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL);
-	pango_layout_set_font_description(layout, desc);
-	pango_font_description_free(desc);
-}
-
-void CairoPangoRenderer::executeDraw(cairo_t* cr)
-{
-	PangoLayout* layout;
-
-	layout = pango_cairo_create_layout(cr);
-
-	int xpos=0;
-	switch(textData.autoSize)
-	{
-		case ALIGNMENT::AS_RIGHT:
-			xpos = textData.width-textData.textWidth;
-			break;
-		case ALIGNMENT::AS_CENTER:
-			xpos = (textData.width-textData.textWidth)/2;
-			break;
-		default:
-			break;
-	}
-	
-	if(textData.background)
-	{
-		cairo_set_source_rgb (cr, textData.backgroundColor.Red/255., textData.backgroundColor.Green/255., textData.backgroundColor.Blue/255.);
-		cairo_paint(cr);
-	}
-
-	/* text scroll position */
-	int32_t translateX = textData.scrollH;
-	int32_t translateY = 0;
-	if (textData.scrollV > 1)
-	{
-		translateY = -PANGO_PIXELS(lineExtents(layout, textData.scrollV-1).y);
-	}
-
-	/* draw the text */
-	cairo_translate(cr, xpos, 0);
-	cairo_set_source_rgb (cr, textData.textColor.Red/255., textData.textColor.Green/255., textData.textColor.Blue/255);
-	cairo_translate(cr, translateX, translateY);
-	int32_t linepos=0;
-	for (auto it = textData.textlines.begin(); it != textData.textlines.end(); it++)
-	{
-		
-		cairo_translate(cr, it->autosizeposition, linepos);
-		tiny_string text = it->text;
-		pangoLayoutFromData(layout, textData,text);
-		if (textData.isPassword)
-		{
-			tiny_string pwtxt;
-			for (uint32_t i = 0; i < text.numChars(); i++)
-				pwtxt+="*";
-			pango_layout_set_text(layout, pwtxt.raw_buf(), -1);
-		}
-		else
-			pango_layout_set_text(layout, text.raw_buf(), -1);
-		pango_cairo_show_layout(cr, layout);
-		cairo_translate(cr, -it->autosizeposition, -linepos);
-		linepos += textData.fontSize+textData.leading;
-	}
-	cairo_translate(cr, -translateX, -translateY);
-	cairo_translate(cr, -xpos, 0);
-
-	if(textData.border)
-	{
-		cairo_set_source_rgb(cr, textData.borderColor.Red/255., textData.borderColor.Green/255., textData.borderColor.Blue/255.);
-		cairo_set_line_width(cr, 1);
-		cairo_rectangle(cr, 0, 0, this->width, this->height);
-		cairo_stroke(cr);
-	}
-	if(textData.caretblinkstate)
-	{
-		uint32_t tw=TEXTFIELD_PADDING;
-		uint32_t thstart=TEXTFIELD_PADDING;
-		uint32_t thend=PANGO_PIXELS(PANGO_SCALE*textData.fontSize)+TEXTFIELD_PADDING;
-		if (!textData.textlines.empty())
-		{
-			number_t tw1,th1;
-			tiny_string currenttext = textData.getText(0);
-			if (caretIndex < currenttext.numChars())
-			{
-				currenttext = currenttext.substr(0,caretIndex);
-			}
-			getBounds(textData,currenttext,tw1,th1);
-			tw += tw1;
-		}
-		tw+=xpos;
-		cairo_set_source_rgb(cr, 0, 0, 0);
-		cairo_set_line_width(cr, 2);
-		cairo_move_to(cr,tw, thstart);
-		cairo_line_to(cr,tw, thend);
-		cairo_stroke(cr);
-	}
-
-	g_object_unref(layout);
-}
-
-bool CairoPangoRenderer::getBounds(const TextData& tData, const tiny_string& text, number_t& tw, number_t& th)
-{
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(nullptr, CAIRO_FORMAT_ARGB32, 0, 0, 0);
-	cairo_t *cr=cairo_create(cairoSurface);
-
-	PangoLayout* layout;
-
-	layout = pango_cairo_create_layout(cr);
-	pangoLayoutFromData(layout, tData,text);
-
-	PangoRectangle ink_rect, logical_rect;
-	pango_layout_get_pixel_extents(layout,&ink_rect,&logical_rect);//TODO: check the rounding during pango conversion
-
-	g_object_unref(layout);
-	cairo_destroy(cr);
-	cairo_surface_destroy(cairoSurface);
-
-	//This should be safe check precision
-	tw = ink_rect.width + ink_rect.x;
-	th = ink_rect.height + ink_rect.y;
-	return (th!=0) && (tw!=0);
-}
-
-PangoRectangle CairoPangoRenderer::lineExtents(PangoLayout *layout, int lineNumber)
-{
-	PangoRectangle rect;
-	memset(&rect, 0, sizeof(PangoRectangle));
-	int i = 0;
-	PangoLayoutIter* lineIter = pango_layout_get_iter(layout);
-	do
-	{
-		if (i == lineNumber)
-		{
-			pango_layout_iter_get_line_extents(lineIter, NULL, &rect);
-			break;
-		}
-
-		i++;
-	} while (pango_layout_iter_next_line(lineIter));
-	pango_layout_iter_free(lineIter);
-
-	return rect;
-}
-
-std::vector<LineData> CairoPangoRenderer::getLineData(const TextData& _textData)
-{
-	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(NULL, CAIRO_FORMAT_ARGB32, 0, 0, 0);
-	cairo_t *cr=cairo_create(cairoSurface);
-
-	PangoLayout* layout;
-	layout = pango_cairo_create_layout(cr);
-	tiny_string text = _textData.getText();
-	pangoLayoutFromData(layout, _textData,text);
-
-	int XOffset = _textData.scrollH;
-	int YOffset = PANGO_PIXELS(lineExtents(layout, _textData.scrollV-1).y);
-	std::vector<LineData> data;
-	data.reserve(pango_layout_get_line_count(layout));
-	PangoLayoutIter* lineIter = pango_layout_get_iter(layout);
-	do
-	{
-		PangoRectangle rect;
-		pango_layout_iter_get_line_extents(lineIter, NULL, &rect);
-		PangoLayoutLine* line = pango_layout_iter_get_line(lineIter);
-		data.emplace_back(PANGO_PIXELS(rect.x) - XOffset,
-				  PANGO_PIXELS(rect.y) - YOffset,
-				  PANGO_PIXELS(rect.width),
-				  PANGO_PIXELS(rect.height),
-				  text.bytePosToIndex(line->start_index),
-				  text.substr_bytes(line->start_index, line->length).numChars(),
-				  PANGO_PIXELS(PANGO_ASCENT(rect)),
-				  PANGO_PIXELS(PANGO_DESCENT(rect)),
-				  PANGO_PIXELS(PANGO_LBEARING(rect)),
-				  0); // FIXME
-	} while (pango_layout_iter_next_line(lineIter));
-	pango_layout_iter_free(lineIter);
-
-	g_object_unref(layout);
-	cairo_destroy(cr);
-	cairo_surface_destroy(cairoSurface);
-
-	return data;
-}
-
 AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(o),surfaceBytes(nullptr),uploadNeeded(false),isBufferOwner(true)
 {
 	owner->cachedSurface->wasUpdated=false;
@@ -1230,11 +1027,6 @@ void TextData::appendText(const char *text, bool firstlineonly, const FormatText
 				return;
 		}
 	}
-	number_t w,h;
-	if (embeddedFont)
-		embeddedFont->getTextBounds("",fontSize,w,h);
-	else
-		CairoPangoRenderer::getBounds(*this,"", w, h);
 	
 	uint32_t index=0;
 	do
@@ -1297,12 +1089,12 @@ bool TextData::isWhitespaceOnly(bool multiline) const
 	return true;
 }
 
-void TextData::getTextSizes(const tiny_string& text, number_t& tw, number_t& th)
+void TextData::getTextSizes(SystemState* sys,const tiny_string& text, number_t& tw, number_t& th)
 {
 	if (embeddedFont)
 		embeddedFont->getTextBounds(text,fontSize,tw,th);
 	else
-		CairoPangoRenderer::getBounds(*this,text, tw, th);
+		nanoVGgetTextBounds(sys,*this,text, tw, th);
 	
 }
 

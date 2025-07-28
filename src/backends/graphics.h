@@ -34,7 +34,6 @@
 #include "smartrefs.h"
 #include "swftypes.h"
 #include <cairo.h>
-#include <pango/pango.h>
 #include "backends/geometry.h"
 #include "memory_support.h"
 
@@ -437,7 +436,7 @@ struct textline
 class FontTag;
 class DLL_PUBLIC TextData
 {
-friend class CairoPangoRenderer;
+friend class CachedSurface;
 protected:
 	std::vector<textline> textlines;
 public:
@@ -445,7 +444,7 @@ public:
 	TextData() : swfversion(0), width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), backgroundColor(0xFFFFFF),borderColor(0x000000),
 		background(false),border(false), multiline(false),isBold(false),isItalic(false),wordWrap(false),caretblinkstate(false),isPassword(false),
 		autoSize(AS_NONE),align(AS_NONE), fontSize(12),
-		embeddedFont(nullptr)
+	embeddedFont(nullptr),nanoVGFontID(-1)
 	{}
 	uint32_t swfversion;
 	uint32_t width;
@@ -472,6 +471,7 @@ public:
 	ALIGNMENT align;
 	uint32_t fontSize;
 	FontTag* embeddedFont;
+	int nanoVGFontID;
 	tiny_string getText(uint32_t line=UINT32_MAX) const;
 	void setText(const char* text, bool firstlineonly=false);
 	void appendText(const char* text, bool firstlineonly=false, const FormatText* format = nullptr, uint32_t swfversion=UINT32_MAX, bool condensewhite=false);
@@ -479,7 +479,7 @@ public:
 	void appendLineBreak(bool needsadditionalbreak, bool emptyline, FormatText format);
 	void clear();
 	bool isWhitespaceOnly(bool multiline) const;
-	void getTextSizes(const tiny_string& text, number_t& tw, number_t& th);
+	void getTextSizes(SystemState* sys, const tiny_string& text, number_t& tw, number_t& th);
 	bool TextIsEqual(const std::vector<tiny_string>& lines) const;
 	uint32_t getLineCount() const { return textlines.size(); }
 	FontTag* checkEmbeddedFont(DisplayObject* d);
@@ -506,38 +506,6 @@ public:
 	number_t descent;
 	number_t leading;
 	number_t indent;
-};
-
-class CairoPangoRenderer : public CairoRenderer
-{
-	/*
-	 * This is run by CairoRenderer::execute()
-	 */
-	void executeDraw(cairo_t* cr) override;
-	TextData textData;
-	uint32_t caretIndex;
-	static void pangoLayoutFromData(PangoLayout* layout, const TextData& tData, const tiny_string& text);
-	static PangoRectangle lineExtents(PangoLayout *layout, int lineNumber);
-public:
-	CairoPangoRenderer(const TextData& _textData, const MATRIX& _m,
-			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
-			float _xs, float _ys,
-			bool _ismask, bool _cacheAsBitmap,
-			float _s, float _a, 
-			const ColorTransformBase& _colortransform,
-			SMOOTH_MODE _smoothing,
-			AS_BLENDMODE _blendmode,
-			uint32_t _ci)
-		: CairoRenderer(_m,_x,_y,_w,_h,_xs, _ys,_ismask,_cacheAsBitmap,_s,_a,
-						_colortransform,
-						_smoothing, _blendmode), textData(_textData),caretIndex(_ci) {}
-	/**
-		Helper. Uses Pango to find the size of the textdata
-		@param _texttData The textData being tested
-		@param w,h,tw,th are the (text)width and (text)height of the textData.
-	*/
-	static bool getBounds(const TextData& tData, const tiny_string& text, number_t& tw, number_t& th);
-	static std::vector<LineData> getLineData(const TextData& _textData);
 };
 
 class RefreshableDrawable: public IDrawable

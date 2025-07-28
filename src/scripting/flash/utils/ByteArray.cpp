@@ -33,6 +33,7 @@
 #include <sstream>
 #include <zlib.h>
 #include <lzma.h>
+#include <glib.h>
 
 using namespace std;
 using namespace lightspark;
@@ -1008,7 +1009,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readMultiByte)
 		return;
 	}
 
-	char* s = g_newa(char,strlen+1);
+	char* s = LS_STACKALLOC(char,strlen+1);
 	// ensure that the resulting string cuts off any zeros at the end
 	strncpy(s,(const char*)th->bytes+th->position,strlen);
 	s[strlen] = 0x0;

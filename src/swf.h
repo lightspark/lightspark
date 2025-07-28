@@ -182,7 +182,7 @@ private:
 #ifdef _WIN32
 	HANDLE childPid;
 #else
-	GPid childPid;
+	int childPid;
 #endif
 
 	//shared null, undefined, true and false instances

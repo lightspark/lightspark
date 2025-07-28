@@ -353,7 +353,7 @@ void ABCVm::callPropLex(call_context *th, int n, int m, method_info **called_mi,
 
 void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool callproplex,preloadedcodedata* instrptr)
 {
-	asAtom* args=g_newa(asAtom, m);
+	asAtom* args=LS_STACKALLOC(asAtom, m);
 	for(int i=0;i<m;i++)
 		RUNTIME_STACK_POP(th,args[m-i-1]);
 
@@ -479,7 +479,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 				else
 				{
 					//Create a new array
-					asAtom* proxyArgs=g_newa(asAtom, m+1);
+					asAtom* proxyArgs=LS_STACKALLOC(asAtom, m+1);
 					ASObject* namearg = abstract_s(th->worker,name->normalizedName(th->worker));
 					namearg->setProxyProperty(*name);
 					proxyArgs[0]=asAtomHandler::fromObject(namearg);
@@ -526,7 +526,7 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 
 void ABCVm::callMethod(call_context* th, int n, int m)
 {
-	asAtom* args=g_newa(asAtom, m);
+	asAtom* args=LS_STACKALLOC(asAtom, m);
 	for(int i=0;i<m;i++)
 	{
 		RUNTIME_STACK_POP(th,args[m-i-1]);
@@ -891,7 +891,7 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 void ABCVm::construct(call_context* th, int m)
 {
 	LOG_CALL( "construct " << m);
-	asAtom* args=g_newa(asAtom, m);
+	asAtom* args=LS_STACKALLOC(asAtom, m);
 	for(int i=0;i<m;i++)
 	{
 		RUNTIME_STACK_POP(th,args[m-i-1]);
@@ -983,7 +983,7 @@ void ABCVm::constructGenericType(call_context* th, int m)
 		createError<TypeError>(th->worker,kWrongTypeArgCountError, "function", "1", Integer::toString(m));
 		return;
 	}
-	ASObject** args=g_newa(ASObject*, m);
+	ASObject** args=LS_STACKALLOC(ASObject*, m);
 	for(int i=0;i<m;i++)
 	{
 		RUNTIME_STACK_POP_ASOBJECT(th,args[m-i-1]);
@@ -1752,7 +1752,7 @@ bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localres
 void ABCVm::constructSuper(call_context* th, int m)
 {
 	LOG_CALL( "constructSuper " << m);
-	asAtom* args=g_newa(asAtom, m);
+	asAtom* args=LS_STACKALLOC(asAtom, m);
 	for(int i=0;i<m;i++)
 	{
 		RUNTIME_STACK_POP(th,args[m-i-1]);
@@ -2056,7 +2056,7 @@ void ABCVm::initProperty(ASObject* obj, ASObject* value, multiname* name)
 
 void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
-	asAtom* args=g_newa(asAtom, m);
+	asAtom* args=LS_STACKALLOC(asAtom, m);
 	for(int i=0;i<m;i++)
 	{
 		RUNTIME_STACK_POP(th,args[m-i-1]);
@@ -2104,7 +2104,7 @@ void ABCVm::callStatic(call_context* th, int n, int m, method_info** called_mi, 
 
 void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, bool keepReturn)
 {
-	asAtom* args=g_newa(asAtom, m);
+	asAtom* args=LS_STACKALLOC(asAtom, m);
 	for(int i=0;i<m;i++)
 	{
 		RUNTIME_STACK_POP(th,args[m-i-1]);
@@ -2389,7 +2389,7 @@ bool ABCVm::ifFalse(ASObject* obj1)
 void ABCVm::constructProp(call_context* th, int n, int m)
 {
 	th->explicitConstruction = true;
-	asAtom* args=g_newa(asAtom, m);
+	asAtom* args=LS_STACKALLOC(asAtom, m);
 	for(int i=0;i<m;i++)
 	{
 		RUNTIME_STACK_POP(th,args[m-i-1]);
@@ -2940,7 +2940,7 @@ bool ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
 
 void ABCVm::call(call_context* th, int m, method_info** called_mi)
 {
-	asAtom* args=g_newa(asAtom, m);
+	asAtom* args=LS_STACKALLOC(asAtom, m);
 	for(int i=0;i<m;i++)
 	{
 		RUNTIME_STACK_POP(th,args[m-i-1]);

@@ -26,7 +26,7 @@
 struct SDL_Window;
 namespace lightspark
 {
-
+unsigned char* getUncompressedDefaultFont(unsigned int& buf_decompressed_size);
 class DLL_PUBLIC Launcher
 {
 public:
@@ -38,6 +38,7 @@ public:
 	bool needsfilesystem;
 	bool start();
 	static void setWindowIcon(SDL_Window* window);
+	static const char* getDefaultFontBase85();
 };
 
 }

@@ -39,6 +39,7 @@
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Number.h"
+#include <glib.h>
 
 using namespace std;
 using namespace lightspark;

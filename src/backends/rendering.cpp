@@ -31,6 +31,7 @@
 #include "compat.h"
 #include <sstream>
 #include <unistd.h>
+#include <glib.h> // for screenshot file
 
 #ifdef _WIN32
 #   define WIN32_LEAN_AND_MEAN
@@ -535,9 +536,15 @@ void RenderThread::set_canrender(bool b)
 }
 void RenderThread::renderSettingsPage()
 {
+	int width=210;
+	int height=136;
+	Vector2 mousepos = m_sys->getInputThread()->getMousePos();
+	int startposx = (windowWidth-width)/2;
+	int startposy = (windowHeight-height)/2;
+
 	lsglLoadIdentity();
 	lsglScalef(1.0f,-1.0f,1);
-	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
+	lsglTranslatef(-offsetX+startposx,(windowHeight-offsetY-startposy)*(-1.0f),0);
 
 	setMatrixUniform(LSGL_MODELVIEW);
 
@@ -547,11 +554,6 @@ void RenderThread::renderSettingsPage()
 	float selectedbackgroundcolor = 0.5;
 	float textcolor = 0.0;
 
-	int width=210;
-	int height=136;
-	Vector2 mousepos = m_sys->getInputThread()->getMousePos();
-	int startposx = (windowWidth-width)/2;
-	int startposy = (windowHeight-height)/2;
 	cairo_t *cr = getCairoContextSettings(width, height);
 
 	cairo_set_source_rgb (cr, backgroundcolor, backgroundcolor,backgroundcolor);

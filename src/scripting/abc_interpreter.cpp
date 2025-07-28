@@ -1872,7 +1872,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				if (t==1 && state.operandlist.size()>t && function->func_scope.getPtr() && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic))
 				{
 					uint32_t i = 0;
-					ASObject** args=g_newa(ASObject*, t);
+					ASObject** args=LS_STACKALLOC(ASObject*, t);
 					auto it = state.operandlist.rbegin();
 					while (i < t)
 					{

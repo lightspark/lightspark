@@ -39,7 +39,6 @@ struct FormatText;
 struct textline;
 class TextData;
 class LineData;
-class CairoPangoRenderer;
 class RefreshableDrawable;
 class InvalidateQueue;
 class CharacterRenderer;

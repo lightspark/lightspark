@@ -35,6 +35,7 @@
 #else
 #include <alloca.h>
 #endif
+#include <glib.h>
 
 using namespace lightspark;
 

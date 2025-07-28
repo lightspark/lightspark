@@ -249,7 +249,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgsVoid_constant(call_context* c
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgsVoid_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));
@@ -276,7 +276,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgsVoid_local(call_context* cont
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgsVoid_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));
@@ -319,7 +319,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_constant(call_context* conte
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgs_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));
@@ -346,7 +346,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_local(call_context* context)
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgs_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));
@@ -373,7 +373,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_constant_localResult(call_co
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgs_c_lr " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));
@@ -401,7 +401,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_local_localResult(call_conte
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgs_l_lr " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));

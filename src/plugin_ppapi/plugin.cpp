@@ -1364,7 +1364,7 @@ bool ppPluginInstance::executeScript(const std::string script, const ExtVariant 
 		LOG(LOG_ERROR,"error preparing script:"<<script<<" "<<g_var_interface->VarToUtf8(exception,&len));
 		return false;
 	}
-	PP_Var* variantArgs = g_newa(PP_Var,argc);
+	PP_Var* variantArgs = LS_STACKALLOC(PP_Var,argc);
 	for(uint32_t i = 0; i < argc; i++)
 	{
 		std::map<const ExtObject *, PP_Var> objectsMap;

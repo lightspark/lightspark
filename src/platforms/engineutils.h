@@ -79,14 +79,9 @@ class DLL_PUBLIC EngineData
 	friend class RenderThread;
 	friend class LSTimers;
 private:
-	SDL_Window* contextmenu;
-	SDL_Renderer* contextmenurenderer;
-	SDL_Texture* contextmenutexture;
 	static SDL_Cursor* handCursor;
 	static SDL_Cursor* arrowCursor;
 	static SDL_Cursor* ibeamCursor;
-	uint8_t* contextmenupixels;
-	int32_t contextmenuheight;
 	void openContextMenuIntern(InteractiveObject *dispatcher);
 	ITickJob* sdleventtickjob;
 	std::string getsharedobjectfilename(const tiny_string &name);
@@ -173,10 +168,6 @@ public:
 
 	// context menu handling
 	virtual void openContextMenu();
-	virtual void updateContextMenu(int newselecteditem);
-	virtual void updateContextMenuFromMouse(uint32_t windowID, int mousey);
-	virtual void renderContextMenu();
-	void closeContextMenu();
 	bool inContextMenu() const
 	{
 		return incontextmenu;

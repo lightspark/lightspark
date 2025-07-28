@@ -263,7 +263,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgsVoid_constant(call_context* con
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionBuiltinMultiArgsVoid_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));
@@ -288,7 +288,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgsVoid_local(call_context* contex
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionBuiltinMultiArgsVoid_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));
@@ -312,7 +312,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgs_constant(call_context* context
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionBuiltinMultiArgs_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));
@@ -336,7 +336,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgs_local(call_context* context)
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionBuiltinMultiArgs_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));
@@ -360,7 +360,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgs_constant_localResult(call_cont
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionBuiltinMultiArgs_c_lr " << asAtomHandler::toDebugString(func) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));
@@ -384,7 +384,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgs_local_localResult(call_context
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionBuiltinMultiArgs_l_lr " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{
 		(++(context->exec_pos));

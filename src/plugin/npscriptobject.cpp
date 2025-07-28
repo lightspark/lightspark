@@ -455,7 +455,7 @@ bool NPScriptObject::invoke(NPIdentifier id, const NPVariant* args, uint32_t arg
 	NPIdentifierObject objId(id);
 
 	// Convert raw arguments to objects
-	const lightspark::ExtVariant** objArgs = g_newa(const lightspark::ExtVariant*,argc);
+	const lightspark::ExtVariant** objArgs = LS_STACKALLOC(const lightspark::ExtVariant*,argc);
 	std::map<const NPObject*, std::unique_ptr<ExtObject>> npObjectsMap;
 	for(uint32_t i = 0; i < argc; i++)
 		objArgs[i] = new NPVariantObject(npObjectsMap, instance, args[i]);
@@ -526,7 +526,7 @@ bool NPScriptObject::callExternalHandler(const char* scriptString, const lightsp
 		else
 		{
 			// These will get passed as arguments to NPN_Invoke(Default)
-			NPVariant* variantArgs = g_newa(NPVariant,argc);
+			NPVariant* variantArgs = LS_STACKALLOC(NPVariant,argc);
 			for(uint32_t i = 0; i < argc; i++)
 			{
 				std::map<const ExtObject*, NPObject*> objectsMap;

@@ -64,7 +64,6 @@ using EventTypes = TypeList
 	LSInitEvent,
 	LSExecEvent,
 	LSOpenContextMenuEvent,
-	LSUpdateContextMenuEvent,
 	LSSelectItemContextMenuEvent,
 	LSRemovedFromStageEvent,
 	LSUserEventImpl
@@ -385,7 +384,6 @@ struct LSContextMenuEvent : public LSEvent
 	enum ContextMenuType
 	{
 		Open,
-		Update,
 		SelectItem,
 	};
 
@@ -401,13 +399,6 @@ struct LSOpenContextMenuEvent : public LSContextMenuEvent
 	InteractiveObject* obj;
 
 	constexpr LSOpenContextMenuEvent(InteractiveObject* _obj) : LSContextMenuEvent(ContextMenuType::Open), obj(_obj) {}
-};
-
-struct LSUpdateContextMenuEvent : public LSContextMenuEvent
-{
-	int selectedItem;
-
-	constexpr LSUpdateContextMenuEvent(int _selectedItem) : LSContextMenuEvent(ContextMenuType::Update), selectedItem(_selectedItem) {}
 };
 
 struct LSSelectItemContextMenuEvent : public LSContextMenuEvent
@@ -488,7 +479,6 @@ constexpr auto LSEvent::visit(V&& visitor) const
 			switch (contextMenu.menuType)
 			{
 				case ContextMenuType::Open: return visitor(static_cast<const LSOpenContextMenuEvent&>(*this)); break;
-				case ContextMenuType::Update: return visitor(static_cast<const LSUpdateContextMenuEvent&>(*this)); break;
 				case ContextMenuType::SelectItem: return visitor(static_cast<const LSSelectItemContextMenuEvent&>(*this)); break;
 			}
 			break;

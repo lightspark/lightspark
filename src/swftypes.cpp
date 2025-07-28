@@ -1980,7 +1980,7 @@ RGB::RGB(const tiny_string& colorstr):Red(0),Green(0),Blue(0)
 	if (s[0] == '#')
 		s++;
 
-	gint64 color = g_ascii_strtoll(s, nullptr, 16);
+	int64_t color = strtoll(s, nullptr, 16);
 	Red = (color >> 16) & 0xFF;
 	Green = (color >> 8) & 0xFF;
 	Blue = color & 0xFF;

@@ -119,7 +119,8 @@ _CRTIMP char* __cdecl __MINGW_NOTHROW   _strdup (const char*) __MINGW_ATTRIB_MAL
 #define ACQUIRE_READ(x) x.load(std::memory_order_acquire)
 #define RELEASE_WRITE(x, v) x.store(v, std::memory_order_release)
 
-
+// alloc space on stack
+#define LS_STACKALLOC(t,c) (t*)alloca(sizeof(t)*(c))
 /* DLL_LOCAL / DLL_PUBLIC */
 /* When building on win32, DLL_PUBLIC is set to __declspec(dllexport)
  * during build of the audio plugins.

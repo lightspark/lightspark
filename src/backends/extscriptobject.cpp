@@ -407,7 +407,7 @@ void ExtASCallback::call(const ExtScriptObject& so, const ExtIdentifier& id,
 			asAtom* newArgs=nullptr;
 			if (argc > 0)
 			{
-				newArgs=g_newa(asAtom, argc);
+				newArgs=LS_STACKALLOC(asAtom,argc);
 				for (uint32_t i = 0; i < argc; i++)
 				{
 					newArgs[i] = asAtomHandler::fromObject(asArgs[i]);

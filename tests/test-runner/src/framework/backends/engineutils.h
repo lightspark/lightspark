@@ -75,9 +75,6 @@ public:
 
 	// context menu handling
 	void openContextMenu() override {}
-	void updateContextMenu(int newselecteditem) override {}
-	void updateContextMenuFromMouse(uint32_t windowID, int mousey) override {}
-	void renderContextMenu() override {}
 
 	// file handling
 	bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath) override;

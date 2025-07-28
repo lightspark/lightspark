@@ -733,7 +733,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	int curdepth = 0;
 	int maxdepth = context->swfversion < 6 ? 8 : 16;
 	auto thisObj = obj != nullptr ? *obj : asAtomHandler::fromObject(clip);
-	std::vector<uint8_t>::const_iterator* scopestackstop = g_newa(std::vector<uint8_t>::const_iterator, maxdepth);
+	std::vector<uint8_t>::const_iterator* scopestackstop = LS_STACKALLOC(std::vector<uint8_t>::const_iterator, maxdepth);
 	scopestackstop[0] = actionlist.end();
 	uint32_t currRegister = 1; // spec is not clear, but gnash starts at register 1
 	if (!suppressThis || preloadThis)
@@ -1648,7 +1648,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom name = PopStack(stack);
 				asAtom na = PopStack(stack);
 				uint32_t numargs = asAtomHandler::toUInt(na);
-				asAtom* args = numargs ? g_newa(asAtom, numargs) : nullptr;
+				asAtom* args = numargs ? LS_STACKALLOC(asAtom, numargs) : nullptr;
 				for (uint32_t i = 0; i < numargs; i++)
 				{
 					args[i] = PopStack(stack);
@@ -1719,7 +1719,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom name = PopStack(stack);
 				asAtom na = PopStack(stack);
 				size_t numargs = std::min((size_t)asAtomHandler::toUInt(na), stack.size());
-				asAtom* args = g_newa(asAtom, numargs);
+				asAtom* args = LS_STACKALLOC(asAtom, numargs);
 				for (size_t i = 0; i < numargs; i++)
 					args[i] = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
@@ -2130,7 +2130,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom scriptobject = PopStack(stack);
 				asAtom na = PopStack(stack);
 				uint32_t numargs = asAtomHandler::toUInt(na);
-				asAtom* args = numargs ? g_newa(asAtom, numargs) : nullptr;
+				asAtom* args = numargs ? LS_STACKALLOC(asAtom, numargs) : nullptr;
 				for (uint32_t i = 0; i < numargs; i++)
 				{
 					args[i] = PopStack(stack);
@@ -2310,7 +2310,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom scriptobject = PopStack(stack);
 				asAtom na = PopStack(stack);
 				size_t numargs = std::min((size_t)asAtomHandler::toUInt(na), stack.size());
-				asAtom* args = g_newa(asAtom, numargs);
+				asAtom* args = LS_STACKALLOC(asAtom, numargs);
 				for (size_t i = 0; i < numargs; i++)
 					args[i] = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewMethod "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));

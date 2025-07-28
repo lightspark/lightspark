@@ -84,6 +84,7 @@ public:
 	bool renderWithNanoVG;
 	bool hasOpaqueBackground;
 	RGB opaqueBackground;
+	TextData textdata;
 #ifndef NDEBUG
 	DisplayObject* src; // this points to the DisplayObject this surface belongs to
 #endif

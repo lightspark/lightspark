@@ -102,8 +102,6 @@ class PluginEngineData:	public EngineData
 friend class nsPluginInstance;
 private:
 	nsPluginInstance* instance;
-	gulong inputHandlerId;
-	gulong sizeHandlerId;
 	SDL_GLContext mSDLContext;
 	unsigned char * mPixels;
 	bool inRendering;
@@ -115,10 +113,6 @@ public:
 	PluginEngineData(nsPluginInstance* i, uint32_t w, uint32_t h,SystemState* _sys);
 	~PluginEngineData()
 	{
-		if(inputHandlerId)
-			g_signal_handler_disconnect(widget, inputHandlerId);
-		if(sizeHandlerId)
-			g_signal_handler_disconnect(widget, sizeHandlerId);
 		if (mPixels)
 			delete[] mPixels;
 	}

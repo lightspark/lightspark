@@ -161,7 +161,7 @@ int InputThread::handleEvent(const LSEvent& event)
 
 	bool hasSys = m_sys != nullptr;
 	bool hasEngineData = hasSys && m_sys->getEngineData() != nullptr;
-	if (hasEngineData && m_sys->getEngineData()->inContextMenu() && handleContextMenuEvent(event))
+	if (hasEngineData && m_sys->getEngineData()->inContextMenu())
 		return true;
 	if (event.getType() == LSEvent::Type::RemovedFromStage)
 	{
@@ -275,43 +275,6 @@ int InputThread::handleEvent(const LSEvent& event)
 			if (focus.focusType == FocusType::Mouse && !focus.focused)
 			{
 				handleMouseLeave();
-				return true;
-			}
-			return false;
-		},
-		[&](const LSEvent&) { return false; }
-	));
-}
-bool InputThread::handleContextMenuEvent(const LSEvent& event)
-{
-	using Button = LSMouseButtonEvent::Button;
-	using ButtonType = LSMouseButtonEvent::ButtonType;
-	using FocusType = LSWindowFocusEvent::FocusType;
-
-	return event.visit(makeVisitor
-	(
-		[&](const LSKeyEvent& key) { return true; },
-		[&](const LSTextEvent& text) { return true; },
-		[&](const LSMouseButtonEvent& mouseButton)
-		{
-			if (mouseButton.buttonType == ButtonType::Up && mouseButton.button == Button::Left)
-			{
-				m_sys->getEngineData()->updateContextMenuFromMouse(mouseButton.windowID, mouseButton.mousePos.y);
-				m_sys->getEngineData()->selectContextMenuItem();
-			}
-			return true;
-		},
-		[&](const LSMouseMoveEvent& mouseMove)
-		{
-			m_sys->getEngineData()->updateContextMenuFromMouse(mouseMove.windowID, mouseMove.mousePos.y);
-			return true;
-		},
-		[&](const LSMouseWheelEvent& mouseWheel) { return true; },
-		[&](const LSWindowFocusEvent& focus)
-		{
-			if (focus.focusType == FocusType::Mouse && !focus.focused)
-			{
-				m_sys->getEngineData()->closeContextMenu();
 				return true;
 			}
 			return false;

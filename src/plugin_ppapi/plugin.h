@@ -245,9 +245,6 @@ public:
 
 	// context menu handling
 	void openContextMenu() override;
-	void updateContextMenu(int newselecteditem) override {}
-	void updateContextMenuFromMouse(uint32_t windowID, int mousey) override {}
-	void renderContextMenu() override {}
 	
 	void openPageInBrowser(const tiny_string& url, const tiny_string& window) override;
 	void setClipboardText(const std::string txt) override;

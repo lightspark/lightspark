@@ -58,7 +58,7 @@ jobs:
             libavformat-dev \
             libswresample-dev \
             libcairo2-dev \
-            libpango1.0-dev \
+            libfontconfig-dev \
             libpng-dev \
             libjpeg-dev \
             librtmp-dev \
@@ -101,7 +101,7 @@ jobs:
             libavformat-dev \
             libswresample-dev \
             libcairo2-dev \
-            libpango1.0-dev \
+            libfontconfig-dev \
             libpng-dev \
             libjpeg-dev \
             librtmp-dev \
@@ -130,7 +130,7 @@ jobs:
             mesa \
             mesa-glu \
             glew \
-            pango \
+            fontconfig \
             ffmpeg \
             sdl2 \
       - name: Run Build

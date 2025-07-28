@@ -232,7 +232,7 @@ ASObject *RegExp::match(const tiny_string& str)
 	for(int i=0;i<namedGroups;i++)
 	{
 		nameEntry* entry=reinterpret_cast<nameEntry*>(entries);
-		uint16_t num=GINT16_FROM_BE(entry->number);
+		uint16_t num=LS_UINT16_TO_BE(entry->number);
 		asAtom captured=a->at(num);
 		ASATOM_INCREF(captured);
 		a->setVariableAtomByQName(getSystemState()->getUniqueStringId(tiny_string(entry->name, true)),nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),captured,DYNAMIC_TRAIT);

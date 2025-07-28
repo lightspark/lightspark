@@ -252,7 +252,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 				else
 				{
 					//Create a new array
-					asAtom* proxyArgs=g_newa(asAtom,argsnum+1);
+					asAtom* proxyArgs=LS_STACKALLOC(asAtom,argsnum+1);
 					ASObject* namearg = abstract_s(context->worker,name->normalizedName(context->worker));
 					namearg->setProxyProperty(*name);
 					proxyArgs[0]=asAtomHandler::fromObject(namearg);
@@ -435,7 +435,7 @@ void lightspark::abc_callpropertyStaticNameCached(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	multiname* name=(context->exec_pos+1)->cachedmultiname3;
 	LOG_CALL( "callProperty_staticnameCached " << *name<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -464,7 +464,7 @@ void lightspark::abc_callpropertyStaticNameCached_localResult(call_context* cont
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	multiname* name=(context->exec_pos+1)->cachedmultiname3;
 	LOG_CALL( "callProperty_staticnameCached_lr " << *name<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -493,7 +493,7 @@ void lightspark::abc_callpropertyStaticNameCached_constant(call_context* context
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	multiname* name=(context->exec_pos+1)->cachedmultiname3;
 	LOG_CALL( "callProperty_staticnameCached_c " << *name<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -521,7 +521,7 @@ void lightspark::abc_callpropertyStaticNameCached_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	multiname* name=(context->exec_pos+1)->cachedmultiname3;
 	LOG_CALL( "callProperty_staticnameCached_l " << *name<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -549,7 +549,7 @@ void lightspark::abc_callpropertyStaticNameCached_constant_localResult(call_cont
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	multiname* name=(context->exec_pos+1)->cachedmultiname3;
 	LOG_CALL( "callProperty_staticnameCached_cl " << *name<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -577,7 +577,7 @@ void lightspark::abc_callpropertyStaticNameCached_local_localResult(call_context
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	multiname* name=(context->exec_pos+1)->cachedmultiname3;
 	LOG_CALL( "callProperty_staticnameCached_ll " << *name<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -820,7 +820,7 @@ void lightspark::abc_callpropvoidStaticNameCached(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	multiname* name=(context->exec_pos+1)->cachedmultiname3;
 	LOG_CALL( "callPropvoid_staticnameCached " << *name<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -842,7 +842,7 @@ void lightspark::abc_callpropvoidStaticNameCached_constant(call_context* context
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	multiname* name=(context->exec_pos+1)->cachedmultiname3;
 	LOG_CALL( "callPropvoid_staticnameCached_c " << *name<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -863,7 +863,7 @@ void lightspark::abc_callpropvoidStaticNameCached_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	multiname* name=(context->exec_pos+1)->cachedmultiname3;
 	LOG_CALL( "callPropvoid_staticnameCached_l " << *name<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -981,7 +981,7 @@ void lightspark::abc_callpropvoidSlotVarCached_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callPropvoid_SlotVarCached_c " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -1002,7 +1002,7 @@ void lightspark::abc_callpropvoidSlotVarCached_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callPropvoid_SlotVarCached_l " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -1314,7 +1314,7 @@ void lightspark::abc_callpropertySlotVarCached_constant(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callProperty_SlotVarCached_c " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -1342,7 +1342,7 @@ void lightspark::abc_callpropertySlotVarCached_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callProperty_SlotVarCached_l " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -1370,7 +1370,7 @@ void lightspark::abc_callpropertySlotVarCached_constant_localResult(call_context
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callProperty_SlotVarCached_cl " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -1398,7 +1398,7 @@ void lightspark::abc_callpropertySlotVarCached_local_localResult(call_context* c
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callProperty_SlotVarCached_ll " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -1718,7 +1718,7 @@ void lightspark::abc_callpropvoidBorrowedSlotCached_constant(call_context* conte
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callPropvoid_BorrowedSlotCached_c " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -1739,7 +1739,7 @@ void lightspark::abc_callpropvoidBorrowedSlotCached_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callPropvoid_BorrowedSlotCached_l " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -1760,7 +1760,7 @@ void lightspark::abc_callpropertyBorrowedSlotCached_constant(call_context* conte
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callProperty_BorrowedSlotCached_c " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -1788,7 +1788,7 @@ void lightspark::abc_callpropertyBorrowedSlotCached_local(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callProperty_BorrowedSlotCached_l " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -1816,7 +1816,7 @@ void lightspark::abc_callpropertyBorrowedSlotCached_constant_localResult(call_co
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callProperty_BorrowedSlotCached_cl " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -1844,7 +1844,7 @@ void lightspark::abc_callpropertyBorrowedSlotCached_local_localResult(call_conte
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
-	asAtom* args = g_newa(asAtom,argcount);
+	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	uint32_t slot_id=instrptr->local3.pos;
 	LOG_CALL( "callProperty_BorrowedSlotCached_ll " << slot_id<<" "<<argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)

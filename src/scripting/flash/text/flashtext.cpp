@@ -36,6 +36,7 @@
 #include "parsing/tags.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Integer.h"
+#include "scripting/toplevel/toplevel.h"
 
 using namespace std;
 using namespace lightspark;
@@ -920,20 +921,19 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineMetrics)
 	ARG_CHECK(ARG_UNPACK(lineIndex));
 
 	Locker l(*th->linemutex);
-	std::vector<LineData> lines = CairoPangoRenderer::getLineData(*th);
-	if ((lineIndex < 0) || (lineIndex >= (int32_t)lines.size()))
+	if ((lineIndex < 0) || (lineIndex >= (int32_t)th->textlines.size()))
 	{
 		createError<RangeError>(wrk,kParamRangeError);
 		return;
 	}
 
 	ret = asAtomHandler::fromObject(Class<TextLineMetrics>::getInstanceS(wrk,
-		lines[lineIndex].indent,
-		lines[lineIndex].extents.Xmax - lines[lineIndex].extents.Xmin,
-		lines[lineIndex].extents.Ymax - lines[lineIndex].extents.Ymin,
-		lines[lineIndex].ascent,
-		lines[lineIndex].descent,
-		lines[lineIndex].leading));
+		th->textlines[lineIndex].autosizeposition,
+		th->textlines[lineIndex].textwidth,
+		th->textlines[lineIndex].height,
+		0,// TODO:th->textlines[lineIndex].ascent,
+		0,// TODO:th->textlines[lineIndex].descent,
+		parseNumber(th->textlines[lineIndex].format.leading,th->getSystemState()->getSwfVersion()<11)));
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getLineOffset)
@@ -1185,7 +1185,7 @@ void TextField::getTextBounds(const tiny_string& txt,number_t &xmin,number_t &xm
 {
 	if (embeddedFont)
 		scaling = 1.0f/1024.0f/20.0f;
-	getTextSizes(txt,xmax,ymax);
+	getTextSizes(getSystemState(),txt,xmax,ymax);
 	xmin = autosizeposition;
 	xmax += autosizeposition;
 	ymin=0;
@@ -1329,7 +1329,7 @@ void TextField::updateSizes()
 	auto it = textlines.begin();
 	while (it != textlines.end())
 	{
-		getTextSizes((*it).text,w,h);
+		getTextSizes(getSystemState(),(*it).text,w,h);
 		(*it).textwidth=w;
 		bool listchanged=false;
 		if (wordWrap && width > TEXTFIELD_PADDING*2 && uint32_t(w) > width-TEXTFIELD_PADDING*2)
@@ -1339,7 +1339,7 @@ void TextField::updateSizes()
 			uint32_t c= text.rfind(" ");// TODO check for other whitespace characters
 			while (c != tiny_string::npos && c != 0)
 			{
-				getTextSizes(text.substr(0,c),w,h);
+				getTextSizes(getSystemState(),text.substr(0,c),w,h);
 				if (w <= width-TEXTFIELD_PADDING*2)
 				{
 					if(w>tw)
@@ -1349,7 +1349,7 @@ void TextField::updateSizes()
 					textline t;
 					t.autosizeposition=0;
 					t.text=text.substr(c+1,UINT32_MAX);
-					getTextSizes(t.text,w,h);
+					getTextSizes(getSystemState(),t.text,w,h);
 					t.textwidth=w;
 					t.height=h;
 					it = textlines.insert(++it,t);
@@ -2022,7 +2022,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 			{
 				tiny_string tmptxt = getText().substr(0,caretIndex);
 				number_t w,h;
-				getTextSizes(tmptxt,w,h);
+				getTextSizes(getSystemState(),tmptxt,w,h);
 				tw = w;
 				tw += autosizeposition/scaling;
 			}
@@ -2103,29 +2103,29 @@ IDrawable* TextField::invalidate(bool smoothing)
 									   , getScaleFactor(), getConcatenatedAlpha()
 									   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 	}		
-	if(matrix.getScaleX() != 1 || matrix.getScaleY() != 1)
-		LOG(LOG_NOT_IMPLEMENTED, "TextField when scaled is not correctly implemented:"<<x<<"/"<<y<<" "<<width<<"x"<<height<<" "<<matrix.getScaleX()<<" "<<matrix.getScaleY()<<" "<<this->getText());
 	float xscale = getConcatenatedMatrix().getScaleX();
 	float yscale = getConcatenatedMatrix().getScaleY();
-	// use specialized Renderer from EngineData, if available, otherwise fallback to Pango
+	// use specialized Renderer from EngineData, if available, otherwise fallback to nanoVG
 	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,matrix, x, y, ceil(width), ceil(height),
 																					xscale,yscale,isMask,cacheAsBitmap, 1.0f,getConcatenatedAlpha(),
 																					ColorTransformBase(),
 																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode());
 	if (res != nullptr)
 		return res;
-	/**  TODO: The scaling is done differently for textfields : height changes are applied directly
-		on the font size. In some cases, it can change the width (if autosize is on and wordwrap off).
-		Width changes do not change the font size, and do nothing when autosize is on and wordwrap off.
-		Currently, the TextField is stretched in case of scaling.
-	*/
-	return new CairoPangoRenderer(*this,matrix,
-				x, y, ceil(width), ceil(height),
-				xscale,yscale,
-				isMask, cacheAsBitmap,
-				1.0f, getConcatenatedAlpha(),
-				ColorTransformBase(),
-				smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),caretIndex);
+	res = new RefreshableDrawable(matrix.getTranslateX(),matrix.getTranslateY(), ceil(width), ceil(height)
+								   , matrix.getScaleX(), matrix.getScaleY()
+								   , isMask, cacheAsBitmap
+								   , 1.0, getConcatenatedAlpha()
+								   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+	res->getState()->textdata = *this;
+	res->getState()->renderWithNanoVG = true;
+	this->resetNeedsTextureRecalculation();
+	return res;
+
+}
+void TextField::refreshSurfaceState()
+{
+	getCachedSurface()->getState()->textdata = *this;
 }
 
 void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
@@ -2372,11 +2372,11 @@ uint32_t TextField::HtmlTextParser::parseFontSize(const char* s,
 			multiplier = -1;
 	}
 
-	int64_t size = basesize + multiplier*g_ascii_strtoll(s, NULL, 10);
+	int64_t size = basesize + multiplier*strtoll(s, NULL, 10);
 	if (size < 1)
 		size = 1;
-	if (size > G_MAXUINT32)
-		size = G_MAXUINT32;
+	if (size > UINT32_MAX)
+		size = UINT32_MAX;
 	
 	return (uint32_t)size;
 }

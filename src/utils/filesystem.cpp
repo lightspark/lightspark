@@ -327,6 +327,13 @@ Path fs::proximate(const Path& path, const Path& base)
 	return weaklyCanonical(path).lexicallyProximate(weaklyCanonical(base));
 }
 
+Path fs::readSymlink(const Path& path)
+{
+	if (!symlinkStatus(path).isSymlink())
+		throw Exception(path, std::errc::invalid_argument);
+	return Detail::resolveSymlink(path);
+}
+
 Path fs::relative(const Path& path, const Path& base)
 {
 	return weaklyCanonical(path).lexicallyRelative(weaklyCanonical(base));

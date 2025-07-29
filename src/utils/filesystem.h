@@ -274,21 +274,21 @@ public:
 	const Path& getPath() const { return path; }
 	operator const Path&() const { return path; }
 
-	bool exists() const;
-	bool isBlockFile() const;
-	bool isCharFile() const;
-	bool isDir() const;
-	bool isFifo() const;
-	bool isOther() const;
-	bool isFile() const;
-	bool isSocket() const;
-	bool isSymlink() const;
+	bool exists() const { return tryGetStatus().exists(); }
+	bool isBlockFile() const { return tryGetStatus().isBlockFile(); }
+	bool isCharFile() const { return tryGetStatus().isCharFile(); }
+	bool isDir() const { return tryGetStatus().isDir(); }
+	bool isFifo() const { return tryGetStatus().isFifo(); }
+	bool isOther() const { return tryGetStatus().isOther(); }
+	bool isFile() const { return tryGetStatus().isFile(); }
+	bool isSocket() const { return tryGetStatus().isSocket(); }
+	bool isSymlink() const { return tryGetStatus().isSymlink(); }
 
-	size_t getFileSize() const { return fileSize; }
-	const TimeSpec& getLastWriteTime() const { return lastWriteTime; }
+	size_t getFileSize() const { return status.getSize(); }
+	const TimeSpec& getLastWriteTime() const { return status.getLastWriteTime(); }
 	const FileStatus& getStatus() const { return status; }
 	const FileStatus& getSymlinkStatus() const { return symlinkStatus; }
-	size_t getHardLinkCount() const { return hardLinkCount; }
+	size_t getHardLinkCount() const { return status.getHardLinks(); }
 
 	bool operator==(const DirEntry& other) const { return path == other.path; }
 	bool operator!=(const DirEntry& other) const { return path != other.path; }
@@ -297,13 +297,12 @@ public:
 	bool operator>(const DirEntry& other) const { return path > other.path; }
 	bool operator>=(const DirEntry& other) const { return path >= other.path; }
 private:
-	friend class DirIter;
+	friend class DirIter
+	FileStatus tryGetStatus() const;
+
 	Path path;
 	FileStatus status;
 	FileStatus symlinkStatus;
-	size_t fileSize { size_t(-1) };
-	size_t hardLinkCount { size_t(-1) };
-	TimeSpec lastWriteTime;
 };
 
 class DirIterImpl
@@ -500,6 +499,7 @@ bool createDir(const Path& path, const Path& attrs);
 void createSymlink(const path& to, const path& newSymlink, bool toDir)
 void setPerms(const Path& path, const Perms& perms, const PermOptions& opts, const FileStatus& fileStatus);
 Path resolveSymlink(const Path& path);
+FileStatus status(const Path& path, FileStatus* _symlinkStatus = nullptr);
 
 // Non platform specific functions.
 bool isNotFoundError(const std::error_code& code);

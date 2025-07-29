@@ -25,6 +25,37 @@
 using namespace lightspark;
 namespace fs = FileSystem;
 
+void fs::DirEntry::assign(const Path& _path)
+{
+	path.assign(_path);
+	refresh();
+}
+
+void fs::DirEntry::replaceFilename(const Path& _path)
+{
+	path.replaceFilename(_path);
+	refresh();
+}
+
+void fs::DirEntry::refresh()
+{
+	try
+	{
+		status = fs::Detail::status(path, &symlinkStatus);
+	}
+	catch (...)
+	{
+		if (!status.statusKnown() || !symlinkStatus.isSymlink())
+			std::rethrow_exception(std::current_exception());
+	}
+
+}
+
+FileStatus fs::DirEntry::tryGetStatus() const
+{
+	return status.statusKnown() ? status : fs::status(Path());
+}
+
 Path fs::canonical(const Path& path)
 {
 	if (path.empty())
@@ -368,6 +399,11 @@ size_t fs::removeAll(const Path& path)
 	if (remove(path))
 		++count;
 	return count;
+}
+
+FileStatus fs::status(const Path& path)
+{
+	return Detail::status(path);
 }
 
 Path fs::weaklyCanonical(const Path& path)

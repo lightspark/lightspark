@@ -126,7 +126,9 @@ void nanoVGSetupFont(EngineData* engineData, TextData& tData)
 		FcResult   result;
 		pat = FcNameParse ((const FcChar8 *)tData.font.raw_buf());
 		FcConfigSubstitute (0, pat, FcMatchPattern);
+#if FC_VERSION >= 21700
 		FcConfigSetDefaultSubstitute (0, pat);
+#endif
 		match = FcFontMatch (0, pat, &result);
 		if (result == FcResult::FcResultMatch)
 		{

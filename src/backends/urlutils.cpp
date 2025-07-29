@@ -35,7 +35,6 @@
 #else
 #include <alloca.h>
 #endif
-#include <glib.h>
 
 using namespace lightspark;
 
@@ -464,19 +463,18 @@ tiny_string URLInfo::encodeSurrogatePair(CharIterator& c, const CharIterator& en
 tiny_string URLInfo::encodeSingleChar(uint32_t codepoint)
 {
 	char octets[6];
-	gint numOctets = g_unichar_to_utf8(codepoint, octets);
+	uint32_t numOctets = tiny_string::unicodeToUTF8(codepoint,octets)-1;
 	tiny_string encoded;
-	for (int i=0; i<numOctets; i++)
+	for (uint32_t i=0; i<numOctets; i++)
 	{
 		encoded += encodeOctet(octets[i]);
 	}
-
 	return encoded;
 }
 
 tiny_string URLInfo::encodeOctet(char c) {
-	gchar *buf = (gchar *)alloca(6);
-	g_snprintf(buf, 6, "%%%.2X", (unsigned char)c);
+	char *buf = (char *)alloca(6);
+	snprintf(buf, 6, "%%%.2X", (unsigned char)c);
 	buf[5] = '\0';
 	return tiny_string(buf, true);
 }
@@ -612,11 +610,12 @@ uint32_t URLInfo::decodeRestOfUTF8Sequence(uint32_t firstOctet, CharIterator& c,
 		return 0;
 	}
 
-	char *octets = (char *)alloca(numOctets);
+	char *octets = (char *)alloca(numOctets+1);
 	octets[0] = firstOctet;
 	for (unsigned int i=1; i<numOctets; i++) {
 		octets[i] = decodeSingleEscapeSequence(c, end);
 	}
+	octets[numOctets]=0x00;
 
 	if (isSurrogateUTF8Sequence(octets, numOctets))
 	{
@@ -624,15 +623,16 @@ uint32_t URLInfo::decodeRestOfUTF8Sequence(uint32_t firstOctet, CharIterator& c,
 		return REPLACEMENT_CHARACTER;
 	}
 
-	gunichar unichar = g_utf8_get_char_validated(octets, numOctets);
-	if ((unichar == (gunichar)-1) || 
-	    (unichar == (gunichar)-2) ||
-	    (unichar >= 0x10FFFF))
+	tiny_string s(octets);
+	for (auto it = s.begin(); it != s.end(); it++)
 	{
-		createError<URIError>(getWorker(),kInvalidURIError, "decodeURI");
-		return 0;
+		if (!it.isValidUTF8())
+		{
+			createError<URIError>(getWorker(),kInvalidURIError, "decodeURI");
+			return 0;
+		}
 	}
-	return (uint32_t)unichar;
+	return s.charAt(0);
 }
 
 uint32_t URLInfo::decodeSingleEscapeSequence(CharIterator& c, const CharIterator& end)
@@ -660,16 +660,16 @@ bool URLInfo::isSurrogateUTF8Sequence(const char *octets, unsigned int numOctets
 
 uint32_t URLInfo::decodeHexDigit(CharIterator& c, const CharIterator& end)
 {
-	if (c == end || !isxdigit(*c))
+	if (c == end || !c.isxdigit())
 	{
 		createError<URIError>(getWorker(),kInvalidURIError, "decodeURI");
 		return 0;
 	}
 
-	gint h = g_unichar_xdigit_value(*c);
+	int32_t h = c.hex_value();
 	assert((h >= 0) && (h < 16));
 	++c;
-	return (uint32_t) h;
+	return (uint32_t)h;
 }
 
 bool URLInfo::isRTMP() const

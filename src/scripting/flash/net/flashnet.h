@@ -84,7 +84,7 @@ public:
 
 class URLVariables: public ASObject
 {
-private:
+protected:
 	void decode(const tiny_string& s);
 	tiny_string toString_priv();
 public:

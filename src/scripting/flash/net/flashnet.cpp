@@ -39,7 +39,6 @@
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Number.h"
-#include <glib.h>
 
 using namespace std;
 using namespace lightspark;
@@ -2436,68 +2435,19 @@ uint32_t NetStream::getTotalLength()
 
 void URLVariables::decode(const tiny_string& s)
 {
-	const char* nameStart=nullptr;
-	const char* nameEnd=nullptr;
-	const char* valueStart=nullptr;
-	const char* valueEnd=nullptr;
-	const char* cur=s.raw_buf();
-	while(1)
+	std::list<tiny_string> spl = s.split((uint32_t)'&');
+	for (auto it = spl.begin(); it != spl.end(); it++)
 	{
-		if(nameStart==nullptr)
-			nameStart=cur;
-		if(*cur == '=')
+		std::list<tiny_string> spl2 = (*it).split((uint32_t)'=');
+		if (spl2.size() ==2)
 		{
-			if(nameStart==nullptr) //Skip this
-			{
-				nameStart=nullptr;
-				nameEnd=nullptr;
-				valueStart=nullptr;
-				valueEnd=nullptr;
-				cur++;
-				continue;
-			}
-			if (nameEnd==nullptr)
-			{
-				nameEnd=cur;
-				valueStart=cur+1;
-			}
-		}
-		else if(*cur == '&' || *cur==0)
-		{
-			if(nameStart==nullptr || nameEnd==nullptr || valueStart==nullptr || valueEnd!=nullptr)
-			{
-				nameStart=nullptr;
-				nameEnd=nullptr;
-				valueStart=nullptr;
-				valueEnd=nullptr;
-				if (*cur==0)
-					break;
-				cur++;
-				continue;
-			}
-			valueEnd=cur;
-			char* name=g_uri_unescape_segment(nameStart,nameEnd,nullptr);
-			char* value=g_uri_unescape_segment(valueStart,valueEnd,nullptr);
-			nameStart=nullptr;
-			nameEnd=nullptr;
-			valueStart=nullptr;
-			valueEnd=nullptr;
-			if(name==nullptr || value==nullptr)
-			{
-				g_free(name);
-				g_free(value);
-				if (*cur==0)
-					break;
-				cur++;
-				continue;
-			}
-
 			//Check if the variable already exists
 			multiname propName(nullptr);
 			propName.name_type=multiname::NAME_STRING;
-			propName.name_s_id=getSys()->getUniqueStringId(tiny_string(name,true));
+			propName.name_s_id=getSystemState()->getUniqueStringId(spl2.front());
 			propName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 			asAtom curValue=asAtomHandler::invalidAtom;
+			tiny_string value = URLInfo::decode(spl2.back(),URLInfo::ENCODE_ESCAPE);
 			getVariableByMultiname(curValue,propName,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 			if(asAtomHandler::isValid(curValue) && !asAtomHandler::isNull(curValue))
 			{
@@ -2522,12 +2472,7 @@ void URLVariables::decode(const tiny_string& s)
 				setVariableByMultiname(propName,v,CONST_NOT_ALLOWED,nullptr,getInstanceWorker());
 			}
 
-			g_free(name);
-			g_free(value);
-			if(*cur==0)
-				break;
 		}
-		cur++;
 	}
 }
 
@@ -2575,8 +2520,9 @@ tiny_string URLVariables::toString_priv()
 			tmp+="&";
 		asAtom nameAtom = asAtomHandler::invalidAtom;
 		nextName(nameAtom,index);
-		const tiny_string& name=asAtomHandler::toString(nameAtom,getInstanceWorker());
-		//TODO: check if the allow_unicode flag should be true or false in g_uri_escape_string
+		tiny_string name=asAtomHandler::toString(nameAtom,getInstanceWorker());
+		//Escape the name
+		name = URLInfo::encode(name,URLInfo::ENCODE_ESCAPE);
 
 		asAtom val=asAtomHandler::invalidAtom;
 		nextValue(val,index);
@@ -2587,18 +2533,13 @@ tiny_string URLVariables::toString_priv()
 			Array* arr=Class<Array>::cast(asAtomHandler::getObject(val));
 			for(uint32_t j=0;j<arr->size();j++)
 			{
-				//Escape the name
-				char* escapedName=g_uri_escape_string(name.raw_buf(),nullptr, false);
-				tmp+=escapedName;
-				g_free(escapedName);
+				tmp+=name;
 				tmp+="=";
 
 				//Escape the value
 				asAtom a = arr->at(j);
-				const tiny_string& value=asAtomHandler::toString(a,getInstanceWorker());
-				char* escapedValue=g_uri_escape_string(value.raw_buf(),nullptr, false);
-				tmp+=escapedValue;
-				g_free(escapedValue);
+				tiny_string value=asAtomHandler::toString(a,getInstanceWorker());
+				tmp+=URLInfo::encode(value,URLInfo::ENCODE_ESCAPE);;
 
 				if(j!=arr->size()-1)
 					tmp+="&";
@@ -2606,17 +2547,12 @@ tiny_string URLVariables::toString_priv()
 		}
 		else
 		{
-			//Escape the name
-			char* escapedName=g_uri_escape_string(name.raw_buf(),nullptr, false);
-			tmp+=escapedName;
-			g_free(escapedName);
+			tmp+=name;
 			tmp+="=";
 
 			//Escape the value
-			const tiny_string& value=asAtomHandler::toString(val,getInstanceWorker());
-			char* escapedValue=g_uri_escape_string(value.raw_buf(),nullptr, false);
-			tmp+=escapedValue;
-			g_free(escapedValue);
+			tiny_string value=asAtomHandler::toString(val,getInstanceWorker());
+			tmp+=URLInfo::encode(value,URLInfo::ENCODE_ESCAPE);;
 		}
 		ASATOM_DECREF(val);
 	}

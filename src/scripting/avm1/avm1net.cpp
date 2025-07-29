@@ -214,24 +214,8 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				{
 					if (loader->getDataFormat()=="text" && asAtomHandler::isValid(loader->getData()))
 					{
-						// TODO how are '&' or '=' handled when inside keys/values?
 						tiny_string s = asAtomHandler::toString(loader->getData(),getInstanceWorker());
-						std::list<tiny_string> spl = s.split((uint32_t)'&');
-						for (auto it = spl.begin(); it != spl.end(); it++)
-						{
-							std::list<tiny_string> spl2 = (*it).split((uint32_t)'=');
-							if (spl2.size() ==2)
-							{
-								multiname mdata(nullptr);
-								mdata.name_type=multiname::NAME_STRING;
-								mdata.isAttribute = false;
-								tiny_string key =spl2.front();
-								mdata.name_s_id = getSystemState()->getUniqueStringId(key);
-								tiny_string v = URLInfo::decode(spl2.back(),URLInfo::ENCODE_ESCAPE);
-								asAtom value = asAtomHandler::fromString(getSystemState(),v);
-								this->setVariableByMultiname(mdata,value,CONST_ALLOWED,nullptr,this->getInstanceWorker());
-							}
-						}
+						decode(s);
 					}
 					asAtom ret=asAtomHandler::invalidAtom;
 					asAtom obj = asAtomHandler::fromObject(this);

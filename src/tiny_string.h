@@ -119,6 +119,38 @@ public:
 	{
 		return *buf_ptr-'0';
 	}
+
+	/* returns true if the current character is a digit */
+	bool isxdigit() const
+	{
+		return ::isxdigit(*buf_ptr);
+	}
+	/* return the value of the current character interpreted as hexadecimal digit,
+	 * i.e. '7' -> 7, 'a' -> 10
+	 * expects the character to be a valid hex digit
+	 */
+	int32_t hex_value() const
+	{
+		switch (*buf_ptr)
+		{
+			case 'a':
+			case 'b':
+			case 'c':
+			case 'd':
+			case 'e':
+			case 'f':
+				return uint8_t(*buf_ptr)-'a'+10;
+			case 'A':
+			case 'B':
+			case 'C':
+			case 'D':
+			case 'E':
+			case 'F':
+				return uint8_t(*buf_ptr)-'A'+10;
+			default:
+				return digit_value();
+		}
+	}
 	bool isValid() const { return buf_ptr; }
 	inline char* ptr() const { return buf_ptr; }
 	bool isValidUTF8() const

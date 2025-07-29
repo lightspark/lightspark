@@ -494,11 +494,15 @@ size_t hardLinkCount(const Path& path);
 namespace Detail
 {
 
+// Platform specific functions.
 bool copyFile(const Path& from, const Path& to, bool overwrite);
 bool createDir(const Path& path, const Path& attrs);
 void createSymlink(const path& to, const path& newSymlink, bool toDir)
 void setPerms(const Path& path, const Perms& perms, const PermOptions& opts, const FileStatus& fileStatus);
 Path resolveSymlink(const Path& path);
+
+// Non platform specific functions.
+bool isNotFoundError(const std::error_code& code);
 
 };
 

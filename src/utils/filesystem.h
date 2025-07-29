@@ -207,6 +207,8 @@ private:
 	TimeSpec lastWriteTime;
 
 	friend FileStatus status(const Path& path);
+	friend class DirEntry;
+
 	void setSize(size_t _size) { size = _size; }
 	void setHardLinks(size_t _hardLinks) { hardLinks = _hardLinks; }
 	void setLastWriteTime(const TimeSpec& _lastWriteTime)
@@ -311,6 +313,7 @@ private:
 	Path basePath;
 	DirOptions options;
 	DirEntry dirEntry;
+	std::error_code code;
 public:
 	DirIterImpl
 	(

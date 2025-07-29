@@ -321,3 +321,13 @@ void setPerms(const Path& path, const Perms& perms, const PermOptions& opts)
 
 	Detail::setPerms(path, perms, opts, fileStatus);
 }
+
+Path fs::proximate(const Path& path, const Path& base)
+{
+	return weaklyCanonical(path).lexicallyProximate(weaklyCanonical(base));
+}
+
+Path fs::relative(const Path& path, const Path& base)
+{
+	return weaklyCanonical(path).lexicallyRelative(weaklyCanonical(base));
+}

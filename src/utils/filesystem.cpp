@@ -370,6 +370,29 @@ size_t fs::removeAll(const Path& path)
 	return count;
 }
 
+Path fs::weaklyCanonical(const Path& path)
+{
+	Path ret;
+	bool scan = true;
+
+	for (auto elem : path)
+	{
+		if (!scan || exists(ret / elem))
+		{
+			ret /= elem;
+			continue;
+		}
+
+		scan = false;
+		ret = (!ret.empty() ? canonical(ret) : ret) / elem;
+	}
+
+	if (scan && !ret.empty())
+		ret = canonical(ret);
+
+	return ret.lexicallyNormal();
+}
+
 bool fs::Detail::isNotFoundError(const std::error_code& code)
 {
 	return

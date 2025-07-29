@@ -280,7 +280,7 @@ fs::FileStatus fromStatMode(mode_t mode)
 	return FileStatus(type, Perms(mode & Perms::Mask));
 }
 
-fs::FileStatus fs::status(const Path& path)
+fs::FileStatus fs::Detail::status(const Path& path, FileStatus* _symlinkStatus)
 {
 	struct stat fileStat;
 	auto onError = [&]

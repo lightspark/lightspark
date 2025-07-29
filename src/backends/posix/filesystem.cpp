@@ -82,6 +82,24 @@ void fs::Detail::createSymlink(const path& to, const path& newSymlink, bool toDi
 
 }
 
+Path fs::Detail::resolveSymlink(const Path& path)
+{
+	size_t bufferSize = 256;
+	std::vector<char> buffer;
+
+	for (;; bufferSize *= 2)
+	{
+		buffer.resize(bufferSize, '\0');
+		ssize_t ret = readlink(path.rawBuf(), buffer.data(), buffer.size());
+		if (ret < 0)
+			throw Exception(path, std::errc(errno));
+		else if (ret < ssize_t(bufferSize))
+			return Path(std::string(buffer.data(), ret));
+	}
+
+	return Path();
+}
+
 Path fs::currentPath()
 {
 	auto pathLen = std::max<size_t>

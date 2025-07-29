@@ -338,3 +338,43 @@ Path fs::relative(const Path& path, const Path& base)
 {
 	return weaklyCanonical(path).lexicallyRelative(weaklyCanonical(base));
 }
+
+size_t fs::removeAll(const Path& path)
+{
+	size_t count = 0;
+	if (path == "/")
+		throw Exception(path, std::errc::not_supported);
+
+	auto fileStatus = symlinkStatus(path);
+
+	if (fileStatus.exists() && fileStatus.isDir())
+	{
+		std::error_code code;
+		for (auto it : DirIter(path, code))
+		{
+			if (code.value() != 0 && !Detail::isNotFoundError(code))
+				throw Exception(path, code);
+
+			if (!it.isSymlink() && it.isDir())
+				count += removeAll(it.path());
+			else
+			{
+				remove(it.path());
+				++count;
+			}
+		}
+	}
+
+	if (remove(path))
+		++count;
+	return count;
+}
+
+bool fs::Detail::isNotFoundError(const std::error_code& code)
+{
+	return
+	(
+		code.value() == std::errc::no_such_file_or_directory ||
+		code.value() == std::errc::not_a_directory
+	);
+}

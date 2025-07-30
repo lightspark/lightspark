@@ -79,7 +79,7 @@ public:
 		if (isInternalCall)
 			checkInternalException();
  	}
-	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target, ASWorker* wrk) override
+	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target, ASWorker* wrk, uint16_t resultlocalnumberpos) override
 	{
 		asAtom obj = target;
 		if (needsSuper() || getSWFVersion() < 7)

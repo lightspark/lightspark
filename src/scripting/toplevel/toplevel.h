@@ -75,6 +75,7 @@ public:
 	}
 	void prepareShutdown() override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	bool isEqual(ASObject* r) override;
 	Prototype* clonePrototype(ASWorker* wrk) override;
@@ -101,6 +102,7 @@ public:
 	void incRef() { if (getClass()) getClass()->incRef(); }
 	void decRef() { if (getClass()) getClass()->decRef(); }
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
 	bool isEqual(ASObject* r) override;
 };
 
@@ -119,6 +121,7 @@ public:
 	}
 	void prepareShutdown() override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	bool isEqual(ASObject* r) override;
 	Prototype* clonePrototype(ASWorker* wrk) override;
@@ -155,6 +158,7 @@ public:
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
 };
 
 // special object if AVM1 ActionGetVariable "super" is used
@@ -169,6 +173,7 @@ private:
 public:
 	AVM1Super_object(ASWorker* wrk, Class_base* c, ASObject* obj,ASObject* _super);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath) override;
 	bool AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
@@ -253,8 +258,13 @@ public:
 #endif
 	}
 	bool isEqual(ASObject* r) override;
-	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target,ASWorker* wrk) override
+	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target,ASWorker* wrk, uint16_t resultlocalnumberpos) override
 	{
+		// prepare result as NaN local number if
+		// result will be local number and it will not replace the same previous local number
+		if (resultlocalnumberpos != UINT16_MAX &&
+			(!asAtomHandler::isLocalNumber(ret) || ret.uintval>>8 != resultlocalnumberpos))
+			asAtomHandler::setNumber(ret,wrk,numeric_limits<double>::quiet_NaN(),resultlocalnumberpos);
 		val_atom(ret,wrk,target,nullptr,0);
 		return nullptr;
 	}
@@ -282,6 +292,7 @@ public:
 	void prepareShutdown() override;
 	
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable= true, uint8_t min_swfversion=0) override;
 	Prototype* clonePrototype(ASWorker* wrk) override;
@@ -334,15 +345,15 @@ public:
 			func_scope = _NR<scope_entry_list>(new scope_entry_list());
 		func_scope->scope.emplace_back(s);
 	}
-	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target,ASWorker* wrk) override
+	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target,ASWorker* wrk, uint16_t resultlocalnumberpos) override
 	{
 		if (simpleGetterOrSetterName)
 		{
 			bool canCache=false;
-			asAtomHandler::getVariableByMultiname(target,ret,*simpleGetterOrSetterName,wrk,canCache,GET_VARIABLE_OPTION::NONE);
+			asAtomHandler::getVariableByMultiname(target,ret,*simpleGetterOrSetterName,wrk,canCache,GET_VARIABLE_OPTION::NONE,resultlocalnumberpos);
 			return simpleGetterOrSetterName;
 		}
-		call(wrk,ret,target,nullptr,0,true,false);
+		call(wrk,ret,target,nullptr,0,true,false,resultlocalnumberpos);
 		return nullptr;
 	}
 	FORCE_INLINE multiname* getSimpleName() {

@@ -2125,7 +2125,9 @@ IDrawable* TextField::invalidate(bool smoothing)
 }
 void TextField::refreshSurfaceState()
 {
+	linemutex->lock();
 	getCachedSurface()->getState()->textdata = *this;
+	linemutex->unlock();
 }
 
 void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,

@@ -874,7 +874,7 @@ void ABCVm::abc_getProperty(call_context* context)
 			assert(instrptr->cacheobj2->type == T_FUNCTION);
 			IFunction* f = instrptr->cacheobj2->as<IFunction>();
 			asAtom closure = asAtomHandler::fromObject(instrptr->cacheobj3 ? instrptr->cacheobj3 : obj);
-			f->callGetter(prop,closure,context->worker);
+			f->callGetter(prop,closure,context->worker,UINT16_MAX);
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 			if(asAtomHandler::isInvalid(prop))
 			{
@@ -911,7 +911,7 @@ void ABCVm::abc_getProperty(call_context* context)
 		IFunction* f = asAtomHandler::as<IFunction>(prop);
 		asAtom closure = asAtomHandler::getClosureAtom(prop,asAtomHandler::fromObject(obj));
 		prop = asAtom();
-		f->callGetter(prop,closure,context->worker);
+		f->callGetter(prop,closure,context->worker,UINT16_MAX);
 		LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 		if(asAtomHandler::isValid(prop))
 		{

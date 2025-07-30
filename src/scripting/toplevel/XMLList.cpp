@@ -905,6 +905,54 @@ GET_VARIABLE_RESULT XMLList::getVariableByInteger(asAtom &ret, int index, GET_VA
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
+asAtomWithNumber XMLList::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+{
+	asAtomWithNumber ret;
+	if (name.isAttribute)
+	{
+		XML::XMLVector retnodes;
+		auto it=nodes.begin();
+		for(; it!=nodes.end(); ++it)
+		{
+			asAtom o=asAtomHandler::invalidAtom;
+			(*it)->getVariableByMultiname(o,name,GET_VARIABLE_OPTION::NONE,wrk);
+			if(asAtomHandler::is<XMLList>(o))
+				retnodes.insert(retnodes.end(), asAtomHandler::as<XMLList>(o)->nodes.begin(), asAtomHandler::as<XMLList>(o)->nodes.end());
+			ASATOM_DECREF(o);
+		}
+
+		ret.value = asAtomHandler::fromObject(create(getInstanceWorker(),retnodes,this,name));
+		ret.isrefcounted=true;
+		return ret;
+	}
+	unsigned int index=0;
+	if(XML::isValidMultiname(getInstanceWorker(),name,index))
+	{
+		if(index<nodes.size())
+		{
+			ret.value = asAtomHandler::fromObject(nodes[index].getPtr());
+		}
+		else
+			asAtomHandler::setUndefined(ret.value);
+	}
+	else
+	{
+		XML::XMLVector retnodes;
+		auto it=nodes.begin();
+		for(; it!=nodes.end(); ++it)
+		{
+			asAtom o=asAtomHandler::invalidAtom;
+			(*it)->getVariableByMultiname(o,name,GET_VARIABLE_OPTION::NONE,wrk);
+			if(asAtomHandler::is<XMLList>(o))
+				retnodes.insert(retnodes.end(), asAtomHandler::as<XMLList>(o)->nodes.begin(), asAtomHandler::as<XMLList>(o)->nodes.end());
+			ASATOM_DECREF(o);
+		}
+		ret.value = asAtomHandler::fromObject(create(getInstanceWorker(),retnodes,this,name));
+		ret.isrefcounted=true;
+	}
+	return ret;
+}
+
 bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk)
 {
 	if(considerDynamic==false)

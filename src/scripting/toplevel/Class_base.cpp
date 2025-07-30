@@ -270,7 +270,9 @@ void Class_base::copyBorrowedTraits(Class_base* src)
 			continue;
 		}
 		v.issealed = src->isSealed;
-		ASATOM_INCREF(v.var);
+		ASObject* var = v.getObjectVar();
+		if (var)
+			var->incRef();
 		ASATOM_INCREF(v.getter);
 		ASATOM_INCREF(v.setter);
 		borrowedVariables.Variables.insert(make_pair(i->first,v));
@@ -839,7 +841,7 @@ void Class_base::describeVariables(pugi::xml_node& root, const Class_base* c, st
 				break;
 			case INSTANCE_TRAIT:
 			case DECLARED_TRAIT:
-				if (asAtomHandler::isValid(it->second.var))
+				if (it->second.isValidVar())
 				{
 					if (isTemplate)
 						continue;
@@ -1128,7 +1130,7 @@ bool Class_base::checkExistingFunction(const multiname &name)
 	variable* v = Variables.findObjVar(getInstanceWorker(),name, DECLARED_TRAIT);
 	if (!v)
 		v = borrowedVariables.findObjVar(getInstanceWorker(),name, DECLARED_TRAIT);
-	if (v && asAtomHandler::isValid(v->var))
+	if (v && v->isValidVar())
 		return this->isSealed;
 	else if (!this->isBuiltin())
 	{
@@ -1137,7 +1139,7 @@ bool Class_base::checkExistingFunction(const multiname &name)
 		getInstance(this->getInstanceWorker(),otmp,false,nullptr,0);
 		setupDeclaredTraits(asAtomHandler::getObject(otmp),false);
 		v = asAtomHandler::getObject(otmp)->findVariableByMultiname(name,nullptr,nullptr,nullptr,false,this->getInstanceWorker());
-		if (v && asAtomHandler::isValid(v->var))
+		if (v && v->isValidVar())
 		{
 			ASATOM_DECREF(otmp);
 			return this->isSealed;
@@ -1149,7 +1151,7 @@ bool Class_base::checkExistingFunction(const multiname &name)
 	return false;
 }
 
-multiname* Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name, ASWorker* wrk, asAtom& closure)
+multiname* Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name, ASWorker* wrk, asAtom& closure, uint16_t resultlocalnumberpos)
 {
 	uint32_t nsRealId;
 	variable* obj = ASObject::findGettableImpl(getInstanceWorker(), borrowedVariables,name,&nsRealId);
@@ -1164,7 +1166,7 @@ multiname* Class_base::getClassVariableByMultiname(asAtom& ret, const multiname 
 			{
 				//It seems valid for a class to redefine only the setter, so if we can't find
 				//something to get, it's ok
-				if(!(asAtomHandler::isValid(obj->getter) || asAtomHandler::isValid(obj->var)))
+				if(!(asAtomHandler::isValid(obj->getter) || obj->isValidVar()))
 					obj=nullptr;
 			}
 			if(obj)
@@ -1191,29 +1193,31 @@ multiname* Class_base::getClassVariableByMultiname(asAtom& ret, const multiname 
 		LOG_CALL("Calling the getter for " << name << " on " << asAtomHandler::toDebugString(obj->getter));
 		assert(asAtomHandler::isFunction(obj->getter));
 		asAtom closureAtom = asAtomHandler::getClosureAtom(obj->getter,asAtomHandler::isValid(closure) ? closure : asAtomHandler::fromObject(this));
-		multiname* simplegetter = asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closureAtom,wrk);
+		multiname* simplegetter = asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closureAtom,wrk,resultlocalnumberpos);
 		LOG_CALL("End of getter"<< ' ' << asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
 		return simplegetter;
 	}
 	else
 	{
 		assert_and_throw(asAtomHandler::isInvalid(obj->setter));
-		ASATOM_INCREF(obj->var);
-		if(asAtomHandler::isFunction(obj->var) && asAtomHandler::getObject(obj->var)->as<IFunction>()->isMethod())
+		ASObject* func = obj->getObjectVar();
+		if (func)
+			func->incRef();
+		if(func && func->is<IFunction>() && func->as<IFunction>()->isMethod())
 		{
-			if (asAtomHandler::isValid(asAtomHandler::as<IFunction>(obj->var)->closure_this))
+			if (asAtomHandler::isValid(func->as<IFunction>()->closure_this))
 			{
-				LOG_CALL("class function " << name << " is already bound to "<<asAtomHandler::toDebugString(obj->var) );
-				ret = obj->var;
+				LOG_CALL("class function " << name << " is already bound to "<<func->toDebugString() );
+				ret = asAtomHandler::fromObjectNoPrimitive(func);
 			}
 			else
 			{
-				LOG_CALL("Attaching this class " << this->toDebugString() << " to function " << name << " "<<asAtomHandler::toDebugString(obj->var));
-				asAtomHandler::setFunction(ret,asAtomHandler::getObject(obj->var),closure,wrk);
+				LOG_CALL("Attaching this class " << this->toDebugString() << " to function " << name << " "<<func->toDebugString());
+				asAtomHandler::setFunction(ret,func,closure,wrk);
 			}
 		}
 		else
-			ret = obj->var;
+			ret = obj->getVar(getInstanceWorker());
 	}
 	return nullptr;
 }

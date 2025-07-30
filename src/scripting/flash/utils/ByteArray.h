@@ -287,6 +287,7 @@ public:
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom &ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	int32_t getVariableByMultiname_i(const multiname& name, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool *alreadyset,ASWorker* wrk) override;
 	void setVariableByMultiname_i(multiname& name, int32_t value,ASWorker* wrk) override;

@@ -1013,9 +1013,9 @@ bool ASObject::deleteVariableByMultiname_intern(const multiname& name, ASWorker*
 	if (obj->kind != DYNAMIC_TRAIT && obj->kind != INSTANCE_TRAIT)
 		return false;
 
-	assert(asAtomHandler::isInvalid(obj->getter) && asAtomHandler::isInvalid(obj->setter) && asAtomHandler::isValid(obj->var));
+	assert(asAtomHandler::isInvalid(obj->getter) && asAtomHandler::isInvalid(obj->setter) && obj->isValidVar());
 
-	ASObject* o = asAtomHandler::getObject(obj->var);
+	ASObject* o = obj->isLocalNumberVar() ? nullptr : asAtomHandler::getObject(obj->getVar(getInstanceWorker(),UINT16_MAX));
 	//Now kill the variable
 	Variables.killObjVar(getInstanceWorker(),name);
 	//Now dereference the value
@@ -1040,7 +1040,7 @@ variable* ASObject::findSettableImpl(ASWorker* wrk,variables_map& map, const mul
 	{
 		//It seems valid for a class to redefine only the getter, so if we can't find
 		//something to get, it's ok
-		if(!(asAtomHandler::isValid(ret->setter) || asAtomHandler::isValid(ret->var)))
+		if(!(asAtomHandler::isValid(ret->setter) || ret->isValidVar()))
 		{
 			ret=nullptr;
 			if(has_getter)
@@ -1070,7 +1070,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	variable* obj=findSettable(name, &has_getter);
 	if (obj && (obj->kind == CONSTANT_TRAIT && allowConst==CONST_NOT_ALLOWED))
 	{
-		if (asAtomHandler::isFunction(obj->var) || asAtomHandler::isValid(obj->setter))
+		if (obj->isFunctionVar() || asAtomHandler::isValid(obj->setter))
 			createError<ReferenceError>(getInstanceWorker(),kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
 		else
 			createError<ReferenceError>(getInstanceWorker(),kConstWriteError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
@@ -1113,7 +1113,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	{
 		variable *protoObj = cls->findSettableInPrototype(name,nullptr);
 		if (protoObj &&
-			((asAtomHandler::isFunction(protoObj->var)) ||
+			((protoObj->isFunctionVar()) ||
 			 asAtomHandler::isValid(protoObj->setter)))
 		{
 			createError<ReferenceError>(getInstanceWorker(),kCannotAssignToMethodError, name.normalizedNameUnresolved(getSystemState()), cls ? cls->getQualifiedClassName() : "");
@@ -1201,12 +1201,12 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		bool isfunc = asAtomHandler::is<SyntheticFunction>(o);
 		if (alreadyset)
 		{
-			if (o.uintval == obj->var.uintval)
+			if (obj->isEqualVar(o))
 				*alreadyset = true;
 			else
 			{
 				obj->setVar(wrk,o);
-				*alreadyset = o.uintval != obj->var.uintval; // setVar may coerce the object into a new instance, so we need to check if decRef is necessary
+				*alreadyset = !obj->isEqualVar(o); // setVar may coerce the object into a new instance, so we need to check if decRef is necessary
 			}
 		}
 		else
@@ -1259,7 +1259,7 @@ void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multina
 variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const nsNameAndKind& _ns, bool _isenumerable, bool _nameIsInteger, uint32_t nameID)
 		: var(_v),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom)
 		,nameStringID(nameID),ns(_ns),slotid(0),kind(_k)
-		,isResolved(false),isenumerable(_isenumerable),issealed(false),isrefcounted(true),nameIsInteger(_nameIsInteger),min_swfversion(0)
+		,isResolved(false),isenumerable(_isenumerable),issealed(false),nameIsInteger(_nameIsInteger),min_swfversion(0)
 {
 	if(_type)
 	{
@@ -1271,8 +1271,8 @@ variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const n
 	{
 		traitTypemname=_t;
 	}
-	assert(!asAtomHandler::isLocalNumber(var));
-	ASObject* o = asAtomHandler::getObject(var);
+	assert(!asAtomHandler::isLocalNumber(var.value));
+	ASObject* o = asAtomHandler::getObject(var.value);
 	if (o && !o->getConstant())
 		o->addStoredMember();
 }
@@ -1293,36 +1293,70 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 		if (wrk->currentCallContext && wrk->currentCallContext->exceptionthrown)
 			return;
 	}
-	asAtom oldvar = var;
-	if (asAtomHandler::isNumber(var)
-		&& asAtomHandler::isNumber(v)
-		&& !asAtomHandler::getObjectNoCheck(var)->getConstant())
+	asAtom oldvar = var.value;
+	if (asAtomHandler::isLocalNumber(v))
 	{
-		// fast replace for local numbers
-		if (asAtomHandler::replaceNumber(var,wrk,asAtomHandler::getNumber(wrk,v)))
-		{
-			asAtomHandler::getObjectNoCheck(var)->addStoredMember();
-			if(isrefcounted && asAtomHandler::isObject(oldvar))
-			{
-				LOG_CALL("remove old var:"<<asAtomHandler::toDebugString(oldvar));
-				asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
-			}
-			isrefcounted=true;
-		}
-		return;
+		var.numbervalue = asAtomHandler::getLocalNumber(wrk->currentCallContext,v);
+		v.uintval=UINT16_MAX<<8 | ATOMTYPE_LOCALNUMBER_BIT;
+		_isrefcounted=false;
 	}
-	if (asAtomHandler::localNumberToGlobalNumber(wrk,v))
-		_isrefcounted=true;
-	assert(!asAtomHandler::isLocalNumber(v));
-	var=v;
-	if(isrefcounted && asAtomHandler::isObject(oldvar))
+	var.value=v;
+	if(var.isrefcounted && asAtomHandler::isObject(oldvar))
 	{
 		LOG_CALL("remove old var:"<<asAtomHandler::toDebugString(oldvar));
 		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
 	}
 	if(asAtomHandler::isObject(v) && _isrefcounted)
 		asAtomHandler::getObjectNoCheck(v)->addStoredMember();
-	isrefcounted = _isrefcounted;
+	var.isrefcounted = _isrefcounted;
+}
+
+bool variable::isClassBaseVar() const
+{
+	return asAtomHandler::is<Class_base>(var.value);
+}
+
+bool variable::isSyntheticFunctionVar() const
+{
+	return asAtomHandler::is<SyntheticFunction>(var.value);
+}
+bool variable::isBuiltinFunctionVar() const
+{
+	return asAtomHandler::is<Function>(var.value);
+}
+bool variable::isFunctionVar() const
+{
+	return asAtomHandler::isFunction(var.value);
+}
+
+bool variable::isDisplayObjectVar() const
+{
+	return asAtomHandler::is<DisplayObject>(var.value);
+}
+
+SyntheticFunction *variable::getSyntheticFunctionVar() const
+{
+	return asAtomHandler::as<SyntheticFunction>(var.value);
+}
+
+IFunction *variable::getFunctionVar() const
+{
+	return asAtomHandler::as<IFunction>(var.value);
+}
+
+void variable::setVarNoCheck(asAtom &v, ASWorker *wrk)
+{
+	if (asAtomHandler::isLocalNumber(v))
+	{
+		var.numbervalue = asAtomHandler::getLocalNumber(wrk->currentCallContext,v);
+		var.value.uintval=UINT16_MAX<<8 | ATOMTYPE_LOCALNUMBER_BIT;
+		var.isrefcounted=false;
+	}
+	else
+	{
+		var.value=v;
+		var.isrefcounted=asAtomHandler::isObject(v);
+	}
 }
 
 void variables_map::killObjVar(ASWorker* wrk,const multiname& mname)
@@ -1342,6 +1376,7 @@ void variables_map::killObjVar(ASWorker* wrk,const multiname& mname)
 		if(ns==*nsIt)
 		{
 			removeVar(&ret->second);
+			ret->second.resetRefcountedVar();
 			Variables.erase(ret);
 			return;
 		}
@@ -1803,7 +1838,7 @@ variable* ASObject::findVariableByMultiname(const multiname& name, Class_base* c
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
 		//something to get, it's ok
-		if(!(asAtomHandler::isValid(obj->getter)|| asAtomHandler::isValid(obj->var)))
+		if(!(asAtomHandler::isValid(obj->getter)|| obj->isValidVar()))
 			obj=nullptr;
 		if (isborrowed)
 			*isborrowed=false;
@@ -1828,7 +1863,7 @@ variable* ASObject::findVariableByMultiname(const multiname& name, Class_base* c
 					{
 						//It seems valid for a class to redefine only the setter, so if we can't find
 						//something to get, it's ok
-						if(!(asAtomHandler::isValid(obj->getter) || asAtomHandler::isValid(obj->var)))
+						if(!(asAtomHandler::isValid(obj->getter) || obj->isValidVar()))
 							obj=nullptr;
 					}
 					if(obj)
@@ -1853,7 +1888,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 	{
 		//It seems valid for a class to redefine only the setter, so if we can't find
 		//something to get, it's ok
-		if(!(asAtomHandler::isValid(obj->getter) || asAtomHandler::isValid(obj->var)))
+		if(!(asAtomHandler::isValid(obj->getter) || obj->isValidVar()))
 			obj=nullptr;
 		else if (obj->min_swfversion &&  wrk->AVM1getSwfVersion() < obj->min_swfversion)
 			obj = nullptr; // we are in AVM1 script execution and the property asked for is not available for the current swfversion
@@ -1880,7 +1915,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 					{
 						//It seems valid for a class to redefine only the setter, so if we can't find
 						//something to get, it's ok
-						if(!(asAtomHandler::isValid(obj->getter) || asAtomHandler::isValid(obj->var)))
+						if(!(asAtomHandler::isValid(obj->getter) || obj->isValidVar()))
 							obj=nullptr;
 					}
 					if(obj)
@@ -1922,7 +1957,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		LOG_CALL("Calling the getter intern for " << name << " on " << this->toDebugString());
 		assert(asAtomHandler::isFunction(obj->getter));
 		asAtom closure = asAtomHandler::getClosureAtom(obj->getter,asAtomHandler::fromObject(this));
-		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closure,wrk);
+		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closure,wrk,UINT16_MAX);
 		LOG_CALL("End of getter"<< ' ' << asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
 		// result of getter always adds a new ref
 		res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISINCREFFED);
@@ -1930,29 +1965,31 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 	else
 	{
 		assert_and_throw(asAtomHandler::isInvalid(obj->setter));
-		if(asAtomHandler::isFunction(obj->var) && asAtomHandler::as<IFunction>(obj->var)->isMethod())
+		if(obj->isFunctionVar() && obj->getFunctionVar()->isMethod())
 		{
-			asAtom closure = asAtomHandler::getClosureAtom(obj->var,asAtomHandler::invalidAtom);
+			asAtom func = obj->getVar(wrk,UINT16_MAX);
+			asAtom closure = asAtomHandler::getClosureAtom(func,asAtomHandler::invalidAtom);
 			if (asAtomHandler::isValid(closure))
 			{
 				LOG_CALL("function " << name << " is already bound to "<<asAtomHandler::toDebugString(closure));
-				if (asAtomHandler::as<IFunction>(obj->var)->clonedFrom)
-					ASATOM_INCREF(obj->var);
-				asAtomHandler::set(ret,obj->var);
+				if (obj->getFunctionVar()->clonedFrom)
+					obj->getFunctionVar()->incRef();
+				asAtomHandler::set(ret,func);
 			}
 			else
 			{
-				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<asAtomHandler::toDebugString(obj->var));
-				asAtomHandler::setFunction(ret,asAtomHandler::getObjectNoCheck(obj->var),asAtomHandler::fromObject(this),wrk);
+				LOG_CALL("Attaching this " << this->toDebugString() << " to function " << name << " "<<obj->getFunctionVar()->toDebugString());
+				asAtomHandler::setFunction(ret,obj->getFunctionVar(),asAtomHandler::fromObject(this),wrk);
 				// the function is always cloned
 				res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISINCREFFED);
 			}
 		}
 		else
 		{
+			asAtom a = obj->getVar(wrk,asAtomHandler::getLocalNumberPos(ret));
 			if (!(opt & NO_INCREF))
-				ASATOM_INCREF(obj->var);
-			asAtomHandler::set(ret,obj->var);
+				ASATOM_INCREF(a);
+			asAtomHandler::set(ret,a);
 		}
 	}
 	return res;
@@ -2025,6 +2062,31 @@ void ASObject::setRefConstant()
 	setConstant();
 }
 
+asAtomWithNumber ASObject::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+{
+	asAtomWithNumber res;
+	variable* v = findVariableByMultiname(name,classdef,nullptr,nullptr,true,wrk);
+	if (v)
+	{
+		if (asAtomHandler::isFunction(v->getter))
+		{
+			res.isrefcounted=true;
+			IFunction* f = asAtomHandler::as<IFunction>(v->getter);
+			asAtom closure = asAtomHandler::fromObject(this);
+			// TODO: avoid creation of Number object for getter result
+			f->callGetter(res.value,closure,wrk,UINT16_MAX);
+		}
+		else if (v->isLocalNumberVar())
+		{
+			res.numbervalue=v->getLocalNumber();
+			res.value.uintval = UINT16_MAX<<8 | ATOMTYPE_LOCALNUMBER_BIT;
+		}
+		else
+			res.value = v->getVar(wrk);
+	}
+	return res;
+}
+
 std::pair<asAtom, GET_VARIABLE_RESULT> ASObject::AVM1searchPrototypeByMultiname
 (
 	const multiname& name,
@@ -2070,7 +2132,7 @@ std::pair<asAtom, GET_VARIABLE_RESULT> ASObject::AVM1searchPrototypeByMultiname
 			IFunction* f = asAtomHandler::as<IFunction>(ret);
 			auto thisObj = asAtomHandler::fromObject(this);
 			ret = asAtomHandler::invalidAtom;
-			f->callGetter(ret, thisObj, wrk);
+			f->callGetter(ret, thisObj, wrk,UINT16_MAX);
 			// result of getter always adds a new ref
 			return std::make_pair(ret, GETVAR_ISINCREFFED);
 		}
@@ -2164,42 +2226,6 @@ bool ASObject::AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_
 	return AVM1setLocalByMultiname(name, value, allowConst, wrk);
 }
 
-void variables_map::check() const
-{
-	//Heavyweight stuff
-#ifdef EXPENSIVE_DEBUG
-	variables_map::const_var_iterator it=Variables.begin();
-	for(;it!=Variables.end();++it)
-	{
-		variables_map::const_var_iterator next=it;
-		++next;
-		if(next==Variables.end())
-			break;
-
-		//No double definition of a single variable should exist
-		if(it->first==next->first && it->second.ns==next->second.ns)
-		{
-			if(asAtomHandler::isInvalid(it->second.var) && asAtomHandler::isInvalid(next->second.var))
-				continue;
-
-			if(asAtomHandler::isInvalid(it->second.var) || asAtomHandler::isInvalid(next->second.var))
-			{
-				LOG(LOG_INFO, it->first << " " << it->second.ns);
-				LOG(LOG_INFO, asAtomHandler::getObjectType(it->second.var) << ' ' << asAtomHandler::getObjectType(it->second.setter) << ' ' << asAtomHandler::getObjectType(it->second.getter));
-				LOG(LOG_INFO, asAtomHandler::getObjectType(next->second.var) << ' ' << asAtomHandler::getObjectType(next->second.setter) << ' ' << asAtomHandler::getObjectType(next->second.getter));
-				abort();
-			}
-
-			if(!asAtomHandler::isFunction(it->second.var) || !asAtomHandler::isFunction(next->second.var))
-			{
-				LOG(LOG_INFO, it->first);
-				abort();
-			}
-		}
-	}
-#endif
-}
-
 void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
@@ -2227,7 +2253,10 @@ void variables_map::dumpVariables()
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<< hex<<it->first<<dec<<" "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
-			asAtomHandler::toDebugString(it->second.var) << ' ' << asAtomHandler::toDebugString(it->second.setter) << ' ' << asAtomHandler::toDebugString(it->second.getter) << ' ' <<it->second.slotid << ' ');//<<dynamic_cast<const Class_base*>(it->second.type));
+			asAtomHandler::toDebugString(it->second.getVar(getWorker(),UINT16_MAX)) << ' ' <<
+			asAtomHandler::toDebugString(it->second.setter) << ' ' <<
+			asAtomHandler::toDebugString(it->second.getter) << ' ' <<
+			it->second.slotid << ' ');//<<dynamic_cast<const Class_base*>(it->second.type));
 	}
 }
 
@@ -2241,18 +2270,19 @@ void variables_map::destroyContents()
 	while(!Variables.empty())
 	{
 		var_iterator it=Variables.begin();
-		if (it->second.isrefcounted)
+		asAtom getter=it->second.getter;
+		asAtom setter=it->second.setter;
+		ASObject* o = asAtomHandler::isAccessible(getter) ? asAtomHandler::getObject(getter) :nullptr;
+		if (o)
+			o->removeStoredMember();
+		o = asAtomHandler::isAccessible(setter) ? asAtomHandler::getObject(setter) :nullptr;
+		if (o)
+			o->removeStoredMember();
+		if (it->second.isRefcountedVar())
 		{
-			asAtom getter=it->second.getter;
-			asAtom setter=it->second.setter;
-			ASObject* o = asAtomHandler::isAccessible(it->second.var) ? asAtomHandler::getObject(it->second.var) :nullptr;
+			it->second.resetRefcountedVar();
+			o = it->second.isAccessibleObjectVar() ? it->second.getObjectVar() :nullptr;
 			Variables.erase(it);
-			if (o)
-				o->removeStoredMember();
-			o = asAtomHandler::isAccessible(getter) ? asAtomHandler::getObject(getter) :nullptr;
-			if (o)
-				o->removeStoredMember();
-			o = asAtomHandler::isAccessible(setter) ? asAtomHandler::getObject(setter) :nullptr;
 			if (o)
 				o->removeStoredMember();
 		}
@@ -2268,7 +2298,7 @@ void variables_map::prepareShutdown()
 	var_iterator it=Variables.begin();
 	while(it!=Variables.end())
 	{
-		ASObject* v = it->second.isrefcounted && asAtomHandler::isAccessibleObject(it->second.var) ? asAtomHandler::getObject(it->second.var) : nullptr;
+		ASObject* v = it->second.isRefcountedVar() && it->second.isAccessibleObjectVar() ? it->second.getObjectVar() : nullptr;
 		if (v)
 			v->prepareShutdown();
 		v = asAtomHandler::getObject(it->second.getter);
@@ -2325,13 +2355,13 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 	{
 		if (gcstate.stopped)
 			return false;
-		if (!asAtomHandler::isAccessible(it->second.var))
+		if (!it->second.isAccessibleObjectVar())
 		{
 			it++;
 			continue;
 		}
-		ASObject* o = asAtomHandler::getObject(it->second.var);
-		if (it->second.isrefcounted && o && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
+		ASObject* o = it->second.getObjectVar();
+		if (it->second.isRefcountedVar() && o && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
 		{
 			if (o==gcstate.startobj)
 			{
@@ -2899,7 +2929,7 @@ void ASObject::AVM1UpdateAllBindings(DisplayObject* target, ASWorker* wrk)
 	{
 		if (it->second.kind == DYNAMIC_TRAIT || it->second.kind == CONSTANT_TRAIT)
 		{
-			asAtom v=it->second.var;
+			asAtom v=it->second.getVar(wrk,UINT16_MAX);
 			target->AVM1UpdateVariableBindings(it->first,v);
 		}
 		it++;
@@ -2924,7 +2954,7 @@ void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 		multiname m(nullptr);
 		m.name_type = multiname::NAME_STRING;
 		m.name_s_id = (*it)->nameStringID;
-		asAtom v=(*it)->var;
+		asAtom v=(*it)->getVar(wrk,UINT16_MAX);
 		if (wrk)
 		{
 			// prepare value for use in another worker
@@ -2960,7 +2990,7 @@ void ASObject::copyValuesForPrototype(ASObject *target,ASWorker* wrk)
 			multiname m(nullptr);
 			m.name_type = multiname::NAME_STRING;
 			m.name_s_id = it->first;
-			asAtom v=it->second.var;
+			asAtom v=it->second.getVar(wrk,UINT16_MAX);
 			if (wrk)
 			{
 				// prepare value for use in another worker
@@ -3025,8 +3055,8 @@ void ASObject::getValueAt(asAtom &ret,int index)
 	}
 	else
 	{
-		ASATOM_INCREF(obj->var);
-		ret = obj->var;
+		ret = obj->getVar(getInstanceWorker(),asAtomHandler::isLocalNumber(ret) ? asAtomHandler::getLocalNumberPos(ret) : UINT16_MAX);
+		ASATOM_INCREF(ret);
 	}
 }
 
@@ -3110,7 +3140,8 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 			out->writeStringAMF0(out->getSystemState()->getStringFromUniqueId(it->first));
 		else
 			out->writeStringVR(stringMap,out->getSystemState()->getStringFromUniqueId(it->first));
-		asAtomHandler::serialize(out,stringMap,objMap,traitsMap,wrk,it->second.var);
+		asAtom var = it->second.getVar(out->getInstanceWorker(),UINT16_MAX);
+		asAtomHandler::serialize(out,stringMap,objMap,traitsMap,wrk,var);
 		if (forsharedobject)
 		{
 			// it seems that on shared objects an additional 0 is written after each property
@@ -3214,7 +3245,8 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 						continue;
 					}
 					out->writeStringAMF0(getSystemState()->getStringFromUniqueId(varIt->first));
-					asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,varIt->second.var);
+					asAtom var = varIt->second.getVar(out->getInstanceWorker(),UINT16_MAX);
+					asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,var);
 				}
 			}
 		}
@@ -3302,7 +3334,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 			continue;
 		asAtom closure = asAtomHandler::getClosureAtom(itbor->second.getter,asAtomHandler::fromObject(this));
 		asAtom ret = asAtomHandler::invalidAtom;
-		asAtomHandler::as<IFunction>(itbor->second.getter)->callGetter(ret,closure,wrk);
+		asAtomHandler::as<IFunction>(itbor->second.getter)->callGetter(ret,closure,wrk,UINT16_MAX);
 		if (!asAtomHandler::isValid(ret))
 			continue;
 		asAtomHandler::serialize(out,stringMap,objMap,traitsMap,wrk,ret);
@@ -3318,7 +3350,8 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 				//Skip variable with a namespace, like protected ones
 				continue;
 			}
-			asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,varIt->second.var);
+			asAtom var = varIt->second.getVar(out->getInstanceWorker(),UINT16_MAX);
+			asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,var);
 		}
 	}
 	serializeDynamicProperties(out, stringMap, objMap, traitsMap,wrk);
@@ -3437,14 +3470,14 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 			}
 			if (varIt == endIt)
 				continue;
-			if(varIt->second.ns.hasEmptyName() && (asAtomHandler::isValid(varIt->second.getter) || asAtomHandler::isValid(varIt->second.var)))
+			if(varIt->second.ns.hasEmptyName() && (asAtomHandler::isValid(varIt->second.getter) || varIt->second.isValidVar()))
 			{
 				ASObject* v = nullptr;
 				bool newobj = false;
-				if (asAtomHandler::isValid(varIt->second.var))
+				if (varIt->second.isValidVar())
 				{
-					asAtom tmp = varIt->second.var;
-					newobj = !asAtomHandler::isObject(varIt->second.var); // variable is not a pointer to an ASObject, so toObject() will create a temporary ASObject that has to be decreffed after usage
+					asAtom tmp = varIt->second.getVar(getInstanceWorker(),UINT16_MAX);
+					newobj = !asAtomHandler::isObject(tmp); // variable is not a pointer to an ASObject, so toObject() will create a temporary ASObject that has to be decreffed after usage
 					v = asAtomHandler::toObject(tmp,getInstanceWorker());
 				}
 				else if (asAtomHandler::isValid(varIt->second.getter))
@@ -3527,7 +3560,7 @@ bool ASObject::hasprop_prototype()
 	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if (var != nullptr)
-		return asAtomHandler::isValid(var->var);
+		return var->isValidVar();
 	if (!sys->mainClip->needsActionScript3())
 	{
 		var = Variables.findObjVar
@@ -3538,7 +3571,7 @@ bool ASObject::hasprop_prototype()
 			(DECLARED_TRAIT|DYNAMIC_TRAIT)
 		);
 	}
-	return (var && asAtomHandler::isValid(var->var));
+	return (var && var->isValidVar());
 }
 
 ASObject* ASObject::getprop_prototype()
@@ -3546,12 +3579,12 @@ ASObject* ASObject::getprop_prototype()
 	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if (var)
-		return asAtomHandler::toObject(var->var,getInstanceWorker());
+		return var->getObjectVar();
 	if (!getSystemState()->mainClip->needsActionScript3())
 		var=Variables.findObjVar(BUILTIN_STRINGS::STRING_PROTO,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
-	if (var != nullptr && asAtomHandler::isObjectPtr(var->var))
-		return asAtomHandler::getObjectNoCheck(var->var);
+	if (var != nullptr)
+		return var->getObjectVar();
 	return nullptr;
 }
 
@@ -3560,12 +3593,12 @@ asAtom ASObject::getprop_prototypeAtom()
 	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if (var)
-		return var->var;
+		return var->getVar(getInstanceWorker(),UINT16_MAX);
 	if (!getSystemState()->mainClip->needsActionScript3())
 		var=Variables.findObjVar(BUILTIN_STRINGS::STRING_PROTO,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if (var != nullptr)
-		return var->var;
+		return var->getVar(getInstanceWorker(),UINT16_MAX);
 	return asAtomHandler::invalidAtom;
 }
 
@@ -3698,7 +3731,7 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 	}
 }
 
-multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const multiname &name, ASWorker* wrk, bool& canCache,GET_VARIABLE_OPTION opt)
+multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const multiname &name, ASWorker* wrk, bool& canCache,GET_VARIABLE_OPTION opt, uint16_t resultlocalnumberpos)
 {
 	// classes for primitives are final and sealed, so we only have to check the class for the variable
 	// no need to create ASObjects for the primitives
@@ -3709,7 +3742,7 @@ multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const m
 		case ATOM_UINTEGER:
 		case ATOM_U_INTEGERPTR:
 		case ATOM_NUMBERPTR:
-			simplegetter = Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
+			simplegetter = Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a,resultlocalnumberpos);
 			canCache = asAtomHandler::isValid(ret);
 			break;
 		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
@@ -3717,11 +3750,11 @@ multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const m
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_BOOL_BIT:
-					simplegetter = Class<Boolean>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
+					simplegetter = Class<Boolean>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a,resultlocalnumberpos);
 					canCache = asAtomHandler::isValid(ret);
 					break;
 				case ATOMTYPE_LOCALNUMBER_BIT:
-					simplegetter = Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
+					simplegetter = Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a,resultlocalnumberpos);
 					canCache = asAtomHandler::isValid(ret);
 					break;
 				default:
@@ -3731,7 +3764,7 @@ multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const m
 			break;
 		}
 		case ATOM_STRINGID:
-			simplegetter =  Class<ASString>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
+			simplegetter =  Class<ASString>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a,resultlocalnumberpos);
 			canCache = asAtomHandler::isValid(ret);
 			break;
 		default:
@@ -3746,7 +3779,7 @@ multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const m
 				IFunction* f = asAtomHandler::as<IFunction>(ret);
 				asAtom closure = asAtomHandler::getClosureAtom(ret,a);
 				ret = asAtom();
-				simplegetter = f->callGetter(ret,closure,wrk);
+				simplegetter = f->callGetter(ret,closure,wrk,resultlocalnumberpos);
 				LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(ret)<<" "<<(simplegetter ? " simplegetter":""));
 			}
 			break;
@@ -5944,4 +5977,15 @@ bool garbagecollectorstate::isIgnored(ASObject* o)
 bool garbagecollectorstate::hasMember(ASObject* o)
 {
 	return o->gccounter.ischecked && o->gccounter.hasmember;
+}
+
+asAtomWithNumber::~asAtomWithNumber()
+{
+	if (isrefcounted)
+		ASATOM_DECREF(value);
+}
+
+tiny_string asAtomWithNumber::toString(ASWorker* wrk) const
+{
+	return asAtomHandler::isLocalNumber(value) ? Number::toString(numbervalue) : asAtomHandler::toString(value,wrk);
 }

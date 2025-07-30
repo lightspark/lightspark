@@ -1587,6 +1587,32 @@ GET_VARIABLE_RESULT Vector::getVariableByInteger(asAtom &ret, int index, GET_VAR
 		return getVariableByIntegerIntern(ret,index,opt,wrk);
 }
 
+asAtomWithNumber Vector::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+{
+	if(!implEnable)
+	{
+		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+	}
+
+	if(!name.hasEmptyNS)
+	{
+		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+	}
+
+	unsigned int index=0;
+	bool isNumber = false;
+	if(!Vector::isValidMultiname(getInstanceWorker(),name,index,&isNumber) || index > vec.size())
+	{
+		return asAtomWithNumber();
+	}
+	asAtomWithNumber ret;
+	if(index < vec.size())
+	{
+		ret.value = vec[index];
+	}
+	return ret;
+}
+
 multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset,ASWorker* wrk)
 {
 	if(!name.hasEmptyNS)

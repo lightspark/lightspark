@@ -996,9 +996,9 @@ void ABCVm::optimizeFunction(SyntheticFunction* function)
 						if(objType)
 						{
 							const variable* var=objType->findBorrowedGettable(*name);
-							if(var && asAtomHandler::isFunction(var->var))
+							if(var && var->isFunctionVar())
 							{
-								SyntheticFunction* calledFunc=dynamic_cast<SyntheticFunction*>(asAtomHandler::getObject(var->var));
+								SyntheticFunction* calledFunc=dynamic_cast<SyntheticFunction*>(var->getObjectVar());
 								if(calledFunc)
 									inferredData.type=calledFunc->mi->returnType;
 							}

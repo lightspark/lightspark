@@ -1380,12 +1380,11 @@ void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_f
 		sort_value v(a,currindex,fromprototype);
 		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
 		{
-			asAtom tmpval=asAtomHandler::invalidAtom;
-			asAtomHandler::getObject(a)->getVariableByMultiname(tmpval,itsf->fieldname,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
-			if (asAtomHandler::isInvalid(tmpval))
+			asAtomWithNumber tmpval;
+			tmpval = asAtomHandler::getObject(a)->getAtomWithNumberByMultiname(itsf->fieldname,getInstanceWorker());
+			if (asAtomHandler::isInvalid(tmpval.value))
 			{
-				tmpval=a;
-				ASATOM_INCREF(tmpval);
+				tmpval.value=a;
 			}
 			v.sortvalues.push_back(tmpval);
 		}
@@ -1481,10 +1480,6 @@ void Array::fillSortedArray(asAtom& ret, std::vector<sort_value>& tmp, bool isUn
 				if (isequal)
 					hasDuplicates=true;
 			}
-			for (auto itsv = ittmp->sortvalues.begin(); itsv != ittmp->sortvalues.end(); itsv++)
-			{
-				ASATOM_DECREF(*itsv);
-			}
 		}
 		if (hasDuplicates)
 		{
@@ -1502,13 +1497,6 @@ void Array::fillSortedArray(asAtom& ret, std::vector<sort_value>& tmp, bool isUn
 			arrayRet->push(asAtomHandler::fromInt(ittmp->originalindex));
 			if (ittmp->fromprototype)
 				ASATOM_REMOVESTOREDMEMBER(ittmp->dataAtom);
-			if (!isUniqueSort) // sortvalues are already decreffed if isUniqueSort is set
-			{
-				for (auto itsv = ittmp->sortvalues.begin(); itsv != ittmp->sortvalues.end(); itsv++)
-				{
-					ASATOM_DECREF(*itsv);
-				}
-			}
 		}
 		ret = asAtomHandler::fromObjectNoPrimitive(arrayRet);
 	}
@@ -1529,13 +1517,6 @@ void Array::fillSortedArray(asAtom& ret, std::vector<sort_value>& tmp, bool isUn
 			}
 			else
 				data_second[i] = ittmp->dataAtom;
-			if (!isUniqueSort) // sortvalues are already decreffed if isUniqueSort is set
-			{
-				for (auto itsv = ittmp->sortvalues.begin(); itsv != ittmp->sortvalues.end(); itsv++)
-				{
-					ASATOM_DECREF(*itsv);
-				}
-			}
 			i++;
 		}
 		this->incRef();
@@ -1604,15 +1585,15 @@ number_t Array::sortOnComparator::compare(const sort_value& d1, const sort_value
 	uint32_t i = 0;
 	for(;it != fields.end();++it)
 	{
-		asAtom obj1 = d1.sortvalues.at(i);
-		asAtom obj2 = d2.sortvalues.at(i);
+		asAtomWithNumber obj1 = d1.sortvalues.at(i);
+		asAtomWithNumber obj2 = d2.sortvalues.at(i);
 		i++;
-		if (it->isNumeric && asAtomHandler::isNumeric(obj1) && asAtomHandler::isNumeric(obj2))
+		if (it->isNumeric && asAtomHandler::isNumeric(obj1.value) && asAtomHandler::isNumeric(obj2.value))
 		{
 			number_t a=numeric_limits<double>::quiet_NaN();
 			number_t b=numeric_limits<double>::quiet_NaN();
-			a=asAtomHandler::toNumber(obj1);
-			b=asAtomHandler::toNumber(obj2);
+			a=obj1.toNumber();
+			b=obj2.toNumber();;
 			if (a != b)
 				return it->isDescending ? b-a : a-b;
 		}
@@ -1621,8 +1602,8 @@ number_t Array::sortOnComparator::compare(const sort_value& d1, const sort_value
 			//Comparison is always in lexicographic order
 			tiny_string s1;
 			tiny_string s2;
-			s1=asAtomHandler::toString(obj1,getWorker());
-			s2=asAtomHandler::toString(obj2,getWorker());
+			s1=obj1.toString(getWorker());
+			s2=obj2.toString(getWorker());
 			if(it->isCaseInsensitive)
 			{
 				int n = s1.strcasecmp(s2);
@@ -2214,6 +2195,61 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 		asAtomHandler::setUndefined(ret);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
+asAtomWithNumber Array::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+{
+	if(!implEnable)
+	{
+		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+	}
+
+	if(!name.hasEmptyNS)
+	{
+		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+	}
+
+	uint32_t index=0;
+	if(!isValidMultiname(getInstanceWorker(),name,index))
+	{
+		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+	}
+
+	if (!getInstanceWorker()->needsActionScript3() && ASObject::hasPropertyByMultiname(name,true,false,wrk)) // AVM1 allows to add a property (via addProperty) with an int as name, so we have to check for that
+		return  ASObject::getAtomWithNumberByMultiname(name,wrk);
+
+	asAtomWithNumber ret;
+	if (index < ARRAY_SIZE_THRESHOLD)
+	{
+		if (data_first.size() > index)
+		{
+			ret.value = data_first.at(index);
+			if (asAtomHandler::isValid(ret.value))
+				return ret;
+		}
+	}
+	auto it = data_second.find(index);
+	if(it != data_second.end())
+	{
+		ret.value = it->second;
+		if (asAtomHandler::isValid(ret.value))
+			return ret;
+	}
+	if (name.hasEmptyNS)
+	{
+		//Check prototype chain
+		Prototype* proto = this->getClass()->prototype.getPtr();
+		while(proto && proto->getObj() != this)
+		{
+			ret = proto->getObj()->getAtomWithNumberByMultiname(name,wrk);
+			if(asAtomHandler::isValid(ret.value))
+				return ret;
+			proto = proto->prevPrototype.getPtr();
+		}
+	}
+	if(index<size())
+		asAtomHandler::setUndefined(ret.value);
+	return ret;
+}
+
 
 GET_VARIABLE_RESULT Array::getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {

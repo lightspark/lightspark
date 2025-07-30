@@ -173,6 +173,9 @@ public:
 			ret= tmp;
 		}
 
+		ret->setIsInitialized();
+		ret->constructionComplete();
+		ret->setConstructIndicator();
 		ret->incRef();
 		return ret;
 	}
@@ -195,6 +198,9 @@ public:
 		else
 			ret=static_cast<TemplatedClass<T>*>(it->second);
 
+		ret->setIsInitialized();
+		ret->constructionComplete();
+		ret->setConstructIndicator();
 		ret->incRef();
 		return ret;
 	}
@@ -340,6 +346,8 @@ public:
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt,ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
+
 	FORCE_INLINE void getVariableByIntegerDirect(asAtom& ret, int index, ASWorker* wrk)
 	{
 		if (index >=0 && uint32_t(index) < size())

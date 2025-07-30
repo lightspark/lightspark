@@ -335,11 +335,12 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 		cur=cur->super.getPtr();
 	}
 	assert_and_throw(var);
-	if(asAtomHandler::isValid(var->var))
+	if(var->isValidVar())
 	{
-		assert_and_throw(asAtomHandler::isFunction(var->var));
-		ASATOM_INCREF(var->var);
-		c->setDeclaredMethodAtomByQName(name,interfaceNs,var->var,NORMAL_METHOD,true);
+		asAtom func = var->getVar(c->getInstanceWorker());
+		assert_and_throw(asAtomHandler::isFunction(func));
+		ASATOM_INCREF(func);
+		c->setDeclaredMethodAtomByQName(name,interfaceNs,func,NORMAL_METHOD,true);
 	}
 	if(asAtomHandler::isValid(var->getter))
 	{
@@ -368,11 +369,12 @@ void lightspark::lookupAndLink(Class_base* c, uint32_t nameID, uint32_t interfac
 		cur=cur->super.getPtr();
 	}
 	assert_and_throw(var);
-	if(asAtomHandler::isValid(var->var))
+	if(var->isValidVar())
 	{
-		assert_and_throw(asAtomHandler::isFunction(var->var));
-		ASATOM_INCREF(var->var);
-		c->setDeclaredMethodAtomByQName(nameID,nsNameAndKind(c->getSystemState(),interfaceNsID, NAMESPACE),var->var,NORMAL_METHOD,true);
+		asAtom func = var->getVar(c->getInstanceWorker());
+		assert_and_throw(var->isFunctionVar());
+		ASATOM_INCREF(func);
+		c->setDeclaredMethodAtomByQName(nameID,nsNameAndKind(c->getSystemState(),interfaceNsID, NAMESPACE),func,NORMAL_METHOD,true);
 	}
 	if(asAtomHandler::isValid(var->getter))
 	{

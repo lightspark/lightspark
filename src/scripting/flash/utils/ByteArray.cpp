@@ -1275,6 +1275,24 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name, ASWorker* wrk
 		return _MNR(getSystemState()->getUndefinedRef());
 }
 
+asAtomWithNumber ByteArray::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+{
+	unsigned int index=0;
+	if(!Array::isValidMultiname(wrk,name,index))
+		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+
+	asAtomWithNumber res;
+	if(index<len)
+	{
+		lock();
+		uint8_t value = bytes[index];
+		unlock();
+		asAtomHandler::setUInt(res.value,this->getInstanceWorker(),static_cast<uint32_t>(value));
+		return res;
+	}
+	asAtomHandler::setUndefined(res.value);
+}
+
 multiname *ByteArray::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
 	assert_and_throw(implEnable);

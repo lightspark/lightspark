@@ -31,7 +31,7 @@ void lightspark::abc_callFunctionSyntheticOneArgVoid_constant_constant(call_cont
 	asAtom obj = *instrptr->arg1_constant;
 	asAtom value = *instrptr->arg2_constant;
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArgVoid_cc " << asAtomHandler::toDebugString(func) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,ret,obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0);
@@ -46,7 +46,7 @@ void lightspark::abc_callFunctionSyntheticOneArgVoid_local_constant(call_context
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom value = *instrptr->arg2_constant;
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArgVoid_lc " << asAtomHandler::toDebugString(func) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	ASATOM_INCREF(obj); // ensure that obj stays valid during call
 	asAtom ret = asAtomHandler::invalidAtom;
@@ -63,7 +63,7 @@ void lightspark::abc_callFunctionSyntheticOneArgVoid_constant_local(call_context
 	asAtom obj = *instrptr->arg1_constant;
 	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArgVoid_cl " << asAtomHandler::toDebugString(func) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	ASATOM_INCREF(value);
 	asAtom ret = asAtomHandler::invalidAtom;
@@ -79,7 +79,7 @@ void lightspark::abc_callFunctionSyntheticOneArgVoid_local_local(call_context* c
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArgVoid_ll " << asAtomHandler::toDebugString(func) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	ASATOM_INCREF(obj); // ensure that obj stays valid during call
 	ASATOM_INCREF(value);
@@ -97,7 +97,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_constant_constant(call_context*
 	asAtom obj = *instrptr->arg1_constant;
 	asAtom value = *instrptr->arg2_constant;
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArg_cc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,ret,obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0);
@@ -112,7 +112,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_local_constant(call_context* co
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom value = *instrptr->arg2_constant;
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArg_lc " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	ASATOM_INCREF(obj); // ensure that obj stays valid during call
 	asAtom ret = asAtomHandler::invalidAtom;
@@ -129,7 +129,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_constant_local(call_context* co
 	asAtom obj = *instrptr->arg1_constant;
 	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArg_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	ASATOM_INCREF(value);
 	asAtom ret = asAtomHandler::invalidAtom;
@@ -145,7 +145,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_local_local(call_context* conte
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArg_ll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	ASATOM_INCREF(obj); // ensure that obj stays valid during call
 	ASATOM_INCREF(value);
@@ -163,7 +163,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_constant_constant_localresult(c
 	asAtom obj = *instrptr->arg1_constant;
 	asAtom value = *instrptr->arg2_constant;
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArg_ccl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,instrptr->local3.pos),obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0,instrptr->local3.pos);
@@ -178,7 +178,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_local_constant_localresult(call
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom value = *instrptr->arg2_constant;
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArg_lcl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	ASATOM_INCREF(obj); // ensure that obj stays valid during call
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
@@ -195,7 +195,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_constant_local_localresult(call
 	asAtom obj = *instrptr->arg1_constant;
 	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArg_cll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
 	ASATOM_INCREF(value);
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
@@ -211,7 +211,7 @@ void lightspark::abc_callFunctionSyntheticOneArg_local_local_localresult(call_co
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	asAtom value = CONTEXT_GETLOCAL(context,instrptr->local_pos2);
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? context->exec_pos->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
+	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionSyntheticOneArg_lll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value)<<" " <<asAtomHandler::toDebugString(func));
 	ASATOM_INCREF(obj); // ensure that obj stays valid during call
 	ASATOM_INCREF(value);
@@ -247,7 +247,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgsVoid_constant(call_context* c
 	asAtom obj = *instrptr->arg1_constant;
 	uint32_t argcount = instrptr->local2.pos;
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
+	asAtom func = fromglobal ? instrptr->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgsVoid_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
 	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -274,7 +274,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgsVoid_local(call_context* cont
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	uint32_t argcount = instrptr->local2.pos;
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
+	asAtom func = fromglobal ? instrptr->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgsVoid_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
 	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -300,7 +300,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	uint32_t argcount = instrptr->local2.pos;
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
+	asAtom func = fromglobal ? instrptr->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgs " << asAtomHandler::toDebugString(func) << ' ' <<argcount);
 	RUNTIME_STACK_POP_N_CREATE(context,argcount+1,args);
 	asAtom ret = asAtomHandler::invalidAtom;
@@ -317,7 +317,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_constant(call_context* conte
 	asAtom obj = *instrptr->arg1_constant;
 	uint32_t argcount = instrptr->local2.pos;
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
+	asAtom func = fromglobal ? instrptr->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgs_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
 	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -344,7 +344,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_local(call_context* context)
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	uint32_t argcount = instrptr->local2.pos;
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
+	asAtom func = fromglobal ? instrptr->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgs_l " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
 	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -371,7 +371,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_constant_localResult(call_co
 	asAtom obj = *instrptr->arg1_constant;
 	uint32_t argcount = instrptr->local2.pos;
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
+	asAtom func = fromglobal ? instrptr->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgs_c_lr " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
 	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
@@ -399,7 +399,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_local_localResult(call_conte
 	asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	uint32_t argcount = instrptr->local2.pos;
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
-	asAtom func = fromglobal ? instrptr->cachedvar3->var : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
+	asAtom func = fromglobal ? instrptr->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
 	LOG_CALL("callFunctionSyntheticMultiArgs_l_lr " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
 	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)

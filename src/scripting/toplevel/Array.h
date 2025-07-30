@@ -43,7 +43,7 @@ struct sorton_field
 };
 struct sort_value
 {
-	std::vector<asAtom> sortvalues;
+	std::vector<asAtomWithNumber> sortvalues;
 	asAtom dataAtom;
 	int originalindex;
 	bool fromprototype;
@@ -52,7 +52,6 @@ struct sort_value
 
 class Array: public ASObject
 {
-friend class ABCVm;
 protected:
 	uint64_t currentsize;
 	// data is split into a vector for the first ARRAY_SIZE_THRESHOLD indexes, and a map for bigger indexes
@@ -170,12 +169,15 @@ public:
 	bool hasEntry(uint32_t index);
 	bool set(unsigned int index, asAtom &o, bool checkbounds = true, bool addref = true, bool addmember=true);
 	uint64_t size();
+	uint64_t getCurrentSize() const { return currentsize; }
 	void push(asAtom o);// push doesn't increment the refcount, so the caller has to take care of that
 	virtual void resize(uint64_t n, bool removemember=true);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	
 	int32_t getVariableByMultiname_i(const multiname& name, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
+
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;

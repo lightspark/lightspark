@@ -33,7 +33,6 @@ void lightspark::abc_newcatch_localresult(call_context* context)
 	asAtom ret=asAtomHandler::fromObject(obj);
 	if (ret.uintval != CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos).uintval)
 	{
-		ASATOM_INCREF(ret);
 		REPLACELOCALRESULT(context,context->exec_pos->local3.pos,ret);
 	}
 	LOG_CALL("getNewCatch_l " << asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos))<<" "<<t<<" "<<context->exec_pos->local3.pos);

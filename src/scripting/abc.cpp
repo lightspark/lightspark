@@ -2183,12 +2183,13 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 
 			variable* var=NULL;
 			var = c->borrowedVariables.findObjVar(nameId,nsNameAndKind(),NO_CREATE_TRAIT,DECLARED_TRAIT);
-			if(var && asAtomHandler::isValid(var->var))
+			if(var && var->isValidVar())
 			{
-				assert_and_throw(asAtomHandler::isFunction(var->var));
+				assert_and_throw(var->isFunctionVar());
 
-				ASATOM_INCREF(var->var);
-				c->setDeclaredMethodAtomByQName(nameId,mname.ns[0],var->var,NORMAL_METHOD,true);
+				asAtom a = var->getVar(c->getInstanceWorker(),UINT16_MAX);
+				ASATOM_INCREF(a);
+				c->setDeclaredMethodAtomByQName(nameId,mname.ns[0],a,NORMAL_METHOD,true);
 			}
 			else
 			{

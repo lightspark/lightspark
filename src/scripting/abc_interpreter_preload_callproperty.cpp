@@ -100,7 +100,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 			v = cls->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
 			if (v)
 			{
-				if ((v->kind & TRAIT_KIND::DECLARED_TRAIT) == 0 || asAtomHandler::is<Class_base>(v->var))
+				if ((v->kind & TRAIT_KIND::DECLARED_TRAIT) == 0 || v->isClassBaseVar())
 					v=nullptr;
 			}
 			fromglobal= v != nullptr;
@@ -140,7 +140,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 				if (needSuper)
 					cls = cls->as<Class_base>()->super.getPtr();
 				v=cls->findVariableByMultiname(*name,cls->as<Class_base>(),nullptr,nullptr,false,state.worker);
-				if (v && !asAtomHandler::is<SyntheticFunction>(v->var))
+				if (v && !v->isSyntheticFunctionVar())
 					v=nullptr;
 			}
 			if (!v && cls && cls->is<Class_base>())
@@ -155,9 +155,9 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 			}
 			if (v)
 			{
-				if (asAtomHandler::is<SyntheticFunction>(v->var) && (fromglobal || (asAtomHandler::as<SyntheticFunction>(v->var)->inClass && asAtomHandler::as<SyntheticFunction>(v->var)->inClass == cls)))
+				if (v->isSyntheticFunctionVar() && (fromglobal || (v->getSyntheticFunctionVar()->inClass && v->getSyntheticFunctionVar()->inClass == cls)))
 				{
-					func = asAtomHandler::as<SyntheticFunction>(v->var);
+					func = v->getSyntheticFunctionVar();
 					resulttype = func->getReturnType();
 					if (func->getMethodInfo()->paramTypes.size() >= argcount)
 					{
@@ -236,25 +236,25 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 						{
 							if (canCallFunctionDirect(state.operandlist.back(),name,needSuper))
 							{
-								if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::isInvalid(asAtomHandler::as<IFunction>(v->var)->closure_this))
+								if (v && v->isFunctionVar() && asAtomHandler::isInvalid(v->getFunctionVar()->closure_this))
 								{
 									ASObject* cls = state.operandlist.back().objtype;
 									if (needResult)
 									{
-										resulttype = asAtomHandler::as<IFunction>(v->var)->getReturnType();
-										if (!resulttype && asAtomHandler::is<Function>(v->var))
+										resulttype = v->getFunctionVar()->getReturnType();
+										if (!resulttype && v->isBuiltinFunctionVar())
 											LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method1:"<<*name<<" "<<cls->toDebugString());
-										setupInstructionOneArgument(state,asAtomHandler::is<Function>(v->var) ? ABC_OP_OPTIMZED_CALLBUILTINFUNCTION_NOARGS : ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS ,opcode,code,true, false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_SETSLOT);
+										setupInstructionOneArgument(state,v->isBuiltinFunctionVar() ? ABC_OP_OPTIMZED_CALLBUILTINFUNCTION_NOARGS : ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS ,opcode,code,true, false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_SETSLOT);
 									}
 									else
 										setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_VOID,opcode,code,p);
-									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = asAtomHandler::getObject(v->var);
+									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj2 = v->getObjectVar();
 									removetypestack(typestack,argcount+state.mi->context->constant_pool.multinames[t].runtimeargs+1);
 									if (needResult)
 									{
-										if (resulttype == nullptr && asAtomHandler::is<Function>(v->var))
+										if (resulttype == nullptr && v->isBuiltinFunctionVar())
 										{
-											resulttype = asAtomHandler::as<Function>(v->var)->getReturnType();
+											resulttype = v->getFunctionVar()->getReturnType();
 											if (resulttype == nullptr)
 												LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method2:"<<*name<<" "<<cls->toDebugString());
 										}
@@ -371,7 +371,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							{
 								variable* mvar = typestack[typestack.size()-2].obj->as<Class_base>()->getBorrowedVariableByMultiname(*name);
 								if (mvar)
-									func = mvar->var;
+									func = mvar->getVar(state.worker);
 							}
 							if (asAtomHandler::isClass(func) && asAtomHandler::as<Class_base>(func)->isBuiltin())
 							{
@@ -442,21 +442,21 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							{
 								if (!fromglobal
 									&& v
-									&& asAtomHandler::is<IFunction>(v->var)
+									&& v->isFunctionVar()
 									&& (
-											(state.function->inClass && state.function->inClass == asAtomHandler::as<IFunction>(v->var)->inClass)
+											(state.function->inClass && state.function->inClass == v->getFunctionVar()->inClass)
 											||
-											(asAtomHandler::isInvalid(asAtomHandler::as<IFunction>(v->var)->closure_this)
-											 && (!asAtomHandler::as<IFunction>(v->var)->inClass
+											(asAtomHandler::isInvalid(v->getFunctionVar()->closure_this)
+											 && (!v->getFunctionVar()->inClass
 												 || !state.function->inClass
-												 || (state.function->inClass->getConstructIndicator() && state.function->inClass->isSubClass(asAtomHandler::as<IFunction>(v->var)->inClass))
-												 || !state.function->inClass->isSubClass(asAtomHandler::as<IFunction>(v->var)->inClass) // function is from a subclass of the caller, so it may not be setup yet if we are currently executing the constructor
+												 || (state.function->inClass->getConstructIndicator() && state.function->inClass->isSubClass(v->getFunctionVar()->inClass))
+												 || !state.function->inClass->isSubClass(v->getFunctionVar()->inClass) // function is from a subclass of the caller, so it may not be setup yet if we are currently executing the constructor
 												 )
 											 )
 										 )
 										)
 								{
-									if (asAtomHandler::is<SyntheticFunction>(v->var))
+									if (v->isSyntheticFunctionVar())
 									{
 										if (!needResult)
 											setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_ONEARG_VOID,opcode,code);
@@ -464,7 +464,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 											setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_ONEARG,opcode,code,false,false,true,p,resulttype);
 										if (argtype)
 										{
-											SyntheticFunction* f = asAtomHandler::as<SyntheticFunction>(v->var);
+											SyntheticFunction* f = v->getSyntheticFunctionVar();
 											if (!f->getMethodInfo()->returnType)
 												f->checkParamTypes();
 											if (f->getMethodInfo()->paramTypes.size() && f->canSkipCoercion(0,argtype))
@@ -477,13 +477,13 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 											state.preloadedcode.back().pcode.cachedvar3 = v;
 										}
 										else
-											state.preloadedcode.back().pcode.cacheobj3 = asAtomHandler::getObject(v->var);
+											state.preloadedcode.back().pcode.cacheobj3 = v->getObjectVar();
 										removetypestack(typestack,argcount+state.mi->context->constant_pool.multinames[t].runtimeargs+1);
 										if (needResult)
 											typestack.push_back(typestackentry(resulttype,false));
 										break;
 									}
-									if (asAtomHandler::is<Function>(v->var))
+									if (v->isBuiltinFunctionVar())
 									{
 										if (!needResult)
 										{
@@ -494,7 +494,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 											setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_ONEARG,opcode,code,false,false,true,p,resulttype);
 											state.preloadedcode.push_back(0);
 										}
-										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj3 = asAtomHandler::getObject(v->var);
+										state.preloadedcode.at(state.preloadedcode.size()-1).pcode.cacheobj3 = v->getObjectVar();
 										removetypestack(typestack,argcount+state.mi->context->constant_pool.multinames[t].runtimeargs+1);
 										if (needResult)
 											typestack.push_back(typestackentry(resulttype,false));
@@ -628,9 +628,9 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							{
 								if (canCallFunctionDirect((*it),name,needSuper))
 								{
-									if (v && asAtomHandler::is<IFunction>(v->var) && asAtomHandler::isInvalid(asAtomHandler::as<IFunction>(v->var)->closure_this))
+									if (v && v->isFunctionVar() && asAtomHandler::isInvalid(v->getFunctionVar()->closure_this))
 									{
-										if (asAtomHandler::is<SyntheticFunction>(v->var) && (asAtomHandler::as<SyntheticFunction>(v->var)->inClass || fromglobal))
+										if (v->isSyntheticFunctionVar() && (v->getSyntheticFunctionVar()->inClass || fromglobal))
 										{
 											state.preloadedcode.at(oppos).opcode = (!needResult ? ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_MULTIARGS);
 											state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
@@ -645,7 +645,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 												state.preloadedcode.at(oppos).pcode.cachedvar3 = v;
 											}
 											else
-												state.preloadedcode.at(oppos).pcode.cacheobj3 = asAtomHandler::getObject(v->var);
+												state.preloadedcode.at(oppos).pcode.cacheobj3 = v->getObjectVar();
 											removeOperands(state,true,lastlocalresulttype,argcount+1);
 											if (needResult)
 												checkForLocalResult(state,code,2,resulttype,oppos,state.preloadedcode.size()-1);
@@ -654,10 +654,10 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 												typestack.push_back(typestackentry(resulttype,false));
 											break;
 										}
-										else if (asAtomHandler::is<Function>(v->var))
+										else if (v->isFunctionVar())
 										{
 											if (needResult)
-												resulttype = asAtomHandler::as<Function>(v->var)->getArgumentDependentReturnType(allargsint);
+												resulttype = v->getFunctionVar()->as<Function>()->getArgumentDependentReturnType(allargsint);
 											state.preloadedcode.at(oppos).opcode = (!needResult ? ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_MULTIARGS);
 											state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
 											if (skipcoerce)
@@ -665,7 +665,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 											it->fillCode(state,0,oppos,true);
 											it->removeArg(state);
 											oppos = state.preloadedcode.size()-1-argcount;
-											state.preloadedcode.at(oppos).pcode.cacheobj3 = asAtomHandler::getObject(v->var);
+											state.preloadedcode.at(oppos).pcode.cacheobj3 = v->getObjectVar();
 											removeOperands(state,true,lastlocalresulttype,argcount+1);
 											if (needResult)
 												checkForLocalResult(state,code,2,resulttype,oppos,state.preloadedcode.size()-1);

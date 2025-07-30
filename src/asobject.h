@@ -472,7 +472,7 @@ public:
 	 * if coerceresult is false, the result of the function will not be coerced into the type provided by the method_info
 	 */
 	static void callFunction(asAtom& caller, ASWorker* wrk, asAtom& ret, asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult=true, bool coercearguments=true, bool isAVM1InternalCall=false, uint16_t resultlocalnumberpos=UINT16_MAX);
-	static multiname* getVariableByMultiname(asAtom& a, asAtom &ret, const multiname& name, ASWorker* wrk, bool& canCache, GET_VARIABLE_OPTION opt);
+	static multiname* getVariableByMultiname(asAtom& a, asAtom &ret, const multiname& name, ASWorker* wrk, bool& canCache, GET_VARIABLE_OPTION opt, uint16_t resultlocalnumberpos=UINT16_MAX);
 	static void getVariableByInteger(asAtom& a, asAtom &ret, int index, ASWorker* wrk);
 	static bool hasPropertyByMultiname(const asAtom& a, const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk);
 	static GET_VARIABLE_RESULT AVM1getVariableByMultiname(const asAtom& a,asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath);
@@ -518,6 +518,7 @@ public:
 	static FORCE_INLINE bool isPrimitive(const asAtom& a);
 	static FORCE_INLINE bool isNumeric(const asAtom& a);
 	static FORCE_INLINE bool isNumber(const asAtom& a);
+	static FORCE_INLINE bool isNumberPtr(const asAtom& a);
 	static FORCE_INLINE bool isLocalNumber(const asAtom& a);
 	static FORCE_INLINE bool isValid(const asAtom& a) { return a.uintval; }
 	static FORCE_INLINE bool isInvalid(const asAtom& a) { return !a.uintval; }
@@ -564,6 +565,12 @@ public:
 	static uint32_t toStringId(asAtom &a, ASWorker* wrk);
 	static FORCE_INLINE asAtom typeOf(asAtom& a);
 	static number_t getLocalNumber(call_context *cc, const asAtom& a);
+	static FORCE_INLINE uint16_t getLocalNumberPos(const asAtom& a)
+	{
+		if (isLocalNumber(a))
+			return a.uintval>>8;
+		return UINT16_MAX;
+	}
 	static bool Boolean_concrete(asAtom& a);
 	static bool Boolean_concrete_object(asAtom& a);
 	static void convert_b(asAtom& a, bool refcounted);
@@ -624,9 +631,35 @@ public:
 #define ASATOM_REMOVESTOREDMEMBER(a) if (asAtomHandler::isAccessibleObject(a)) { asAtomHandler::getObjectNoCheck(a)->removeStoredMember();}
 #define ASATOM_PREPARESHUTDOWN(a) if (asAtomHandler::isAccessibleObject(a)) { asAtomHandler::getObjectNoCheck(a)->prepareShutdown();}
 
+// avoids creating number objects and refcounting, if possible
+struct asAtomWithNumber
+{
+	asAtom value;
+	number_t numbervalue;
+	bool isrefcounted;
+	asAtomWithNumber():value(asAtomHandler::invalidAtom),numbervalue(0),isrefcounted(false)
+	{
+	}
+	asAtomWithNumber(asAtom v):value(v),numbervalue(0),isrefcounted(asAtomHandler::isObject(v))
+	{
+	}
+	asAtomWithNumber(number_t n):numbervalue(n),isrefcounted(false)
+	{
+		value.uintval=UINT16_MAX<<8 | ATOMTYPE_LOCALNUMBER_BIT;
+	}
+	~asAtomWithNumber();
+	number_t toNumber() const
+	{
+		return asAtomHandler::isLocalNumber(value) ? numbervalue : asAtomHandler::toNumber(value);
+	}
+	tiny_string toString(ASWorker* wrk) const;
+};
+
 struct variable
 {
-	asAtom var;
+private:
+	asAtomWithNumber var;
+public:
 	union
 	{
 		multiname* traitTypemname;
@@ -642,13 +675,12 @@ struct variable
 	bool isResolved:1;
 	bool isenumerable:1;
 	bool issealed:1;
-	bool isrefcounted:1;
-	bool nameIsInteger;
+	bool nameIsInteger:1;
 	uint8_t min_swfversion;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns,bool _nameIsInteger,uint32_t nameID)
 		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom)
 		,nameStringID(nameID),ns(_ns),slotid(0),kind(_k)
-		,isResolved(false),isenumerable(true),issealed(false),isrefcounted(true)
+		,isResolved(false),isenumerable(true),issealed(false)
 		,nameIsInteger(_nameIsInteger),min_swfversion(0)
 	{}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* type, const nsNameAndKind &_ns, bool _isenumerable, bool _nameIsInteger, uint32_t nameID);
@@ -657,11 +689,85 @@ struct variable
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
 	void setVarNoCoerce(asAtom &v, ASWorker *wrk);
+	void setVarFromVariable(variable* v);
 
 	void setResultType(Type* t)
 	{
 		isResolved=true;
 		type=t;
+	}
+	asAtom getVar(ASWorker* wrk,uint16_t localnumberpos=UINT16_MAX)
+	{
+		if (asAtomHandler::isLocalNumber(var.value))
+		{
+			asAtom res = asAtomHandler::invalidAtom;
+			asAtomHandler::setNumber(res,wrk,var.numbervalue,localnumberpos);
+			return res;
+		}
+		return var.value;
+	}
+	asAtom* getVarPtr(ASWorker* wrk)
+	{
+		if (asAtomHandler::isLocalNumber(var.value))
+			asAtomHandler::setNumber(var.value,wrk,var.numbervalue,UINT16_MAX);
+		return &var.value;
+	}
+	bool isRefcountedVar() const
+	{
+		return var.isrefcounted;
+	}
+	void resetRefcountedVar()
+	{
+		var.isrefcounted=false;
+	}
+	bool isValidVar() const
+	{
+		return asAtomHandler::isValid(var.value);
+	}
+	bool isEqualVar(const asAtom& a) const
+	{
+		return var.value.uintval==a.uintval;
+	}
+	bool isLocalNumberVar() const
+	{
+		return asAtomHandler::isLocalNumber(var.value);
+	}
+	bool isClassVar() const
+	{
+		return asAtomHandler::isClass(var.value);
+	}
+	bool isClassBaseVar() const;
+	bool isSyntheticFunctionVar() const;
+	bool isBuiltinFunctionVar() const;
+	bool isFunctionVar() const;
+	bool isDisplayObjectVar() const;
+	bool isNullVar() const
+	{
+		return asAtomHandler::isNull(var.value);
+	}
+	bool isNullOrUndefinedVar() const
+	{
+		return asAtomHandler::isNullOrUndefined(var.value);
+	}
+	SyntheticFunction* getSyntheticFunctionVar() const;
+	IFunction* getFunctionVar() const;
+	FORCE_INLINE ASObject* getObjectVar() const
+	{
+		return asAtomHandler::getObject(var.value);
+	}
+	FORCE_INLINE bool isAccessibleObjectVar() const
+	{
+		return asAtomHandler::isAccessibleObject(var.value);
+	}
+	void setVarNoCheck(asAtom &v, ASWorker *wrk);
+	FORCE_INLINE Class_base* getClassVar(SystemState* sys) const
+	{
+		return asAtomHandler::getClass(var.value,sys);
+	}
+	number_t getLocalNumber() const
+	{
+		assert(asAtomHandler::isLocalNumber(var.value));
+		return var.numbervalue;
 	}
 };
 // struct used to count cyclic references
@@ -851,7 +957,7 @@ public:
 				if(ret->second.kind & traitKinds)
 				{
 					res = &ret->second;
-					if (asAtomHandler::isValid(ret->second.var) || asAtomHandler::isValid(ret->second.setter))
+					if ((ret->second.isValidVar()) || asAtomHandler::isValid(ret->second.setter))
 						return &ret->second;
 					else
 					{
@@ -891,18 +997,18 @@ public:
 	//Initialize a new variable specifying the type (TODO: add support for const)
 	void initializeVar(multiname &mname, asAtom &obj, multiname *typemname, ABCContext* context, TRAIT_KIND traitKind, ASObject* mainObj, uint32_t slot_id, bool isenumerable);
 	void killObjVar(ASWorker* wrk, const multiname& mname);
-	FORCE_INLINE asAtom getSlot(unsigned int n)
+	FORCE_INLINE asAtom getSlot(unsigned int n, ASWorker* wrk, uint16_t localnumberpos)
 	{
 		assert_and_throw(n > 0 && n <= slotcount);
-		return slots_vars[n-1]->var;
+		return slots_vars[n-1]->getVar(wrk,localnumberpos);
 	}
 	FORCE_INLINE variable* getSlotVar(unsigned int n)
 	{
 		return slots_vars[n-1];
 	}
-	FORCE_INLINE asAtom getSlotNoCheck(unsigned int n)
+	FORCE_INLINE asAtom getSlotNoCheck(unsigned int n, ASWorker* wrk, uint16_t localnumberpos)
 	{
-		return slots_vars[n]->var;
+		return slots_vars[n]->getVar(wrk,localnumberpos);
 	}
 	FORCE_INLINE TRAIT_KIND getSlotKind(unsigned int n)
 	{
@@ -918,6 +1024,9 @@ public:
 	 * this is verified at optimization time
 	 */
 	FORCE_INLINE void setSlotNoCoerce(unsigned int n, asAtom o, ASWorker *wrk);
+
+	// copies var and numbervalue from variable without converting numbervalue
+	FORCE_INLINE void setSlotFromVariable(unsigned int n, variable* v);
 
 	FORCE_INLINE void initSlot(unsigned int n, variable *v)
 	{
@@ -938,7 +1047,6 @@ public:
 	uint32_t getNameAt(unsigned int i, bool& nameIsInteger);
 	const variable* getValueAt(unsigned int i);
 	~variables_map();
-	void check() const;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,
 				std::map<const Class_base*, uint32_t>& traitsMap, bool forsharedobject, ASWorker* wrk);
@@ -985,7 +1093,7 @@ private:
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
-			if(!(asAtomHandler::isValid(ret->getter) || asAtomHandler::isValid(ret->var)))
+			if(!(asAtomHandler::isValid(ret->getter) || ret->isValidVar()))
 				ret=nullptr;
 		}
 		return ret;
@@ -1022,7 +1130,7 @@ protected:
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
-			if(!(asAtomHandler::isValid(ret->getter) || asAtomHandler::isValid(ret->var)))
+			if(!(asAtomHandler::isValid(ret->getter) || ret->isValidVar()))
 				ret=nullptr;
 		}
 		return ret;
@@ -1034,7 +1142,7 @@ protected:
 		{
 			//It seems valid for a class to redefine only the setter, so if we can't find
 			//something to get, it's ok
-			if(!(asAtomHandler::isValid(ret->getter) || asAtomHandler::isValid(ret->var)))
+			if(!(asAtomHandler::isValid(ret->getter) || ret->isValidVar()))
 				ret=nullptr;
 		}
 		return ret;
@@ -1188,6 +1296,7 @@ public:
 	{
 		return getVariableByIntegerIntern(ret,index,opt,wrk);
 	}
+	virtual asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk);
 
 	std::pair<asAtom, GET_VARIABLE_RESULT> AVM1searchPrototypeByMultiname
 	(
@@ -1290,17 +1399,17 @@ public:
 	void setDeclaredMethodAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom f, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	virtual bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk);
-	FORCE_INLINE asAtom getSlot(unsigned int n)
+	FORCE_INLINE asAtom getSlot(unsigned int n,uint16_t localnumberpos=UINT16_MAX)
 	{
-		return Variables.getSlot(n);
+		return Variables.getSlot(n,getInstanceWorker(),localnumberpos);
 	}
 	FORCE_INLINE variable* getSlotVar(unsigned int n)
 	{
 		return Variables.getSlotVar(n);
 	}
-	FORCE_INLINE asAtom getSlotNoCheck(unsigned int n)
+	FORCE_INLINE asAtom getSlotNoCheck(unsigned int n,uint16_t localnumberpos=UINT16_MAX)
 	{
-		return Variables.getSlotNoCheck(n);
+		return Variables.getSlotNoCheck(n,getInstanceWorker(),localnumberpos);
 	}
 	FORCE_INLINE TRAIT_KIND getSlotKind(unsigned int n)
 	{
@@ -1317,6 +1426,10 @@ public:
 	FORCE_INLINE void setSlotNoCoerce(unsigned int n,asAtom o,ASWorker* wrk)
 	{
 		Variables.setSlotNoCoerce(n,o,wrk);
+	}
+	FORCE_INLINE void setSlotFromVariable(unsigned int n,variable* v)
+	{
+		Variables.setSlotFromVariable(n,v);
 	}
 	FORCE_INLINE Class_base* getSlotType(unsigned int n,ABCContext* context)
 	{
@@ -1506,10 +1619,10 @@ public:
 FORCE_INLINE TRISTATE variables_map::setSlot(ASWorker* wrk,unsigned int n, asAtom &o)
 {
 	assert_and_throw(n < slotcount);
-	if (slots_vars[n]->var.uintval != o.uintval)
+	if (!slots_vars[n]->isEqualVar(o))
 	{
 		slots_vars[n]->setVar(wrk,o);
-		return slots_vars[n]->var.uintval == o.uintval ? TTRUE : TFALSE; // setVar may coerce the object into a new instance, so we need to check if incRef is necessary
+		return slots_vars[n]->isEqualVar(o) ? TTRUE : TFALSE; // setVar may coerce the object into a new instance, so we need to check if incRef is necessary
 	}
 	return TUNDEFINED;
 }
@@ -1517,57 +1630,59 @@ FORCE_INLINE TRISTATE variables_map::setSlot(ASWorker* wrk,unsigned int n, asAto
 FORCE_INLINE void variables_map::setSlotNoCoerce(unsigned int n, asAtom o, ASWorker* wrk)
 {
 	assert_and_throw(n < slotcount);
-	if (slots_vars[n]->var.uintval != o.uintval)
+	if (!slots_vars[n]->isEqualVar(o))
 		slots_vars[n]->setVarNoCoerce(o,wrk);
+}
+FORCE_INLINE void variables_map::setSlotFromVariable(unsigned int n, variable* v)
+{
+	assert_and_throw(n < slotcount);
+	slots_vars[n]->setVarFromVariable(v);
 }
 FORCE_INLINE void variables_map::setDynamicVarNoCheck(uint32_t nameID, asAtom& v, bool nameIsInteger, ASWorker* wrk, bool prepend)
 {
 	var_iterator inserted=Variables.insert(Variables.cbegin(),
 			make_pair(nameID,variable(DYNAMIC_TRAIT,nsNameAndKind(),nameIsInteger,nameID)));
 	insertVar(&inserted->second,prepend);
-	asAtomHandler::localNumberToGlobalNumber(wrk,v);
 
 	ASObject* o = asAtomHandler::getObject(v);
 	if (o && !o->getConstant())
 		o->addStoredMember();
-	asAtomHandler::set(inserted->second.var,v);
+	inserted->second.setVarNoCheck(v,wrk);
 }
 FORCE_INLINE void variable::setVarNoCoerce(asAtom &v, ASWorker* wrk)
 {
-	asAtom oldvar = var;
-	if (asAtomHandler::isNumber(var)
-		&& asAtomHandler::isNumber(v)
-		&& !asAtomHandler::getObjectNoCheck(var)->getConstant())
-	{
-		// fast replace for local numbers
-		if (asAtomHandler::replaceNumber(var,wrk,asAtomHandler::getNumber(wrk,v)))
-		{
-			asAtomHandler::getObjectNoCheck(var)->addStoredMember();
-			if(isrefcounted && asAtomHandler::isObject(oldvar))
-			{
-				LOG_CALL("remove old var no coerce:"<<asAtomHandler::toDebugString(oldvar));
-				asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
-			}
-			isrefcounted=true;
-		}
-		return;
-	}
-	bool needsref = !asAtomHandler::localNumberToGlobalNumber(wrk,v);
-	var=v;
-	if(isrefcounted && asAtomHandler::isObject(oldvar))
+	asAtom oldvar = var.value;
+	setVarNoCheck(v,wrk);
+	if(var.isrefcounted && asAtomHandler::isObject(oldvar))
 	{
 		LOG_CALL("remove old var no coerce:"<<asAtomHandler::toDebugString(oldvar));
 		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
 	}
-	isrefcounted = asAtomHandler::isObject(v);
-	if(isrefcounted)
+	var.isrefcounted = asAtomHandler::isObject(v);
+	if(var.isrefcounted)
 	{
-		if (needsref)
-			asAtomHandler::getObjectNoCheck(v)->incRef();
+		asAtomHandler::getObjectNoCheck(v)->incRef();
 		asAtomHandler::getObjectNoCheck(v)->addStoredMember();
 	}
 }
 
+FORCE_INLINE void variable::setVarFromVariable(variable* v)
+{
+	asAtom oldvar = var.value;
+	var.value=v->var.value;
+	var.numbervalue=v->var.numbervalue;
+	if(var.isrefcounted && asAtomHandler::isObject(oldvar))
+	{
+		LOG_CALL("remove old var no coerce:"<<asAtomHandler::toDebugString(oldvar));
+		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
+	}
+	var.isrefcounted = asAtomHandler::isObject(var.value);
+	if(var.isrefcounted)
+	{
+		asAtomHandler::getObjectNoCheck(var.value)->incRef();
+		asAtomHandler::getObjectNoCheck(var.value)->addStoredMember();
+	}
+}
 
 class Activation_object;
 class ApplicationDomain;
@@ -2474,10 +2589,7 @@ FORCE_INLINE bool asAtomHandler::decrement(asAtom& a, ASWorker* wrk, bool replac
 			if (a.uintval>>3 > 0)
 				setUInt(a,wrk,(a.uintval>>3)-1);
 			else
-			{
-				number_t val = a.uintval>>3;
-				setNumber(a,wrk,val-1);
-			}
+				setInt(a,wrk,-1);
 			break;
 		}
 		case ATOM_NUMBERPTR:
@@ -2932,6 +3044,10 @@ FORCE_INLINE void asAtomHandler::multiply_i(asAtom& a, ASWorker* wrk, asAtom &v2
 FORCE_INLINE bool asAtomHandler::isNumeric(const asAtom& a)
 {
 	return (isInteger(a) || isUInteger(a) || isNumber(a));
+}
+FORCE_INLINE bool asAtomHandler::isNumberPtr(const asAtom& a)
+{
+	return (a.uintval&0x7)==ATOM_NUMBERPTR;
 }
 FORCE_INLINE bool asAtomHandler::isNumber(const asAtom& a)
 {

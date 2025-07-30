@@ -39,6 +39,8 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Proxy");
 	}
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk);
+
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk) override;
 	void setVariableByMultiname_i(multiname& name, int32_t value,ASWorker* wrk) override
 	{

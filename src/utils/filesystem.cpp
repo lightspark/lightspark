@@ -25,37 +25,6 @@
 using namespace lightspark;
 namespace fs = FileSystem;
 
-void fs::DirEntry::assign(const Path& _path)
-{
-	path.assign(_path);
-	refresh();
-}
-
-void fs::DirEntry::replaceFilename(const Path& _path)
-{
-	path.replaceFilename(_path);
-	refresh();
-}
-
-void fs::DirEntry::refresh()
-{
-	try
-	{
-		status = fs::Detail::status(path, &symlinkStatus);
-	}
-	catch (...)
-	{
-		if (!status.statusKnown() || !symlinkStatus.isSymlink())
-			std::rethrow_exception(std::current_exception());
-	}
-
-}
-
-FileStatus fs::DirEntry::tryGetStatus() const
-{
-	return status.statusKnown() ? status : fs::status(Path());
-}
-
 Path fs::canonical(const Path& path)
 {
 	if (path.empty())
@@ -167,12 +136,12 @@ void fs::copy(const Path& from, const Path& to, const CopyOptions& options)
 				break;
 			if (!statusTo.exists())
 				createDir(to, from);
-			for (auto it = DirIter(from); it != DirIter(); it.inc())
+			for (auto dir : DirIter(from))
 			{
 				copy
 				(
-					it->path(),
-					to / it->path().getFilename(),
+					dir.path(),
+					to / dir.path().getFilename(),
 					options | CopyOptions(0x8000)
 				);
 			}
@@ -372,33 +341,28 @@ Path fs::relative(const Path& path, const Path& base)
 
 size_t fs::removeAll(const Path& path)
 {
-	size_t count = 0;
 	if (path == "/")
 		throw Exception(path, std::errc::not_supported);
 
 	auto fileStatus = symlinkStatus(path);
 
-	if (fileStatus.exists() && fileStatus.isDir())
-	{
-		std::error_code code;
-		for (auto it : DirIter(path, code))
-		{
-			if (code.value() != 0 && !Detail::isNotFoundError(code))
-				throw Exception(path, code);
+	if (!fileStatus.exists())
+		return 0;
+	if (!fileStatus.isDir())
+		return remove(path);
 
-			if (!it.isSymlink() && it.isDir())
-				count += removeAll(it.path());
-			else
-			{
-				remove(it.path());
-				++count;
-			}
-		}
+	size_t count = 0;
+	std::error_code code;
+	for (auto it = DirIter(path, code); it != DirIter(); it.inc(code))
+	{
+		if (code.value() != 0 && !Detail::isNotFoundError(code))
+			throw Exception(path, code);
+
+		bool recurse = !it->isSymlink() && it->isDir();
+		count += recurse ? removeAll(it->path()) : remove(it->path());
 	}
 
-	if (remove(path))
-		++count;
-	return count;
+	return count + remove(path);
 }
 
 FileStatus fs::status(const Path& path)

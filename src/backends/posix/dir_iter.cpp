@@ -20,6 +20,7 @@
 #include <fstream>
 #include <unistd.h>
 
+#include "backends/posix/dir_iter.h"
 #include "utils/filesystem.h"
 #include "utils/path.h"
 #include "utils/timespec.h"
@@ -28,24 +29,13 @@ using namespace lightspark;
 namespace fs = FileSystem;
 
 using DirOpts = fs::DirOptions;
-class PosixDirIter : public fs::DirIterImpl
-{
-private:
-	DIR* dir;
-	dirent* entry;
-public:
-	PosixDirIter(const Path& path, const DirOpts& opts);
-	~PosixDirIter();
+using DirIterImpl = fs::DirIter::Impl;
 
-	void operator++() override;
-	void copyToDirEntry() override;
-};
-
-PosixDirIter::PosixDirIter
+DirIterImpl::DirIterImpl
 (
 	const Path& path,
 	const DirOpts& opts
-) : fs::DirIterImpl(path, opts), dir(nullptr), entry(nullptr), error(0)
+) : fs::DirIter::ImplBase(path, opts), dir(nullptr), entry(nullptr), error(0)
 {
 	if (path.empty())
 		return;
@@ -68,13 +58,13 @@ PosixDirIter::PosixDirIter
 		code = std::error_code(errno);
 }
 
-PosixDirIter::~PosixDirIter()
+DirIterImpl::~DirIterImpl()
 {
 	if (dir != nullptr)
 		closedir(dir);
 }
 
-void PosixDirIter::operator++()
+void DirIterImpl::inc(std::error_code& code)
 {
 	if (dir == nullptr)
 		return;
@@ -109,7 +99,7 @@ void PosixDirIter::operator++()
 	} while (skip || !strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."));
 }
 
-void PosixDirIter::copyToDirEntry()
+void DirIterImpl::copyToDirEntry()
 {
 	dirEntry.symlinkStatus.setPerms(Perms::Unknown);
 	dirEntry.symlinkStatus.setType(fileTypeFromDirEnt(*entry));

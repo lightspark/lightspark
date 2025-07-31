@@ -307,26 +307,6 @@ private:
 	FileStatus symlinkStatus;
 };
 
-class DirIterImpl
-{
-private:
-	Path basePath;
-	DirOptions options;
-	DirEntry dirEntry;
-	std::error_code code;
-public:
-	DirIterImpl
-	(
-		const Path& path,
-		const DirOptions& opts
-	) : basePath(path), options(opts) {}
-	DirIterImpl(const IterImpl& other) = default;
-	virtual ~DirIterImpl() {}
-
-	virtual void operator++() = 0;
-	virtual void copyToDirEntry() = 0;
-};
-
 class DirIter
 {
 private:
@@ -345,7 +325,25 @@ private:
 		DirEntry operator*() && { return std::move(entry); }
 	};
 
-	_R<DirIterImpl> impl;
+	class ImplBase
+	{
+	public:
+		Path basePath;
+		DirOptions options;
+		DirEntry dirEntry;
+		std::error_code code;
+
+		ImplBase
+		(
+			const Path& path,
+			const DirOptions& opts
+		) : basePath(path), options(opts) {}
+		ImplBase(const ImplBase& other) = delete;
+		~ImplBase() {}
+	};
+
+	class Impl;
+	_R<ImplBase> impl;
 public:
 	using iterator_category = std::input_iterator_tag;
 	using value_type = DirEntry;
@@ -353,11 +351,12 @@ public:
 	using pointer = const DirEntry*;
 	using reference = const DirEntry&;
 
-	DirIter();
-	DirIter(const Path& path, const DirOptions& opts = DirOptions::None);
+	DirIter(const Path& path = Path(), const DirOptions& opts = DirOptions::None);
+	DirIter(const Path& path, std::error_code& code);
+	DirIter(const Path& path, const DirOptions& opts, std::error_code& code);
 
-	DirIter(const DirIter& other);
-	DirIter(DirIter&& other);
+	DirIter(const DirIter& other) = default;
+	DirIter(DirIter&& other) = default;
 
 	DirIter& operator=(const DirIter& other) = default;
 	DirIter& operator=(DirIter&& other) = default;
@@ -366,6 +365,7 @@ public:
 	const DirEntry* operator->() const { return &impl->dirEntry; }
 
 	DirIter& operator++();
+	DirIter& inc(std::error_code& code);
 	Proxy operator++(int)
 	{
 		Proxy tmp(**this);
@@ -373,8 +373,8 @@ public:
 		return tmp;
 	}
 
-	bool operator==(const DirIter& other) const { impl->dirEntry == other.impl->dirEntry; }
-	bool operator!=(const DirIter& other) const { impl->dirEntry != other.impl->dirEntry; }
+	bool operator==(const DirIter& other) const { *(*this) == *other; }
+	bool operator!=(const DirIter& other) const { *(*this) != *other; }
 };
 
 class RecursiveDirIter
@@ -419,26 +419,43 @@ public:
 	using pointer = const DirEntry*;
 	using reference = const DirEntry&;
 
-	RecursiveDirIter();
-	RecursiveDirIter(const Path& path, const DirOptions& opts = DirOptions::None);
+	RecursiveDirIter
+	(
+		const Path& path = Path(),
+		const DirOptions& opts = DirOptions::None
+	) : dirStack(opts, DirIter(path, opts)) {}
 
-	RecursiveDirIter(const RecursiveDirIter& other);
-	RecursiveDirIter(RecursiveDirIter&& other);
+	RecursiveDirIter
+	(
+		const Path& path,
+		std::error_code& code
+	) : dirStack(DirOptions::None, DirIter(path, code)) {}
 
-	RecursiveDirIter& operator=(const RecursiveDirIter& other);
-	RecursiveDirIter& operator=(RecursiveDirIter&& other);
+	RecursiveDirIter
+	(
+		const Path& path,
+		const DirOptions& opts,
+		std::error_code& code
+	) : dirStack(opts, DirIter(path, opts, code)) {}
 
-	DirOptions getOptions() const;
-	ssize_t depth() const;
-	bool isPending() const;
+	RecursiveDirIter(const RecursiveDirIter& other) = default;
+	RecursiveDirIter(RecursiveDirIter&& other) = default;
 
-	const DirEntry& operator*() const { return impl->dirEntry; }
-	const DirEntry* operator->() const { return &impl->dirEntry; }
+	RecursiveDirIter& operator=(const RecursiveDirIter& other) = default;
+	RecursiveDirIter& operator=(RecursiveDirIter&& other) = default;
+
+	DirOptions getOptions() const { return dirStack.options; }
+	ssize_t depth() const { return dirStack.size() - 1; }
+	bool isPending() const { return dirStack.pending; }
+
+	const DirEntry& operator*() const { return dirStack.top().impl->dirEntry; }
+	const DirEntry* operator->() const { return &dirStack.top().impl->dirEntry; }
 
 	void pop();
-	void disablePending();
+	void disablePending() { dirStack.pending = false; }
 
 	RecursiveDirIter& operator++();
+	RecursiveDirIter& inc(std::error_code& code);
 	DirIter::Proxy operator++(int)
 	{
 		DirIter::Proxy tmp(**this);
@@ -446,8 +463,8 @@ public:
 		return tmp;
 	}
 
-	bool operator==(const RecursiveDirIter& other) const { impl->dirEntry == other.impl->dirEntry; }
-	bool operator!=(const RecursiveDirIter& other) const { impl->dirEntry != other.impl->dirEntry; }
+	bool operator==(const RecursiveDirIter& other) const { *(*this) == *other; }
+	bool operator!=(const RecursiveDirIter& other) const { *(*this) != *other; }
 };
 
 Path absolute(const Path& path);

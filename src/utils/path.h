@@ -20,96 +20,40 @@
 #ifndef UTILS_PATH_H
 #define UTILS_PATH_H 1
 
+#include "backends/path.h"
 #include "compat.h"
 #include "tiny_string.h"
 
 namespace lightspark
 {
 
+template<typename T>
+struct PathHelper;
+
 // Based on `path` from https://github.com/gulrak/filesystem
-class Path
+class Path : public PathHelper<uint32_t>
 {
 public:
-	using ValueType = uint32_t;
 	using StringType = tiny_string;
 	using StringSizeType = size_t;
 	using StringIter = CharIterator;
+	using StringPtr = char*;
+	using ConstStrPtr = const char*;
 	using ConstStrIter = const CharIterator;
 
-	class Iter
+	// The pathname format.
+	enum Format
 	{
-	private:
-		friend class Path;
-
-		ConstStrIter inc(const ConstStrIter& pos) const;
-		ConstStrIter dec(const ConstStrIter& pos) const;
-		void updateCurrent();
-
-		ConstStrIter first;
-		ConstStrIter last;
-		ConstStrIter prefix;
-		ConstStrIter root;
-		ConstStrIter iter;
-
-		Path current;
-	public:
-		using ValueType = const Path;
-		using Ptr = ValueType*;
-		using Ref = ValueType&;
-		using DiffType = ptrdiff_t;
-		using IterCategory = std::bidirectional_iterator_tag;
-
-		using value_type = ValueType;
-		using pointer = Ptr;
-		using reference = Ref;
-		using difference_type = DiffType;
-		using iterator_category = IterCategory;
-
-		Iter() = default;
-		Iter(const Path& path, const ConstStrIter& pos) :
-		first(path.path.begin()),
-		last(path.path.end()),
-		prefix(std::next(first, path.prefixLength)),
-		root
-		(
-			path.hasRootDir() ?
-			std::next(first, path.prefixLength + path.rootNameLength()) :
-			last
-		),
-		iter(pos)
-		{
-			if (pos != last)
-				updateCurrent();
-		}
-
-		Iter& operator++();
-		Iter operator++(int)
-		{
-			auto it = *this;
-			++(*this);
-			return it;
-		}
-
-		Iter& operator--()
-		{
-			iter = dec(iter);
-			updateCurrent();
-			return *this;
-		}
-
-		Iter operator--(int)
-		{
-			auto it = *this;
-			--(*this);
-			return it;
-		}
-
-		bool operator==(const Iter& other) const { return iter == other.iter; }
-		bool operator!=(const Iter& other) const { return iter != other.iter; }
-
-		Ref operator*() const { return current; }
-		Ptr operator->() const { return &current }
+		// The generic format, used internally for dealing with portable
+		// separators (`/`).
+		Generic,
+		// The native format of the current platform.
+		Native,
+		// Auto detect the format, fallback to `Native`.
+		Auto,
 	};
+
+	class Iter;
 
 	using iterator = Iter;
 	using const_iterator = Iter;
@@ -138,33 +82,15 @@ private:
 
 	size_t rootNameLength() const;
 	int compareImpl(const Path& other) const;
+	void postprocessPath(const Format& format);
 
 	static constexpr ValueType genericSeparator = U'/';
 	StringType path;
 	StringSizeType prefixLength { 0 };
 public:
-	static constexpr ValueType getNativeSeparator();
-	static constexpr ValueType getPreferredSeparator()
-	{
-		return getNativeSeparator();
-	}
-
-	static constexpr ValueType nativeSeparator = getNativeSeparator();
-	static constexpr ValueType preferredSeparator = getPreferredSeparator();
-
-	// The pathname format.
-	enum Format
-	{
-		// The generic format, used internally for dealing with portable
-		// separators (`/`).
-		Generic,
-		// The native format of the current platform.
-		Native,
-		// Auto detect the format, fallback to `Native`.
-		Auto,
-	};
-
-	Path() = default;
+	// NOTE: Can't use `= default` in the default constructor because of
+	// bugs in both GCC, and Clang.
+	Path() {}
 	Path(const Path& other) = default;
 	Path(Path&& other) = default;
 
@@ -200,8 +126,8 @@ public:
 	Path& assign(const Path& other) { return *this = other; }
 	Path& assign(StringType&& other)
 	{
-		path = std:move(other);
-		postprocessPath(Format::NativeFormat);
+		path = std::move(other);
+		postprocessPath(Format::Native);
 		return *this;
 	}
 
@@ -209,7 +135,7 @@ public:
 	Path& assign(const T& other)
 	{
 		path = toUTF8(other);
-		postprocessPath(Format::NativeFormat);
+		postprocessPath(Format::Native);
 		return *this;
 	}
 
@@ -217,7 +143,8 @@ public:
 	Path& assign(InputIter first, InputIter last)
 	{
 		path = StringType(first, last);
-		postprocessPath(Format::NativeFormat);
+		postprocessPath(Format::Native);
+		return *this;
 	}
 
 	Path& operator/=(const Path& other);
@@ -236,7 +163,7 @@ public:
 	Path& operator+=(const Path& other)
 	{
 		path += other.path;
-		postprocessPath(Format::NativeFormat);
+		postprocessPath(Format::Native);
 		return *this;
 	}
 
@@ -246,6 +173,7 @@ public:
 			path += other == genericSeparator ? nativeSeparator : other;
 
 		checkLongPath();
+		return *this;
 	}
 	
 
@@ -262,7 +190,7 @@ public:
 		return *this += Path(first, last);
 		#elif 1
 		path += StringType(first, last);
-		postprocessPath(Format::NativeFormat);
+		postprocessPath(Format::Native);
 		return *this;
 		#else
 		return concat(StringType(first, last));
@@ -292,7 +220,7 @@ public:
 	const StringType& getNativeStr() const { return path; }
 	const StringType& getGenericStr() const;
 	const StringType& getStr() const { return getNativeStr(); }
-	const ValueType* rawBuf() const { return getNativeStr().raw_buf(); }
+	ConstStrPtr rawBuf() const { return getNativeStr().raw_buf(); }
 	operator StringType() const { return getNativeStr(); }
 
 	int compare(const Path& other) const;
@@ -328,8 +256,8 @@ public:
 	Path lexicallyRelative(const Path& base) const;
 	Path lexicallyProximate(const Path& base) const;
 
-	Iter begin() const { return Iter(*this, path.begin()); }
-	Iter end() const { return Iter(*this, path.end()); }
+	Iter begin() const;
+	Iter end() const;
 
 	bool operator==(const Path& other) const { return !compare(other); }
 	bool operator!=(const Path& other) const { return compare(other); }
@@ -350,6 +278,99 @@ public:
 	{
 		return path.contains(_path.path);
 	}
+};
+
+class Path::Iter
+{
+private:
+	friend class Path;
+
+	ConstStrIter inc(const ConstStrIter& pos) const;
+	ConstStrIter dec(const ConstStrIter& pos) const;
+	void updateCurrent();
+
+	ConstStrIter first;
+	ConstStrIter last;
+	ConstStrIter prefix;
+	ConstStrIter root;
+	ConstStrIter iter;
+
+	Path current;
+public:
+	using ValueType = const Path;
+	using Ptr = ValueType*;
+	using Ref = ValueType&;
+	using DiffType = ptrdiff_t;
+	using IterCategory = std::bidirectional_iterator_tag;
+
+	using value_type = ValueType;
+	using pointer = Ptr;
+	using reference = Ref;
+	using difference_type = DiffType;
+	using iterator_category = IterCategory;
+
+	Iter() = default;
+	Iter(const Path& path, const ConstStrIter& pos) :
+	first(path.path.begin()),
+	last(path.path.end()),
+	#if 0
+	prefix(first + path.prefixLength),
+	root
+	(
+		path.hasRootDir() ?
+		#if 1
+		first + path.prefixLength + path.rootNameLength() :
+		#else
+		prefix + path.rootNameLength() :
+		#endif
+		last
+	),
+	#else
+	prefix(std::next(first, path.prefixLength)),
+	root
+	(
+		path.hasRootDir() ?
+		#if 1
+		std::next(first, path.prefixLength + path.rootNameLength()) :
+		#else
+		std::next(prefix, path.rootNameLength()) :
+		#endif
+		last
+	),
+	#endif
+	iter(pos)
+	{
+		if (pos != last)
+			updateCurrent();
+	}
+
+	Iter& operator++();
+	Iter operator++(int)
+	{
+		auto it = *this;
+		++(*this);
+		return it;
+	}
+
+	Iter& operator--()
+	{
+		iter = dec(iter);
+		updateCurrent();
+		return *this;
+	}
+
+	Iter operator--(int)
+	{
+		auto it = *this;
+		--(*this);
+		return it;
+	}
+
+	bool operator==(const Iter& other) const { return iter == other.iter; }
+	bool operator!=(const Iter& other) const { return iter != other.iter; }
+
+	Ref operator*() const { return current; }
+	Ptr operator->() const { return &current }
 };
 
 };

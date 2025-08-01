@@ -110,3 +110,74 @@ fs::DirIter& fs::DirIter::inc(std::error_code& code)
 	impl->inc(code);
 	return *this;
 }
+
+fs::RecirsiveDirIter& fs::RecirsiveDirIter::operator++()
+{
+	std::error_code code;
+	inc(code);
+	if (code.value())
+	{
+		auto path =
+		(
+			dirStack.empty() ?
+			Path() :
+			dirStack.top().getPath()
+		);
+		throw Exception(path, code);
+	}
+	return *this;
+}
+
+fs::RecirsiveDirIter& fs::RecirsiveDirIter::inc(std::error_code& code)
+{
+	bool isSymlink;
+	bool isDir;
+
+	try
+	{
+		isSymlink = (*this)->isSymlink();
+		isDir = (*this)->isDir();
+	}
+	catch (Exception& e)
+	{
+		if (!isSymlink || !Detail::isNotFoundError(e.code()))
+			code = e.code();
+	}
+
+	if (code.value())
+		return *this;
+
+	if (isPending() && isDir && (!isSymlink || (getOptions() & DirOpts::FollowSymlinks)))
+		dirStack.push(DirIter((*this)->path(), dirStack.options, code));
+	else
+		dirStack.top().inc(code);
+
+	if (!code.value())
+	{
+		while (depth() > 0 && dirStack.top() == DirIter())
+		{
+			dirStack.pop();
+			dirStack.top().inc(code);
+		}
+	}
+	else if (!dirStack.empty())
+		dirStack.pop();
+	dirStack.pending = true;
+
+	return *this;
+}
+
+void fs::RecirsiveDirIter::pop()
+{
+	if (!depth())
+	{
+		*this = RecursiveDirIter();
+		return;
+	}
+
+	do
+	{
+		dirStack.pop();
+		++dirStack.top();
+	} while (depth() > 0 && dirStack.top() == DirIter());
+}

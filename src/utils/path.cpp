@@ -404,3 +404,13 @@ Path Path::lexicallyProximate(const Path& base) const
 	Path ret = lexicallyRelative(base);
 	return ret.empty() ? *this : ret;
 }
+
+Path::Iter Path::begin() const
+{
+	return Iter(*this, path.begin());
+}
+
+Path::Iter Path::end() const
+{
+	return Iter(*this, path.end());
+}

@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include <fstream>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "utils/filesystem.h"
@@ -263,6 +264,7 @@ Path fs::tempDirPath()
 
 fs::FileStatus fromStatMode(mode_t mode)
 {
+	using namespace fs;
 	FileType type;
 
 	switch (mode & S_IFMT)

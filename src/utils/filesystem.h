@@ -21,6 +21,7 @@
 #define UTILS_FILESYSTEM_H 1
 
 #include "compat.h"
+#include "smartrefs.h"
 #include "tiny_string.h"
 #include "utils/path.h"
 #include "utils/timespec.h"
@@ -477,7 +478,7 @@ void copySymlink(const Path& symlink, const Path& newSymlink);
 bool createDirs(const Path& path);
 bool createDir(const Path& path, const Path& attrs = Path());
 void createDirSymlink(const Path& to, const Path& newSymlink);
-void createSymlink(const path& to, const path& newSymlink);
+void createSymlink(const Path& to, const Path& newSymlink);
 Path currentPath();
 void currentPath(const Path& path);
 bool exists(const Path& path);
@@ -516,7 +517,7 @@ namespace Detail
 // Platform specific functions.
 bool copyFile(const Path& from, const Path& to, bool overwrite);
 bool createDir(const Path& path, const Path& attrs);
-void createSymlink(const path& to, const path& newSymlink, bool toDir)
+void createSymlink(const Path& to, const Path& newSymlink, bool toDir)
 void setPerms(const Path& path, const Perms& perms, const PermOptions& opts, const FileStatus& fileStatus);
 Path resolveSymlink(const Path& path);
 FileStatus status(const Path& path, FileStatus* _symlinkStatus = nullptr);

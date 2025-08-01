@@ -68,7 +68,7 @@ fs::DirIter::DirIter
 (
 	const Path& path,
 	const DirOpts& opts
-) : impl(_R(new Impl(path, opts)))
+) : impl(_MR(new Impl(path, opts)))
 {
 	if (impl->code.value())
 		throw Exception(path, impl->code);
@@ -79,7 +79,7 @@ fs::DirIter::DirIter
 (
 	const Path& path,
 	std::error_code& code
-) : impl(_R(new Impl(path, DirOpts::None)))
+) : impl(_MR(new Impl(path, DirOpts::None)))
 {
 	if (impl->code.value())
 		code = impl->code;
@@ -90,7 +90,7 @@ fs::DirIter::DirIter
 	const Path& path,
 	const DirOpts& opts,
 	std::error_code& code
-) : impl(_R(new Impl(path, opts)))
+) : impl(_MR(new Impl(path, opts)))
 {
 	if (impl->code.value())
 		code = impl->code;

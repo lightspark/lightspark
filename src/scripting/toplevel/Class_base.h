@@ -78,7 +78,7 @@ public:
 	bool coerceForTemplate(ASWorker* wrk, asAtom& o,bool allowconversion);
 	
 	/* Return "any" for anyType, "void" for voidType and class_name.name for Class_base */
-	virtual tiny_string getName() const=0;
+	virtual tiny_string getName(bool dotnotation=false) const=0;
 
 	/* Returns true if the given multiname is present in the declared traits of the type */
 	virtual EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const = 0;
@@ -99,7 +99,7 @@ class ASAny: public Type
 public:
 	bool coerce(ASWorker* wrk,asAtom& o) override { return false; }
 	virtual ~ASAny() {}
-	tiny_string getName() const override { return "any"; }
+	tiny_string getName(bool dotnotation=false) const override { return "any"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return CANNOT_BIND; }
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }
 	bool isBuiltin() const override { return true; }
@@ -111,7 +111,7 @@ class Void: public Type
 public:
 	bool coerce(ASWorker* wrk,asAtom& o) override { return false; }
 	virtual ~Void() {}
-	tiny_string getName() const override { return "void"; }
+	tiny_string getName(bool dotnotation=false) const override { return "void"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return NOT_BINDED; }
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }
 	bool isBuiltin() const override { return true; }
@@ -129,7 +129,7 @@ public:
 	ActivationType(const method_info* m):mi(m){}
 	bool coerce(ASWorker* wrk,asAtom& o) override { throw RunTimeException("Coercing to an ActivationType should not happen");}
 	virtual ~ActivationType() {}
-	tiny_string getName() const override { return "activation"; }
+	tiny_string getName(bool dotnotation=false) const override { return "activation"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override;
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override;
 	bool isBuiltin() const override { return true; }
@@ -219,7 +219,7 @@ public:
 	bool isSubClass(Class_base* cls, bool considerInterfaces=true);
 	const tiny_string getQualifiedClassName(bool fullName = false) const;
 	uint32_t getQualifiedClassNameID();
-	tiny_string getName() const override;
+	tiny_string getName(bool dotnotation=false) const override;
 	tiny_string toString();
 	virtual void generator(ASWorker* wrk,asAtom &ret, asAtom* args, const unsigned int argslen);
 	ASObject *describeType(ASWorker* wrk) const override;
@@ -288,7 +288,7 @@ public:
 
 
 	bool coerce(ASWorker* wrk, asAtom& o) override { return false;}
-	tiny_string getName() const override { return "template"; }
+	tiny_string getName(bool dotnotation=false) const override { return "template"; }
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override { return CANNOT_BIND;}
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }
 	bool isBuiltin() const override { return true;}

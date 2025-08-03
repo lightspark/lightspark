@@ -26,6 +26,7 @@
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/events/StatusEvent.h"
 #include <glib.h>
 
 using namespace lightspark;
@@ -303,7 +304,8 @@ public:
 		ctxt->incRef();
 		tiny_string c((const char*)code,true);
 		tiny_string l((const char*)level,true);
-		getVm(ctxt->getSystemState())->addEvent(_MR(ctxt), _MR(Class<StatusEvent>::getInstanceS(ctxt->getInstanceWorker(),c,l)));
+		asAtom statuscode = asAtomHandler::fromString(ctxt->getSystemState(),c);
+		getVm(ctxt->getSystemState())->addEvent(_MR(ctxt), _MR(Class<StatusEvent>::getInstanceS(ctxt->getInstanceWorker(),l,statuscode)));
 		LOG(LOG_CALLS,"nativeExtension:DispatchStatusEventAsync:"<<ctxt->toDebugString()<<" "<<c<<" "<<l);
 		return FRE_OK;
 	}

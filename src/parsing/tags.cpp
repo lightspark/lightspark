@@ -3289,6 +3289,7 @@ void AVM1InitActionTag::execute(RootMovieClip *root) const
 		return;
 	}
 	MovieClip* clip = sprite->instance(nullptr)->as<MovieClip>();
+	clip->AVM1SetForInitAction();
 	clip->beforeConstruction(true);
 	clip->state.last_FP=0; // avoid declaring the first frame
 	clip->constructionComplete(true,true);

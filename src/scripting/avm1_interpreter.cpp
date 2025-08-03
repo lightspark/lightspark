@@ -645,6 +645,10 @@ bool ACTIONRECORD::implementsInterface(asAtom type, ASObject* value, ASWorker* w
 				implementsinterface = asAtomHandler::as<AVM1Function>(o)->implementsInterface(type);
 		}
 	}
+	else if (value->is<Array>()
+			   && (asAtomHandler::getObject(type) == Class<AVM1Array>::getRef(wrk->getSystemState()).getPtr()
+				   || asAtomHandler::getObject(type) == Class<Array>::getRef(wrk->getSystemState()).getPtr()))
+		implementsinterface = true; // special case comparing AVM1Array to Array
 	else
 		implementsinterface = ABCVm::instanceOf(value,asAtomHandler::getObject(type));
 	return implementsinterface;
@@ -1630,8 +1634,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					),
 					context->isCaseSensitive()
 				);
-
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineLocal done "<<asAtomHandler::toDebugString(name)<<" " <<asAtomHandler::toDebugString(value));
 				if (context->getScope()->defineLocalByMultiname
 				(
 					m,
@@ -1640,6 +1642,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					wrk
 				))
 					ASATOM_DECREF(value);
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineLocal done "<<asAtomHandler::toDebugString(name));
 				ASATOM_DECREF(name);
 				break;
 			}
@@ -2717,7 +2720,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				code.assign(it,it+codesize);
 				it += codesize;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction2 "<<name<<" "<<paramcount<<" "<<flag1<<flag2<<flag3<<flag4<<flag5<<flag6<<flag7<<flag8<<flag9<<" "<<codesize);
-				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,context,funcparamnames,code,flag7 ? nullptr : context->getScope(),registernumber,flag1, flag2, flag3, flag4, flag5, flag6, flag7, flag8, flag9);
+				AVM1Function* f = Class<IFunction>::getAVM1Function(wrk,clip,context,funcparamnames,code,context->getScope(),registernumber,flag1, flag2, flag3, flag4, flag5, flag6, flag7, flag8, flag9);
 				//Create the prototype object
 				ASObject* pr =new_asobject(f->getSystemState()->worker);
 				pr->addStoredMember();

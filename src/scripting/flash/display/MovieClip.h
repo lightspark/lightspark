@@ -41,6 +41,7 @@ private:
 	bool inAVM1Attachment;
 	bool isAVM1Loaded;
 	bool AVM1EventScriptsAdded;
+	bool forAVM1InitAction;
 	void runGoto(bool newFrame);
 	AVM1context avm1context;
 	std::map<uint32_t,AVM1context> AVM1FrameContexts;
@@ -74,6 +75,9 @@ public:
 	 * executed while loading
 	 */
 	virtual bool hasFinishedLoading() { return true; }
+
+	void AVM1SetForInitAction() { forAVM1InitAction = true; }
+	bool AVM1GetForInitAction() const { return forAVM1InitAction; }
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(swapDepths);
 	ASFUNCTION_ATOM(addFrameScript);

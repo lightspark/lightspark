@@ -18,8 +18,10 @@
 **************************************************************************/
 
 #include "scripting/flash/events/flashevents.h"
+#include "scripting/flash/events/AsyncErrorEvent.h"
 #include "scripting/flash/events/FocusEvent.h"
 #include "scripting/flash/events/HttpStatusEvent.h"
+#include "scripting/flash/events/StatusEvent.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"

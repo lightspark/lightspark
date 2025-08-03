@@ -68,6 +68,7 @@ ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
 	,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
+	,forAVM1InitAction(false)
 	,framecontainer(nullptr)
 	,actions(nullptr),totalFrames_unreliable(1),enabled(true),avm1loader(nullptr)
 {
@@ -76,6 +77,7 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSprit
 
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c, FrameContainer* f, uint32_t defineSpriteTagID):Sprite(wrk,c),fromDefineSpriteTag(defineSpriteTagID),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
 	,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
+	,forAVM1InitAction(false)
 	,framecontainer(f)
 	,actions(nullptr),totalFrames_unreliable(f->getFramesLoaded()),enabled(true),avm1loader(nullptr)
 {

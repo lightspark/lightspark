@@ -998,7 +998,7 @@ bool ASObject::deleteVariableByMultiname_intern(const multiname& name, ASWorker*
 		if (classdef && classdef->isSealed)
 		{
 			if (classdef->Variables.findObjVar(getInstanceWorker(),name, DECLARED_TRAIT)!=nullptr)
-				createError<ReferenceError>(getInstanceWorker(),kDeleteSealedError,name.normalizedNameUnresolved(getSystemState()),classdef->getName());
+				createError<ReferenceError>(getInstanceWorker(),kDeleteSealedError,name.normalizedNameUnresolved(getSystemState()),classdef->getName(true));
 			return false;
 		}
 

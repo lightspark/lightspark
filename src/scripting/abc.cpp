@@ -24,6 +24,7 @@
 #include "compat.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/Stage.h"
+#include "scripting/flash/events/LocalConnectionEvent.h"
 #include "scripting/toplevel/toplevel.h"
 #include <algorithm>
 
@@ -1177,9 +1178,15 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				FunctionAsyncEvent* ev=static_cast<FunctionAsyncEvent*>(e.second.getPtr());
 				asAtom result=asAtomHandler::invalidAtom;
 				if (asAtomHandler::is<AVM1Function>(ev->f))
+				{
 					asAtomHandler::as<AVM1Function>(ev->f)->call(&result,&ev->obj,ev->args,ev->numArgs);
+					ASATOM_DECREF(ev->obj);
+					for (uint32_t i = 0; i < ev->numArgs; i++)
+						ASATOM_DECREF(ev->args[i]);
+				}
 				else
 					asAtomHandler::callFunction(ev->f,getWorker(),result,ev->obj,ev->args,ev->numArgs,true);
+				ASATOM_DECREF(ev->f);
 				ASATOM_DECREF(result);
 				break;
 			}

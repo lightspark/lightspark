@@ -35,6 +35,10 @@
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/Stage.h"
+#include "scripting/flash/events/AsyncErrorEvent.h"
+#include "scripting/flash/events/LocalConnectionEvent.h"
+#include "scripting/flash/events/StatusEvent.h"
+#include "scripting/flash/net/LocalConnection.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/toplevel/toplevel.h"
@@ -54,7 +58,6 @@
 #include "backends/config.h"
 #include "backends/rendering.h"
 #include "backends/cachedsurface.h"
-#include "backends/image.h"
 #include "backends/extscriptobject.h"
 #include "backends/input.h"
 #include "backends/locale.h"
@@ -209,7 +212,7 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 									   "onConnect","onData","onClose","onSelect",
 									   "add","alpha","darken","difference","erase","hardlight","invert","layer","lighten","multiply","overlay","screen","subtract",
 									   "text","null","true","false","global","init","onSetFocus","onResize","movieclip","caller","callee","arguments",
-									   "onUnload"
+									   "onUnload","onStatus","level"
 									  };
 
 extern uint32_t asClassCount;
@@ -660,6 +663,8 @@ void SystemState::systemFinalize()
 	invalidateQueueHead.reset();
 	invalidateQueueTail.reset();
 	parameters.reset();
+	for (auto it = localconnection_client_map.begin(); it != localconnection_client_map.end(); ++it)
+		it->second->removeStoredMember();
 	localconnection_client_map.clear();
 	static_SoundMixer_soundTransform.reset();
 	static_ObjectEncoding_dynamicPropertyWriter.reset();
@@ -2731,34 +2736,157 @@ void SystemState::windowToStageCoordinates(int windowX, int windowY, int& stageX
 	stageX = (windowX-offsetX)/scaleX;
 	stageY = (windowY-offsetY)/scaleY;
 }
+
+void SystemState::setLocalConnectionClient(uint32_t nameID, LocalConnection* client)
+{
+	Locker l(mutexLocalConnection);
+	if (client)
+	{
+		client->incRef();
+		client->addStoredMember();
+		// remove old connection, if any
+		auto it = localconnection_client_map.find(nameID);
+		if (it != localconnection_client_map.end() && it->second!= client)
+		{
+			it->second->removeStoredMember();
+			localconnection_client_map.erase(it);
+		}
+	}
+	// register new connection
+	localconnection_client_map[nameID]=client;
+}
+
+void SystemState::closeLocalConnectionClient(uint32_t nameID)
+{
+	Locker l(mutexLocalConnection);
+	auto it = localconnection_client_map.find(nameID);
+	if (it != localconnection_client_map.end())
+	{
+		it->second->removeStoredMember();
+		localconnection_client_map.erase(it);
+	}
+}
+
+LocalConnection* SystemState::getLocalConnectionClient(uint32_t nameID)
+{
+	Locker l(mutexLocalConnection);
+	auto it = localconnection_client_map.find(nameID);
+	if (it != localconnection_client_map.end())
+		return  (*it).second;
+	return nullptr;
+}
 void SystemState::handleLocalConnectionEvent(LocalConnectionEvent* ev)
 {
-	_NR<ASObject> obj;
+	LOG_CALL("handleLocalConnectionEvent:"<<ev->eventtype<<" "<<getStringFromUniqueId(ev->nameID)<<" "<<getStringFromUniqueId(ev->methodID)<<" "<<ev->sender->toDebugString());
 	mutexLocalConnection.lock();
-	LOG_CALL("handleLocalConnectionEvent:"<<getStringFromUniqueId(ev->nameID)<<" "<<getStringFromUniqueId(ev->methodID)<<" "<<ev->numargs);
+	LocalConnection* currentConnection = nullptr;
 	auto it = this->localconnection_client_map.find(ev->nameID);
-	if (it != this->localconnection_client_map.end())
-		obj =(*it).second;
-	else
-		LOG(LOG_ERROR,"no client for LocalConnection found:"<<getStringFromUniqueId(ev->nameID)<<" "<<getStringFromUniqueId(ev->methodID)<<" "<<ev->numargs);
-	mutexLocalConnection.unlock();
-	if (!obj.isNull())
+	bool hasConnection = it != this->localconnection_client_map.end();
+	if (hasConnection)
+		currentConnection = (*it).second;
+	switch (ev->eventtype)
 	{
-		multiname m(nullptr);
-		m.name_type=multiname::NAME_STRING;
-		m.name_s_id=ev->methodID;
-		m.isAttribute = false;
-		asAtom func = asAtomHandler::invalidAtom;
-		(*it).second->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,this->worker);
-		if (asAtomHandler::isFunction(func))
+		case LOCALCONNECTION_EVENTTYPE::LOCALCONNECTION_CONNECT:
 		{
-			asAtom o = asAtomHandler::fromObject(obj.getPtr());
-			asAtom ret = asAtomHandler::invalidAtom;
-			asAtomHandler::callFunction(func,worker,ret,o,ev->args,ev->numargs,false);
-			ASATOM_DECREF(ret);
+			if (hasConnection)
+			{
+				if (currentConnection
+					&& ev->sender != currentConnection)
+				{
+					if (currentConnection->getConnectionStatus()==LOCALCONNECTION_CONNECTED)
+					{
+						ev->sender->setConnectionName(UINT32_MAX);
+						ev->sender->incRef();
+						getVm(this)->addEvent(_MR(ev->sender), _MR(Class<StatusEvent>::getInstanceS(ev->sender->getInstanceWorker(), "error",asAtomHandler::fromString(this,"LocalConnection already connected"))));
+					}
+					else
+					{
+						currentConnection->removeStoredMember();
+						localconnection_client_map.erase(ev->nameID);
+					}
+				}
+				else
+					ev->sender->setConnectionName(ev->nameID);
+			}
+			else
+			{
+				setLocalConnectionClient(ev->nameID,ev->sender);
+				ev->sender->setConnectionName(ev->nameID);
+			}
+			mutexLocalConnection.unlock();
+			break;
 		}
-		else
-			LOG(LOG_ERROR,"no method for LocalConnection found:"<<getStringFromUniqueId(ev->nameID)<<" "<<getStringFromUniqueId(ev->methodID)<<" "<<(*it).second->toDebugString());
+		case LOCALCONNECTION_EVENTTYPE::LOCALCONNECTION_CLOSE:
+		{
+			if (currentConnection && currentConnection==ev->sender)
+			{
+				currentConnection->removeStoredMember();
+				localconnection_client_map.erase(ev->nameID);
+			}
+			ev->sender->setConnectionName(UINT32_MAX);
+			mutexLocalConnection.unlock();
+			break;
+		}
+		case LOCALCONNECTION_EVENTTYPE::LOCALCONNECTION_SEND:
+		{
+			ASObject* obj=nullptr;
+			if (currentConnection
+				&& (currentConnection->getConnectionStatus() == LOCALCONNECTION_CONNECTED))
+			{
+				obj =asAtomHandler::getObject(currentConnection->client);
+				if (!obj)
+					obj = currentConnection;
+				if (ev->sender->is<AVM1LocalConnection>()
+					 && !obj->is<AVM1LocalConnection>())
+					obj=nullptr; // it seems that sending from AVM1 to AVM2 is not allowed
+			}
+			if (!obj)
+			{
+				ev->sender->incRef();
+				getVm(this)->addEvent(_MR(ev->sender), _MR(Class<StatusEvent>::getInstanceS(ev->sender->getInstanceWorker(), "error")));
+			}
+			mutexLocalConnection.unlock();
+			if (obj)
+			{
+				multiname m(nullptr);
+				m.name_type=multiname::NAME_STRING;
+				m.name_s_id=ev->methodID;
+				m.isAttribute = false;
+				asAtom func = asAtomHandler::invalidAtom;
+				if (ev->sender->is<AVM1LocalConnection>())
+					obj->AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,obj->getInstanceWorker(),false);
+				else
+					obj->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,obj->getInstanceWorker());
+				if (asAtomHandler::isFunction(func))
+				{
+					ev->sender->incRef();
+					getVm(this)->addEvent(_MR(ev->sender), _MR(Class<StatusEvent>::getInstanceS(ev->sender->getInstanceWorker(), "status")));
+					asAtom o = asAtomHandler::fromObject(obj);
+					obj->incRef();
+					if (asAtomHandler::is<AVM1Function>(func))
+					{
+						for (uint32_t i = 0; i < ev->numargs; i++)
+							ASATOM_INCREF(ev->args[i]);
+					}
+					_R<FunctionAsyncEvent> funcevent(new (unaccountedMemory) FunctionAsyncEvent(func,o, ev->args, ev->numargs));
+					getVm(this)->addEvent(NullRef,funcevent);
+				}
+				else
+				{
+					ev->sender->incRef();
+					getVm(this)->addEvent(_MR(ev->sender), _MR(Class<StatusEvent>::getInstanceS(ev->sender->getInstanceWorker(), "status")));
+					if (obj->is<EventDispatcher>())
+					{
+						obj->incRef();
+						auto e = Class<AsyncErrorEvent>::getInstanceS(obj->getInstanceWorker());
+						auto err = Class<ReferenceError>::getInstanceS(obj->getInstanceWorker(),createErrorMessage(kReadSealedError,getStringFromUniqueId(ev->methodID),obj->getClass()->getName(true),""),kReadSealedError);
+						e->error = asAtomHandler::fromObject(err);
+						getVm(this)->addEvent(_MR(obj->as<EventDispatcher>()), _MR(e));
+					}
+				}
+			}
+			break;
+		}
 	}
 }
 

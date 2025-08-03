@@ -197,14 +197,6 @@ public:
 	static void sinit(Class_base*);
 };
 
-class AsyncErrorEvent: public ErrorEvent
-{
-public:
-	AsyncErrorEvent(ASWorker* wrk, Class_base* c);
-	static void sinit(Class_base*);
-	ASFUNCTION_ATOM(_constructor);
-};
-
 class UncaughtErrorEvent: public ErrorEvent
 {
 public:
@@ -362,20 +354,6 @@ public:
 	ASFUNCTION_ATOM(removeEventListener);
 	ASFUNCTION_ATOM(dispatchEvent);
 	ASFUNCTION_ATOM(_hasEventListener);
-};
-
-class StatusEvent: public Event
-{
-private:
-	Event* cloneImpl() const override;
-public:
-	StatusEvent(ASWorker* wrk, Class_base* c, const tiny_string& _code="", const tiny_string& _level=""):Event(wrk,c, "status"),
-		code(_code),level(_level)
-	{
-	}
-	static void sinit(Class_base*);
-	ASPROPERTY_GETTER_SETTER(tiny_string, code);
-	ASPROPERTY_GETTER_SETTER(tiny_string, level);
 };
 
 class DataEvent: public TextEvent
@@ -549,19 +527,6 @@ private:
 public:
 	RootConstructedEvent(_NR<DisplayObject> m, bool explicit_ = false);
 	EVENT_TYPE getEventType() const override { return ROOTCONSTRUCTEDEVENT; }
-};
-class LocalConnectionEvent: public Event
-{
-friend class SystemState;
-private:
-	uint32_t nameID;
-	uint32_t methodID;
-	asAtom* args;
-	uint32_t numargs;
-public:
-	LocalConnectionEvent(uint32_t _nameID, uint32_t _methodID, asAtom* _args, uint32_t _numargs);
-	~LocalConnectionEvent();
-	EVENT_TYPE getEventType() const override { return LOCALCONNECTIONEVENT; }
 };
 
 class BroadcastEvent: public Event

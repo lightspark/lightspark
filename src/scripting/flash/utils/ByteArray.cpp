@@ -1291,6 +1291,7 @@ asAtomWithNumber ByteArray::getAtomWithNumberByMultiname(const multiname& name, 
 		return res;
 	}
 	asAtomHandler::setUndefined(res.value);
+	return res;
 }
 
 multiname *ByteArray::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)

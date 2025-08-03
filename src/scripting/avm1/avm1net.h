@@ -40,8 +40,9 @@ public:
 class AVM1LocalConnection: public LocalConnection
 {
 public:
-	AVM1LocalConnection(ASWorker* wrk,Class_base* c):LocalConnection(wrk,c){}
+	AVM1LocalConnection(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
+	void AVM1HandleEvent(EventDispatcher *dispatcher, Event *e) override;
 };
 
 class AVM1LoadVars: public URLVariables

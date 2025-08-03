@@ -1697,6 +1697,7 @@ class ASString;
 class ASWorker;
 class AVM1Function;
 class AVM1LoadVars;
+class AVM1LocalConnection;
 class AVM1MovieClip;
 class AVM1MovieClipLoader;
 class AVM1Sound;
@@ -1797,6 +1798,7 @@ class Sprite;
 class StackOverflowError;
 class Stage;
 class Stage3D;
+class StatusEvent;
 class SyntaxError;
 class Template_base;
 class TextBlock;
@@ -1848,6 +1850,7 @@ template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
 template<> inline bool ASObject::is<ASWorker>() const { return subtype==SUBTYPE_WORKER; }
 template<> inline bool ASObject::is<AVM1Function>() const { return subtype==SUBTYPE_AVM1FUNCTION; }
 template<> inline bool ASObject::is<AVM1LoadVars>() const { return subtype == SUBTYPE_AVM1LOADVARS; }
+template<> inline bool ASObject::is<AVM1LocalConnection>() const { return subtype==SUBTYPE_AVM1LOCALCONNECTION; }
 template<> inline bool ASObject::is<AVM1Movie>() const { return subtype == SUBTYPE_AVM1MOVIE; }
 template<> inline bool ASObject::is<AVM1MovieClip>() const { return subtype == SUBTYPE_AVM1MOVIECLIP; }
 template<> inline bool ASObject::is<AVM1MovieClipLoader>() const { return subtype == SUBTYPE_AVM1MOVIECLIPLOADER; }
@@ -1898,7 +1901,8 @@ template<> inline bool ASObject::is<Event>() const
 			|| subtype == SUBTYPE_GAMEINPUTEVENT
 			|| subtype == SUBTYPE_NATIVEWINDOWBOUNDSEVENT
 			|| subtype == SUBTYPE_FOCUSEVENT
-			|| subtype == SUBTYPE_HTTPSTATUSEVENT;
+			|| subtype == SUBTYPE_HTTPSTATUSEVENT
+			|| subtype == SUBTYPE_STATUSEVENT;
 }
 template<> inline bool ASObject::is<ExtensionContext>() const { return subtype==SUBTYPE_EXTENSIONCONTEXT; }
 template<> inline bool ASObject::is<FontDescription>() const { return subtype==SUBTYPE_FONTDESCRIPTION; }
@@ -1923,8 +1927,8 @@ template<> inline bool ASObject::is<IFunction>() const { return type==T_FUNCTION
 template<> inline bool ASObject::is<IndexBuffer3D>() const { return subtype==SUBTYPE_INDEXBUFFER3D; }
 template<> inline bool ASObject::is<Integer>() const { return type==T_INTEGER; }
 template<> inline bool ASObject::is<InteractiveObject>() const { return subtype==SUBTYPE_INTERACTIVE_OBJECT || subtype==SUBTYPE_TEXTFIELD || subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_SIMPLEBUTTON || subtype==SUBTYPE_LOADER || subtype == SUBTYPE_AVM1MOVIECLIP || subtype == SUBTYPE_AVM1MOVIE; }
-template<> inline bool ASObject::is<LocalConnection>() const { return subtype==SUBTYPE_LOCALCONNECTION; }
 template<> inline bool ASObject::is<KeyboardEvent>() const { return subtype==SUBTYPE_KEYBOARD_EVENT; }
+template<> inline bool ASObject::is<LocalConnection>() const { return subtype==SUBTYPE_LOCALCONNECTION || subtype==SUBTYPE_AVM1LOCALCONNECTION; }
 template<> inline bool ASObject::is<Loader>() const { return subtype==SUBTYPE_LOADER; }
 template<> inline bool ASObject::is<LoaderContext>() const { return subtype==SUBTYPE_LOADERCONTEXT; }
 template<> inline bool ASObject::is<LoaderInfo>() const { return subtype==SUBTYPE_LOADERINFO; }
@@ -1965,6 +1969,7 @@ template<> inline bool ASObject::is<Sprite>() const { return subtype==SUBTYPE_SP
 template<> inline bool ASObject::is<StackOverflowError>() const { return subtype==SUBTYPE_STACKOVERFLOWERROR; }
 template<> inline bool ASObject::is<Stage>() const { return subtype==SUBTYPE_STAGE; }
 template<> inline bool ASObject::is<Stage3D>() const { return subtype==SUBTYPE_STAGE3D; }
+template<> inline bool ASObject::is<StatusEvent>() const { return subtype==SUBTYPE_STATUSEVENT; }
 template<> inline bool ASObject::is<SyntaxError>() const { return subtype==SUBTYPE_SYNTAXERROR; }
 template<> inline bool ASObject::is<SyntheticFunction>() const { return subtype==SUBTYPE_SYNTHETICFUNCTION; }
 template<> inline bool ASObject::is<Template_base>() const { return type==T_TEMPLATE; }

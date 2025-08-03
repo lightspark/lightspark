@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2009-2013  Alessandro Pignotti (a.pignotti@sssup.it)
+    Copyright (C) 2025  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -17,48 +18,23 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_FLASH_NET_LOCALCONNECTION_H
-#define SCRIPTING_FLASH_NET_LOCALCONNECTION_H
+#ifndef SCRIPTING_FLASH_EVENTS_ASYNCERROREVENT_H
+#define SCRIPTING_FLASH_EVENTS_ASYNCERROREVENT_H 1
 
-#include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
 
 namespace lightspark
 {
-enum LOCALCONNECTION_STATUS
-{
-	LOCALCONNECTION_CLOSED,
-	LOCALCONNECTION_CONNECTING,
-	LOCALCONNECTION_CONNECTED,
-	LOCALCONNECTION_CLOSING
-};
 
-class LocalConnection: public EventDispatcher
+class AsyncErrorEvent: public ErrorEvent
 {
-private:
-	Mutex connectionMutex;
-	uint32_t connectionNameID;
-	LOCALCONNECTION_STATUS connectionstatus;
 public:
-	LocalConnection(ASWorker* wrk,Class_base* c);
+	AsyncErrorEvent(ASWorker* wrk, Class_base* c);
 	static void sinit(Class_base*);
 	void finalize() override;
-	bool destruct() override;
-	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
-	void prepareShutdown() override;
-	uint32_t getConnectionName();
-	LOCALCONNECTION_STATUS getConnectionStatus() const { return connectionstatus; }
-	void setConnectionName(uint32_t newconnectionname);
 	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION_ATOM(isSupported);
-	ASFUNCTION_ATOM(allowDomain);
-	ASFUNCTION_ATOM(allowInsecureDomain);
-	ASFUNCTION_ATOM(send);
-	ASFUNCTION_ATOM(connect);
-	ASFUNCTION_ATOM(close);
-	ASFUNCTION_ATOM(domain);
-	ASPROPERTY_GETTER_SETTER(asAtom,client);
+	ASPROPERTY_GETTER_SETTER(asAtom,error);
 };
 
 }
-#endif // SCRIPTING_FLASH_NET_LOCALCONNECTION_H
+#endif /* SCRIPTING_FLASH_EVENTS_ASYNCERROREVENT_H */

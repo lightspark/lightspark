@@ -257,7 +257,7 @@ private:
 	std::map<tiny_string, Class_base *> classnamemap;
 	unordered_set<DisplayObject*> listResetParent;
 	Mutex mutexLocalConnection;
-	std::map<uint32_t, _NR<ASObject>> localconnection_client_map;
+	std::map<uint32_t, LocalConnection*> localconnection_client_map;
 	ACQUIRE_RELEASE_VARIABLE(FramePhase, framePhase);
 	ATOMIC_INT32(instanceCounter); // used to create unique instanceX names for AVM1
 public:
@@ -332,16 +332,9 @@ public:
 	void stageCoordinateMapping(const Vector2& windowSize, Vector2& offset, Vector2f& scale);
 	Vector2f windowToStagePoint(const Vector2f& windowPos);
 	void windowToStageCoordinates(int windowX, int windowY, int& stageX, int& stageY);
-	void setLocalConnectionClient(uint32_t nameID,_NR<ASObject> client)
-	{
-		Locker l(mutexLocalConnection);
-		localconnection_client_map[nameID]=client;
-	}
-	void removeLocalConnectionClient(uint32_t nameID)
-	{
-		Locker l(mutexLocalConnection);
-		localconnection_client_map.erase(nameID);
-	}
+	void setLocalConnectionClient(uint32_t nameID,LocalConnection* client);
+	void closeLocalConnectionClient(uint32_t nameID);
+	LocalConnection* getLocalConnectionClient(uint32_t nameID);
 	void handleLocalConnectionEvent(LocalConnectionEvent* ev);
 	FramePhase getFramePhase() const { return ACQUIRE_READ(framePhase); }
 	void setFramePhase(FramePhase phase) { RELEASE_WRITE(framePhase, phase); }

@@ -728,11 +728,11 @@ uint32_t Class_base::getQualifiedClassNameID()
 	return qualifiedClassnameID;
 }
 
-tiny_string Class_base::getName() const
+tiny_string Class_base::getName(bool dotnotation) const
 {
 	return (class_name.nsStringId == BUILTIN_STRINGS::EMPTY ?
 				this->getSystemState()->getStringFromUniqueId(class_name.nameId)
-			  : this->getSystemState()->getStringFromUniqueId(class_name.nsStringId) +"$"+ this->getSystemState()->getStringFromUniqueId(class_name.nameId));
+			  : this->getSystemState()->getStringFromUniqueId(class_name.nsStringId) +(dotnotation ? "." : "$")+ this->getSystemState()->getStringFromUniqueId(class_name.nameId));
 }
 
 ASObject *Class_base::describeType(ASWorker* wrk) const

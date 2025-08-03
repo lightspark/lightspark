@@ -1283,22 +1283,6 @@ void SecurityErrorEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("SECURITY_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"securityError"),DECLARED_TRAIT);
 }
 
-AsyncErrorEvent::AsyncErrorEvent(ASWorker* wrk, Class_base* c):ErrorEvent(wrk,c, "asyncError")
-{
-}
-
-void AsyncErrorEvent::sinit(Class_base* c)
-{
-	CLASS_SETUP(c, ErrorEvent, _constructor, CLASS_SEALED);
-	c->setVariableAtomByQName("ASYNC_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"asyncError"),DECLARED_TRAIT);
-}
-
-ASFUNCTIONBODY_ATOM(AsyncErrorEvent,_constructor)
-{
-	uint32_t baseClassArgs=imin(argslen,4);
-	ErrorEvent::_constructor(ret,wrk,obj,args,baseClassArgs);
-}
-
 
 UncaughtErrorEvent::UncaughtErrorEvent(ASWorker* wrk, Class_base* c):ErrorEvent(wrk,c, "uncaughtError")
 {
@@ -1405,30 +1389,6 @@ void ParseRPCMessageEvent::finalize()
 	client.reset();
 	responder.reset();
 }
-
-Event* StatusEvent::cloneImpl() const
-{
-	StatusEvent *clone = Class<StatusEvent>::getInstanceS(getInstanceWorker());
-	clone->code = code;
-	clone->level = level;
-	// Event
-	clone->type = type;
-	clone->bubbles = bubbles;
-	clone->cancelable = cancelable;
-	return clone;
-}
-
-void StatusEvent::sinit(Class_base* c)
-{
-	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
-	/* TODO: dispatch this event */
-	c->setVariableAtomByQName("STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"status"),DECLARED_TRAIT);
-	REGISTER_GETTER_SETTER_RESULTTYPE(c, code, ASString);
-	REGISTER_GETTER_SETTER_RESULTTYPE(c, level, ASString);
-}
-
-ASFUNCTIONBODY_GETTER_SETTER(StatusEvent, code)
-ASFUNCTIONBODY_GETTER_SETTER(StatusEvent, level)
 
 void DataEvent::sinit(Class_base* c)
 {
@@ -1922,30 +1882,8 @@ Event* GameInputEvent::cloneImpl() const
 	return clone;
 }
 
-
-LocalConnectionEvent::LocalConnectionEvent(uint32_t _nameID, uint32_t _methodID, asAtom* _args, uint32_t _numargs): Event(nullptr,nullptr,"LocalConnectionEvent")
-  ,nameID(_nameID),methodID(_methodID)
-{
-	numargs=_numargs;
-	args = new asAtom[numargs];
-	for (uint32_t i = 0; i < numargs; i++)
-	{
-		args[i]=_args[i];
-		ASATOM_INCREF(args[i]);
-	}
-}
-
 BroadcastEvent::BroadcastEvent(const tiny_string& _eventname): Event(nullptr,nullptr,"BroadcastEvent"),eventname(_eventname)
 {
-}
-
-LocalConnectionEvent::~LocalConnectionEvent()
-{
-	for (uint32_t i = 0; i < numargs; i++)
-	{
-		ASATOM_DECREF(args[i]);
-	}
-	
 }
 
 GetMouseTargetEvent::GetMouseTargetEvent(ASWorker* wrk,uint32_t _x, uint32_t _y, HIT_TYPE _type): WaitableEvent(wrk,"GetMouseTargetEvent"),x(_x),y(_y),type(_type)

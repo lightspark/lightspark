@@ -120,13 +120,13 @@ bool AVM1Scope::setVariableByMultiname
 	ASWorker* wrk
 )
 {
-	bool removed =
+	bool ignore =
 	(
-		asAtomHandler::is<DisplayObject>(values) &&
-		!asAtomHandler::as<DisplayObject>(values)->isOnStage()
+		asAtomHandler::is<MovieClip>(values) &&
+		asAtomHandler::as<MovieClip>(values)->AVM1GetForInitAction()
 	);
 
-	if (!removed && asAtomHandler::isValid(values) && (isTargetScope() || asAtomHandler::hasPropertyByMultiname(values,name, true, true, wrk)))
+	if (!ignore && asAtomHandler::isValid(values) && (isTargetScope() || asAtomHandler::hasPropertyByMultiname(values,name, true, true, wrk)))
 	{
 		// Found the variable on this object, overwrite it.
 		// Or, we've hit the currently running clip, so create it here.

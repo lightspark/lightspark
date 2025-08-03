@@ -19,6 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/flash/net/LocalConnection.h"
+#include "scripting/flash/events/LocalConnectionEvent.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/argconv.h"
 
@@ -26,7 +27,10 @@ using namespace std;
 using namespace lightspark;
 
 LocalConnection::LocalConnection(ASWorker* wrk, Class_base* c):
-	EventDispatcher(wrk,c),connectionNameID(UINT32_MAX),isSupported(true)
+	EventDispatcher(wrk,c)
+	,connectionNameID(UINT32_MAX)
+	,connectionstatus(LOCALCONNECTION_CLOSED)
+	,client(asAtomHandler::invalidAtom)
 {
 	subtype=SUBTYPE_LOCALCONNECTION;
 }
@@ -41,11 +45,14 @@ void LocalConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("domain","",c->getSystemState()->getBuiltinFunction(domain,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	REGISTER_GETTER_RESULTTYPE(c,isSupported,Boolean);
+	c->setDeclaredMethodByQName("isSupported","",c->getSystemState()->getBuiltinFunction(isSupported),GETTER_METHOD,false);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,client,ASObject);
 }
 
-ASFUNCTIONBODY_GETTER(LocalConnection, isSupported)
+ASFUNCTIONBODY_ATOM(LocalConnection, isSupported)
+{
+	ret = asAtomHandler::trueAtom;
+}
 
 void LocalConnection::_getter_client(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen)
 {
@@ -56,10 +63,10 @@ void LocalConnection::_getter_client(asAtom& ret, ASWorker* wrk, asAtom& obj, as
 	}
 	LocalConnection* th = asAtomHandler::as<LocalConnection>(obj);
 	// empty client means th is the client
-	if (th->client.isNull())
+	if (asAtomHandler::isInvalid(th->client))
 		ret = asAtomHandler::fromObjectNoPrimitive(th);
 	else
-		ret = asAtomHandler::fromObjectNoPrimitive(th->client.getPtr());
+		ret = th->client;
 	ASATOM_INCREF(ret);
 }
 void LocalConnection::_setter_client(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen)
@@ -85,58 +92,38 @@ void LocalConnection::_setter_client(asAtom& ret, ASWorker* wrk, asAtom& obj, as
 		return;
 	}
 	LocalConnection* th = asAtomHandler::as<LocalConnection>(obj);
-	ASObject* o = asAtomHandler::toObject(args[0],wrk);
-	if (o == th->client.getPtr() || (o==th && th->client.isNull()))
+	if (args[0].uintval == th->client.uintval || (asAtomHandler::getObject(args[0])==th && asAtomHandler::isInvalid(th->client)))
 		return;
-	if (th->client)
+	ASATOM_REMOVESTOREDMEMBER(th->client);
+	if (asAtomHandler::getObject(args[0])!=th)
 	{
-		th->client->removeStoredMember();
-		th->client.fakeRelease();
+		th->client = args[0];
+		ASATOM_ADDSTOREDMEMBER(th->client);
 	}
-	_NR<ASObject> cl;
-	if (o != th)
-	{
-		o->incRef();
-		o->addStoredMember();
-		th->client = _MR(o);
-		cl = th->client;
-	}
-	else
-	{
-		th->incRef();
-		cl = _MR(th);
-	}
-	wrk->getSystemState()->setLocalConnectionClient(th->connectionNameID,cl);
 }
 
 
 void LocalConnection::finalize()
 {
 	EventDispatcher::finalize();
-	if (client)
-	{
-		client->removeStoredMember();
-		client.fakeRelease();
-	}
+	ASATOM_REMOVESTOREDMEMBER(client);
+	client = asAtomHandler::invalidAtom;
 }
 
 bool LocalConnection::destruct()
 {
 	connectionNameID=UINT32_MAX;
-	isSupported=true;
-	if (client)
-	{
-		client->removeStoredMember();
-		client.fakeRelease();
-	}
+	ASATOM_REMOVESTOREDMEMBER(client);
+	client = asAtomHandler::invalidAtom;
 	return EventDispatcher::destruct();
 }
 
 bool LocalConnection::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
-	if (client)
-		ret = client->countAllCylicMemberReferences(gcstate) || ret;
+	ASObject* o = asAtomHandler::getObject(client);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 
@@ -145,8 +132,25 @@ void LocalConnection::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	EventDispatcher::prepareShutdown();
-	if (client)
-		client->prepareShutdown();
+	ASObject* o = asAtomHandler::getObject(client);
+	if (o)
+		o->prepareShutdown();
+}
+
+uint32_t LocalConnection::getConnectionName()
+{
+	Locker l(connectionMutex);
+	return connectionNameID;
+}
+
+void LocalConnection::setConnectionName(uint32_t newconnectionname)
+{
+	Locker l(connectionMutex);
+	if (newconnectionname == UINT32_MAX)
+		connectionstatus = LOCALCONNECTION_CLOSED;
+	else
+		connectionstatus = LOCALCONNECTION_CONNECTED;
+	connectionNameID=newconnectionname;
 }
 
 ASFUNCTIONBODY_ATOM(LocalConnection,_constructor)
@@ -175,48 +179,174 @@ ASFUNCTIONBODY_ATOM(LocalConnection, allowInsecureDomain)
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, send)
 {
-	//LocalConnection* th=asAtomHandler::as<LocalConnection>(obj);
+	LocalConnection* th=asAtomHandler::as<LocalConnection>(obj);
+	ret = asAtomHandler::falseAtom; // for AVM1
 	asAtom connectionName = asAtomHandler::invalidAtom;
 	asAtom methodName = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK_MORE_ALLOWED(connectionName)(methodName));
-	uint32_t nameID = asAtomHandler::toStringId(connectionName,wrk);
-	uint32_t methodID = asAtomHandler::toStringId(methodName,wrk);
-	if (nameID==BUILTIN_STRINGS::EMPTY || methodID==BUILTIN_STRINGS::EMPTY)
+
+	if (asAtomHandler::isNull(connectionName))
 	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError, "value of either connectionName or methodName is an empty string");
+		if (wrk->needsActionScript3())
+			createError<TypeError>(wrk,kNullPointerError, "connectionName");
 		return;
 	}
+	if (asAtomHandler::toStringId(connectionName,wrk)==BUILTIN_STRINGS::EMPTY)
+	{
+		if (wrk->needsActionScript3())
+			createError<ArgumentError>(wrk,kEmptyStringError, "connectionName");
+		return;
+	}
+	if (!asAtomHandler::isString(connectionName) )
+	{
+		if (wrk->needsActionScript3())
+			createError<ArgumentError>(wrk,kInvalidArgumentError, "connectionName");
+		return;
+	}
+
+	if (asAtomHandler::isNull(methodName))
+	{
+		if (wrk->needsActionScript3())
+			createError<TypeError>(wrk,kNullPointerError, "methodName");
+		return;
+	}
+	if (!asAtomHandler::isString(methodName) )
+	{
+		if (wrk->needsActionScript3())
+			createError<ArgumentError>(wrk,kInvalidArgumentError, "methodName");
+		return;
+	}
+	if (asAtomHandler::toStringId(methodName,wrk)==BUILTIN_STRINGS::EMPTY)
+	{
+		if (wrk->needsActionScript3())
+			createError<ArgumentError>(wrk,kEmptyStringError, "methodName");
+		return;
+	}
+	tiny_string s = asAtomHandler::toString(methodName,wrk);
+	if (s.empty()
+		|| s=="send"
+		|| s=="connect"
+		|| s=="close"
+		|| s=="allowDomain"
+		|| s=="allowInsecureDomain"
+		|| s=="domain")
+	{
+		if (wrk->needsActionScript3())
+			createError<ArgumentError>(wrk,kInvalidParamError);
+		return;
+	}
+	uint32_t methodID = asAtomHandler::toStringId(methodName,wrk);
+	tiny_string cname = asAtomHandler::toString(connectionName,wrk);
+	if(!cname.contains(":") && !cname.startsWith("_"))
+	{
+		tiny_string fullname = wrk->getSystemState()->mainClip->getOrigin().getHostname();
+		if (fullname.empty())
+			fullname="localhost";
+		fullname += ":";
+		fullname += cname;
+		cname = fullname;
+	}
+	uint32_t nameID = wrk->getSystemState()->getUniqueStringId(cname,false);
 	uint32_t numargs = argslen-2;
-	
-	getVm(wrk->getSystemState())->addEvent(NullRef,_MR(new (wrk->getSystemState()->unaccountedMemory) LocalConnectionEvent(nameID,methodID,args+2,numargs)));
+	ret = asAtomHandler::trueAtom; // for AVM1
+	getVm(wrk->getSystemState())->addEvent(NullRef,_MR(new (wrk->getSystemState()->unaccountedMemory) LocalConnectionEvent(th,nameID,methodID,args+2,numargs,LOCALCONNECTION_EVENTTYPE::LOCALCONNECTION_SEND)));
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, connect)
 {
+	ret = asAtomHandler::falseAtom; // for AVM1
 	if (!asAtomHandler::is<LocalConnection>(obj))
 		return;
 	LocalConnection* th=asAtomHandler::as<LocalConnection>(obj);
 	asAtom connectionName = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(connectionName));
-	th->connectionNameID = asAtomHandler::toStringId(connectionName,wrk);
-	
-	_NR<ASObject> cl = th->client;
-	if (cl.isNull()) // th is the client
+	Locker l(th->connectionMutex);
+	if (th->connectionstatus == LOCALCONNECTION_CONNECTED)
 	{
-		th->incRef();
-		cl = _MR(th);
+		// already connected
+		if (!th->is<AVM1LocalConnection>())
+			createErrorWithMessage<ArgumentError>(wrk,2082, "Error #2082: Connect failed because the object is already connected.");
+		return;
 	}
-	wrk->getSystemState()->setLocalConnectionClient(th->connectionNameID,cl);
+	if (asAtomHandler::isNull(connectionName))
+	{
+		if (wrk->needsActionScript3())
+			createError<TypeError>(wrk,kNullPointerError, "connectionName");
+		return;
+	}
+	if (asAtomHandler::toStringId(connectionName,wrk)==BUILTIN_STRINGS::EMPTY)
+	{
+		if (wrk->needsActionScript3())
+			createError<ArgumentError>(wrk,kEmptyStringError, "connectionName");
+		return;
+	}
+	if (!asAtomHandler::isString(connectionName))
+	{
+		if (!th->is<AVM1LocalConnection>())
+			createError<ArgumentError>(wrk,kInvalidArgumentError, "connectionName");
+		return;
+	}
+	tiny_string s = asAtomHandler::toString(connectionName,wrk);
+	if (s.empty() || s.contains(":"))
+	{
+		if (!th->is<AVM1LocalConnection>())
+			createError<ArgumentError>(wrk,kInvalidParamError);
+		return;
+	}
+	tiny_string cname;
+	if (s.startsWith("_"))
+		cname=s;
+	else
+	{
+		cname = wrk->getSystemState()->mainClip->getOrigin().getHostname();
+		if (cname.empty())
+			cname="localhost";
+		cname += ":";
+		cname += s;
+	}
+	uint32_t newConnectionName = wrk->getSystemState()->getUniqueStringId(cname,false);
+	LocalConnection* currentconnection = wrk->getSystemState()->getLocalConnectionClient(newConnectionName);
+	if (currentconnection
+		&& currentconnection->connectionNameID == newConnectionName)
+	{
+		if (currentconnection->connectionstatus ==LOCALCONNECTION_CLOSING
+			|| currentconnection->connectionstatus ==LOCALCONNECTION_CLOSED)
+		{
+			wrk->getSystemState()->setLocalConnectionClient(newConnectionName,th);
+			th->connectionstatus = LOCALCONNECTION_CONNECTED;
+			th->connectionNameID = newConnectionName;
+			ret = asAtomHandler::trueAtom; // for AVM1
+		}
+		else
+		{
+			if (!th->is<AVM1LocalConnection>())
+				createErrorWithMessage<ArgumentError>(wrk,2082, "Error #2082: Connect failed because the object is already connected.");
+			return;
+		}
+	}
+	else
+	{
+		wrk->getSystemState()->setLocalConnectionClient(newConnectionName,th);
+		th->connectionstatus = LOCALCONNECTION_CONNECTING;
+		th->connectionNameID = newConnectionName;
+		getVm(wrk->getSystemState())->addEvent(NullRef,_MR(new (wrk->getSystemState()->unaccountedMemory) LocalConnectionEvent(th,newConnectionName,0,nullptr,0,LOCALCONNECTION_EVENTTYPE::LOCALCONNECTION_CONNECT)));
+		ret = asAtomHandler::trueAtom; // for AVM1
+	}
 }
 ASFUNCTIONBODY_ATOM(LocalConnection, close)
 {
 	if (!asAtomHandler::is<LocalConnection>(obj))
 		return;
 	LocalConnection* th=asAtomHandler::as<LocalConnection>(obj);
-	if (th->connectionNameID==UINT32_MAX)
+	Locker l(th->connectionMutex);
+	if (th->connectionNameID == UINT32_MAX
+		|| th->connectionstatus == LOCALCONNECTION_CLOSED
+		|| th->connectionstatus == LOCALCONNECTION_CLOSING)
 	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError, "LocalConnection is not connected");
+		if (!th->is<AVM1LocalConnection>())
+			createErrorWithMessage<ArgumentError>(wrk,2083, "Error #2083: Close failed because the object is not connected.");
 		return;
 	}
-	wrk->getSystemState()->removeLocalConnectionClient(th->connectionNameID);
-	th->connectionNameID=UINT32_MAX;
+	th->connectionstatus = LOCALCONNECTION_CLOSING;
+	getVm(wrk->getSystemState())->addEvent(NullRef,_MR(new (wrk->getSystemState()->unaccountedMemory) LocalConnectionEvent(th,th->connectionNameID,0,nullptr,0,LOCALCONNECTION_EVENTTYPE::LOCALCONNECTION_CLOSE)));
+	ret = asAtomHandler::trueAtom; // for AVM1
 }

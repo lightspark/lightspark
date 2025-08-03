@@ -19,6 +19,7 @@
 
 #include "scripting/avm1/avm1net.h"
 #include "scripting/flash/display/Stage.h"
+#include "scripting/flash/events/StatusEvent.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
@@ -36,16 +37,56 @@ void AVM1SharedObject::sinit(Class_base* c)
 	REGISTER_GETTER(c,data);
 }
 
+AVM1LocalConnection::AVM1LocalConnection(ASWorker* wrk, Class_base* c):LocalConnection(wrk,c)
+{
+	subtype=SUBTYPE_AVM1LOCALCONNECTION;
+}
+
 void AVM1LocalConnection::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("allowDomain","",c->getSystemState()->getBuiltinFunction(allowDomain),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("allowInsecureDomain","",c->getSystemState()->getBuiltinFunction(allowInsecureDomain),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("send","",c->getSystemState()->getBuiltinFunction(send),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("domain","",c->getSystemState()->getBuiltinFunction(domain),GETTER_METHOD,true);
+	c->prototype->setDeclaredMethodByQName("allowDomain","",c->getSystemState()->getBuiltinFunction(allowDomain),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("allowInsecureDomain","",c->getSystemState()->getBuiltinFunction(allowInsecureDomain),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("send","",c->getSystemState()->getBuiltinFunction(send),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("domain","",c->getSystemState()->getBuiltinFunction(domain),NORMAL_METHOD,false);
 }
+
+void AVM1LocalConnection::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
+{
+	if (dispatcher == this)
+	{
+		if (e->is<StatusEvent>())
+		{
+			asAtom func=asAtomHandler::invalidAtom;
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.isAttribute = false;
+			m.name_s_id=BUILTIN_STRINGS::STRING_ONSTATUS;
+			getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
+			if (asAtomHandler::is<AVM1Function>(func))
+			{
+				asAtom ret=asAtomHandler::invalidAtom;
+				asAtom obj = asAtomHandler::fromObject(this);
+				asAtom args[1];
+				ASObject* infoobj = new_asobject(getInstanceWorker());
+				multiname mlvl(nullptr);
+				mlvl.name_type=multiname::NAME_STRING;
+				mlvl.isAttribute = false;
+				mlvl.name_s_id=BUILTIN_STRINGS::STRING_LEVEL;
+				asAtom lvl = asAtomHandler::fromString(getSystemState(),e->as<StatusEvent>()->level);
+				infoobj->setVariableByMultiname(mlvl,lvl,CONST_NOT_ALLOWED,nullptr,getInstanceWorker());
+				args[0] = asAtomHandler::fromObject(infoobj);
+				asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
+				ASATOM_DECREF(func);
+				infoobj->decRef();
+			}
+		}
+	}
+
+}
+
 void AVM1LoadVars::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, URLVariables, _constructor, CLASS_DYNAMIC_NOT_FINAL);

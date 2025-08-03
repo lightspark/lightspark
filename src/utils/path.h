@@ -24,11 +24,34 @@
 #include "compat.h"
 #include "tiny_string.h"
 
+namespace std
+{
+
+template<>
+struct iterator_traits<lightspark::CharIterator>
+{
+	using difference_type = size_t;
+	using value_type = uint32_t;
+	using pointer = char*;
+	using reference = char&;
+	using iterator_category = forward_iterator_tag;
+};
+
+};
+
 namespace lightspark
 {
 
-template<typename T>
-struct PathHelper;
+class Path;
+
+namespace FileSystem
+{
+
+bool exists(const Path& path);
+bool isDir(const Path& path);
+bool isFile(const Path& path);
+
+};
 
 // Based on `path` from https://github.com/gulrak/filesystem
 class Path : public PathHelper<uint32_t>
@@ -39,7 +62,7 @@ public:
 	using StringIter = CharIterator;
 	using StringPtr = char*;
 	using ConstStrPtr = const char*;
-	using ConstStrIter = const CharIterator;
+	using ConstStrIter = CharIterator;
 
 	// The pathname format.
 	enum Format
@@ -104,6 +127,12 @@ public:
 	Path
 	(
 		StringType&& str,
+		const Format& fmt = Format::Auto
+	) : path(std::move(str)) { postprocessPath(fmt); }
+
+	Path
+	(
+		const char* str,
 		const Format& fmt = Format::Auto
 	) : path(std::move(str)) { postprocessPath(fmt); }
 
@@ -285,6 +314,9 @@ class Path::Iter
 private:
 	friend class Path;
 
+	ConstStrIter incImpl(const ConstStrIter& pos) const;
+	ConstStrIter decImpl(const ConstStrIter& pos) const;
+
 	ConstStrIter inc(const ConstStrIter& pos) const;
 	ConstStrIter dec(const ConstStrIter& pos) const;
 	void updateCurrent();
@@ -370,7 +402,7 @@ public:
 	bool operator!=(const Iter& other) const { return iter != other.iter; }
 
 	Ref operator*() const { return current; }
-	Ptr operator->() const { return &current }
+	Ptr operator->() const { return &current; }
 };
 
 };

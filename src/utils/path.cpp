@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <algorithm>
 #include "utils/filesystem.h"
 #include "utils/path.h"
 
@@ -178,7 +179,7 @@ Path& Path::replaceExtension(const Path& _path)
 	if (hasExtension())
 		path = path.stripSuffix(getExtension().path);
 
-	if (!_path.startsWith("."))
+	if (!_path.path.startsWith("."))
 		path += '.';
 	return concat(_path);
 }
@@ -236,7 +237,7 @@ Path Path::getRootDir() const
 {
 	if (!hasRootDir())
 		return Path();
-	return Path(nativeSeparator, Format::Native);
+	return Path(tiny_string::fromChar(nativeSeparator), Format::Native);
 }
 
 Path Path::getRoot() const
@@ -253,7 +254,11 @@ Path Path::getRelative() const
 	auto rootLen = prefixLength + rootNameLength() + hasRootDir();
 	return Path
 	(
-		path.substr(std::min(rootLen, path.numChars))
+		path.substr(std::min<size_t>
+		(
+			rootLen,
+			path.numChars()
+		), StringType::npos),
 		Format::Generic
 	);
 }
@@ -284,7 +289,7 @@ Path Path::getStem() const
 	if (filename == "." || filename == "..")
 		return Path(filename, Format::Native);
 
-	auto pos = filename.rfind('.');
+	auto pos = filename.rfind(".");
 	if (pos == StringType::npos || !pos)
 		return Path(filename, Format::Native);
 
@@ -296,11 +301,15 @@ Path Path::getExtension() const
 	auto filename = getFilename();
 	if (filename.empty())
 		return Path();
-	auto pos = filename.path.rfind('.');
+	auto pos = filename.path.rfind(".");
 	if (pos == StringType::npos || !pos || filename.path == "..")
 		return Path();
 
-	return Path(filename.path.substr(pos), Format::Native);
+	return Path
+	(
+		filename.path.substr(pos, StringType::npos),
+		Format::Native
+	);
 }
 
 bool Path::hasRootDir() const
@@ -316,7 +325,7 @@ bool Path::hasRelativePath() const
 
 bool Path::hasFilename() const
 {
-	return hasRelativePath() && !getFilename.empty();
+	return hasRelativePath() && !getFilename().empty();
 }
 
 Path Path::lexicallyNormal() const
@@ -331,7 +340,7 @@ Path Path::lexicallyNormal() const
 		lastParentDir = str == "..";
 	};
 
-	for (auto str : *this)
+	for (StringType str : *this)
 	{
 		if (str == ".")
 		{
@@ -348,7 +357,10 @@ Path Path::lexicallyNormal() const
 			continue;
 		if (*(--ret.end()) == "..")
 		{
-			ret.path = ret.path.stripSuffix(nativeSeparator);
+			ret.path = ret.path.stripSuffix
+			(
+				tiny_string::fromChar(nativeSeparator)
+			);
 			ret.removeFilename();
 			continue;
 		}
@@ -357,7 +369,7 @@ Path Path::lexicallyNormal() const
 	}
 
 	if (ret.empty())
-		return ".";
+		return Path(".");
 	return ret;
 }
 
@@ -392,7 +404,7 @@ Path Path::lexicallyRelative(const Path& base) const
 		return Path();
 
 	Path ret;
-	for (size_t i = 0; i < count; ++i)
+	for (size_t i = 0; i < size_t(count); ++i)
 		ret /= "..";
 	for (const auto& elem : InputIterRange<ConstIter>(it, end()))
 		ret /= elem;

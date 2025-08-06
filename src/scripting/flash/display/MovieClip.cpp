@@ -528,8 +528,8 @@ void MovieClip::afterLegacyInsert()
 
 void MovieClip::afterLegacyDelete(bool inskipping)
 {
-	getSystemState()->stage->AVM1RemoveMouseListener(this);
-	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
+	getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+	getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
 	Sprite::afterLegacyDelete(inskipping);
 }
 bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
@@ -720,12 +720,12 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 			clipactions.AllEventFlags.ClipEventMouseUp)
 	{
 		setMouseEnabled(true);
-		getSystemState()->stage->AVM1AddMouseListener(this);
+		getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 	}
 	if (clipactions.AllEventFlags.ClipEventKeyDown ||
 		clipactions.AllEventFlags.ClipEventKeyUp ||
 		clipactions.AllEventFlags.ClipEventKeyPress)
-		getSystemState()->stage->AVM1AddKeyboardListener(this);
+		getSystemState()->stage->AVM1AddKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
 
 	if (clipactions.AllEventFlags.ClipEventLoad ||
 			clipactions.AllEventFlags.ClipEventUnload)

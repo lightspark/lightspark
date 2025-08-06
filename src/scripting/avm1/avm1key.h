@@ -35,6 +35,7 @@ public:
 	ASFUNCTION_ATOM(removeListener);
 	ASFUNCTION_ATOM(getCode);
 	ASFUNCTION_ATOM(getAscii);
+	ASFUNCTION_ATOM(get_listeners);
 };
 class AVM1Mouse: public ASObject
 {
@@ -46,6 +47,7 @@ public:
 	ASFUNCTION_ATOM(show);
 	ASFUNCTION_ATOM(addListener);
 	ASFUNCTION_ATOM(removeListener);
+	ASFUNCTION_ATOM(get_listeners);
 };
 
 }

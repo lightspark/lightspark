@@ -54,8 +54,8 @@ void SimpleButton::afterLegacyInsert()
 {
 	if (!needsActionScript3())
 	{
-		getSystemState()->stage->AVM1AddKeyboardListener(this);
-		getSystemState()->stage->AVM1AddMouseListener(this);
+		getSystemState()->stage->AVM1AddKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
+		getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 	}
 	if (lastParent)
 		lastParent->removeStoredMember();

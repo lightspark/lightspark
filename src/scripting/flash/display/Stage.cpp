@@ -26,6 +26,7 @@
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/ui/keycodes.h"
+#include "scripting/avm1/avm1array.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/toplevel/Number.h"
@@ -957,18 +958,22 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 			getSystemState()->getInputThread()->setLastKeyUp(e->as<KeyboardEvent>());
 		}
 		avm1listenerMutex.lock();
-		vector<ASObject*> tmplisteners = avm1KeyboardListeners;
+		vector<asAtom> tmplisteners = avm1KeyboardListeners;
 		for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
-			(*it)->incRef();
+			ASATOM_INCREF(*it);
 		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
 		bool handled = false;
 		auto it = tmplisteners.begin();
 		while (it != tmplisteners.end())
 		{
-			if (!handled && (*it)->AVM1HandleKeyboardEvent(e->as<KeyboardEvent>()))
-				handled=true;
-			(*it)->decRef();
+			ASObject* o = asAtomHandler::getObject(*it);
+			if (o)
+			{
+				if (!handled && o->AVM1HandleKeyboardEvent(e->as<KeyboardEvent>()))
+					handled=true;
+				o->decRef();
+			}
 			it++;
 		}
 	}
@@ -976,9 +981,11 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 	{
 		avm1listenerMutex.lock();
 		// eventhandlers may change the listener list, so we work on a copy
-		vector<ASObject*> tmplisteners = avm1MouseListeners;
+		vector<asAtom> tmplisteners = avm1MouseListeners;
 		for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
-			(*it)->incRef();
+		{
+			ASATOM_INCREF(*it);
+		}
 		avm1listenerMutex.unlock();
 		if (e->type=="mouseDown")
 		{
@@ -988,16 +995,24 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 			// - onPressed
 			for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
 			{
-				(*it)->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
+				ASObject* o = asAtomHandler::getObject(*it);
+				if (o)
+					o->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
 			}
 			for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
 			{
-				(*it)->AVM1HandleSetFocusEvent(dispatcher);
+				ASObject* o = asAtomHandler::getObject(*it);
+				if (o)
+					o->AVM1HandleSetFocusEvent(dispatcher);
 			}
 			for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
 			{
-				(*it)->AVM1HandlePressedEvent(dispatcher);
-				(*it)->decRef();
+				ASObject* o = asAtomHandler::getObject(*it);
+				if (o)
+				{
+					o->AVM1HandlePressedEvent(dispatcher);
+					o->decRef();
+				}
 			}
 		}
 		else
@@ -1005,8 +1020,12 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 			auto it = tmplisteners.rbegin();
 			while (it != tmplisteners.rend())
 			{
-				(*it)->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
-				(*it)->decRef();
+				ASObject* o = asAtomHandler::getObject(*it);
+				if (o)
+				{
+					o->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
+					o->decRef();
+				}
 				it++;
 			}
 		}
@@ -1056,40 +1075,54 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 	}
 }
 
-void Stage::AVM1AddKeyboardListener(ASObject *o)
+bool Stage::AVM1AddKeyboardListener(asAtom listener)
 {
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
 	{
-		if ((*it) == o)
-			return;
+		if ((*it).uintval == listener.uintval)
+			return false;
 	}
-	avm1KeyboardListeners.push_back(o);
+	avm1KeyboardListeners.push_back(listener);
+	return true;
 }
 
-void Stage::AVM1RemoveKeyboardListener(ASObject *o)
+bool Stage::AVM1RemoveKeyboardListener(asAtom listener)
 {
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
 	{
-		if ((*it) == o)
+		if ((*it).uintval == listener.uintval)
 		{
 			avm1KeyboardListeners.erase(it);
-			break;
+			return true;
 		}
 	}
+	return true;
 }
-void Stage::AVM1AddMouseListener(ASObject *o)
+
+void Stage::AVM1GetKeyboardListeners(AVM1Array* res)
 {
 	Locker l(avm1listenerMutex);
-	auto it = std::find_if(avm1MouseListeners.begin(), avm1MouseListeners.end(), [&](ASObject* obj)
+	res->resize(avm1KeyboardListeners.size());
+	for (uint32_t i = 0; i < avm1KeyboardListeners.size();i++)
 	{
-		if (obj == o)
+		asAtom l = avm1MouseListeners.at(i);
+		res->set(i,l,false);
+	}
+}
+bool Stage::AVM1AddMouseListener(asAtom listener)
+{
+	Locker l(avm1listenerMutex);
+	auto it = std::find_if(avm1MouseListeners.begin(), avm1MouseListeners.end(), [&](asAtom obj)
+	{
+		if (obj.uintval == listener.uintval)
 			return true;
-		if (o->is<DisplayObject>() && obj->is<DisplayObject>())
+		ASObject* o = asAtomHandler::getObject(listener);
+		if (o && o->is<DisplayObject>() && asAtomHandler::is<DisplayObject>(obj))
 		{
 			DisplayObject* dispA = o->as<DisplayObject>();
-			DisplayObject* dispB = obj->as<DisplayObject>();
+			DisplayObject* dispB = asAtomHandler::as<DisplayObject>(obj);
 
 			if (dispA != nullptr && dispB != nullptr)
 			{
@@ -1107,24 +1140,37 @@ void Stage::AVM1AddMouseListener(ASObject *o)
 		}
 		return false;
 	});
-	if (it != avm1MouseListeners.end() && (*it) == o)
-		return;
+	if (it != avm1MouseListeners.end() && (*it).uintval == listener.uintval)
+		return true;
 	if (it != avm1MouseListeners.end())
-		avm1MouseListeners.insert(it, o);
+		avm1MouseListeners.insert(it, listener);
 	else
-		avm1MouseListeners.push_back(o);
+		avm1MouseListeners.push_back(listener);
+	return true;
 }
 
-void Stage::AVM1RemoveMouseListener(ASObject *o)
+bool Stage::AVM1RemoveMouseListener(asAtom listener)
 {
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
 	{
-		if ((*it) == o)
+		if ((*it).uintval == listener.uintval)
 		{
 			avm1MouseListeners.erase(it);
-			break;
+			return true;
 		}
+	}
+	return false;
+}
+
+void Stage::AVM1GetMouseListeners(AVM1Array* res)
+{
+	Locker l(avm1listenerMutex);
+	res->resize(avm1MouseListeners.size());
+	for (uint32_t i = 0; i < avm1MouseListeners.size();i++)
+	{
+		asAtom listener = avm1MouseListeners.at(i);
+		res->set(i,listener,false);
 	}
 }
 void Stage::AVM1AddEventListener(ASObject *o)

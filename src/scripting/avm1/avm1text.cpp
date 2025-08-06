@@ -47,10 +47,9 @@ void AVM1Selection::sinit(Class_base* c)
 }
 ASFUNCTIONBODY_ATOM(AVM1Selection,addListener)
 {
-	_NR<ASObject> listener;
+	asAtom listener;
 	ARG_CHECK(ARG_UNPACK(listener));
-	if (listener)
-		wrk->getSystemState()->stage->AVM1AddMouseListener(listener.getPtr());
+	wrk->getSystemState()->stage->AVM1AddMouseListener(listener);
 }
 ASFUNCTIONBODY_ATOM(AVM1Selection,getFocus)
 {

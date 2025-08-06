@@ -2982,7 +2982,7 @@ bool DisplayObject::AVM1setLocalByMultiname
 	else if (isMouseEvent(name.name_s_id))
 	{
 		as<InteractiveObject>()->setMouseEnabled(true);
-		sys->stage->AVM1AddMouseListener(this);
+		sys->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 		avm1mouselistenercount++;
 		setIsEnumerable(name, false);
 	}
@@ -3060,63 +3060,63 @@ void DisplayObject::AVM1registerPrototypeListeners()
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(this);
+				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(this);
+				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEUP;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(this);
+				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONPRESS;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(this);
+				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEWHEEL;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(this);
+				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONROLLOVER;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(this);
+				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONROLLOUT;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(this);
+				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(this);
+				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 				avm1mouselistenercount++;
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASE;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(this);
+				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 				avm1mouselistenercount++;
 			}
 		}
@@ -3140,7 +3140,7 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* w
 			this->as<InteractiveObject>()->setMouseEnabled(false);
 			avm1mouselistenercount--;
 			if (avm1mouselistenercount==0)
-				getSystemState()->stage->AVM1RemoveMouseListener(this);
+				getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 		}
 		tiny_string s = name.normalizedNameUnresolved(getSystemState()).lowercase();
 		AVM1SetVariable(s,asAtomHandler::undefinedAtom,false);
@@ -3151,8 +3151,8 @@ void DisplayObject::removeAVM1Listeners()
 {
 	if (needsActionScript3())
 		return;
-	getSystemState()->stage->AVM1RemoveMouseListener(this);
-	getSystemState()->stage->AVM1RemoveKeyboardListener(this);
+	getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+	getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
 	getSystemState()->stage->AVM1RemoveEventListener(this);
 	getSystemState()->unregisterFrameListener(this);
 	avm1mouselistenercount=0;

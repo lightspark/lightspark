@@ -21,6 +21,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/display/Stage.h"
+#include "scripting/avm1/avm1array.h"
 #include "backends/input.h"
 
 using namespace std;
@@ -48,11 +49,12 @@ void AVM1Key::sinit(Class_base* c)
 	c->setVariableAtomByQName("TAB",nsNameAndKind(),asAtomHandler::fromUInt(9),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("UP",nsNameAndKind(),asAtomHandler::fromUInt(38),CONSTANT_TRAIT);
 
-	c->setDeclaredMethodByQName("isDown","",c->getSystemState()->getBuiltinFunction(isDown),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addListener),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeListener),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("getCode","",c->getSystemState()->getBuiltinFunction(getCode),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("getAscii","",c->getSystemState()->getBuiltinFunction(getAscii),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("isDown","",c->getSystemState()->getBuiltinFunction(isDown),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getCode","",c->getSystemState()->getBuiltinFunction(getCode),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getAscii","",c->getSystemState()->getBuiltinFunction(getAscii),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("_listeners","",c->getSystemState()->getBuiltinFunction(get_listeners),GETTER_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Key,isDown)
@@ -63,17 +65,15 @@ ASFUNCTIONBODY_ATOM(AVM1Key,isDown)
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,addListener)
 {
-	_NR<ASObject> listener;
+	asAtom listener = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(listener));
-	if (listener)
-		wrk->getSystemState()->stage->AVM1AddKeyboardListener(listener.getPtr());
+	ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1AddKeyboardListener(listener));
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,removeListener)
 {
-	_NR<ASObject> listener;
+	asAtom listener = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(listener));
-	if (listener)
-		wrk->getSystemState()->stage->AVM1RemoveKeyboardListener(listener.getPtr());
+	ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1RemoveKeyboardListener(listener));
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,getCode)
 {
@@ -92,6 +92,12 @@ ASFUNCTIONBODY_ATOM(AVM1Key,getAscii)
 		c = (AS3KeyCode)toupper((int)c);
 	asAtomHandler::setInt(ret,wrk,c);
 }
+ASFUNCTIONBODY_ATOM(AVM1Key,get_listeners)
+{
+	AVM1Array* res = Class<AVM1Array>::getInstanceSNoArgs(wrk);
+	wrk->getSystemState()->stage->AVM1GetKeyboardListeners(res);
+	ret = asAtomHandler::fromObjectNoPrimitive(res);
+}
 
 
 
@@ -99,10 +105,11 @@ void AVM1Mouse::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
 
-	c->setDeclaredMethodByQName("hide","",c->getSystemState()->getBuiltinFunction(hide),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("show","",c->getSystemState()->getBuiltinFunction(show),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addListener),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("hide","",c->getSystemState()->getBuiltinFunction(hide),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("show","",c->getSystemState()->getBuiltinFunction(show),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("_listeners","",c->getSystemState()->getBuiltinFunction(get_listeners),GETTER_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Mouse,hide)
@@ -115,16 +122,20 @@ ASFUNCTIONBODY_ATOM(AVM1Mouse,show)
 }
 ASFUNCTIONBODY_ATOM(AVM1Mouse,addListener)
 {
-	_NR<ASObject> listener;
+	asAtom listener=asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(listener));
-	if (listener)
-		wrk->getSystemState()->stage->AVM1AddMouseListener(listener.getPtr());
+	ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1AddMouseListener(listener));
 }
 ASFUNCTIONBODY_ATOM(AVM1Mouse,removeListener)
 {
-	_NR<ASObject> listener;
+	asAtom listener=asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(listener));
-	if (listener)
-		wrk->getSystemState()->stage->AVM1RemoveMouseListener(listener.getPtr());
+	ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1RemoveMouseListener(listener));
 }
 
+ASFUNCTIONBODY_ATOM(AVM1Mouse,get_listeners)
+{
+	AVM1Array* res = Class<AVM1Array>::getInstanceSNoArgs(wrk);
+	wrk->getSystemState()->stage->AVM1GetMouseListeners(res);
+	ret = asAtomHandler::fromObjectNoPrimitive(res);
+}

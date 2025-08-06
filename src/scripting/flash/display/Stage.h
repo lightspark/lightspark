@@ -26,6 +26,7 @@ namespace lightspark
 {
 class RootMovieClip;
 class ASWorker;
+class AVM1Array;
 
 class Stage: public DisplayObjectContainer
 {
@@ -43,8 +44,8 @@ private:
 	Mutex focusSpinlock;
 	InteractiveObject* focus;
 	_NR<RootMovieClip> root;
-	vector<ASObject*> avm1KeyboardListeners;
-	vector<ASObject*> avm1MouseListeners;
+	vector<asAtom> avm1KeyboardListeners;
+	vector<asAtom> avm1MouseListeners;
 	vector<ASObject*> avm1EventListeners;
 	vector<ASObject*> avm1ResizeListeners;
 	// double linked list of AVM1 MovieClips currently on Stage that have scripts to execute
@@ -130,10 +131,12 @@ public:
 	ASPROPERTY_GETTER(_NR<NativeWindow>,nativeWindow);
 	
 	void AVM1HandleEvent(EventDispatcher *dispatcher, Event* e) override;
-	void AVM1AddKeyboardListener(ASObject* o);
-	void AVM1RemoveKeyboardListener(ASObject *o);
-	void AVM1AddMouseListener(ASObject *o);
-	void AVM1RemoveMouseListener(ASObject* o);
+	bool AVM1AddKeyboardListener(asAtom listener);
+	bool AVM1RemoveKeyboardListener(asAtom listener);
+	void AVM1GetKeyboardListeners(AVM1Array* res);
+	bool AVM1AddMouseListener(asAtom listener);
+	bool AVM1RemoveMouseListener(asAtom listener);
+	void AVM1GetMouseListeners(AVM1Array* res);
 	void AVM1AddEventListener(ASObject *o);
 	void AVM1RemoveEventListener(ASObject *o);
 	void AVM1AddResizeListener(ASObject *o);

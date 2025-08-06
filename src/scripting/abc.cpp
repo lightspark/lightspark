@@ -73,9 +73,6 @@
 #endif
 #include "logger.h"
 #include "swftypes.h"
-#include <sstream>
-#include <limits>
-#include <cmath>
 #include "swf.h"
 #include "scripting/class.h"
 #include "exceptions.h"

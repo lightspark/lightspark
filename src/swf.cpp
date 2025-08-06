@@ -2862,12 +2862,6 @@ void SystemState::handleLocalConnectionEvent(LocalConnectionEvent* ev)
 					ev->sender->incRef();
 					getVm(this)->addEvent(_MR(ev->sender), _MR(Class<StatusEvent>::getInstanceS(ev->sender->getInstanceWorker(), "status")));
 					asAtom o = asAtomHandler::fromObject(obj);
-					obj->incRef();
-					if (asAtomHandler::is<AVM1Function>(func))
-					{
-						for (uint32_t i = 0; i < ev->numargs; i++)
-							ASATOM_INCREF(ev->args[i]);
-					}
 					_R<FunctionAsyncEvent> funcevent(new (unaccountedMemory) FunctionAsyncEvent(func,o, ev->args, ev->numargs));
 					getVm(this)->addEvent(NullRef,funcevent);
 				}

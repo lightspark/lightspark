@@ -1652,8 +1652,9 @@ FORCE_INLINE void variables_map::setDynamicVarNoCheck(uint32_t nameID, asAtom& v
 FORCE_INLINE void variable::setVarNoCoerce(asAtom &v, ASWorker* wrk)
 {
 	asAtom oldvar = var.value;
+	bool oldisrefcounted = var.isrefcounted;
 	setVarNoCheck(v,wrk);
-	if(var.isrefcounted && asAtomHandler::isObject(oldvar))
+	if(oldisrefcounted && asAtomHandler::isObject(oldvar))
 	{
 		LOG_CALL("remove old var no coerce:"<<asAtomHandler::toDebugString(oldvar));
 		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();

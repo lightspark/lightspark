@@ -262,7 +262,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgsVoid_constant(call_context* con
 	uint32_t argcount = instrptr->local2.pos;
 	bool fromglobal = instrptr->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? instrptr->cachedvar3->getVar(context->worker) : asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj3);
-	LOG_CALL("callFunctionBuiltinMultiArgsVoid_c " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
+	LOG_CALL("callFunctionBuiltinMultiArgsVoid_c " << asAtomHandler::toDebugString(func) << ' ' << asAtomHandler::toDebugString(obj)<<" "<<argcount);
 	asAtom* args = LS_STACKALLOC(asAtom,argcount);
 	for (uint32_t i = argcount; i > 0 ; i--)
 	{

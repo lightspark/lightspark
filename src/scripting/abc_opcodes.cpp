@@ -2462,7 +2462,7 @@ void ABCVm::constructProp(call_context* th, int n, int m)
 
 bool ABCVm::hasNext2(call_context* th, int n, int m)
 {
-	LOG_CALL("hasNext2 " << n << ' ' << m);
+	LOG_CALL("hasNext2 " << n << ' ' << m<<" "<<asAtomHandler::toDebugString(th->locals[n]));
 	ASObject* obj=asAtomHandler::getObject(th->locals[n]);
 	//If the local is not assigned or is a primitive bail out
 	if(obj==nullptr)

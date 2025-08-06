@@ -18,13 +18,9 @@
 **************************************************************************/
 
 #include "scripting/abc.h"
-#include "scripting/flash/utils/flashutils.h"
 #include "asobject.h"
-#include "scripting/class.h"
 #include "compat.h"
 #include "parsing/amf3_generator.h"
-#include "scripting/argconv.h"
-#include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/utils/IntervalRunner.h"
 #include "scripting/flash/utils/IntervalManager.h"
 
@@ -68,7 +64,7 @@ void IntervalRunner::tick()
 	if(type == TIMEOUT)
 	{
 		//remove ourselves from the active intervals list
-		sys->intervalManager->clearInterval(id, TIMEOUT, true);
+		sys->intervalManager->clearInterval(id, true);
 	}
 	if (ACQUIRE_READ(finished))
 	{

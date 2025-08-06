@@ -370,7 +370,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		//Give the reference of the other args to an array
 		for(uint32_t j=0;j<passedToRest;j++)
 		{
-			rest->set(j,args[passedToLocals+j]);
+			rest->set(j,args[passedToLocals+j],false,false);
 		}
 
 		assert_and_throw(cc->mi->body->local_count>args_len);

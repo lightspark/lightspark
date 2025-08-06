@@ -18,14 +18,12 @@
 **************************************************************************/
 
 #include "scripting/abc.h"
-#include "scripting/flash/utils/flashutils.h"
+#include "scripting/flash/display/DisplayObject.h"
+#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/utils/IntervalRunner.h"
 #include "scripting/flash/utils/IntervalManager.h"
+#include "scripting/toplevel/AVM1Function.h"
 #include "asobject.h"
-#include "scripting/class.h"
-#include "compat.h"
-#include "parsing/amf3_generator.h"
-#include "scripting/argconv.h"
-#include "scripting/flash/errors/flasherrors.h"
 
 using namespace std;
 using namespace lightspark;
@@ -40,72 +38,132 @@ IntervalManager::~IntervalManager()
 	std::map<uint32_t,IntervalRunner*>::iterator it = runners.begin();
 	while(it != runners.end())
 	{
-		getSys()->removeJob((*it).second);
-		runners.erase(it++);
+		IntervalRunner* r = (*it).second;
+		it = runners.erase(it);
+		getSys()->removeJob(r);
 	}
 }
 
-uint32_t IntervalManager::setInterval(asAtom callback, asAtom* args, const unsigned int argslen, asAtom obj, uint32_t interval)
+void IntervalManager::setupTimer(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool isInterval)
 {
 	Locker l(mutex);
+	if (argslen < 2)
+		return;
+	uint32_t paramstart = 2;
+	asAtom func = args[0];
+	uint32_t delayarg = 1;
+	asAtom o = asAtomHandler::nullAtom;
+	if (!asAtomHandler::isFunction(args[0])) // AVM1 also allows arguments object,functionname,interval,params...
+	{
+		if (argslen < 3)
+			return;
+		paramstart = 3;
+		delayarg = 2;
+		ASObject* oref = asAtomHandler::toObject(args[0],wrk);
+		multiname m(nullptr);
+		m.name_type=multiname::NAME_STRING;
+		m.isAttribute = false;
+		m.name_s_id= asAtomHandler::toStringId(args[1],wrk);
+		func = asAtomHandler::invalidAtom;
+		oref->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NO_INCREF,wrk);
+		if (asAtomHandler::isInvalid(func))
+		{
+			ASObject* pr = oref->getprop_prototype();
+			while (pr)
+			{
+				pr->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NO_INCREF,wrk);
+				if (asAtomHandler::isValid(func))
+					break;
+				pr = pr->getprop_prototype();
+			}
+		}
+		if (asAtomHandler::isInvalid(func) && oref->is<DisplayObject>())
+		{
+			uint32_t nameidlower = wrk->getSystemState()->getUniqueStringId(asAtomHandler::toString(args[1],wrk).lowercase());
+			AVM1Function* f = oref->as<DisplayObject>()->AVM1GetFunction(nameidlower);
+			if (f)
+				func = asAtomHandler::fromObjectNoPrimitive(f);
+		}
+		if (!asAtomHandler::isFunction(func))
+		{
+			uint32_t id = getFreeID();
+			asAtomHandler::setInt(ret,wrk,(int32_t)id);
+			return;
+		}
+	}
+	if (asAtomHandler::isUndefined(args[delayarg]))
+		return;
+	if (asAtomHandler::isNull(args[delayarg]))
+	{
+		uint32_t id = getFreeID();
+		asAtomHandler::setInt(ret,wrk,(int32_t)id);
+		return;
+	}
+	if (!asAtomHandler::isFunction(func))
+	{
+		uint32_t id = getFreeID();
+		asAtomHandler::setInt(ret,wrk,(int32_t)id);
+		return;
+	}
+	if (!asAtomHandler::is<AVM1Function>(func))
+		o = asAtomHandler::getClosureAtom(func,asAtomHandler::nullAtom);
+	else
+	{
+		// it seems that adobe uses the ObjectReference as "this" for the callback
+		if (!asAtomHandler::isFunction(args[0]))
+			o = args[0];
+		else
+			o = asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<AVM1Function>(func)->getClip());
+	}
 
-	if (interval == 0)
+	//Build arguments array
+	asAtom* callbackArgs = LS_STACKALLOC(asAtom,argslen-paramstart);
+	uint32_t i;
+	for(i=0; i<argslen-paramstart; i++)
+		callbackArgs[i] = args[i+paramstart];
+
+	uint32_t interval = asAtomHandler::toInt(args[delayarg]);
+	if (interval == 0 && isInterval)
 	{
 		// interval is 0, so we make sure the function is executed for the first time ahead of the next event in the event loop
-		ASATOM_INCREF(callback);
-		_R<FunctionAsyncEvent> event(new (asAtomHandler::getObject(callback)->getSystemState()->unaccountedMemory) FunctionAsyncEvent(callback, obj, args, argslen));
-		getVm(asAtomHandler::getObject(callback)->getSystemState())->prependEvent(NullRef,event);
+		ASATOM_INCREF(func);
+		_R<FunctionAsyncEvent> event(new (asAtomHandler::getObject(func)->getSystemState()->unaccountedMemory) FunctionAsyncEvent(func, o, callbackArgs, argslen-paramstart));
+		getVm(asAtomHandler::getObject(func)->getSystemState())->prependEvent(NullRef,event);
 	}
 	uint32_t id = getFreeID();
-	IntervalRunner* runner = new (asAtomHandler::getObject(callback)->getSystemState()->unaccountedMemory)
-		IntervalRunner(IntervalRunner::INTERVAL, id, callback, args, argslen, obj);
+	IntervalRunner* runner = new (asAtomHandler::getObject(func)->getSystemState()->unaccountedMemory)
+		IntervalRunner(isInterval ? IntervalRunner::INTERVAL : IntervalRunner::TIMEOUT, id, func, callbackArgs, argslen-paramstart, o);
 
-	//Add runner as tickjob
-	getSys()->addTick(interval, runner);
+	if (isInterval)
+	{
+		//Add runner as tickjob
+		wrk->getSystemState()->addTick(interval, runner);
+	}
+	else
+	{
+		//Add runner as waitjob
+		wrk->getSystemState()->addWait(interval, runner);
+	}
 	//Add runner to map
 	runners[id] = runner;
-	//Increment currentID
-	currentID++;
-
-	return currentID-1;
-}
-uint32_t IntervalManager::setTimeout(asAtom callback, asAtom* args, const unsigned int argslen, asAtom obj, uint32_t interval)
-{
-	Locker l(mutex);
-
-	uint32_t id = getFreeID();
-	IntervalRunner* runner = new (asAtomHandler::getObject(callback)->getSystemState()->unaccountedMemory)
-		IntervalRunner(IntervalRunner::TIMEOUT, id, callback, args, argslen, obj);
-
-	//Add runner as waitjob
-	asAtomHandler::getObject(callback)->getSystemState()->addWait(interval, runner);
-	//Add runner to map
-	runners[id] = runner;
-	//increment currentID
-	currentID++;
-
-	return currentID-1;
+	asAtomHandler::setInt(ret,wrk,(int32_t)id);
 }
 
 uint32_t IntervalManager::getFreeID()
 {
-	//At the first run every currentID will be available. But eventually the currentID will wrap around.
-	//Thats why we need to check if the currentID isn't used yet
-	while(currentID == 0 || runners.count(currentID) != 0)
-		currentID++;
-	return currentID;
+	return currentID++;
 }
 
-void IntervalManager::clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE type, bool removeJob)
+void IntervalManager::clearInterval(uint32_t id, bool isTimeout)
 {
 	Locker l(mutex);
 
 	std::map<uint32_t,IntervalRunner*>::iterator it = runners.find(id);
 	//If the entry exists and the types match, remove its tickjob, delete its intervalRunner and erase their entry
-	if(it != runners.end() && (*it).second->getType() == type)
+	if(it != runners.end() && (*it).second->getType() == isTimeout? IntervalRunner::TIMEOUT : IntervalRunner::INTERVAL)
 	{
-		if(removeJob)
-			(*it).second->removeJob();
+		IntervalRunner* r = (*it).second;
 		runners.erase(it);
+		r->removeJob();
 	}
 }

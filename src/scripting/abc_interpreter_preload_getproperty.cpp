@@ -211,6 +211,7 @@ void preload_getproperty(preloadstate& state, std::vector<typestackentry>& types
 								addname = false;
 								removetypestack(typestack,runtimeargs+1);
 								typestack.push_back(typestackentry(v->getClassVar(state.function->getSystemState()),v->isClassVar()));
+								ASATOM_DECREF(otmp);
 								break;
 							}
 							if (v && v->slotid)

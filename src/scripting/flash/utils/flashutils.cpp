@@ -288,102 +288,26 @@ ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 	asAtomHandler::setInt(ret,wrk,(int32_t)res);
 }
 
-
 ASFUNCTIONBODY_ATOM(lightspark,setInterval)
 {
-	if (argslen < 2)
-		return;
-	uint32_t paramstart = 2;
-	asAtom func = args[0];
-	uint32_t delayarg = 1;
-	asAtom o = asAtomHandler::nullAtom;
-	if (!asAtomHandler::isFunction(args[0])) // AVM1 also allows setInterval with arguments object,functionname,interval,params...
-	{
-		if (argslen < 3)
-			return;
-		paramstart = 3;
-		delayarg = 2;
-		ASObject* oref = asAtomHandler::toObject(args[0],wrk);
-		multiname m(nullptr);
-		m.name_type=multiname::NAME_STRING;
-		m.isAttribute = false;
-		m.name_s_id= asAtomHandler::toStringId(args[1],wrk);
-		func = asAtomHandler::invalidAtom;
-		oref->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NO_INCREF,wrk);
-		if (asAtomHandler::isInvalid(func))
-		{
-			ASObject* pr = oref->getprop_prototype();
-			while (pr)
-			{
-				pr->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NO_INCREF,wrk);
-				if (asAtomHandler::isValid(func))
-					break;
-				pr = pr->getprop_prototype();
-			}
-		}
-		if (asAtomHandler::isInvalid(func) && oref->is<DisplayObject>())
-		{
-			uint32_t nameidlower = wrk->getSystemState()->getUniqueStringId(asAtomHandler::toString(args[1],wrk).lowercase());
-			AVM1Function* f = oref->as<DisplayObject>()->AVM1GetFunction(nameidlower);
-			if (f)
-				func = asAtomHandler::fromObjectNoPrimitive(f);
-		}
-		if (!asAtomHandler::isFunction(func))
-			return;
-	}
-	if (!asAtomHandler::is<AVM1Function>(func))
-		o = asAtomHandler::getClosureAtom(func,asAtomHandler::nullAtom);
-	else
-	{
-		// it seems that adobe uses the ObjectReference as "this" for the callback
-		if (!asAtomHandler::isFunction(args[0]))
-			o = args[0];
-		else
-			o = asAtomHandler::fromObjectNoPrimitive(asAtomHandler::as<AVM1Function>(func)->getClip());
-	}
-	//Build arguments array
-	asAtom* callbackArgs = LS_STACKALLOC(asAtom,argslen-paramstart);
-	uint32_t i;
-	for(i=0; i<argslen-paramstart; i++)
-		callbackArgs[i] = args[i+paramstart];
-
-	//Add interval through manager
-	uint32_t id = wrk->getSystemState()->intervalManager->setInterval(func, callbackArgs, argslen-paramstart,
-			o, asAtomHandler::toInt(args[delayarg]));
-	asAtomHandler::setInt(ret,wrk,(int32_t)id);
+	wrk->getSystemState()->intervalManager->setupTimer(ret,wrk,obj,args,argslen,true);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,setTimeout)
 {
-	if (argslen < 2 || !asAtomHandler::isFunction(args[0]))
-		return;
-
-	//Build arguments array
-	asAtom* callbackArgs = LS_STACKALLOC(asAtom,argslen-2);
-	uint32_t i;
-	for(i=0; i<argslen-2; i++)
-		callbackArgs[i] = args[i+2];
-
-	asAtom o = asAtomHandler::nullAtom;
-	if (asAtomHandler::isValid(asAtomHandler::as<IFunction>(args[0])->closure_this))
-		o = asAtomHandler::as<IFunction>(args[0])->closure_this;
-
-	//Add timeout through manager
-	uint32_t id = wrk->getSystemState()->intervalManager->setTimeout(args[0], callbackArgs, argslen-2,
-			o, asAtomHandler::toInt(args[1]));
-	asAtomHandler::setInt(ret,wrk,(int32_t)id);
+	wrk->getSystemState()->intervalManager->setupTimer(ret,wrk,obj,args,argslen,false);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,clearInterval)
 {
 	assert_and_throw(argslen == 1);
-	wrk->getSystemState()->intervalManager->clearInterval(asAtomHandler::toInt(args[0]), IntervalRunner::INTERVAL, true);
+	wrk->getSystemState()->intervalManager->clearInterval(asAtomHandler::toInt(args[0]), false);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,clearTimeout)
 {
 	assert_and_throw(argslen == 1);
-	wrk->getSystemState()->intervalManager->clearInterval(asAtomHandler::toInt(args[0]), IntervalRunner::TIMEOUT, true);
+	wrk->getSystemState()->intervalManager->clearInterval(asAtomHandler::toInt(args[0]), true);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,escapeMultiByte)

@@ -56,7 +56,7 @@ public:
 	void beforeConstruction(bool _explicit = false) override;
 	void afterConstruction(bool _explicit = false) override;
 	RunState state;
-	AVM1MovieClipLoader* avm1loader;
+	list<AVM1MovieClipLoader*> avm1loaderlist;
 	uint32_t getFrameCount();
 	FrameContainer* getFrameContainer() const { return framecontainer; }
 	MovieClip(ASWorker* wrk,Class_base* c);

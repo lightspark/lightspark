@@ -1342,11 +1342,13 @@ FunctionEvent::~FunctionEvent()
 FunctionAsyncEvent::FunctionAsyncEvent(asAtom _f, asAtom _obj, asAtom* _args, uint32_t _numArgs):
 		Event(nullptr,nullptr,"FunctionAsyncEvent"),f(_f),obj(_obj),numArgs(_numArgs)
 {
+	ASATOM_INCREF(obj);
 	args = new asAtom[numArgs];
 	uint32_t i;
 	for(i=0; i<numArgs; i++)
 	{
 		args[i] = _args[i];
+		ASATOM_INCREF(args[i]);
 	}
 }
 

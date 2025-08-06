@@ -20,14 +20,13 @@
 #ifndef SCRIPTING_FLASH_UTILS_INTERVALMANAGER_H
 #define SCRIPTING_FLASH_UTILS_INTERVALMANAGER_H 1
 
-#include "compat.h"
 #include "swftypes.h"
-#include "scripting/flash/utils/IntervalRunner.h"
 
 
 namespace lightspark
 {
-
+class IntervalRunner;
+class ASWorker;
 class IntervalManager
 {
 private:
@@ -37,10 +36,9 @@ private:
 public:
 	IntervalManager();
 	~IntervalManager();
-	uint32_t setInterval(asAtom callback, asAtom* args, const unsigned int argslen, asAtom obj, const uint32_t interval);
-	uint32_t setTimeout(asAtom callback, asAtom* args, const unsigned int argslen, asAtom obj, const uint32_t interval);
+	void setupTimer(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen,bool isInterval);
 	uint32_t getFreeID();
-	void clearInterval(uint32_t id, IntervalRunner::INTERVALTYPE type, bool removeJob);
+	void clearInterval(uint32_t id, bool isTimeout);
 };
 
 }

@@ -77,7 +77,7 @@ void ABCVm::abc_dxnslate(call_context* context)
 void ABCVm::abc_kill(call_context* context)
 {
 	uint32_t t = context->exec_pos->arg3_uint;
-	LOG_CALL( "kill " << t);
+	LOG_CALL( "kill " << t <<" "<<asAtomHandler::toDebugString(context->locals[t]));
 	ASATOM_DECREF(context->locals[t]);
 	context->locals[t]=asAtomHandler::undefinedAtom;
 	++(context->exec_pos);
@@ -313,7 +313,7 @@ void ABCVm::abc_nextname(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	LOG_CALL("nextName");
+	LOG_CALL("nextName "<<asAtomHandler::toDebugString(*pval));
 	if(!asAtomHandler::isUInteger(*v1) && !asAtomHandler::isInteger(*v1))
 		throw UnsupportedException("Type mismatch in nextName");
 

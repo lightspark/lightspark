@@ -65,6 +65,7 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("setInterval","",_MR(m_sys->getBuiltinFunction(setInterval)));
 	builtinavm1->registerBuiltin("clearInterval","",_MR(m_sys->getBuiltinFunction(clearInterval)));
 	builtinavm1->registerBuiltin("setTimeout","",_MR(m_sys->getBuiltinFunction(setTimeout)));
+	builtinavm1->registerBuiltin("clearTimeout","",_MR(m_sys->getBuiltinFunction(clearTimeout)));
 	builtinavm1->registerBuiltin("updateAfterEvent","",_MR(m_sys->getBuiltinFunction(AVM1_updateAfterEvent)));
 
 	builtinavm1->registerBuiltin("object","",Class<ASObject>::getRef(m_sys));

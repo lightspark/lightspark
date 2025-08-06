@@ -70,7 +70,7 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSprit
 	,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
 	,forAVM1InitAction(false)
 	,framecontainer(nullptr)
-	,actions(nullptr),totalFrames_unreliable(1),enabled(true),avm1loader(nullptr)
+	,actions(nullptr),totalFrames_unreliable(1),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
@@ -79,7 +79,7 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c, FrameContainer* f, uint32_t d
 	,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
 	,forAVM1InitAction(false)
 	,framecontainer(f)
-	,actions(nullptr),totalFrames_unreliable(f->getFramesLoaded()),enabled(true),avm1loader(nullptr)
+	,actions(nullptr),totalFrames_unreliable(f->getFramesLoaded()),enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	//For sprites totalFrames_unreliable is the actual frame count
@@ -109,9 +109,11 @@ bool MovieClip::destruct()
 	actions=nullptr;
 
 	enabled = true;
-	if (avm1loader)
-		avm1loader->removeStoredMember();
-	avm1loader = nullptr;
+	while (!avm1loaderlist.empty())
+	{
+		avm1loaderlist.front()->removeStoredMember();
+		avm1loaderlist.pop_front();
+	}
 	auto avm1ctxt = getAVM1Context();
 	avm1ctxt->setScope(nullptr);
 	avm1ctxt->setGlobalScope(nullptr);
@@ -129,9 +131,11 @@ void MovieClip::finalize()
 	}
 	frameScripts.clear();
 	state.reset();
-	if (avm1loader)
-		avm1loader->removeStoredMember();
-	avm1loader = nullptr;
+	while (!avm1loaderlist.empty())
+	{
+		avm1loaderlist.front()->removeStoredMember();
+		avm1loaderlist.pop_front();
+	}
 	for (auto it = this->AVM1FrameContexts.begin(); it != this->AVM1FrameContexts.end(); it++)
 	{
 		it->second.setScope(nullptr);
@@ -159,8 +163,8 @@ void MovieClip::prepareShutdown()
 	auto avm1ctxt = getAVM1Context();
 	avm1ctxt->setScope(nullptr);
 	avm1ctxt->setGlobalScope(nullptr);
-	if (avm1loader)
-		avm1loader->prepareShutdown();
+	for (auto it = avm1loaderlist.begin();it != avm1loaderlist.end(); it++)
+		(*it)->prepareShutdown();
 }
 
 bool MovieClip::countCylicMemberReferences(garbagecollectorstate &gcstate)
@@ -174,8 +178,8 @@ bool MovieClip::countCylicMemberReferences(garbagecollectorstate &gcstate)
 		if (o)
 			ret = o->countAllCylicMemberReferences(gcstate) || ret;
 	}
-	if (avm1loader)
-		ret = avm1loader->countAllCylicMemberReferences(gcstate) || ret;
+	for (auto it = avm1loaderlist.begin();it != avm1loaderlist.end(); it++)
+		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
 	if (!needsActionScript3())
 	{
 		for (auto it = this->AVM1FrameContexts.begin(); it != this->AVM1FrameContexts.end(); it++)
@@ -1110,9 +1114,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 	tiny_string method;
 	ARG_CHECK(ARG_UNPACK(url,"")(method,"GET"));
 
-	th->avm1loader = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
-	th->avm1loader->addStoredMember();
-	th->avm1loader->load(url,method,th);
+	auto l = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
+	l->addStoredMember();
+	th->avm1loaderlist.push_back(l);
+	l->load(url,method,th);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1UnloadMovie)
 {
@@ -1130,9 +1135,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovieNum)
 	int32_t level;
 	ARG_CHECK(ARG_UNPACK(url,"")(level,0)(method,"GET"));
 
-	th->avm1loader = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
-	th->avm1loader->addStoredMember();
-	th->avm1loader->load(url,method,th,level);
+	auto l = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
+	l->addStoredMember();
+	th->avm1loaderlist.push_back(l);
+	l->load(url,method,th,level);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 {

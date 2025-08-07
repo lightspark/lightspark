@@ -130,12 +130,12 @@ class Transform: public ASObject
 {
 friend class DisplayObject;
 private:
-	_NR<DisplayObject> owner;
+	DisplayObject* owner;
 	void onSetMatrix3D(_NR<Matrix3D> oldValue);
 	MATRIX getConcatenatedMatrix();
 public:
 	Transform(ASWorker* wrk,Class_base* c);
-	Transform(ASWorker* wrk, Class_base* c, _R<DisplayObject> o);
+	Transform(ASWorker* wrk, Class_base* c, DisplayObject* o);
 	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	bool destruct() override;
@@ -151,6 +151,7 @@ public:
 	ASFUNCTION_ATOM(getRelativeMatrix3D);
 	ASPROPERTY_GETTER_SETTER(_NR<PerspectiveProjection>, perspectiveProjection);
 	ASPROPERTY_GETTER_SETTER(_NR<Matrix3D>, matrix3D);
+	ASFUNCTION_ATOM(_getConcatenatedColorTransform);
 
 };
 

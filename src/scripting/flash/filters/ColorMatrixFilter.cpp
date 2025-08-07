@@ -137,7 +137,7 @@ bool ColorMatrixFilter::compareFILTER(const FILTER& filter) const
 }
 void ColorMatrixFilter::getRenderFilterArgs(uint32_t step,float* args) const
 {
-	if (step == 0)
+	if (step == 0 && matrix)
 	{
 		args[0]=float(FILTERSTEP_COLORMATRIX);
 		assert_and_throw(matrix->size() >= 20);

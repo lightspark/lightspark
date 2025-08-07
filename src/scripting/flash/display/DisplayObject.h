@@ -106,7 +106,7 @@ private:
 	uint32_t avm1mouselistenercount;
 	uint32_t avm1framelistenercount;
 	uint32_t broadcastEventListenerCount;
-	void onSetScrollRect(_NR<Rectangle> oldValue);
+	void onSetScrollRect(asAtom oldValue);
 protected:
 	_NR<Rectangle> scalingGrid;
 	MATRIX currentrendermatrix;
@@ -171,7 +171,7 @@ public:
 	_NR<DisplayObject> invalidateQueueNext;
 	LoaderInfo* loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
-	ASPROPERTY_GETTER_SETTER(_NR<Rectangle>,scrollRect);
+	ASPROPERTY_GETTER_SETTER(asAtom,scrollRect);
 	_NR<ColorTransform> colorTransform;
 	void setNeedsTextureRecalculation(bool skippable=false);
 	void resetNeedsTextureRecalculation() { needsTextureRecalculation=false; }

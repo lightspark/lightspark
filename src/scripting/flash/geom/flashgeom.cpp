@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "backends/graphics.h"
 #include "scripting/abc.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Matrix3D.h"
@@ -300,13 +301,17 @@ ASFUNCTIONBODY_ATOM(ColorTransform,_toString)
 Transform::Transform(ASWorker* wrk, Class_base* c):ASObject(wrk,c),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(wrk))
 {
 }
-Transform::Transform(ASWorker* wrk,Class_base* c, _R<DisplayObject> o):ASObject(wrk,c),owner(o),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(wrk))
+Transform::Transform(ASWorker* wrk,Class_base* c, DisplayObject* o):ASObject(wrk,c),owner(o),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(wrk))
 {
+	owner->incRef();
+	owner->addStoredMember();
 }
 
 bool Transform::destruct()
 {
-	owner.reset();
+	if (owner)
+		owner->removeStoredMember();
+	owner=nullptr;
 	perspectiveProjection.reset();
 	matrix3D.reset();
 	return destructIntern();
@@ -314,7 +319,9 @@ bool Transform::destruct()
 
 void Transform::finalize()
 {
-	owner.reset();
+	if (owner)
+		owner->removeStoredMember();
+	owner=nullptr;
 	perspectiveProjection.reset();
 	matrix3D.reset();
 }
@@ -348,13 +355,15 @@ void Transform::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(_getColorTransform,0,Class<Transform>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(_getColorTransform,0,Class<ColorTransform>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(_setColorTransform),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("matrix","",c->getSystemState()->getBuiltinFunction(_setMatrix),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("matrix","",c->getSystemState()->getBuiltinFunction(_getMatrix,0,Class<Matrix>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("concatenatedMatrix","",c->getSystemState()->getBuiltinFunction(_getConcatenatedMatrix,0,Class<Matrix>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("pixelBounds","",c->getSystemState()->getBuiltinFunction(_getPixelBounds,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("getRelativeMatrix3D","",c->getSystemState()->getBuiltinFunction(getRelativeMatrix3D,1,Class<Matrix3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("concatenatedColorTransform","",c->getSystemState()->getBuiltinFunction(_getConcatenatedColorTransform,0,Class<ColorTransform>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, perspectiveProjection, PerspectiveProjection);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, matrix3D, Matrix3D);
 }
@@ -370,7 +379,12 @@ ASFUNCTIONBODY_ATOM(Transform,_constructor)
 {
 	Transform* th=asAtomHandler::as<Transform>(obj);
 	// it's not in the specs but it seems to be possible to construct a Transform object with an owner as argment
-	ARG_CHECK(ARG_UNPACK(th->owner,NullRef));
+	if (argslen && asAtomHandler::is<DisplayObject>(args[0]))
+	{
+		th->owner = asAtomHandler::as<DisplayObject>(args[0]);
+		th->owner->incRef();
+		th->owner->addStoredMember();
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_getMatrix)
@@ -458,17 +472,38 @@ ASFUNCTIONBODY_ATOM(Transform,_getPixelBounds)
 	Transform* th=asAtomHandler::as<Transform>(obj);
 	assert_and_throw(argslen==0);
 	Rectangle* rc = Class<Rectangle>::getInstanceSNoArgs(wrk);
-	number_t xmax,ymax;
+	number_t xmin,ymin,xmax,ymax;
 	MATRIX m = th->getConcatenatedMatrix();
-	th->owner->getBounds(rc->x,xmax,rc->y,ymax,m);
-	rc->width=xmax-rc->x;
-	rc->height=ymax-rc->y;
+	if (th->owner->getBounds(xmin,xmax,ymin,ymax,m))
+	{
+		rc->x = xmin;
+		rc->y = ymin;
+		rc->width=xmax-xmin;
+		rc->height=ymax-ymin;
+	}
 	ret = asAtomHandler::fromObject(rc);
 }
 ASFUNCTIONBODY_ATOM(Transform,getRelativeMatrix3D)
 {
 	//Transform* th=asAtomHandler::as<Transform>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Transform.getRelativeMatrix3D");
+}
+
+ASFUNCTIONBODY_ATOM(Transform,_getConcatenatedColorTransform)
+{
+	Transform* th=asAtomHandler::as<Transform>(obj);
+	if (!th->owner->colorTransform.isNull())
+	{
+		ColorTransformBase ct = *th->owner->colorTransform.getPtr();
+		DisplayObject* p = th->owner->getParent();
+		while (p && !p->colorTransform.isNull())
+		{
+			ct = ct.multiplyTransform(*p->colorTransform.getPtr());
+			p = p->getParent();
+		}
+		ColorTransform* colortransform = Class<ColorTransform>::getInstanceS(wrk,ct);
+		ret = asAtomHandler::fromObject(colortransform);
+	}
 }
 
 Matrix::Matrix(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_MATRIX)

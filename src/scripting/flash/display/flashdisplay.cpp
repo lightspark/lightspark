@@ -17,14 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <list>
 
-#include "backends/security.h"
+#include "asobject.h"
 #include "scripting/abc.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/NativeWindow.h"
-#include "scripting/flash/display/Stage3D.h"
 #include "scripting/flash/display/Stage.h"
 #include "scripting/flash/display/Graphics.h"
 #include "swf.h"
@@ -51,7 +49,6 @@
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
-#include "scripting/toplevel/UInteger.h"
 #include "scripting/toplevel/Vector.h"
 #include <algorithm>
 
@@ -267,7 +264,7 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 	if(dynamicDisplayList.empty())
 	{
 		// values for invalid bounds, see ruffle avm1/movieclip_invalid_get_bounds_<x> tests
-		if (loadedFrom->version >= 8 || getSystemState()->getSwfVersion() >= 8)
+		if (getSystemState()->useNewInvalidBounds )
 		{
 			xmin=number_t(0x8000000)/20.0;
 			xmax=number_t(0x8000000)/20.0;
@@ -730,7 +727,8 @@ ASFUNCTIONBODY_GETTER_SETTER(DisplayObjectContainer, tabChildren)
 
 DisplayObjectContainer::DisplayObjectContainer(ASWorker* wrk, Class_base* c):InteractiveObject(wrk,c),mouseChildren(true),
 	boundsrectXmin(0),boundsrectYmin(0),boundsrectXmax(0),boundsrectYmax(0),boundsRectDirty(true),
-	boundsrectVisibleXmin(0),boundsrectVisibleYmin(0),boundsrectVisibleXmax(0),boundsrectVisibleYmax(0),boundsRectVisibleDirty(true),
+	boundsrectVisibleXmin(0),boundsrectVisibleYmin(0),boundsrectVisibleXmax(0),boundsrectVisibleYmax(0),
+	boundsRectVisibleDirty(true),
 	tabChildren(true)
 {
 	subtype=SUBTYPE_DISPLAYOBJECTCONTAINER;
@@ -1129,8 +1127,9 @@ void DisplayObjectContainer::cloneDisplayList(std::vector<Ref<DisplayObject> >& 
 InteractiveObject::InteractiveObject(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),
 	mouseEnabled(true),doubleClickEnabled(false),
 	avm1focusrect(asAtomHandler::invalidAtom),avm1tabindex(asAtomHandler::undefinedAtom),
-	accessibilityImplementation(NullRef),contextMenu(NullRef),
-	tabEnabled(false),tabIndex(-1)
+	accessibilityImplementation(NullRef),
+	contextMenu(asAtomHandler::undefinedAtom),
+	tabEnabled(asAtomHandler::undefinedAtom),tabIndex(-1)
 
 {
 	subtype=SUBTYPE_INTERACTIVE_OBJECT;
@@ -1179,16 +1178,15 @@ ASFUNCTIONBODY_ATOM(InteractiveObject,_getDoubleClickEnabled)
 
 bool InteractiveObject::destruct()
 {
-	if (contextMenu)
-	{
-		contextMenu->removeStoredMember();
-		contextMenu.fakeRelease();
-	}
+	ASATOM_REMOVESTOREDMEMBER(contextMenu);
+	contextMenu = asAtomHandler::undefinedAtom;
+	ASATOM_REMOVESTOREDMEMBER(tabEnabled);
+	tabEnabled = asAtomHandler::undefinedAtom;
 	mouseEnabled = true;
 	doubleClickEnabled =false;
 	accessibilityImplementation.reset();
 	focusRect.reset();
-	tabEnabled = false;
+	tabEnabled = asAtomHandler::undefinedAtom;
 	tabIndex = -1;
 	ASATOM_REMOVESTOREDMEMBER(avm1tabindex);
 	avm1tabindex=asAtomHandler::undefinedAtom;
@@ -1196,14 +1194,14 @@ bool InteractiveObject::destruct()
 }
 void InteractiveObject::finalize()
 {
-	if (contextMenu)
-	{
-		contextMenu->removeStoredMember();
-		contextMenu.fakeRelease();
-	}
+	ASATOM_REMOVESTOREDMEMBER(contextMenu);
+	contextMenu = asAtomHandler::undefinedAtom;
+	ASATOM_REMOVESTOREDMEMBER(tabEnabled);
+	tabEnabled = asAtomHandler::undefinedAtom;
 	accessibilityImplementation.reset();
 	focusRect.reset();
 	ASATOM_REMOVESTOREDMEMBER(avm1tabindex);
+	avm1tabindex=asAtomHandler::undefinedAtom;
 	DisplayObject::finalize();
 }
 
@@ -1212,8 +1210,9 @@ void InteractiveObject::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	DisplayObject::prepareShutdown();
-	if (contextMenu)
-		contextMenu->prepareShutdown();
+	ASObject* o = asAtomHandler::getObject(contextMenu);
+	if (o)
+		o->prepareShutdown();
 	if (accessibilityImplementation)
 		accessibilityImplementation->prepareShutdown();
 	if (focusRect)
@@ -1225,8 +1224,9 @@ bool InteractiveObject::countCylicMemberReferences(garbagecollectorstate& gcstat
 	if (skipCountCylicMemberReferences(gcstate))
 		return gcstate.hasMember(this);
 	bool ret = DisplayObject::countCylicMemberReferences(gcstate);
-	if (contextMenu)
-		ret = contextMenu->countAllCylicMemberReferences(gcstate) || ret;
+	ASObject* o = asAtomHandler::getObject(contextMenu);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
 	if (accessibilityImplementation)
 		ret = accessibilityImplementation->countAllCylicMemberReferences(gcstate) || ret;
 	if (focusRect)
@@ -1242,14 +1242,14 @@ void InteractiveObject::defaultEventBehavior(Ref<Event> e)
 
 _NR<InteractiveObject> InteractiveObject::getCurrentContextMenuItems(std::vector<_R<NativeMenuItem>>& items)
 {
-	if (this->contextMenu.isNull() || !this->contextMenu->is<ContextMenu>())
+	if (!asAtomHandler::is<ContextMenu>(contextMenu))
 	{
 		if (this->getParent())
 			return getParent()->getCurrentContextMenuItems(items);
 		ContextMenu::getVisibleBuiltinContextMenuItems(nullptr,items,getInstanceWorker());
 	}
 	else
-		this->contextMenu->as<ContextMenu>()->getCurrentContextMenuItems(items);
+		asAtomHandler::as<ContextMenu>(contextMenu)->getCurrentContextMenuItems(items);
 	this->incRef();
 	return _MR<InteractiveObject>(this);
 }
@@ -1276,6 +1276,8 @@ void InteractiveObject::AVM1SetupMethods(Class_base* c)
 	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_getter_tabEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_setTabIndex),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_getTabIndex,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_setMouseEnabled),SETTER_METHOD,false);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, accessibilityImplementation)
@@ -1355,23 +1357,17 @@ ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_setTabIndex)
 	ASATOM_ADDSTOREDMEMBER(th->avm1tabindex);
 }
 
-void InteractiveObject::onContextMenu(_NR<ASObject> oldValue)
+void InteractiveObject::onContextMenu(asAtom oldValue)
 {
-	if (oldValue)
-	{
-		oldValue->removeStoredMember();
-		oldValue.fakeRelease();
-	}
-	if (this->contextMenu->is<ContextMenu>())
-	{
-		this->contextMenu->as<ContextMenu>()->owner = this;
-		this->contextMenu->addStoredMember();
-	}
+	ASATOM_REMOVESTOREDMEMBER(oldValue);
+	if (asAtomHandler::is<ContextMenu>(contextMenu))
+		asAtomHandler::as<ContextMenu>(contextMenu)->owner = this;
 }
 
 bool DisplayObjectContainer::fillTabStopsAutomatic(std::map<int32_t, DisplayObject*>& distancemap, bool& hasTabIndices)
 {
-	if (!this->is<Stage>() && !this->is<RootMovieClip>() && (!this->isVisible() || !this->isOnStage() || !this->tabEnabled))
+	if (!this->is<Stage>() && !this->is<RootMovieClip>() &&
+		(!this->isVisible() || !this->isOnStage() || !asAtomHandler::AVM1toBool(tabEnabled,getInstanceWorker(),loadedFrom->version)))
 		return false;
 	if (this->tabIndex>=0)
 	{
@@ -1388,11 +1384,14 @@ bool DisplayObjectContainer::fillTabStopsAutomatic(std::map<int32_t, DisplayObje
 			continue;
 		bool tabenabled = true;
 		InteractiveObject* o = (*it)->as<InteractiveObject>();
-		if (o->is<Sprite>() && !o->as<Sprite>()->buttonMode && !o->tabEnabled)
+		if (o->is<Sprite>()
+			&& !o->as<Sprite>()->buttonMode
+			&& !asAtomHandler::AVM1toBool(o->tabEnabled,getInstanceWorker(),loadedFrom->version))
 			tabenabled=false;
 		if (!o->isFocusable())
 			tabenabled=false;
-		if (!o->is<DisplayObjectContainer>() && !o->tabEnabled)
+		if (!o->is<DisplayObjectContainer>()
+			&& !asAtomHandler::AVM1toBool(o->tabEnabled,getInstanceWorker(),loadedFrom->version))
 			tabenabled=false;
 		if (o->tabIndex>=0 && tabenabled)
 		{
@@ -1420,7 +1419,8 @@ bool DisplayObjectContainer::fillTabStopsAutomatic(std::map<int32_t, DisplayObje
 }
 void DisplayObjectContainer::fillTabStopsByTabIndex(std::map<int32_t, DisplayObject*>& indexmap)
 {
-	if (!this->is<Stage>() && !this->is<RootMovieClip>() && (!this->isVisible() || !this->isOnStage() || !this->tabEnabled))
+	if (!this->is<Stage>() && !this->is<RootMovieClip>() &&
+		(!this->isVisible() || !this->isOnStage() || !asAtomHandler::AVM1toBool(tabEnabled,getInstanceWorker(),loadedFrom->version)))
 		return;
 	if (this->tabIndex>=0)
 		indexmap.insert(make_pair(this->tabIndex,this));
@@ -1430,7 +1430,9 @@ void DisplayObjectContainer::fillTabStopsByTabIndex(std::map<int32_t, DisplayObj
 		if (!(*it)->isVisible() || !(*it)->isOnStage() || !(*it)->is<InteractiveObject>())
 			continue;
 		InteractiveObject* o = (*it)->as<InteractiveObject>();
-		if (!o->is<RootMovieClip>() && !o->tabEnabled && (!o->is<Sprite>() || !o->as<Sprite>()->buttonMode))
+		if (!o->is<RootMovieClip>()
+			&& !asAtomHandler::AVM1toBool(o->tabEnabled,getInstanceWorker(),loadedFrom->version)
+			&& (!o->is<Sprite>() || !o->as<Sprite>()->buttonMode))
 			continue;
 		if (o->is<DisplayObjectContainer>() && !o->is<SimpleButton>())
 			o->as<DisplayObjectContainer>()->fillTabStopsByTabIndex(indexmap);
@@ -1450,7 +1452,7 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    " (" << pos.x << "," << pos.y << ") " <<
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
-		    ((*it)->isMask() ? "m" : "") <<((*it)->hasFilters() ? "f" : "") <<((*it)->scrollRect.getPtr() ? "s" : "") << " cd=" <<(*it)->ClipDepth<<" "<<
+						  ((*it)->isMask() ? "m" : "") <<((*it)->hasFilters() ? "f" : "") <<(asAtomHandler::is<Rectangle>((*it)->scrollRect) ? "s" : "") << " cd=" <<(*it)->ClipDepth<<" "<<
 		    "a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'"<<" depth:"<<(*it)->getDepth()<<" blendmode:"<<(*it)->getBlendMode()<<
 		    ((*it)->cacheAsBitmap ? " cached" : ""));
 
@@ -1582,7 +1584,7 @@ IDrawable* DisplayObjectContainer::invalidate(bool smoothing)
 		res->getState()->setupChildrenList(dynamicDisplayList);
 	}
 	if (!this->needsActionScript3()
-			&& tabEnabled
+			&& asAtomHandler::AVM1toBool(tabEnabled,getInstanceWorker(),loadedFrom->version)
 			&& this == getSystemState()->stage->getFocusTarget())
 	{
 		// add rectangle to be rendered for focused SimpleButton/Sprite (AVM1 only)

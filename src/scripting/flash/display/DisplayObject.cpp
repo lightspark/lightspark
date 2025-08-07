@@ -21,7 +21,7 @@
 #include "compat.h"
 #include "swf.h"
 #include "scripting/flash/display/DisplayObject.h"
-#include "backends/rendering.h"
+#include "backends/rendering_context.h"
 #include "backends/cachedsurface.h"
 #include "backends/input.h"
 #include "scripting/argconv.h"
@@ -30,7 +30,6 @@
 #include "scripting/flash/geom/Point.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/accessibility/flashaccessibility.h"
-#include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/Stage.h"
@@ -41,7 +40,6 @@
 #include "scripting/flash/filters/BlurFilter.h"
 #include "scripting/flash/filters/ColorMatrixFilter.h"
 #include "scripting/flash/filters/ConvolutionFilter.h"
-#include "scripting/flash/filters/DisplacementMapFilter.h"
 #include "scripting/flash/filters/DropShadowFilter.h"
 #include "scripting/flash/filters/GlowFilter.h"
 #include "scripting/flash/filters/GradientBevelFilter.h"
@@ -167,7 +165,10 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	avm1mouselistenercount(0),avm1framelistenercount(0),broadcastEventListenerCount(0),
 	onStage(false),visible(true),
 	mask(nullptr),clipMask(nullptr),
-	invalidateQueueNext(),loaderInfo(nullptr),loadedFrom(nullptr),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
+	invalidateQueueNext(),
+	loaderInfo(nullptr),
+	scrollRect(asAtomHandler::undefinedAtom),
+	loadedFrom(nullptr),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
 	name(BUILTIN_STRINGS::EMPTY),
 	opaqueBackground(asAtomHandler::nullAtom)
 {
@@ -211,6 +212,8 @@ void DisplayObject::finalize()
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
 	scalingGrid.reset();
+	ASATOM_REMOVESTOREDMEMBER(scrollRect);
+	scrollRect=asAtomHandler::undefinedAtom;
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
 	{
 		ASObject* o = asAtomHandler::getObject(it->second);
@@ -258,7 +261,8 @@ bool DisplayObject::destruct()
 	accessibilityProperties.reset();
 	colorTransform.reset();
 	scalingGrid.reset();
-	scrollRect.reset();
+	ASATOM_REMOVESTOREDMEMBER(scrollRect);
+	scrollRect=asAtomHandler::undefinedAtom;
 	loadedFrom=getSystemState()->mainClip->applicationDomain.getPtr();
 	hasChanged = true;
 	needsTextureRecalculation=true;
@@ -328,8 +332,9 @@ void DisplayObject::prepareShutdown()
 		scalingGrid->prepareShutdown();
 	if (filters)
 		filters->prepareShutdown();
-	if (scrollRect)
-		scrollRect->prepareShutdown();
+	ASObject* sr = asAtomHandler::getObject(scrollRect);
+	if (sr)
+		sr->prepareShutdown();
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
 	{
 		ASObject* o = asAtomHandler::getObject(it->second);
@@ -365,6 +370,9 @@ bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		if (o)
 			ret = o->countAllCylicMemberReferences(gcstate) || ret;
 	}
+	ASObject* sr = asAtomHandler::getObject(scrollRect);
+	if (sr)
+		ret = sr->countAllCylicMemberReferences(gcstate) || ret;
 	if (mask)
 		ret = mask->countAllCylicMemberReferences(gcstate) || ret;
 	if (clipMask)
@@ -489,32 +497,34 @@ void DisplayObject::onSetName(uint32_t oldName)
 		}
 	}
 }
-void DisplayObject::onSetScrollRect(_NR<Rectangle> oldValue)
+void DisplayObject::onSetScrollRect(asAtom oldValue)
 {
-	if (oldValue == this->scrollRect)
+	if (oldValue.uintval == this->scrollRect.uintval)
 		return;
-	if (!oldValue.isNull())
-		oldValue->removeUser(this);
-	if (!this->scrollRect.isNull())
+	if (asAtomHandler::is<Rectangle>(oldValue))
+		asAtomHandler::as<Rectangle>(oldValue)->removeUser(this);
+	if (asAtomHandler::is<Rectangle>(scrollRect))
 	{
 		// not mentioned in the specs, but setting scrollRect actually creates a clone of the provided rect,
 		// so that any future changes to the scrollRect have no effect on the provided rect and vice versa
 		Rectangle* res=Class<Rectangle>::getInstanceS(this->getInstanceWorker());
-		res->x=this->scrollRect->x;
-		res->y=this->scrollRect->y;
-		res->width=this->scrollRect->width;
-		res->height=this->scrollRect->height;
+		res->x=asAtomHandler::as<Rectangle>(scrollRect)->x;
+		res->y=asAtomHandler::as<Rectangle>(scrollRect)->y;
+		res->width=asAtomHandler::as<Rectangle>(scrollRect)->width;
+		res->height=asAtomHandler::as<Rectangle>(scrollRect)->height;
 
-		this->scrollRect = _MR(res);
-		this->scrollRect->addUser(this);
+		ASATOM_REMOVESTOREDMEMBER(scrollRect);
+		this->scrollRect = asAtomHandler::fromObjectNoPrimitive(res);
+		res->addStoredMember();
+		res->addUser(this);
 	}
-	if ((this->scrollRect.isNull() && !oldValue.isNull()) ||
-		(!this->scrollRect.isNull() && oldValue.isNull()) ||
-		(!this->scrollRect.isNull() && !oldValue.isNull() &&
-		 (this->scrollRect->x != oldValue->x ||
-		  this->scrollRect->y != oldValue->y ||
-		  this->scrollRect->width != oldValue->width ||
-		  this->scrollRect->height != oldValue->height)))
+	if ((!asAtomHandler::is<Rectangle>(scrollRect) && !asAtomHandler::is<Rectangle>(oldValue)) ||
+		(!asAtomHandler::is<Rectangle>(scrollRect) && asAtomHandler::is<Rectangle>(oldValue)) ||
+		(!asAtomHandler::is<Rectangle>(scrollRect) && !asAtomHandler::is<Rectangle>(oldValue) &&
+		 (asAtomHandler::as<Rectangle>(scrollRect)->x != asAtomHandler::as<Rectangle>(oldValue)->x ||
+		  asAtomHandler::as<Rectangle>(scrollRect)->y != asAtomHandler::as<Rectangle>(oldValue)->y ||
+		  asAtomHandler::as<Rectangle>(scrollRect)->width != asAtomHandler::as<Rectangle>(oldValue)->width ||
+		  asAtomHandler::as<Rectangle>(scrollRect)->height != asAtomHandler::as<Rectangle>(oldValue)->height)))
 	{
 		hasChanged = true;
 		if (onStage)
@@ -525,7 +535,7 @@ void DisplayObject::onSetScrollRect(_NR<Rectangle> oldValue)
 }
 void DisplayObject::updatedRect()
 {
-	assert(!this->scrollRect.isNull());
+	assert(asAtomHandler::is<Rectangle>(scrollRect));
 	hasChanged = true;
 	if (onStage)
 		requestInvalidation(getSystemState());
@@ -719,8 +729,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getTransform)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 
-	th->incRef();
-	ret = asAtomHandler::fromObject(Class<Transform>::getInstanceS(wrk,_MR(th)));
+	ret = asAtomHandler::fromObject(Class<Transform>::getInstanceS(wrk,th));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setTransform)
@@ -991,8 +1000,8 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		}
 	}
 	this->boundsRectWithoutChildren(state->bounds.min.x, state->bounds.max.x, state->bounds.min.y, state->bounds.max.y, false);
-	if (this->scrollRect)
-		state->scrollRect=this->scrollRect->getRect();
+	if (asAtomHandler::is<Rectangle>(scrollRect))
+		state->scrollRect=asAtomHandler::as<Rectangle>(scrollRect)->getRect();
 	else
 		state->scrollRect= RECT();
 	if (this->is<RootMovieClip>())
@@ -2618,7 +2627,7 @@ asAtom DisplayObject::getPropertyByIndex(size_t idx, ASWorker* wrk)
 			_getRotation(ret,wrk,obj,nullptr,0);
 			break;
 		case 11:// target
-			ret = asAtomHandler::fromString(sys, AVM1GetPath());
+			ret = asAtomHandler::fromString(sys, AVM1GetPath(false));
 			break;
 		case 12:// framesloaded
 			if (is<MovieClip>())
@@ -2633,14 +2642,22 @@ asAtom DisplayObject::getPropertyByIndex(size_t idx, ASWorker* wrk)
 				DisplayObject* droptarget = as<AVM1MovieClip>()->getDroptarget();
 				if (droptarget)
 					ret = asAtomHandler::fromString(sys, droptarget->AVM1GetPath(false));
+				else
+					ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 			}
 			break;
 		case 15:// url
-			return asAtomHandler::fromString(sys, sys->mainClip->getOrigin().getURL());
+			ret = asAtomHandler::fromString(sys, sys->mainClip->getOrigin().getURL());
+			break;
+		case 16:// _highquality
+			ret = asAtomHandler::fromUInt(wrk->getSystemState()->highquality);
 			break;
 		case 17:// focusrect
 			if (is<InteractiveObject>())
 				InteractiveObject::AVM1_getfocusrect(ret,wrk,obj,nullptr,0);
+			break;
+		case 18:// _soundbuftime
+			ret = asAtomHandler::fromInt(wrk->getSystemState()->static_SoundMixer_bufferTime);
 			break;
 		case 19:// quality
 			AVM1_getQuality(ret,wrk,obj,nullptr,0);
@@ -2839,7 +2856,6 @@ GET_VARIABLE_RESULT DisplayObject::AVM1getVariableByMultiname
 {
 	auto s = name.normalizedName(wrk);
 	bool caseSensitive = wrk->AVM1isCaseSensitive();
-
 	// Property search order for `DisplayObject`s.
 	// 1. Expandos (user defined properties on the underlying object).
 	auto result = ASObject::AVM1getVariableByMultiname
@@ -3323,17 +3339,13 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_globalToLocal)
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesLoaded)
 {
-	if (wrk->getSystemState()->mainClip->loaderInfo)
-	{
-		asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->mainClip->loaderInfo->getBytesLoaded());
-	}
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	asAtomHandler::setUInt(ret,wrk,th->loaderInfo ? th->loaderInfo->getBytesLoaded() : 0);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesTotal)
 {
-	if (wrk->getSystemState()->mainClip->loaderInfo)
-	{
-		asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->mainClip->loaderInfo->getBytesTotal());
-	}
+	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
+	asAtomHandler::setUInt(ret,wrk,th->loaderInfo ? th->loaderInfo->getBytesTotal() : 0);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getQuality)
 {
@@ -3374,6 +3386,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 
 	DisplayObject* target= th;
+	bool currentNewInvalidBounds = wrk->getSystemState()->useNewInvalidBounds;
 	if(argslen>=1) // contrary to spec adobe allows getBounds with zero parameters
 	{
 		if (asAtomHandler::is<Undefined>(args[0]) || asAtomHandler::is<Null>(args[0]))
@@ -3381,14 +3394,20 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 		asAtom t = args[0];
 		if (!asAtomHandler::is<DisplayObject>(t))
 		{
-			t = th->AVM1GetVariable(asAtomHandler::toString(args[0],wrk).lowercase());
-			if (!asAtomHandler::is<DisplayObject>(t))
+			tiny_string path = asAtomHandler::toString(args[0],wrk).lowercase();
+			DisplayObject* d = th->AVM1GetClipFromPath(path);
+			if (!d)
 			{
 				LOG(LOG_ERROR,"AVM1_getBounds:path not found:"<<asAtomHandler::toDebugString(args[0])<<" on "<<th->toDebugString());
+				ASATOM_DECREF(t);
 				return;
 			}
+			target = d;
 		}
-		target =asAtomHandler::as<DisplayObject>(t);
+		else
+			target = asAtomHandler::as<DisplayObject>(t);
+		if (target!=th && (target->loadedFrom->version >= 8 || wrk->getSystemState()->getSwfVersion() >= 8))
+			currentNewInvalidBounds = wrk->getSystemState()->useNewInvalidBounds=true;
 	}
 	ASObject* o =  new_asobject(wrk);
 	ret = asAtomHandler::fromObject(o);
@@ -3411,7 +3430,10 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 	}
 
 	number_t x1=0,x2=0,y1=0,y2=0;
+	if (th == target)
+		wrk->getSystemState()->useNewInvalidBounds=false;
 	th->getBounds(x1,x2,y1,y2, m);
+	wrk->getSystemState()->useNewInvalidBounds=currentNewInvalidBounds;
 
 	asAtom v=asAtomHandler::invalidAtom;
 	multiname name(nullptr);
@@ -3496,12 +3518,20 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->prototype->setDeclaredMethodByQName("getBytesLoaded","",c->getSystemState()->getBuiltinFunction(AVM1_getBytesLoaded),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("getBytesTotal","",c->getSystemState()->getBuiltinFunction(AVM1_getBytesTotal),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("getBounds","",c->getSystemState()->getBuiltinFunction(AVM1_getBounds),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getRect","",c->getSystemState()->getBuiltinFunction(AVM1_getBounds),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("swapDepths","",c->getSystemState()->getBuiltinFunction(AVM1_swapDepths),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("getDepth","",c->getSystemState()->getBuiltinFunction(AVM1_getDepth),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("setMask","",c->getSystemState()->getBuiltinFunction(_setMask),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("transform","",c->getSystemState()->getBuiltinFunction(_getTransform),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("transform","",c->getSystemState()->getBuiltinFunction(_setTransform),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(AVM1_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("blendMode","",c->getSystemState()->getBuiltinFunction(_getBlendMode,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("blendMode","",c->getSystemState()->getBuiltinFunction(_setBlendMode),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("cacheAsBitmap","",c->getSystemState()->getBuiltinFunction(_getter_cacheAsBitmap,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("cacheAsBitmap","",c->getSystemState()->getBuiltinFunction(_setter_cacheAsBitmap),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("filters","",c->getSystemState()->getBuiltinFunction(_getter_filters,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("filters","",c->getSystemState()->getBuiltinFunction(_setter_filters),SETTER_METHOD,false);
+
 }
 DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path, asAtom* member)
 {
@@ -3545,6 +3575,9 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path, asAtom* mem
 		return nullptr;
 	}
 	uint32_t pos = path.find("/");
+	uint32_t pos2 = path.find(":");
+	if (pos2 < pos)
+		pos = pos2;
 	tiny_string subpath = (pos == tiny_string::npos) ? path : path.substr_bytes(0,pos);
 	if (subpath.empty())
 	{
@@ -3955,7 +3988,7 @@ DisplayObject* DisplayObject::AVM1getRoot()
 		return this;
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
-	m.name_s_id=getSystemState()->getUniqueStringId("_lockroot");
+	m.name_s_id=BUILTIN_STRINGS::STRING_LOCKROOT;
 	m.isAttribute = false;
 	asAtom l= asAtomHandler::undefinedAtom;
 	getVariableByMultiname(l,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());

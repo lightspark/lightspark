@@ -212,7 +212,7 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 									   "onConnect","onData","onClose","onSelect",
 									   "add","alpha","darken","difference","erase","hardlight","invert","layer","lighten","multiply","overlay","screen","subtract",
 									   "text","null","true","false","global","init","onSetFocus","onResize","movieclip","caller","callee","arguments",
-									   "onUnload","onStatus","level"
+									   "onUnload","onStatus","level","_lockroot"
 									  };
 
 extern uint32_t asClassCount;
@@ -244,11 +244,15 @@ SystemState::SystemState
 	instanceCounter(0),
 	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),avm1global(nullptr),
 	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),
-	ignoreUnhandledExceptions(false),runSingleThreaded(_runSingleThreaded),exitOnError(ERROR_NONE),
-	systemDomain(nullptr),worker(nullptr),workerDomain(nullptr),singleworker(true),
+	ignoreUnhandledExceptions(false),runSingleThreaded(_runSingleThreaded),
+	useNewInvalidBounds(false),
+	exitOnError(ERROR_NONE),
+	systemDomain(nullptr),worker(nullptr),workerDomain(nullptr),
+	highquality(1),
+	singleworker(true),
 	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),avm1FocusRectLinestyle(0xff),
 	unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
-	static_SoundMixer_bufferTime(0),
+	static_SoundMixer_bufferTime(5),
 	static_Multitouch_inputMode("gesture"),
 	static_XML_ignoreComments(true),
 	static_XML_ignoreProcessingInstructions(true),

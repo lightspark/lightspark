@@ -73,7 +73,7 @@ protected:
 	asAtom avm1focusrect;
 	asAtom avm1tabindex;
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
-	void onContextMenu(_NR<ASObject> oldValue);
+	void onContextMenu(asAtom oldValue);
 	~InteractiveObject();
 public:
 	bool isHittable(HIT_TYPE type)
@@ -91,8 +91,8 @@ public:
 	}
 	InteractiveObject(ASWorker* wrk,Class_base* c);
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityImplementation>,accessibilityImplementation);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,contextMenu); // adobe seems to allow DisplayObjects, too
-	ASPROPERTY_GETTER_SETTER(bool,tabEnabled);
+	ASPROPERTY_GETTER_SETTER(asAtom,contextMenu); // adobe seems to allow DisplayObjects, too
+	ASPROPERTY_GETTER_SETTER(asAtom,tabEnabled);
 	ASPROPERTY_GETTER_SETTER(int32_t,tabIndex);
 	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,focusRect);
 	ASFUNCTION_ATOM(_constructor);

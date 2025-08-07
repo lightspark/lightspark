@@ -458,7 +458,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,prevScene)
 ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->framecontainer->getFramesLoaded());
+	if (th->framecontainer->getFramesLoaded())
+		asAtomHandler::setUInt(ret,wrk,th->framecontainer->getFramesLoaded());
+	else
+		asAtomHandler::setUInt(ret,wrk,1); // no frames available yet, report 1 frame anyway
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getTotalFrames)
@@ -482,8 +485,13 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentScene)
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrame)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	//currentFrame is 1-based and relative to current scene
-	asAtomHandler::setInt(ret,wrk,th->state.FP+1 - th->framecontainer->getCurrentSceneStartFrame(th->state.FP));
+	if (th->framecontainer->getFramesLoaded())
+	{
+		//currentFrame is 1-based and relative to current scene
+		asAtomHandler::setInt(ret,wrk,th->state.FP+1 - th->framecontainer->getCurrentSceneStartFrame(th->state.FP));
+	}
+	else
+		asAtomHandler::setInt(ret,wrk,0);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrameLabel)
@@ -904,7 +912,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	AVM1MovieClip* toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(wrk);
 	toAdd->loadedFrom = th->loadedFrom;
 	toAdd->name = nameId;
-	toAdd->setMouseEnabled(false);
+	toAdd->setMouseEnabled(true);
+	multiname m(nullptr);
+	m.name_type=multiname::NAME_STRING;
+	m.name_s_id=BUILTIN_STRINGS::STRING_LOCKROOT;
+	toAdd->setVariableByMultiname(m,asAtomHandler::falseAtom,CONST_ALLOWED,nullptr,wrk);
 	if(th->hasLegacyChildAt(Depth) )
 	{
 		th->deleteLegacyChildAt(Depth,false);

@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/flash/display/BitmapData.h"
+#include "asobject.h"
 #include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/avm1/avm1display.h"
@@ -539,7 +540,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 	// use temporary Bitmap to copy BitmapData on GPU (bitmap will be destroyed in renderthread)
 	Bitmap* d = Class<Bitmap>::getInstanceSNoArgs(wrk);
 	d->setupTemporaryBitmap(source.getPtr());
-	d->scrollRect=sourceRect;
+	d->scrollRect=asAtomHandler::fromObjectNoPrimitive(sourceRect.getPtr());
+	ASATOM_ADDSTOREDMEMBER(d->scrollRect);
 	MATRIX m;
 	m.translate(destPoint->getX(),destPoint->getY());
 	th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer());
@@ -825,7 +827,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,scroll)
 		rcScroll->y = -y;
 		rcScroll->width = copyWidth;
 		rcScroll->height = copyHeight;
-		d->scrollRect=_MR(rcScroll);
+		d->scrollRect=asAtomHandler::fromObjectNoPrimitive(rcScroll);
+		rcScroll->addStoredMember();
 		th->drawDisplayObject(d, MATRIX(),false,BLENDMODE_NORMAL,nullptr,nullptr,true);
 		th->pixels->addTemporaryBitmap(th->getSystemState()->getRenderThread(),d);
 		th->notifyUsers();
@@ -1397,7 +1400,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 		Bitmap* d = Class<Bitmap>::getInstanceSNoArgs(wrk);
 		d->setupTemporaryBitmap(sourceBitmapData.getPtr());
 		d->setFilter(filter.getPtr());
-		d->scrollRect=sourceRect;
+		d->scrollRect=asAtomHandler::fromObjectNoPrimitive(sourceRect.getPtr());
+		ASATOM_ADDSTOREDMEMBER(d->scrollRect);
 		MATRIX m;
 		m.translate(destPoint->getX(),destPoint->getY());
 		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,sourceBitmapData->getBitmapContainer()==th->getBitmapContainer());

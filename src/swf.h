@@ -409,6 +409,8 @@ public:
 	bool useJit;
 	bool ignoreUnhandledExceptions;
 	bool runSingleThreaded;
+	bool useNewInvalidBounds;
+
 	ERROR_TYPE exitOnError;
 
 	//Parameters/FlashVars
@@ -448,6 +450,7 @@ public:
 
 	ASWorker* worker;
 	WorkerDomain* workerDomain;
+	uint32_t highquality; // TODO highquality is only a stub for the AVM1 _highquality property
 	bool singleworker;
 	Mutex workerMutex;
 	void addWorker(ASWorker* w);

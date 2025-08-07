@@ -490,7 +490,6 @@ bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, nu
 }
 void SimpleButton::addDisplayObject(BUTTONOBJECTTYPE state, uint32_t depth, DisplayObject* o)
 {
-	assert(state < 4);
 	o->addStoredMember();
 	states[state].push_back(make_pair(depth,o));
 }
@@ -543,7 +542,7 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DefineButtonTag *tag)
 				LOG(LOG_ERROR,"ButtonSound not found for OverUpToOverDown:"<<tag->sounds->SoundID3_OverDownToOverUp << " on button "<<tag->getId());
 		}
 	}
-	tabEnabled = true;
+	tabEnabled = asAtomHandler::trueAtom;
 }
 
 void SimpleButton::finalize()

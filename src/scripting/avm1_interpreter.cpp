@@ -160,9 +160,12 @@ ASObject* AVM1context::resolveTargetPath
 		path = path.substr(1, UINT32_MAX);
 		obj = root;
 	}
-
+	bool destroyprev=false;
+	GET_VARIABLE_RESULT varres = GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	while (!path.empty())
 	{
+		destroyprev = varres & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED;
+		varres = GET_VARIABLE_RESULT::GETVAR_NORMAL;
 		// Skip over any leading `:`s.
 		// e.g. `:foo`, and `::foo` are the same as `foo`.
 		path = path.trimStartMatches(':');
@@ -255,7 +258,7 @@ ASObject* AVM1context::resolveTargetPath
 					multiname objName(nullptr);
 					objName.name_type = multiname::NAME_STRING;
 					objName.name_s_id = sys->getUniqueStringId(name, isCaseSensitive());
-					obj->AVM1getVariableByMultiname
+					varres = obj->AVM1getVariableByMultiname
 					(
 						val,
 						objName,
@@ -265,6 +268,8 @@ ASObject* AVM1context::resolveTargetPath
 					);
 				}
 			}
+			if (destroyprev)
+				obj->decRef();
 		}
 
 		// NOTE: `this`, and `_root` are only allowed at the start of
@@ -277,7 +282,7 @@ ASObject* AVM1context::resolveTargetPath
 		else
 			return nullptr;
 	}
-	if (obj)
+	if (obj && ((varres & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)==0))
 		obj->incRef();
 	return obj;
 }

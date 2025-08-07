@@ -18,7 +18,6 @@
 **************************************************************************/
 
 #include "platforms/engineutils.h"
-#include "scripting/abc.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/display/RootMovieClip.h"
@@ -28,7 +27,6 @@
 #include "compat.h"
 #include "backends/geometry.h"
 #include "backends/graphics.h"
-#include "backends/rendering.h"
 #include "backends/rendering_context.h"
 #include "backends/cachedsurface.h"
 #include "scripting/argconv.h"
@@ -143,7 +141,7 @@ TextField::TextField(ASWorker* wrk, Class_base* c, const TextData& textData, boo
 	if (!readOnly)
 	{
 		type = ET_EDITABLE;
-		tabEnabled = true;
+		tabEnabled = asAtomHandler::trueAtom;
 	}
 	fillstyleTextColor.push_back(0xff);
 }
@@ -820,12 +818,12 @@ ASFUNCTIONBODY_ATOM(TextField, _setter_type)
 	if (value == "dynamic")
 	{
 		th->type = ET_READ_ONLY;
-		th->tabEnabled=false;
+		th->tabEnabled=asAtomHandler::falseAtom;
 	}
 	else if (value == "input")
 	{
 		th->type = ET_EDITABLE;
-		th->tabEnabled=true;
+		th->tabEnabled=asAtomHandler::trueAtom;
 	}
 	else
 		createError<ArgumentError>(wrk,kInvalidEnumError, "type");

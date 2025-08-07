@@ -98,7 +98,8 @@ swfFile(test.swfPath)
 	setTLSWorker(sys->worker);
 	EngineData::initSDL();
 	sys->setParamsAndEngine(new TestRunnerEngineData(rootPath, this), true);
-	sys->mainClip->setOrigin(tiny_string("file://") + test.swfPath.generic_string());
+	sys->mainClip->setOrigin(tiny_string("/")+test.swfFilename);
+	sys->mainClip->setBaseURL(tiny_string("file://") + test.rootPath.generic_string()+"/");
 	sys->securityManager->setSandboxType(SecurityManager::LOCAL_TRUSTED);
 	sys->ignoreUnhandledExceptions = true;
 	sys->useFastInterpreter = true;

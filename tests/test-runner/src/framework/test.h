@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+	Copyright (C) 2025  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -65,6 +66,7 @@ struct Test
 	path_t inputPath;
 	path_t outputPath;
 	path_t rootPath;
+	tiny_string swfFilename;
 	tiny_string name;
 	TestFormat format;
 	Type type;

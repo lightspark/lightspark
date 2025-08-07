@@ -547,9 +547,9 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluateSandboxURL(const URLI
 SecurityManager::EVALUATIONRESULT SecurityManager::evaluateLocalDirectoryURL(const URLInfo& url)
 {
 	//The URL is local and points to a directory above the origin
-	if(url.getProtocol() == "file" && !url.isSubOf(getSys()->mainClip->getOrigin()))
+	if(url.getProtocol() == "file" && !url.isSubOf(getSys()->mainClip->getBaseURL()))
 	{
-		LOG(LOG_ERROR,"evaluateLocalDirectoryURL failed:"<<url<<" "<<getSys()->mainClip->getOrigin());
+		LOG(LOG_ERROR,"evaluateLocalDirectoryURL failed:"<<url<<" "<<getSys()->mainClip->getBaseURL());
 		return NA_RESTRICT_LOCAL_DIRECTORY;
 	}
 
@@ -600,11 +600,11 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 		return ALLOWED;
 
 	//This check doesn't apply to local files
-	if(url.getProtocol() == "file" && getSys()->mainClip->getOrigin().getProtocol() == "file")
+	if(url.getProtocol() == "file" && getSys()->mainClip->getBaseURL().getProtocol() == "file")
 		return ALLOWED;
 
 	// no need to check if we trust the source
-	if (getSys()->mainClip->getOrigin().getProtocol() == "file" && sandboxType == LOCAL_TRUSTED)
+	if (getSys()->mainClip->getBaseURL().getProtocol() == "file" && sandboxType == LOCAL_TRUSTED)
 		return ALLOWED;
 
 	//Streaming from RTMP is always allowed (see
@@ -614,11 +614,11 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 
 	LOG(LOG_INFO, "SECURITY: Evaluating URL for cross domain policies:");
 	LOG(LOG_INFO, "SECURITY: --> URL:    " << url);
-	LOG(LOG_INFO, "SECURITY: --> Origin: " << getSys()->mainClip->getOrigin());
+	LOG(LOG_INFO, "SECURITY: --> Origin: " << getSys()->mainClip->getBaseURL());
 
 	//The URL has exactly the same domain name as the origin, always allowed
-	if(url.getProtocol() == getSys()->mainClip->getOrigin().getProtocol() &&
-			url.getHostname() == getSys()->mainClip->getOrigin().getHostname())
+	if(url.getProtocol() == getSys()->mainClip->getBaseURL().getProtocol() &&
+			url.getHostname() == getSys()->mainClip->getBaseURL().getHostname())
 	{
 		LOG(LOG_INFO, "SECURITY: Same hostname as origin, allowing");
 		return ALLOWED;
@@ -635,7 +635,7 @@ SecurityManager::EVALUATIONRESULT SecurityManager::evaluatePoliciesURL(const URL
 		URLPFileListConstIt it = files->begin();
 		for(; it != files->end(); ++it)
 		{
-			if((*it)->allowsAccessFrom(getSys()->mainClip->getOrigin(), url))
+			if((*it)->allowsAccessFrom(getSys()->mainClip->getBaseURL(), url))
 			{
 				LOG(LOG_INFO, "SECURITY: ALLOWED: A policy file explicitly allowed access");
 				delete files;

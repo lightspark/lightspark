@@ -75,6 +75,7 @@ public:
 	void setOrigin(const tiny_string& u, const tiny_string& filename="") DLL_PUBLIC;
 	URLInfo& getOrigin() DLL_PUBLIC;
 	void setBaseURL(const tiny_string& url) DLL_PUBLIC;
+	const URLInfo& getBaseURL();
 	static RootMovieClip* getInstance(ASWorker* wrk, LoaderInfo* li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain);
 	/*
 	 * The application domain for this clip

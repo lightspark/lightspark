@@ -90,6 +90,15 @@ URLInfo& RootMovieClip::getOrigin()
 void RootMovieClip::setBaseURL(const tiny_string& url)
 {
 	applicationDomain->setBaseURL(url);
+	if(loaderInfo)
+	{
+		tiny_string url = getBaseURL().getParsedURL()+getOrigin().getPath()+getOrigin().getPathFile();
+		loaderInfo->setLoaderURL(url);
+	}
+}
+const URLInfo& RootMovieClip::getBaseURL()
+{
+	return applicationDomain->getBaseURL();
 }
 
 RootMovieClip* RootMovieClip::getInstance(ASWorker* wrk, LoaderInfo* li, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain)

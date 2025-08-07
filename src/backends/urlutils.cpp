@@ -89,7 +89,7 @@ URLInfo::URLInfo(const tiny_string& u)
 	size_t pathPos = std::string::npos;
 	size_t queryPos = std::string::npos;
 	size_t fragmentPos = std::string::npos;
-	size_t cursor = hostnamePos;
+	size_t cursor = hostnamePos == std::string::npos ? 0 : hostnamePos;
 
 	if(protocol == "file")
 	{

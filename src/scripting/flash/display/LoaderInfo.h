@@ -50,7 +50,7 @@ private:
 	_NR<ByteArray> bytesData;
 	ProgressEvent* progressEvent;
 	Mutex spinlock;
-	enum LOAD_STATUS { LOAD_START=0, LOAD_OPENED, LOAD_PROGRESSING, LOAD_DOWNLOAD_DONE, LOAD_INIT_SENT, LOAD_COMPLETE };
+	enum LOAD_STATUS { LOAD_START=0, LOAD_STARTED, LOAD_OPENED, LOAD_PROGRESSING, LOAD_DOWNLOAD_DONE, LOAD_INIT_SENT, LOAD_COMPLETE };
 	LOAD_STATUS loadStatus;
 	bool fromByteArray;
 	bool hasavm1target;
@@ -79,6 +79,7 @@ public:
 	void afterHandleEvent(Event* ev) override;
 	void addLoaderEvent(Event* ev);
 	void setOpened(bool fromBytes);
+	void setStarted() { loadStatus=LOAD_STARTED; }
 	DisplayObject* getParsedObject() const;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);

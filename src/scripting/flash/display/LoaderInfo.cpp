@@ -371,7 +371,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 					progressEvent->bytesLoaded = bytesLoaded;
 					progressEvent->bytesTotal = bytesTotal;
 					// if event is already in event queue, we don't need to add it again
-					if (!progressEvent->queued)
+					if (!ACQUIRE_READ(progressEvent->queued))
 					{
 						this->addLoaderEvent(progressEvent);
 						this->incRef();
@@ -513,7 +513,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesTotal)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 
-	if (th->loadStatus == LOAD_START || th->loadStatus==LOAD_OPENED)
+	if (th->loadStatus <= LOAD_OPENED)
 		asAtomHandler::setUInt(ret,wrk,0);
 	else
 		asAtomHandler::setUInt(ret,wrk,th->bytesTotal);
@@ -521,7 +521,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesTotal)
 
 bool LoaderInfo::fillBytesData(ByteArray* data)
 {
-	if (this->loadStatus < LOAD_OPENED)
+	if (this->loadStatus < LOAD_STARTED)
 		return false;
 	if (bytesData.isNull())
 		bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));

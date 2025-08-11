@@ -78,13 +78,7 @@ public:
 		AVM1Scope* _parent,
 		const AVM1ScopeClass& type,
 		asAtom _values
-	):
-		parent(_parent),
-		_class(type),
-		values(_values),
-		storedmembercount(0)
-	{
-	}
+	);
 
 	// Constructs a global scope (A parentless scope).
 	AVM1Scope(Global* globals);
@@ -241,16 +235,8 @@ public:
 		const CONST_ALLOWED_FLAG& allowConst,
 		ASWorker* wrk
 	);
-	void addStoredMember()
-	{
-		assert((int)storedmembercount<this->getRefCount());
-		++storedmembercount;
-	}
-	void removeStoredMember()
-	{
-		assert(storedmembercount);
-		--storedmembercount;
-	}
+	void addStoredMember();
+	void removeStoredMember();
 
 	// Deletes a variable from the scope.
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk);

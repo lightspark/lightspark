@@ -351,12 +351,8 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 	{
 		ASWorker* wrk = getInstanceWorker();
 		
-		if (listeners.insert(this).second)
-		{
-			this->incRef();
-			this->addStoredMember();
-		}
 		std::set<ASObject*> tmplisteners = listeners;
+		tmplisteners.insert(this);
 		auto it = tmplisteners.begin();
 		while (it != tmplisteners.end())
 		{
@@ -379,8 +375,8 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					else
 						args[0] = asAtomHandler::undefinedAtom;
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
-					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
+				ASATOM_DECREF(func);
 			}
 			else if (e->type == "avm1_init")
 			{
@@ -402,8 +398,8 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 						args[0] = asAtomHandler::undefinedAtom;
 
 					f->call(&ret,&obj,args,1);
-					f->decRef();
 				}
+				ASATOM_DECREF(func);
 			}
 			else if (e->type == "progress")
 			{
@@ -426,8 +422,8 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					args[1] = asAtomHandler::fromInt(ev->bytesLoaded);
 					args[2] = asAtomHandler::fromInt(ev->bytesTotal);
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,3);
-					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
+				ASATOM_DECREF(func);
 			}
 			else if (e->type == "complete")
 			{
@@ -447,8 +443,8 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					else
 						args[0] = asAtomHandler::undefinedAtom;
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,1);
-					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
+				ASATOM_DECREF(func);
 			}
 			else if (e->type == "ioError")
 			{
@@ -463,8 +459,8 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					asAtom ret=asAtomHandler::invalidAtom;
 					asAtom obj = asAtomHandler::fromObject(this);
 					asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,nullptr,0);
-					asAtomHandler::as<AVM1Function>(func)->decRef();
 				}
+				ASATOM_DECREF(func);
 			}
 			it++;
 		}
@@ -531,15 +527,19 @@ void AVM1MovieClipLoader::prepareShutdown()
 	auto itlst = listeners.begin();
 	while (itlst != listeners.end())
 	{
-		(*itlst)->prepareShutdown();
-		itlst++;
+		ASObject* o = (*itlst);
+		itlst = listeners.erase(itlst);
+		o->prepareShutdown();
+		o->removeStoredMember();
 	}
 	loadermutex.lock();
 	auto itldr = loaderlist.begin();
 	while (itldr != loaderlist.end())
 	{
-		(*itldr)->prepareShutdown();
-		itldr++;
+		ASObject* o = (*itldr);
+		itldr = loaderlist.erase(itldr);
+		o->prepareShutdown();
+		o->removeStoredMember();
 	}
 	loadermutex.unlock();
 }

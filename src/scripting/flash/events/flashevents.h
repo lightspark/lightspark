@@ -39,7 +39,7 @@ enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	AVM1INITACTION_EVENT,SET_LOADER_CONTENT_EVENT,ROOTCONSTRUCTEDEVENT,
 	LOCALCONNECTIONEVENT,GETMOUSETARGET_EVENT, RENDER_FRAME,
 	BROADCAST_EVENT,
-	LOADMOVIE_EVENT};
+	STARTJOB_EVENT};
 
 class ABCContext;
 class DictionaryTag;
@@ -52,7 +52,7 @@ class DefineSpriteTag;
 class ByteArray;
 class Rectangle;
 class Loader;
-class LoaderThread;
+class IThreadJob;
 
 class Event: public ASObject
 {
@@ -576,13 +576,13 @@ public:
 	EVENT_TYPE getEventType() const override { return FLUSH_INVALIDATION_QUEUE; }
 };
 
-class LoadMovieEvent: public Event
+class StartJobEvent: public Event
 {
-	LoaderThread* thread;
+	IThreadJob* thread;
 public:
-	LoadMovieEvent(LoaderThread* t):Event(nullptr,nullptr, "LoadMovieEvent"),thread(t){}
-	EVENT_TYPE getEventType() const override { return LOADMOVIE_EVENT; }
-	LoaderThread* getThread() const { return thread; }
+	StartJobEvent(IThreadJob* t):Event(nullptr,nullptr, "LoadMovieEvent"),thread(t){}
+	EVENT_TYPE getEventType() const override { return STARTJOB_EVENT; }
+	IThreadJob* getThread() const { return thread; }
 };
 
 class ParseRPCMessageEvent: public Event

@@ -650,7 +650,8 @@ ASFUNCTIONBODY_ATOM(URLLoader,load)
 	th->incRef();
 	urlRequest->incRef();
 	URLLoaderThread *job=new URLLoaderThread(_MR(urlRequest), _MR(th));
-	th->getSystemState()->addJob(job);
+	_R<StartJobEvent> event=_MR(new (th->getSystemState()->unaccountedMemory) StartJobEvent(job));
+	getVm(th->getSystemState())->addEvent(NullRef,event);
 	th->job=job;
 	ret = asAtomHandler::trueAtom; // only needed for AVM1, in AVM2 this method has no result
 }

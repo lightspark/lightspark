@@ -1043,6 +1043,8 @@ bool DisplayObjectContainer::destruct()
 	if (getParent())
 		getParent()->_removeFromDisplayList(this);
 	// clear all member variables in the display list first to properly handle cyclic reference detection
+	setParent(nullptr);
+	removeAVM1Listeners();
 	prepareDestruction();
 	clearDisplayList();
 	auto it = mapFrameDepthToLegacyChildRemembered.begin();
@@ -1066,6 +1068,8 @@ void DisplayObjectContainer::finalize()
 	if (getParent())
 		getParent()->_removeFromDisplayList(this);
 	// clear all member variables in the display list first to properly handle cyclic reference detection
+	setParent(nullptr);
+	removeAVM1Listeners();
 	prepareDestruction();
 	clearDisplayList();
 	auto it = mapFrameDepthToLegacyChildRemembered.begin();

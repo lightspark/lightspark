@@ -1349,14 +1349,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				m_sys->flushInvalidationQueue();
 				break;
 			}
-			case LOADMOVIE_EVENT:
+			case STARTJOB_EVENT:
 			{
-				LoadMovieEvent* ev=static_cast<LoadMovieEvent*>(e.second.getPtr());
+				StartJobEvent* ev=static_cast<StartJobEvent*>(e.second.getPtr());
 				LOG(LOG_CALLS,"LoadMovieEvent");
-				LoaderThread* thread = ev->getThread();
+				IThreadJob* thread = ev->getThread();
 				if (!m_sys->runSingleThreaded)
 				{
-					thread->getLoader()->addJob(thread);
 					m_sys->addJob(thread);
 				}
 				else

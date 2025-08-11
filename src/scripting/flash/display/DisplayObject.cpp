@@ -335,17 +335,25 @@ void DisplayObject::prepareShutdown()
 	ASObject* sr = asAtomHandler::getObject(scrollRect);
 	if (sr)
 		sr->prepareShutdown();
-	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
+	while (!avm1variables.empty())
 	{
-		ASObject* o = asAtomHandler::getObject(it->second);
+		ASObject* o = asAtomHandler::getObject(avm1variables.begin()->second);
+		avm1variables.erase(avm1variables.begin());
 		if (o)
+		{
+			o->removeStoredMember();
 			o->prepareShutdown();
+		}
 	}
-	for (auto it = avm1locals.begin(); it != avm1locals.end(); it++)
+	while (!avm1locals.empty())
 	{
-		ASObject* o = asAtomHandler::getObject(it->second);
+		ASObject* o = asAtomHandler::getObject(avm1locals.begin()->second);
+		avm1locals.erase(avm1locals.begin());
 		if (o)
+		{
+			o->removeStoredMember();
 			o->prepareShutdown();
+		}
 	}
 	setMask(NullRef);
 	setClipMask(NullRef);
@@ -1577,6 +1585,7 @@ void DisplayObject::setVisible(bool v)
 
 void DisplayObject::setLoaderInfo(LoaderInfo* li)
 {
+	assert(loaderInfo==nullptr);
 	loaderInfo=li;
 	if (li)
 	{
@@ -2872,7 +2881,7 @@ GET_VARIABLE_RESULT DisplayObject::AVM1getVariableByMultiname
 
 	result = GETVAR_NORMAL;
 
-	bool isInternalProp = s.startsWith("_");
+	bool isInternalProp = s.startsWith("_") && !s.startsWith("__");
 	// 2. Path properties. i.e. `_root`, `_parent`, `_level<depth>`
 	// (honours case sensitivity).
 	if (isInternalProp)

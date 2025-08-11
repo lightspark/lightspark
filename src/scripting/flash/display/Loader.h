@@ -85,11 +85,9 @@ public:
 	DisplayObject* getContent() const { return content; }
 	LoaderInfo* getContentLoaderInfo();
 	bool allowLoadingSWF() { return allowCodeImport; }
-	bool hasAVM1Target() const { return avm1target; }
 	void AVM1setup(int level, ASObject* container);
 	int AVM1getLevel() const { return avm1level; }
 	void loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _avm1target=nullptr);
-	void addJob(LoaderThread* t);
 	void unload();
 };
 

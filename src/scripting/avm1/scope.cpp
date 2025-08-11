@@ -31,6 +31,14 @@ using namespace lightspark;
 
 // Based on Ruffle's `avm1::scope::Scope`.
 
+AVM1Scope::AVM1Scope(AVM1Scope* _parent, const AVM1ScopeClass& type, asAtom _values):
+	parent(_parent),
+	_class(type),
+	values(_values),
+	storedmembercount(0)
+{
+}
+
 AVM1Scope::AVM1Scope(Global* globals) : AVM1Scope
 (
 	// `parent`
@@ -63,8 +71,6 @@ AVM1Scope::~AVM1Scope()
 {
 	if (parent)
 		parent->decRef();
-	if (_class==AVM1ScopeClass::Local)
-		ASATOM_DECREF(values);
 }
 
 void AVM1Scope::setTargetScope(DisplayObject* clip)
@@ -210,6 +216,20 @@ bool AVM1Scope::forceDefineLocal
 	return forceDefineLocalByMultiname(m, value, allowConst, wrk);
 }
 
+void AVM1Scope::addStoredMember()
+{
+	assert((int)storedmembercount<this->getRefCount());
+	ASATOM_ADDSTOREDMEMBER(values);
+	++storedmembercount;
+}
+
+void AVM1Scope::removeStoredMember()
+{
+	assert(storedmembercount);
+	ASATOM_REMOVESTOREDMEMBER(values);
+	--storedmembercount;
+}
+
 bool AVM1Scope::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
 	ASObject* v = asAtomHandler::getObject(values);
@@ -225,9 +245,12 @@ bool AVM1Scope::countAllCyclicMemberReferences(garbagecollectorstate& gcstate)
 	if (gcstate.stopped || this->getRefCount() != (int)this->storedmembercount)
 		return false;
 	bool ret = false;
-	ASObject* v = asAtomHandler::getObject(values);
-	if (v)
-		ret = v->countAllCylicMemberReferences(gcstate);
+	if (asAtomHandler::isAccessible(values))
+	{
+		ASObject* v = asAtomHandler::getObject(values);
+		if (v)
+			ret = v->countAllCylicMemberReferences(gcstate);
+	}
 	return ret;
 }
 

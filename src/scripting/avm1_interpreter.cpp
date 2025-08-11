@@ -79,10 +79,8 @@ AVM1context::AVM1context(DisplayObject* target, SystemState* sys) :
 	callee(nullptr)
 {
 	globalScope->addStoredMember();
-	ASATOM_ADDSTOREDMEMBER(globalScope->getLocals());
 	scope = new AVM1Scope(globalScope, target);
 	scope->addStoredMember();
-	ASATOM_ADDSTOREDMEMBER(scope->getLocals());
 }
 
 AVM1context::~AVM1context()
@@ -103,7 +101,6 @@ void AVM1context::setScope(AVM1Scope* sc)
 {
 	if (scope)
 	{
-		ASATOM_REMOVESTOREDMEMBER(scope->getLocals());
 		scope->removeStoredMember();
 		scope->decRef();
 	}
@@ -111,14 +108,12 @@ void AVM1context::setScope(AVM1Scope* sc)
 	if (scope)
 	{
 		scope->addStoredMember();
-		ASATOM_ADDSTOREDMEMBER(scope->getLocals());
 	}
 }
 void AVM1context::setGlobalScope(AVM1Scope* sc)
 {
 	if (globalScope)
 	{
-		ASATOM_REMOVESTOREDMEMBER(globalScope->getLocals());
 		globalScope->removeStoredMember();
 		globalScope->decRef();
 	}
@@ -126,7 +121,6 @@ void AVM1context::setGlobalScope(AVM1Scope* sc)
 	if (globalScope)
 	{
 		globalScope->addStoredMember();
-		ASATOM_ADDSTOREDMEMBER(globalScope->getLocals());
 	}
 }
 
@@ -2771,7 +2765,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				++curdepth;
 				scopestackstop[curdepth] = itend;
 				context->getScope()->incRef();
-				ASATOM_ADDSTOREDMEMBER(context->getScope()->getLocals());
 
 				context->setScope(new AVM1Scope
 								(

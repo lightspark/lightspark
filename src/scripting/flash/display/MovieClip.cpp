@@ -114,9 +114,8 @@ bool MovieClip::destruct()
 		avm1loaderlist.front()->removeStoredMember();
 		avm1loaderlist.pop_front();
 	}
-	auto avm1ctxt = getAVM1Context();
-	avm1ctxt->setScope(nullptr);
-	avm1ctxt->setGlobalScope(nullptr);
+	avm1context.setScope(nullptr);
+	avm1context.setGlobalScope(nullptr);
 	return Sprite::destruct();
 }
 
@@ -141,9 +140,8 @@ void MovieClip::finalize()
 		it->second.setScope(nullptr);
 		it->second.setGlobalScope(nullptr);
 	}
-	auto avm1ctxt = getAVM1Context();
-	avm1ctxt->setScope(nullptr);
-	avm1ctxt->setGlobalScope(nullptr);
+	avm1context.setScope(nullptr);
+	avm1context.setGlobalScope(nullptr);
 	Sprite::finalize();
 }
 
@@ -160,11 +158,14 @@ void MovieClip::prepareShutdown()
 			o->prepareShutdown();
 		it++;
 	}
-	auto avm1ctxt = getAVM1Context();
-	avm1ctxt->setScope(nullptr);
-	avm1ctxt->setGlobalScope(nullptr);
-	for (auto it = avm1loaderlist.begin();it != avm1loaderlist.end(); it++)
-		(*it)->prepareShutdown();
+	avm1context.setScope(nullptr);
+	avm1context.setGlobalScope(nullptr);
+	while (!avm1loaderlist.empty())
+	{
+		avm1loaderlist.front()->prepareShutdown();
+		avm1loaderlist.front()->removeStoredMember();
+		avm1loaderlist.pop_front();
+	}
 }
 
 bool MovieClip::countCylicMemberReferences(garbagecollectorstate &gcstate)

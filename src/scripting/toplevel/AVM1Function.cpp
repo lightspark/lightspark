@@ -39,7 +39,6 @@ AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, AVM1
 	{
 		scope->incRef();
 		scope->addStoredMember();
-		ASATOM_ADDSTOREDMEMBER(scope->getLocals());
 	}
 	context.keepLocals=true;
 	superobj = asAtomHandler::invalidAtom;
@@ -91,8 +90,8 @@ void AVM1Function::finalize()
 	clip=nullptr;
 	if (scope)
 	{
-		ASATOM_REMOVESTOREDMEMBER(scope->getLocals());
 		scope->removeStoredMember();
+		scope->decRef();
 		scope=nullptr;
 	}
 	ASATOM_REMOVESTOREDMEMBER(superobj);
@@ -116,7 +115,7 @@ bool AVM1Function::destruct()
 	if (scope)
 	{
 		scope->removeStoredMember();
-		ASATOM_REMOVESTOREDMEMBER(scope->getLocals());
+		scope->decRef();
 		scope=nullptr;
 	}
 	ASATOM_REMOVESTOREDMEMBER(superobj);
@@ -165,10 +164,10 @@ bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
 		ret = su->countAllCylicMemberReferences(gcstate) || ret;
-	if (context.getScope())
-		ret |= context.getScope()->countAllCyclicMemberReferences(gcstate);
-	if (context.getGlobalScope())
-		ret |= context.getGlobalScope()->countAllCyclicMemberReferences(gcstate);
+	if (context.scope)
+		ret |= context.scope->countAllCyclicMemberReferences(gcstate);
+	if (context.globalScope)
+		ret |= context.globalScope->countAllCyclicMemberReferences(gcstate);
 	return ret;
 }
 bool AVM1Function::implementsInterface(asAtom &iface)

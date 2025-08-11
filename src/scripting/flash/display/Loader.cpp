@@ -290,34 +290,14 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 			return;
 		}
 	}
-
+	this->contentLoaderInfo->setStarted();
 	r->incRef();
 	LoaderThread *thread=new LoaderThread(_MR(r), this);
-	if (this->needsActionScript3())
-	{
-		if (!getSystemState()->runSingleThreaded)
-		{
-			Locker l(this->spinlock);
-			this->jobs.push_back(thread);
-			this->getSystemState()->addJob(thread);
-		}
-		else
-		{
-			thread->execute();
-			thread->jobFence();
-		}
-	}
-	else
-	{
-		_R<LoadMovieEvent> event=_MR(new (getSystemState()->unaccountedMemory) LoadMovieEvent(thread));
-		getVm(getSystemState())->addEvent(NullRef,event);
-	}
+	_R<StartJobEvent> event=_MR(new (getSystemState()->unaccountedMemory) StartJobEvent(thread));
+	getVm(getSystemState())->addEvent(NullRef,event);
+	this->jobs.push_back(thread);
 }
 
-void Loader::addJob(LoaderThread* t)
-{
-	this->jobs.push_back(t);
-}
 ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
@@ -356,7 +336,8 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 		{
 			Locker l(th->spinlock);
 			th->jobs.push_back(thread);
-			th->getSystemState()->addJob(thread);
+			_R<StartJobEvent> event=_MR(new (th->getSystemState()->unaccountedMemory) StartJobEvent(thread));
+			getVm(th->getSystemState())->addEvent(NullRef,event);
 		}
 		else
 		{
@@ -444,12 +425,12 @@ bool Loader::destruct()
 	url = URLInfo();
 	loaded=false;
 	allowCodeImport=true;
-	if (content)
-		content->removeStoredMember();
-	content=nullptr;
 	if (contentLoaderInfo)
 		contentLoaderInfo->removeStoredMember();
 	contentLoaderInfo=nullptr;
+	if (content)
+		content->removeStoredMember();
+	content=nullptr;
 	if (avm1container)
 		avm1container->removeStoredMember();
 	avm1container=nullptr;
@@ -585,6 +566,8 @@ void Loader::setContent(DisplayObject* o)
 			o->incRef();
 			p->insertLegacyChildAt(depth,o,false,false);
 		}
+		avm1target->removeStoredMember();
+		avm1target=nullptr;
 	}
 	else
 	{

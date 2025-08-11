@@ -47,7 +47,7 @@ void AVM1Selection::sinit(Class_base* c)
 }
 ASFUNCTIONBODY_ATOM(AVM1Selection,addListener)
 {
-	asAtom listener;
+	asAtom listener = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(listener));
 	wrk->getSystemState()->stage->AVM1AddMouseListener(listener);
 }

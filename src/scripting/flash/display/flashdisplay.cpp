@@ -60,7 +60,7 @@ using namespace lightspark;
 std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 {
 	s << "[" << r.getClass()->class_name << "]";
-	if(r.name != BUILTIN_STRINGS::EMPTY)
+	if(r.name != BUILTIN_STRINGS::EMPTY && r.name != UINT32_MAX)
 		s << " name: " << r.name;
 	return s;
 }
@@ -770,7 +770,7 @@ bool DisplayObjectContainer::hasLegacyChildByName
 	for (const auto& pair : mapDepthToLegacyChild)
 	{
 		auto child = pair.second;
-		if (child->name == BUILTIN_STRINGS::EMPTY)
+		if (child->name == BUILTIN_STRINGS::EMPTY || child->name==UINT32_MAX)
 			continue;
 		const auto& childName = getSystemState()->getStringFromUniqueId(child->name);
 		if (name.equalsWithCase(childName, caseSensitive))
@@ -788,7 +788,7 @@ DisplayObject* DisplayObjectContainer::getLegacyChildByName
 	for (const auto& pair : mapDepthToLegacyChild)
 	{
 		auto child = pair.second;
-		if (child->name == BUILTIN_STRINGS::EMPTY)
+		if (child->name == BUILTIN_STRINGS::EMPTY || child->name == UINT32_MAX)
 			continue;
 		const auto& childName = getSystemState()->getStringFromUniqueId(child->name);
 		if (name.equalsWithCase(childName, caseSensitive))
@@ -837,8 +837,9 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 	if(!hasLegacyChildAt(depth))
 		return;
 	DisplayObject* obj = mapDepthToLegacyChild.at(depth);
-	if(obj->name != BUILTIN_STRINGS::EMPTY 
-	   && !obj->markedForLegacyDeletion) // member variable was already reset in purgeLegacyChildren
+	if(obj->name != BUILTIN_STRINGS::EMPTY
+		&& obj->name != UINT32_MAX
+		&& !obj->markedForLegacyDeletion) // member variable was already reset in purgeLegacyChildren
 	{
 		//The variable is not deleted, but just set to null
 		//This is a tested behavior
@@ -906,7 +907,10 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 			}
 		}
 	}
-	if((!loadedFrom->usesActionScript3 || obj->isConstructed()) && obj->name != BUILTIN_STRINGS::EMPTY && !obj->hasDefaultName)
+	if((!loadedFrom->usesActionScript3 || obj->isConstructed())
+		&& obj->name != BUILTIN_STRINGS::EMPTY
+		&& obj->name != UINT32_MAX
+		&& !obj->hasDefaultName)
 	{
 		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
@@ -976,7 +980,7 @@ void DisplayObjectContainer::purgeLegacyChildren()
 		{
 			legacyChildrenMarkedForDeletion.insert(i->first);
 			obj->markedForLegacyDeletion=true;
-			if(obj->name != BUILTIN_STRINGS::EMPTY)
+			if(obj->name != BUILTIN_STRINGS::EMPTY && obj->name != UINT32_MAX)
 			{
 				multiname objName(nullptr);
 				objName.name_type=multiname::NAME_STRING;
@@ -1457,7 +1461,9 @@ void DisplayObjectContainer::dumpDisplayList(unsigned int level)
 		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
 		    ((*it)->isVisible() ? "v" : "") <<
 						  ((*it)->isMask() ? "m" : "") <<((*it)->hasFilters() ? "f" : "") <<(asAtomHandler::is<Rectangle>((*it)->scrollRect) ? "s" : "") << " cd=" <<(*it)->ClipDepth<<" "<<
-		    "a=" << (*it)->clippedAlpha() <<" '"<<getSystemState()->getStringFromUniqueId((*it)->name)<<"'"<<" depth:"<<(*it)->getDepth()<<" blendmode:"<<(*it)->getBlendMode()<<
+			"a=" << (*it)->clippedAlpha() <<" '"<<
+			((*it)->name != UINT32_MAX ? getSystemState()->getStringFromUniqueId((*it)->name) : "")<<"'"
+			<<" depth:"<<(*it)->getDepth()<<" blendmode:"<<(*it)->getBlendMode()<<
 		    ((*it)->cacheAsBitmap ? " cached" : ""));
 
 		if ((*it)->is<DisplayObjectContainer>())

@@ -936,7 +936,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	if (th->getParent() && !th->is<RootMovieClip>())
 	{
-		if (th->name != BUILTIN_STRINGS::EMPTY)
+		if (th->name != BUILTIN_STRINGS::EMPTY && th->name != UINT32_MAX)
 		{
 			multiname m(nullptr);
 			m.name_type=multiname::NAME_STRING;

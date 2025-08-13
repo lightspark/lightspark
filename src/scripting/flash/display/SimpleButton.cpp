@@ -741,7 +741,7 @@ void SimpleButton::resetStateToStart(BUTTONOBJECTTYPE type)
 			parentSprite[type]->loadedFrom=this->loadedFrom;
 			parentSprite[type]->constructionComplete(true);
 			parentSprite[type]->afterConstruction(true);
-			parentSprite[type]->name = BUILTIN_STRINGS::EMPTY;
+			parentSprite[type]->name = UINT32_MAX;
 		}
 		else if (parentSprite[type]->is<DisplayObjectContainer>())
 		{

@@ -155,7 +155,7 @@ bool AVM1Scope::defineLocalByMultiname
 )
 {
 	ASObject* v = asAtomHandler::getObject(values);
-	if (!isWithScope() || parent)
+	if (!isWithScope())
 		return v && v->AVM1setVariableByMultiname(name, value, allowConst, wrk);
 	// When defining a local in a `with` scope, we also need to check if
 	// that local exists on the `with` target. If it does, the variable
@@ -163,8 +163,11 @@ bool AVM1Scope::defineLocalByMultiname
 	// defined in the first non-`with` parent scope.
 
 	// Does this variable already exist on the target?
-	if (v && v->hasPropertyByMultiname(name, true, true, wrk))
-		return v->AVM1setVariableByMultiname(name, value, allowConst, wrk);
+	if (v)
+	{
+		if (v->hasPropertyByMultiname(name, true, true, wrk))
+			return v->AVM1setVariableByMultiname(name, value, allowConst, wrk);
+	}
 
 	// If not, go up the scope chain.
 	return parent->defineLocalByMultiname(name, value, allowConst, wrk);

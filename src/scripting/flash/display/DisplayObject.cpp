@@ -169,7 +169,7 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	loaderInfo(nullptr),
 	scrollRect(asAtomHandler::undefinedAtom),
 	loadedFrom(nullptr),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
-	name(BUILTIN_STRINGS::EMPTY),
+	name(UINT32_MAX),
 	opaqueBackground(asAtomHandler::nullAtom)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
@@ -287,7 +287,7 @@ bool DisplayObject::destruct()
 	legacy=false;
 	markedForLegacyDeletion=false;
 	cacheAsBitmap=false;
-	name=BUILTIN_STRINGS::EMPTY;
+	name=UINT32_MAX;
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
 	{
 		ASObject* o = asAtomHandler::getObject(it->second);
@@ -471,8 +471,10 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getter_name)
 		return;
 	}
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	if (th->needsActionScript3() && th->name == BUILTIN_STRINGS::EMPTY)
+	if (th->needsActionScript3() && (th->name == BUILTIN_STRINGS::EMPTY || th->name==UINT32_MAX) )
 		ret = asAtomHandler::nullAtom;
+	else if (th->name==UINT32_MAX)
+		ret = asAtomHandler::undefinedAtom;
 	else
 		ret = asAtomHandler::fromStringID(th->name);
 
@@ -1151,7 +1153,7 @@ tiny_string DisplayObject::AVM1GetPath(bool dotnotation)
 	tiny_string res;
 	if (getParent())
 		res = getParent()->AVM1GetPath(dotnotation);
-	if (this->name != BUILTIN_STRINGS::EMPTY)
+	if (this->name != BUILTIN_STRINGS::EMPTY && this->name != UINT32_MAX)
 	{
 		if (dotnotation)
 		{
@@ -2279,7 +2281,7 @@ void DisplayObject::constructionComplete(bool _explicit, bool forInitAction)
 }
 void DisplayObject::setNameOnParent()
 {
-	if( this->name != BUILTIN_STRINGS::EMPTY && !this->hasDefaultName)
+	if( this->name != BUILTIN_STRINGS::EMPTY && !this->hasDefaultName && this->name != UINT32_MAX)
 	{
 		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
@@ -2642,8 +2644,11 @@ asAtom DisplayObject::getPropertyByIndex(size_t idx, ASWorker* wrk)
 			if (is<MovieClip>())
 				MovieClip::_getFramesLoaded(ret,wrk,obj,nullptr,0);
 			break;
-		case 13:// name
-			_getter_name(ret,wrk,obj,nullptr,0);
+		case 13:// _name
+			if (this->name == UINT32_MAX)
+				ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
+			else
+				_getter_name(ret,wrk,obj,nullptr,0);
 			break;
 		case 14:// _droptarget
 			if (is<AVM1MovieClip>())

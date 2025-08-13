@@ -1106,6 +1106,7 @@ private:
 	// double-linked list of objects marked for garbage collection
 	ASObject* gcNext;
 	ASObject* gcPrev;
+	std::map<uint32_t,pair<IFunction*,asAtom>> avm1watcherlist;
 protected:
 	ASObject(MemoryAccount* m);
 
@@ -1167,6 +1168,8 @@ protected:
 			(*it)->removeStoredMember();
 		}
 		ownedObjects.clear();
+		if (!avm1watcherlist.empty())
+			AVM1clearWatcherList();
 		if (proxyMultiName)
 		{
 			delete proxyMultiName;
@@ -1216,6 +1219,7 @@ protected:
 		}
 		return dodestruct;
 	}
+	void AVM1clearWatcherList();
 public:
 	ASObject(ASWorker* wrk, Class_base* c,SWFOBJECT_TYPE t = T_OBJECT,CLASS_SUBTYPE subtype = SUBTYPE_NOT_SET);
 	void serializeDynamicProperties(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -1261,6 +1265,8 @@ public:
 	ASFUNCTION_ATOM(addProperty);
 	ASFUNCTION_ATOM(registerClass);
 	ASFUNCTION_ATOM(AVM1_IgnoreSetter);
+	ASFUNCTION_ATOM(AVM1_watch);
+	ASFUNCTION_ATOM(AVM1_unwatch);
 
 	void check() const;
 	static void s_incRef(ASObject* o)
@@ -1309,6 +1315,7 @@ public:
 	virtual GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath = true);
 	virtual bool AVM1setLocalByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
 	virtual bool AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
+	bool AVM1checkWatcher(multiname& name, asAtom& value, ASWorker* wrk);
 
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.

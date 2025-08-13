@@ -1728,7 +1728,22 @@ ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 	if (m.name_s_id == BUILTIN_STRINGS::EMPTY)
 		return;
 	ASObject* o = asAtomHandler::toObject(obj,wrk);
-	o->deleteVariableByMultiname_intern(m,wrk);
+	asAtom oldvar = asAtomHandler::invalidAtom;
+
+	// remove old entry
+	variable* v = o->findVariableByMultiname(m,nullptr,nullptr,nullptr,false,wrk);
+	if (v)
+	{
+		if (!setter.isNull())
+		{
+			oldvar = v->getVar(wrk);
+			ASATOM_INCREF(oldvar);
+		}
+		v->setVar(wrk,asAtomHandler::invalidAtom);
+		ASATOM_REMOVESTOREDMEMBER(v->getter);
+		ASATOM_REMOVESTOREDMEMBER(v->setter);
+		o->Variables.killObjVar(wrk,m);
+	}
 	if (!getter.isNull())
 	{
 		if (!getter->is<IFunction>())
@@ -1746,7 +1761,17 @@ ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 		setter->incRef();
 		setter->addStoredMember();
 		o->setDeclaredMethodByQName(m.name_s_id,nsNameAndKind(),setter.getPtr(),SETTER_METHOD,false);
+		if (asAtomHandler::isValid(oldvar))
+		{
+			// re-add old value
+			variable* vnew = o->findVariableByMultiname(m,nullptr,nullptr,nullptr,false,wrk);
+			if (vnew)
+				vnew->setVar(wrk,oldvar);
+		}
 	}
+
+	asAtom newval = asAtomHandler::undefinedAtom;
+	o->AVM1checkWatcher(m,newval,wrk);
 }
 ASFUNCTIONBODY_ATOM(ASObject,registerClass)
 {
@@ -1763,6 +1788,63 @@ ASFUNCTIONBODY_ATOM(ASObject,registerClass)
 ASFUNCTIONBODY_ATOM(ASObject,AVM1_IgnoreSetter)
 {
 	// this is for AVM1 readonly getters, it does nothing and is only needed to avoid an exception if setter is called
+}
+
+ASFUNCTIONBODY_ATOM(ASObject,AVM1_watch)
+{
+	ret = asAtomHandler::falseAtom;
+	if (argslen < 2)
+		return;
+	asAtom name = asAtomHandler::invalidAtom;
+	_NR<IFunction> callback;
+	asAtom userdata = asAtomHandler::invalidAtom;
+
+	ARG_CHECK(ARG_UNPACK(name)(callback)(userdata,asAtomHandler::undefinedAtom));
+
+	uint32_t nameID = asAtomHandler::toStringId(name,wrk);
+	if (callback && nameID != BUILTIN_STRINGS::EMPTY)
+	{
+		ASObject* th = asAtomHandler::toObject(obj,wrk);
+		auto it = th->avm1watcherlist.find(nameID);
+		if (it != th->avm1watcherlist.end())
+		{
+			// remove previous watcher
+			it->second.first->removeStoredMember();
+			ASATOM_REMOVESTOREDMEMBER(it->second.second);
+			th->avm1watcherlist.erase(it);
+		}
+		th->avm1watcherlist.insert(make_pair(nameID,make_pair(callback.getPtr(),userdata)));
+		callback->incRef();
+		callback->addStoredMember();
+		ASATOM_ADDSTOREDMEMBER(userdata);
+		ret = asAtomHandler::trueAtom;
+	}
+}
+ASFUNCTIONBODY_ATOM(ASObject,AVM1_unwatch)
+{
+	ret = asAtomHandler::falseAtom;
+	asAtom name = asAtomHandler::invalidAtom;
+	ARG_CHECK(ARG_UNPACK(name));
+
+	uint32_t nameID = asAtomHandler::toStringId(name,wrk);
+	if (nameID != BUILTIN_STRINGS::EMPTY)
+	{
+		ASObject* th = asAtomHandler::toObject(obj,wrk);
+		auto it = th->avm1watcherlist.find(nameID);
+		if (it != th->avm1watcherlist.end())
+		{
+			multiname m(nullptr);
+			m.name_type=multiname::NAME_STRING;
+			m.name_s_id=nameID;
+			asAtom tmp = asAtomHandler::invalidAtom;
+			if (th->getVariableByMultiname(tmp,m,GET_VARIABLE_OPTION::DONT_CALL_GETTER,wrk) & GET_VARIABLE_RESULT::GETVAR_ISGETTER)
+				return;
+			it->second.first->removeStoredMember();
+			ASATOM_REMOVESTOREDMEMBER(it->second.second);
+			th->avm1watcherlist.erase(it);
+			ret = asAtomHandler::trueAtom;
+		}
+	}
 }
 
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
@@ -2117,17 +2199,17 @@ std::pair<asAtom, GET_VARIABLE_RESULT> ASObject::AVM1searchPrototypeByMultiname
 			);
 		}
 
-		opt = GET_VARIABLE_OPTION(opt | GET_VARIABLE_OPTION::DONT_CALL_GETTER | GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
+		GET_VARIABLE_OPTION opt2 = GET_VARIABLE_OPTION(opt | GET_VARIABLE_OPTION::DONT_CALL_GETTER | GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
 
 		GET_VARIABLE_RESULT res = pr->AVM1getVariableByMultiname
 		(
 			ret,
 			name,
-			opt,
+			opt2,
 			wrk,
 			isSlashPath
 			);
-		if (res & GET_VARIABLE_RESULT::GETVAR_ISGETTER)
+		if (res & GET_VARIABLE_RESULT::GETVAR_ISGETTER && !(opt & GET_VARIABLE_OPTION::DONT_CALL_GETTER))
 		{
 			IFunction* f = asAtomHandler::as<IFunction>(ret);
 			auto thisObj = asAtomHandler::fromObject(this);
@@ -2191,9 +2273,6 @@ bool ASObject::AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_
 
 	if (s.empty())
 		return false;
-
-	// TODO: Support watchers.
-
 	if (!hasPropertyByMultiname(name, true, false, wrk))
 	{
 		// We have to check the prototype chain for virtual setters,
@@ -2207,6 +2286,8 @@ bool ASObject::AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_
 			if (asAtomHandler::isInvalid(var->setter))
 				continue;
 
+			asAtom newval = value;
+			AVM1checkWatcher(name,newval,wrk);
 			auto thisObj = asAtomHandler::fromObject(this);
 			auto res = asAtomHandler::invalidAtom;
 			asAtomHandler::callFunction
@@ -2215,17 +2296,72 @@ bool ASObject::AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_
 				wrk,
 				res,
 				thisObj,
-				&value,
+				&newval,
 				1,
 				false
 			);
 			return false;
 		}
 	}
-
-	return AVM1setLocalByMultiname(name, value, allowConst, wrk);
+	asAtom newval = value;
+	AVM1checkWatcher(name,newval,wrk);
+	return AVM1setLocalByMultiname(name, newval, allowConst, wrk);
 }
-
+bool ASObject::AVM1checkWatcher(multiname& name, asAtom& value, ASWorker* wrk)
+{
+	auto it = avm1watcherlist.find(name.name_s_id);
+	if (it != avm1watcherlist.end())
+	{
+		asAtom args[4];
+		args[0] = asAtomHandler::fromStringID(name.name_s_id);
+		asAtom oldval = asAtomHandler::invalidAtom;
+		bool hasgetter= AVM1getVariableByMultiname(oldval,name,GET_VARIABLE_OPTION::DONT_CALL_GETTER,wrk) & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+		if (hasgetter)
+		{
+			// for some reason adobe sets variables for virtual getters/setters (added through "addProperty") , so we have to keep track of them, too
+			// see ruffle test avm1/watch_virtual_property
+			variable* v = Variables.findObjVar(wrk,name,TRAIT_KIND::DECLARED_TRAIT| TRAIT_KIND::NO_CREATE_TRAIT);
+			if (!v)
+			{
+				ASObject* pr = getprop_prototype();
+				while (pr && !v)
+				{
+					v = pr->Variables.findObjVar(wrk,name,TRAIT_KIND::DECLARED_TRAIT| TRAIT_KIND::NO_CREATE_TRAIT);
+					pr = pr->getprop_prototype();
+				}
+			}
+			if (v)
+				oldval = v->getVar(wrk);
+			else
+				oldval = asAtomHandler::invalidAtom;
+		}
+		if (asAtomHandler::isInvalid(oldval))
+			args[1] = asAtomHandler::undefinedAtom;
+		else
+			args[1] = oldval;
+		args[2] = value;
+		ASATOM_INCREF(value);
+		args[3] = it->second.second;
+		ASATOM_INCREF(it->second.second);
+		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
+		this->incRef();
+		asAtom func = asAtomHandler::fromObjectNoPrimitive(it->second.first);
+		asAtom newval = asAtomHandler::undefinedAtom;
+		asAtomHandler::callFunction(func,getInstanceWorker(),newval,obj,args,4,true);
+		if (hasgetter && !asAtomHandler::isUndefined(newval))
+		{
+			variable* v = Variables.findObjVar(wrk,name,TRAIT_KIND::DECLARED_TRAIT);
+			if (v)
+			{
+				v->setVar(wrk,newval);
+				value = newval;
+				return true;
+			}
+		}
+		value = newval;
+	}
+	return false;
+}
 void variables_map::dumpVariables()
 {
 	var_iterator it=Variables.begin();
@@ -2615,6 +2751,7 @@ bool ASObject::handleGarbageCollection()
 		uint32_t c =0;
 		for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 		{
+			LOG(LOG_CALLS,"handleGarbageCollection checked:"<<(*it)<<" "<<(*it)->getRefCount()<<"/"<<(*it)->storedmembercount<<" count:"<<(*it)->gccounter.count<<" "<<((*it)->gccounter.hasmember ? "hasmember" : ""));
 			if ((*it) == this)
 			{
 				if (c != UINT32_MAX)
@@ -2684,6 +2821,15 @@ bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	}
 	if (gcstate.stopped)
 		return false;
+	for (auto it = avm1watcherlist.begin(); it != avm1watcherlist.end(); it++)
+	{
+		ret = it->second.first->countCylicMemberReferences(gcstate) || ret;
+		ASObject* o = asAtomHandler::getObject(it->second.second);
+		if (o)
+			ret = o->countCylicMemberReferences(gcstate) || ret;
+	}
+	if (gcstate.stopped)
+		return false;
 	ret = Variables.countCylicMemberReferences(gcstate,this) || ret;
 	return ret;
 }
@@ -2732,6 +2878,16 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 bool ASObject::destruct()
 {
 	return destructIntern();
+}
+
+void ASObject::AVM1clearWatcherList()
+{
+	for (auto it = avm1watcherlist.begin(); it != avm1watcherlist.end(); it++)
+	{
+		it->second.first->removeStoredMember();
+		ASATOM_REMOVESTOREDMEMBER(it->second.second);
+	}
+	avm1watcherlist.clear();
 }
 bool ASObject::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 {

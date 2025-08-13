@@ -2087,8 +2087,12 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
 		}
 	}
-	if (exists && (currchar->getTagID() == CharacterId) && nameID) // reuse name of existing DispayObject at this depth
+	if (exists
+		&& (currchar->getTagID() == CharacterId)
+		&& nameID != BUILTIN_STRINGS::EMPTY
+		&& nameID != UINT32_MAX)
 	{
+		// reuse name of existing DispayObject at this depth
 		currchar->name = nameID;
 		currchar->incRef();
 		multiname objName(nullptr);

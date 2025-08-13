@@ -956,7 +956,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" end with "<<asAtomHandler::toDebugString(context->getScope()->getLocals()));
 			AVM1Scope* sc = context->getScope()->getParentScope();
 			if (sc)
+			{
 				sc->incRef();
+				ASATOM_REMOVESTOREDMEMBER(sc->getLocals());
+			}
 			context->setScope(sc);
 			curdepth--;
 			Log::calls_indent--;
@@ -2765,6 +2768,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				++curdepth;
 				scopestackstop[curdepth] = itend;
 				context->getScope()->incRef();
+				ASATOM_ADDSTOREDMEMBER(context->getScope()->getLocals());
 
 				context->setScope(new AVM1Scope
 								(

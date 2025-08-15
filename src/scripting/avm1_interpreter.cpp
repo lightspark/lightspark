@@ -2325,19 +2325,23 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewMethod without name "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				asAtom func=asAtomHandler::invalidAtom;
 				ASObject* scrobj = asAtomHandler::toObject(scriptobject,wrk);
+				bool funcrefcounted=false;
 				if (asAtomHandler::isUndefined(name)|| asAtomHandler::toStringId(name,wrk) == BUILTIN_STRINGS::EMPTY)
 				{
 					func = scriptobject;
 				}
 				else
 				{
+					funcrefcounted=true;
 					multiname m(nullptr);
 					m.name_type=multiname::NAME_STRING;
 					m.name_s_id=nameID;
 					m.isAttribute = false;
 					scrobj->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
-					if (!asAtomHandler::is<IFunction>(func))
+					if (!asAtomHandler::is<IFunction>(func) && !asAtomHandler::is<Class_base>(func))
 					{
+						ASATOM_DECREF(func);
+						func = asAtomHandler::invalidAtom;
 						ASObject* pr =scrobj->getprop_prototype();
 						if (pr)
 							pr->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
@@ -2365,6 +2369,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							pr->getClass()->getInstance(wrk,ret,true,nullptr,0);
 						asAtomHandler::toObject(ret,wrk)->setprop_prototype(proto);
 						asAtomHandler::toObject(ret,wrk)->setprop_prototype(proto,BUILTIN_STRINGS::STRING_PROTO);
+						ASATOM_DECREF(constr);
 					}
 				}
 				if (asAtomHandler::is<Function>(func))
@@ -2393,6 +2398,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					context->exceptionthrown->decRef();
 					context->exceptionthrown=nullptr;
 				}
+				if (funcrefcounted)
+					ASATOM_DECREF(func);
 				PushStack(stack,ret);
 				ASATOM_DECREF(name);
 				ASATOM_DECREF(scriptobject);

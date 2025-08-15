@@ -2300,6 +2300,8 @@ bool ASObject::AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_
 				1,
 				false
 			);
+			ASATOM_DECREF(res);
+			ASATOM_DECREF(newval);
 			return false;
 		}
 	}

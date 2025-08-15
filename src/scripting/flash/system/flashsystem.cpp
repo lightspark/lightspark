@@ -23,6 +23,7 @@
 #include "scripting/flash/system/messagechannel.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/display/Loader.h"
+#include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/Stage.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/avm1/scope.h"
@@ -713,14 +714,78 @@ void ApplicationDomain::checkBinding(DictionaryTag *tag)
 		Class_inherit* cls = typeObject->as<Class_inherit>();
 		if (cls)
 		{
-			ABCVm *vm = getVm(getSystemState());
-			vm->buildClassAndBindTag(tag->bindingclassname.raw_buf(), tag,cls);
+			buildClassAndBindTag(tag->bindingclassname.raw_buf(), tag,cls);
 			tag->bindedTo=cls;
 			tag->bindingclassname = "";
 			cls->bindToTag(tag);
 		}
 	}
 }
+bool ApplicationDomain::buildClassAndBindTag(const string& s, DictionaryTag* t, Class_inherit* derived_cls)
+{
+	Class_inherit* derived_class_tmp = derived_cls? derived_cls : findClassInherit(s);
+	if(!derived_class_tmp)
+		return false;
+	derived_class_tmp->checkScriptInit();
+	//It seems to be acceptable for the same base to be binded multiple times.
+	//In such cases the first binding is bidirectional (instances created using PlaceObject
+	//use the binded class and instances created using 'new' use the binded tag). Any other
+	//bindings will be unidirectional (only instances created using new will use the binded tag)
+	if(t->bindedTo==nullptr)
+		t->bindedTo=derived_class_tmp;
+
+	derived_class_tmp->bindToTag(t);
+	return true;
+}
+void ApplicationDomain::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
+{
+	if (base.getPtr() != base->getSystemState()->mainClip
+		&& !base->isOnStage()
+		&& base->loaderInfo->hasAVM1Target())
+	{
+		base->setConstructorCallComplete();
+		return; // loader was removed from stage. clip is ignored
+	}
+	Class_inherit* derived_class_tmp = findClassInherit(s);
+	if(!derived_class_tmp)
+		return;
+
+	//Let's override the class
+	base->setClass(derived_class_tmp);
+	// ensure that traits are initialized for movies loaded from actionscript
+	base->setIsInitialized(false);
+	derived_class_tmp->bindToRoot();
+	// the root movie clip may have it's own constructor, so we make sure it is called
+	asAtom r = asAtomHandler::fromObject(base.getPtr());
+	derived_class_tmp->handleConstruction(r,nullptr,0,true);
+	base->setConstructorCallComplete();
+}
+
+Class_inherit* ApplicationDomain::findClassInherit(const string& s)
+{
+	LOG(LOG_CALLS,"Setting class name to " << s);
+	ASObject* target;
+	ASObject* derived_class=getVariableByString(s,target);
+	if(derived_class==nullptr || derived_class->getObjectType()==T_NULL)
+	{
+		//LOG(LOG_ERROR,"Class " << s << " not found in global for "<<root->getOrigin());
+		//throw RunTimeException("Class not found in global");
+		return nullptr;
+	}
+
+	assert_and_throw(derived_class->getObjectType()==T_CLASS);
+
+	//Now the class is valid, check that it's not a builtin one
+	assert_and_throw(static_cast<Class_base*>(derived_class)->class_index!=-1);
+	Class_inherit* derived_class_tmp=static_cast<Class_inherit*>(derived_class);
+	if(derived_class_tmp->isBinded())
+	{
+		//LOG(LOG_ERROR, "Class already binded to a tag. Not binding:"<<s<< " class:"<<derived_class_tmp->getQualifiedClassName());
+		return nullptr;
+	}
+	return derived_class_tmp;
+}
+
 
 bool ApplicationDomain::needsCaseInsensitiveNames()
 {
@@ -1721,11 +1786,14 @@ void ASWorker::execute()
 		event_queue_mutex.unlock();
 		try
 		{
+			//LOG(LOG_INFO,"worker handle event:"<<e->type);
 			if (dispatcher)
 			{
 				dispatcher->handleEvent(e);
 				dispatcher->afterHandleEvent(e.getPtr());
 			}
+			else
+				handleInternalEvent(e.getPtr());
 		}
 		catch(LightsparkException& e)
 		{
@@ -1765,6 +1833,26 @@ void ASWorker::execute()
 		}
 	}
 	delete sbuf;
+}
+void ASWorker::handleInternalEvent(Event* e)
+{
+	switch(e->getEventType())
+	{
+		case BIND_CLASS:
+		{
+			BindClassEvent* ev=static_cast<BindClassEvent*>(e);
+			LOG(LOG_CALLS,"Binding of " << ev->class_name);
+			if(ev->tag)
+				ev->tag->loadedFrom->buildClassAndBindTag(ev->class_name.raw_buf(),ev->tag);
+			else
+				ev->base->loadedFrom->buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base);
+			LOG(LOG_CALLS,"End of binding of " << ev->class_name);
+			break;
+		}
+		default:
+			LOG(LOG_ERROR,"executing internal event in worker, should not happen:"<<e->type);
+			break;
+	}
 }
 
 void ASWorker::jobFence()

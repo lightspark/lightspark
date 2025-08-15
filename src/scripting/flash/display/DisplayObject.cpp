@@ -242,7 +242,6 @@ bool DisplayObject::destruct()
 	getSystemState()->stage->AVM1RemoveDisplayObject(this);
 	getSystemState()->stage->removeHiddenObject(this);
 	removeAVM1Listeners();
-	ismaskCount=0;
 	filterlistHasChanged=false;
 	maxfilterborder=0;
 	setParent(nullptr);
@@ -250,6 +249,7 @@ bool DisplayObject::destruct()
 	if (mask)
 		mask->removeStoredMember();
 	mask=nullptr;
+	ismaskCount=0;
 	if (clipMask)
 		clipMask->removeStoredMember();
 	clipMask=nullptr;
@@ -314,8 +314,6 @@ void DisplayObject::prepareShutdown()
 		getSystemState()->unregisterFrameListener(this);
 	broadcastEventListenerCount=0;
 
-	if (mask)
-		mask->prepareShutdown();
 	if (clipMask)
 		clipMask->prepareShutdown();
 	if (matrix)

@@ -154,6 +154,10 @@ public:
 	void setBaseURL(const tiny_string& url);
 	const URLInfo& getBaseURL();
 	tiny_string findClassAlias(Class_base* cls);
+	bool buildClassAndBindTag(const std::string& s, DictionaryTag* t, Class_inherit *derived_cls=nullptr);
+	void buildClassAndInjectBase(const std::string& s, _R<RootMovieClip> base);
+	Class_inherit* findClassInherit(const std::string& s);
+
 
 	static void sinit(Class_base* c);
 	void registerGlobalScope(Global* scope);
@@ -521,6 +525,7 @@ public:
 	std::list<asAtom> nativeExtensionAtomlist;
 	std::list<uint8_t*> nativeExtensionStringlist;
 	uint32_t nativeExtensionCallCount;
+	void handleInternalEvent(Event* e);
 };
 class WorkerDomain: public ASObject
 {

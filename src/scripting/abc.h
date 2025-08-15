@@ -568,8 +568,6 @@ private:
 	void handleEvent(std::pair<_NR<EventDispatcher>,_R<Event> > e);
 	void handleFrontEvent();
 	void signalEventWaiters();
-	void buildClassAndInjectBase(const std::string& s, _R<RootMovieClip> base);
-	Class_inherit* findClassInherit(const std::string& s, ApplicationDomain* appDomain);
 
 	//Profiling support
 	static uint64_t profilingCheckpoint(uint64_t& startTime);
@@ -1312,7 +1310,6 @@ public:
 
 	uint32_t getAndIncreaseNamespaceBase(uint32_t nsNum);
 
-	bool buildClassAndBindTag(const std::string& s, DictionaryTag* t, Class_inherit *derived_cls=nullptr);
 	void checkExternalCallEvent() DLL_PUBLIC;
 	void setIdle(bool isidle) { isIdle = isidle; }
 };

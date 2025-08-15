@@ -3473,12 +3473,12 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 			ASWorker* worker = root->getInstanceWorker();
 			if (!worker->isPrimordial && !isSysRoot)
 			{
-				getVm(root->getSystemState())->buildClassAndInjectBase(className.raw_buf(),_MR(root));
+				root->applicationDomain->buildClassAndInjectBase(className.raw_buf(),_MR(root));
 				worker->state ="running";
 				worker->incRef();
 				getVm(root->getSystemState())->addEvent(_MR(worker),_MR(Class<Event>::getInstanceS(root->getInstanceWorker(),"workerState")));
 			}
-			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(_MR(root),className)));
+			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(worker,_MR(root),className)));
 		}
 		else
 		{
@@ -3490,7 +3490,7 @@ void SymbolClassTag::execute(RootMovieClip* root) const
 			if (tag == nullptr)
 				return;
 			root->applicationDomain->addBinding(className, tag);
-			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(tag,className)));
+			getVm(root->getSystemState())->addEvent(NullRef, _MR(new (root->getSystemState()->unaccountedMemory) BindClassEvent(root->getInstanceWorker(),tag,className)));
 		}
 	}
 }

@@ -1122,16 +1122,8 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 		switch(e.second->getEventType())
 		{
 			case BIND_CLASS:
-			{
-				BindClassEvent* ev=static_cast<BindClassEvent*>(e.second.getPtr());
-				LOG(LOG_CALLS,"Binding of " << ev->class_name);
-				if(ev->tag)
-					buildClassAndBindTag(ev->class_name.raw_buf(),ev->tag);
-				else
-					buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base);
-				LOG(LOG_CALLS,"End of binding of " << ev->class_name);
+				e.second->getInstanceWorker()->handleInternalEvent(e.second.getPtr());
 				break;
-			}
 			case SHUTDOWN:
 			{
 				while (!idleevents_queue.empty())
@@ -1451,7 +1443,10 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
 * * \param ev event that will be sent */
 bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool isGlobalMessage)
 {
-	if (!isGlobalMessage && !obj.isNull() && ev->getInstanceWorker() && !ev->getInstanceWorker()->isPrimordial)
+	if (!isGlobalMessage
+			&& (!obj.isNull() || ev->getEventType() == BIND_CLASS)
+			&& ev->getInstanceWorker()
+			&& !ev->getInstanceWorker()->isPrimordial)
 	{
 		return ev->getInstanceWorker()->addEvent(obj,ev);
 	}
@@ -1549,71 +1544,6 @@ bool ABCVm::prependBufferEvent(_NR<EventDispatcher> obj ,_R<Event> ev)
 	return true;
 }
 
-Class_inherit* ABCVm::findClassInherit(const string& s, ApplicationDomain* appDomain)
-{
-	LOG(LOG_CALLS,"Setting class name to " << s);
-	ASObject* target;
-	ASObject* derived_class=appDomain->getVariableByString(s,target);
-	if(derived_class==nullptr || derived_class->getObjectType()==T_NULL)
-	{
-		//LOG(LOG_ERROR,"Class " << s << " not found in global for "<<root->getOrigin());
-		//throw RunTimeException("Class not found in global");
-		return nullptr;
-	}
-
-	assert_and_throw(derived_class->getObjectType()==T_CLASS);
-
-	//Now the class is valid, check that it's not a builtin one
-	assert_and_throw(static_cast<Class_base*>(derived_class)->class_index!=-1);
-	Class_inherit* derived_class_tmp=static_cast<Class_inherit*>(derived_class);
-	if(derived_class_tmp->isBinded())
-	{
-		//LOG(LOG_ERROR, "Class already binded to a tag. Not binding:"<<s<< " class:"<<derived_class_tmp->getQualifiedClassName());
-		return nullptr;
-	}
-	return derived_class_tmp;
-}
-
-void ABCVm::buildClassAndInjectBase(const string& s, _R<RootMovieClip> base)
-{
-	if (base.getPtr() != base->getSystemState()->mainClip
-			&& !base->isOnStage()
-			&& base->loaderInfo->hasAVM1Target())
-	{
-		base->setConstructorCallComplete();
-		return; // loader was removed from stage. clip is ignored
-	}
-	Class_inherit* derived_class_tmp = findClassInherit(s, base->applicationDomain.getPtr());
-	if(!derived_class_tmp)
-		return;
-
-	//Let's override the class
-	base->setClass(derived_class_tmp);
-	// ensure that traits are initialized for movies loaded from actionscript
-	base->setIsInitialized(false);
-	derived_class_tmp->bindToRoot();
-	// the root movie clip may have it's own constructor, so we make sure it is called
-	asAtom r = asAtomHandler::fromObject(base.getPtr());
-	derived_class_tmp->handleConstruction(r,nullptr,0,true);
-	base->setConstructorCallComplete();
-}
-
-bool ABCVm::buildClassAndBindTag(const string& s, DictionaryTag* t, Class_inherit* derived_cls)
-{
-	Class_inherit* derived_class_tmp = derived_cls? derived_cls : findClassInherit(s, t->loadedFrom);
-	if(!derived_class_tmp)
-		return false;
-	derived_class_tmp->checkScriptInit();
-	//It seems to be acceptable for the same base to be binded multiple times.
-	//In such cases the first binding is bidirectional (instances created using PlaceObject
-	//use the binded class and instances created using 'new' use the binded tag). Any other
-	//bindings will be unidirectional (only instances created using new will use the binded tag)
-	if(t->bindedTo==nullptr)
-		t->bindedTo=derived_class_tmp;
-
-	derived_class_tmp->bindToTag(t);
-	return true;
-}
 void ABCVm::checkExternalCallEvent()
 {
 	if (shuttingdown)

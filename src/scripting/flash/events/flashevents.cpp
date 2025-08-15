@@ -1369,14 +1369,16 @@ ExternalCallEvent::~ExternalCallEvent()
 {
 }
 
-BindClassEvent::BindClassEvent(_R<RootMovieClip> b, const tiny_string& c)
-	: Event(nullptr,nullptr, "bindClass"),base(b),tag(NULL),class_name(c)
+BindClassEvent::BindClassEvent(ASWorker* wrk, _R<RootMovieClip> b, const tiny_string& c)
+	: Event(wrk,nullptr, "bindClass"),base(b),tag(NULL),class_name(c)
 {
+	assert(wrk);
 }
 
-BindClassEvent::BindClassEvent(DictionaryTag* t, const tiny_string& c)
-	: Event(nullptr,nullptr, "bindClass"),tag(t),class_name(c)
+BindClassEvent::BindClassEvent(ASWorker* wrk, DictionaryTag* t, const tiny_string& c)
+	: Event(wrk,nullptr, "bindClass"),tag(t),class_name(c)
 {
+	assert(wrk);
 }
 
 ParseRPCMessageEvent::ParseRPCMessageEvent(_R<ByteArray> ba, _NR<ASObject> c, _NR<Responder> r):

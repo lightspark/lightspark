@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -53,6 +53,8 @@ template<typename T>
 using IsRef = std::is_reference<T>;
 template<typename T>
 using IsArray = std::is_array<T>;
+template<typename T>
+using IsEnum = std::is_enum<T>;
 
 template<typename T>
 using HasDtor = std::is_destructible<T>;

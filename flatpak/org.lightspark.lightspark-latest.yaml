@@ -2,7 +2,7 @@ app-id: org.lightspark.lightspark-latest
 runtime: org.freedesktop.Platform
 runtime-version: '24.08'
 sdk: org.freedesktop.Sdk
-command: lightspark
+command: SDL_VIDEODRIVER=$XDG_SESSION_TYPE && lightspark
 rename-desktop-file: lightspark.desktop
 rename-icon: lightspark
 add-extensions:

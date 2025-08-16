@@ -46,6 +46,8 @@ template<bool B>
 using BoolConstant = std::integral_constant<bool, B>;
 template<bool B, typename T, typename F>
 using CondT = typename std::conditional<B, T, F>::type;
+template<typename T>
+using UnderlyingType = typename std::underlying_type<T>::type;
 
 template<typename T>
 using IsVoid = std::is_void<T>;

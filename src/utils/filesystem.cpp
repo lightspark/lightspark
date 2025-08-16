@@ -19,6 +19,7 @@
 
 #include <system_error>
 
+#include "utils/enum.h"
 #include "utils/filesystem.h"
 #include "utils/path.h"
 
@@ -32,7 +33,7 @@ Path fs::canonical(const Path& path)
 	Path workingDir = path.isAbsolute() ? path : absolute(path);
 	Path ret;
 
-	if (status(workingDir).type() == FileType::NotFound)
+	if (status(workingDir).getType() == FileType::NotFound)
 		throw Exception(path, std::errc::no_such_file_or_directory);
 
 	for (bool redo = true; redo; workingDir = ret)
@@ -53,7 +54,7 @@ Path fs::canonical(const Path& path)
 				continue;
 			if (elem == "..")
 			{
-				ret = ret.parent();
+				ret = ret.getParent();
 				continue;
 			}
 
@@ -93,7 +94,7 @@ void fs::copy(const Path& from, const Path& to, const CopyOptions& options)
 	FileStatus statusFrom = handleSymlinks ? symlinkStatus(from) : status(from);
 
 	if (!statusFrom.exists())
-		throw Exception(path, std::errc::no_such_file_or_directory);
+		throw Exception(from, to, std::errc::no_such_file_or_directory);
 
 	FileStatus statusTo = handleSymlinks ? symlinkStatus(to) : status(to);
 
@@ -109,7 +110,7 @@ void fs::copy(const Path& from, const Path& to, const CopyOptions& options)
 	switch (statusFrom.getType())
 	{
 		case FileType::Symlink:
-			if (options & CopyOptions::SkipSymlinks)
+			if (bool(options & CopyOptions::SkipSymlinks))
 				break;
 
 			if (statusTo.exists() || !(options & CopyOptions::CopySymlinks))
@@ -117,22 +118,23 @@ void fs::copy(const Path& from, const Path& to, const CopyOptions& options)
 			copySymlink(from, to);
 			break;
 		case FileType::Regular:
-			if (options & CopyOptions::DirsOnly)
+			if (bool(options & CopyOptions::DirectoriesOnly))
 				break;
-			if (options & CopyOptions::CreateSymlinks)
+			if (bool(options & CopyOptions::CreateSymlinks))
 				createSymlink(from.isAbsolute() ? from : canonical(from), to);
-			else if (options & CopyOptions::CreateHardLinks)
+			else if (bool(options & CopyOptions::CreateHardLinks))
 				createHardLink(from, to);
 			else if (statusTo.isDir())
 				copyFile(from, to / from.getFilename());
 			else
 				copyFile(from, to);
+			break;
 		case FileType::Directory:
 			#ifdef USE_LWG_2936
-			if (options & CopyOptions::CreateSymlinks)
+			if (bool(options & CopyOptions::CreateSymlinks))
 				throw Exception(from, to, std::errc::is_a_directory);
 			#endif
-			if (options != CopyOptions::None && (options & CopyOptions::Recursive))
+			if (options != CopyOptions::None && bool(options & CopyOptions::Recursive))
 				break;
 			if (!statusTo.exists())
 				createDir(to, from);
@@ -140,8 +142,8 @@ void fs::copy(const Path& from, const Path& to, const CopyOptions& options)
 			{
 				copy
 				(
-					dir.path(),
-					to / dir.path().getFilename(),
+					dir.getPath(),
+					to / dir.getPath().getFilename(),
 					options | CopyOptions(0x8000)
 				);
 			}
@@ -152,9 +154,9 @@ void fs::copy(const Path& from, const Path& to, const CopyOptions& options)
 	}
 }
 
-void fs::copyFile(const Path& from, const Path& to)
+bool fs::copyFile(const Path& from, const Path& to)
 {
-	copyFile(from, to, CopyOptions::None);
+	return copyFile(from, to, CopyOptions::None);
 }
 
 bool fs::copyFile(const Path& from, const Path& to, const CopyOptions& options)
@@ -168,11 +170,11 @@ bool fs::copyFile(const Path& from, const Path& to, const CopyOptions& options)
 		return false;
 	if (statusTo.exists())
 	{
-		if (options & CopyOptions::SkipExisting)
+		if (bool(options & CopyOptions::SkipExisting))
 			throw Exception(from, to, std::errc::file_exists);
 		auto fromTime = statusFrom.getLastWriteTime();
 		auto toTime = statusTo.getLastWriteTime();
-		if ((options & CopyOptions::UpdateExisting) && fromTime <= toTime)
+		if (bool(options & CopyOptions::UpdateExisting) && fromTime <= toTime)
 			return false;
 		overwrite = true;
 	}
@@ -200,7 +202,7 @@ bool fs::createDirs(const Path& path)
 	);
 
 	Path current(path.getNativeStr().substr(0, rootLen));
-	Path dirs(path.getNativeStr().substr(rootLen));
+	Path dirs(path.getNativeStr().substr(rootLen, Path::StringType::npos));
 
 	for (auto part : dirs)
 	{
@@ -244,7 +246,7 @@ void fs::createDirSymlink(const Path& to, const Path& newSymlink)
 	Detail::createSymlink(to, newSymlink, true);
 }
 
-void fs::createSymlink(const path& to, const path& newSymlink)
+void fs::createSymlink(const Path& to, const Path& newSymlink)
 {
 	Detail::createSymlink(to, newSymlink, false);
 }
@@ -304,22 +306,23 @@ TimeSpec fs::getLastWriteTime(const Path& path)
 	return status(path).getLastWriteTime();
 }
 
-void setPerms(const Path& path, const Perms& perms, const PermOptions& opts)
+void setPerms(const Path& path, const fs::Perms& perms, const fs::PermOptions& opts)
 {
-	using PermOpts = PermOptions;
+	using PermOpts = fs::PermOptions;
 	if (!(opts & (PermOpts::Replace | PermOpts::Add | PermOpts::Remove)))
-		throw Exception(path, std::errc::invalid_argument);
+		throw fs::Exception(path, std::errc::invalid_argument);
 
-	auto fileStatus = symlinkStatus(path);
-	bool addPerms = opts & PermOpts::Add;
-	bool removePerms = opts & PermOpts::Remove;
+	auto _perms = perms;
+	auto fileStatus = fs::symlinkStatus(path);
+	bool addPerms = bool(opts & PermOpts::Add);
+	bool removePerms = bool(opts & PermOpts::Remove);
 
 	if (addPerms && !removePerms)
-		perms |= fileStatus.getPerms();
+		_perms |= fileStatus.getPerms();
 	else if (removePerms && !addPerms)
-		perms &= ~fileStatus.getPerms();
+		_perms &= ~fileStatus.getPerms();
 
-	Detail::setPerms(path, perms, opts, fileStatus);
+	fs::Detail::setPerms(path, _perms, opts, fileStatus);
 }
 
 Path fs::proximate(const Path& path, const Path& base)
@@ -359,13 +362,13 @@ size_t fs::removeAll(const Path& path)
 			throw Exception(path, code);
 
 		bool recurse = !it->isSymlink() && it->isDir();
-		count += recurse ? removeAll(it->path()) : remove(it->path());
+		count += recurse ? removeAll(it->getPath()) : remove(it->getPath());
 	}
 
 	return count + remove(path);
 }
 
-FileStatus fs::status(const Path& path)
+fs::FileStatus fs::status(const Path& path)
 {
 	return Detail::status(path);
 }
@@ -397,7 +400,7 @@ bool fs::Detail::isNotFoundError(const std::error_code& code)
 {
 	return
 	(
-		code.value() == std::errc::no_such_file_or_directory ||
-		code.value() == std::errc::not_a_directory
+		std::errc(code.value()) == std::errc::no_such_file_or_directory ||
+		std::errc(code.value()) == std::errc::not_a_directory
 	);
 }

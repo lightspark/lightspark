@@ -20,6 +20,8 @@
 #ifndef UTILS_FILESYSTEM_H
 #define UTILS_FILESYSTEM_H 1
 
+#include <stack>
+
 #include "compat.h"
 #include "smartrefs.h"
 #include "tiny_string.h"
@@ -236,8 +238,8 @@ public:
 	const FileType& getType() const { return type; }
 	const Perms& getPerms() const { return perms; }
 
-	const size_t getSize() const { return size; }
-	const size_t getHardLinks() const { return hardLinks; }
+	size_t getSize() const { return size; }
+	size_t getHardLinks() const { return hardLinks; }
 	const TimeSpec& getLastWriteTime() const { return lastWriteTime; }
 
 	bool statusKnown() const { return type != FileType::None; }
@@ -253,9 +255,9 @@ public:
 
 	bool operator==(const FileStatus& other) const noexcept
 	{
-		return type == other.type && perms = other.perms;
+		return type == other.type && perms == other.perms;
 	}
-}
+};
 
 class DirEntry
 {
@@ -263,7 +265,7 @@ public:
 	DirEntry() = default;
 	DirEntry(const DirEntry& other) = default;
 	DirEntry(DirEntry&& other) = default;
-	DirEntry(const Path& _path) : _path(path) { refresh(); }
+	DirEntry(const Path& _path) : path(_path) { refresh(); }
 
 	~DirEntry() {}
 
@@ -279,7 +281,7 @@ public:
 
 	bool exists() const { return tryGetStatus().exists(); }
 	bool isBlockFile() const { return tryGetStatus().isBlockFile(); }
-	bool isCharFile() const { return tryGetStatus().isCharFile(); }
+	bool isCharFile() const { return tryGetStatus().isCharacterFile(); }
 	bool isDir() const { return tryGetStatus().isDir(); }
 	bool isFifo() const { return tryGetStatus().isFifo(); }
 	bool isOther() const { return tryGetStatus().isOther(); }
@@ -300,7 +302,7 @@ public:
 	bool operator>(const DirEntry& other) const { return path > other.path; }
 	bool operator>=(const DirEntry& other) const { return path >= other.path; }
 private:
-	friend class DirIter
+	friend class DirIter;
 	FileStatus tryGetStatus() const;
 
 	Path path;
@@ -326,7 +328,9 @@ private:
 		DirEntry operator*() && { return std::move(entry); }
 	};
 
-	class ImplBase
+	class Impl;
+
+	class ImplBase : public RefCountable
 	{
 	public:
 		Path basePath;
@@ -341,9 +345,18 @@ private:
 		) : basePath(path), options(opts) {}
 		ImplBase(const ImplBase& other) = delete;
 		~ImplBase() {}
+
+		const Impl* asImpl() const
+		{
+			return reinterpret_cast<const Impl*>(this);
+		}
+
+		Impl* asImpl()
+		{
+			return reinterpret_cast<Impl*>(this);
+		}
 	};
 
-	class Impl;
 	_R<ImplBase> impl;
 public:
 	using iterator_category = std::input_iterator_tag;
@@ -374,8 +387,8 @@ public:
 		return tmp;
 	}
 
-	bool operator==(const DirIter& other) const { *(*this) == *other; }
-	bool operator!=(const DirIter& other) const { *(*this) != *other; }
+	bool operator==(const DirIter& other) const { return *(*this) == *other; }
+	bool operator!=(const DirIter& other) const { return *(*this) != *other; }
 };
 
 class RecursiveDirIter
@@ -402,15 +415,15 @@ private:
 
 		Path currentPath() const
 		{
-			if (!top()->path().empty())
-				return top()->impl->dirEntry.path();
+			if (!top()->getPath().empty())
+				return top()->getPath();
 			// Recreate the path that failed from the dir stack.
 			Path path = origPath;
 			for (const auto& dir : c)
-				path /= dir->path();
+				path /= dir->getPath();
 			return path;
 		}
-	}
+	};
 
 	DirStack dirStack;
 public:
@@ -464,8 +477,8 @@ public:
 		return tmp;
 	}
 
-	bool operator==(const RecursiveDirIter& other) const { *(*this) == *other; }
-	bool operator!=(const RecursiveDirIter& other) const { *(*this) != *other; }
+	bool operator==(const RecursiveDirIter& other) const { return *(*this) == *other; }
+	bool operator!=(const RecursiveDirIter& other) const { return *(*this) != *other; }
 };
 
 Path absolute(const Path& path);
@@ -517,7 +530,7 @@ namespace Detail
 // Platform specific functions.
 bool copyFile(const Path& from, const Path& to, bool overwrite);
 bool createDir(const Path& path, const Path& attrs);
-void createSymlink(const Path& to, const Path& newSymlink, bool toDir)
+void createSymlink(const Path& to, const Path& newSymlink, bool toDir);
 void setPerms(const Path& path, const Perms& perms, const PermOptions& opts, const FileStatus& fileStatus);
 Path resolveSymlink(const Path& path);
 FileStatus status(const Path& path, FileStatus* _symlinkStatus = nullptr);
@@ -526,6 +539,11 @@ FileStatus status(const Path& path, FileStatus* _symlinkStatus = nullptr);
 bool isNotFoundError(const std::error_code& code);
 
 };
+
+DirIter begin(DirIter it) { return it; }
+DirIter end(const DirIter&) { return DirIter(); }
+RecursiveDirIter begin(RecursiveDirIter it) { return it; }
+RecursiveDirIter end(const RecursiveDirIter&) { return RecursiveDirIter(); }
 
 };
 

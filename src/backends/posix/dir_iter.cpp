@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include "backends/posix/dir_iter.h"
+#include "utils/enum.h"
 #include "utils/filesystem.h"
 #include "utils/path.h"
 #include "utils/timespec.h"
@@ -29,9 +30,11 @@ using namespace lightspark;
 namespace fs = FileSystem;
 
 using DirOpts = fs::DirOptions;
-using DirIterImpl = fs::DirIter::Impl;
+// NOTE: This can't be done with `using` because `DirIter::Impl` is
+// private.
+#define DirIterImpl fs::DirIter::Impl
 
-DirIterImpl::DirIterImpl
+DirIterImpl::Impl
 (
 	const Path& path,
 	const DirOpts& opts
@@ -58,7 +61,7 @@ DirIterImpl::DirIterImpl
 		code = std::error_code(errno);
 }
 
-DirIterImpl::~DirIterImpl()
+DirIterImpl::~Impl()
 {
 	if (dir != nullptr)
 		closedir(dir);
@@ -91,6 +94,7 @@ void DirIterImpl::inc(std::error_code& code)
 		dirEntry.path.appendName(entry->d_name);
 		copyToDirEntry();
 		auto error = code.value();
+		const auto& opts = options;
 		if (error && (error == EACCES || error == EPERM) && (opts & DirOpts::SkipPermDenied))
 		{
 			code.clear();
@@ -115,3 +119,5 @@ void DirIterImpl::copyToDirEntry()
 	dirEntry.setHardLinkCount(-1);
 	dirEntry.setLastWriteTime(TimeSpec());
 }
+
+#undef DirIterImpl

@@ -20,6 +20,7 @@
 #include <system_error>
 
 #include "backends/dir_iter.h"
+#include "utils/enum.h"
 #include "utils/filesystem.h"
 #include "utils/path.h"
 
@@ -56,12 +57,6 @@ fs::FileStatus fs::DirEntry::tryGetStatus() const
 	return status.statusKnown() ? status : fs::status(Path());
 }
 
-static_assert(std::is_base_of
-<
-	fs::DirIter::Impl,
-	fs::DirIter::ImplBase
->::value, "DirIter::Impl isn't derived from DirIter::ImplBase.");
-
 using DirOpts = fs::DirOptions;
 
 fs::DirIter::DirIter
@@ -70,6 +65,12 @@ fs::DirIter::DirIter
 	const DirOpts& opts
 ) : impl(_MR(new Impl(path, opts)))
 {
+	static_assert
+	(
+		std::is_base_of<ImplBase, Impl>::value,
+		"DirIter::Impl isn't derived from DirIter::ImplBase."
+	);
+
 	if (impl->code.value())
 		throw Exception(path, impl->code);
 	impl->code.clear();
@@ -99,7 +100,7 @@ fs::DirIter::DirIter
 fs::DirIter& fs::DirIter::operator++()
 {
 	std::error_code code;
-	impl->inc(code);
+	impl->asImpl()->inc(code);
 	if (code.value())
 		throw Exception(path, code);
 	return *this;
@@ -107,7 +108,7 @@ fs::DirIter& fs::DirIter::operator++()
 
 fs::DirIter& fs::DirIter::inc(std::error_code& code)
 {
-	impl->inc(code);
+	impl->asImpl()->inc(code);
 	return *this;
 }
 
@@ -121,7 +122,7 @@ fs::RecursiveDirIter& fs::RecursiveDirIter::operator++()
 		(
 			dirStack.empty() ?
 			Path() :
-			dirStack.top().getPath()
+			dirStack.top()->getPath()
 		);
 		throw Exception(path, code);
 	}
@@ -147,8 +148,8 @@ fs::RecursiveDirIter& fs::RecursiveDirIter::inc(std::error_code& code)
 	if (code.value())
 		return *this;
 
-	if (isPending() && isDir && (!isSymlink || (getOptions() & DirOpts::FollowSymlinks)))
-		dirStack.push(DirIter((*this)->path(), dirStack.options, code));
+	if (isPending() && isDir && (!isSymlink || bool(getOptions() & DirOpts::FollowSymlinks)))
+		dirStack.push(DirIter((*this)->getPath(), dirStack.options, code));
 	else
 		dirStack.top().inc(code);
 

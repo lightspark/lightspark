@@ -58,7 +58,7 @@ modules:
     - type: script
       dest-filename: lightspark_start.sh
       commands:
-        - SDL_VIDEODRIVER=$XDG_SESSION_TYPE && lightspark
+        - SDL_VIDEODRIVER=$XDG_SESSION_TYPE lightspark
 finish-args:
   - --share=ipc
   - --socket=fallback-x11

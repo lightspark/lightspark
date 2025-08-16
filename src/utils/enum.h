@@ -26,21 +26,66 @@ namespace lightspark
 {
 
 template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
+static bool operator!(const T& a)
+{
+	return !bool(a);
+}
+
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
+static T operator~(const T& a)
+{
+	return static_cast<T>
+	(
+		~static_cast<UnderlyingType<T>>(a)
+	);
+}
+
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
+static T operator&(const T& a, const T& b)
+{
+	return static_cast<T>
+	(
+		static_cast<UnderlyingType<T>>(a) &
+		static_cast<UnderlyingType<T>>(b)
+	);
+}
+
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
+static T operator|(const T& a, const T& b)
+{
+	return static_cast<T>
+	(
+		static_cast<UnderlyingType<T>>(a) |
+		static_cast<UnderlyingType<T>>(b)
+	);
+}
+
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
+static T operator^(const T& a, const T& b)
+{
+	return static_cast<T>
+	(
+		static_cast<UnderlyingType<T>>(a) ^
+		static_cast<UnderlyingType<T>>(b)
+	);
+}
+
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
 static T& operator&=(T& a, T b)
 {
-	return a = static_cast<T>(a & b);
+	return a = a & b;
 }
 
 template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
 static T& operator|=(T& a, T b)
 {
-	return a = static_cast<T>(a | b);
+	return a = a | b;
 }
 
 template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
 static T& operator^=(T& a, T b)
 {
-	return a = static_cast<T>(a ^ b);
+	return a = a ^ b;
 }
 
 };

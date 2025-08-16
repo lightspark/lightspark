@@ -18,9 +18,12 @@
 **************************************************************************/
 
 #include <fstream>
+#include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/statvfs.h>
 #include <unistd.h>
 
+#include "utils/enum.h"
 #include "utils/filesystem.h"
 #include "utils/path.h"
 #include "utils/timespec.h"
@@ -76,7 +79,7 @@ bool fs::Detail::createDir(const Path& path, const Path& attrs)
 	return true;
 }
 
-void fs::Detail::createSymlink(const path& to, const path& newSymlink, bool toDir)
+void fs::Detail::createSymlink(const Path& to, const Path& newSymlink, bool toDir)
 {
 	if (symlink(to.rawBuf(), newSymlink.rawBuf()) < 0)
 		throw Exception(to, newSymlink, std::errc(errno));
@@ -118,7 +121,7 @@ Path fs::currentPath()
 
 void fs::currentPath(const Path& path)
 {
-	if (chdir(path.getStr().raw_buf() < 0))
+	if (chdir(path.rawBuf()) < 0)
 		throw Exception(std::errc(errno));
 }
 
@@ -129,7 +132,7 @@ bool fs::equivalent(const Path& a, const Path& b)
 
 	auto retA = stat(a.rawBuf(), &statA);
 	auto errnoA = errno;
-	auto retB = stat(b.rawBuf(), &statb);
+	auto retB = stat(b.rawBuf(), &statB);
 
 	#ifdef USE_LWG_2936
 	bool throwException = retA < 0 || retB < 0;
@@ -194,17 +197,17 @@ void fs::Detail::setPerms
 {
 	using PermOpts = PermOptions;
 	#if _POSIX_C_SOURCE >= 200809L
-	int flag = opts & PermOpts::NoFollow ? AT_SYMLINK_NOFOLLOW : 0;
+	int flag = bool(opts & PermOpts::NoFollow) ? AT_SYMLINK_NOFOLLOW : 0;
 	if (fchmodat(AT_FDCWD, path.rawBuf(), mode_t(perms), flag) < 0)
 	#else
-	if ((opts & PermOpts::NoFollow) && fileStatus.isSymlink())
+	if (bool(opts & PermOpts::NoFollow) && fileStatus.isSymlink())
 		throw Exception(path, std::errc::not_supported);
 	if (chmod(path.rawBuf(), mode_t(perms)) < 0)
 	#endif
 		throw Exception(path, std::errc(errno));
 }
 
-void fs::remove(const Path& path)
+bool fs::remove(const Path& path)
 {
 	if (!::remove(path.rawBuf()))
 		return true;
@@ -279,7 +282,7 @@ fs::FileStatus fromStatMode(mode_t mode)
 		default: type = FileType::Unknown; break;
 	}
 
-	return FileStatus(type, Perms(mode & Perms::Mask));
+	return FileStatus(type, Perms(mode) & Perms::Mask);
 }
 
 fs::FileStatus fs::Detail::status(const Path& path, FileStatus* _symlinkStatus)

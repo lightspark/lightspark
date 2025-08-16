@@ -2,7 +2,7 @@ app-id: org.lightspark.lightspark-latest
 runtime: org.freedesktop.Platform
 runtime-version: '24.08'
 sdk: org.freedesktop.Sdk
-command: SDL_VIDEODRIVER=$XDG_SESSION_TYPE && lightspark
+command: lightspark_start
 rename-desktop-file: lightspark.desktop
 rename-icon: lightspark
 add-extensions:
@@ -50,6 +50,15 @@ modules:
     - -DCOMPILE_PPAPI_PLUGIN=false
     - -DINSTALL_SYSTEM_CONFIGURATION=false
   builddir: true
+- name: lightspark_start
+  buildsystem: simple
+  build-commands:
+    - install -Dm755 lightspark_start.sh /app/bin/lightspark_start
+  sources:
+    - type: script
+      dest-filename: lightspark_start.sh
+      commands:
+        - SDL_VIDEODRIVER=$XDG_SESSION_TYPE && lightspark
 finish-args:
   - --share=ipc
   - --socket=fallback-x11

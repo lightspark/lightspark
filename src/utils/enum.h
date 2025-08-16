@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -20,24 +20,24 @@
 #ifndef UTILS_ENUM_H
 #define UTILS_ENUM_H 1
 
-#include <type_traits>
+#include "utils/type_traits.h"
 
 namespace lightspark
 {
 
-template<typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = false>
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
 static T& operator&=(T& a, T b)
 {
 	return a = static_cast<T>(a & b);
 }
 
-template<typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = false>
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
 static T& operator|=(T& a, T b)
 {
 	return a = static_cast<T>(a | b);
 }
 
-template<typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = false>
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
 static T& operator^=(T& a, T b)
 {
 	return a = static_cast<T>(a ^ b);

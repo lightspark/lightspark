@@ -51,7 +51,7 @@ void fs::DirEntry::refresh()
 	}
 }
 
-FileStatus fs::DirEntry::tryGetStatus() const
+fs::FileStatus fs::DirEntry::tryGetStatus() const
 {
 	return status.statusKnown() ? status : fs::status(Path());
 }
@@ -111,7 +111,7 @@ fs::DirIter& fs::DirIter::inc(std::error_code& code)
 	return *this;
 }
 
-fs::RecirsiveDirIter& fs::RecirsiveDirIter::operator++()
+fs::RecursiveDirIter& fs::RecursiveDirIter::operator++()
 {
 	std::error_code code;
 	inc(code);
@@ -128,7 +128,7 @@ fs::RecirsiveDirIter& fs::RecirsiveDirIter::operator++()
 	return *this;
 }
 
-fs::RecirsiveDirIter& fs::RecirsiveDirIter::inc(std::error_code& code)
+fs::RecursiveDirIter& fs::RecursiveDirIter::inc(std::error_code& code)
 {
 	bool isSymlink;
 	bool isDir;
@@ -167,7 +167,7 @@ fs::RecirsiveDirIter& fs::RecirsiveDirIter::inc(std::error_code& code)
 	return *this;
 }
 
-void fs::RecirsiveDirIter::pop()
+void fs::RecursiveDirIter::pop()
 {
 	if (!depth())
 	{

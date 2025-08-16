@@ -1680,7 +1680,8 @@ void tiny_string::getTrimPositions(uint32_t& start, uint32_t& end) const
 			CharIterator chIt(buf+start);
 			if (!unicodeIsWhiteSpace(*chIt))
 				break;
-			++start;
+			char* bufptr = chIt.ptr();
+			start += (++chIt).ptr()-bufptr;
 		}
 	}
 	while (end > start)

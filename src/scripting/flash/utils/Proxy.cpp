@@ -28,7 +28,6 @@
 #include "scripting/flash/errors/flasherrors.h"
 #include <sstream>
 #include <zlib.h>
-#include <glib.h>
 
 using namespace std;
 using namespace lightspark;

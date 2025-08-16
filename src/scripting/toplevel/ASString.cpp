@@ -29,7 +29,6 @@
 #include "scripting/toplevel/IFunction.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/RegExp.h"
-#include <glib.h>
 
 using namespace std;
 using namespace lightspark;
@@ -530,9 +529,8 @@ number_t ASString::toNumber(ASWorker* wrk, const tiny_string& value)
 	bool isAS3 = wrk->needsActionScript3();
 	if (swfVersion < 6 && value.empty())
 		return numeric_limits<double>::quiet_NaN();
-	const char *s = value.raw_buf();
-	while (*s && isEcmaSpace(g_utf8_get_char(s)))
-		s = g_utf8_next_char(s);
+	tiny_string trimmedvalue = value.removeWhitespace();
+	const char *s = trimmedvalue.raw_buf();
 
 	double val;
 	char *end = nullptr;
@@ -572,7 +570,7 @@ number_t ASString::toNumber(ASWorker* wrk, const tiny_string& value)
 			}
 		}
 		errno = 0;
-		val = g_ascii_strtod(s, &end);
+		val = ::strtod(s, &end);
 
 		if (errno == ERANGE)
 		{
@@ -593,10 +591,8 @@ number_t ASString::toNumber(ASWorker* wrk, const tiny_string& value)
 	if (swfVersion >= 5)
 	{
 		// Fail if there is any rubbish after the converted number
-		while(*end) {
-			if(!isEcmaSpace(g_utf8_get_char(end)))
-				return numeric_limits<double>::quiet_NaN();
-			end = g_utf8_next_char(end);
+		if(end && *end) {
+			return numeric_limits<double>::quiet_NaN();
 		}
 	}
 	return val;
@@ -828,7 +824,7 @@ ASFUNCTIONBODY_ATOM(ASString,charAt)
 			ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 			return;
 		}
-		uint32_t c = g_utf8_get_char(th->getData().raw_buf()+th->getBytePosition(index));
+		uint32_t c = *(CharIterator((char*)(th->getData().raw_buf()+th->getBytePosition(index))));
 		ret = c < BUILTIN_STRINGS_CHAR_MAX ? asAtomHandler::fromStringID(c) : asAtomHandler::fromObject(abstract_s(wrk, tiny_string::fromChar(c) ));
 		return;
 	}
@@ -865,7 +861,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 			asAtomHandler::setNumber(ret,wrk,Number::NaN);
 		else
 		{
-			uint32_t c = g_utf8_get_char(th->getData().raw_buf()+th->getBytePosition(index));
+			uint32_t c = *(CharIterator((char*)(th->getData().raw_buf()+th->getBytePosition(index))));
 			asAtomHandler::setInt(ret,wrk,(int32_t)c);
 		}
 	}

@@ -24,7 +24,6 @@
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
 #include "scripting/flash/utils/ByteArray.h"
-#include <glib.h>
 
 using namespace std;
 using namespace lightspark;
@@ -292,7 +291,7 @@ void Integer::serializeValue(ByteArray* out, int32_t val)
 	}
 }
 
-int32_t parseIntDigit(char ch)
+int32_t parseIntDigit(uint32_t ch)
 {
 	if (ch >= '0' && ch <= '9') {
 		return (ch - '0');
@@ -315,23 +314,23 @@ bool parseIntECMA262(number_t& result, tiny_string& s, int32_t radix,bool negate
 	if (radix >= 2 && radix <= 36 && index < s.numChars()) {
 		result = 0;
 		int32_t start = index;
-		const char* cur = s.raw_buf();
+		CharIterator chIt = s.begin();
 
 		// Read the digits, generate result
-		while (index < s.numChars()) {
-			int32_t v = parseIntDigit(g_utf8_get_char(cur));
+		while (chIt != s.end()) {
+			int32_t v = parseIntDigit(*chIt);
 			if (v == -1 || v >= radix) {
 				break;
 			}
 			result = result * radix + v;
 			gotDigits = true;
 			index++;
-			cur = g_utf8_next_char(cur);
+			chIt++;
 		}
 
-		while(ASString::isEcmaSpace(g_utf8_get_char(cur))) // trailing whitespace is valid.
+		while(ASString::isEcmaSpace(*chIt)) // trailing whitespace is valid.
 		{
-			cur = g_utf8_next_char(cur);
+			chIt++;
 			index++;
 		}
 		if (strict && index < s.numChars()) {
@@ -464,11 +463,13 @@ bool parseIntECMA262(number_t& result, tiny_string& s, int32_t radix,bool negate
 }
 
 
-bool Integer::fromStringFlashCompatible(const char* cur, number_t& ret, int radix,bool strict)
+bool Integer::fromStringFlashCompatible(const char* str, number_t& ret, int radix,bool strict)
 {
 	//Skip whitespace chars
-	while(ASString::isEcmaSpace(g_utf8_get_char(cur)))
-		cur = g_utf8_next_char(cur);
+	CharIterator chIt((char*)str);
+	while(ASString::isEcmaSpace(*chIt))
+		chIt++;
+	char* cur = chIt.ptr();
 
 	bool negate=false;
 	//Skip and take note of plus/minus sign
@@ -481,7 +482,7 @@ bool Integer::fromStringFlashCompatible(const char* cur, number_t& ret, int radi
 	}
 	if (radix == 0 || radix==16)
 	{
-		if (g_str_has_prefix(cur,"0x") || g_str_has_prefix(cur,"0X"))
+		if (cur[0]=='0' && (cur[1] =='x' || cur[1] == 'X'))
 		{
 			radix = 16;
 			cur+=2;

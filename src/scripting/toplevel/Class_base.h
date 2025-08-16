@@ -22,7 +22,7 @@
 
 #include "compat.h"
 #include "asobject.h"
-#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/ASWorker.h"
 
 
 namespace pugi

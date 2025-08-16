@@ -26,7 +26,6 @@
 #include "scripting/flash/display/Stage.h"
 #include "scripting/flash/display/Graphics.h"
 #include "swf.h"
-#include "scripting/flash/system/flashsystem.h"
 #include "parsing/streams.h"
 #include "parsing/tags.h"
 #include "compat.h"

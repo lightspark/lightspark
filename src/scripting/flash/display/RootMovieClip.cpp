@@ -22,6 +22,8 @@
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/Loader.h"
 #include "scripting/flash/geom/Rectangle.h"
+#include "scripting/flash/system/ApplicationDomain.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/avm1/avm1display.h"

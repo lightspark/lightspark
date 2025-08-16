@@ -20,7 +20,7 @@
 #include "scripting/abc.h"
 #include "scripting/abc_optimized.h"
 #include "scripting/abc_optimized_getproperty.h"
-#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/errors/flasherrors.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/class.h"
 

@@ -36,7 +36,7 @@
 #include "scripting/toplevel/XML.h"
 #include "scripting/toplevel/XMLList.h"
 #include "scripting/toplevel/Error.h"
-#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/ASWorker.h"
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/display/RootMovieClip.h"

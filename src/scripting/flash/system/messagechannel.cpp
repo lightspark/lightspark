@@ -22,6 +22,7 @@
 #include "scripting/flash/concurrent/Condition.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "scripting/toplevel/IFunction.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"

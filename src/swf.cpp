@@ -40,6 +40,7 @@
 #include "scripting/flash/events/StatusEvent.h"
 #include "scripting/flash/net/LocalConnection.h"
 #include "scripting/flash/geom/Rectangle.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASString.h"

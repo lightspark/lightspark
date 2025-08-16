@@ -36,6 +36,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/ASQName.h"
 #include "scripting/toplevel/Number.h"

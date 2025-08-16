@@ -87,6 +87,7 @@ class TimerThread;
 class LocalConnectionEvent;
 class ABCVm;
 class Function;
+class SecurityDomain;
 
 enum class FramePhase
 {

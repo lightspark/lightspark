@@ -24,7 +24,9 @@
 #include "compat.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/Stage.h"
+#include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/events/LocalConnectionEvent.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/toplevel/toplevel.h"
 #include <algorithm>
 

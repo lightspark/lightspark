@@ -19,6 +19,7 @@
 
 #include "scripting/toplevel/ASQName.h"
 #include "scripting/toplevel/XML.h"
+#include "scripting/flash/errors/flasherrors.h"
 #include "scripting/class.h"
 
 using namespace lightspark;

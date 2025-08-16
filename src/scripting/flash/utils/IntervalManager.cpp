@@ -19,7 +19,7 @@
 
 #include "scripting/abc.h"
 #include "scripting/flash/display/DisplayObject.h"
-#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/ASWorker.h"
 #include "scripting/flash/utils/IntervalRunner.h"
 #include "scripting/flash/utils/IntervalManager.h"
 #include "scripting/toplevel/AVM1Function.h"

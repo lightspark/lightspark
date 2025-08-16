@@ -42,6 +42,7 @@
 #include "scripting/flash/filters/GlowFilter.h"
 #include "scripting/flash/filters/GradientBevelFilter.h"
 #include "scripting/flash/filters/GradientGlowFilter.h"
+#include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/ui/ContextMenu.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/abc.h"

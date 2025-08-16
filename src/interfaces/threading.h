@@ -20,11 +20,10 @@
 #ifndef INTERFACES_THREADING_H
 #define INTERFACES_THREADING_H 1
 
-#include "forwards/scripting/flash/system/flashsystem.h"
 
 namespace lightspark
 {
-
+class ASWorker;
 class IThreadJob
 {
 friend class ThreadPool;
@@ -65,6 +64,6 @@ public:
 	void setWorker(ASWorker* w) { fromWorker = w;}
 };
 
-};
+}
 #endif /* INTERFACEs_THREADING_H */
 

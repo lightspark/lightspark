@@ -26,7 +26,8 @@
 #include "scripting/toplevel/IFunction.h"
 #include "scripting/toplevel/Namespace.h"
 #include "scripting/toplevel/RegExp.h"
-#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "parsing/streams.h"
 #include <string>

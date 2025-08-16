@@ -26,6 +26,9 @@
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/net/flashnet.h"
+#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/ApplicationDomain.h"
+#include "scripting/flash/utils/ByteArray.h"
 
 using namespace std;
 using namespace lightspark;

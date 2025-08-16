@@ -20,7 +20,8 @@
 #ifndef SCRIPTING_TOPLEVEL_VECTOR_H
 #define SCRIPTING_TOPLEVEL_VECTOR_H 1
 
-#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/ApplicationDomain.h"
+#include "scripting/toplevel/Error.h"
 #include "class.h"
 
 namespace lightspark

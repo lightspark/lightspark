@@ -25,6 +25,7 @@
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/display/RootMovieClip.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "threading.h"

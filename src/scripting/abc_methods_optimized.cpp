@@ -21,6 +21,8 @@
 #include "compat.h"
 #include "exceptions.h"
 #include "scripting/abcutils.h"
+#include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/ASString.h"
 #include "scripting/toplevel/RegExp.h"

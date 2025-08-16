@@ -33,7 +33,7 @@
 #include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/RootMovieClip.h"
-#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "parsing/tags.h"
 
 using namespace lightspark;

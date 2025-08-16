@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include "scripting/class.h"
+#include "scripting/flash/utils/ByteArray.h"
 #include "scripting/toplevel/IFunction.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Array.h"

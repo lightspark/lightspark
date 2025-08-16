@@ -28,7 +28,7 @@
 #include "interfaces/timer.h"
 #include "platforms/engineutils.h"
 #include "scripting/flash/display/RootMovieClip.h"
-#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 
 using namespace lightspark;
 using namespace std;

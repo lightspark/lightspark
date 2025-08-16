@@ -31,7 +31,6 @@
 #include "forwards/swftypes.h"
 #include "forwards/scripting/flash/display/DisplayObject.h"
 #include "forwards/scripting/flash/display/flashdisplay.h"
-#include "forwards/scripting/flash/system/flashsystem.h"
 #include "forwards/tiny_string.h"
 #include "logger.h"
 #include <cstdlib>
@@ -272,8 +271,11 @@ class AVM1Function;
 class AVM1context;
 class AVM1Scope;
 struct namespace_info;
-
 struct multiname;
+class RootMovieClip;
+class ApplicationDomain;
+class ASWorker;
+
 class QName
 {
 public:
@@ -479,7 +481,6 @@ public:
 //Numbers taken from AVM2 specs
 enum NS_KIND { NAMESPACE=0x08, PACKAGE_NAMESPACE=0x16, PACKAGE_INTERNAL_NAMESPACE=0x17, PROTECTED_NAMESPACE=0x18, 
 			EXPLICIT_NAMESPACE=0x19, STATIC_PROTECTED_NAMESPACE=0x1A, PRIVATE_NAMESPACE=0x05 };
-class RootMovieClip;
 struct nsNameAndKindImpl
 {
 	uint32_t nameId;

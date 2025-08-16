@@ -25,7 +25,6 @@
 #include "3rdparty/pugixml/src/pugixml.hpp"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Vector.h"
-#include "scripting/flash/system/flashsystem.h"
 #include "scripting/flash/events/StatusEvent.h"
 #include <glib.h>
 

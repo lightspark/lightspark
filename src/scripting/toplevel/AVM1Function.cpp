@@ -21,6 +21,7 @@
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/flash/display/DisplayObject.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/avm1/scope.h"
 
 using namespace std;

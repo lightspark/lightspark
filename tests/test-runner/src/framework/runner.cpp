@@ -27,7 +27,8 @@
 #include <lightspark/logger.h>
 #include <lightspark/scripting/abc.h>
 #include <lightspark/scripting/flash/display/RootMovieClip.h>
-#include <lightspark/scripting/flash/system/flashsystem.h>
+#include "scripting/flash/system/ApplicationDomain.h"
+#include "scripting/flash/system/ASWorker.h"
 #include <lightspark/swf.h>
 #include <lightspark/tiny_string.h>
 #include <lightspark/utils/visitor.h>

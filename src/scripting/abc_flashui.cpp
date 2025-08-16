@@ -26,6 +26,7 @@
 #include "scripting/flash/ui/gameinput.h"
 #include "scripting/flash/display/RootMovieClip.h"
 
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/class.h"
 #include "scripting/abc.h"

@@ -32,7 +32,6 @@
 #include "scripting/toplevel/IFunction.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Array.h"
-#include "scripting/flash/system/flashsystem.h"
 #include "memory_support.h"
 
 namespace pugi

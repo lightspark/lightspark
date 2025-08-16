@@ -654,7 +654,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 												typestack.push_back(typestackentry(resulttype,false));
 											break;
 										}
-										else if (v->isFunctionVar())
+										else if (v->isBuiltinFunctionVar())
 										{
 											if (needResult)
 												resulttype = v->getFunctionVar()->as<Function>()->getArgumentDependentReturnType(allargsint);

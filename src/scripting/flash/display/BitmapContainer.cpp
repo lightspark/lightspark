@@ -22,7 +22,6 @@
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/geom/flashgeom.h"
-#include "scripting/flash/system/flashsystem.h"
 #include "backends/rendering.h"
 #include "backends/cachedsurface.h"
 #include "backends/image.h"

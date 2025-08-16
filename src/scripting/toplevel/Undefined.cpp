@@ -20,6 +20,7 @@
 
 #include "scripting/class.h"
 #include "scripting/toplevel/Undefined.h"
+#include "scripting/flash/errors/flasherrors.h"
 #include "parsing/amf3_generator.h"
 #include "scripting/flash/utils/ByteArray.h"
 

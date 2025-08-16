@@ -21,6 +21,8 @@
 #include "scripting/abc.h"
 #include "compat.h"
 #include "scripting/abc_interpreter_helper.h"
+#include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/class.h"

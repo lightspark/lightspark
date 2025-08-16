@@ -26,7 +26,7 @@
 #include "compat.h"
 #include "logger.h"
 #include "swf.h"
-#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/ASWorker.h"
 
 using namespace lightspark;
 

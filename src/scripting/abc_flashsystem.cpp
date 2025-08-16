@@ -18,6 +18,8 @@
 **************************************************************************/
 
 #include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/ASWorker.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/flash/system/messagechannel.h"
 #include "scripting/flash/system/messagechannelstate.h"
 #include "scripting/flash/system/securitypanel.h"

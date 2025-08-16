@@ -22,7 +22,6 @@
 
 #include "forwards/asobject.h"
 #include "forwards/scripting/flash/display/DisplayObject.h"
-#include "forwards/scripting/flash/system/flashsystem.h"
 #include "forwards/scripting/toplevel/Global.h"
 #include "forwards/swftypes.h"
 #include "smartrefs.h"

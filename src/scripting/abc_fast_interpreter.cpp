@@ -29,7 +29,8 @@
 #include "scripting/toplevel/Namespace.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Undefined.h"
-#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/flash/display/RootMovieClip.h"
 
 using namespace std;

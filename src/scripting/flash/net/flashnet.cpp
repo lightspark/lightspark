@@ -26,7 +26,7 @@
 #include "scripting/flash/net/flashnet.h"
 #include "scripting/flash/net/URLRequestHeader.h"
 #include "scripting/class.h"
-#include "scripting/flash/system/flashsystem.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/display/RootMovieClip.h"

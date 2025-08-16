@@ -21,6 +21,8 @@
 #include "scripting/abc_optimized.h"
 #include "scripting/abc_optimized_callproperty.h"
 #include "scripting/class.h"
+#include "scripting/flash/errors/flasherrors.h"
+#include "scripting/flash/utils/flashutils.h"
 #include "scripting/toplevel/toplevel.h"
 #include "scripting/toplevel/RegExp.h"
 

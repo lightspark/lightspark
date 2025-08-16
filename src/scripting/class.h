@@ -24,7 +24,6 @@
 #include "asobject.h"
 #include "swf.h"
 #include "scripting/toplevel/Class_base.h"
-#include "scripting/flash/system/flashsystem.h"
 #include "backends/streamcache.h"
 
 

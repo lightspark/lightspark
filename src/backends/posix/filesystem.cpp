@@ -18,6 +18,8 @@
 **************************************************************************/
 
 #include <fstream>
+#include <vector>
+
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
@@ -54,8 +56,8 @@ Path fs::absolute(const Path& path)
 
 bool fs::Detail::copyFile(const Path& from, const Path& to, bool overwrite)
 {
-	std::ifstream is(from, std::ios_base::binary | std::ios_base::trunc);
-	std::ofstream os(to, std::ios_base::binary);
+	std::ifstream is(from.getStr(), std::ios_base::binary | std::ios_base::trunc);
+	std::ofstream os(to.getStr(), std::ios_base::binary);
 	if (!overwrite && !os.fail())
 		throw Exception(from, to, std::errc(errno));
 	if (!is.eof() && (os << is.rdbuf()).fail())

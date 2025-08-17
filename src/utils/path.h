@@ -47,6 +47,10 @@ class Path;
 namespace FileSystem
 {
 
+class DirIter;
+
+Path canonical(const Path& path);
+bool createDirs(const Path& path);
 bool exists(const Path& path);
 bool isDir(const Path& path);
 bool isFile(const Path& path);
@@ -82,6 +86,10 @@ public:
 	using const_iterator = Iter;
 	using ConstIter = Iter;
 private:
+	friend class FileSystem::DirIter;
+
+	void appendName(const StringPtr name);
+
 	template<typename InputIter>
 	class InputIterRange
 	{
@@ -103,9 +111,13 @@ private:
 		InputIter end() const { return last; }
 	};
 
+	friend Path FileSystem::canonical(const Path& path);
+	friend bool FileSystem::createDirs(const Path& path);
+
 	size_t rootNameLength() const;
 	int compareImpl(const Path& other) const;
 	void postprocessPath(const Format& format);
+	void checkLongPath();
 
 	static constexpr ValueType genericSeparator = U'/';
 	StringType path;

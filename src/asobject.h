@@ -490,6 +490,7 @@ public:
 	static std::string toDebugString(const asAtom a);
 	static FORCE_INLINE void applyProxyProperty(asAtom& a,SystemState *sys, multiname& name);
 	static FORCE_INLINE TRISTATE isLess(asAtom& a, ASWorker* wrk, asAtom& v2);
+	static TRISTATE AVM1isLess(asAtom& a, ASWorker* wrk, asAtom& v2);
 	static FORCE_INLINE bool isEqual(asAtom& a, ASWorker* wrk, asAtom& v2);
 	static bool AVM1isEqual(asAtom& v1, asAtom& v2, ASWorker* wrk);
 	static FORCE_INLINE bool isEqualStrict(asAtom& a, ASWorker* wrk, asAtom& v2);

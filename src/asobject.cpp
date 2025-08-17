@@ -4621,11 +4621,12 @@ tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk, bool for
 				// Special case for `DisplayObject`s.
 				return obj->as<DisplayObject>()->AVM1GetPath();
 			}
+			else if (obj->is<Class_base>())
+				return "[type Function]";
 
 			tiny_string ret = "[type Object]";
 			asAtom atom = asAtomHandler::invalidAtom;
 			obj->call_toString(atom);
-
 
 			if (isString(atom))
 				ret = toString(atom, wrk, true);
@@ -5982,6 +5983,33 @@ bool asAtomHandler::localNumberToGlobalNumber(ASWorker* wrk, asAtom &a)
 		return true;
 	}
 	return false;
+}
+
+TRISTATE asAtomHandler::AVM1isLess(asAtom& a, ASWorker* wrk, asAtom& v2)
+{
+	bool isRefCounted1 = false;
+	bool isRefCounted2 = false;
+	asAtom aa = a;
+	asAtom bb = v2;
+
+	if (asAtomHandler::isObject(aa))
+		AVM1toPrimitive(aa, wrk, isRefCounted1, NUMBER_HINT);
+	if (asAtomHandler::isObject(bb))
+		AVM1toPrimitive(bb, wrk, isRefCounted2, NUMBER_HINT);
+	// If either parameter's `valueOf` results in a non-movieclip object, immediately return false.
+	// This is the common case for objects because `Object.prototype.valueOf` returns the same object.
+	ASObject* oa = asAtomHandler::getObject(aa);
+	if(oa && !oa->is<MovieClip>() && !isPrimitive(aa))
+		return TRISTATE::TFALSE;
+	ASObject* ob = asAtomHandler::getObject(bb);
+	if(ob && !ob->is<MovieClip>() && !isPrimitive(bb))
+		return TRISTATE::TFALSE;
+	TRISTATE ret = isLess(aa,wrk,bb);
+	if (isRefCounted1)
+		ASATOM_DECREF(aa);
+	if (isRefCounted2)
+		ASATOM_DECREF(bb);
+	return ret;
 }
 
 // Implements ECMA-262 2nd edition, section 11.9.3. The abstract equality

@@ -2612,10 +2612,43 @@ TextFormat::~TextFormat()
 {
 }
 
+void StyleSheet::clearStyles()
+{
+	while (!styles.empty())
+	{
+		auto it =styles.begin();
+		ASATOM_REMOVESTOREDMEMBER((*it).second);
+		styles.erase(it);
+	}
+}
+
+StyleSheet::StyleSheet(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c)
+{
+}
+
 void StyleSheet::finalize()
 {
 	EventDispatcher::finalize();
-	styles.clear();
+	clearStyles();
+}
+bool StyleSheet::destruct()
+{
+	clearStyles();
+	return EventDispatcher::destruct();
+}
+void StyleSheet::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	clearStyles();
+}
+bool StyleSheet::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	for (auto it = styles.begin(); it != styles.end(); it++)
+		ret = asAtomHandler::getObject(it->second)->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void StyleSheet::sinit(Class_base* c)
@@ -2625,37 +2658,43 @@ void StyleSheet::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("setStyle","",c->getSystemState()->getBuiltinFunction(setStyle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("getStyle","",c->getSystemState()->getBuiltinFunction(getStyle),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("parseCSS","",c->getSystemState()->getBuiltinFunction(parseCSS),NORMAL_METHOD,true);
-}
-
-void StyleSheet::buildTraits(ASObject* o)
-{
+	c->setDeclaredMethodByQName("clear","",c->getSystemState()->getBuiltinFunction(parseCSS),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("transform","",c->getSystemState()->getBuiltinFunction(transform),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(StyleSheet,setStyle)
 {
 	StyleSheet* th=asAtomHandler::as<StyleSheet>(obj);
-	assert_and_throw(argslen==2);
-	const tiny_string& arg0=asAtomHandler::toString(args[0],wrk);
-	ASATOM_INCREF(args[1]); //TODO: should make a copy, see reference
-	map<tiny_string, asAtom>::iterator it=th->styles.find(arg0);
+	tiny_string styleName;
+	asAtom styleObject = asAtomHandler::invalidAtom;
+	ARG_CHECK(ARG_UNPACK(styleName)(styleObject));
+
+	ASObject* style = new_asobject(wrk);
+	style->addStoredMember();
+	ASObject* styleobj = asAtomHandler::getObject(styleObject);
+	if (styleobj)
+		style->copyValues(styleobj,wrk);
+	auto it=th->styles.find(styleName);
 	//NOTE: we cannot use the [] operator as References cannot be non initialized
 	if(it!=th->styles.end()) //Style already exists
-		it->second=args[1];
+		it->second=asAtomHandler::fromObjectNoPrimitive(style);
 	else
-		th->styles.insert(make_pair(arg0,args[1]));
+		th->styles.insert(make_pair(styleName,asAtomHandler::fromObjectNoPrimitive(style)));
 }
 
 ASFUNCTIONBODY_ATOM(StyleSheet,getStyle)
 {
 	StyleSheet* th=asAtomHandler::as<StyleSheet>(obj);
-	assert_and_throw(argslen==1);
-	const tiny_string& arg0=asAtomHandler::toString(args[0],wrk);
-	map<tiny_string, asAtom>::iterator it=th->styles.find(arg0);
+	tiny_string styleName;
+	ARG_CHECK(ARG_UNPACK(styleName));
+	auto it=th->styles.find(styleName);
 	if(it!=th->styles.end()) //Style already exists
 	{
-		//TODO: should make a copy, see reference
-		ASATOM_INCREF(it->second);
-		ret = it->second;
+		ASObject* style = new_asobject(wrk);
+		ASObject* styleobj = asAtomHandler::getObject(it->second);
+		assert(styleobj);
+		style->copyValues(styleobj,wrk);
+		ret = asAtomHandler::fromObjectNoPrimitive(style);
 	}
 	else
 	{
@@ -2682,6 +2721,18 @@ ASFUNCTIONBODY_ATOM(StyleSheet,parseCSS)
 	tiny_string css;
 	ARG_CHECK(ARG_UNPACK(css));
 	LOG(LOG_NOT_IMPLEMENTED,"StyleSheet.parseCSS does nothing");
+}
+
+ASFUNCTIONBODY_ATOM(StyleSheet,clear)
+{
+	StyleSheet* th=asAtomHandler::as<StyleSheet>(obj);
+	th->clearStyles();
+}
+
+ASFUNCTIONBODY_ATOM(StyleSheet,transform)
+{
+	//StyleSheet* th=asAtomHandler::as<StyleSheet>(obj);
+	LOG(LOG_NOT_IMPLEMENTED,"StyleSheet.transform does nothing");
 }
 
 void StaticText::sinit(Class_base* c)

@@ -103,10 +103,18 @@ void ABCVm::registerClassesAVM1()
 	{
 		ASObject* systempackage = new_asobject(m_sys->worker);
 		builtinavm1->setVariableByQName("System",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),systempackage,CONSTANT_TRAIT);
-		
+
 		systempackage->setVariableByQName("security","System",Class<Security>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		systempackage->setVariableByQName("capabilities","System",Class<Capabilities>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 	}
+	if (m_sys->getSwfVersion() >= 7)
+	{
+		ASObject* textfieldpackage = new_asobject(m_sys->worker);
+		builtinavm1->setVariableByQName("TextField",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),textfieldpackage ,CONSTANT_TRAIT);
+
+		textfieldpackage->setVariableByQName("StyleSheet","TextField",Class<AVM1StyleSheet>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+	}
+
 	if (m_sys->getSwfVersion() >= 8)
 	{
 		ASObject* flashpackage = new_asobject(m_sys->worker);

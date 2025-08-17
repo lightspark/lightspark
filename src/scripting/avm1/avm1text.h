@@ -54,6 +54,13 @@ public:
 	ASFUNCTION_ATOM(getFocus);
 	ASFUNCTION_ATOM(setFocus);
 };
+class AVM1StyleSheet: public StyleSheet
+{
+public:
+	AVM1StyleSheet(ASWorker* wrk,Class_base* c):StyleSheet(wrk,c)
+	{}
+	static void sinit(Class_base* c);
+};
 
 }
 #endif // SCRIPTING_AVM1_AVM1TEXT_H

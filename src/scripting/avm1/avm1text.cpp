@@ -71,3 +71,13 @@ ASFUNCTIONBODY_ATOM(AVM1Selection,setFocus)
 		LOG(LOG_ERROR,"invalid object for Selection.setFocus:"<<asAtomHandler::toDebugString(args[0]));
 }
 
+void AVM1StyleSheet::sinit(Class_base* c)
+{
+	StyleSheet::sinit(c);
+	c->prototype->setDeclaredMethodByQName("getStyleNames","",c->getSystemState()->getBuiltinFunction(_getStyleNames),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("setStyle","",c->getSystemState()->getBuiltinFunction(setStyle),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("getStyle","",c->getSystemState()->getBuiltinFunction(getStyle),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("parseCSS","",c->getSystemState()->getBuiltinFunction(parseCSS),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("clear","",c->getSystemState()->getBuiltinFunction(clear),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("transform","",c->getSystemState()->getBuiltinFunction(transform),NORMAL_METHOD,false);
+}

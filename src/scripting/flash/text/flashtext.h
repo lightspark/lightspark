@@ -60,15 +60,21 @@ class StyleSheet: public EventDispatcher
 {
 private:
 	std::map<tiny_string, asAtom > styles;
+	void clearStyles();
 public:
-	StyleSheet(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c){}
+	StyleSheet(ASWorker* wrk,Class_base* c);
 	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+
 	ASFUNCTION_ATOM(getStyle);
 	ASFUNCTION_ATOM(setStyle);
 	ASFUNCTION_ATOM(_getStyleNames);
 	ASFUNCTION_ATOM(parseCSS);
+	ASFUNCTION_ATOM(clear);
+	ASFUNCTION_ATOM(transform);
 	static void sinit(Class_base* c);
-	static void buildTraits(ASObject* o);
 };
 
 class TextField: public InteractiveObject, public TextData, public TokenContainer, public ITickJob

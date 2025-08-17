@@ -571,11 +571,8 @@ asAtom ASObject::callResolveMethod(const tiny_string& name, ASWorker* wrk)
 	{
 		if (depth == UINT8_MAX)
 		{
-			throw ScriptLimitException
-			(
-				"Reached maximum prototype recursion limit",
-				ScriptLimitException::MaxPrototypeRecursion
-			);
+			wrk->throwStackOverflow();
+			return asAtomHandler::undefinedAtom;
 		}
 
 		auto func = asAtomHandler::invalidAtom;
@@ -2192,11 +2189,8 @@ std::pair<asAtom, GET_VARIABLE_RESULT> ASObject::AVM1searchPrototypeByMultiname
 	{
 		if (depth == UINT8_MAX)
 		{
-			throw ScriptLimitException
-			(
-				"Reached maximum prototype recursion limit",
-				ScriptLimitException::MaxPrototypeRecursion
-			);
+			wrk->throwStackOverflow();
+			return std::make_pair(asAtomHandler::undefinedAtom, GETVAR_NORMAL);
 		}
 
 		GET_VARIABLE_OPTION opt2 = GET_VARIABLE_OPTION(opt | GET_VARIABLE_OPTION::DONT_CALL_GETTER | GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
@@ -2852,7 +2846,11 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 		gcstate.ignoreCount(this);
 		ret = this->gccounter.hasmember;
 	}
-	else if (!getInDestruction() && !getCached() && canHaveCyclicMemberReference() && !markedforgarbagecollection && !deletedingarbagecollection)
+	else if (!getInDestruction()
+			   && !getCached()
+			   && canHaveCyclicMemberReference()
+			   && !deletedingarbagecollection
+			   )
 	{
 		if (!this->gccounter.ischecked)
 		{

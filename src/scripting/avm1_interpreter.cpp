@@ -2020,7 +2020,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 								break;
 						}
 					}
-					if (context->exceptionthrown)
+					if (context->exceptionthrown && !context->exceptionthrown->is<StackOverflowError>())
 					{
 						context->exceptionthrown->decRef();
 						context->exceptionthrown=nullptr;
@@ -2293,7 +2293,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod invalid scriptobject "<<asAtomHandler::toDebugString(scriptobject)<<" "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func));
 				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject)<<" result:"<<asAtomHandler::toDebugString(ret));
-				if (context->exceptionthrown)
+				if (context->exceptionthrown && !context->exceptionthrown->is<StackOverflowError>())
 				{
 					if (tryblockstart== actionlist.end())
 					{
@@ -2391,7 +2391,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (asAtomHandler::isObject(ret))
 					asAtomHandler::getObjectNoCheck(ret)->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),func,DYNAMIC_TRAIT,true,false);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewMethod done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject)<<" result:"<<asAtomHandler::toDebugString(ret));
-				if (context->exceptionthrown)
+				if (context->exceptionthrown && !context->exceptionthrown->is<StackOverflowError>())
 				{
 					ASATOM_DECREF(ret);
 					ret = asAtomHandler::undefinedAtom;
@@ -2782,6 +2782,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 									context->getScope(),
 									obj
 								));
+				ASATOM_DECREF(obj);
 				break;
 			}
 			case 0x96: // ActionPush

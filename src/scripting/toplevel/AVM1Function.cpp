@@ -137,7 +137,11 @@ void AVM1Function::prepareShutdown()
 		return;
 	IFunction::prepareShutdown();
 	if (clip)
+	{
 		clip->prepareShutdown();
+		clip->removeStoredMember();
+	}
+	clip=nullptr;
 	if (context.scope)
 		context.scope->prepareShutdown();
 	if (context.globalScope)

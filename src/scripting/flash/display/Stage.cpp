@@ -329,6 +329,14 @@ void Stage::prepareShutdown()
 	avm1MouseListeners.clear();
 	avm1EventListeners.clear();
 	avm1ResizeListeners.clear();
+	avm1ScriptMutex.lock();
+	auto itscr = avm1scriptstoexecute.begin();
+	while (itscr != avm1scriptstoexecute.end())
+	{
+		(*itscr).clip->decRef(); // was increffed in AVM1AddScriptEvents
+		itscr = avm1scriptstoexecute.erase(itscr);
+	}
+	avm1ScriptMutex.unlock();
 }
 
 Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)

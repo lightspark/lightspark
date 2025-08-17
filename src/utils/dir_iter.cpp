@@ -102,7 +102,7 @@ fs::DirIter& fs::DirIter::operator++()
 	std::error_code code;
 	impl->asImpl()->inc(code);
 	if (code.value())
-		throw Exception(path, code);
+		throw Exception((*this)->getPath(), code);
 	return *this;
 }
 
@@ -124,7 +124,7 @@ fs::RecursiveDirIter& fs::RecursiveDirIter::operator++()
 			Path() :
 			dirStack.top()->getPath()
 		);
-		throw Exception(path, code);
+		throw Exception((*this)->getPath(), code);
 	}
 	return *this;
 }
@@ -141,8 +141,8 @@ fs::RecursiveDirIter& fs::RecursiveDirIter::inc(std::error_code& code)
 	}
 	catch (Exception& e)
 	{
-		if (!isSymlink || !Detail::isNotFoundError(e.code()))
-			code = e.code();
+		if (!isSymlink || !Detail::isNotFoundError(e.getCode()))
+			code = e.getCode();
 	}
 
 	if (code.value())

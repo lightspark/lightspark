@@ -23,6 +23,7 @@
 #include <stack>
 
 #include "compat.h"
+#include "exceptions.h"
 #include "smartrefs.h"
 #include "tiny_string.h"
 #include "utils/path.h"
@@ -50,19 +51,14 @@ public:
 	(
 		const std::string& cause,
 		const std::error_code& code
-	) : SystemException(cause, code) {}
+	) : Exception(cause, Path(), Path(), code) {}
 
 	Exception
 	(
-		const std::string& _cause,
-		const Path& _path1,
+		const std::string& cause,
+		const Path& path1,
 		const std::error_code& code
-	) : Exception(_cause, code), path1(_path1)
-	{
-		if (path1.empty())
-			return;
-		cause += ": '" + path1.getStr() + '\'';
-	}
+	) : Exception(cause, path1, Path(), code) {}
 
 	Exception
 	(
@@ -70,11 +66,15 @@ public:
 		const Path& _path1,
 		const Path& _path2,
 		const std::error_code& code
-	) : Exception(_cause, _path1, code), path2(_path2)
+	) : SystemException(_cause, code), path1(_path1), path2(_path2)
 	{
+		if (path1.empty())
+			return;
+		cause += std::string(": '") + std::string(path1.getStr()) + '\'';
+
 		if (path2.empty())
 			return;
-		cause += ", '" + path2.getStr() + '\'';
+		cause += std::string(", '") + std::string(path2.getStr()) + '\'';
 	}
 
 	Exception(const std::error_code& code) : Exception(code.message(), code) {}
@@ -110,7 +110,7 @@ public:
 
 	const Path& getPath1() const { return path1; }
 	const Path& getPath2() const { return path2; }
-	const char* what() const override
+	const char* what() const throw()
 	{
 		return !cause.empty() ? cause.c_str() : "Lightspark filesystem error";
 	}
@@ -199,6 +199,15 @@ enum class DirOptions : uint8_t
 	SkipPermDenied = 1 << 1,
 };
 
+class FileStatus;
+
+namespace Detail
+{
+
+FileStatus status(const Path& path, FileStatus* _symlinkStatus);
+
+};
+
 class FileStatus
 {
 private:
@@ -209,8 +218,9 @@ private:
 	size_t hardLinks { size_t(-1) };
 	TimeSpec lastWriteTime;
 
-	friend FileStatus status(const Path& path);
+	friend FileStatus Detail::status(const Path& path, FileStatus* _symlinkStatus);
 	friend class DirEntry;
+	friend class DirIter;
 
 	void setSize(size_t _size) { size = _size; }
 	void setHardLinks(size_t _hardLinks) { hardLinks = _hardLinks; }

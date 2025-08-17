@@ -38,7 +38,7 @@ DirIterImpl::Impl
 (
 	const Path& path,
 	const DirOpts& opts
-) : fs::DirIter::ImplBase(path, opts), dir(nullptr), entry(nullptr), error(0)
+) : fs::DirIter::ImplBase(path, opts), dir(nullptr), entry(nullptr)
 {
 	if (path.empty())
 		return;
@@ -50,15 +50,15 @@ DirIterImpl::Impl
 
 	if (dir != nullptr)
 	{
-		*++this;
+		inc(code);
 		return;
 	}
 
 	auto error = errno;
-	basePath = fs::Path();
+	basePath = Path();
 
 	if ((error != EACCES && error != EPERM) || !(opts & DirOpts::SkipPermDenied))
-		code = std::error_code(errno);
+		code = std::make_error_code(std::errc(errno));
 }
 
 DirIterImpl::~Impl()
@@ -87,7 +87,7 @@ void DirIterImpl::inc(std::error_code& code)
 			dir = nullptr;
 			dirEntry.path.clear();
 			if (errno && errno != EINTR)
-				code = std::error_code(errno);
+				code = std::make_error_code(std::errc(errno));
 			break;
 		}
 		dirEntry.path = basePath;
@@ -95,7 +95,7 @@ void DirIterImpl::inc(std::error_code& code)
 		copyToDirEntry();
 		auto error = code.value();
 		const auto& opts = options;
-		if (error && (error == EACCES || error == EPERM) && (opts & DirOpts::SkipPermDenied))
+		if (error && (error == EACCES || error == EPERM) && bool(opts & DirOpts::SkipPermDenied))
 		{
 			code.clear();
 			skip = true;
@@ -115,9 +115,9 @@ void DirIterImpl::copyToDirEntry()
 		dirEntry.symlinkStatus.setType(FileType::None);
 	}
 
-	dirEntry.setFileSize(-1);
-	dirEntry.setHardLinkCount(-1);
-	dirEntry.setLastWriteTime(TimeSpec());
+	dirEntry.status.setSize(-1);
+	dirEntry.status.setHardLinks(-1);
+	dirEntry.status.setLastWriteTime(TimeSpec());
 }
 
 #undef DirIterImpl

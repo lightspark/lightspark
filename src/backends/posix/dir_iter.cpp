@@ -25,6 +25,7 @@
 #include "utils/filesystem.h"
 #include "utils/path.h"
 #include "utils/timespec.h"
+#include "utils/type_traits.h"
 
 using namespace lightspark;
 namespace fs = FileSystem;
@@ -101,6 +102,51 @@ void DirIterImpl::inc(std::error_code& code)
 			skip = true;
 		}
 	} while (skip || !strcmp(entry->d_name, ".") || !strcmp(entry->d_name, ".."));
+}
+
+template<typename T, typename = int>
+struct HasDType : std::false_type {};
+template<typename T>
+struct HasDType<T, decltype(void(T::d_type), 0)> : std::true_type {};
+
+template<typename T = dirent, EnableIf<!HasDType<T>::value, bool> = false>
+fs::FileType fileTypeFromDirEnt(const dirent& entry)
+{
+	return fs::FileType::None;
+}
+
+template<typename T = dirent, EnableIf<HasDType<T>::value, bool> = false>
+fs::FileType fileTypeFromDirEnt(const dirent& entry)
+{
+	using FileType = fs::FileType;
+	switch (entry.d_type)
+	{
+		#ifdef DT_UNKNOWN
+		case DT_UNKNOWN: return FileType::None; break;
+		#endif
+		#ifdef DT_REG
+		case DT_REG: return FileType::Regular; break;
+		#endif
+		#ifdef DT_DIR
+		case DT_DIR: return FileType::Directory; break;
+		#endif
+		#ifdef DT_LNK
+		case DT_LNK: return FileType::Symlink; break;
+		#endif
+		#ifdef DT_BLK
+		case DT_BLK: return FileType::Block; break;
+		#endif
+		#ifdef DT_CHR
+		case DT_CHR: return FileType::Character; break;
+		#endif
+		#ifdef DT_FIFO
+		case DT_FIFO: return FileType::Fifo; break;
+		#endif
+		#ifdef DT_SOCK
+		case DT_SOCK: return FileType::Socket; break;
+		#endif
+		default: return FileType::Unknown; break;
+	}
 }
 
 void DirIterImpl::copyToDirEntry()

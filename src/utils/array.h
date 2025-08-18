@@ -29,13 +29,7 @@ namespace lightspark
 template<typename... Args>
 constexpr std::array<CommonType<Args...>, sizeof...(Args)> makeArray(Args&&... args)
 {
-	return std::array<CommonType<Args...>, sizeof...(Args)> { arg, args... };
-}
-
-template<typename T, typename... Args>
-constexpr std::array<T, sizeof...(Args)> makeArray(Args&&... args)
-{
-	return makeArray(std::forward<Args>(args)...);
+	return std::array<CommonType<Args...>, sizeof...(Args)> { args... };
 }
 
 };

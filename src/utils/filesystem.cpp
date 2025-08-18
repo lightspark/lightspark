@@ -84,12 +84,12 @@ void fs::copy(const Path& from, const Path& to)
 
 void fs::copy(const Path& from, const Path& to, const CopyOptions& options)
 {
-	bool handleSymlinks = options &
+	bool handleSymlinks = bool(options &
 	(
 		CopyOptions::SkipSymlinks |
 		CopyOptions::CopySymlinks |
-		CopyOptions::CreateSymlinks |
-	);
+		CopyOptions::CreateSymlinks
+	));
 
 	FileStatus statusFrom = handleSymlinks ? symlinkStatus(from) : status(from);
 

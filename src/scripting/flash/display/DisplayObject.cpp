@@ -2764,7 +2764,7 @@ void DisplayObject::setPropertyByIndex(size_t idx, const asAtom& val, ASWorker* 
 }
 
 // NOTE: Can't use `tiny_string` here because it isn't `constexpr`.
-static constexpr auto propTable = makeArray<const char*>
+static constexpr auto propTable = makeArray
 (
 	"_x",
 	"_y",

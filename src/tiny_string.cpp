@@ -66,6 +66,19 @@ tiny_string::tiny_string(const std::string& r):_buf_static(),buf(_buf_static),st
 	init();
 }
 
+tiny_string::tiny_string(const CharIterator& first, const CharIterator& last) :
+_buf_static(),
+buf(_buf_static),
+stringSize(last.ptr() - first.ptr()),
+type(STATIC)
+{
+	if (stringSize > STATIC_SIZE)
+		createBuffer(stringSize);
+	memcpy(buf, first.ptr(), stringSize - 1);
+	buf[stringSize - 1] = '\0';
+	init();
+}
+
 tiny_string::~tiny_string()
 {
 	resetToStatic();

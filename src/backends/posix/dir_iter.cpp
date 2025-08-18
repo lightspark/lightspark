@@ -153,7 +153,7 @@ void DirIterImpl::copyToDirEntry()
 {
 	dirEntry.symlinkStatus.setPerms(Perms::Unknown);
 	dirEntry.symlinkStatus.setType(fileTypeFromDirEnt(*entry));
-	if (dirEntry.symlinkStatus.isSymlink())
+	if (!dirEntry.symlinkStatus.isSymlink())
 		dirEntry.status = dirEntry.symlinkStatus;
 	else
 	{

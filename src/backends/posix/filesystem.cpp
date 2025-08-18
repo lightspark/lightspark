@@ -25,6 +25,7 @@
 #include <sys/statvfs.h>
 #include <unistd.h>
 
+#include "utils/array.h"
 #include "utils/enum.h"
 #include "utils/filesystem.h"
 #include "utils/path.h"
@@ -259,7 +260,7 @@ Path fs::tempDirPath()
 
 	for (auto envVar : envVars)
 	{
-		auto tmpPath = getenv(*envVar);
+		auto tmpPath = getenv(envVar);
 		if (tmpPath != nullptr)
 			return Path(tmpPath);
 	}

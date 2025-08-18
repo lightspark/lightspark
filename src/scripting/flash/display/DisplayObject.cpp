@@ -451,7 +451,7 @@ void DisplayObject::sinit(Class_base* c)
 
 ASFUNCTIONBODY_SETTER_STRINGID_CB(DisplayObject,name,onSetName)
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObject,accessibilityProperties)
-ASFUNCTIONBODY_GETTER_SETTER_CB(DisplayObject,scrollRect,onSetScrollRect)
+ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE_CB(DisplayObject,scrollRect,asAtomHandler::undefinedAtom,onSetScrollRect)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationX)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, rotationY)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplayObject, metaData)
@@ -3883,7 +3883,7 @@ asAtom DisplayObject::getVariableBindingValue(const tiny_string &name)
 		*wrk->AVM1callStack.back() :
 		fallback
 	);
-
+	this->incRef();
 	auto pair = ctx.resolveVariablePath
 	(
 		asAtomHandler::fromObject(this),

@@ -127,6 +127,18 @@
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
 		ArgumentConversionAtom<decltype(th->name)>::cleanupOldValue(oldValue); \
 	}
+#define ASFUNCTIONBODY_SETTER_ATOMTYPE(c,name,a) \
+	void c::_setter_##name(asAtom& ret,ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	{ \
+			if(!asAtomHandler::is<c>(obj)) {\
+				createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+			c* th = asAtomHandler::as<c>(obj); \
+			if(argslen != 1) {\
+				createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+			decltype(th->name) oldValue = th->name; \
+			th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],a); \
+			ArgumentConversionAtom<decltype(th->name)>::cleanupOldValue(oldValue); \
+	}
 #define ASFUNCTIONBODY_SETTER_STATIC(c,name) \
 	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
@@ -177,6 +189,20 @@
 		ArgumentConversionAtom<decltype(th->name)>::cleanupOldValue(oldValue); \
 	}
 
+#define ASFUNCTIONBODY_SETTER_ATOMTYPE_CB(c,name,a,callback) \
+	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+	{ \
+			if(!asAtomHandler::is<c>(obj)) {\
+				createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+			c* th = asAtomHandler::as<c>(obj); \
+			if(argslen != 1) {\
+				createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+			decltype(th->name) oldValue = th->name; \
+			th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],a); \
+			th->callback(oldValue); \
+			ArgumentConversionAtom<decltype(th->name)>::cleanupOldValue(oldValue); \
+	}
+
 #define ASFUNCTIONBODY_SETTER_STRINGID_CB(c,name,callback) \
 	void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
 	{ \
@@ -195,6 +221,10 @@
 		ASFUNCTIONBODY_GETTER(c,name) \
 		ASFUNCTIONBODY_SETTER(c,name)
 
+#define ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE(c,name,a) \
+		ASFUNCTIONBODY_GETTER(c,name) \
+		ASFUNCTIONBODY_SETTER_ATOMTYPE(c,name,a)
+
 #define ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(c,name) \
 		ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
 		ASFUNCTIONBODY_SETTER_NOT_IMPLEMENTED(c,name)
@@ -202,6 +232,10 @@
 #define ASFUNCTIONBODY_GETTER_SETTER_CB(c,name,callback) \
 		ASFUNCTIONBODY_GETTER(c,name) \
 		ASFUNCTIONBODY_SETTER_CB(c,name,callback)
+
+#define ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE_CB(c,name,a,callback) \
+		ASFUNCTIONBODY_GETTER(c,name) \
+		ASFUNCTIONBODY_SETTER_ATOMTYPE_CB(c,name,a,callback)
 
 #define ASFUNCTIONBODY_GETTER_SETTER_STATIC(c,name) \
 		ASFUNCTIONBODY_GETTER_STATIC(c,name) \

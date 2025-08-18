@@ -90,7 +90,7 @@ asAtom AVM1Scope::resolveRecursiveByMultiname
 )
 {
 	asAtom ret = asAtomHandler::invalidAtom;
-	if (asAtomHandler::hasPropertyByMultiname(values,name, true, true, wrk))
+	if (asAtomHandler::hasPropertyByMultiname(values,name, true, _class != AVM1ScopeClass::Local, wrk))
 	{
 		asAtomHandler::AVM1getVariableByMultiname(values,ret, name, options, wrk, false);
 		return ret;

@@ -1193,7 +1193,6 @@ bool InteractiveObject::destruct()
 	doubleClickEnabled =false;
 	accessibilityImplementation.reset();
 	focusRect.reset();
-	tabEnabled = asAtomHandler::undefinedAtom;
 	tabIndex = -1;
 	ASATOM_REMOVESTOREDMEMBER(avm1tabindex);
 	avm1tabindex=asAtomHandler::undefinedAtom;
@@ -1288,8 +1287,8 @@ void InteractiveObject::AVM1SetupMethods(Class_base* c)
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, accessibilityImplementation)
-ASFUNCTIONBODY_GETTER_SETTER_CB(InteractiveObject, contextMenu,onContextMenu)
-ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabEnabled)
+ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE_CB(InteractiveObject, contextMenu,asAtomHandler::undefinedAtom,onContextMenu)
+ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE(InteractiveObject, tabEnabled,asAtomHandler::undefinedAtom)
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabIndex)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(InteractiveObject, focusRect) // stub
 
@@ -1355,6 +1354,7 @@ ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_getTabIndex)
 ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_setTabIndex)
 {
 	InteractiveObject* th=asAtomHandler::as<InteractiveObject>(obj);
+	ASATOM_REMOVESTOREDMEMBER(th->avm1tabindex);
 	th->avm1tabindex=asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(th->avm1tabindex,asAtomHandler::undefinedAtom));
 	if (asAtomHandler::isUndefined(th->avm1tabindex))

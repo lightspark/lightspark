@@ -106,41 +106,40 @@ void AVM1MovieClip::setColor(AVM1Color* c)
 
 ASFUNCTIONBODY_ATOM(AVM1MovieClip,startDrag)
 {
-	AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
-	bool lockcenter;
-	number_t x1, y1, x2, y2;
-	ARG_CHECK(ARG_UNPACK(lockcenter,false)(x1,0)(y1,0)(x2,0)(y2,0));
+	bool lockcenter=false;
+	if (argslen > 0)
+		lockcenter = asAtomHandler::AVM1toNumber(args[0],wrk->AVM1getSwfVersion());
 
-	if (th->droptarget)
+	Rectangle* rect = nullptr;
+	if (argslen > 4)
 	{
-		th->droptarget->removeStoredMember();
-		th->droptarget=nullptr;
+		rect = Class<Rectangle>::getInstanceS(wrk);
+		number_t x1=0, y1=0, x2=0, y2=0;
+		x1 = asAtomHandler::AVM1toNumber(args[1],wrk->AVM1getSwfVersion());
+		y1 = asAtomHandler::AVM1toNumber(args[2],wrk->AVM1getSwfVersion());
+		x2 = asAtomHandler::AVM1toNumber(args[3],wrk->AVM1getSwfVersion());
+		y2 = asAtomHandler::AVM1toNumber(args[4],wrk->AVM1getSwfVersion());
+		rect->x = x1;
+		rect->y = y1;
+		rect->width = x2-x1;
+		rect->height = y2-y1;
 	}
-	if (argslen > 1)
-	{
-		Rectangle* rect = Class<Rectangle>::getInstanceS(wrk);
-		asAtom fret = asAtomHandler::invalidAtom;
-		asAtom fobj = asAtomHandler::fromObject(rect);
-		asAtom fx1 = asAtomHandler::fromNumber(wrk, x1, false);
-		asAtom fy1 = asAtomHandler::fromNumber(wrk, y1, false);
-		asAtom fx2 = asAtomHandler::fromNumber(wrk, x2, false);
-		asAtom fy2 = asAtomHandler::fromNumber(wrk, y2, false);
-		Rectangle::_setLeft(fret,wrk,fobj,&fx1,1);
-		Rectangle::_setTop(fret,wrk,fobj,&fy1,1);
-		Rectangle::_setRight(fret,wrk,fobj,&fx2,1);
-		Rectangle::_setBottom(fret,wrk,fobj,&fy2,1);
-	
-		asAtom fargs[2];
-		fargs[0] = asAtomHandler::fromBool(lockcenter);
+	asAtom fargs[2];
+	fargs[0] = asAtomHandler::fromBool(lockcenter);
+	if (rect)
 		fargs[1] = asAtomHandler::fromObject(rect);
-		Sprite::_startDrag(ret,wrk,obj,fargs,2);
-	}
-	else
+	if (asAtomHandler::is<AVM1MovieClip>(obj))
 	{
-		asAtom fargs[1];
-		fargs[0] = asAtomHandler::fromBool(lockcenter);
-		Sprite::_startDrag(ret,wrk,obj,fargs,1);
+		AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
+		if (th->droptarget)
+		{
+			th->droptarget->removeStoredMember();
+			th->droptarget=nullptr;
+		}
+		Sprite::_startDrag(ret,wrk,obj,fargs,rect ? 2 : 1);
 	}
+	if (rect)
+		rect->decRef();
 }
 
 ASFUNCTIONBODY_ATOM(AVM1MovieClip,stopDrag)

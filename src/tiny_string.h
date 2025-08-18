@@ -102,6 +102,17 @@ public:
 		++(*this);
 		return result;
 	}
+	CharIterator& operator--() //prefix
+	{
+		buf_ptr = g_utf8_prev_char(buf_ptr);
+		return *this;
+	}
+	CharIterator operator--(int) // postfix
+	{
+		CharIterator result = *this;
+		--(*this);
+		return result;
+	}
 	bool operator==(const CharIterator& o) const
 	{
 		return buf_ptr == o.buf_ptr;

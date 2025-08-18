@@ -131,8 +131,8 @@ fs::RecursiveDirIter& fs::RecursiveDirIter::operator++()
 
 fs::RecursiveDirIter& fs::RecursiveDirIter::inc(std::error_code& code)
 {
-	bool isSymlink;
-	bool isDir;
+	bool isSymlink = false;
+	bool isDir = false;
 
 	try
 	{

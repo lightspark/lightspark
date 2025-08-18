@@ -550,10 +550,10 @@ bool isNotFoundError(const std::error_code& code);
 
 };
 
-DirIter begin(DirIter it) { return it; }
-DirIter end(const DirIter&) { return DirIter(); }
-RecursiveDirIter begin(RecursiveDirIter it) { return it; }
-RecursiveDirIter end(const RecursiveDirIter&) { return RecursiveDirIter(); }
+inline DirIter begin(DirIter it) { return it; }
+inline DirIter end(const DirIter&) { return DirIter(); }
+inline RecursiveDirIter begin(RecursiveDirIter it) { return it; }
+inline RecursiveDirIter end(const RecursiveDirIter&) { return RecursiveDirIter(); }
 
 };
 
@@ -562,10 +562,10 @@ namespace std
 #define DirIter lightspark::FileSystem::DirIter
 #define RecursiveDirIter lightspark::FileSystem::RecursiveDirIter
 
-DirIter begin(DirIter it) { return it; }
-DirIter end(const DirIter&) { return DirIter(); }
-RecursiveDirIter begin(RecursiveDirIter it) { return it; }
-RecursiveDirIter end(const RecursiveDirIter&) { return RecursiveDirIter(); }
+inline DirIter begin(DirIter it) { return it; }
+inline DirIter end(const DirIter&) { return DirIter(); }
+inline RecursiveDirIter begin(RecursiveDirIter it) { return it; }
+inline RecursiveDirIter end(const RecursiveDirIter&) { return RecursiveDirIter(); }
 
 #undef DirIter
 #undef RecursiveDirIter

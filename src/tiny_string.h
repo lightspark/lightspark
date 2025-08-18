@@ -378,6 +378,8 @@ public:
 	bool endsWith(const tiny_string& str) const;
 	bool startsWith(const char* o) const;
 	bool endsWith(const char* o) const;
+	bool startsWith(uint32_t ch) const { return charAt(0) == ch; }
+	bool endsWith(uint32_t ch) const { return charAt(numChars() - 1) == ch; }
 	/* idx is an index of utf-8 characters */
 	uint32_t charAt(uint32_t idx) const
 	{

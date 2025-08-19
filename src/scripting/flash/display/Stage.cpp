@@ -1267,9 +1267,9 @@ ASFUNCTIONBODY_ATOM(Stage,_getFrameRate)
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	_NR<RootMovieClip> root = th->getRoot();
 	if (root.isNull())
-		asAtomHandler::setNumber(ret,wrk,wrk->getSystemState()->mainClip->applicationDomain->getFrameRate());
+		wrk->setBuiltinCallResultLocalNumber(ret, wrk->getSystemState()->mainClip->applicationDomain->getFrameRate());
 	else
-		asAtomHandler::setNumber(ret,wrk,root->applicationDomain->getFrameRate());
+		wrk->setBuiltinCallResultLocalNumber(ret, root->applicationDomain->getFrameRate());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setFrameRate)

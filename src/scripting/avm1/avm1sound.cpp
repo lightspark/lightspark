@@ -116,7 +116,7 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getVolume)
 	{
 		if (!th->soundChannel->soundTransform)
 			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
-		asAtomHandler::setNumber(ret,wrk,th->soundChannel->soundTransform->volume);
+		wrk->setBuiltinCallResultLocalNumber(ret, th->soundChannel->soundTransform->volume);
 	}
 	else
 		asAtomHandler::setInt(ret,wrk,wrk->getSystemState()->static_SoundMixer_soundTransform->volume);

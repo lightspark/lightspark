@@ -195,7 +195,7 @@ ASFUNCTIONBODY_ATOM(Number,_toLocaleString)
 ASFUNCTIONBODY_ATOM(Number,generator)
 {
 	if(argslen==0)
-		asAtomHandler::setNumber(ret,wrk,0.);
+		wrk->setBuiltinCallResultLocalNumber(ret, 0.);
 	else if (asAtomHandler::isUndefined(args[0]) && !wrk->needsActionScript3())
 	{
 		if (wrk->AVM1getSwfVersion() < 7)
@@ -204,7 +204,7 @@ ASFUNCTIONBODY_ATOM(Number,generator)
 			ret = wrk->getSystemState()->nanAtom;
 	}
 	else
-		asAtomHandler::setNumber(ret,wrk,asAtomHandler::toNumber(args[0]));
+		wrk->setBuiltinCallResultLocalNumber(ret, asAtomHandler::toNumber(args[0]));
 }
 
 tiny_string Number::toString() const

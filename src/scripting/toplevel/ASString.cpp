@@ -850,7 +850,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 	{
 		tiny_string s = wrk->getSystemState()->getStringFromUniqueId(asAtomHandler::getStringId(obj));
 		if(index<0 || index>=(int64_t)s.numChars())
-			asAtomHandler::setNumber(ret,wrk,Number::NaN);
+			wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
 		else
 			asAtomHandler::setInt(ret,wrk,(int32_t)s.charAt(index));
 	}
@@ -858,7 +858,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 	{
 		ASString* th = asAtomHandler::as<ASString>(obj);
 		if(index<0 || index>=(int64_t)th->getData().numChars())
-			asAtomHandler::setNumber(ret,wrk,Number::NaN);
+			wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
 		else
 		{
 			uint32_t c = *(CharIterator((char*)(th->getData().raw_buf()+th->getBytePosition(index))));
@@ -869,7 +869,7 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 	{
 		tiny_string data = asAtomHandler::toString(obj,wrk);
 		if(index<0 || index>=(int64_t)data.numChars())
-			asAtomHandler::setNumber(ret,wrk,Number::NaN);
+			wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
 		else
 		{
 			//Character codes are expected to be positive

@@ -117,7 +117,7 @@ ASFUNCTIONBODY_ATOM(Timer,_getRunning)
 ASFUNCTIONBODY_ATOM(Timer,_getDelay)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->delay);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->delay);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setDelay)

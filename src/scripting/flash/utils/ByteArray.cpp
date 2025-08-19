@@ -860,7 +860,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readDouble)
 	th->position+=8;
 
 	th->unlock();
-	asAtomHandler::setNumber(ret,wrk,res);
+	wrk->setBuiltinCallResultLocalNumber(ret, res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
@@ -879,7 +879,7 @@ ASFUNCTIONBODY_ATOM(ByteArray,readFloat)
 	th->position+=4;
 
 	th->unlock();
-	asAtomHandler::setNumber(ret,wrk,res);
+	wrk->setBuiltinCallResultLocalNumber(ret, res);
 }
 
 ASFUNCTIONBODY_ATOM(ByteArray,readInt)

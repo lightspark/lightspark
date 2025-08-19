@@ -3753,7 +3753,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
-				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
+				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
 					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
 						&& state.operandlist.back().objtype == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
@@ -3768,7 +3768,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #ifdef ENABLE_OPTIMIZATION
 				if (opcode == code.peekbyte() && state.jumptargets.find(code.tellg()+1) == state.jumptargets.end())
 					break;
-				if (state.operandlist.empty() && state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
+				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && typestack.size() > 0 && typestack.back().obj == Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
 					break;
 				if (state.jumptargets.find(code.tellg()) == state.jumptargets.end() && state.operandlist.size() > 0
 						&& (state.operandlist.back().objtype == Class<UInteger>::getRef(mi->context->applicationDomain->getSystemState()).getPtr()

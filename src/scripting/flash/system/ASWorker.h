@@ -56,6 +56,7 @@ private:
 	std::vector<ABCContext*> contexts;
 	unordered_map<uint32_t,IFunction*> avm1ClassConstructorsCaseSensitive;
 	unordered_map<uint32_t,IFunction*> avm1ClassConstructorsCaseInsensitive;
+	uint16_t builtinCallResultlocalnumber;
 public:
 	Stage* stage; // every worker has its own stage. In case of the primordial worker this points to the stage of the SystemState.
 	asfreelist* freelist;
@@ -161,6 +162,18 @@ public:
 	std::list<uint8_t*> nativeExtensionStringlist;
 	uint32_t nativeExtensionCallCount;
 	void handleInternalEvent(Event* e);
+	void setBuiltinCallResultLocalNumber(asAtom& ret, number_t value)
+	{
+		asAtomHandler::setNumber(ret,this,value,builtinCallResultlocalnumber);
+	}
+	void pushBuiltinCallResultLocalNumber(uint16_t resultlocalnumberpos)
+	{
+		builtinCallResultlocalnumber= resultlocalnumberpos;
+	}
+	void popBuiltinCallResultLocalNumber()
+	{
+		builtinCallResultlocalnumber=UINT16_MAX;
+	}
 };
 
 }

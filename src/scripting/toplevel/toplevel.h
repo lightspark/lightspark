@@ -234,12 +234,6 @@ public:
 #ifdef PROFILING_SUPPORT
 		uint64_t t1 = compat_get_thread_cputime_us();
 #endif
-		// prepare result as NaN local number if
-		// result will be local number and it will not replace the same previous local number
-		if (resultlocalnumberpos != UINT16_MAX &&
-				(!asAtomHandler::isLocalNumber(ret) || ret.uintval>>8 != resultlocalnumberpos))
-			asAtomHandler::setNumber(ret,wrk,numeric_limits<double>::quiet_NaN(),resultlocalnumberpos);
-
 		/*
 		 * We do not enforce ABCVm::limits.max_recursion here.
 		 * This should be okey, because there is no infinite recursion
@@ -247,7 +241,9 @@ public:
 		 * Additionally, we still need to run builtin code (such as the ASError constructor) when
 		 * ABCVm::limits.max_recursion is reached in SyntheticFunction::call.
 		 */
+		wrk->pushBuiltinCallResultLocalNumber(resultlocalnumberpos);
 		val_atom(ret,wrk,obj,args,num_args);
+		wrk->popBuiltinCallResultLocalNumber();
 		if (asAtomHandler::isInvalid(ret))
 			ret = asAtomHandler::undefinedAtom; // ensure we always have a valid result for cases where callproperty is done on a void method
 #ifdef PROFILING_SUPPORT
@@ -259,12 +255,9 @@ public:
 	bool isEqual(ASObject* r) override;
 	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target,ASWorker* wrk, uint16_t resultlocalnumberpos) override
 	{
-		// prepare result as NaN local number if
-		// result will be local number and it will not replace the same previous local number
-		if (resultlocalnumberpos != UINT16_MAX &&
-			(!asAtomHandler::isLocalNumber(ret) || ret.uintval>>8 != resultlocalnumberpos))
-			asAtomHandler::setNumber(ret,wrk,numeric_limits<double>::quiet_NaN(),resultlocalnumberpos);
+		wrk->pushBuiltinCallResultLocalNumber(resultlocalnumberpos);
 		val_atom(ret,wrk,target,nullptr,0);
+		wrk->popBuiltinCallResultLocalNumber();
 		return nullptr;
 	}
 	Class_base* getReturnType(bool opportunistic=false) override;

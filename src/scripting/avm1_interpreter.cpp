@@ -916,13 +916,15 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					multiname m(nullptr);
 					m.name_type = multiname::NAME_STRING;
 					m.name_s_id = nameID;
-					context->getScope()->setVariableByMultiname
-					(
-						m,
-						e,
-						CONST_ALLOWED,
-						wrk
-					);
+					if (context->getScope()->setVariableByMultiname
+						(
+							m,
+							e,
+							CONST_ALLOWED,
+							wrk
+						))
+						ASATOM_DECREF(e);
+
 				}
 				else if(trycatchblock.reg != UINT8_MAX)
 				{
@@ -2590,7 +2592,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						asAtom obj = context->getVariable(thisObj, originalclip, clip, s2);
 						asAtom ret = asAtomHandler::invalidAtom;
 						if (asAtomHandler::is<MovieClip>(obj))
+						{
 							MovieClip::AVM1UnloadMovie(ret,wrk,obj,nullptr,0);
+							ASATOM_DECREF(obj);
+						}
 						else
 							LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetURL clip not found "<<s1<<" "<<s2<<" "<<asAtomHandler::toDebugString(obj));
 					}
@@ -3287,6 +3292,20 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				break;
 		}
 		++context->actionsExecuted;
+	}
+	while (curdepth > 0)
+	{
+		// ActionReturn reached inside "with"
+		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" end with "<<asAtomHandler::toDebugString(context->getScope()->getLocals()));
+		AVM1Scope* sc = context->getScope()->getParentScope();
+		if (sc)
+		{
+			sc->incRef();
+			ASATOM_REMOVESTOREDMEMBER(sc->getLocals());
+		}
+		context->setScope(sc);
+		curdepth--;
+		Log::calls_indent--;
 	}
 	if (scope && isClosure)
 	{

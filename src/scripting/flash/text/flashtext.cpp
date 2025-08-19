@@ -597,7 +597,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setHeight)
 ASFUNCTIONBODY_ATOM(TextField,_getTextFieldX)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->originalXPosition+th->autosizeposition);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->originalXPosition+th->autosizeposition);
 }
 ASFUNCTIONBODY_ATOM(TextField,_setTextFieldX)
 {

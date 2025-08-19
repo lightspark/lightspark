@@ -3066,7 +3066,12 @@ FORCE_INLINE void asAtomHandler::add_i(asAtom& a, ASWorker* wrk, asAtom &v2)
 	LOG_CALL("add_i " << num1 << '+' << num2);
 	int64_t res = num1+num2;
 	if (res >= INT32_MAX || res <= INT32_MIN)
-		setNumber(a,wrk,res);
+	{
+		if (res >=0 && res <= UINT32_MAX)
+			setUInt(a,wrk,res);
+		else
+			setNumber(a,wrk,res);
+	}
 	else
 		setInt(a,wrk,res);
 }

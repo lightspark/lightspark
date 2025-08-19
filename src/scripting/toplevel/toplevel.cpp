@@ -885,7 +885,7 @@ ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 
 	if((radix != 0) && ((radix < 2) || (radix > 36)))
 	{
-		asAtomHandler::setNumber(ret,wrk,numeric_limits<double>::quiet_NaN());
+		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
 		return;
 	}
 
@@ -894,11 +894,11 @@ ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 	bool valid=Integer::fromStringFlashCompatible(cur,res,radix);
 
 	if(valid==false)
-		asAtomHandler::setNumber(ret,wrk,numeric_limits<double>::quiet_NaN());
+		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
 	else if (res < INT32_MAX && res > INT32_MIN)
 		asAtomHandler::setInt(ret,wrk,(int32_t)res);
 	else
-		asAtomHandler::setNumber(ret,wrk,res);
+		wrk->setBuiltinCallResultLocalNumber(ret, res);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,parseFloat)
@@ -906,7 +906,7 @@ ASFUNCTIONBODY_ATOM(lightspark,parseFloat)
 	tiny_string str;
 	ARG_CHECK(ARG_UNPACK (str, ""));
 
-	asAtomHandler::setNumber(ret,wrk,parseNumber(str,wrk->getSystemState()->getSwfVersion()<11));
+	wrk->setBuiltinCallResultLocalNumber(ret, parseNumber(str,wrk->getSystemState()->getSwfVersion()<11));
 }
 number_t lightspark::parseNumber(const tiny_string str, bool useoldversion)
 {

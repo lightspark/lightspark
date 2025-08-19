@@ -103,11 +103,11 @@ ASFUNCTIONBODY_ATOM(SoundTransform,_get_pan)
 {
 	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
 	if (th->leftToRight != 0.0 || th->rightToLeft != 0.0)
-		asAtomHandler::setNumber(ret,wrk,0.0);
+		wrk->setBuiltinCallResultLocalNumber(ret, 0.0);
 	else
 	{
 		number_t n = number_t(th->leftToLeft/100.0);
-		asAtomHandler::setNumber(ret,wrk,1.0-n*n);
+		wrk->setBuiltinCallResultLocalNumber(ret, 1.0-n*n);
 	}
 }
 ASFUNCTIONBODY_ATOM(SoundTransform,_set_pan)
@@ -121,7 +121,7 @@ ASFUNCTIONBODY_ATOM(SoundTransform,_get_volume)
 {
 	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
 	number_t n = number_t(th->volume)/100.0;
-	asAtomHandler::setNumber(ret,wrk,n);
+	wrk->setBuiltinCallResultLocalNumber(ret, n);
 }
 ASFUNCTIONBODY_ATOM(SoundTransform,_set_volume)
 {

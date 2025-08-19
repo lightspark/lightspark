@@ -314,7 +314,7 @@ ASFUNCTIONBODY_ATOM(Capabilities,_maxLevelIDC)
 ASFUNCTIONBODY_ATOM(Capabilities,_pixelAspectRatio)
 {
     LOG(LOG_NOT_IMPLEMENTED,"Capabilities.pixelAspectRatio always returns 1");
-    asAtomHandler::setNumber(ret,wrk,1);
+	wrk->setBuiltinCallResultLocalNumber(ret, 1);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_screenColor)
@@ -365,7 +365,7 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getHasAccessibility)
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenDPI)
 {
 	number_t dpi = wrk->getSystemState()->getEngineData()->getScreenDPI();
-	asAtomHandler::setNumber(ret,wrk,dpi);
+	wrk->setBuiltinCallResultLocalNumber(ret, dpi);
 }
 
 LoaderContext::LoaderContext(ASWorker* wrk, Class_base* c):

@@ -164,7 +164,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,getColor)
 ASFUNCTIONBODY_ATOM(ColorTransform,getRedMultiplier)
 {
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->redMultiplier);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->redMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setRedMultiplier)
@@ -177,7 +177,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setRedMultiplier)
 ASFUNCTIONBODY_ATOM(ColorTransform,getGreenMultiplier)
 {
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->greenMultiplier);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->greenMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setGreenMultiplier)
@@ -190,7 +190,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setGreenMultiplier)
 ASFUNCTIONBODY_ATOM(ColorTransform,getBlueMultiplier)
 {
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->blueMultiplier);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->blueMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setBlueMultiplier)
@@ -203,7 +203,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setBlueMultiplier)
 ASFUNCTIONBODY_ATOM(ColorTransform,getAlphaMultiplier)
 {
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->alphaMultiplier);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->alphaMultiplier);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaMultiplier)
@@ -216,7 +216,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaMultiplier)
 ASFUNCTIONBODY_ATOM(ColorTransform,getRedOffset)
 {
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->redOffset);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->redOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setRedOffset)
@@ -229,7 +229,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setRedOffset)
 ASFUNCTIONBODY_ATOM(ColorTransform,getGreenOffset)
 {
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->greenOffset);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->greenOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setGreenOffset)
@@ -242,7 +242,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setGreenOffset)
 ASFUNCTIONBODY_ATOM(ColorTransform,getBlueOffset)
 {
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->blueOffset);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->blueOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setBlueOffset)
@@ -255,7 +255,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setBlueOffset)
 ASFUNCTIONBODY_ATOM(ColorTransform,getAlphaOffset)
 {
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->alphaOffset);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->alphaOffset);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,setAlphaOffset)
@@ -604,7 +604,7 @@ bool Matrix::destruct()
 ASFUNCTIONBODY_ATOM(Matrix,_get_a)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->matrix.xx);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->matrix.xx);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_a)
@@ -617,7 +617,7 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_a)
 ASFUNCTIONBODY_ATOM(Matrix,_get_b)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->matrix.yx);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->matrix.yx);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_b)
@@ -630,7 +630,7 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_b)
 ASFUNCTIONBODY_ATOM(Matrix,_get_c)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->matrix.xy);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->matrix.xy);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_c)
@@ -643,7 +643,7 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_c)
 ASFUNCTIONBODY_ATOM(Matrix,_get_d)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->matrix.yy);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->matrix.yy);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_d)
@@ -656,7 +656,7 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_d)
 ASFUNCTIONBODY_ATOM(Matrix,_get_tx)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->matrix.x0);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->matrix.x0);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_tx)
@@ -669,7 +669,7 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_tx)
 ASFUNCTIONBODY_ATOM(Matrix,_get_ty)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->matrix.y0);
+	wrk->setBuiltinCallResultLocalNumber(ret, th->matrix.y0);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_ty)

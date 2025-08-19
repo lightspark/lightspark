@@ -242,11 +242,11 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,canonicalizeNumber)
 		case T_UINTEGER:
 		case T_NULL:
 		case T_UNDEFINED:
-			asAtomHandler::setNumber(ret,wrk,o->toNumber());
+			wrk->setBuiltinCallResultLocalNumber(ret, o->toNumber());
 			break;
 		case T_QNAME:
 		case T_NAMESPACE:
-			asAtomHandler::setNumber(ret,wrk,Number::NaN);
+			wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
 			break;
 		default:
 			o->incRef();

@@ -2373,7 +2373,7 @@ ASFUNCTIONBODY_ATOM(NetStream,_getTime)
 {
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	if(th->isReady())
-		asAtomHandler::setNumber(ret,wrk,th->getStreamTime()/1000.);
+		wrk->setBuiltinCallResultLocalNumber(ret, th->getStreamTime()/1000.);
 	else
 		asAtomHandler::setUInt(ret,wrk,0);
 }
@@ -2383,7 +2383,7 @@ ASFUNCTIONBODY_ATOM(NetStream,_getCurrentFPS)
 	//TODO: provide real FPS (what really is displayed)
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	if(th->isReady() && !th->paused)
-		asAtomHandler::setNumber(ret,wrk,th->getFrameRate());
+		wrk->setBuiltinCallResultLocalNumber(ret, th->getFrameRate());
 	else
 		asAtomHandler::setUInt(ret,wrk,0);
 }

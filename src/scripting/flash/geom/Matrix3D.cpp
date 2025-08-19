@@ -1044,7 +1044,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,invert)
 ASFUNCTIONBODY_ATOM(Matrix3D,_get_determinant)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
-	asAtomHandler::setNumber(ret,wrk,th->getDeterminant());
+	wrk->setBuiltinCallResultLocalNumber(ret, th->getDeterminant());
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,_get_rawData)
 {

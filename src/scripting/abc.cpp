@@ -599,8 +599,20 @@ ABCContext::ABCContext(ApplicationDomain* appDomain,SecurityDomain* secDomain, i
 	constantAtoms_doubles.resize(constant_pool.doubles.size());
 	for (uint32_t i = 0; i < constant_pool.doubles.size(); i++)
 	{
-		ASObject* res = abstract_d_constant(applicationDomain->getInstanceWorker(),constant_pool.doubles[i]);
-		constantAtoms_doubles[i] = asAtomHandler::fromObject(res);
+		number_t n = constant_pool.doubles[i];
+		if (Number::isInteger(n)  &&
+#ifdef LIGHTSPARK_64
+			n >= INT32_MIN && n <= INT32_MAX
+#else
+			n > INT32_MIN>>3 && n < INT32_MAX>>3
+#endif
+			)
+			constantAtoms_doubles[i] = asAtomHandler::fromInt(n);
+		else
+		{
+			ASObject* res = abstract_d_constant(applicationDomain->getInstanceWorker(),n);
+			constantAtoms_doubles[i] = asAtomHandler::fromObject(res);
+		}
 	}
 	constantAtoms_strings.resize(constant_pool.strings.size());
 	for (uint32_t i = 0; i < constant_pool.strings.size(); i++)
@@ -2282,6 +2294,21 @@ asAtom* ABCContext::getConstantAtom(OPERANDTYPES kind, int index)
 uint32_t ABCContext::addCachedConstantAtom(asAtom a)
 {
 	++atomsCachedMaxID;
+	if (asAtomHandler::isNumber(a))
+	{
+		number_t n = asAtomHandler::getNumber(this->applicationDomain->getInstanceWorker(),a);
+		if (Number::isInteger(n)  &&
+#ifdef LIGHTSPARK_64
+			n >= INT32_MIN && n <= INT32_MAX
+#else
+			n > INT32_MIN>>3 && n < INT32_MAX>>3
+#endif
+			)
+		{
+			ASATOM_DECREF(a);
+			a = asAtomHandler::fromInt(n);
+		}
+	}
 	constantAtoms_cached[atomsCachedMaxID]=a;
 	return atomsCachedMaxID;
 }

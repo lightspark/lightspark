@@ -75,7 +75,7 @@ ASFUNCTIONBODY_ATOM(Math,atan2)
 {
 	number_t n1, n2;
 	ARG_CHECK(ARG_UNPACK (n1) (n2));
-	asAtomHandler::setNumber(ret,wrk,::atan2(n1,n2));
+	wrk->setBuiltinCallResultLocalNumber(ret, ::atan2(n1,n2));
 }
 
 ASFUNCTIONBODY_ATOM(Math,_max)
@@ -101,7 +101,7 @@ ASFUNCTIONBODY_ATOM(Math,_max)
 	if (isint)
 		asAtomHandler::setInt(ret,wrk,largest);
 	else
-		asAtomHandler::setNumber(ret,wrk,largest);
+		wrk->setBuiltinCallResultLocalNumber(ret, largest);
 }
 
 ASFUNCTIONBODY_ATOM(Math,_min)
@@ -127,14 +127,14 @@ ASFUNCTIONBODY_ATOM(Math,_min)
 	if (isint)
 		asAtomHandler::setInt(ret,wrk,smallest);
 	else
-		asAtomHandler::setNumber(ret,wrk,smallest);
+		wrk->setBuiltinCallResultLocalNumber(ret, smallest);
 }
 
 ASFUNCTIONBODY_ATOM(Math,exp)
 {
 	number_t n;
 	ARG_CHECK(ARG_UNPACK (n));
-	asAtomHandler::setNumber(ret,wrk,::exp(n));
+	wrk->setBuiltinCallResultLocalNumber(ret, ::exp(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,acos)
@@ -142,7 +142,7 @@ ASFUNCTIONBODY_ATOM(Math,acos)
 	//Angle is in radians
 	number_t n;
 	ARG_CHECK(ARG_UNPACK (n));
-	asAtomHandler::setNumber(ret,wrk,::acos(n));
+	wrk->setBuiltinCallResultLocalNumber(ret, ::acos(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,asin)
@@ -150,7 +150,7 @@ ASFUNCTIONBODY_ATOM(Math,asin)
 	//Angle is in radians
 	number_t n;
 	ARG_CHECK(ARG_UNPACK (n));
-	asAtomHandler::setNumber(ret,wrk,::asin(n));
+	wrk->setBuiltinCallResultLocalNumber(ret, ::asin(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,atan)
@@ -158,7 +158,7 @@ ASFUNCTIONBODY_ATOM(Math,atan)
 	//Angle is in radians
 	number_t n;
 	ARG_CHECK(ARG_UNPACK (n));
-	asAtomHandler::setNumber(ret,wrk,::atan(n));
+	wrk->setBuiltinCallResultLocalNumber(ret, ::atan(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,cos)
@@ -166,7 +166,7 @@ ASFUNCTIONBODY_ATOM(Math,cos)
 	//Angle is in radians
 	number_t n;
 	ARG_CHECK(ARG_UNPACK (n));
-	asAtomHandler::setNumber(ret,wrk,::cos(n));
+	wrk->setBuiltinCallResultLocalNumber(ret, ::cos(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,sin)
@@ -174,7 +174,7 @@ ASFUNCTIONBODY_ATOM(Math,sin)
 	//Angle is in radians
 	number_t n;
 	ARG_CHECK(ARG_UNPACK (n));
-	asAtomHandler::setNumber(ret,wrk,::sin(n));
+	wrk->setBuiltinCallResultLocalNumber(ret, ::sin(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,tan)
@@ -182,7 +182,7 @@ ASFUNCTIONBODY_ATOM(Math,tan)
 	//Angle is in radians
 	number_t n;
 	ARG_CHECK(ARG_UNPACK (n));
-	asAtomHandler::setNumber(ret,wrk,::tan(n));
+	wrk->setBuiltinCallResultLocalNumber(ret, ::tan(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,abs)
@@ -208,7 +208,7 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 			asAtomHandler::set(ret,a);
 			break;
 		case T_UNDEFINED:
-			asAtomHandler::setNumber(ret,wrk,Number::NaN);
+			wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
 			break;
 		case T_NULL:
 			asAtomHandler::setInt(ret,wrk,(int32_t)0);
@@ -219,7 +219,7 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 			if (n  == 0.)
 				asAtomHandler::setInt(ret,wrk,(int32_t)0);
 			else
-				asAtomHandler::setNumber(ret,wrk,(number_t)::fabs(n));
+				wrk->setBuiltinCallResultLocalNumber(ret, ::fabs(n));
 			break;
 		}
 		default:
@@ -228,7 +228,7 @@ ASFUNCTIONBODY_ATOM(Math,abs)
 			if (n  == 0.)
 				asAtomHandler::setInt(ret,wrk,(int32_t)0);
 			else
-				asAtomHandler::setNumber(ret,wrk,(number_t)::fabs(n));
+				wrk->setBuiltinCallResultLocalNumber(ret, ::fabs(n));
 			break;
 		}
 	}
@@ -239,26 +239,26 @@ ASFUNCTIONBODY_ATOM(Math,ceil)
 	number_t n;
 	ARG_CHECK(ARG_UNPACK (n));
 	if (std::isnan(n))
-		asAtomHandler::setNumber(ret,wrk,Number::NaN);
+		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
 	else if (n == 0.)
-		asAtomHandler::setNumber(ret,wrk,std::signbit(n) ? -0. : 0.);
+		wrk->setBuiltinCallResultLocalNumber(ret, std::signbit(n) ? -0. : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
 	{
 		number_t n2 = ::ceil(n);
 		if (n2 == 0.)
-			asAtomHandler::setNumber(ret,wrk,std::signbit(n2) ? -0. : 0.);
+			wrk->setBuiltinCallResultLocalNumber(ret, std::signbit(n2) ? -0. : 0.);
 		else
 			asAtomHandler::setInt(ret,wrk,(int32_t)n2);
 	}
 	else
-		asAtomHandler::setNumber(ret,wrk,::ceil(n));
+		wrk->setBuiltinCallResultLocalNumber(ret, ::ceil(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,log)
 {
 	number_t n;
 	ARG_CHECK(ARG_UNPACK (n));
-	asAtomHandler::setNumber(ret,wrk,::log(n));
+	wrk->setBuiltinCallResultLocalNumber(ret, ::log(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,floor)
@@ -266,17 +266,17 @@ ASFUNCTIONBODY_ATOM(Math,floor)
 	number_t n;
 	ARG_CHECK(ARG_UNPACK (n));
 	if (n == 0.)
-		asAtomHandler::setNumber(ret,wrk,std::signbit(n) ? -0. : 0.);
+		wrk->setBuiltinCallResultLocalNumber(ret, std::signbit(n) ? -0. : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
 	{
 		number_t n2 = ::floor(n);
 		if (n2 == 0.)
-			asAtomHandler::setNumber(ret,wrk,std::signbit(n2) ? -0. : 0.);
+			wrk->setBuiltinCallResultLocalNumber(ret, std::signbit(n2) ? -0. : 0.);
 		else
 			asAtomHandler::setInt(ret,wrk,(int32_t)n2);
 	}
 	else
-		asAtomHandler::setNumber(ret,wrk,(number_t)::floor(n));
+		wrk->setBuiltinCallResultLocalNumber(ret, ::floor(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,round)
@@ -293,24 +293,24 @@ ASFUNCTIONBODY_ATOM(Math,round)
 		ARG_CHECK(ARG_UNPACK (n,1.0));
 	}
 	if (std::isnan(n))
-		asAtomHandler::setNumber(ret,wrk,Number::NaN);
+		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
 	else if (n < 0 && n >= -0.5)
 		// it seems that adobe violates ECMA-262, chapter 15.8.2 on Math class, but avmplus got it right on Number class
-		asAtomHandler::setNumber(ret,wrk,asAtomHandler::getObject(obj) == Class<Number>::getClass(wrk->getSystemState()) ? -0. : 0.);
+		wrk->setBuiltinCallResultLocalNumber(ret, asAtomHandler::getObject(obj) == Class<Number>::getClass(wrk->getSystemState()) ? -0. : 0.);
 	else if (n == 0.)
 		// it seems that adobe violates ECMA-262, chapter 15.8.2 on Math class, but avmplus got it right on Number class
-		asAtomHandler::setNumber(ret,wrk,asAtomHandler::getObject(obj) == Class<Number>::getClass(wrk->getSystemState()) ? (std::signbit(n) ? -0. : 0.) : 0.);
+		wrk->setBuiltinCallResultLocalNumber(ret, asAtomHandler::getObject(obj) == Class<Number>::getClass(wrk->getSystemState()) ? (std::signbit(n) ? -0. : 0.) : 0.);
 	else if (n > INT32_MIN && n < INT32_MAX)
 		asAtomHandler::setInt(ret,wrk,(int32_t)::floor(n+0.5));
 	else
-		asAtomHandler::setNumber(ret,wrk,(number_t)::floor(n+0.5));
+		wrk->setBuiltinCallResultLocalNumber(ret, ::floor(n+0.5));
 }
 
 ASFUNCTIONBODY_ATOM(Math,sqrt)
 {
 	number_t n;
 	ARG_CHECK(ARG_UNPACK (n));
-	asAtomHandler::setNumber(ret,wrk,::sqrt(n));
+	wrk->setBuiltinCallResultLocalNumber(ret, ::sqrt(n));
 }
 
 ASFUNCTIONBODY_ATOM(Math,pow)
@@ -318,16 +318,16 @@ ASFUNCTIONBODY_ATOM(Math,pow)
 	number_t x, y;
 	ARG_CHECK(ARG_UNPACK (x) (y));
 	if (::fabs(x) == 1 && (std::isnan(y) || std::isinf(y)) )
-		asAtomHandler::setNumber(ret,wrk,Number::NaN);
+		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
 	else if (std::isinf(x) && x<0 && y<0 && Number::isInteger(y))
 	{
 		// special case, see ruffle test from_avmplus/as3/Types/Number/pow
-		asAtomHandler::setNumber(ret,wrk,-0.0);
+		wrk->setBuiltinCallResultLocalNumber(ret, -0.0);
 	}
 	else if (x==0 && std::signbit(x) && y>0 && Number::isInteger(y))
 	{
 		// special case, see ruffle test from_avmplus/as3/Types/Number/pow
-		asAtomHandler::setNumber(ret,wrk,uint64_t(y)%2 ? -0.0 : 0.0);
+		wrk->setBuiltinCallResultLocalNumber(ret, uint64_t(y)%2 ? -0.0 : 0.0);
 	}
 	else
 	{
@@ -340,10 +340,10 @@ ASFUNCTIONBODY_ATOM(Math,pow)
 			else if (val > 0 && val < UINT32_MAX)
 				asAtomHandler::setUInt(ret,wrk,val);
 			else
-				asAtomHandler::setNumber(ret,wrk,val);
+				wrk->setBuiltinCallResultLocalNumber(ret, val);
 		}
 		else
-			asAtomHandler::setNumber(ret,wrk,val);
+			wrk->setBuiltinCallResultLocalNumber(ret, val);
 	}
 }
 
@@ -360,7 +360,7 @@ ASFUNCTIONBODY_ATOM(Math,random)
 
 	number_t res=rand();
 	res/=(number_t(1.)+RAND_MAX)*max;
-	asAtomHandler::setNumber(ret,wrk,res);
+	wrk->setBuiltinCallResultLocalNumber(ret, res);
 }
 
 

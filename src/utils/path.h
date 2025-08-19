@@ -213,7 +213,7 @@ public:
 
 	Path& operator+=(const ValueType& other)
 	{
-		if (path.empty() || path.endsWith(nativeSeparator))
+		if (path.empty() || !path.endsWith(nativeSeparator))
 			path += other == genericSeparator ? nativeSeparator : other;
 
 		checkLongPath();

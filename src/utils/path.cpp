@@ -162,6 +162,55 @@ Path& Path::operator/=(const Path& other)
 	return *this;
 }
 
+bool Path::hasRootNamePrefix() const
+{
+	const auto prefix = StringType::fromChar(nativeSeparator) + nativeSeparator;
+
+	return
+	(
+		path.numChars() > prefixLength + 2 &&
+		path.find(prefix) == prefixLength &&
+		path[prefixLength + 2] != nativeSeparator
+	);
+}
+
+size_t Path::rootNameLength() const
+{
+	size_t ret = rootNameLengthImpl();
+	if (ret > 0)
+		return ret;
+
+	if (!hasRootNamePrefix())
+		return 0;
+
+	size_t pos = path.find(StringType::fromChar(nativeSeparator), prefixLength + 3);
+	return pos != StringType::npos ? pos : path.numChars();
+}
+
+void Path::postprocessPath(const Format& format)
+{
+	// TODO: Throw on invalid UTF-8 data.
+
+	postprocessPathImpl(format);
+
+	StringSizeType offset = hasRootNamePrefix() ? 2 : 0;
+
+	StringType newPath;
+	size_t newEnd = prefixLength + offset;
+
+	for (size_t i = newEnd; i < path.numChars(); ++i)
+	{
+		bool isSame =
+		(
+			path[newEnd] == path[i] &&
+			path[newEnd] == nativeSeparator
+		);
+		if (!isSame && ++newEnd != i)
+			newPath += path[i];
+	}
+	path = newPath;
+}
+
 Path& Path::removeFilename()
 {
 	if (hasFilename())
@@ -182,6 +231,20 @@ Path& Path::replaceExtension(const Path& _path)
 	if (!_path.path.startsWith("."))
 		path += '.';
 	return concat(_path);
+}
+
+void Path::appendName(const StringPtr name)
+{
+	if (path.empty())
+	{
+		*this /= Path(name);
+		return;
+	}
+
+	if (!path.endsWith(StringType::fromChar(nativeSeparator)))
+		path += nativeSeparator;
+	path += name;
+	checkLongPath();
 }
 
 const StringType& Path::getGenericStr() const

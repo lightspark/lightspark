@@ -33,8 +33,8 @@ struct iterator_traits<lightspark::CharIterator>
 	using difference_type = size_t;
 	using value_type = uint32_t;
 	using pointer = char*;
-	using reference = char&;
-	using iterator_category = forward_iterator_tag;
+	using reference = uint32_t;
+	using iterator_category = bidirectional_iterator_tag;
 };
 
 };
@@ -114,8 +114,11 @@ private:
 	friend Path FileSystem::canonical(const Path& path);
 	friend bool FileSystem::createDirs(const Path& path);
 
+	size_t rootNameLengthImpl() const;
+	bool hasRootNamePrefix() const;
 	size_t rootNameLength() const;
 	int compareImpl(const Path& other) const;
+	void postprocessPathImpl(const Format& format);
 	void postprocessPath(const Format& format);
 	void checkLongPath();
 

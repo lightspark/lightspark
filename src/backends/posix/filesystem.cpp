@@ -337,6 +337,12 @@ fs::FileStatus fs::symlinkStatus(const Path& path)
 	return FileStatus(FileType::NotFound);
 }
 
+void fs::createHardLink(const Path& to, const Path& newHardLink)
+{
+	if (link(to.rawBuf(), newHardLink.rawBuf()) < 0)
+		throw Exception(to, newHardLink, std::errc(errno));
+}
+
 size_t fs::hardLinkCount(const Path& path)
 {
 	FileStatus fileStatus = status(path);

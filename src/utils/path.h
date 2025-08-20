@@ -262,7 +262,7 @@ public:
 	Path& replaceExtension(const Path& path = Path());
 
 	const StringType& getNativeStr() const { return path; }
-	const StringType& getGenericStr() const;
+	StringType getGenericStr() const;
 	const StringType& getStr() const { return getNativeStr(); }
 	ConstStrPtr rawBuf() const { return getNativeStr().raw_buf(); }
 	operator StringType() const { return getNativeStr(); }

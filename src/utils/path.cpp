@@ -247,7 +247,7 @@ void Path::appendName(const StringPtr name)
 	checkLongPath();
 }
 
-const StringType& Path::getGenericStr() const
+StringType Path::getGenericStr() const
 {
 	auto ret = path;
 	auto sepStr = StringType::fromChar(genericSeparator);

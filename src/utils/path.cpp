@@ -126,7 +126,7 @@ Path& Path::operator/=(const Path& other)
 {
 	if (other.empty())
 	{
-		tiny_string str = StringType::fromChar(nativeSeparator) + ':';
+		tiny_string str = StringType::fromChar(nativeSeparator) + ":";
 		if (!path.empty() && path.findLast(str) == StringType::npos)
 			path += nativeSeparator;
 		return *this;
@@ -164,7 +164,11 @@ Path& Path::operator/=(const Path& other)
 
 bool Path::hasRootNamePrefix() const
 {
-	const auto prefix = StringType::fromChar(nativeSeparator) + nativeSeparator;
+	const auto prefix =
+	(
+		StringType::fromChar(nativeSeparator) +
+		StringType::fromChar(nativeSeparator)
+	);
 
 	return
 	(
@@ -338,7 +342,7 @@ Path Path::getParent() const
 		return Path();
 	
 	auto it = end().dec(path.end());
-	auto it2 = std::next(path.begin(), rootLen)
+	auto it2 = std::next(path.begin(), rootLen);
 	if (std::distance(it, it2) <= 0 && *it != nativeSeparator)
 		--it;
 	return Path(path.begin(), it, Format::Native);

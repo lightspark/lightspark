@@ -600,7 +600,7 @@ ABCContext::ABCContext(ApplicationDomain* appDomain,SecurityDomain* secDomain, i
 	for (uint32_t i = 0; i < constant_pool.doubles.size(); i++)
 	{
 		number_t n = constant_pool.doubles[i];
-		if (Number::isInteger(n)  &&
+		if (Number::isInteger(n) && (n!= 0 || !std::signbit(n)) &&
 #ifdef LIGHTSPARK_64
 			n >= INT32_MIN && n <= INT32_MAX
 #else

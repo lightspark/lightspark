@@ -222,7 +222,7 @@ public:
 	tiny_string(const tiny_string& r);
 	tiny_string(const std::string& r);
 	tiny_string(std::istream& in, int len);
-	tiny_string(const CharIterator& first, const CharIterator& last);
+	tiny_string(CharIterator first, CharIterator last);
 	~tiny_string();
 	uint32_t operator[](size_t i) const { return charAt(i); }
 	tiny_string& operator=(const tiny_string& s);

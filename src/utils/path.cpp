@@ -257,7 +257,7 @@ StringType Path::getGenericStr() const
 	for (size_t i = 0; i < ret.numChars(); ++i)
 	{
 		if (ret[i] == nativeSeparator)
-			ret.replace(i, 0, sepStr);
+			ret.replace(i, 1, sepStr);
 	}
 	return ret;
 }

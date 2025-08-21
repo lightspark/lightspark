@@ -36,7 +36,7 @@ ConstStrIter Path::Iter::inc(const ConstStrIter& pos) const
 
 	auto it = pos;
 	bool fromStart = it == first || it == prefix;
-	if (fromStart && it == first && std::distance(prefix, first) <= 0)
+	if (fromStart && it == first && std::distance(prefix, first) > 0)
 		return prefix;
 	else if (*it++ != nativeSeparator)
 	{

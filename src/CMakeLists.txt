@@ -315,6 +315,9 @@ SET(LIBSPARK_SOURCES
   scripting/avm1/avm1rectangle.cpp
   scripting/avm1/scope.cpp
   scripting/avm1_interpreter.cpp
+  utils/dir_iter.cpp
+  utils/filesystem.cpp
+  utils/path.cpp
   platforms/engineutils.cpp
   3rdparty/nanovg/src/nanovg.c
   3rdparty/pugixml/src/pugixml.cpp
@@ -399,6 +402,16 @@ ELSE()
     SET(LIBSPARK_SOURCES ${LIBSPARK_SOURCES} platforms/slowpaths_generic.cpp)
   ENDIF(ENABLE_SSE2)
 ENDIF(MINGW)
+
+# Platform specific code for `FileSystem`.
+IF (UNIX)
+  SET(LIBSPARK_SOURCES
+    ${LIBSPARK_SOURCES}
+    backends/posix/filesystem.cpp
+    backends/posix/dir_iter.cpp
+    backends/posix/path.cpp
+  )
+ENDIF(UNIX)
 
 # needed for jxr image decoder
 SET_SOURCE_FILES_PROPERTIES(${PROJECT_SOURCE_DIR}/src/scripting/flash/display3d/flashdisplay3dtextures.cpp PROPERTIES COMPILE_FLAGS "-D__ANSI__ -DDISABLE_PERF_MEASUREMENT -Wno-endif-labels -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/common/include/ -I${PROJECT_SOURCE_DIR}/src/3rdparty/jxrlib/image/sys/")

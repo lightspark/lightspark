@@ -34,6 +34,8 @@
 #include "parsing/streams.h"
 #include "launcher.h"
 #include "timer.h"
+#include "utils/filesystem.h"
+#include "utils/path.h"
 
 #ifdef __MINGW32__
     #ifndef PATH_MAX
@@ -43,95 +45,79 @@
 #endif
 using namespace std;
 using namespace lightspark;
+namespace fs = FileSystem;
 
 class StandaloneEngineData: public EngineData
 {
-	char* mBaseDir;
-	tiny_string mApplicationStoragePath;
-	void removedir(const char* dir)
+	Path basePath;
+	Path appStoragePath;
+
+	bool isValidFilePath(const Path& path)
 	{
-		GDir* d = g_dir_open(dir,0,nullptr);
-		if (!d)
-			return;
-		while (true)
-		{
-			const char* filename = g_dir_read_name (d);
-			if (!filename)
-			{
-				g_dir_close(d);
-				return;
-			}
-			string path = dir;
-			path += G_DIR_SEPARATOR_S;
-			path += filename;
-			struct stat st;
-			stat(path.c_str(), &st);
-			if(st.st_mode & S_IFDIR)
-				removedir(path.c_str());
-			else
-				::remove(path.c_str());
-		}
-		g_dir_close(d);
-		removedir(dir);
+		return !path.contains("./") && path != ".." && !path.contains("~");
 	}
-	bool isvalidfilename(const tiny_string& filename)
+
+	bool tryMoveDir(const Path& path, const Path& oldPath)
 	{
-		if (filename.find("./") != tiny_string::npos || filename == ".." ||
-				filename.find("~") != tiny_string::npos)
+		if (!fs::createDir(path))
 			return false;
-		return true;
+
+		fs::setPerms(path, fs::Perms::OwnerAll);
+
+		if (!oldPath.exists())
+			return false;
+
+		try
+		{
+			fs::rename(oldPath, path);
+			return true;
+		}
+		catch (...)
+		{
+			return false;
+		}
 	}
-	size_t getfilesize(const char* filepath)
+
+	Optional<Path> tryGetFullPath
+	(
+		SystemState* sys,
+		const Path& path,
+		bool isFullPath
+	)
 	{
-		struct stat st;
-		stat(filepath, &st);
-		return st.st_size;
+		if (!isValidFilePath(path))
+			return {};
+		Path ret = isFullPath ? path : Path(FileFullPath(sys, path));
+		if (ret.empty())
+			return {};
+		return ret;
 	}
 public:
-	StandaloneEngineData(const tiny_string& filedatapath,const tiny_string& absolutepath)
+	StandaloneEngineData(const Path& fileDataPath, const Path& absPath)
 	{
-		sharedObjectDatapath = Config::getConfig()->getUserDataDirectory();
-		sharedObjectDatapath += G_DIR_SEPARATOR_S;
-		sharedObjectDatapath += "data";
+		auto config = Config::getConfig();
+		Path userDataPath = tiny_string(config->getUserDataDirectory());
+		Path cachePath = tiny_string(config->getCacheDirectory());
+		sharedObjectDatapath = userDataPath / "data";
 		// move sharedObject data from old location to new location, if new location doesn't exist yet
-		if (!g_file_test(sharedObjectDatapath.raw_buf(),G_FILE_TEST_EXISTS))
-		{
-			g_mkdir_with_parents(Config::getConfig()->getUserDataDirectory().c_str(),S_IRUSR | S_IWUSR | S_IXUSR);
-			tiny_string oldsharedObjectDatapath = Config::getConfig()->getCacheDirectory();
-			oldsharedObjectDatapath += G_DIR_SEPARATOR_S;
-			oldsharedObjectDatapath += "data";
-			if (g_file_test(oldsharedObjectDatapath.raw_buf(),G_FILE_TEST_EXISTS))
-			{
-				if (g_rename(oldsharedObjectDatapath.raw_buf(),sharedObjectDatapath.raw_buf()) != 0)
-					LOG(LOG_ERROR,"couldn't move shared object data from cache directory to user data directory");
-			}
-		}
-		sharedObjectDatapath += filedatapath;
-		
+		if (!tryMoveDir(sharedObjectDatapath, cachePath / "data"))
+			LOG(LOG_ERROR, "couldn't move shared object data from cache directory to user data directory");
 
-		mApplicationStoragePath = Config::getConfig()->getUserDataDirectory();
-		mApplicationStoragePath += filedatapath;
+		sharedObjectDatapath += fileDataPath;
+
+		appStoragePath = userDataPath / fileDataPath;
+
 		// move ApplicationStorage data from old location to new location, if new location doesn't exist yet
-		if (!g_file_test(mApplicationStoragePath.raw_buf(),G_FILE_TEST_EXISTS))
-		{
-			g_mkdir_with_parents(Config::getConfig()->getUserDataDirectory().c_str(),S_IRUSR | S_IWUSR | S_IXUSR);
-			tiny_string oldmApplicationStoragePath = Config::getConfig()->getCacheDirectory();
-			oldmApplicationStoragePath += filedatapath;
-			if (g_file_test(oldmApplicationStoragePath.raw_buf(),G_FILE_TEST_EXISTS))
-			{
-				if (g_rename(oldmApplicationStoragePath.raw_buf(),mApplicationStoragePath.raw_buf()) != 0)
-					LOG(LOG_ERROR,"couldn't move appstorage data from cache directory to user data directory");
-			}
-		}
-		mApplicationStoragePath += G_DIR_SEPARATOR_S;
-		mApplicationStoragePath += "appstorage";
-		mBaseDir = g_path_get_dirname(absolutepath.raw_buf());
+		if (!tryMoveDir(appStoragePath, cachePath / fileDataPath))
+			LOG(LOG_ERROR, "couldn't move appstorage data from cache directory to user data directory");
+
+		appStoragePath /= "appstorage";
+		basePath = absPath.getDir();
 	}
+
 	~StandaloneEngineData()
 	{
-		removedir(Config::getConfig()->getDataDirectory().c_str());
-		if (mBaseDir)
-			g_free(mBaseDir);
+		fs::removeAll(tiny_string(Config::getConfig()->getDataDirectory()));
 	}
 	uint32_t getWindowForGnash() override
 	{
@@ -155,232 +141,275 @@ public:
 	}
 	bool getAIRApplicationDescriptor(SystemState* sys,tiny_string& xmlstring) override
 	{
-		if (sys->flashMode == SystemState::FLASH_MODE::AIR)
-		{
-			tiny_string swfpath = FileFullPath(sys,"");
-			gchar* dir = g_path_get_dirname(swfpath.raw_buf());
-			std::string p = dir;
-			p += G_DIR_SEPARATOR_S;
-			p += "META-INF";
-			p += G_DIR_SEPARATOR_S;
-			p += "AIR";
-			p += G_DIR_SEPARATOR_S;
-			p += "application.xml";
-			tiny_string filename(p);
-			xmlstring = FileRead(sys,filename,true);
-			return true;
-		}
-		return false;
-	}
-	bool FileExists(SystemState* sys,const tiny_string& filename, bool isfullpath) override
-	{
-		if (!isvalidfilename(filename))
+		if (sys->flashMode != SystemState::FLASH_MODE::AIR)
 			return false;
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return false;
-		return g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS);
-	}
-	bool FileIsHidden(SystemState* sys,const tiny_string& filename, bool isfullpath) override
-	{
-		if (!isvalidfilename(filename))
-			return false;
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return false;
-		char* f = g_path_get_basename(p.raw_buf());
-#ifdef _WIN32
-		LOG(LOG_NOT_IMPLEMENTED,"File.IsHidden not properly implemented for windows");
-#endif
-		return *f == '.';
-	}
-	bool FileIsDirectory(SystemState* sys,const tiny_string& filename, bool isfullpath) override
-	{
-		if (!isvalidfilename(filename))
-			return false;
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return false;
-		return g_file_test(p.raw_buf(),G_FILE_TEST_IS_DIR);
+
+		Path path
+		(
+			Path(FileFullPath(sys, "")).getDir() /
+			"META-INF" /
+			"AIR" /
+			"application.xml"
+		);
+
+		xmlstring = FileRead(sys, path, true);
+		return true;
 	}
 
-	uint32_t FileSize(SystemState* sys,const tiny_string& filename, bool isfullpath) override
+	bool FileExists(SystemState* sys, const tiny_string& filename, bool isFullPath) override
 	{
-		if (!isvalidfilename(filename))
-			return 0;
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return 0;
-		return getfilesize(p.raw_buf());
+		return tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).transformOr(false, [&](const Path& path) { return path.exists(); });
 	}
-	
+
+	bool FileIsHidden(SystemState* sys, const tiny_string& filename, bool isFullPath) override
+	{
+		return tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).transformOr(false, [&](const Path& path)
+		{
+			// TODO: Add a portable way of checking if a path is hidden
+			// to `FileSystem`.
+			#ifdef _WIN32
+			LOG(LOG_NOT_IMPLEMENTED,"File.IsHidden not properly implemented for windows");
+			#endif
+			return path.getFilename().getStr().startsWith('.');
+		});
+	}
+
+	bool FileIsDirectory(SystemState* sys, const tiny_string& filename, bool isFullPath) override
+	{
+		return tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).transformOr(false, [&](const Path& path) { return path.isDir(); });
+	}
+
+	uint32_t FileSize(SystemState* sys, const tiny_string& filename, bool isFullPath) override
+	{
+		return tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).filter([&](const Path& path)
+		{
+			return path.isFile();
+		}).transformOr(0, [&](const Path& path)
+		{
+			return fs::fileSize(path);
+		});
+	}
+
 	tiny_string FileFullPath(SystemState* sys, const tiny_string& filename) override
 	{
-		std::string p;
-		if (sys->flashMode == SystemState::FLASH_MODE::AIR && mBaseDir)
-		{
-			if (!g_path_is_absolute(filename.raw_buf()))
-				p = mBaseDir;
-		}
+		Path path(filename);
+		bool isAIR = sys->flashMode == SystemState::FLASH_MODE::AIR;
+
+		Path ret;
+
+		if (isAIR && !basePath.empty())
+			ret = !path.isAbsolute() ? basePath : "";
 		else
-			p = Config::getConfig()->getDataDirectory();
-		if (p.empty())
+			ret = Config::getConfig()->getDataDirectory();
+
+		if (ret.empty())
 			return "";
-		p += G_DIR_SEPARATOR_S;
-		p += filename.raw_buf();
-		return p;
+		return ret /= filename;
 	}
 
-	tiny_string FileBasename(SystemState* sys, const tiny_string& filename, bool isfullpath) override
+	tiny_string FileBasename(SystemState* sys, const tiny_string& filename, bool isFullPath) override
 	{
-		if (!isvalidfilename(filename))
-			return "";
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return "";
-		char* b = g_path_get_basename(p.raw_buf());
-		return tiny_string(b);
-	}
-
-	tiny_string FileRead(SystemState* sys,const tiny_string& filename, bool isfullpath) override
-	{
-		if (!isvalidfilename(filename))
-			return "";
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return "";
-
-		if (!g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS))
-			return "";
-		uint32_t len = getfilesize(p.raw_buf());
-		std::ifstream file;
-		
-		file.open(p.raw_buf(), std::ios::in|std::ios::binary);
-		
-		tiny_string res(file,len);
-		file.close();
-		return res;
-	}
-	void FileWrite(SystemState* sys,const tiny_string& filename, const tiny_string& data, bool isfullpath) override
-	{
-		if (!isvalidfilename(filename))
-			return;
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return;
-		std::ofstream file;
-
-		file.open(p.raw_buf(), std::ios::out|std::ios::binary);
-		file << data;
-		file.close();
-	}
-	uint8_t FileReadUnsignedByte(SystemState* sys, const tiny_string& filename, uint32_t startpos, bool isfullpath) override
-	{
-		if (!isvalidfilename(filename))
-			return 0;
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return 0;
-		if (!g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS))
-			return 0;
-		std::ifstream file;
-		file.open(p.raw_buf(), std::ios::in|std::ios::binary);
-		file.seekg(startpos);
-		uint8_t buf;
-		file.read((char*)&buf,1);
-		file.close();
-		return buf;
-	}
-	void FileReadByteArray(SystemState* sys,const tiny_string &filename,ByteArray* res, uint32_t startpos, uint32_t length, bool isfullpath) override
-	{
-		if (!isvalidfilename(filename))
-			return;
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return;
-		if (!g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS))
-			return;
-		uint32_t len = min(length,uint32_t(getfilesize(p.raw_buf())-startpos));
-		std::ifstream file;
-		uint8_t* buf = new uint8_t[len];
-		file.open(p.raw_buf(), std::ios::in|std::ios::binary);
-		file.seekg(startpos);
-		file.read((char*)buf,len);
-		res->writeBytes(buf,len);
-		file.close();
-		delete[] buf;
-	}
-	
-	void FileWriteByteArray(SystemState* sys,const tiny_string &filename, ByteArray *data, uint32_t startpos, uint32_t length, bool isfullpath) override
-	{
-		if (!isvalidfilename(filename))
-			return;
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return;
-		std::ofstream file;
-		
-		file.open(p.raw_buf(), std::ios::out|std::ios::binary|std::ios::trunc);
-		uint8_t* buf = data->getBuffer(data->getLength(),false);
-		uint32_t len = length;
-		if (length == UINT32_MAX || startpos+length > data->getLength())
-			len = data->getLength()-startpos;
-		file.write((char*)buf+startpos,len);
-		file.close();
-	}
-	bool FileCreateDirectory(SystemState* sys,const tiny_string& filename, bool isfullpath) override
-	{
-		if (!isvalidfilename(filename))
-			return false;
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return false;
-		if (!p.endsWith(G_DIR_SEPARATOR_S))
+		return tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).transformOr(tiny_string(), [&](const Path& path)
 		{
-			// if filename doesn't end with a directory separator, it is treated as a full path to a file
-			gchar* dir = g_path_get_dirname(p.raw_buf());
-			p=dir;
-			g_free(dir);
-		}
-		return g_mkdir_with_parents(p.raw_buf(),0755) == 0;
+			return path.getFilename().getStr();
+		});
 	}
-	bool FilGetDirectoryListing(SystemState* sys, const tiny_string &filename, bool isfullpath, std::vector<tiny_string>& filelist) override
+
+	tiny_string FileRead(SystemState* sys, const tiny_string& filename, bool isFullPath) override
 	{
-		if (!isvalidfilename(filename))
-			return false;
-		tiny_string p = isfullpath ? filename : FileFullPath(sys,filename);
-		if (p.empty())
-			return false;
-		GDir* dir = g_dir_open(p.raw_buf(),0,nullptr);
-		if (dir)
+		return tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).filter([&](const Path& path)
 		{
-			while (true)
-			{
-				const char* filename = g_dir_read_name(dir);
-				if (!filename)
-					break;
-				tiny_string s(filename,true);
-				filelist.push_back(s);;
-			}
-			g_dir_close(dir);
+			return path.isFile();
+		}).transformOr(tiny_string(), [&](const Path& path)
+		{
+			std::ifstream file(path.getStr(), std::ios::in | std::ios::binary);
+			return tiny_string(file, fs::fileSize(path));
+		});
+	}
+
+	void FileWrite(SystemState* sys, const tiny_string& filename, const tiny_string& data, bool isFullPath) override
+	{
+		(void)tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).filter([&](const Path& path)
+		{
+			return path.isFile();
+		}).andThen([&](const Path& path) -> Optional<Path>
+		{
+			std::ofstream file(path.getStr(), std::ios::out | std::ios::binary);
+			file << data;
+			return {};
+		});
+	}
+
+	uint8_t FileReadUnsignedByte(SystemState* sys, const tiny_string &filename, uint32_t startpos, bool isFullPath) override
+	{
+		return tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).filter([&](const Path& path)
+		{
+			return path.isFile();
+		}).transformOr(0, [&](const Path& path)
+		{
+			uint8_t ret;
+			std::ifstream file(path.getStr(), std::ios::in | std::ios::binary);
+			file.seekg(startpos);
+			file.read(reinterpret_cast<char*>(&ret), 1);
+			return ret;
+		});
+	}
+
+	void FileReadByteArray(SystemState* sys, const tiny_string &filename, ByteArray* res, uint32_t startpos, uint32_t length, bool isFullPath) override
+	{
+		(void)tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).filter([&](const Path& path)
+		{
+			return path.isFile();
+		}).andThen([&](const Path& path) -> Optional<Path>
+		{
+			size_t len = std::min<decltype(fs::fileSize(path))>
+			(
+				length, fs::fileSize(path) - startpos
+			);
+			uint8_t* buf = new uint8_t[len];
+			std::ifstream file(path.getStr(), std::ios::in | std::ios::binary);
+			file.seekg(startpos);
+			file.read(reinterpret_cast<char*>(buf), len);
+			res->writeBytes(buf, len);
+			delete[] buf;
+			return path;
+		});
+	}
+
+	void FileWriteByteArray(SystemState* sys, const tiny_string& filename, ByteArray* data, uint32_t startpos, uint32_t length, bool isFullPath) override
+	{
+		(void)tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).filter([&](const Path& path)
+		{
+			return path.isFile();
+		}).andThen([&](const Path& path) -> Optional<Path>
+		{
+			size_t len =
+			(
+				length != UINT32_MAX &&
+				startpos + length <= data->getLength()
+			) ? length : data->getLength();
+			uint8_t* buf = data->getBuffer(data->getLength(), false);
+			std::ofstream file(path.getStr(), std::ios::out | std::ios::binary);
+			file.write(reinterpret_cast<char*>(buf+startpos), len);
+			return path;
+		});
+	}
+
+	bool FileCreateDirectory(SystemState* sys, const tiny_string& filename, bool isFullPath) override
+	{
+		return tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).transformOr(false, [&](const Path& path)
+		{
+			// Remove the path's filename, if it has one.
+			//
+			// NOTE: We can't use `removeFilename()` because it modifies the
+			// path, but because `transformOr()` is const, that's not allowed.
+			auto dir = path.hasFilename() ? path.getDir() : path;
+			bool ret = fs::createDir(dir);
+			fs::setPerms
+			(
+				dir,
+				fs::Perms::GroupWrite | fs::Perms::OthersWrite,
+				fs::PermOptions::Remove
+			);
+			return ret;
+		});
+	}
+
+	bool FilGetDirectoryListing(SystemState* sys, const tiny_string &filename, bool isFullPath, std::vector<tiny_string>& filelist) override
+	{
+		return tryGetFullPath
+		(
+			sys,
+			filename,
+			isFullPath
+		).filter([&](const Path& path)
+		{
+			return path.isDir();
+		}).transformOr(false, [&](const Path& path)
+		{
+			std::transform
+			(
+				fs::DirIter(path),
+				fs::DirIter(),
+				std::back_inserter(filelist),
+				[](const fs::DirEntry& entry)
+				{
+					return entry.getPath().getStr();
+				}
+			);
 			return true;
-		}
-		return false;
+		});
 	}
-	
+
 	bool FilePathIsAbsolute(const tiny_string& filename) override
 	{
-		return g_path_is_absolute(filename.raw_buf());
+		return Path(filename).isAbsolute();
 	}
+
 	tiny_string FileGetApplicationStorageDir() override
 	{
-		return mApplicationStoragePath;
+		return appStoragePath;
 	}
 };
 
 int main(int argc, char* argv[])
 {
-	char* fileName=nullptr;
+	Path fileName;
 	char* url=nullptr;
 	char* paramsFileName=nullptr;
 #ifdef PROFILING_SUPPORT
@@ -410,7 +439,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=nullptr;
+				fileName.clear();
 				break;
 			}
 
@@ -435,7 +464,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=nullptr;
+				fileName.clear();
 				break;
 			}
 			startscalefactor = max(1.0,atof(argv[i]));
@@ -445,7 +474,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=nullptr;
+				fileName.clear();
 				break;
 			}
 
@@ -457,7 +486,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=nullptr;
+				fileName.clear();
 				break;
 			}
 			paramsFileName=argv[i];
@@ -468,7 +497,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=nullptr;
+				fileName.clear();
 				break;
 			}
 			tiny_string ext = argv[i];
@@ -481,7 +510,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=NULL;
+				fileName.clear();
 				break;
 			}
 			profilingFileName=argv[i];
@@ -493,7 +522,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=nullptr;
+				fileName.clear();
 				break;
 			}
 			if(strncmp(argv[i], "remote", 6) == 0)
@@ -524,7 +553,7 @@ int main(int argc, char* argv[])
 			i++;
 			if(i==argc)
 			{
-				fileName=nullptr;
+				fileName.clear();
 				break;
 			}
 			HTTPcookie=argv[i];
@@ -564,18 +593,18 @@ int main(int argc, char* argv[])
 		else
 		{
 			//No options flag, so set the swf file name
-			if(fileName) //If already set, exit in error status
+			if (!fileName.empty()) //If already set, exit in error status
 			{
-				fileName=nullptr;
+				fileName.clear();
 				break;
 			}
-			fileName=argv[i];
+			fileName = tiny_string(argv[i], true);
 		}
 	}
 	
 	// no filename give, we start the launcher
 	Launcher l; // define launcher here, so that the char pointers into the tiny_strings stay valid until the end
-	if(fileName==nullptr)
+	if (fileName.empty())
 	{
 		bool fileselected = l.start();
 		if (fileselected)
@@ -583,7 +612,7 @@ int main(int argc, char* argv[])
 			if (l.selectedfile.empty())
 				exit(0);
 			ignoreUnhandledExceptions=true; // always ignore exception when running from launcher
-			fileName= (char*)l.selectedfile.raw_buf();
+			fileName = l.selectedfile;
 			if (l.needsAIR)
 				flashMode=SystemState::AIR;
 			if (l.needsfilesystem && l.needsnetwork)
@@ -600,7 +629,7 @@ int main(int argc, char* argv[])
 	}
 
 	Log::setLogLevel(log_level);
-	lsfilereader r(fileName);
+	lsfilereader r(fileName.rawBuf());
 	istream f(&r);
 	f.seekg(0, ios::end);
 	uint32_t fileSize=f.tellg();
@@ -616,14 +645,18 @@ int main(int argc, char* argv[])
 	SystemState::staticInit();
 
 	SDLEventLoop* eventLoop = new SDLEventLoop(new Time());
-	char absolutepath[PATH_MAX];
-	if (realpath(fileName,absolutepath) == nullptr)
+	Path absPath;
+	try
 	{
-		LOG(LOG_ERROR, "Unable to resolve file");
+		absPath = fs::canonical(fileName);
+	}
+	catch (fs::Exception& e)
+	{
+		LOG(LOG_ERROR, "Unable to resolve path \"" << fileName.getStr() << "\". Reason: " << e.what());
 		exit(1);
 	}
 	if (flashMode==SystemState::AIR)
-		EngineData::checkForNativeAIRExtensions(extensions,absolutepath);
+		EngineData::checkForNativeAIRExtensions(extensions,(char*)absPath.rawBuf());
 	//NOTE: see SystemState declaration
 	SystemState* sys = new SystemState(fileSize, flashMode, eventLoop);
 	ParseThread* pt = new ParseThread(f, sys->mainClip);
@@ -651,17 +684,15 @@ int main(int argc, char* argv[])
 	//When running in a local sandbox, set the root URL to the current working dir
 	else if(sandboxType != SecurityManager::REMOTE)
 	{
-		char * cwd = g_get_current_dir();
-		char* baseurl = g_filename_to_uri(cwd,nullptr,nullptr);
+		char* baseurl = g_filename_to_uri(fs::currentPath().rawBuf(),nullptr,nullptr);
 		string cwdStr = string(baseurl);
-		free(cwd);
 		free(baseurl);
 		cwdStr += "/";
 		sys->mainClip->setOrigin(cwdStr, fileName);
 	}
 	else
 	{
-		sys->mainClip->setOrigin(string("file://") + fileName);
+		sys->mainClip->setOrigin(tiny_string("file://") + fileName.getGenericStr());
 		LOG(LOG_INFO, "Warning: running with no origin URL set.");
 	}
 
@@ -686,12 +717,11 @@ int main(int argc, char* argv[])
 		sys->setCookies(HTTPcookie);
 
 	// create path for shared object local storage
-	tiny_string homedir(g_get_home_dir());
-	tiny_string filedatapath = absolutepath;
-	if (filedatapath.find(homedir) == 0) // remove home dir, if file is located below home dir
-		filedatapath = filedatapath.substr_bytes(homedir.numBytes(),UINT32_MAX);
+	Path homeDir(g_get_home_dir());
+	// remove home dir, if file is located below home dir
+	Path fileDataPath = fs::relative(absPath, homeDir);
 
-	sys->setParamsAndEngine(new StandaloneEngineData(filedatapath,absolutepath), true);
+	sys->setParamsAndEngine(new StandaloneEngineData(fileDataPath, absPath), true);
 	// on standalone local storage is always allowed
 	sys->getEngineData()->setLocalStorageAllowedMarker(true);
 	sys->getEngineData()->startInFullScreenMode=startInFullScreenMode;

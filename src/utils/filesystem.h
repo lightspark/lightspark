@@ -269,7 +269,7 @@ public:
 	}
 };
 
-class DirEntry
+class DLL_PUBLIC DirEntry
 {
 public:
 	DirEntry() = default;
@@ -320,7 +320,7 @@ private:
 	FileStatus symlinkStatus;
 };
 
-class DirIter
+class DLL_PUBLIC DirIter
 {
 private:
 	friend class RecursiveDirIter;
@@ -401,7 +401,7 @@ public:
 	bool operator!=(const DirIter& other) const { return *(*this) != *other; }
 };
 
-class RecursiveDirIter
+class DLL_PUBLIC RecursiveDirIter
 {
 private:
 
@@ -491,48 +491,48 @@ public:
 	bool operator!=(const RecursiveDirIter& other) const { return *(*this) != *other; }
 };
 
-Path absolute(const Path& path);
-Path canonical(const Path& path);
-void copy(const Path& from, const Path& to);
-void copy(const Path& from, const Path& to, const CopyOptions& options);
-bool copyFile(const Path& from, const Path& to);
-bool copyFile(const Path& from, const Path& to, const CopyOptions& options);
-void copySymlink(const Path& symlink, const Path& newSymlink);
-bool createDirs(const Path& path);
-bool createDir(const Path& path, const Path& attrs = Path());
-void createDirSymlink(const Path& to, const Path& newSymlink);
-void createSymlink(const Path& to, const Path& newSymlink);
-Path currentPath();
-void currentPath(const Path& path);
-bool exists(const Path& path);
-bool equivalent(const Path& a, const Path& b);
-size_t fileSize(const Path& path);
-bool isBlockFile(const Path& path);
-bool isCharacterFile(const Path& path);
-bool isDir(const Path& path);
-bool isEmpty(const Path& path);
-bool isFifo(const Path& path);
-bool isOther(const Path& path);
-bool isFile(const Path& path);
-bool isSocket(const Path& path);
-bool isSymlink(const Path& path);
-TimeSpec getLastWriteTime(const Path& path);
-void setLastWriteTime(const Path& path, const TimeSpec& newTime);
-void setPerms(const Path& path, const Perms& perms, const PermOptions& opts = PermOptions::Replace);
-Path proximate(const Path& path, const Path& base = currentPath());
-Path readSymlink(const Path& path);
-Path relative(const Path& path, const Path& base = currentPath());
-bool remove(const Path& path);
-size_t removeAll(const Path& path);
-void rename(const Path& from, const Path& to);
-void resizeFile(const Path& path, size_t size);
-SpaceInfo space(const Path& path);
-FileStatus status(const Path& path);
-FileStatus symlinkStatus(const Path& path);
-Path tempDirPath();
-Path weaklyCanonical(const Path& path);
-void createHardLink(const Path& to, const Path& newHardLink);
-size_t hardLinkCount(const Path& path);
+DLL_PUBLIC Path absolute(const Path& path);
+DLL_PUBLIC Path canonical(const Path& path);
+DLL_PUBLIC void copy(const Path& from, const Path& to);
+DLL_PUBLIC void copy(const Path& from, const Path& to, const CopyOptions& options);
+DLL_PUBLIC bool copyFile(const Path& from, const Path& to);
+DLL_PUBLIC bool copyFile(const Path& from, const Path& to, const CopyOptions& options);
+DLL_PUBLIC void copySymlink(const Path& symlink, const Path& newSymlink);
+DLL_PUBLIC bool createDirs(const Path& path);
+DLL_PUBLIC bool createDir(const Path& path, const Path& attrs = Path());
+DLL_PUBLIC void createDirSymlink(const Path& to, const Path& newSymlink);
+DLL_PUBLIC void createSymlink(const Path& to, const Path& newSymlink);
+DLL_PUBLIC Path currentPath();
+DLL_PUBLIC void currentPath(const Path& path);
+DLL_PUBLIC bool exists(const Path& path);
+DLL_PUBLIC bool equivalent(const Path& a, const Path& b);
+DLL_PUBLIC size_t fileSize(const Path& path);
+DLL_PUBLIC bool isBlockFile(const Path& path);
+DLL_PUBLIC bool isCharacterFile(const Path& path);
+DLL_PUBLIC bool isDir(const Path& path);
+DLL_PUBLIC bool isEmpty(const Path& path);
+DLL_PUBLIC bool isFifo(const Path& path);
+DLL_PUBLIC bool isOther(const Path& path);
+DLL_PUBLIC bool isFile(const Path& path);
+DLL_PUBLIC bool isSocket(const Path& path);
+DLL_PUBLIC bool isSymlink(const Path& path);
+DLL_PUBLIC TimeSpec getLastWriteTime(const Path& path);
+DLL_PUBLIC void setLastWriteTime(const Path& path, const TimeSpec& newTime);
+DLL_PUBLIC void setPerms(const Path& path, const Perms& perms, const PermOptions& opts = PermOptions::Replace);
+DLL_PUBLIC Path proximate(const Path& path, const Path& base = currentPath());
+DLL_PUBLIC Path readSymlink(const Path& path);
+DLL_PUBLIC Path relative(const Path& path, const Path& base = currentPath());
+DLL_PUBLIC bool remove(const Path& path);
+DLL_PUBLIC size_t removeAll(const Path& path);
+DLL_PUBLIC void rename(const Path& from, const Path& to);
+DLL_PUBLIC void resizeFile(const Path& path, size_t size);
+DLL_PUBLIC SpaceInfo space(const Path& path);
+DLL_PUBLIC FileStatus status(const Path& path);
+DLL_PUBLIC FileStatus symlinkStatus(const Path& path);
+DLL_PUBLIC Path tempDirPath();
+DLL_PUBLIC Path weaklyCanonical(const Path& path);
+DLL_PUBLIC void createHardLink(const Path& to, const Path& newHardLink);
+DLL_PUBLIC size_t hardLinkCount(const Path& path);
 
 namespace Detail
 {

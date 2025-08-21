@@ -605,7 +605,7 @@ uint32_t tiny_string::findFirstInv(const tiny_string& str, uint32_t start) const
 		for (auto ch2 : str)
 		{
 			if (ch != ch2)
-				break;
+				return i;
 		}
 	}
 

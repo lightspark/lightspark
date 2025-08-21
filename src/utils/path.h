@@ -178,7 +178,7 @@ public:
 	template<typename T>
 	Path& assign(const T& other)
 	{
-		path = toUTF8(other);
+		path = StringType(other);
 		postprocessPath(Format::Native);
 		return *this;
 	}

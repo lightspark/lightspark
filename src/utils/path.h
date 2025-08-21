@@ -30,7 +30,7 @@ namespace std
 template<>
 struct iterator_traits<lightspark::CharIterator>
 {
-	using difference_type = size_t;
+	using difference_type = ssize_t;
 	using value_type = uint32_t;
 	using pointer = char*;
 	using reference = uint32_t;

@@ -306,7 +306,7 @@ TimeSpec fs::getLastWriteTime(const Path& path)
 	return status(path).getLastWriteTime();
 }
 
-void setPerms(const Path& path, const fs::Perms& perms, const fs::PermOptions& opts)
+void fs::setPerms(const Path& path, const fs::Perms& perms, const fs::PermOptions& opts)
 {
 	using PermOpts = fs::PermOptions;
 	if (!(opts & (PermOpts::Replace | PermOpts::Add | PermOpts::Remove)))

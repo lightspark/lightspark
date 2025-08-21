@@ -195,18 +195,21 @@ void Path::postprocessPath(const Format& format)
 
 	StringSizeType offset = hasRootNamePrefix() ? 2 : 0;
 
-	StringType newPath;
 	size_t newEnd = prefixLength + offset;
+	StringType newPath = StringType::fromChar(path[newEnd]);
 
-	for (size_t i = newEnd; i < path.numChars(); ++i)
+	for (size_t i = newEnd + 1; i < path.numChars(); ++i)
 	{
 		bool isSame =
 		(
 			path[newEnd] == path[i] &&
 			path[newEnd] == nativeSeparator
 		);
-		if (!isSame && ++newEnd != i)
+		if (!isSame)
+		{
+			newEnd = i;
 			newPath += path[i];
+		}
 	}
 	path = newPath;
 }

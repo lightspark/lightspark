@@ -66,10 +66,10 @@ tiny_string::tiny_string(const std::string& r):_buf_static(),buf(_buf_static),st
 	init();
 }
 
-tiny_string::tiny_string(const CharIterator& first, const CharIterator& last) :
+tiny_string::tiny_string(CharIterator first, CharIterator last) :
 _buf_static(),
 buf(_buf_static),
-stringSize(last.ptr() - first.ptr()),
+stringSize(last.ptr() - first.ptr() + 1),
 type(STATIC)
 {
 	if (stringSize > STATIC_SIZE)

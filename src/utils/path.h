@@ -58,7 +58,7 @@ bool isFile(const Path& path);
 };
 
 // Based on `path` from https://github.com/gulrak/filesystem
-class Path : public PathHelper<uint32_t>
+class DLL_PUBLIC Path : public PathHelper<uint32_t>
 {
 public:
 	using StringType = tiny_string;

@@ -191,7 +191,7 @@ void fs::copySymlink(const Path& symlink, const Path& newSymlink)
 		createSymlink(to, newSymlink);
 }
 
-bool fs::createDirs(const Path& path)
+bool fs::createDirs(const Path& path, const Perms& perms)
 {
 	bool didCreate = false;
 	auto rootLen =
@@ -217,7 +217,7 @@ bool fs::createDirs(const Path& path)
 
 		try
 		{
-			createDir(current);
+			createDir(current, perms);
 		}
 		catch (...)
 		{
@@ -239,6 +239,18 @@ bool fs::createDir(const Path& path, const Path& attrs)
 	#endif
 		return false;
 	return Detail::createDir(path, attrs);
+}
+
+bool fs::createDir(const Path& path, const Perms& perms)
+{
+	#ifdef USE_LWG_2936
+	if (status(path).exists())
+	#else
+	auto fileStatus = status(path);
+	if (fileStatus.exists() && fileStatus.isDir())
+	#endif
+		return false;
+	return Detail::createDir(path, perms);
 }
 
 void fs::createDirSymlink(const Path& to, const Path& newSymlink)

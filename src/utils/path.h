@@ -48,9 +48,10 @@ namespace FileSystem
 {
 
 class DirIter;
+enum class Perms : uint16_t;
 
 Path canonical(const Path& path);
-bool createDirs(const Path& path);
+bool createDirs(const Path& path, const Perms& perms);
 bool exists(const Path& path);
 bool isDir(const Path& path);
 bool isFile(const Path& path);
@@ -112,7 +113,11 @@ private:
 	};
 
 	friend Path FileSystem::canonical(const Path& path);
-	friend bool FileSystem::createDirs(const Path& path);
+	friend bool FileSystem::createDirs
+	(
+		const Path& path,
+		const FileSystem::Perms& perms
+	);
 
 	size_t rootNameLengthImpl() const;
 	bool hasRootNamePrefix() const;

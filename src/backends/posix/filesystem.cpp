@@ -68,16 +68,21 @@ bool fs::Detail::copyFile(const Path& from, const Path& to, bool overwrite)
 
 bool fs::Detail::createDir(const Path& path, const Path& attrs)
 {
-	auto attribs = mode_t(Perms::All);
+	Perms attribs = Perms::All;
 	if (!attrs.empty())
 	{
 		struct stat fileStat;
 		if (stat(attrs.rawBuf(), &fileStat) < 0)
 			throw Exception(path, std::errc(errno));
-		attribs = fileStat.st_mode;
+		attribs = Perms(fileStat.st_mode);
 	}
 
-	if (mkdir(path.rawBuf(), attribs) < 0)
+	return Detail::createDir(path, attribs);
+}
+
+bool fs::Detail::createDir(const Path& path, const Perms& perms)
+{
+	if (mkdir(path.rawBuf(), mode_t(perms)) < 0)
 		throw Exception(path, std::errc(errno));
 	return true;
 }

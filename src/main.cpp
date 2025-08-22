@@ -57,31 +57,9 @@ class StandaloneEngineData: public EngineData
 		return !path.contains("./") && path != ".." && !path.contains("~");
 	}
 
-	bool createDirs(const Path& path, const fs::Perms& perms)
-	{
-		Path base = path;
-		for (; !base.exists(); base = base.getDir());
-
-		if (!fs::createDirs(path))
-			return false;
-
-		for (auto _path = path; _path != base; _path = _path.getDir())
-		{
-			try
-			{
-				fs::setPerms(_path, perms);
-			}
-			catch (...)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
 	bool tryMoveDir(const Path& path, const Path& oldPath)
 	{
-		if (!createDirs(path, fs::Perms::OwnerAll))
+		if (!fs::createDirs(path, fs::Perms::OwnerAll))
 			return false;
 
 		if (!oldPath.exists())
@@ -379,7 +357,7 @@ public:
 			// NOTE: We can't use `removeFilename()` because it modifies the
 			// path, but because `transformOr()` is const, that's not allowed.
 			auto dir = path.hasFilename() ? path.getDir() : path;
-			return createDirs
+			return fs::createDirs
 			(
 				dir,
 				fs::Perms::All ^

@@ -59,6 +59,9 @@ class StandaloneEngineData: public EngineData
 
 	bool tryMoveDir(const Path& path, const Path& oldPath)
 	{
+		if (path.exists())
+			return false;
+
 		if (!fs::createDirs(path, fs::Perms::OwnerAll))
 			return false;
 

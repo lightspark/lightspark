@@ -104,7 +104,8 @@ public:
 		if (!tryMoveDir(sharedObjectDatapath, cachePath / "data"))
 			LOG(LOG_ERROR, "couldn't move shared object data from cache directory to user data directory");
 
-		sharedObjectDatapath += fileDataPath;
+		// TODO: Make `sharedObjectDatapath` a `Path`, rather than a `tiny_string`.
+		sharedObjectDatapath = Path(sharedObjectDatapath) / fileDataPath;
 
 		appStoragePath = userDataPath / fileDataPath;
 

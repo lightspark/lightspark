@@ -36,6 +36,8 @@
 #include "flash/utils/ByteArray.h"
 #include "flash/geom/flashgeom.h"
 #include "launcher.h"
+#include "utils/filesystem.h"
+#include "utils/path.h"
 #include <glib/gstdio.h>
 #include <fcntl.h>
 #include <sys/types.h>
@@ -76,6 +78,7 @@ extern const char* getDefaultFontBase85();
 
 using namespace std;
 using namespace lightspark;
+namespace fs = FileSystem;
 
 uint32_t EngineData::userevent = (uint32_t)-1;
 SDL_Thread* EngineData::mainLoopThread = nullptr;
@@ -598,67 +601,43 @@ void EngineData::showWindow(uint32_t w, uint32_t h)
 
 void EngineData::checkForNativeAIRExtensions(std::vector<tiny_string>& extensions, char* fileName)
 {
-	tiny_string p = g_path_get_dirname(fileName);
-	p += G_DIR_SEPARATOR_S;
-	p += "META-INF";
-	p += G_DIR_SEPARATOR_S;
-	p += "AIR";
-	p += G_DIR_SEPARATOR_S;
-	p += "extensions";
-	GDir* dir = g_dir_open(p.raw_buf(),0,nullptr);
-	if (dir)
+	Path baseDir = Path(fileName).getDir();
+	Path path = baseDir / "META-INF" / "AIR" / "extensions";
+
+	for (auto entry : fs::DirIter(path))
 	{
-		while (true)
-		{
-			const char* subpath = g_dir_read_name(dir);
-			if (!subpath)
-				break;
-			tiny_string extensionpath=p;
-			extensionpath += G_DIR_SEPARATOR_S;
-			extensionpath += subpath;
-			extensionpath += G_DIR_SEPARATOR_S;
-			extensionpath += "library.swf";
-			if (g_file_test(p.raw_buf(),G_FILE_TEST_EXISTS))
-			{
-				LOG(LOG_INFO,"native extension found:"<<extensionpath);
-				extensions.push_back(extensionpath);
-			}
-		}
-		g_dir_close(dir);
+		Path extPath = path / entry / "library.swf";
+
+		if (!extPath.exists())
+			continue;
+
+		LOG(LOG_INFO, "native extension found:" << extPath.getStr());
+		extensions.push_back(extPath.getStr());
 	}
-	if (!extensions.empty())
+
+	if (extensions.empty())
+		return;
+
+	// try to load additional libraries that may be needed for the extensions
+	for (auto entry : fs::DirIter(baseDir))
 	{
-		// try to load additional libraries that may be needed for the extensions
-		tiny_string basedir = g_path_get_dirname(fileName);
-		GDir* dir = g_dir_open(basedir.raw_buf(),0,nullptr);
-		if (dir)
-		{
-			while (true)
-			{
-				const char* file = g_dir_read_name(dir);
-				if (!file)
-					break;
-				if (g_file_test(file,G_FILE_TEST_IS_DIR))
-					continue;
-				tiny_string s=file;
-#ifdef _WIN32
-				const char* suffix = ".dll";
-#else
-				const char* suffix = ".so";
-#endif
-				if (!s.endsWith(suffix))
-					continue;
-				tiny_string libpath=basedir;
-				libpath += G_DIR_SEPARATOR_S;
-				libpath += s;
-				void* lib = SDL_LoadObject(libpath.raw_buf());
-				if (lib==nullptr)
-					LOG(LOG_ERROR,"loading additional lib failed:"<<SDL_GetError()<<" "<<libpath);
-				else
-					LOG(LOG_INFO,"additional lib loaded:"<<lib<<" "<<libpath);
-			}
-			g_dir_close(dir);
-		}
+		if (entry.isDir())
+			continue;
+
+		#ifdef _WIN32
+		static constexpr const char* suffix = ".dll";
+		#else
+		static constexpr const char* suffix = ".so";
+		#endif
+		if (entry.getPath().getExtension() != suffix)
+			continue;
+
+		Path libPath = baseDir / entry;
+		void* lib = SDL_LoadObject(libPath.rawBuf());
+		if (lib == nullptr)
+			LOG(LOG_ERROR, "loading additional lib failed:" << SDL_GetError() << ' ' << libPath.getStr());
+		else
+			LOG(LOG_INFO, "additional lib loaded:" << lib << ' ' << libPath.getStr());
 	}
 }
 
@@ -685,78 +664,70 @@ void EngineData::notifyTimer()
 
 std::string EngineData::getsharedobjectfilename(const tiny_string& name)
 {
-	tiny_string subdir = sharedObjectDatapath + G_DIR_SEPARATOR_S;
-	subdir += "sharedObjects";
-	g_mkdir_with_parents(subdir.raw_buf(),0700);
+	Path subDir = Path(sharedObjectDatapath) / "sharedObjects";
+	fs::createDirs(subDir, fs::Perms::OwnerAll);
 
-	std::string p = subdir.raw_buf();
-	p += G_DIR_SEPARATOR_S;
-	p += name.raw_buf();
-	p += ".sol";
-	return p;
+	return (subDir / name + ".sol").getStr();
 }
 void EngineData::setLocalStorageAllowedMarker(bool allowed)
 {
-	tiny_string subdir = sharedObjectDatapath + G_DIR_SEPARATOR_S;
-	g_mkdir_with_parents(subdir.raw_buf(),0700);
+	Path subDir(sharedObjectDatapath);
+	fs::createDirs(subDir, fs::Perms::OwnerAll);
 
-	std::string p = subdir.raw_buf();
-	p += G_DIR_SEPARATOR_S;
-	p += "localStorageAllowed";
-	if (allowed)
+	auto path = subDir / "localStorageAllowed";
+	if (allowed && !path.exists())
 	{
-		if (!g_file_test(p.c_str(),G_FILE_TEST_EXISTS))
-			g_creat(p.c_str(),0600);
+		// Create the file.
+		std::ofstream(path.getStr());
+		fs::setPerms(path, fs::Perms::OwnerRead | fs::Perms::OwnerWrite);
 	}
 	else
-		g_unlink(p.c_str());
+		fs::remove(path);
 }
 bool EngineData::getLocalStorageAllowedMarker()
 {
-	tiny_string subdir = sharedObjectDatapath + G_DIR_SEPARATOR_S;
-	if (!g_file_test(subdir.raw_buf(),G_FILE_TEST_EXISTS))
+	Path subDir(sharedObjectDatapath);
+	if (!subDir.exists())
 		return false;
-	g_mkdir_with_parents(subdir.raw_buf(),0700);
+	fs::createDirs(subDir, fs::Perms::OwnerAll);
 
-	std::string p = subdir.raw_buf();
-	p += G_DIR_SEPARATOR_S;
-	p += "localStorageAllowed";
-	return g_file_test(p.c_str(),G_FILE_TEST_EXISTS);
+	return (subDir / "localStorageAllowed").exists();
 }
 bool EngineData::fillSharedObject(const tiny_string &name, ByteArray *data)
 {
 	if (!getLocalStorageAllowedMarker())
 		return false;
-	std::string p = getsharedobjectfilename(name);
-	if (!g_file_test(p.c_str(),G_FILE_TEST_EXISTS))
+
+	Path path(getsharedobjectfilename(name));
+	if (!path.exists())
 		return false;
-	GStatBuf st_buf;
-	g_stat(p.c_str(),&st_buf);
-	uint32_t len = st_buf.st_size;
-	std::ifstream file;
-	uint8_t buf[len];
-	file.open(p, std::ios::in|std::ios::binary);
-	file.read((char*)buf,len);
-	data->writeBytes(buf,len);
-	file.close();
+
+	size_t len = fs::fileSize(path);
+	uint8_t* buf = new uint8_t[len];
+
+	std::ifstream file(path.getStr(), std::ios::in|std::ios::binary);
+	file.read((char*)buf, len);
+	data->writeBytes(buf, len);
+	delete[] buf;
 	return true;
 }
 bool EngineData::flushSharedObject(const tiny_string &name, ByteArray *data)
 {
 	if (!getLocalStorageAllowedMarker())
 		return false;
-	std::string p = getsharedobjectfilename(name);
-	std::ofstream file;
-	file.open(p, std::ios::out|std::ios::binary|std::ios::trunc);
-	uint8_t* buf = data->getBuffer(data->getLength(),false);
-	file.write((char*)buf,data->getLength());
-	file.close();
+
+	std::ofstream file
+	(
+		getsharedobjectfilename(name),
+		std::ios::out|std::ios::binary|std::ios::trunc
+	);
+	uint8_t* buf = data->getBuffer(data->getLength(), false);
+	file.write((char*)buf, data->getLength());
 	return true;
 }
 void EngineData::removeSharedObject(const tiny_string &name)
 {
-	std::string p = getsharedobjectfilename(name);
-	g_unlink(p.c_str());
+	fs::remove(Path(getsharedobjectfilename(name)));
 }
 
 void EngineData::setDisplayState(const tiny_string &displaystate,SystemState* sys)

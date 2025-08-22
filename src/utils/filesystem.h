@@ -498,8 +498,9 @@ DLL_PUBLIC void copy(const Path& from, const Path& to, const CopyOptions& option
 DLL_PUBLIC bool copyFile(const Path& from, const Path& to);
 DLL_PUBLIC bool copyFile(const Path& from, const Path& to, const CopyOptions& options);
 DLL_PUBLIC void copySymlink(const Path& symlink, const Path& newSymlink);
-DLL_PUBLIC bool createDirs(const Path& path);
-DLL_PUBLIC bool createDir(const Path& path, const Path& attrs = Path());
+DLL_PUBLIC bool createDirs(const Path& path, const Perms& perms = Perms::All);
+DLL_PUBLIC bool createDir(const Path& path, const Path& attrs);
+DLL_PUBLIC bool createDir(const Path& path, const Perms& perms = Perms::All);
 DLL_PUBLIC void createDirSymlink(const Path& to, const Path& newSymlink);
 DLL_PUBLIC void createSymlink(const Path& to, const Path& newSymlink);
 DLL_PUBLIC Path currentPath();
@@ -540,6 +541,7 @@ namespace Detail
 // Platform specific functions.
 bool copyFile(const Path& from, const Path& to, bool overwrite);
 bool createDir(const Path& path, const Path& attrs);
+bool createDir(const Path& path, const Perms& perms);
 void createSymlink(const Path& to, const Path& newSymlink, bool toDir);
 void setPerms(const Path& path, const Perms& perms, const PermOptions& opts, const FileStatus& fileStatus);
 Path resolveSymlink(const Path& path);

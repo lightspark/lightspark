@@ -57,12 +57,32 @@ class StandaloneEngineData: public EngineData
 		return !path.contains("./") && path != ".." && !path.contains("~");
 	}
 
-	bool tryMoveDir(const Path& path, const Path& oldPath)
+	bool createDirs(const Path& path, const fs::Perms& perms)
 	{
-		if (!fs::createDir(path))
+		Path base = path;
+		for (; !base.exists(); base = base.getDir());
+
+		if (!fs::createDirs(path))
 			return false;
 
-		fs::setPerms(path, fs::Perms::OwnerAll);
+		for (auto _path = path; _path != base; _path = _path.getDir())
+		{
+			try
+			{
+				fs::setPerms(_path, perms);
+			}
+			catch (...)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool tryMoveDir(const Path& path, const Path& oldPath)
+	{
+		if (!createDirs(path, fs::Perms::OwnerAll))
+			return false;
 
 		if (!oldPath.exists())
 			return false;
@@ -359,14 +379,15 @@ public:
 			// NOTE: We can't use `removeFilename()` because it modifies the
 			// path, but because `transformOr()` is const, that's not allowed.
 			auto dir = path.hasFilename() ? path.getDir() : path;
-			bool ret = fs::createDir(dir);
-			fs::setPerms
+			return createDirs
 			(
 				dir,
-				fs::Perms::GroupWrite | fs::Perms::OthersWrite,
-				fs::PermOptions::Remove
+				fs::Perms::All ^
+				(
+					fs::Perms::GroupWrite |
+					fs::Perms::OthersWrite
+				)
 			);
-			return ret;
 		});
 	}
 

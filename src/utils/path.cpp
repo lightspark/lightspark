@@ -202,7 +202,12 @@ void Path::postprocessPath(const Format& format)
 	StringSizeType offset = hasRootNamePrefix() ? 2 : 0;
 
 	size_t newEnd = prefixLength + offset;
-	StringType newPath = StringType::fromChar(path[newEnd]);
+	StringType newPath =
+	(
+		newEnd > 0 ?
+		path.substr(0, newEnd) :
+		StringType::fromChar(path[newEnd])
+	);
 
 	for (size_t i = newEnd + 1; i < path.numChars(); ++i)
 	{

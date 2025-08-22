@@ -153,6 +153,8 @@ Path& Path::operator/=(const Path& other)
 			first = false;
 			continue;
 		}
+		else if (!first && (path.empty() || !path.endsWith(nativeSeparator)))
+			path += nativeSeparator;
 
 		first = false;
 		path += it.getNativeStr();

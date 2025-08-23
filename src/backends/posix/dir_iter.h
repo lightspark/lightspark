@@ -20,6 +20,8 @@
 #ifndef BACKENDS_POSIX_DIR_ITER_H
 #define BACKENDS_POSIX_DIR_ITER_H 1
 
+#include <dirent.h>
+
 #include "compat.h"
 #include "tiny_string.h"
 #include "utils/filesystem.h"

@@ -135,7 +135,7 @@ Path& Path::operator/=(const Path& other)
 	bool assignOnly =
 	(
 		other.isAbsolute() &&
-		(path == getRootName().path && other.path != "/")
+		(path != getRootName().path || other.path != "/")
 	) || (other.hasRootName() && other.getRootName() != getRootName());
 	if (assignOnly)
 		return assign(other);

@@ -39,5 +39,10 @@ struct PathHelper
 	static constexpr ValueType preferredSeparator = '/';
 };
 
+template<typename T>
+constexpr T PathHelper<T>::nativeSeparator;
+template<typename T>
+constexpr T PathHelper<T>::preferredSeparator;
+
 };
 #endif /* UTILS_BACKENDS_POSIX_PATH_H */

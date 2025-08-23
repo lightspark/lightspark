@@ -1731,7 +1731,7 @@ GET_VARIABLE_RESULT XML::getVariableByInteger(asAtom &ret, int index, GET_VARIAB
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
-asAtomWithNumber XML::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber XML::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
 	bool isAttr=name.isAttribute;
 	unsigned int index=0;
@@ -1749,7 +1749,6 @@ asAtomWithNumber XML::getAtomWithNumberByMultiname(const multiname& name, ASWork
 		//Lookup attribute
 		const XMLVector& attributes=getAttributesByMultiname(name,normalizedNameID);
 		ret.value = asAtomHandler::fromObject(XMLList::create(getInstanceWorker(),attributes,attributelist.getPtr(),name));
-		ret.isrefcounted=true;
 	}
 	else if(XML::isValidMultiname(getInstanceWorker(),name,index))
 	{
@@ -1772,7 +1771,6 @@ asAtomWithNumber XML::getAtomWithNumberByMultiname(const multiname& name, ASWork
 			mname.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			XMLList* retObj=XMLList::create(getInstanceWorker(),res,this->getChildrenlist(),mname);
 			ret.value = asAtomHandler::fromObject(retObj);
-			ret.isrefcounted=true;
 		}
 		else
 		{
@@ -1781,7 +1779,6 @@ asAtomWithNumber XML::getAtomWithNumberByMultiname(const multiname& name, ASWork
 			if(!res.empty())
 			{
 				ret.value =asAtomHandler::fromObject(XMLList::create(getInstanceWorker(),res,this->getChildrenlist(),name));
-				ret.isrefcounted=true;
 			}
 		}
 	}

@@ -74,7 +74,7 @@ public:
 	}
 	void prepareShutdown() override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
-	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	bool isEqual(ASObject* r) override;
 	Prototype* clonePrototype(ASWorker* wrk) override;
@@ -101,7 +101,7 @@ public:
 	void incRef() { if (getClass()) getClass()->incRef(); }
 	void decRef() { if (getClass()) getClass()->decRef(); }
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
-	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt) override;
 	bool isEqual(ASObject* r) override;
 };
 
@@ -120,7 +120,7 @@ public:
 	}
 	void prepareShutdown() override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
-	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	bool isEqual(ASObject* r) override;
 	Prototype* clonePrototype(ASWorker* wrk) override;
@@ -157,7 +157,7 @@ public:
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
-	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt) override;
 };
 
 // special object if AVM1 ActionGetVariable "super" is used
@@ -172,7 +172,7 @@ private:
 public:
 	AVM1Super_object(ASWorker* wrk, Class_base* c, ASObject* obj,ASObject* _super);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
-	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt) override;
 	GET_VARIABLE_RESULT AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath) override;
 	bool AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
@@ -284,7 +284,7 @@ public:
 	void prepareShutdown() override;
 	
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
-	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable= true, uint8_t min_swfversion=0) override;
 	Prototype* clonePrototype(ASWorker* wrk) override;

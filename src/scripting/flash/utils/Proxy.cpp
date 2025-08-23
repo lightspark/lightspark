@@ -128,14 +128,14 @@ GET_VARIABLE_RESULT Proxy::getVariableByMultiname(asAtom& ret, const multiname& 
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
-asAtomWithNumber Proxy::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber Proxy::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
 	//It seems that various kind of implementation works only with the empty namespace
 	asAtom o=asAtomHandler::invalidAtom;
 	GET_VARIABLE_RESULT res = GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	LOG_CALL("Proxy::getVar "<< name << " " << this->toDebugString()<<" "<<ASObject::hasPropertyByMultiname(name, true, true,wrk));
 	if(ASObject::hasPropertyByMultiname(name, true, true,wrk))
-		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 	if (!implEnable)
 		return asAtomWithNumber();
 
@@ -147,7 +147,7 @@ asAtomWithNumber Proxy::getAtomWithNumberByMultiname(const multiname& name, ASWo
 	res = getVariableByMultiname(o,getPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL,wrk);
 
 	if(asAtomHandler::isInvalid(o))
-		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 	assert_and_throw(asAtomHandler::isFunction(o));
 
 	ASObject* namearg = abstract_s(getInstanceWorker(),name.normalizedName(wrk));
@@ -161,7 +161,6 @@ asAtomWithNumber Proxy::getAtomWithNumberByMultiname(const multiname& name, ASWo
 	asAtomWithNumber ret;
 	// TODO avoid creation of Number object for return value
 	asAtomHandler::callFunction(o,getInstanceWorker(),ret.value,v,&arg,1,true);
-	ret.isrefcounted=true;
 	if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
 		ASATOM_DECREF(o);
 	implEnable=true;

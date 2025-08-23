@@ -905,7 +905,7 @@ GET_VARIABLE_RESULT XMLList::getVariableByInteger(asAtom &ret, int index, GET_VA
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
-asAtomWithNumber XMLList::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber XMLList::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
 	asAtomWithNumber ret;
 	if (name.isAttribute)
@@ -922,7 +922,6 @@ asAtomWithNumber XMLList::getAtomWithNumberByMultiname(const multiname& name, AS
 		}
 
 		ret.value = asAtomHandler::fromObject(create(getInstanceWorker(),retnodes,this,name));
-		ret.isrefcounted=true;
 		return ret;
 	}
 	unsigned int index=0;
@@ -948,7 +947,6 @@ asAtomWithNumber XMLList::getAtomWithNumberByMultiname(const multiname& name, AS
 			ASATOM_DECREF(o);
 		}
 		ret.value = asAtomHandler::fromObject(create(getInstanceWorker(),retnodes,this,name));
-		ret.isrefcounted=true;
 	}
 	return ret;
 }

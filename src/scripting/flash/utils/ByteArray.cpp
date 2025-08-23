@@ -1275,11 +1275,11 @@ int32_t ByteArray::getVariableByMultiname_i(const multiname& name, ASWorker* wrk
 		return _MNR(getSystemState()->getUndefinedRef());
 }
 
-asAtomWithNumber ByteArray::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber ByteArray::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
 	unsigned int index=0;
 	if(!Array::isValidMultiname(wrk,name,index))
-		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 
 	asAtomWithNumber res;
 	if(index<len)

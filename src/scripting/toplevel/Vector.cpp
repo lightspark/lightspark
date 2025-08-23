@@ -1587,16 +1587,16 @@ GET_VARIABLE_RESULT Vector::getVariableByInteger(asAtom &ret, int index, GET_VAR
 		return getVariableByIntegerIntern(ret,index,opt,wrk);
 }
 
-asAtomWithNumber Vector::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber Vector::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
 	if(!implEnable)
 	{
-		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 	}
 
 	if(!name.hasEmptyNS)
 	{
-		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 	}
 
 	unsigned int index=0;

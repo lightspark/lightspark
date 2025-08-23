@@ -45,6 +45,7 @@
 #include "scripting/flash/ui/keycodes.h"
 #include "scripting/flash/display3d/flashdisplay3d.h"
 #include "scripting/argconv.h"
+#include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/AVM1Function.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"

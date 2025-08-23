@@ -21,7 +21,6 @@
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/ui/ContextMenuBuiltInItems.h"
-#include "scripting/toplevel/Array.h"
 #include "scripting/flash/display/NativeMenuItem.h"
 
 namespace lightspark

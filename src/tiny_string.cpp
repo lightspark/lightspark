@@ -1519,20 +1519,24 @@ tiny_string tiny_string::uppercase() const
 	return ret;
 }
 
-/* like strcasecmp(s1.raw_buf(),s2.raw_buf()) but for unicode
- * TODO: slow! */
 int tiny_string::strcasecmp(tiny_string& s2) const
 {
 	if (this->isASCII && s2.isASCII)
 		return ::strcasecmp(this->raw_buf(),s2.raw_buf());
-	tiny_string str1 = this->lowercase();
-	tiny_string str2 = s2.lowercase();
-	if (str1 < str2)
-		return -1;
-	else if (str1==str2)
-		return 0;
-	else
-		return 1;
+	auto it1 = this->begin();
+	auto it2 = s2.begin();
+	while (it1 != this->end() && it2 != s2.end())
+	{
+		uint32_t c1 = unicharToLower(it1.getChar());
+		uint32_t c2 = unicharToLower(it2.getChar());
+		if (c1 < c2)
+			return -1;
+		else if (c1 > c2)
+			return 1;
+		++it1;
+		++it2;
+	}
+	return int(stringSize) - int(s2.stringSize);
 }
 
 bool tiny_string::caselessEquals(const tiny_string& str) const
@@ -1555,6 +1559,10 @@ bool tiny_string::equalsWithCase(const tiny_string& str, bool caseSensitive) con
 	return caselessEquals(str);
 }
 
+int tiny_string::strcmp(tiny_string& s2) const
+{
+	return memcmp(buf,s2.buf,std::min(stringSize,s2.stringSize));
+}
 uint32_t tiny_string::bytePosToIndex(uint32_t bytepos) const
 {
 	if (bytepos >= numBytes())

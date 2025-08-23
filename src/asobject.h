@@ -584,12 +584,12 @@ public:
 	static bool AVM1toPrimitive(asAtom& ret, ASWorker* wrk, bool& isRefCounted, const TP_HINT& hint = NO_HINT);
 	static FORCE_INLINE number_t getNumber(ASWorker* wrk, const asAtom& a);
 	static FORCE_INLINE number_t toNumber(const asAtom& a);
-	static inline number_t AVM1toNumber(asAtom& a, uint32_t swfversion, bool primitiveHint = false);
+	static inline number_t AVM1toNumber(const asAtom& a, uint32_t swfversion, bool primitiveHint = false);
 	static FORCE_INLINE bool AVM1toBool(asAtom& a, ASWorker* wrk, uint32_t swfversion);
 	static FORCE_INLINE int32_t toInt(const asAtom& a);
 	static FORCE_INLINE int32_t toIntStrict(ASWorker* wrk, const asAtom& a);
 	static FORCE_INLINE int64_t toInt64(const asAtom& a);
-	static FORCE_INLINE uint32_t toUInt(asAtom& a);
+	static FORCE_INLINE uint32_t toUInt(const asAtom& a);
 	static FORCE_INLINE uint32_t getUInt(ASWorker* wrk, asAtom& a);
 	static int32_t localNumbertoInt(ASWorker* wrk, const asAtom& a);
 	static void getStringView(tiny_string& res, const asAtom &a, ASWorker* wrk); // this doesn't deep copy the data buffer if parameter a is an ASString
@@ -671,21 +671,24 @@ struct asAtomWithNumber
 {
 	asAtom value;
 	number_t numbervalue;
-	bool isrefcounted;
-	asAtomWithNumber():value(asAtomHandler::invalidAtom),numbervalue(0),isrefcounted(false)
+	asAtomWithNumber():value(asAtomHandler::invalidAtom),numbervalue(0)
 	{
 	}
-	asAtomWithNumber(asAtom v):value(v),numbervalue(0),isrefcounted(asAtomHandler::isObject(v))
+	asAtomWithNumber(asAtom v):value(v),numbervalue(0)
 	{
 	}
-	asAtomWithNumber(number_t n):numbervalue(n),isrefcounted(false)
+	asAtomWithNumber(number_t n):numbervalue(n)
 	{
 		value.uintval=UINT16_MAX<<8 | ATOMTYPE_LOCALNUMBER_BIT;
 	}
-	~asAtomWithNumber();
-	number_t toNumber() const
+	number_t toNumber(ASWorker* wrk) const;
+	int32_t toInt() const
 	{
-		return asAtomHandler::isLocalNumber(value) ? numbervalue : asAtomHandler::toNumber(value);
+		return asAtomHandler::isLocalNumber(value) ? int32_t(numbervalue) : asAtomHandler::toInt(value);
+	}
+	int32_t toUInt() const
+	{
+		return asAtomHandler::isLocalNumber(value) ? uint32_t(numbervalue) : asAtomHandler::toUInt(value);
 	}
 	tiny_string toString(ASWorker* wrk) const;
 };
@@ -711,6 +714,8 @@ public:
 	bool isenumerable:1;
 	bool issealed:1;
 	bool nameIsInteger:1;
+	bool varIsRefCounted:1;
+
 	uint8_t min_swfversion;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns,bool _nameIsInteger,uint32_t nameID)
 		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom)
@@ -749,11 +754,11 @@ public:
 	}
 	bool isRefcountedVar() const
 	{
-		return var.isrefcounted;
+		return varIsRefCounted;
 	}
 	void resetRefcountedVar()
 	{
-		var.isrefcounted=false;
+		varIsRefCounted=false;
 	}
 	bool isValidVar() const
 	{
@@ -1337,7 +1342,7 @@ public:
 	{
 		return getVariableByIntegerIntern(ret,index,opt,wrk);
 	}
-	virtual asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk);
+	virtual asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt);
 
 	std::pair<asAtom, GET_VARIABLE_RESULT> AVM1searchPrototypeByMultiname
 	(
@@ -1694,15 +1699,15 @@ FORCE_INLINE void variables_map::setDynamicVarNoCheck(uint32_t nameID, asAtom& v
 FORCE_INLINE void variable::setVarNoCoerce(asAtom &v, ASWorker* wrk)
 {
 	asAtom oldvar = var.value;
-	bool oldisrefcounted = var.isrefcounted;
+	bool oldisrefcounted = varIsRefCounted;
 	setVarNoCheck(v,wrk);
 	if(oldisrefcounted && asAtomHandler::isObject(oldvar))
 	{
 		LOG_CALL("remove old var no coerce:"<<asAtomHandler::toDebugString(oldvar));
 		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
 	}
-	var.isrefcounted = asAtomHandler::isObject(v);
-	if(var.isrefcounted)
+	varIsRefCounted = asAtomHandler::isObject(v);
+	if(varIsRefCounted)
 	{
 		asAtomHandler::getObjectNoCheck(v)->incRef();
 		asAtomHandler::getObjectNoCheck(v)->addStoredMember();
@@ -1714,13 +1719,13 @@ FORCE_INLINE void variable::setVarFromVariable(variable* v)
 	asAtom oldvar = var.value;
 	var.value=v->var.value;
 	var.numbervalue=v->var.numbervalue;
-	if(var.isrefcounted && asAtomHandler::isObject(oldvar))
+	if(varIsRefCounted && asAtomHandler::isObject(oldvar))
 	{
 		LOG_CALL("remove old var no coerce:"<<asAtomHandler::toDebugString(oldvar));
 		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
 	}
-	var.isrefcounted = asAtomHandler::isObject(var.value);
-	if(var.isrefcounted)
+	varIsRefCounted = asAtomHandler::isObject(var.value);
+	if(varIsRefCounted)
 	{
 		asAtomHandler::getObjectNoCheck(var.value)->incRef();
 		asAtomHandler::getObjectNoCheck(var.value)->addStoredMember();
@@ -2158,7 +2163,7 @@ FORCE_INLINE number_t asAtomHandler::toNumber(const asAtom& a)
 			return getObjectNoCheck(a)->toNumber();
 	}
 }
-inline number_t asAtomHandler::AVM1toNumber(asAtom& a, uint32_t swfversion, bool primitiveHint)
+inline number_t asAtomHandler::AVM1toNumber(const asAtom& a, uint32_t swfversion, bool primitiveHint)
 {
 	switch(a.uintval&0x7)
 	{
@@ -2282,7 +2287,7 @@ FORCE_INLINE int64_t asAtomHandler::toInt64(const asAtom& a)
 			return getObjectNoCheck(a)->toInt64();
 	}
 }
-FORCE_INLINE uint32_t asAtomHandler::toUInt(asAtom& a)
+FORCE_INLINE uint32_t asAtomHandler::toUInt(const asAtom& a)
 {
 	switch(a.uintval&0x7)
 	{

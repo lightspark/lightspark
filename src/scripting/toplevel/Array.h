@@ -63,17 +63,6 @@ protected:
 	void fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_field>& sortfields);
 	void fillSortedArray(asAtom& ret, std::vector<sort_value>& tmp, bool isUniqueSort, bool returnIndexedArray, bool isCaseInsensitive, bool hasDuplicates);
 private:
-	class sortComparatorDefault
-	{
-	private:
-		bool isNumeric;
-		bool isCaseInsensitive;
-		bool isDescending;
-		bool useoldversion;
-	public:
-		sortComparatorDefault(bool oldversion, bool n, bool ci, bool d):isNumeric(n),isCaseInsensitive(ci),isDescending(d),useoldversion(oldversion){}
-		bool operator()(const sort_value& d1, const sort_value& d2);
-	};
 	tiny_string toString_priv(bool localized=false);
 	int capIndex(int i);
 	void getIntegerNameListFromPrototypeChain(std::map<int32_t, asAtom>& members);
@@ -94,8 +83,10 @@ public:
 	private:
 		std::vector<sorton_field> fields;
 	public:
-		sortOnComparator(const std::vector<sorton_field>& sf):ISortComparator(),fields(sf){}
+		sortOnComparator(const std::vector<sorton_field>& sf,ASWorker* _wrk):ISortComparator(),fields(sf),wrk(_wrk){}
 		number_t compare(const sort_value& d1, const sort_value& d2) override;
+		ASWorker* wrk;
+
 	};
 	class sortComparatorWrapper : public ISortComparator
 	{
@@ -103,7 +94,19 @@ public:
 		asAtom comparator;
 	public:
 		sortComparatorWrapper(asAtom c):ISortComparator(),comparator(c){}
-		virtual number_t compare(const sort_value& d1, const sort_value& d2);
+		number_t compare(const sort_value& d1, const sort_value& d2) override;
+	};
+	class sortComparatorDefault : public ISortComparator
+	{
+		private:
+		ASWorker* wrk;
+		bool isNumeric;
+		bool isCaseInsensitive;
+		bool isDescending;
+		bool useoldversion;
+		public:
+		sortComparatorDefault(ASWorker* _wrk, bool oldversion, bool n, bool ci, bool d):wrk(_wrk),isNumeric(n),isCaseInsensitive(ci),isDescending(d),useoldversion(oldversion){}
+		number_t compare(const sort_value& d1, const sort_value& d2) override;
 	};
 	static bool isIntegerWithoutLeadingZeros(const tiny_string& value);
 	virtual bool isAVM1Array() const { return false; }
@@ -176,7 +179,7 @@ public:
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	
 	int32_t getVariableByMultiname_i(const multiname& name, ASWorker* wrk) override;
-	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk) override;
+	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt) override;
 
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk) override;

@@ -1382,12 +1382,12 @@ GET_VARIABLE_RESULT ObjectPrototype::getVariableByMultiname(asAtom& ret, const m
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt,wrk);
 }
 
-asAtomWithNumber ObjectPrototype::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber ObjectPrototype::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
-	asAtomWithNumber ret = ASObject::getAtomWithNumberByMultiname(name,wrk);
+	asAtomWithNumber ret = ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 	if(asAtomHandler::isValid(ret.value) || prevPrototype.isNull())
 		return ret;
-	return prevPrototype->getObj()->getAtomWithNumberByMultiname(name,wrk);
+	return prevPrototype->getObj()->getAtomWithNumberByMultiname(name,wrk,opt);
 }
 
 multiname *ObjectPrototype::setVariableByMultiname(multiname &name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
@@ -1453,13 +1453,13 @@ GET_VARIABLE_RESULT ArrayPrototype::getVariableByMultiname(asAtom& ret, const mu
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt,wrk);
 }
 
-asAtomWithNumber ArrayPrototype::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber ArrayPrototype::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
-	asAtomWithNumber ret = Array::getAtomWithNumberByMultiname(name,wrk);
+	asAtomWithNumber ret = Array::getAtomWithNumberByMultiname(name,wrk,opt);
 	if(asAtomHandler::isValid(ret.value) || prevPrototype.isNull())
 		return ret;
 
-	return prevPrototype->getObj()->getAtomWithNumberByMultiname(name,wrk);
+	return prevPrototype->getObj()->getAtomWithNumberByMultiname(name,wrk,opt);
 }
 
 multiname *ArrayPrototype::setVariableByMultiname(multiname &name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
@@ -1488,7 +1488,7 @@ GET_VARIABLE_RESULT ObjectConstructor::getVariableByMultiname(asAtom& ret, const
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
-asAtomWithNumber ObjectConstructor::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber ObjectConstructor::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
 	asAtomWithNumber ret;
 	if (name.normalizedName(getInstanceWorker()) == "prototype")
@@ -1499,7 +1499,7 @@ asAtomWithNumber ObjectConstructor::getAtomWithNumberByMultiname(const multiname
 	else if (name.normalizedName(getInstanceWorker()) == "length")
 		asAtomHandler::setUInt(ret.value,getInstanceWorker(),_length);
 	else
-		return getClass()->getAtomWithNumberByMultiname(name,wrk);
+		return getClass()->getAtomWithNumberByMultiname(name,wrk,opt);
 	return ret;
 }
 bool ObjectConstructor::isEqual(ASObject* r)
@@ -1538,12 +1538,12 @@ GET_VARIABLE_RESULT FunctionPrototype::getVariableByMultiname(asAtom& ret, const
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt,wrk);
 }
 
-asAtomWithNumber FunctionPrototype::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber FunctionPrototype::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
-	asAtomWithNumber ret =Function::getAtomWithNumberByMultiname(name,wrk);
+	asAtomWithNumber ret =Function::getAtomWithNumberByMultiname(name,wrk,opt);
 	if(asAtomHandler::isValid(ret.value) || prevPrototype.isNull())
 		return ret;
-	return prevPrototype->getObj()->getAtomWithNumberByMultiname(name,wrk);
+	return prevPrototype->getObj()->getAtomWithNumberByMultiname(name,wrk,opt);
 }
 
 multiname* FunctionPrototype::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
@@ -1617,14 +1617,14 @@ GET_VARIABLE_RESULT Function_object::getVariableByMultiname(asAtom& ret, const m
 	return GETVAR_NORMAL;
 }
 
-asAtomWithNumber Function_object::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber Function_object::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
-	asAtomWithNumber ret = ASObject::getAtomWithNumberByMultiname(name,wrk);
+	asAtomWithNumber ret = ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 	if(asAtomHandler::isValid(ret.value) )
 		return ret;
 	ASObject* o = asAtomHandler::getObject(functionPrototype);
 	if (o)
-		return o->getAtomWithNumberByMultiname(name,wrk);
+		return o->getAtomWithNumberByMultiname(name,wrk,opt);
 	return ret;
 }
 
@@ -1666,13 +1666,13 @@ GET_VARIABLE_RESULT AVM1Super_object::getVariableByMultiname(asAtom& ret, const 
 	return baseobject->getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 }
 
-asAtomWithNumber AVM1Super_object::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber AVM1Super_object::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
 	asAtomWithNumber ret;
 	if (checkPrototype(ret.value,name))
 		return ret;
 	ret.value = asAtomHandler::invalidAtom;
-	return baseobject->getAtomWithNumberByMultiname(name,wrk);
+	return baseobject->getAtomWithNumberByMultiname(name,wrk,opt);
 }
 GET_VARIABLE_RESULT AVM1Super_object::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath)
 {

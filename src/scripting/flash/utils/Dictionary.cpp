@@ -282,7 +282,7 @@ GET_VARIABLE_RESULT Dictionary::getVariableByMultiname(asAtom& ret, const multin
 	return getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 }
 
-asAtomWithNumber Dictionary::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber Dictionary::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
 	asAtom key=asAtomHandler::invalidAtom;
 	getKeyFromMultiname(name,key);
@@ -296,7 +296,7 @@ asAtomWithNumber Dictionary::getAtomWithNumberByMultiname(const multiname& name,
 	if (asAtomHandler::isPrimitive(key))
 	{
 		// primitive key, fallback to base implementation
-		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 	}
 	else
 	{

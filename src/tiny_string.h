@@ -403,6 +403,7 @@ public:
 	// Compares two strings for equality, with the specified case
 	// sensitivity.
 	bool equalsWithCase(const tiny_string& str, bool caseSensitive) const;
+	int strcmp(tiny_string& s2) const;
 	/* split string at each occurrence of delimiter character */
 	std::list<tiny_string> split(uint32_t delimiter) const;
 	/* Convert from byte offset to UTF-8 character index */

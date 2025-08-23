@@ -1063,12 +1063,14 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 }
 
 
-bool Array::sortComparatorDefault::operator()(const sort_value& d1, const sort_value& d2)
+number_t Array::sortComparatorDefault::compare(const sort_value& d1, const sort_value& d2)
 {
 	asAtom o1 = d1.dataAtom;
 	asAtom o2 = d2.dataAtom;
-	if(isNumeric)
- 	{
+	if(isNumeric
+		&& (wrk->needsActionScript3() ||
+			(asAtomHandler::isNumeric(o1) && asAtomHandler::isNumeric(o2) )))
+	{
 		number_t a=numeric_limits<double>::quiet_NaN();
 		number_t b=numeric_limits<double>::quiet_NaN();
 		if (useoldversion)
@@ -1083,41 +1085,47 @@ bool Array::sortComparatorDefault::operator()(const sort_value& d1, const sort_v
 		}
 		// nan entries are always put at the end
 		if (std::isnan(a))
-			return isDescending;
+			return isDescending?-1:1;
 		if (std::isnan(b))
-			return !isDescending;
+			return isDescending?1:-1;
 		if(isDescending)
-			return a>b;
+			return b-a;
 		else
-			return a<b;
+			return a-b;
 	}
 	else
 	{
 		//Comparison is always in lexicographic order
 		tiny_string s1;
 		tiny_string s2;
-		// undefined entries are always put at the end
-		if (asAtomHandler::isUndefined(o1))
-			return false;
-		if (asAtomHandler::isUndefined(o2))
-			return true;
-		s1=asAtomHandler::toString(o1,getWorker());
-		s2=asAtomHandler::toString(o2,getWorker());
-		if(isDescending)
+		if (wrk->needsActionScript3())
 		{
-			//TODO: unicode support
-			if(isCaseInsensitive)
-				return s1.strcasecmp(s2)>0;
-			else
-				return s1>s2;
+			// undefined entries are always put at the end
+			if (asAtomHandler::isUndefined(o1))
+				return 1;
+			if (asAtomHandler::isUndefined(o2))
+				return -1;
+			s1=asAtomHandler::toString(o1,wrk);
+			s2=asAtomHandler::toString(o2,wrk);
 		}
 		else
 		{
-			//TODO: unicode support
+			s1=asAtomHandler::AVM1toString(o1,wrk);
+			s2=asAtomHandler::AVM1toString(o2,wrk);
+		}
+		if(isDescending)
+		{
 			if(isCaseInsensitive)
-				return s1.strcasecmp(s2)<0;
+				return -s1.strcasecmp(s2);
 			else
-				return s1<s2;
+				return -s1.strcmp(s2);
+		}
+		else
+		{
+			if(isCaseInsensitive)
+				return s1.strcasecmp(s2);
+			else
+				return s1.strcmp(s2);
 		}
 	}
 }
@@ -1373,22 +1381,27 @@ void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_f
 			currindex++;
 			continue;
 		}
+		asAtom b = a;
 		// ensure ASObjects are created
+		bool isTempObject = false;
 		if (!sortfields.empty())
+		{
+			isTempObject = !asAtomHandler::isObject(a);
 			asAtomHandler::toObject(a,getInstanceWorker());
-		
-		sort_value v(a,currindex,fromprototype);
+		}
+
+		sort_value v(b,currindex,fromprototype);
 		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
 		{
 			asAtomWithNumber tmpval;
-			tmpval = asAtomHandler::getObject(a)->getAtomWithNumberByMultiname(itsf->fieldname,getInstanceWorker());
+			tmpval = asAtomHandler::getObject(a)->getAtomWithNumberByMultiname(itsf->fieldname,getInstanceWorker(), GET_VARIABLE_OPTION::NONE);
 			if (asAtomHandler::isInvalid(tmpval.value))
-			{
-				tmpval.value=a;
-			}
+				tmpval.value=b;
 			v.sortvalues.push_back(tmpval);
 		}
 		tmp.push_back(v);
+		if (isTempObject)
+			ASATOM_DECREF(a);
 		currindex++;
 	}
 	uint32_t previndex = (uint32_t)currindex;
@@ -1409,23 +1422,27 @@ void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_f
 			currindex++;
 			continue;
 		}
+		asAtom b = a;
 		// ensure ASObjects are created
+		bool isTempObject = false;
 		if (!sortfields.empty())
-			asAtomHandler::toObject(it2->second,getInstanceWorker());
-		
-		sort_value v(a,currindex,hole);
+		{
+			isTempObject = !asAtomHandler::isObject(a);
+			asAtomHandler::toObject(a,getInstanceWorker());
+		}
+
+		sort_value v(b,currindex,hole);
 		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
 		{
-			asAtom tmpval=asAtomHandler::invalidAtom;
-			asAtomHandler::getObject(a)->getVariableByMultiname(tmpval,itsf->fieldname,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
-			if (asAtomHandler::isInvalid(tmpval))
-			{
-				tmpval=a;
-				ASATOM_INCREF(tmpval);
-			}
+			asAtomWithNumber tmpval;
+			tmpval = asAtomHandler::getObject(a)->getAtomWithNumberByMultiname(itsf->fieldname,getInstanceWorker(), GET_VARIABLE_OPTION::DONT_CALL_GETTER);
+			if (asAtomHandler::isInvalid(tmpval.value))
+				tmpval.value=b;
 			v.sortvalues.push_back(tmpval);
 		}
 		tmp.push_back(v);
+		if (isTempObject)
+			ASATOM_DECREF(a);
 		currindex++;
 		if (!hole)
 		{
@@ -1440,23 +1457,27 @@ void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_f
 			asAtom a = getMemberFromPrototypeChain(i,protomembers);
 			if (asAtomHandler::isValid(a))
 			{
+				asAtom b = a;
 				// ensure ASObjects are created
+				bool isTempObject = false;
 				if (!sortfields.empty())
-					asAtomHandler::toObject(it2->second,getInstanceWorker());
+				{
+					isTempObject = !asAtomHandler::isObject(a);
+					asAtomHandler::toObject(a,getInstanceWorker());
+				}
 
-				sort_value v(a,i,true);
+				sort_value v(b,i,true);
 				for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
 				{
-					asAtom tmpval=asAtomHandler::invalidAtom;
-					asAtomHandler::getObject(a)->getVariableByMultiname(tmpval,itsf->fieldname,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
-					if (asAtomHandler::isInvalid(tmpval))
-					{
-						tmpval=a;
-						ASATOM_INCREF(tmpval);
-					}
+					asAtomWithNumber tmpval;
+					tmpval = asAtomHandler::getObject(a)->getAtomWithNumberByMultiname(itsf->fieldname,getInstanceWorker(), GET_VARIABLE_OPTION::DONT_CALL_GETTER);
+					if (asAtomHandler::isInvalid(tmpval.value))
+						tmpval.value=b;
 					v.sortvalues.push_back(tmpval);
 				}
 				tmp.push_back(v);
+				if (isTempObject)
+					ASATOM_DECREF(a);
 				currindex++;
 			}
 		}
@@ -1574,8 +1595,10 @@ ASFUNCTIONBODY_ATOM(Array,_sort)
 		hasDuplicates = c.hasduplicates;
 	}
 	else
-		sort(tmp.begin(),tmp.end(),sortComparatorDefault(wrk->getSystemState()->getSwfVersion() < 11, isNumeric,isCaseInsensitive,isDescending));
-	
+	{
+		sortComparatorDefault c(wrk,wrk->getSystemState()->getSwfVersion() < 11, isNumeric,isCaseInsensitive,isDescending);
+		qsort(tmp,c,0,tmp.size()-1);
+	}
 	th->fillSortedArray(ret,tmp,isUniqueSort,returnIndexedArray,isCaseInsensitive,hasDuplicates);
 }
 
@@ -1592,8 +1615,8 @@ number_t Array::sortOnComparator::compare(const sort_value& d1, const sort_value
 		{
 			number_t a=numeric_limits<double>::quiet_NaN();
 			number_t b=numeric_limits<double>::quiet_NaN();
-			a=obj1.toNumber();
-			b=obj2.toNumber();;
+			a=obj1.toNumber(wrk);
+			b=obj2.toNumber(wrk);
 			if (a != b)
 				return it->isDescending ? b-a : a-b;
 		}
@@ -1602,8 +1625,8 @@ number_t Array::sortOnComparator::compare(const sort_value& d1, const sort_value
 			//Comparison is always in lexicographic order
 			tiny_string s1;
 			tiny_string s2;
-			s1=obj1.toString(getWorker());
-			s2=obj2.toString(getWorker());
+			s1=obj1.toString(wrk);
+			s2=obj2.toString(wrk);
 			if(it->isCaseInsensitive)
 			{
 				int n = s1.strcasecmp(s2);
@@ -1658,7 +1681,7 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 			if (asAtomHandler::is<Array>(args[1]))
 			{
 				Array* opts=asAtomHandler::as<Array>(args[1]);
-				for (uint32_t i = 0; i < sortfields.size() && i < opts->size(); i++)
+				for (uint32_t i = 0; opts->size() == sortfields.size() && i < opts->size(); i++)
 				{
 					uint32_t options=0;
 					asAtom o = asAtomHandler::invalidAtom;
@@ -1672,10 +1695,13 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 						sortfields[i].isCaseInsensitive=true;
 					if(options&DESCENDING)
 						sortfields[i].isDescending=true;
-					if(options&UNIQUESORT)
-						isUniqueSort=true;
-					if(options&RETURNINDEXEDARRAY)
-						returnIndexedArray=true;
+					if (i==0)
+					{
+						if(options&UNIQUESORT)
+							isUniqueSort=true;
+						if(options&RETURNINDEXEDARRAY)
+							returnIndexedArray=true;
+					}
 				}
 			}
 			else
@@ -1723,7 +1749,7 @@ ASFUNCTIONBODY_ATOM(Array,sortOn)
 	
 	std::vector<sort_value> tmp;
 	th->fillUnsortedArray(tmp,sortfields);
-	sortOnComparator c(sortfields);
+	sortOnComparator c(sortfields,wrk);
 	qsort(tmp,c,0,tmp.size()-1);
 	th->fillSortedArray(ret,tmp,isUniqueSort,returnIndexedArray,false,c.hasduplicates);
 }
@@ -2195,26 +2221,26 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 		asAtomHandler::setUndefined(ret);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
-asAtomWithNumber Array::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber Array::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
 	if(!implEnable)
 	{
-		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 	}
 
 	if(!name.hasEmptyNS)
 	{
-		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 	}
 
 	uint32_t index=0;
 	if(!isValidMultiname(getInstanceWorker(),name,index))
 	{
-		return ASObject::getAtomWithNumberByMultiname(name,wrk);
+		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 	}
 
 	if (!getInstanceWorker()->needsActionScript3() && ASObject::hasPropertyByMultiname(name,true,false,wrk)) // AVM1 allows to add a property (via addProperty) with an int as name, so we have to check for that
-		return  ASObject::getAtomWithNumberByMultiname(name,wrk);
+		return  ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 
 	asAtomWithNumber ret;
 	if (index < ARRAY_SIZE_THRESHOLD)
@@ -2239,7 +2265,7 @@ asAtomWithNumber Array::getAtomWithNumberByMultiname(const multiname& name, ASWo
 		Prototype* proto = this->getClass()->prototype.getPtr();
 		while(proto && proto->getObj() != this)
 		{
-			ret = proto->getObj()->getAtomWithNumberByMultiname(name,wrk);
+			ret = proto->getObj()->getAtomWithNumberByMultiname(name,wrk,opt);
 			if(asAtomHandler::isValid(ret.value))
 				return ret;
 			proto = proto->prevPrototype.getPtr();

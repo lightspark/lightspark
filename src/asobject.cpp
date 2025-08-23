@@ -1298,14 +1298,14 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 		_isrefcounted=false;
 	}
 	var.value=v;
-	if(var.isrefcounted && asAtomHandler::isObject(oldvar))
+	if(varIsRefCounted && asAtomHandler::isObject(oldvar))
 	{
 		LOG_CALL("remove old var:"<<asAtomHandler::toDebugString(oldvar));
 		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
 	}
 	if(asAtomHandler::isObject(v) && _isrefcounted)
 		asAtomHandler::getObjectNoCheck(v)->addStoredMember();
-	var.isrefcounted = _isrefcounted;
+	varIsRefCounted = _isrefcounted;
 }
 
 bool variable::isClassBaseVar() const
@@ -1347,12 +1347,12 @@ void variable::setVarNoCheck(asAtom &v, ASWorker *wrk)
 	{
 		var.numbervalue = asAtomHandler::getLocalNumber(wrk->currentCallContext,v);
 		var.value.uintval=UINT16_MAX<<8 | ATOMTYPE_LOCALNUMBER_BIT;
-		var.isrefcounted=false;
+		varIsRefCounted=false;
 	}
 	else
 	{
 		var.value=v;
-		var.isrefcounted=asAtomHandler::isObject(v);
+		varIsRefCounted=asAtomHandler::isObject(v);
 	}
 }
 
@@ -2141,19 +2141,21 @@ void ASObject::setRefConstant()
 	setConstant();
 }
 
-asAtomWithNumber ASObject::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk)
+asAtomWithNumber ASObject::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
 {
 	asAtomWithNumber res;
 	variable* v = findVariableByMultiname(name,classdef,nullptr,nullptr,true,wrk);
 	if (v)
 	{
-		if (asAtomHandler::isFunction(v->getter))
+		if (asAtomHandler::is<Function>(v->getter)) // only call builtin getters(?)
 		{
-			res.isrefcounted=true;
-			IFunction* f = asAtomHandler::as<IFunction>(v->getter);
-			asAtom closure = asAtomHandler::fromObject(this);
-			// TODO: avoid creation of Number object for getter result
-			f->callGetter(res.value,closure,wrk,UINT16_MAX);
+			if (!(opt & DONT_CALL_GETTER))
+			{
+				IFunction* f = asAtomHandler::as<IFunction>(v->getter);
+				asAtom closure = asAtomHandler::fromObject(this);
+				// TODO: avoid creation of Number object for getter result
+				f->callGetter(res.value,closure,wrk,UINT16_MAX);
+			}
 		}
 		else if (v->isLocalNumberVar())
 		{
@@ -2404,6 +2406,7 @@ void variables_map::destroyContents()
 		var_iterator it=Variables.begin();
 		asAtom getter=it->second.getter;
 		asAtom setter=it->second.setter;
+
 		ASObject* o = asAtomHandler::isAccessible(getter) ? asAtomHandler::getObject(getter) :nullptr;
 		if (o)
 			o->removeStoredMember();
@@ -2412,7 +2415,6 @@ void variables_map::destroyContents()
 			o->removeStoredMember();
 		if (it->second.isRefcountedVar())
 		{
-			it->second.resetRefcountedVar();
 			o = it->second.isAccessibleObjectVar() ? it->second.getObjectVar() :nullptr;
 			Variables.erase(it);
 			if (o)
@@ -2811,10 +2813,7 @@ bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		return this->gccounter.hasmember;
 	bool ret = false;
 	for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
-	{
-		if (!(*it)->gccounter.ischecked)
-			ret = (*it)->countCylicMemberReferences(gcstate) || ret;
-	}
+		ret = (*it)->countCylicMemberReferences(gcstate) || ret;
 	if (gcstate.stopped)
 		return false;
 	for (auto it = avm1watcherlist.begin(); it != avm1watcherlist.end(); it++)
@@ -6163,13 +6162,20 @@ bool garbagecollectorstate::hasMember(ASObject* o)
 	return o->gccounter.ischecked && o->gccounter.hasmember;
 }
 
-asAtomWithNumber::~asAtomWithNumber()
+number_t asAtomWithNumber::toNumber(ASWorker* wrk) const
 {
-	if (isrefcounted)
-		ASATOM_DECREF(value);
+	return asAtomHandler::isLocalNumber(value) ?
+			   numbervalue
+		   : wrk->needsActionScript3() ?
+			asAtomHandler::toNumber(value)
+			: asAtomHandler::AVM1toNumber(value,wrk->AVM1getSwfVersion());
 }
 
 tiny_string asAtomWithNumber::toString(ASWorker* wrk) const
 {
-	return asAtomHandler::isLocalNumber(value) ? Number::toString(numbervalue) : asAtomHandler::toString(value,wrk);
+	return asAtomHandler::isLocalNumber(value) ?
+			Number::toString(numbervalue)
+		   : wrk->needsActionScript3() ?
+			asAtomHandler::toString(value,wrk)
+			: asAtomHandler::AVM1toString(value,wrk);
 }

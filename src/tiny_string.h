@@ -104,7 +104,8 @@ public:
 	}
 	CharIterator& operator--() //prefix
 	{
-		buf_ptr = g_utf8_prev_char(buf_ptr);
+		// Based on GLib's implementation.
+		for (; (*buf_ptr & 0xc0) == 0x80; --buf_ptr);
 		return *this;
 	}
 	CharIterator operator--(int) // postfix

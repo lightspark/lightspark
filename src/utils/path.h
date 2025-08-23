@@ -365,31 +365,13 @@ public:
 	Iter(const Path& path, const ConstStrIter& pos) :
 	first(path.path.begin()),
 	last(path.path.end()),
-	#if 0
-	prefix(first + path.prefixLength),
-	root
-	(
-		path.hasRootDir() ?
-		#if 1
-		first + path.prefixLength + path.rootNameLength() :
-		#else
-		prefix + path.rootNameLength() :
-		#endif
-		last
-	),
-	#else
 	prefix(std::next(first, path.prefixLength)),
 	root
 	(
 		path.hasRootDir() ?
-		#if 1
 		std::next(first, path.prefixLength + path.rootNameLength()) :
-		#else
-		std::next(prefix, path.rootNameLength()) :
-		#endif
 		last
 	),
-	#endif
 	iter(pos)
 	{
 		if (pos != last)

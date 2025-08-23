@@ -120,3 +120,12 @@ ASFUNCTIONBODY_ATOM(NativeProcessStartupInfo,_constructor)
 ASFUNCTIONBODY_GETTER_SETTER(NativeProcessStartupInfo,arguments)
 ASFUNCTIONBODY_GETTER_SETTER(NativeProcessStartupInfo,executable)
 ASFUNCTIONBODY_GETTER_SETTER(NativeProcessStartupInfo,workingDirectory)
+
+void IFilePromise::linkTraits(Class_base* c)
+{
+	lookupAndLink(c,"isAsync","flash.desktop:IFilePromise");
+	lookupAndLink(c,"relativePath","flash.desktop:IFilePromise");
+	lookupAndLink(c,"close","flash.desktop:IFilePromise");
+	lookupAndLink(c,"open","flash.desktop:IFilePromise");
+	lookupAndLink(c,"reportError","flash.desktop:IFilePromise");
+}

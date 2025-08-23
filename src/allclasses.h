@@ -68,6 +68,7 @@ REGISTER_CLASS_NAME(NativeProcess,"flash.desktop")
 REGISTER_CLASS_NAME(NativeProcessStartupInfo,"flash.desktop")
 REGISTER_CLASS_NAME(ClipboardFormats,"flash.desktop")
 REGISTER_CLASS_NAME(ClipboardTransferMode,"flash.desktop")
+REGISTER_CLASS_NAME(IFilePromise,"flash.desktop")
 
 //Display
 REGISTER_CLASS_NAME(ActionScriptVersion,"flash.display")

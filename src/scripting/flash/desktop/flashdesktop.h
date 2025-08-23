@@ -66,6 +66,11 @@ public:
 	ASPROPERTY_GETTER_SETTER(_NR<ASFile>,workingDirectory);
 };
 
+class IFilePromise
+{
+public:
+	static void linkTraits(Class_base* c);
+};
 
 }
 

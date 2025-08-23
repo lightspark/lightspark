@@ -33,6 +33,7 @@ void ABCVm::registerClassesFlashDesktop(Global* builtin)
 	//If needed add AIR definitions
 	if(m_sys->flashMode==SystemState::AIR)
 	{
+		builtin->registerBuiltin("IFilePromise","flash.desktop",InterfaceClass<IFilePromise>::getRef(m_sys));
 		builtin->registerBuiltin("NativeApplication","flash.desktop",Class<NativeApplication>::getRef(m_sys));
 		builtin->registerBuiltin("NativeDragManager","flash.desktop",Class<NativeDragManager>::getRef(m_sys));
 		builtin->registerBuiltin("NativeProcess","flash.desktop",Class<NativeProcess>::getRef(m_sys));

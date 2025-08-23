@@ -63,7 +63,7 @@ fs::DirIter::DirIter
 (
 	const Path& path,
 	const DirOpts& opts
-) : impl(_MR(new Impl(path, opts)))
+) : impl(_MR<ImplBase>(new Impl(path, opts)))
 {
 	static_assert
 	(
@@ -80,7 +80,7 @@ fs::DirIter::DirIter
 (
 	const Path& path,
 	std::error_code& code
-) : impl(_MR(new Impl(path, DirOpts::None)))
+) : impl(_MR<ImplBase>(new Impl(path, DirOpts::None)))
 {
 	if (impl->code.value())
 		code = impl->code;
@@ -91,7 +91,7 @@ fs::DirIter::DirIter
 	const Path& path,
 	const DirOpts& opts,
 	std::error_code& code
-) : impl(_MR(new Impl(path, opts)))
+) : impl(_MR<ImplBase>(new Impl(path, opts)))
 {
 	if (impl->code.value())
 		code = impl->code;

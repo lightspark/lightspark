@@ -20,13 +20,13 @@
 #ifndef FLASH_NET_SOCKET_H_
 #define FLASH_NET_SOCKET_H_
 
+#include <queue>
 #include "forwards/threading.h"
 #include "interfaces/threading.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/utils/flashutils.h"
 #include "tiny_string.h"
 #include "asobject.h"
-#include <glib.h>
 
 namespace lightspark
 {
@@ -116,7 +116,8 @@ private:
 	tiny_string hostname;
 	int port;
 	int timeout;
-	GAsyncQueue *sendQueue;
+	std::queue<void*> sendQueue;
+	lightspark::Mutex sendQueueMutex;
 	int signalEmitter;
 	int signalListener;
 

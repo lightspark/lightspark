@@ -883,7 +883,6 @@ void ASSocket::threadFinished()
 ASSocketThread::ASSocketThread(_R<ASSocket> _owner, const tiny_string& _hostname, int _port, int _timeout)
 : owner(_owner), hostname(_hostname), port(_port), timeout(_timeout)
 {
-	sendQueue = g_async_queue_new();
 	datasend = _MR(Class<ByteArray>::getInstanceS(owner->getInstanceWorker()));
 	datareceive = _MR(Class<ByteArray>::getInstanceS(owner->getInstanceWorker()));
 #ifdef _WIN32
@@ -917,12 +916,14 @@ ASSocketThread::~ASSocketThread()
 		::close(signalEmitter);
 
 	void *data;
-	while ((data = g_async_queue_try_pop(sendQueue)) != nullptr)
+	sendQueueMutex.lock();
+	while ((data = sendQueue.front()) != nullptr)
 	{
 		tiny_string *s = (tiny_string *)data;
 		delete s;
+		sendQueue.pop();
 	}
-	g_async_queue_unref(sendQueue);
+	sendQueueMutex.unlock();
 }
 
 void ASSocketThread::execute()
@@ -1048,12 +1049,15 @@ void ASSocketThread::executeCommand(char cmd, SocketIO& sock)
 		case SOCKET_COMMAND_SEND:
 		{
 			void *data;
-			while ((data = g_async_queue_try_pop(sendQueue)) != nullptr)
+			sendQueueMutex.lock();
+			while ((data = sendQueue.front()) != nullptr)
 			{
 				socketbuf *s = (socketbuf *)data;
 				sock.sendAll(s->buf, s->len);
 				delete s;
+				sendQueue.pop();
 			}
+			sendQueueMutex.unlock();
 			break;
 		}
 		case SOCKET_COMMAND_CLOSE:
@@ -1092,7 +1096,9 @@ void ASSocketThread::flushData()
 	socketbuf* packet = new socketbuf(datasend->getBuffer(datasend->getLength(),false),datasend->getLength());
 	datasend->setLength(0);
 	datasend->unlock();
-	g_async_queue_push(sendQueue, packet);
+	sendQueueMutex.lock();
+	sendQueue.push(packet);
+	sendQueueMutex.unlock();
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-result"
 	write(signalEmitter, &SOCKET_COMMAND_SEND, 1);

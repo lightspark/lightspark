@@ -47,10 +47,9 @@ protected:
 	void connect(tiny_string host, int port);
 	bool isConnected();
 public:
-	XMLSocket(ASWorker* wrk,Class_base* c) : EventDispatcher(wrk,c), job(nullptr), timeout(20000) {}
+	XMLSocket(ASWorker* wrk,Class_base* c);
 	~XMLSocket();
 	static void sinit(Class_base*);
-	static void buildTraits(ASObject* o);
 	void finalize() override;
 	void threadFinished();
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;

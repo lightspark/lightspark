@@ -194,8 +194,8 @@ AVM1XMLNode::AVM1XMLNode(ASWorker* wrk, Class_base* c):XMLNode(wrk,c)
 	subtype = SUBTYPE_AVM1XMLNODE;
 }
 
-AVM1XMLNode::AVM1XMLNode(ASWorker* wrk, Class_base* c, XMLDocument* _r, pugi::xml_node _n, XMLNode* _p):
-	XMLNode(wrk,c,_r,_n,_p)
+AVM1XMLNode::AVM1XMLNode(ASWorker* wrk, Class_base* c, pugi::xml_node _n, XMLNode* _p):
+	XMLNode(wrk,c,_n,_p)
 {
 	subtype = SUBTYPE_AVM1XMLNODE;
 }

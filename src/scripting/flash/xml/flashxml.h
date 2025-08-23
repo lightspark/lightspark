@@ -34,14 +34,13 @@ class XMLNode: public ASObject
 {
 friend class XML;
 protected:
-	XMLDocument* root;
 	XMLNode* parent;
 	Array* children;
+	uint32_t childcount; // this is used to keep track of the real count of child nodes, as the children array may be modified by AS code
 	pugi::xml_node node;
 	pugi::xml_document tmpdoc; // used for temproary copying/moving of nodes
 	tiny_string toString_priv(pugi::xml_node outputNode);
 	pugi::xml_node getParentNode();
-	virtual XMLDocument* getRootDoc() { return root; }
 	tiny_string getPrefix();
 	static bool getNamespaceURI(const pugi::xml_node& n, const tiny_string& prefix, tiny_string& uri);
 	static bool getPrefixFromNamespaceURI(const pugi::xml_node& n, const tiny_string& uri, tiny_string& prefix);
@@ -50,9 +49,11 @@ protected:
 	void reloadChildren();
 	void refreshChildren();
 	void fillIDMap(ASObject* o);
+	uint32_t findChildIndex(XMLNode* child);
+	bool isAncestor(const pugi::xml_node& child);
 public:
 	XMLNode(ASWorker* wrk,Class_base* c);
-	XMLNode(ASWorker* wrk,Class_base* c, XMLDocument* _r, pugi::xml_node _n, XMLNode* _p);
+	XMLNode(ASWorker* wrk,Class_base* c, pugi::xml_node _n, XMLNode* _p);
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
@@ -97,10 +98,6 @@ protected:
 	tiny_string doctypedecl;
 	tiny_string xmldecl;
 	bool needsActionScript3;
-	XMLDocument* getRootDoc() override
-	{
-		return this;
-	}
 	void setDecl();
 public:
 	XMLDocument(ASWorker* wrk,Class_base* c, tiny_string s="");

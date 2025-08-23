@@ -32,18 +32,13 @@ using namespace std;
 using namespace lightspark;
 
 XMLNode::XMLNode(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLNODE)
-	,root(nullptr),parent(nullptr),children(nullptr),node()
+	,parent(nullptr),children(nullptr),childcount(0),node()
 {
 }
 
-XMLNode::XMLNode(ASWorker* wrk, Class_base* c, XMLDocument* _r, pugi::xml_node _n, XMLNode* _p):
-	ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLNODE),root(_r),parent(_p),children(nullptr),node(_n)
+XMLNode::XMLNode(ASWorker* wrk, Class_base* c, pugi::xml_node _n, XMLNode* _p):
+	ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLNODE),parent(_p),children(nullptr),childcount(0),node(_n)
 {
-	if (root)
-	{
-		root->incRef();
-		root->addStoredMember();
-	}
 	if (parent)
 	{
 		parent->incRef();
@@ -82,9 +77,6 @@ void XMLNode::sinit(Class_base* c)
 
 void XMLNode::finalize()
 {
-	if (root)
-		root->removeStoredMember();
-	root=nullptr;
 	if (children)
 		children->removeStoredMember();
 	children = nullptr;
@@ -95,12 +87,10 @@ void XMLNode::finalize()
 
 bool XMLNode::destruct()
 {
-	if (root)
-		root->removeStoredMember();
-	root=nullptr;
 	if (children)
 		children->removeStoredMember();
 	children = nullptr;
+	childcount=0;
 	if (parent)
 		parent->removeStoredMember();
 	parent = nullptr;
@@ -114,8 +104,6 @@ void XMLNode::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	ASObject::prepareShutdown();
-	if (root)
-		root->prepareShutdown();
 	if (children)
 		children->prepareShutdown();
 	if (parent)
@@ -124,8 +112,6 @@ void XMLNode::prepareShutdown()
 bool XMLNode::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
-	if (root)
-		ret = root->countAllCylicMemberReferences(gcstate) || ret;
 	if (children)
 		ret = children->countAllCylicMemberReferences(gcstate) || ret;
 	if (parent)
@@ -141,19 +127,14 @@ ASFUNCTIONBODY_ATOM(XMLNode,_constructor)
 	uint32_t type;
 	tiny_string value;
 	ARG_CHECK(ARG_UNPACK(type)(value));
-	if(wrk->needsActionScript3())
-		th->root= Class<XMLDocument>::getInstanceS(wrk);
-	else
-		th->root = Class<AVM1XMLDocument>::getInstanceS(wrk);
-	th->root->addStoredMember();
 	switch (type)
 	{
 		case 1:
 			if (!value.empty())
-				th->node = th->root->xmldoc.root().append_child(value.raw_buf());
+				th->node = th->tmpdoc.root().append_child(value.raw_buf());
 			break;
 		case 3:
-			th->node = th->root->xmldoc.root().append_child(pugi::node_pcdata);
+			th->node = th->tmpdoc.root().append_child(pugi::node_pcdata);
 			th->node.set_value(value.raw_buf());
 			break;
 		default:
@@ -188,19 +169,22 @@ ASFUNCTIONBODY_ATOM(XMLNode,lastChild)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
 	assert_and_throw(argslen==0);
-	if(th->node.type()==pugi::node_null || th->node.type() == pugi::node_pcdata)
+	asAtomHandler::setNull(ret);
+	th->fillChildren();
+	for (uint32_t i = th->children->size(); i >0 ; i--)
 	{
-		asAtomHandler::setNull(ret);
-		return;
+		asAtom a = asAtomHandler::invalidAtom;
+		th->children->at_nocheck(a,i-1);
+		if (asAtomHandler::is<XMLNode>(a))
+		{
+			pugi::xml_node_type t = asAtomHandler::as<XMLNode>(a)->node.type();
+			if (t==pugi::node_declaration) // skip declaration node
+				continue;
+			ret = a;
+			ASATOM_INCREF(ret);
+			break;
+		}
 	}
-	pugi::xml_node newNode =th->node.last_child();
-	if(newNode.type() == pugi::node_null)
-	{
-		asAtomHandler::setNull(ret);
-		return;
-	}
-	XMLDocument* r = th->getRootDoc();
-	ret = asAtomHandler::fromObject(wrk->needsActionScript3() ? Class<XMLNode>::getInstanceS(wrk,r,newNode,th) :Class<AVM1XMLNode>::getInstanceS(wrk,r,newNode,th));
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,childNodes)
@@ -345,21 +329,26 @@ void XMLNode::removeChild(const pugi::xml_node& child)
 			}
 		}
 	}
+	child.parent().remove_child(child);
+	assert(childcount);
+	childcount--;
+
 }
 
 void XMLNode::fillChildren()
 {
 	if (!children)
 	{
+		assert(childcount==0);
 		children =  getInstanceWorker()->needsActionScript3() ? Class<Array>::getInstanceSNoArgs(getInstanceWorker()) : Class<AVM1Array>::getInstanceSNoArgs(getInstanceWorker());
 		children->addStoredMember();
-		XMLDocument* r = getRootDoc();
 		auto range = node.children();
 		for(auto it = range.begin();it!=range.end();++it)
 		{
 			if(it->type()==pugi::node_declaration || it->type()==pugi::node_comment || it->type()==pugi::node_doctype)
 				continue;
-			children->push(asAtomHandler::fromObject(getInstanceWorker()->needsActionScript3() ? Class<XMLNode>::getInstanceS(getInstanceWorker(),r, *it,this) : Class<AVM1XMLNode>::getInstanceS(getInstanceWorker(),r, *it,this)));
+			children->push(asAtomHandler::fromObject(getInstanceWorker()->needsActionScript3() ? Class<XMLNode>::getInstanceS(getInstanceWorker(), *it,this) : Class<AVM1XMLNode>::getInstanceS(getInstanceWorker(), *it,this)));
+			childcount++;
 		}
 	}
 }
@@ -368,14 +357,30 @@ void XMLNode::reloadChildren()
 {
 	if (children)
 	{
+		for (uint32_t i = 0; i < children->size(); i++)
+		{
+			asAtom a = asAtomHandler::invalidAtom;
+			children->at_nocheck(a,i);
+			ASObject* o = asAtomHandler::getObject(a);
+			if (o && o->is<XMLNode>())
+			{
+				XMLNode* n = o->as<XMLNode>();
+				if (n->parent)
+				{
+					n->parent->removeStoredMember();
+					n->parent=nullptr;
+				}
+			}
+		}
 		children->resize(0);
-		XMLDocument* r = getRootDoc();
+		childcount=0;
 		auto range = node.children();
 		for(auto it = range.begin();it!=range.end();++it)
 		{
 			if(it->type()==pugi::node_declaration || it->type()==pugi::node_comment)
 				continue;
-			children->push(asAtomHandler::fromObject(getInstanceWorker()->needsActionScript3() ? Class<XMLNode>::getInstanceS(getInstanceWorker(),r, *it,this) : Class<AVM1XMLNode>::getInstanceS(getInstanceWorker(),r, *it,this)));
+			children->push(asAtomHandler::fromObject(getInstanceWorker()->needsActionScript3() ? Class<XMLNode>::getInstanceS(getInstanceWorker(), *it,this) : Class<AVM1XMLNode>::getInstanceS(getInstanceWorker(), *it,this)));
+			childcount++;
 		}
 	}
 }
@@ -428,6 +433,33 @@ void XMLNode::fillIDMap(ASObject* o)
 	}
 }
 
+uint32_t XMLNode::findChildIndex(XMLNode* child)
+{
+	if (children == nullptr)
+		return UINT32_MAX;
+	for (uint32_t i = 0; i < children->size(); i++)
+	{
+		asAtom a = asAtomHandler::invalidAtom;
+		children->at_nocheck(a,i);
+		ASObject* o = asAtomHandler::getObject(a);
+		if (o == child)
+			return i;
+	}
+	return UINT32_MAX;
+}
+
+bool XMLNode::isAncestor(const pugi::xml_node& child)
+{
+	pugi::xml_node n = child.parent();
+	while (n.type() != pugi::node_null)
+	{
+		if (n == this->node)
+			return true;
+		n = n.parent();
+	}
+	return false;
+}
+
 ASFUNCTIONBODY_ATOM(XMLNode,parentNode)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
@@ -437,7 +469,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,parentNode)
 		if (parent.type()!=pugi::node_null && parent.type()!=pugi::node_document)
 		{
 			XMLNode* grandparent = th->parent ? th->parent->parent : nullptr;
-			th->parent = wrk->needsActionScript3() ? Class<XMLNode>::getInstanceS(wrk,th->root, parent,grandparent) : Class<AVM1XMLNode>::getInstanceS(wrk,th->root, parent,grandparent);
+			th->parent = wrk->needsActionScript3() ? Class<XMLNode>::getInstanceS(wrk, parent,grandparent) : Class<AVM1XMLNode>::getInstanceS(wrk, parent,grandparent);
 			th->parent->addStoredMember();
 		}
 	}
@@ -454,30 +486,30 @@ ASFUNCTIONBODY_ATOM(XMLNode,nextSibling)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
 	asAtomHandler::setNull(ret);
-	if(th->node.type()==pugi::node_null)
+	if(th->node.type()==pugi::node_null || !th->parent)
 		return;
-	pugi::xml_node sibling;
-	if (th->node.parent().type()!=pugi::node_null)
-		sibling = th->node.next_sibling();
-	if (sibling.type()!=pugi::node_null)
-		ret = asAtomHandler::fromObject(wrk->needsActionScript3() ? Class<XMLNode>::getInstanceS(wrk,th->root, sibling,th->parent) : Class<AVM1XMLNode>::getInstanceS(wrk,th->root, sibling,th->parent));
-	else
-		ret = asAtomHandler::nullAtom;
+	th->fillChildren();
+	uint32_t index = th->parent->findChildIndex(th);
+	if (index != UINT32_MAX && index < th->parent->children->size())
+	{
+		th->parent->children->at_nocheck(ret,index+1);
+		ASATOM_INCREF(ret);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,previousSibling)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
 	asAtomHandler::setNull(ret);
-	if(th->node.type()==pugi::node_null)
+	if(th->node.type()==pugi::node_null || !th->parent)
 		return;
-	pugi::xml_node sibling;
-	if (th->node.parent().type()!=pugi::node_null)
-		sibling = th->node.previous_sibling();
-	if (sibling.type()!=pugi::node_null)
-		ret = asAtomHandler::fromObject(wrk->needsActionScript3() ? Class<XMLNode>::getInstanceS(wrk,th->root, sibling,th->parent) : Class<AVM1XMLNode>::getInstanceS(wrk,th->root, sibling,th->parent));
-	else
-		ret = asAtomHandler::nullAtom;
+	th->fillChildren();
+	uint32_t index = th->parent->findChildIndex(th);
+	if (index != UINT32_MAX && index > 0 )
+	{
+		th->parent->children->at_nocheck(ret,index-1);
+		ASATOM_INCREF(ret);
+	}
 }
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeType)
 {
@@ -528,8 +560,20 @@ ASFUNCTIONBODY_ATOM(XMLNode,_setNodeName)
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
 	tiny_string name;
 	ARG_CHECK(ARG_UNPACK(name));
-	if (name.empty())
+	if (name.empty() || asAtomHandler::isUndefined(args[0]))
 		LOG(LOG_NOT_IMPLEMENTED,"XMLNode.setNodeName with empty argument");
+	else if (th->is<XMLDocument>())
+	{
+		pugi::xml_node n =th->node.prepend_child(name.raw_buf());
+		pugi::xml_node s = n.next_sibling();
+		while (s.type()!= pugi::node_null)
+		{
+			n.append_move(s);
+			s = n.next_sibling();
+		}
+		th->node = th->node.first_child();
+		th->reloadChildren();
+	}
 	else
 		th->node.set_name(name.raw_buf());
 }
@@ -572,35 +616,22 @@ ASFUNCTIONBODY_ATOM(XMLNode,appendChild)
 	ARG_CHECK(ARG_UNPACK(c));
 	if (c.isNull() || c->parent == th)
 		return;
+	if (c->isAncestor(th->node))
+		return;
+	th->fillChildren();
 
 	pugi::xml_node newnode = c->is<XMLDocument>() ?  th->node.append_copy(c->node.first_child()) : th->node.append_copy(c->node);
 
 	if (c->parent)
+	{
 		c->parent->removeChild(c->node);
-	if (th->children)
-	{
-		th->refreshChildren();
-		c->incRef();
-		asAtom ch = asAtomHandler::fromObjectNoPrimitive(c.getPtr());
-		th->children->push(ch);
+		c->parent->removeStoredMember();
+		c->parent=nullptr;
 	}
-	if (c->root && c->root != th)
-		c->root->removeStoredMember();
-	if (th->is<XMLDocument>())
-	{
-		if (c->root != th)
-		{
-			c->root = th->as<XMLDocument>();
-			c->root->incRef();
-			c->root->addStoredMember();
-		}
-	}
-	else
-	{
-		c->root = th->getRootDoc();
-		c->root->incRef();
-		c->root->addStoredMember();
-	}
+	asAtom ch = asAtomHandler::fromObjectNoPrimitive(c.getPtr());
+	th->children->resize(th->childcount+1);
+	th->children->set(th->childcount,ch);
+	th->childcount++;
 	th->incRef();
 	th->addStoredMember();
 	c->parent = th;
@@ -649,10 +680,6 @@ ASFUNCTIONBODY_ATOM(XMLNode,removeNode)
 		th->parent->removeStoredMember();
 		th->parent=nullptr;
 	}
-
-	if (th->root)
-		th->root->removeStoredMember();
-	th->root=nullptr;
 }
 ASFUNCTIONBODY_ATOM(XMLNode,hasChildNodes)
 {
@@ -667,35 +694,34 @@ ASFUNCTIONBODY_ATOM(XMLNode,insertBefore)
 	ARG_CHECK(ARG_UNPACK(newChild)(insertPoint));
 	if (newChild.isNull() || newChild->parent == th)
 		return;
-	if (insertPoint.isNull())
+	if (insertPoint.isNull() || !insertPoint->is<XMLNode>())
 		return;
-	if (newChild->parent)
-		newChild->parent->removeChild(newChild->node);
-
+	th->fillChildren();
 	pugi::xml_node newnode = th->node.append_copy(newChild->node);
 	th->node.insert_move_before(newnode,insertPoint->node);
-	th->reloadChildren();
-	if (newChild->root && newChild->root != th)
-		newChild->root->removeStoredMember();
-	if (th->is<XMLDocument>())
+	// remove new child from previous parent
+	if (newChild->parent)
 	{
-		if (newChild->root != th)
-		{
-			newChild->root = th->as<XMLDocument>();
-			newChild->root->incRef();
-			newChild->root->addStoredMember();
-		}
+		newChild->parent->removeChild(newChild->node);
+		newChild->parent->removeStoredMember();
+		newChild->parent=nullptr;
 	}
-	else
-	{
-		newChild->root = th->getRootDoc();
-		newChild->root->incRef();
-		newChild->root->addStoredMember();
-	}
+
+	// set new parent
 	th->incRef();
 	th->addStoredMember();
 	newChild->parent = th;
-	newChild->node = newnode;
+
+	// update children array
+	uint32_t index = th->findChildIndex(insertPoint->as<XMLNode>());
+	asAtom tmp = asAtomHandler::invalidAtom;
+	asAtom arrobj = asAtomHandler::fromObject(th->children);
+	asAtom arrarg[2];
+	arrarg[0]=asAtomHandler::fromUInt(index);
+	arrarg[1]=asAtomHandler::fromObject(newChild.getPtr());
+	th->children->insertAt(tmp,wrk,arrobj,arrarg,2);
+	ASATOM_DECREF(tmp);
+	th->childcount++;
 }
 ASFUNCTIONBODY_ATOM(XMLNode,prefix)
 {
@@ -962,7 +988,7 @@ ASFUNCTIONBODY_ATOM(XMLDocument,createElement)
 	tiny_string name;
 	ARG_CHECK(ARG_UNPACK(name));
 	pugi::xml_node newNode = th->tmpdoc.append_child(name.raw_buf());
-	ret = asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(wrk,th,newNode,nullptr));
+	ret = asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(wrk,newNode,nullptr));
 }
 ASFUNCTIONBODY_ATOM(XMLDocument,createTextNode)
 {
@@ -978,7 +1004,7 @@ ASFUNCTIONBODY_ATOM(XMLDocument,createTextNode)
 	pugi::xml_node newNode = th->tmpdoc.append_child(pugi::node_pcdata);
 	newNode.set_value(text.raw_buf());
 
-	ret = asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(wrk, th, newNode,th));
+	ret = asAtomHandler::fromObject(Class<XMLNode>::getInstanceS(wrk, newNode,nullptr));
 	return;
 }
 

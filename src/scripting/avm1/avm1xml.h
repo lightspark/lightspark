@@ -51,7 +51,7 @@ class AVM1XMLNode: public XMLNode
 {
 public:
 	AVM1XMLNode(ASWorker* wrk,Class_base* c);
-	AVM1XMLNode(ASWorker* wrk,Class_base* c, XMLDocument* _r, pugi::xml_node _n, XMLNode* _p);
+	AVM1XMLNode(ASWorker* wrk,Class_base* c, pugi::xml_node _n, XMLNode* _p);
 	static void sinit(Class_base* c);
 };
 

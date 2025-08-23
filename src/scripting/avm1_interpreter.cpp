@@ -743,7 +743,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	{
 		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" preload this:"<<asAtomHandler::toDebugString(thisObj));
 		if (!suppressThis)
-			ASATOM_INCREF(thisObj);
+			ASATOM_ADDSTOREDMEMBER(thisObj);
 		registers[currRegister++] = !suppressThis ? thisObj : asAtomHandler::undefinedAtom;
 	}
 
@@ -781,7 +781,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 
 		auto argsAtom = asAtomHandler::fromObject(argsArray);
 		if (preloadArguments)
+		{
+			argsArray->addStoredMember();
 			registers[currRegister++] = argsAtom;
+		}
 		else
 		{
 			if (context->getScope()->forceDefineLocal
@@ -809,7 +812,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			// NOTE: The `super` register is set to `undefined`, if both
 			// flags are set.
 			if (!suppressSuper)
-				ASATOM_INCREF(super);
+				ASATOM_ADDSTOREDMEMBER(super);
 			registers[currRegister++] = (!suppressSuper) ? super : asAtomHandler::undefinedAtom;
 		}
 		else
@@ -829,6 +832,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	{
 		DisplayObject* root=clip->AVM1getRoot();
 		root->incRef();
+		root->addStoredMember();
 		registers[currRegister++] = asAtomHandler::fromObject(root);
 	}
 	if (preloadParent)
@@ -839,12 +843,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 		if (clip->getParent() != nullptr)
 		{
 			clip->getParent()->incRef();
+			clip->getParent()->addStoredMember();
 			registers[currRegister++] = asAtomHandler::fromObject(clip->getParent());
 		}
 	}
 	if (preloadGlobal)
 	{
 		clip->getSystemState()->avm1global->incRef();
+		clip->getSystemState()->avm1global->addStoredMember();
 		registers[currRegister++] = asAtomHandler::fromObject(clip->getSystemState()->avm1global);
 	}
 	for (uint32_t i = 0; i < paramnames.size() && i < num_args; i++)
@@ -854,8 +860,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 
 		if (reg != 0)
 		{
-			ASATOM_INCREF(args[i]);
-			ASATOM_DECREF(registers[reg]);
+			ASATOM_ADDSTOREDMEMBER(args[i]);
+			ASATOM_REMOVESTOREDMEMBER(registers[reg]);
 			registers[reg] = args[i];
 		}
 		else
@@ -928,7 +934,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				else if(trycatchblock.reg != UINT8_MAX)
 				{
-					ASATOM_DECREF(registers[trycatchblock.reg]);
+					ASATOM_REMOVESTOREDMEMBER(registers[trycatchblock.reg]);
+					context->exceptionthrown->addStoredMember();
 					registers[trycatchblock.reg] = asAtomHandler::fromObject(context->exceptionthrown);
 				}
 				else
@@ -2607,10 +2614,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x87: // ActionStoreRegister
 			{
 				asAtom a = PeekStack(stack);
-				ASATOM_INCREF(a);
+				ASATOM_ADDSTOREDMEMBER(a);
 				uint8_t num = *it++;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStoreRegister "<<(int)num<<" "<<asAtomHandler::toDebugString(a));
-				ASATOM_DECREF(registers[num]);
+				ASATOM_REMOVESTOREDMEMBER(registers[num]);
 				registers[num] = a;
 				break;
 			}
@@ -3320,7 +3327,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 
 	for (uint32_t i = 0; i < 256; i++)
 	{
-		ASATOM_DECREF(registers[i]);
+		ASATOM_REMOVESTOREDMEMBER(registers[i]);
 	}
 	while (!stack.empty())
 	{

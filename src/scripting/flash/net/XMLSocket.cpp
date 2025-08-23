@@ -59,10 +59,6 @@ void XMLSocket::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,timeout);
 }
 
-void XMLSocket::buildTraits(ASObject* o)
-{
-}
-
 void XMLSocket::finalize()
 {
 	EventDispatcher::finalize();
@@ -155,9 +151,9 @@ void XMLSocket::connect(tiny_string host, int port)
 	}
 
 	incRef();
-	XMLSocketThread *thread = new XMLSocketThread(_MR(this), host, port, timeout);
-	getSys()->addJob(thread);
-	job = thread;
+	job = new XMLSocketThread(_MR(this), host, port, timeout);
+	_R<StartJobEvent> event=_MR(new (getSystemState()->unaccountedMemory) StartJobEvent(job));
+	getVm(getSystemState())->addEvent(NullRef,event);
 }
 
 ASFUNCTIONBODY_ATOM(XMLSocket, _connect)
@@ -196,6 +192,10 @@ bool XMLSocket::isConnected()
 {
 	Locker l(joblock);
 	return job && job->isConnected();
+}
+
+XMLSocket::XMLSocket(ASWorker* wrk, Class_base* c) : EventDispatcher(wrk,c), job(nullptr), timeout(20000)
+{
 }
 
 ASFUNCTIONBODY_ATOM(XMLSocket, _connected)
@@ -315,7 +315,6 @@ void XMLSocketThread::execute()
 {
 	if (!sock.connect(hostname, port))
 	{
-		owner->incRef();
 		if (owner->getSystemState()->mainClip->needsActionScript3())
 			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 		else
@@ -323,7 +322,6 @@ void XMLSocketThread::execute()
 		return;
 	}
 
-	owner->incRef();
 	getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getInstanceWorker(),"connect")));
 
 	struct timeval timeout;

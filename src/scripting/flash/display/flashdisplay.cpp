@@ -2165,7 +2165,6 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 		auto it = dynamicDisplayList.begin();
 		while (it != dynamicDisplayList.end())
 		{
-			(*it)->incRef();
 			if ((*it)->getBounds(xmin,xmax,ymin,ymax,m))
 			{
 				if (xmin <= point->getX() && xmax >= point->getX()

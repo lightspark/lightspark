@@ -2062,6 +2062,7 @@ ASFUNCTIONBODY_ATOM(Array,insertAt)
 		std::map<uint32_t,asAtom> tmp;
 		if (index < ARRAY_SIZE_THRESHOLD)
 		{
+			ASATOM_ADDSTOREDMEMBER(o);
 			th->data_first.insert(th->data_first.begin()+index,o);
 		}
 		auto it=th->data_second.begin();

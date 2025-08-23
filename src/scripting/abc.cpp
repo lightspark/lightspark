@@ -1358,7 +1358,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case STARTJOB_EVENT:
 			{
 				StartJobEvent* ev=static_cast<StartJobEvent*>(e.second.getPtr());
-				LOG(LOG_CALLS,"LoadMovieEvent");
+				LOG(LOG_CALLS,"StartJobEvent");
 				IThreadJob* thread = ev->getThread();
 				if (!m_sys->runSingleThreaded)
 				{

@@ -35,10 +35,8 @@ namespace lightspark
 template<typename T>
 class Optional;
 
-};
-
 // Based on `ghc::filesystem` from https://github.com/gulrak/filesystem
-namespace lightspark::FileSystem
+namespace FileSystem
 {
 
 class Exception : public SystemException
@@ -556,6 +554,8 @@ inline DirIter begin(DirIter it) { return it; }
 inline DirIter end(const DirIter&) { return DirIter(); }
 inline RecursiveDirIter begin(RecursiveDirIter it) { return it; }
 inline RecursiveDirIter end(const RecursiveDirIter&) { return RecursiveDirIter(); }
+
+};
 
 };
 

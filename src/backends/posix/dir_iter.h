@@ -28,8 +28,11 @@
 #include "utils/path.h"
 #include "utils/timespec.h"
 
+namespace lightspark
+{
+
 // Based on `ghc::filesystem` from https://github.com/gulrak/filesystem
-namespace lightspark::FileSystem
+namespace FileSystem
 {
 
 class DirIter::Impl : public DirIter::ImplBase
@@ -44,6 +47,8 @@ public:
 
 	void inc(std::error_code& code);
 	void copyToDirEntry();
+};
+
 };
 
 };

@@ -105,7 +105,7 @@ public:
 	CharIterator& operator--() //prefix
 	{
 		// Based on GLib's implementation.
-		for (; (*buf_ptr & 0xc0) == 0x80; --buf_ptr);
+		for (--buf_ptr; (*buf_ptr & 0xc0) == 0x80; --buf_ptr);
 		return *this;
 	}
 	CharIterator operator--(int) // postfix

@@ -413,7 +413,6 @@ void XMLSocketThread::executeCommand(char cmd, SocketIO& sock)
 		case SOCKET_COMMAND_SEND:
 		{
 			sendQueueMutex.lock();
-			void *data;
 			while (!sendQueue.empty())
 			{
 				tiny_string *s = sendQueue.front();

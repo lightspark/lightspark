@@ -898,7 +898,6 @@ ASSocketThread::~ASSocketThread()
 	if (signalEmitter != -1)
 		::close(signalEmitter);
 
-	void *data;
 	sendQueueMutex.lock();
 	while (!sendQueue.empty())
 	{
@@ -1031,7 +1030,6 @@ void ASSocketThread::executeCommand(char cmd, SocketIO& sock)
 	{
 		case SOCKET_COMMAND_SEND:
 		{
-			void *data;
 			sendQueueMutex.lock();
 			while (!sendQueue.empty())
 			{

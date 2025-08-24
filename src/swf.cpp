@@ -143,7 +143,7 @@ void SystemState::addBroadcastEvent(const tiny_string& event)
 
 void SystemState::handleBroadcastEvent(const tiny_string& event)
 {
-	std::list<DisplayObject*> tmplisteners; // work on copy of framelistners, as the list may change during event handling
+	std::list<DisplayObject*> tmplisteners; // work on copy of framelisteners, as the list may change during event handling
 	{
 		Locker l(mutexFrameListeners);
 		for (auto it : frameListeners)
@@ -708,9 +708,14 @@ SystemState::~SystemState()
 #ifdef PROFILING_SUPPORT
 	dumpFunctionCallCount();
 #endif
+	mutexFrameListeners.lock();
+	for (auto it = frameListeners.begin(); it != frameListeners.end(); it++)
+		(*it)->prepareShutdown();
+	mutexFrameListeners.unlock();
+
+	this->resetParentList();
 	stage->prepareShutdown();
 	stage->_removeAllChildren();
-	this->resetParentList();
 	// finalize main worker
 	worker->finalize();
 	workerDomain->finalize();

@@ -136,11 +136,7 @@ bool DisplayObject::belongsToMask() const
 void DisplayObject::addBroadcastEventListener()
 {
 	if (broadcastEventListenerCount==0)
-	{
 		getSystemState()->registerFrameListener(this);
-		this->incRef();
-		this->addStoredMember();
-	}
 	++broadcastEventListenerCount;
 }
 
@@ -149,10 +145,7 @@ void DisplayObject::removeBroadcastEventListener()
 	assert(broadcastEventListenerCount);
 	--broadcastEventListenerCount;
 	if (broadcastEventListenerCount==0)
-	{
 		getSystemState()->unregisterFrameListener(this);
-		this->removeStoredMember();
-	}
 }
 
 DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
@@ -232,6 +225,8 @@ void DisplayObject::finalize()
 	needsTextureRecalculation=true;
 	avm1mouselistenercount=0;
 	avm1framelistenercount=0;
+	if (broadcastEventListenerCount)
+		getSystemState()->unregisterFrameListener(this);
 	broadcastEventListenerCount=0;
 	EventDispatcher::finalize();
 }
@@ -282,6 +277,8 @@ bool DisplayObject::destruct()
 	visible=true;
 	avm1mouselistenercount=0;
 	avm1framelistenercount=0;
+	if (broadcastEventListenerCount)
+		getSystemState()->unregisterFrameListener(this);
 	broadcastEventListenerCount=0;
 	filters.reset();
 	legacy=false;
@@ -310,8 +307,6 @@ void DisplayObject::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	EventDispatcher::prepareShutdown();
-	if (broadcastEventListenerCount)
-		getSystemState()->unregisterFrameListener(this);
 	broadcastEventListenerCount=0;
 
 	if (clipMask)

@@ -310,7 +310,10 @@ template<>
 inline void Class<Boolean>::getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass, bool callSyntheticConstructor)
 {
 	if (argslen> 0)
+	{
 		ret = asAtomHandler::fromObject(abstract_b(worker->getSystemState(),asAtomHandler::Boolean_concrete(args[0])));
+		ASATOM_DECREF(args[0]);
+	}
 	else
 		ret = asAtomHandler::fromObject(abstract_b(worker->getSystemState(),false));
 }

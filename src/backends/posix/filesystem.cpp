@@ -20,6 +20,10 @@
 #include <fstream>
 #include <vector>
 
+#if defined(__APPLE__) && defined(__MACH__)
+#include <Availability.h>
+#endif
+
 #include <fcntl.h>
 #include <limits.h>
 #include <sys/stat.h>
@@ -188,11 +192,21 @@ void fs::setLastWriteTime(const Path& path, const TimeSpec& newTime)
 	if (stat(path.rawBuf(), &fileStat) < 0)
 		throw Exception(path, std::errc(errno));
 
+	#if defined(__APPLE__) && defined(__MACH__)
+	timeval times[2];
+	times[0].tv_sec = fileStat.st_atimespec.tv_sec;
+	times[0].tv_usec = fileStat.st_atimespec.tv_nsec / TimeSpec::nsPerUs;
+	times[1].tv_sec = newTime.getSecs();
+	times[1].tv_usec = newTime.toUs() % TimeSpec::usPerSec;
+
+	if (utimes(path.rawBuf(), times) < 0)
+	#else
 	utimbuf times;
 	times.modtime = newTime.getSecs();
 	times.actime = fileStat.st_atime;
 
 	if (utime(path.rawBuf(), &times) < 0)
+	#endif
 	#endif
 		throw Exception(path, std::errc(errno));
 }

@@ -179,7 +179,8 @@ void fs::setLastWriteTime(const Path& path, const TimeSpec& newTime)
 {
 	#if _POSIX_C_SOURCE >= 200809L
 	timespec times[2];
-	times[0] = TimeSpec::fromNs(UTIME_OMIT);
+	times[0].tv_sec = 0;
+	times[0].tv_nsec = UTIME_OMIT;
 	times[1] = newTime;
 	if (utimensat(AT_FDCWD, path.rawBuf(), times, 0) < 0)
 	#else

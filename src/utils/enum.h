@@ -25,8 +25,10 @@
 namespace lightspark
 {
 
+// NOTE: This needs to be `constexpr` due to it otherwise causing build
+// errors on GCC 11, and earlier.
 template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
-static bool operator!(const T& a)
+static constexpr bool operator!(const T& a)
 {
 	return !bool(a);
 }

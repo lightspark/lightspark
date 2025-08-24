@@ -28,7 +28,7 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
-#if _POSIX_C_SOURCE < 200809L
+#if _POSIX_C_SOURCE < 200809L || _XOPEN_SOURCE < 700
 #include <utime.h>
 #include <sys/time.h>
 #endif
@@ -185,7 +185,7 @@ size_t fs::fileSize(const Path& path)
 
 void fs::setLastWriteTime(const Path& path, const TimeSpec& newTime)
 {
-	#if _POSIX_C_SOURCE >= 200809L
+	#if _POSIX_C_SOURCE >= 200809L || _XOPEN_SOURCE >= 700
 	timespec times[2];
 	times[0].tv_sec = 0;
 	times[0].tv_nsec = UTIME_OMIT;
@@ -224,7 +224,7 @@ void fs::Detail::setPerms
 )
 {
 	using PermOpts = PermOptions;
-	#if _POSIX_C_SOURCE >= 200809L
+	#if _POSIX_C_SOURCE >= 200809L || _XOPEN_SOURCE >= 700
 	int flag = bool(opts & PermOpts::NoFollow) ? AT_SYMLINK_NOFOLLOW : 0;
 	if (fchmodat(AT_FDCWD, path.rawBuf(), mode_t(perms), flag) < 0)
 	#else

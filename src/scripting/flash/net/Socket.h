@@ -111,12 +111,27 @@ class ASSocketThread : public IThreadJob
 {
 friend class ASSocket;
 private:
+	struct socketbuf
+	{
+		uint8_t* buf;
+		size_t len;
+		socketbuf(uint8_t* data, size_t l)
+		{
+			buf = new uint8_t[l];
+			len = l;
+			memcpy(buf,data,len);
+		}
+		~socketbuf()
+		{
+			delete[] buf;
+		}
+	};
 	SocketIO sock;
 	_R<ASSocket> owner;
 	tiny_string hostname;
 	int port;
 	int timeout;
-	std::queue<void*> sendQueue;
+	std::queue<socketbuf*> sendQueue;
 	lightspark::Mutex sendQueueMutex;
 	int signalEmitter;
 	int signalListener;

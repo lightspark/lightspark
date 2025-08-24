@@ -54,23 +54,6 @@ const char SOCKET_COMMAND_CLOSE = '-';
 using namespace std;
 using namespace lightspark;
 
-struct socketbuf
-{
-	uint8_t* buf;
-	size_t len;
-	socketbuf(uint8_t* data, size_t l)
-	{
-		buf = new uint8_t[l];
-		len = l;
-		memcpy(buf,data,len);
-	}
-	~socketbuf()
-	{
-		delete[] buf;
-	}
-};
-
-
 SocketIO::SocketIO() : fd(-1)
 {
 #ifdef _WIN32
@@ -917,9 +900,9 @@ ASSocketThread::~ASSocketThread()
 
 	void *data;
 	sendQueueMutex.lock();
-	while ((data = sendQueue.front()) != nullptr)
+	while (!sendQueue.empty())
 	{
-		tiny_string *s = (tiny_string *)data;
+		socketbuf *s = sendQueue.front();
 		delete s;
 		sendQueue.pop();
 	}
@@ -1050,9 +1033,9 @@ void ASSocketThread::executeCommand(char cmd, SocketIO& sock)
 		{
 			void *data;
 			sendQueueMutex.lock();
-			while ((data = sendQueue.front()) != nullptr)
+			while (!sendQueue.empty())
 			{
-				socketbuf *s = (socketbuf *)data;
+				socketbuf *s = sendQueue.front();
 				sock.sendAll(s->buf, s->len);
 				delete s;
 				sendQueue.pop();

@@ -63,7 +63,7 @@ private:
 	tiny_string hostname;
 	int port;
 	int timeout;
-	std::queue<void*> sendQueue;
+	std::queue<tiny_string*> sendQueue;
 	lightspark::Mutex sendQueueMutex;
 	int signalEmitter;
 	int signalListener;

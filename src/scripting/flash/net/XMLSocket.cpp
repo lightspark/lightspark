@@ -299,12 +299,11 @@ XMLSocketThread::~XMLSocketThread()
 		::close(signalListener);
 	if (signalEmitter != -1)
 		::close(signalEmitter);
-	
+
 	sendQueueMutex.lock();
-	void *data;
-	while ((data = sendQueue.front()) != nullptr)
+	while (!sendQueue.empty())
 	{
-		tiny_string *s = (tiny_string *)data;
+		tiny_string *s = sendQueue.front();
 		delete s;
 		sendQueue.pop();
 	}
@@ -415,15 +414,15 @@ void XMLSocketThread::executeCommand(char cmd, SocketIO& sock)
 		{
 			sendQueueMutex.lock();
 			void *data;
-			while ((data = sendQueue.front()) != nullptr)
+			while (!sendQueue.empty())
 			{
-				tiny_string *s = (tiny_string *)data;
+				tiny_string *s = sendQueue.front();
 				sock.sendAll(s->raw_buf(), s->numBytes());
 				delete s;
 				// according to specs every message is terminated by a null byte
 				char buf=0;
 				sock.sendAll(&buf, 1);
-				sendQueue.pop();	
+				sendQueue.pop();
 			}
 			sendQueueMutex.unlock();
 			break;

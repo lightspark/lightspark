@@ -24,7 +24,6 @@
 #include "tiny_string.h"
 #include "asobject.h"
 #include "threading.h"
-#include <glib.h>
 #include "Socket.h"
 
 namespace lightspark
@@ -63,7 +62,8 @@ private:
 	tiny_string hostname;
 	int port;
 	int timeout;
-	GAsyncQueue *sendQueue;
+	std::queue<tiny_string*> sendQueue;
+	lightspark::Mutex sendQueueMutex;
 	int signalEmitter;
 	int signalListener;
 

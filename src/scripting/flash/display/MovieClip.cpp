@@ -1169,7 +1169,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 	tf->setY(y);
 	tf->width = width;
 	tf->height = height;
-	th->_addChildAt(tf,depth);
+	if (th->hasLegacyChildAt(depth))
+		th->deleteLegacyChildAt(depth, false);
+	th->insertLegacyChildAt(depth, tf, false, false);
+
 	if(tf->name != BUILTIN_STRINGS::EMPTY)
 	{
 		tf->incRef();

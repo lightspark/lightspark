@@ -20,13 +20,13 @@
 #ifndef FLASH_NET_SOCKET_H_
 #define FLASH_NET_SOCKET_H_
 
+#include <queue>
 #include "forwards/threading.h"
 #include "interfaces/threading.h"
 #include "scripting/flash/events/flashevents.h"
 #include "scripting/flash/utils/flashutils.h"
 #include "tiny_string.h"
 #include "asobject.h"
-#include <glib.h>
 
 namespace lightspark
 {
@@ -111,12 +111,28 @@ class ASSocketThread : public IThreadJob
 {
 friend class ASSocket;
 private:
+	struct socketbuf
+	{
+		uint8_t* buf;
+		size_t len;
+		socketbuf(uint8_t* data, size_t l)
+		{
+			buf = new uint8_t[l];
+			len = l;
+			memcpy(buf,data,len);
+		}
+		~socketbuf()
+		{
+			delete[] buf;
+		}
+	};
 	SocketIO sock;
 	_R<ASSocket> owner;
 	tiny_string hostname;
 	int port;
 	int timeout;
-	GAsyncQueue *sendQueue;
+	std::queue<socketbuf*> sendQueue;
+	lightspark::Mutex sendQueueMutex;
 	int signalEmitter;
 	int signalListener;
 

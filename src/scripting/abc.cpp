@@ -104,9 +104,9 @@ bool inStartupOrClose=true;
 bool lightspark::isVmThread()
 {
 #ifndef NDEBUG
-	return inStartupOrClose || GPOINTER_TO_INT(tls_get(is_vm_thread));
+	return inStartupOrClose || (int)(int64_t)(tls_get(is_vm_thread));
 #else
-	return GPOINTER_TO_INT(tls_get(is_vm_thread));
+	return (int)(int64_t)(tls_get(is_vm_thread));
 #endif
 }
 
@@ -797,7 +797,7 @@ void ABCVm::start()
 		t = SDL_CreateThread(Run,"ABCVm",this);
 	else
 	{
-		tls_set(is_vm_thread, GINT_TO_POINTER(1));
+		tls_set(is_vm_thread, (void *)(int64_t)1);
 		initVM();
 	}
 }
@@ -1889,7 +1889,7 @@ int ABCVm::Run(void* d)
 		;
 
 	/* set TLS variable for isVmThread() */
-	tls_set(is_vm_thread, GINT_TO_POINTER(1));
+	tls_set(is_vm_thread, (void *)(int64_t)1);
 
 	std::string errStr;
 	th->initVM(&errStr);

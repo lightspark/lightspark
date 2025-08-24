@@ -2813,15 +2813,15 @@ bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		return this->gccounter.hasmember;
 	bool ret = false;
 	for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
-		ret = (*it)->countCylicMemberReferences(gcstate) || ret;
+		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
 	if (gcstate.stopped)
 		return false;
 	for (auto it = avm1watcherlist.begin(); it != avm1watcherlist.end(); it++)
 	{
-		ret = it->second.first->countCylicMemberReferences(gcstate) || ret;
+		ret = it->second.first->countAllCylicMemberReferences(gcstate) || ret;
 		ASObject* o = asAtomHandler::getObject(it->second.second);
 		if (o)
-			ret = o->countCylicMemberReferences(gcstate) || ret;
+			ret = o->countAllCylicMemberReferences(gcstate) || ret;
 	}
 	if (gcstate.stopped)
 		return false;

@@ -2093,14 +2093,22 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		&& nameID != UINT32_MAX)
 	{
 		// reuse name of existing DispayObject at this depth
+		asAtom v = asAtomHandler::fromObject(currchar);
 		currchar->name = nameID;
 		currchar->incRef();
-		multiname objName(nullptr);
-		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=currchar->name;
-		objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		asAtom v = asAtomHandler::fromObject(currchar);
-		parent->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
+		if (currchar->hasDefaultName)
+		{
+			// special handling for defaultName in case currchar is not dynamic
+			parent->setDynamicVariableNoCheck(nameID,v,false,parent->getInstanceWorker());
+		}
+		else
+		{
+			multiname objName(nullptr);
+			objName.name_type=multiname::NAME_STRING;
+			objName.name_s_id=currchar->name;
+			objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+			parent->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
+		}
 	}
 	if (exists && PlaceFlagHasClipAction)
 	{

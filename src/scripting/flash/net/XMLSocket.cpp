@@ -270,8 +270,6 @@ void XMLSocket::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 XMLSocketThread::XMLSocketThread(_R<XMLSocket> _owner, const tiny_string& _hostname, int _port, int _timeout)
 : owner(_owner), hostname(_hostname), port(_port), timeout(_timeout)
 {
-	sendQueue = g_async_queue_new();
-
 #ifdef _WIN32
 	HANDLE readPipe, writePipe;
 	if (!CreatePipe(&readPipe,&writePipe,NULL,0))
@@ -302,13 +300,14 @@ XMLSocketThread::~XMLSocketThread()
 	if (signalEmitter != -1)
 		::close(signalEmitter);
 
-	void *data;
-	while ((data = g_async_queue_try_pop(sendQueue)) != nullptr)
+	sendQueueMutex.lock();
+	while (!sendQueue.empty())
 	{
-		tiny_string *s = (tiny_string *)data;
+		tiny_string *s = sendQueue.front();
 		delete s;
+		sendQueue.pop();
 	}
-	g_async_queue_unref(sendQueue);
+	sendQueueMutex.unlock();
 }
 
 void XMLSocketThread::execute()
@@ -413,17 +412,18 @@ void XMLSocketThread::executeCommand(char cmd, SocketIO& sock)
 	{
 		case SOCKET_COMMAND_SEND:
 		{
-			void *data;
-			while ((data = g_async_queue_try_pop(sendQueue)) != nullptr)
+			sendQueueMutex.lock();
+			while (!sendQueue.empty())
 			{
-				tiny_string *s = (tiny_string *)data;
+				tiny_string *s = sendQueue.front();
 				sock.sendAll(s->raw_buf(), s->numBytes());
 				delete s;
 				// according to specs every message is terminated by a null byte
 				char buf=0;
 				sock.sendAll(&buf, 1);
-				
+				sendQueue.pop();
 			}
+			sendQueueMutex.unlock();
 			break;
 		}
 		case SOCKET_COMMAND_CLOSE:
@@ -457,7 +457,9 @@ void XMLSocketThread::sendData(const tiny_string& data)
 		return;
 
 	tiny_string *packet = new tiny_string(data);
-	g_async_queue_push(sendQueue, packet);
+	sendQueueMutex.lock();
+	sendQueue.push(packet);
+	sendQueueMutex.unlock();
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-result"
 	write(signalEmitter, &SOCKET_COMMAND_SEND, 1);

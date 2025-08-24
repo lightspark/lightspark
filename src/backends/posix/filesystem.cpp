@@ -28,6 +28,10 @@
 #include <limits.h>
 #include <sys/stat.h>
 #include <sys/statvfs.h>
+#if _POSIX_C_SOURCE < 200809L
+#include <utime.h>
+#include <sys/time.h>
+#endif
 #include <unistd.h>
 
 #include "utils/array.h"

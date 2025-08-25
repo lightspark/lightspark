@@ -203,7 +203,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 	ARG_CHECK(ARG_UNPACK(width)(height)(transparent, true)(fillColor, 0xFFFFFFFF));
 
 	//If the bitmap is already initialized, just return
-	if(width==0 || height==0 || !th->pixels->isEmpty())
+	if(width==0 || height==0 || !th->pixels->isEmpty() || th->pixels->isFromTag())
 		return;
 	if((width<0) || (width> (wrk->AVM1getSwfVersion() >=10 ? 8191 : 2880)) )
 	{

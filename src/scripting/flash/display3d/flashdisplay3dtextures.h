@@ -23,7 +23,6 @@
 
 #include "swftypes.h"
 #include "scripting/flash/events/flashevents.h"
-#include "scripting/flash/display/BitmapContainer.h"
 
 namespace lightspark
 {

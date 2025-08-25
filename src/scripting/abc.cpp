@@ -1104,7 +1104,10 @@ void ABCVm::tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e)
 		{
 			LOG(LOG_ERROR,"Unhandled ActionScript exception in VM " << e->as<ASError>()->getStackTraceString());
 			if (m_sys->ignoreUnhandledExceptions)
+			{
+				e->decRef();
 				return;
+			}
 			m_sys->setError(e->as<ASError>()->getStackTraceString());
 		}
 		else
@@ -1116,6 +1119,7 @@ void ABCVm::tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e)
 			}
 			m_sys->setError(ASWorker::getStackTraceString(m_sys,stacktrace,e));
 		}
+		e->decRef();
 		if (!m_sys->isShuttingDown())
 		{
 			/* do not allow any more event to be enqueued */

@@ -34,9 +34,10 @@ using namespace lightspark;
 
 extern void nanoVGDeleteImage(int image, EngineData* engineData);
 extern void nanoVGUpdateImage(int image, const unsigned char* data, EngineData* engineData);
-BitmapContainer::BitmapContainer(MemoryAccount* m):stride(0),width(0),height(0),
+BitmapContainer::BitmapContainer(MemoryAccount* m, bool _isfromtag):stride(0),width(0),height(0),
 	data(reporter_allocator<uint8_t>(m)),
 	hasModifiedData(false),hasModifiedTexture(false),needsclear(true),
+	isfromtag(_isfromtag),
 	currentrenderdata(0),
 	renderevent(0),
 	nanoVGImageHandle(-1),cachedCairoPattern(nullptr)

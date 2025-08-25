@@ -81,6 +81,7 @@ protected:
 	bool hasModifiedData;
 	bool hasModifiedTexture;
 	bool needsclear;
+	bool isfromtag;
 	ATOMIC_INT32(currentrenderdata);
 	BitmapContainerRenderData renderdata[2];
 public:
@@ -95,7 +96,7 @@ public:
 	int nanoVGImageHandle;
 	RGBA nanoVGImageBackgroundcolor;
 	cairo_pattern_t* cachedCairoPattern;
-	BitmapContainer(MemoryAccount* m);
+	BitmapContainer(MemoryAccount* m, bool _isfromtag=false);
 	~BitmapContainer();
 	uint32_t getDataSize() const { return data.size(); }
 	uint8_t* getData() { return getCurrentData(); }
@@ -145,6 +146,7 @@ public:
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
 	bool isEmpty() const { return data.empty(); }
+	bool isFromTag() const { return isfromtag; }
 
 	bool checkTextureForUpload(SystemState* sys);
 	void clone(BitmapContainer* c);

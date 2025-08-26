@@ -373,6 +373,10 @@ private:
 	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr, bool callSyntheticConstructor=true) override;
 	IFunction* getNopFunction();
 public:
+	void getInstanceTemporary(ASWorker* worker,asAtom& ret) override
+	{
+		getInstance(worker,ret,false,nullptr,0,nullptr,false);
+	}
 	static Class<IFunction>* getClass(SystemState* sys);
 	static _R<Class<IFunction>> getRef(SystemState* sys)
 	{

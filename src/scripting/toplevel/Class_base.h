@@ -206,6 +206,7 @@ public:
 	void finalize() override;
 	void prepareShutdown() override;
 	virtual void getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr, bool callSyntheticConstructor=true)=0;
+	virtual void getInstanceTemporary(ASWorker* worker,asAtom& ret)=0;
 	void addImplementedInterface(const multiname& i);
 	void addImplementedInterface(Class_base* i);
 	virtual void buildInstanceTraits(ASObject* o) const=0;
@@ -316,6 +317,10 @@ private:
 	}
 	
 public:
+	void getInstanceTemporary(ASWorker* worker,asAtom& ret) override
+	{
+		assert(false);
+	}
 	static Class_object* getClass(SystemState* sys);
 	
 	static _R<Class_object> getRef(SystemState* sys)

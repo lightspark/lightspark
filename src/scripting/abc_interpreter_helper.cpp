@@ -2459,7 +2459,7 @@ variable* getTempVariableFromClass(Class_base* cls, asAtom& otmp, multiname* nam
 		&& cls != Class<Global>::getRef(cls->getSystemState()).getPtr()
 		&& !cls->isInterface
 		&& cls->isConstructed())
-		cls->getInstance(wrk,otmp,false,nullptr,0);
+		cls->getInstanceTemporary(wrk,otmp);
 	ASObject* obj = asAtomHandler::getObject(otmp);
 	if (obj)
 	{

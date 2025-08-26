@@ -59,6 +59,10 @@ public:
 		if(construct)
 			this->handleConstruction(ret,args,argslen,true);
 	}
+	void getInstanceTemporary(ASWorker* worker,asAtom& ret) override
+	{
+		getInstance(worker,ret,false,nullptr,0,nullptr,false);
+	}
 
 	/* This function is called for as3 code like v = Vector.<String>(["Hello", "World"])
 	 * this->types will be Class<ASString> on entry of this function.

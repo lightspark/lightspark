@@ -471,7 +471,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	textData.isPassword = Password;
 }
 
-ASObject* DefineEditTextTag::instance(Class_base* c)
+ASObject* DefineEditTextTag::instance(Class_base* c, bool temporary)
 {
 	if(c==nullptr)
 	{
@@ -621,7 +621,7 @@ DefineSpriteTag::~DefineSpriteTag()
 	delete framecontainer;
 }
 
-ASObject* DefineSpriteTag::instance(Class_base* c)
+ASObject* DefineSpriteTag::instance(Class_base* c, bool temporary)
 {
 	Class_base* retClass=nullptr;
 	if(c)
@@ -635,13 +635,13 @@ ASObject* DefineSpriteTag::instance(Class_base* c)
 	MovieClip* spr = !loadedFrom->usesActionScript3 ?
 				new (retClass->memoryAccount) AVM1MovieClip(loadedFrom->getInstanceWorker(),retClass, framecontainer, this->getId()) :
 				new (retClass->memoryAccount) MovieClip(loadedFrom->getInstanceWorker(),retClass, framecontainer, this->getId());
+	if (temporary)
+		return spr;
 	if (soundheadtag)
 		soundheadtag->setSoundChannel(spr);
 	if (soundstartframe != UINT32_MAX)
 		spr->setSoundStartFrame(this->soundstartframe);
 	spr->loadedFrom=this->loadedFrom;
-	// initactions are always executed in Vm thread, no need to check here
-	// spr->loadedFrom->AVM1checkInitActions(spr);
 	spr->setScalingGrid();
 	return spr;
 }
@@ -766,7 +766,7 @@ void FontTag::fillTokens(int glyphposition, const RGBA& color, tokensVector* tk,
 	tk->stroketokens = it->second.at(glyphposition).stroketokens;
 }
 
-ASObject* FontTag::instance(Class_base* c)
+ASObject* FontTag::instance(Class_base* c, bool temporary)
 {
 	Class_base* retClass=nullptr;
 	if(c)
@@ -1357,7 +1357,7 @@ DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 		LOG(LOG_NOT_IMPLEMENTED,"DefineFont4Tag with FontData");
 	ignore(in,dest-in.tellg());
 }
-ASObject* DefineFont4Tag::instance(Class_base* c)
+ASObject* DefineFont4Tag::instance(Class_base* c, bool temporary)
 {
 	tiny_string fontname = FontName;
 	Class_base* retClass=nullptr;
@@ -1374,7 +1374,7 @@ ASObject* DefineFont4Tag::instance(Class_base* c)
 	return ret;
 }
 
-BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),bitmap(_MR(new BitmapContainer(root->getSystemState()->tagsMemory)))
+BitmapTag::BitmapTag(RECORDHEADER h,RootMovieClip* root):DictionaryTag(h,root),bitmap(_MR(new BitmapContainer(root->getSystemState()->tagsMemory,true)))
 {
 }
 
@@ -1471,7 +1471,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 	}
 }
 
-ASObject* BitmapTag::instance(Class_base* c)
+ASObject* BitmapTag::instance(Class_base* c, bool temporary)
 {
 	//Flex imports bitmaps using BitmapAsset as the base class, which is derived from bitmap
 	//Also BitmapData is used in the wild though, so support both cases
@@ -1539,7 +1539,7 @@ DefineTextTag::~DefineTextTag()
 	tokens.destruct();
 }
 
-ASObject* DefineTextTag::instance(Class_base* c)
+ASObject* DefineTextTag::instance(Class_base* c, bool temporary)
 {
 	/* we cannot call computeCached in the constructor
 	 * because loadedFrom is not available there for dictionary lookups
@@ -1661,7 +1661,7 @@ DefineShapeTag::~DefineShapeTag()
 	}
 }
 
-ASObject* DefineShapeTag::instance(Class_base *c)
+ASObject* DefineShapeTag::instance(Class_base *c, bool temporary)
 {
 	if (!tokens)
 	{
@@ -1689,7 +1689,8 @@ ASObject* DefineShapeTag::instance(Class_base *c)
 					 new (c->memoryAccount) Shape(loadedFrom->getInstanceWorker(),c):
 					new (c->memoryAccount) AVM1Shape(loadedFrom->getInstanceWorker(),c);
 	}
-	ret->setupShape(this, 1.0f/20.0f);
+	if (!temporary)
+		ret->setupShape(this, 1.0f/20.0f);
 	return ret;
 }
 
@@ -1741,7 +1742,7 @@ DefineMorphShapeTag::~DefineMorphShapeTag()
 		it = tokensmap.erase(it);
 	}
 }
-ASObject* DefineMorphShapeTag::instance(Class_base* c)
+ASObject* DefineMorphShapeTag::instance(Class_base* c, bool temporary)
 {
 	assert_and_throw(bindedTo==nullptr);
 	if(c==nullptr)
@@ -2480,7 +2481,7 @@ DefineButtonTag::~DefineButtonTag()
 		delete sounds;
 }
 
-ASObject* DefineButtonTag::instance(Class_base* c)
+ASObject* DefineButtonTag::instance(Class_base* c, bool temporary)
 {
 	Class_base* realClass=(c)?c:bindedTo;
 
@@ -2496,6 +2497,8 @@ ASObject* DefineButtonTag::instance(Class_base* c)
 				new (realClass->memoryAccount) SimpleButton(loadedFrom->getInstanceWorker(), realClass,this);
 	ret->legacy=true;
 	ret->setScalingGrid();
+	if (temporary)
+		return ret;
 
 	auto i = Characters.begin();
 	for(;i != Characters.end(); ++i)
@@ -2565,7 +2568,7 @@ DefineVideoStreamTag::~DefineVideoStreamTag()
 {
 }
 
-ASObject* DefineVideoStreamTag::instance(Class_base* c)
+ASObject* DefineVideoStreamTag::instance(Class_base* c, bool temporary)
 {
 	Class_base* classRet = nullptr;
 	if(c)
@@ -2600,7 +2603,7 @@ DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s,RootMovi
 	s.read((char*)bytes,size);
 }
 
-ASObject* DefineBinaryDataTag::instance(Class_base* c)
+ASObject* DefineBinaryDataTag::instance(Class_base* c, bool temporary)
 {
 	uint8_t* b = new uint8_t[len];
 	memcpy(b,bytes,len);
@@ -2803,7 +2806,7 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 #endif
 }
 
-ASObject* DefineSoundTag::instance(Class_base* c)
+ASObject* DefineSoundTag::instance(Class_base* c, bool temporary)
 {
 	Class_base* retClass=nullptr;
 	if (c)

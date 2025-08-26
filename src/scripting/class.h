@@ -56,6 +56,7 @@ private:
 	_NR<ASObject> instancefactory;
 	asfreelist freelist;
 public:
+	void getInstanceTemporary(ASWorker* worker,asAtom& ret) override;
 	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait, Global* _global);
 	bool checkScriptInit();
 	bool destruct() override
@@ -175,6 +176,10 @@ protected:
 			handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed(), callSyntheticConstructor);
 	}
 public:
+	void getInstanceTemporary(ASWorker* worker,asAtom& ret) override
+	{
+		getInstance(worker,ret, false, nullptr, 0, nullptr, false);
+	}
 	template<typename... Args>
 	static T* getInstanceS(ASWorker* wrk, Args&&... args)
 	{
@@ -326,6 +331,7 @@ private:
 	//This function is instantiated always because of inheritance
 	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass=nullptr, bool callSyntheticConstructor=true) override;
 public:
+	void getInstanceTemporary(ASWorker* worker,asAtom& ret) override;
 	static ASObject* getInstanceS(ASWorker* wrk)
 	{
 		Class<ASObject>* c=Class<ASObject>::getClass(wrk->getSystemState());
@@ -397,6 +403,10 @@ class InterfaceClass: public Class_base
 	}
 	InterfaceClass(const QName& name, uint32_t classID, MemoryAccount* m):Class_base(name, classID, m) { }
 public:
+	void getInstanceTemporary(ASWorker*,asAtom&)
+	{
+		assert(false);
+	}
 	static InterfaceClass<T>* getClass(SystemState* sys)
 	{
 		uint32_t classId=ClassName<T>::id;

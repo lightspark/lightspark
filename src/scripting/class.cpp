@@ -213,6 +213,18 @@ void Class_inherit::recursiveBuild(ASObject* target) const
 	buildInstanceTraits(target);
 }
 
+void Class_inherit::getInstanceTemporary(ASWorker* worker, asAtom& ret)
+{
+	if(tag)
+	{
+		ret=asAtomHandler::fromObject(tag->instance(this,true));
+	}
+	else if (super)
+	{
+		super->getInstance(worker,ret,false,nullptr,0,this);
+	}
+}
+
 
 void Class_inherit::buildInstanceTraits(ASObject* o) const
 {
@@ -503,4 +515,9 @@ Class<ASObject>* Class<ASObject>::getClass(SystemState* sys)
 		ret=static_cast<Class<ASObject>*>(*retAddr);
 	
 	return ret;
+}
+
+void Class<ASObject>::getInstanceTemporary(ASWorker* worker, asAtom& ret)
+{
+	getInstance(worker, ret, false, nullptr, 0, nullptr, false);
 }

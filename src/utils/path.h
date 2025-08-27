@@ -277,6 +277,8 @@ public:
 	{
 		return compare(Path(other));
 	}
+	template<typename T>
+	int compare(const T& other) const { return compare(Path(other)); }
 
 	Path getRootName() const;
 	Path getRootDir() const;

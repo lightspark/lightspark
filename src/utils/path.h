@@ -224,8 +224,8 @@ public:
 		checkLongPath();
 		return *this;
 	}
-	
 
+	Path& operator+=(char other) { return *this += ValueType(other); }
 	template<typename T>
 	Path& operator+=(const T& other) { return *this += Path(other); }
 

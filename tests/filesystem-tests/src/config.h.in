@@ -1,0 +1,2 @@
+#define VERSION "@FILESYSTEM_VERSION@"
+#cmakedefine SIGNAL_BACKTRACE

@@ -102,6 +102,18 @@ public:
 		++(*this);
 		return result;
 	}
+	CharIterator& operator--() //prefix
+	{
+		// Based on GLib's implementation.
+		for (--buf_ptr; (*buf_ptr & 0xc0) == 0x80; --buf_ptr);
+		return *this;
+	}
+	CharIterator operator--(int) // postfix
+	{
+		CharIterator result = *this;
+		--(*this);
+		return result;
+	}
 	bool operator==(const CharIterator& o) const
 	{
 		return buf_ptr == o.buf_ptr;
@@ -211,6 +223,7 @@ public:
 	tiny_string(const tiny_string& r);
 	tiny_string(const std::string& r);
 	tiny_string(std::istream& in, int len);
+	tiny_string(CharIterator first, CharIterator last);
 	~tiny_string();
 	uint32_t operator[](size_t i) const { return charAt(i); }
 	tiny_string& operator=(const tiny_string& s);
@@ -366,6 +379,8 @@ public:
 	bool endsWith(const tiny_string& str) const;
 	bool startsWith(const char* o) const;
 	bool endsWith(const char* o) const;
+	bool startsWith(uint32_t ch) const { return charAt(0) == ch; }
+	bool endsWith(uint32_t ch) const { return charAt(numChars() - 1) == ch; }
 	/* idx is an index of utf-8 characters */
 	uint32_t charAt(uint32_t idx) const
 	{

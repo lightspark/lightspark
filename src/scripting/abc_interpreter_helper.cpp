@@ -2029,6 +2029,7 @@ void setupInstructionIncDecInteger(preloadstate& state,memorystream& code,std::v
 
 bool checkInitializeLocalToConstant(preloadstate& state,int32_t value)
 {
+	int32_t realvalue = value;
 	value -= state.mi->numArgs()+1;
 	if (state.operandlist.size() && state.operandlist.back().type != OP_LOCAL && state.operandlist.back().type != OP_CACHED_SLOT
 			&& value >= 0 && value < int(state.canlocalinitialize.size()) && state.canlocalinitialize[value])
@@ -2041,6 +2042,7 @@ bool checkInitializeLocalToConstant(preloadstate& state,int32_t value)
 		}
 		state.mi->body->localsinitialvalues[value]= *state.mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
 		state.canlocalinitialize[value]=false;
+		state.localtypes[realvalue]=state.operandlist.back().objtype;
 		state.operandlist.back().removeArg(state);
 		state.operandlist.pop_back();
 		return true;

@@ -35,8 +35,9 @@ using namespace lightspark;
 
 namespace lightspark
 {
-uint32_t skipIgnorables(memorystream& code,uint32_t pos)
+uint32_t skipIgnorables(memorystream& code,uint32_t pos, int32_t& positionsskipped)
 {
+	positionsskipped=0;
 	bool done = false;
 	while (!done)
 	{
@@ -48,13 +49,20 @@ uint32_t skipIgnorables(memorystream& code,uint32_t pos)
 			case 0x82://coerce_a
 			case 0x09://label
 			case 0x76://convert_b
+				positionsskipped++;
 				pos++;
 				break;
 			case 0xf0://debugline
 			case 0xf1://debugfile
 			case 0xf2://bkptline
+				positionsskipped += code.peeku30FromPosition(pos)+1;
 				pos = code.skipu30FromPosition(pos);
 				pos++;
+				break;
+			case 0x2a://dup
+				positionsskipped++;
+				pos++;
+				done=true;
 				break;
 			default:
 				done=true;
@@ -145,9 +153,10 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 						auto it = state.jumptargets.find(jumppos);
 						while (it != state.jumptargets.end())
 						{
-							jumppos = skipIgnorables(code,jumppos);
-							int skipdup = code.peekbyteFromPosition(jumppos-1) ==0x2a ? 1 : 0; //dup
-							if (code.peekbyteFromPosition(jumppos-1+skipdup) ==0x11)//iftrue
+							int32_t positionsskipped;
+							int32_t newjumppos = skipIgnorables(code,jumppos,positionsskipped);
+							jumppos = newjumppos;
+							if (code.peekbyteFromPosition(jumppos-1) ==0x11)//iftrue
 							{
 								if (!numjumps)
 								{
@@ -157,13 +166,13 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 										(*it).second--;
 								}
 								dupskippable= lastskipdup;
-								int32_t jumpdelta = code.peeks24FromPosition(jumppos+skipdup);
-								jump += jumpdelta+3+1+skipdup;
-								jumppos += jumpdelta+3+1+skipdup;
+								int32_t jumpdelta = code.peeks24FromPosition(jumppos);
+								jump += jumpdelta+3+1+positionsskipped;
+								jumppos += jumpdelta+3+1;
 								it = state.jumptargets.find(jumppos);
 								numjumps++;
 							}
-							else if (code.peekbyteFromPosition(jumppos-1+skipdup) ==0x12)//iffalse
+							else if (code.peekbyteFromPosition(jumppos-1) ==0x12)//iffalse
 							{
 								if (!numjumps)
 								{
@@ -173,7 +182,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 										(*it).second--;
 								}
 								dupskippable= lastskipdup;
-								jump += 3+1+skipdup; // jump to first opcode after iffalse
+								jump += 3+1+positionsskipped; // jump to first opcode after iffalse
 								jumppos = pos+jump+3+1;
 								it = state.jumptargets.find(jumppos);
 								numjumps++;
@@ -183,7 +192,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 								dupskippable= !lastskipdup;
 								break;
 							}
-							lastskipdup=skipdup;
+							lastskipdup=0;
 						}
 						if (numjumps)
 						{
@@ -215,9 +224,10 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 						auto it = state.jumptargets.find(jumppos);
 						while (it != state.jumptargets.end())
 						{
-							jumppos = skipIgnorables(code,jumppos);
-							int skipdup = code.peekbyteFromPosition(jumppos-1) ==0x2a ? 1 : 0; //dup
-							if (code.peekbyteFromPosition(jumppos-1+skipdup) ==0x12)//iffalse
+							int32_t positionsskipped;
+							int32_t newjumppos = skipIgnorables(code,jumppos,positionsskipped);
+							jumppos = newjumppos;
+							if (code.peekbyteFromPosition(jumppos-1) ==0x12)//iffalse
 							{
 								if (!numjumps)
 								{
@@ -227,13 +237,13 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 										(*it).second--;
 								}
 								dupskippable= lastskipdup;
-								int32_t jumpdelta = code.peeks24FromPosition(jumppos+skipdup);
-								jump += jumpdelta+3+1+skipdup;
-								jumppos += jumpdelta+3+1+skipdup;
+								int32_t jumpdelta = code.peeks24FromPosition(jumppos);
+								jump += jumpdelta+3+1+positionsskipped;
+								jumppos += jumpdelta+3+1;
 								it = state.jumptargets.find(jumppos);
 								numjumps++;
 							}
-							else if (code.peekbyteFromPosition(jumppos-1+skipdup) ==0x11)//iftrue
+							else if (code.peekbyteFromPosition(jumppos-1) ==0x11)//iftrue
 							{
 								if (!numjumps)
 								{
@@ -243,7 +253,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 										(*it).second--;
 								}
 								dupskippable= lastskipdup;
-								jump += 3+1+skipdup; // jump to first opcode after iftrue
+								jump += 3+1+positionsskipped; // jump to first opcode after iftrue
 								jumppos = pos+jump+3+1;
 								it = state.jumptargets.find(jumppos);
 								numjumps++;
@@ -253,7 +263,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 								dupskippable= !lastskipdup;
 								break;
 							}
-							lastskipdup=skipdup;
+							lastskipdup=0;
 						}
 						if (numjumps)
 						{
@@ -369,6 +379,13 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 			state.preloadedcode.back().pcode.arg3_uint=val;
 			state.refreshOldNewPosition(code);
 			state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));
+			if (op.type == OP_LOCAL)
+			{
+				if (typestack.back().obj && typestack.back().obj->is<Class_base>())
+					state.localtypes[op.index]=typestack.back().obj->as<Class_base>();
+				else
+					state.localtypes[op.index]=nullptr;
+			}
 		}
 	}
 	else

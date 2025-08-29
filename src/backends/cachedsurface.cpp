@@ -424,7 +424,11 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 		Vector2f offset(bounds.min.x-baseTransform.matrix.x0,bounds.min.y-baseTransform.matrix.y0);
 		Vector2f size = bounds.size();
 		
-		bool hasDirtyMatrix = baseTransform.matrix != state->cachedMatrix;
+		// don't force refresh if only the position has changed
+		bool hasDirtyMatrix = baseTransform.matrix.xx!=state->cachedMatrix.xx
+							  || baseTransform.matrix.yx!=state->cachedMatrix.yx
+							  || baseTransform.matrix.xy!=state->cachedMatrix.xy
+							  || baseTransform.matrix.yy!=state->cachedMatrix.yy;
 		if (needsFilterRefresh || hasDirtyMatrix)
 		{
 			state->cachedMatrix = hasDirtyMatrix ? baseTransform.matrix : state->cachedMatrix;
@@ -1006,6 +1010,7 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	uint32_t parentframebufferHeight = sys->getRenderThread()->currentframebufferHeight;
 	
 	sys->getRenderThread()->setViewPort(w,h,true);
+	engineData->exec_glDisable_GL_SCISSOR_TEST();
 	if (state->hasOpaqueBackground)
 		engineData->exec_glClearColor(float(state->opaqueBackground.Red)/255.0,float(state->opaqueBackground.Green)/255.0,float(state->opaqueBackground.Blue)/255.0,1.0);
 	else
@@ -1098,7 +1103,10 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	{
 		sys->getRenderThread()->resetCurrentFrameBuffer();
 		if (!sys->getRenderThread()->getFlipVertical())
+		{
 			sys->getRenderThread()->setViewPort(parentframebufferWidth,parentframebufferHeight,false);
+			engineData->exec_glDisable_GL_SCISSOR_TEST();
+		}
 		else
 			sys->getRenderThread()->resetViewPort();
 		engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
@@ -1109,6 +1117,7 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 		engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(feparent.filterframebuffer);
 		engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(feparent.filterrenderbuffer);
 		sys->getRenderThread()->setViewPort(parentframebufferWidth,parentframebufferHeight,true);
+		engineData->exec_glDisable_GL_SCISSOR_TEST();
 	}
 	engineData->exec_glDeleteFramebuffers(1,&filterframebuffer);
 	engineData->exec_glDeleteRenderbuffers(1,&filterrenderbuffer);

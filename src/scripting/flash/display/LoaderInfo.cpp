@@ -363,9 +363,11 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 					progressEvent = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal);
 					this->addLoaderEvent(progressEvent);
 					this->incRef();
-					progressEvent->incRef();
+					// progressEvent might already be set to nullptr between spinlock.unlock() and addEvent, so we need a separate variable for this
+					ProgressEvent* e = progressEvent;
+					e->incRef();
 					spinlock.unlock();
-					getVm(getSystemState())->addEvent(_MR(this),_MR(progressEvent));
+					getVm(getSystemState())->addEvent(_MR(this),_MR(e));
 				}
 				else
 				{
@@ -378,9 +380,11 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 					{
 						this->addLoaderEvent(progressEvent);
 						this->incRef();
-						progressEvent->incRef();
-						getVm(getSystemState())->addEvent(_MR(this),_MR(progressEvent));
+						// progressEvent might already be set to nullptr between spinlock.unlock() and addEvent, so we need a separate variable for this
+						ProgressEvent* e = progressEvent;
+						e->incRef();
 						spinlock.unlock();
+						getVm(getSystemState())->addEvent(_MR(this),_MR(e));
 					}
 					else
 						spinlock.unlock();

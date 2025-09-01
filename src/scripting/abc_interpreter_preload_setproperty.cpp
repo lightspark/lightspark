@@ -87,8 +87,7 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 						}
 					}
 					if ((it->type == OP_LOCAL || it->type == OP_CACHED_CONSTANT || it->type == OP_CACHED_SLOT)
-						&& it->objtype && !it->objtype->isInterface && it->objtype->isInitialized()
-						&& (!typestack[typestack.size()-2].obj || !typestack[typestack.size()-2].classvar))
+						&& it->objtype && !it->objtype->isInterface && it->objtype->isInitialized())
 					{
 						// check if we can replace setProperty by setSlot
 						asAtom otmp = asAtomHandler::invalidAtom;
@@ -99,8 +98,9 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 							v = getTempVariableFromClass(it->objtype,otmp,name,state.worker);
 						if (!v && it->objtype->is<Class_inherit>())
 						{
-							v = it->objtype->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
-							if (v && v->kind != DECLARED_TRAIT)
+							bool isBorrowed=false;
+							v = it->objtype->findVariableByMultiname(*name,nullptr,nullptr,&isBorrowed,false,state.worker);
+							if (v && (v->kind != DECLARED_TRAIT || isBorrowed))
 								v=nullptr;
 						}
 						if (!asAtomHandler::isPrimitive(otmp) && v && v->slotid)

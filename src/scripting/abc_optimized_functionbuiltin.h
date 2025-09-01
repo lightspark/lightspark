@@ -20,12 +20,9 @@
 #ifndef SCRIPTING_ABC_OPTIMIZED_FUNCTIONBUILTIN_H
 #define SCRIPTING_ABC_OPTIMIZED_FUNCTIONBUILTIN_H 1
 
-#include "scripting/abcutils.h"
-#include "scripting/abctypes.h"
-
-
 namespace lightspark
 {
+struct call_context;
 void abc_callFunctionBuiltinOneArgVoid_constant_constant(call_context* context);
 void abc_callFunctionBuiltinOneArgVoid_local_constant(call_context* context);
 void abc_callFunctionBuiltinOneArgVoid_constant_local(call_context* context);

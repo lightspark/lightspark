@@ -179,6 +179,11 @@ public:
 			delete[] cc.localNumbers;
 			cc.localNumbers=nullptr;
 		}
+		if (cc.localNumbersIncludingSlots)
+		{
+			delete[] cc.localNumbersIncludingSlots;
+			cc.localNumbersIncludingSlots=nullptr;
+		}
 	}
 };
 

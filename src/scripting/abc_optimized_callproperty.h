@@ -20,11 +20,9 @@
 #ifndef SCRIPTING_ABC_OPTIMIZED_CALLPROPERTY_H
 #define SCRIPTING_ABC_OPTIMIZED_CALLPROPERTY_H 1
 
-#include "scripting/abcutils.h"
-#include "scripting/abctypes.h"
-
 namespace lightspark
 {
+struct call_context;
 void abc_callpropertyStaticName(call_context* context);
 void abc_callpropertyStaticName_localresult(call_context* context);
 void abc_callpropertyStaticNameCached(call_context* context);

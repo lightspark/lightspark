@@ -691,6 +691,7 @@ struct asAtomWithNumber
 		return asAtomHandler::isLocalNumber(value) ? uint32_t(numbervalue) : asAtomHandler::toUInt(value);
 	}
 	tiny_string toString(ASWorker* wrk) const;
+	std::string toDebugString() const;
 };
 
 struct variable
@@ -746,11 +747,17 @@ public:
 		}
 		return var.value;
 	}
-	asAtom* getVarPtr(ASWorker* wrk)
+	asAtomWithNumber* getVarPtr()
 	{
-		if (asAtomHandler::isLocalNumber(var.value))
-			asAtomHandler::setNumber(var.value,wrk,var.numbervalue,UINT16_MAX);
+		return &var;
+	}
+	asAtom* getVarValuePtr()
+	{
 		return &var.value;
+	}
+	number_t* getVarNumberPtr()
+	{
+		return &var.numbervalue;
 	}
 	bool isRefcountedVar() const
 	{
@@ -766,7 +773,7 @@ public:
 	}
 	bool isEqualVar(const asAtom& a) const
 	{
-		return var.value.uintval==a.uintval;
+		return var.value.uintval==a.uintval && !asAtomHandler::isLocalNumber(var.value);
 	}
 	bool isLocalNumberVar() const
 	{
@@ -804,10 +811,15 @@ public:
 	{
 		return asAtomHandler::getClass(var.value,sys);
 	}
-	number_t getLocalNumber() const
+	FORCE_INLINE number_t getLocalNumber() const
 	{
 		assert(asAtomHandler::isLocalNumber(var.value));
 		return var.numbervalue;
+	}
+	FORCE_INLINE void setLocalNumberPos(uint16_t pos)
+	{
+		if (asAtomHandler::isLocalNumber(var.value))
+			var.value.uintval=pos<<8 | ATOMTYPE_LOCALNUMBER_BIT;
 	}
 };
 // struct used to count cyclic references
@@ -1278,8 +1290,17 @@ public:
 	void addStoredMember();
 	bool isMarkedForGarbageCollection() const { return markedforgarbagecollection; }
 	bool removefromGarbageCollection();
-	void addToGarbageCollection();
+	bool addToGarbageCollection();
 	void removeStoredMember();
+	FORCE_INLINE void decRefAndGCCheck()
+	{
+		if (storedmembercount
+			&& getRefCount()==int(storedmembercount)+1
+			&& addToGarbageCollection())
+			return;
+		else
+			decRef();
+	}
 	bool handleGarbageCollection();
 	virtual bool countCylicMemberReferences(garbagecollectorstate& gcstate);
 	FORCE_INLINE bool canHaveCyclicMemberReference()

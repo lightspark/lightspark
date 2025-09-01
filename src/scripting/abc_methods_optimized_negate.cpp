@@ -81,8 +81,8 @@ void lightspark::abc_negate_constant_localresult(call_context* context)
 void lightspark::abc_negate_local_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos;
-	LOG_CALL( "negate_ll");
 	asAtom res = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
+	LOG_CALL( "negate_ll "<<instrptr->local_pos1<<" "<<instrptr->local3.pos<<" "<<asAtomHandler::toDebugString(res));
 	if (asAtomHandler::isInteger(res) && asAtomHandler::toInt(res) != 0)
 	{
 		int32_t ret=-(asAtomHandler::toInt(res));

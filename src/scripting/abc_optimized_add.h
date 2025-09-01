@@ -20,11 +20,9 @@
 #ifndef SCRIPTING_ABC_OPTIMIZED_ADD_H
 #define SCRIPTING_ABC_OPTIMIZED_ADD_H 1
 
-#include "scripting/abcutils.h"
-#include "scripting/abctypes.h"
-
 namespace lightspark
 {
+struct call_context;
 void abc_add_constant_constant(call_context* context);
 void abc_add_local_constant(call_context* context);
 void abc_add_constant_local(call_context* context);

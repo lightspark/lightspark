@@ -1294,7 +1294,6 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 	if (asAtomHandler::isLocalNumber(v))
 	{
 		var.numbervalue = asAtomHandler::getLocalNumber(wrk->currentCallContext,v);
-		v.uintval=UINT16_MAX<<8 | ATOMTYPE_LOCALNUMBER_BIT;
 		_isrefcounted=false;
 	}
 	var.value=v;
@@ -1346,7 +1345,7 @@ void variable::setVarNoCheck(asAtom &v, ASWorker *wrk)
 	if (asAtomHandler::isLocalNumber(v))
 	{
 		var.numbervalue = asAtomHandler::getLocalNumber(wrk->currentCallContext,v);
-		var.value.uintval=UINT16_MAX<<8 | ATOMTYPE_LOCALNUMBER_BIT;
+		var.value=v;
 		varIsRefCounted=false;
 	}
 	else
@@ -2160,7 +2159,7 @@ asAtomWithNumber ASObject::getAtomWithNumberByMultiname(const multiname& name, A
 		else if (v->isLocalNumberVar())
 		{
 			res.numbervalue=v->getLocalNumber();
-			res.value.uintval = UINT16_MAX<<8 | ATOMTYPE_LOCALNUMBER_BIT;
+			res.value = v->getVar(wrk);
 		}
 		else
 			res.value = v->getVar(wrk);
@@ -2387,7 +2386,7 @@ void variables_map::dumpVariables()
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<< hex<<it->first<<dec<<" "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
-			asAtomHandler::toDebugString(it->second.getVar(getWorker(),UINT16_MAX)) << ' ' <<
+			it->second.getVarPtr()->toDebugString() << ' ' <<
 			asAtomHandler::toDebugString(it->second.setter) << ' ' <<
 			asAtomHandler::toDebugString(it->second.getter) << ' ' <<
 			it->second.slotid << ' ');//<<dynamic_cast<const Class_base*>(it->second.type));
@@ -2686,13 +2685,15 @@ bool ASObject::removefromGarbageCollection()
 	return false;
 }
 
-void ASObject::addToGarbageCollection()
+bool ASObject::addToGarbageCollection()
 {
 	if (getInstanceWorker() && canHaveCyclicMemberReference())
 	{
 		getInstanceWorker()->addObjectToGarbageCollector(this);
 		markedforgarbagecollection = true;
+		return true;
 	}
+	return false;
 }
 
 void ASObject::addStoredMember()
@@ -4335,8 +4336,13 @@ number_t asAtomHandler::getLocalNumber(call_context* cc,const asAtom& a)
 {
 	assert((a.uintval&0xf) == (ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER|ATOMTYPE_LOCALNUMBER_BIT));
 	uint32_t index = a.uintval>>8;
+	if (index >= cc->mi->body->getMaxLocalNumbers())
+	{
+		LOG(LOG_ERROR,"getlocalnum:"<<index);
+		cc->worker->dumpStacktrace();
+	}
 	assert(index < cc->mi->body->getMaxLocalNumbers());
-	return cc->localNumbers[index];
+	return *cc->localNumbersIncludingSlots[index];
 }
 int32_t asAtomHandler::localNumbertoInt(ASWorker* wrk, const asAtom& a)
 {
@@ -5103,7 +5109,7 @@ void asAtomHandler::setNumber(asAtom& a, ASWorker* wrk, number_t val, uint16_t l
 	{
 		assert(wrk->currentCallContext);
 		assert(localnumberpos < wrk->currentCallContext->mi->body->getMaxLocalNumbers());
-		wrk->currentCallContext->localNumbers[localnumberpos]=val;
+		*wrk->currentCallContext->localNumbersIncludingSlots[localnumberpos]=val;
 		a.uintval=localnumberpos<<8 | ATOMTYPE_LOCALNUMBER_BIT;
 		return;
 	}
@@ -6178,4 +6184,20 @@ tiny_string asAtomWithNumber::toString(ASWorker* wrk) const
 		   : wrk->needsActionScript3() ?
 			asAtomHandler::toString(value,wrk)
 			: asAtomHandler::AVM1toString(value,wrk);
+}
+
+std::string asAtomWithNumber::toDebugString() const
+{
+	std::string res;
+	if (asAtomHandler::isLocalNumber(value))
+	{
+		res += Number::toString(numbervalue);
+		res += " (ln:";
+		res += Number::toString(value.uintval>>8);
+		res += ")";
+	}
+	else
+		res = asAtomHandler::toDebugString(value);
+	return res;
+
 }

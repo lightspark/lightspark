@@ -611,7 +611,7 @@ void ABCVm::abc_getlexfromslot_localresult(call_context* context)
 	asAtom o = num ==-1 ? *context->locals : (context->function->func_scope->scope.rbegin()+num)->object;
 	ASObject* s = asAtomHandler::toObject(o,context->worker);
 	asAtom a = s->getSlot(t,context->exec_pos->local3.pos);
-	LOG_CALL("getlexfromslot_l "<<s->toDebugString()<<" "<<t);
+	LOG_CALL("getlexfromslot_l "<<s->toDebugString()<<" "<<t<<" "<<asAtomHandler::toDebugString(a));
 	ASATOM_INCREF(a);
 	replacelocalresult(context,context->exec_pos->local3.pos,a);
 	++(context->exec_pos);

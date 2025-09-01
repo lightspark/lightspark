@@ -221,9 +221,7 @@ void preload_getproperty(preloadstate& state, std::vector<typestackentry>& types
 								{
 									if (state.unchangedlocals.find(state.operandlist.back().index) != state.unchangedlocals.end())
 									{
-										// TODO cached slots currently don't work for Numbers because of storing the numbervalue in the variable
 										if (resulttype
-											&& resulttype != Class<Number>::getRef(state.function->getSystemState()).getPtr()
 											&& resulttype != Class_object::getRef(state.function->getSystemState()).getPtr())
 										{
 											uint32_t index = state.operandlist.back().index;

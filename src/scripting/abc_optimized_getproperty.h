@@ -20,11 +20,9 @@
 #ifndef SCRIPTING_ABC_OPTIMIZED_GETPROPERTY_H
 #define SCRIPTING_ABC_OPTIMIZED_GETPROPERTY_H 1
 
-#include "scripting/abcutils.h"
-#include "scripting/abctypes.h"
-
 namespace lightspark
 {
+struct call_context;
 void abc_getProperty_constant_constant(call_context* context);
 void abc_getProperty_local_constant(call_context* context);
 void abc_getProperty_constant_local(call_context* context);

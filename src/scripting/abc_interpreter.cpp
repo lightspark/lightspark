@@ -2549,9 +2549,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								// check if we can replace getProperty by getSlot
 								resulttype = getSlotResultTypeFromClass(it->objtype, t, state);
 							}
-							// TODO cached slots currently don't work for Numbers because of storing the numbervalue in the variable
 							if (resulttype
-								&& resulttype != Class<Number>::getRef(state.function->getSystemState()).getPtr()
 								&& resulttype != Class_object::getRef(state.function->getSystemState()).getPtr())
 							{
 								it->removeArg(state);

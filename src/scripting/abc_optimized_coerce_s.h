@@ -20,11 +20,9 @@
 #ifndef SCRIPTING_ABC_OPTIMIZED_COERCE_S_H
 #define SCRIPTING_ABC_OPTIMIZED_COERCE_S_H 1
 
-#include "scripting/abcutils.h"
-#include "scripting/abctypes.h"
-
 namespace lightspark
 {
+struct call_context;
 void abc_coerce_s_constant(call_context* context);
 void abc_coerce_s_local(call_context* context);
 void abc_coerce_s_constant_localresult(call_context* context);

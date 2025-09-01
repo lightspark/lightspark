@@ -139,6 +139,39 @@ void dumpFunctionCallCount(bool builtinonly = false,uint32_t mincallcount=0, uin
 	}
 }
 #endif
+FORCE_INLINE void resetLocals(call_context *cc, call_context* saved_cc, const asAtom& obj)
+{
+	for(asAtom* i=cc->locals+1;i< cc->lastlocal;++i)
+	{
+		LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
+		ASObject* o = asAtomHandler::getObject(*i);
+		if (o)
+			o->decRefAndGCCheck();
+	}
+	if (cc->locals[0].uintval != obj.uintval)
+	{
+		LOG_CALL("locals0:"<<asAtomHandler::toDebugString(cc->locals[0]));
+		ASObject* o = asAtomHandler::getObject(cc->locals[0]);
+		if (o)
+			o->decRefAndGCCheck();
+	}
+	if (saved_cc)
+	{
+		// reset local number positions
+		int i = saved_cc->mi->body->getMaxLocalNumbersWithoutSlots();
+		for (auto it = saved_cc->mi->body->localconstantslots.begin(); it != saved_cc->mi->body->localconstantslots.end(); it++)
+		{
+			assert(it->local_pos < (saved_cc->mi->numArgs()-saved_cc->mi->numOptions())+1);
+			if (asAtomHandler::isObject(saved_cc->locals[it->local_pos]))
+			{
+				ASObject* o = asAtomHandler::getObjectNoCheck(saved_cc->locals[it->local_pos]);
+				o->getSlotVar(it->slot_number)->setLocalNumberPos(i);
+			}
+			i++;
+		}
+	}
+}
+
 /**
  * This prepares a new call_context and then executes the ABC bytecode function
  * by ABCVm::executeFunction() or through JIT.
@@ -166,18 +199,20 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		ABCVm::preloadFunction(this,wrk);
 		mi->body->codeStatus = method_body_info::PRELOADED;
 		mi->cc.exec_pos = mi->body->preloadedcode.data();
-		mi->cc.locals = new asAtom[mi->body->getReturnValuePos()+1+mi->body->localresultcount];
+		mi->cc.locals = new asAtom[mi->body->getMaxLocalNumbersWithoutSlots()];
 		mi->cc.stack = new asAtom[mi->body->max_stack+1];
 		mi->cc.scope_stack = new asAtom[mi->body->max_scope_depth];
 		mi->cc.scope_stack_dynamic = new bool[mi->body->max_scope_depth];
 		mi->cc.max_stackp=mi->cc.stack+mi->cc.mi->body->max_stack;
-		mi->cc.lastlocal = mi->cc.locals+mi->cc.mi->body->getReturnValuePos()+1+mi->body->localresultcount;
-		mi->cc.localslots = new asAtom*[mi->body->localconstantslots.size()+mi->body->getReturnValuePos()+1+mi->body->localresultcount];
-		for (uint32_t i = 0; i < uint32_t(mi->body->getReturnValuePos()+1+mi->body->localresultcount); i++)
+		mi->cc.lastlocal = mi->cc.locals+mi->cc.mi->body->getMaxLocalNumbersWithoutSlots();
+		mi->cc.localslots = new asAtom*[mi->body->getMaxLocalNumbers()];
+		mi->cc.localNumbers = new number_t[mi->body->getMaxLocalNumbersWithoutSlots()];
+		mi->cc.localNumbersIncludingSlots = new number_t*[mi->body->getMaxLocalNumbers()];
+		for (uint32_t i = 0; i < uint32_t(mi->body->getMaxLocalNumbersWithoutSlots()); i++)
 		{
 			mi->cc.localslots[i] = &mi->cc.locals[i];
+			mi->cc.localNumbersIncludingSlots[i] = &mi->cc.localNumbers[i];
 		}
-		mi->cc.localNumbers = new number_t[mi->body->getMaxLocalNumbers()];
 	}
 	if (saved_cc && saved_cc->exceptionthrown)
 	{
@@ -273,18 +308,20 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		cc->sys = getSystemState();
 		cc->worker=wrk;
 		cc->exceptionthrown = nullptr;
-		cc->locals= LS_STACKALLOC(asAtom, mi->body->getReturnValuePos()+1+mi->body->localresultcount);
+		cc->locals= LS_STACKALLOC(asAtom, mi->body->getMaxLocalNumbersWithoutSlots());
 		cc->stack = LS_STACKALLOC(asAtom, mi->body->max_stack+1);
 		cc->scope_stack=LS_STACKALLOC(asAtom, mi->body->max_scope_depth);
 		cc->scope_stack_dynamic=LS_STACKALLOC(bool, mi->body->max_scope_depth);
 		cc->max_stackp=cc->stackp+cc->mi->body->max_stack;
-		cc->lastlocal = cc->locals+mi->body->getReturnValuePos()+1+mi->body->localresultcount;
-		cc->localslots = LS_STACKALLOC(asAtom*,mi->body->localconstantslots.size()+mi->body->getReturnValuePos()+1+mi->body->localresultcount);
-		for (uint32_t i = 0; i < uint32_t(mi->body->getReturnValuePos()+1+mi->body->localresultcount); i++)
+		cc->lastlocal = cc->locals+mi->body->getMaxLocalNumbersWithoutSlots();
+		cc->localslots = LS_STACKALLOC(asAtom*,mi->body->getMaxLocalNumbers());
+		cc->localNumbers = LS_STACKALLOC(number_t,mi->body->getMaxLocalNumbersWithoutSlots());
+		cc->localNumbersIncludingSlots = LS_STACKALLOC(number_t*,mi->body->getMaxLocalNumbers());
+		for (uint32_t i = 0; i < uint32_t(mi->body->getMaxLocalNumbersWithoutSlots()); i++)
 		{
 			cc->localslots[i] = &cc->locals[i];
+			cc->localNumbersIncludingSlots[i] = &cc->localNumbers[i];
 		}
-		cc->localNumbers = LS_STACKALLOC(number_t,mi->body->getMaxLocalNumbers());
 	}
 	else
 	{
@@ -409,17 +446,22 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				// returnvalue
 				cc->locals[mi->body->getReturnValuePos()]=asAtomHandler::invalidAtom;
 				// fill additional locals with slots of objects that don't change during execution
-				int i = mi->body->getReturnValuePos()+1+mi->body->localresultcount;
+				int i = mi->body->getMaxLocalNumbersWithoutSlots();
+				int p=0;
 				for (auto it = mi->body->localconstantslots.begin(); it != mi->body->localconstantslots.end(); it++)
 				{
 					assert(it->local_pos < (mi->numArgs()-mi->numOptions())+1);
 					if (asAtomHandler::isObject(cc->locals[it->local_pos]))
 					{
 						ASObject* o = asAtomHandler::getObjectNoCheck(cc->locals[it->local_pos]);
-						cc->localslots[i] = o->getSlotVar(it->slot_number)->getVarPtr(getInstanceWorker());
+						o->getSlotVar(it->slot_number)->setLocalNumberPos(i);
+						cc->localslots[i] = o->getSlotVar(it->slot_number)->getVarValuePtr();
+						cc->localNumbersIncludingSlots[i] = o->getSlotVar(it->slot_number)->getVarNumberPtr();
+						LOG_CALL("localconstant:"<<i<<"/"<<p<<" "<<it->slot_number<<" "<<o->toDebugString());
 					}
 					else
 						cc->localslots[i] = &asAtomHandler::nullAtom;
+					p++;
 					i++;
 				}
 				//Switch the codeStatus to USED to make sure the method will not be optimized while being used
@@ -498,16 +540,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 						else
 							this->decRef();
 					}
-					for(asAtom* i=cc->locals+1;i< cc->lastlocal;++i)
-					{
-						LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
-						ASATOM_DECREF_POINTER(i);
-					}
-					if (cc->locals[0].uintval != obj.uintval)
-					{
-						LOG_CALL("locals0:"<<asAtomHandler::toDebugString(cc->locals[0]));
-						ASATOM_DECREF_POINTER(cc->locals);
-					}
+					resetLocals(cc, saved_cc, obj);
 					throw excobj;
 				}
 				break;
@@ -544,17 +577,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 			ASATOM_DECREF_POINTER(cc->stackp);
 		}
 	}
-	for(asAtom* i=cc->locals+1;i< cc->lastlocal;++i)
-	{
-		LOG_CALL("locals:"<<(i-cc->locals)<<" "<<asAtomHandler::toDebugString(*i));
-		assert(!asAtomHandler::isLocalNumber(*i)||(i->uintval>>8 == uint32_t(i-cc->locals)));
-		ASATOM_DECREF_POINTER(i);
-	}
-	if (cc->locals[0].uintval != obj.uintval)
-	{
-		LOG_CALL("locals0:"<<asAtomHandler::toDebugString(cc->locals[0]));
-		ASATOM_DECREF_POINTER(cc->locals);
-	}
+	resetLocals(cc, saved_cc, obj);
 
 	asAtom* lastscope=cc->scope_stack+cc->curr_scope_stack;
 	for(asAtom* i=cc->scope_stack;i< lastscope;++i)

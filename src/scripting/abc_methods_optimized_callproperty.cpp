@@ -182,8 +182,6 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 				cacheptr->local2.flags &= ~ABC_OP_CACHED;
 			}
 			asAtom closure = asAtomHandler::getClosureAtom(o,obj);
-			if (!refcounted && asAtomHandler::is<SyntheticFunction>(o))
-				ASATOM_INCREF(closure);
 			asAtomHandler::callFunction(o,context->worker,ret,closure,args,argsnum,refcounted,needreturn && coercearguments,coercearguments);
 			if (needreturn && asAtomHandler::isInvalid(ret))
 				ret = asAtomHandler::undefinedAtom;
@@ -333,8 +331,6 @@ FORCE_INLINE void callprop_intern_slotvar(call_context* context,asAtom& ret,asAt
 	if(asAtomHandler::is<IFunction>(o))
 	{
 		asAtom closure = asAtomHandler::getClosureAtom(o,obj);
-		if (asAtomHandler::is<SyntheticFunction>(o))
-			ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(o,context->worker,ret,closure,args,argsnum,false,needreturn && coercearguments,coercearguments);
 		if (needreturn && asAtomHandler::isInvalid(ret))
 			ret = asAtomHandler::undefinedAtom;
@@ -381,8 +377,6 @@ FORCE_INLINE void callprop_intern_borrowedslot(call_context* context,asAtom& ret
 	if(asAtomHandler::is<IFunction>(o))
 	{
 		asAtom closure = asAtomHandler::getClosureAtom(o,obj);
-		if (asAtomHandler::is<SyntheticFunction>(o))
-			ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(o,context->worker,ret,closure,args,argsnum,false,needreturn && coercearguments,coercearguments);
 		if (needreturn && asAtomHandler::isInvalid(ret))
 			ret = asAtomHandler::undefinedAtom;

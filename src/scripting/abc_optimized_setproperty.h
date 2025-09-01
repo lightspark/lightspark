@@ -20,11 +20,9 @@
 #ifndef SCRIPTING_ABC_OPTIMIZED_SETPROPERTY_H
 #define SCRIPTING_ABC_OPTIMIZED_SETPROPERTY_H 1
 
-#include "scripting/abcutils.h"
-#include "scripting/abctypes.h"
-
 namespace lightspark
 {
+struct call_context;
 void abc_setPropertyStaticName(call_context* context);
 void abc_setPropertyStaticName_constant_constant(call_context* context);
 void abc_setPropertyStaticName_local_constant(call_context* context);

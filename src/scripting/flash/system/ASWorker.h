@@ -162,15 +162,19 @@ public:
 	std::list<uint8_t*> nativeExtensionStringlist;
 	uint32_t nativeExtensionCallCount;
 	void handleInternalEvent(Event* e);
-	void setBuiltinCallResultLocalNumber(asAtom& ret, number_t value)
+	FORCE_INLINE uint16_t getBuiltinCallResultLocalNumber() const
+	{
+		return builtinCallResultlocalnumber;
+	}
+	FORCE_INLINE void setBuiltinCallResultLocalNumber(asAtom& ret, number_t value)
 	{
 		asAtomHandler::setNumber(ret,this,value,builtinCallResultlocalnumber);
 	}
-	void pushBuiltinCallResultLocalNumber(uint16_t resultlocalnumberpos)
+	FORCE_INLINE void pushBuiltinCallResultLocalNumber(uint16_t resultlocalnumberpos)
 	{
 		builtinCallResultlocalnumber= resultlocalnumberpos;
 	}
-	void popBuiltinCallResultLocalNumber()
+	FORCE_INLINE void popBuiltinCallResultLocalNumber()
 	{
 		builtinCallResultlocalnumber=UINT16_MAX;
 	}

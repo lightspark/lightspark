@@ -77,6 +77,7 @@ struct call_context
 	uint32_t defaultNamespaceUri;
 	ASObject* exceptionthrown;
 	number_t* localNumbers;
+	number_t** localNumbersIncludingSlots;
 	call_context(method_info* _mi):
 		locals(nullptr),stack(nullptr),
 		stackp(nullptr),exec_pos(nullptr),
@@ -85,7 +86,8 @@ struct call_context
 		scope_stack(nullptr),scope_stack_dynamic(nullptr),localslots(nullptr),mi(_mi),
 		function(nullptr),sys(nullptr),worker(nullptr),explicitConstruction(false),
 		defaultNamespaceUri(0),exceptionthrown(nullptr),
-		localNumbers(nullptr)
+		localNumbers(nullptr),
+		localNumbersIncludingSlots(nullptr)
 	{
 	}
 	static void handleError(int errorcode);

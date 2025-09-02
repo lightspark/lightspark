@@ -1376,7 +1376,7 @@ void ByteArray::writeU29(uint32_t val)
 		uint8_t b;
 		if(i<3)
 		{
-			uint32_t tmp=(val >> ((3-i)*7));
+			uint32_t tmp=(val >> ((3-i)*7+1));
 			if(tmp==0)
 				continue;
 

@@ -244,7 +244,7 @@ Path& Path::replaceExtension(const Path& _path)
 	if (hasExtension())
 		path = path.stripSuffix(getExtension().path);
 
-	if (!_path.path.startsWith("."))
+	if (!_path.empty() && !_path.path.startsWith('.'))
 		path += '.';
 	return concat(_path);
 }

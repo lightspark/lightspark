@@ -434,7 +434,7 @@ Path Path::lexicallyNormal() const
 		}
 		if (ret == getRoot())
 			continue;
-		if (*(--ret.end()) == "..")
+		if (*(--ret.end()) != "..")
 		{
 			ret.path = ret.path.stripSuffix
 			(

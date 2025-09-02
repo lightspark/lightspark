@@ -204,7 +204,10 @@ void Path::postprocessPath(const Format& format)
 	StringType newPath =
 	(
 		newEnd > 0 ?
-		path.substr(0, newEnd) :
+		// NOTE: We need to post decrement `newEnd` here because it must
+		// lag behind `i` when removing duplicate separators, or it'll
+		// remove the first unique separator.
+		path.substr(0, newEnd--) :
 		StringType::fromChar(path[newEnd])
 	);
 

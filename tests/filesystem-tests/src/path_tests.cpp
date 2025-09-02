@@ -47,7 +47,7 @@ using StringType = Path::StringType;
 //#define USE_QUOTED_STRING
 
 // TODO: Move this into `Path`.
-static std::ostream& operator<<(std::ostream& s, const Path& path)
+std::ostream& operator<<(std::ostream& s, const Path& path)
 {
 	#ifdef USE_QUOTED_STRING
 	s << '"';
@@ -64,7 +64,7 @@ static std::ostream& operator<<(std::ostream& s, const Path& path)
 	#endif
 }
 
-static bool hasHostRootNameSupport()
+bool hasHostRootNameSupport()
 {
 	return Path("//host").hasRootName();
 }

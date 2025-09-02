@@ -107,7 +107,7 @@ void lightspark::abc_getslot_constant_setslotnocoerce(call_context* context)
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotFromVariable(t,var);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotFromVariable(t,var,context->exec_pos->local3.pos);
 	++(context->exec_pos);
 }
 void lightspark::abc_getslot_local_setslotnocoerce(call_context* context)
@@ -123,7 +123,7 @@ void lightspark::abc_getslot_local_setslotnocoerce(call_context* context)
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotFromVariable(t,var);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotFromVariable(t,var,context->exec_pos->local3.pos);
 	++(context->exec_pos);
 }
 void lightspark::abc_getSlotFromScopeObject(call_context* context)

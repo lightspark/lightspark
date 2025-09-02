@@ -730,7 +730,7 @@ public:
 	 * To be used only if the value is guaranteed to be of the right type
 	 */
 	void setVarNoCoerce(asAtom &v, ASWorker *wrk);
-	void setVarFromVariable(variable* v);
+	void setVarFromVariable(variable* v, uint16_t localnumberpos);
 
 	void setResultType(Type* t)
 	{
@@ -1078,7 +1078,7 @@ public:
 	FORCE_INLINE void setSlotNoCoerce(unsigned int n, asAtom o, ASWorker *wrk);
 
 	// copies var and numbervalue from variable without converting numbervalue
-	FORCE_INLINE void setSlotFromVariable(unsigned int n, variable* v);
+	FORCE_INLINE void setSlotFromVariable(unsigned int n, variable* v, uint16_t localnumberpos);
 
 	FORCE_INLINE void initSlot(unsigned int n, variable *v)
 	{
@@ -1495,9 +1495,9 @@ public:
 	{
 		Variables.setSlotNoCoerce(n,o,wrk);
 	}
-	FORCE_INLINE void setSlotFromVariable(unsigned int n,variable* v)
+	FORCE_INLINE void setSlotFromVariable(unsigned int n,variable* v, uint16_t localnumberpos)
 	{
-		Variables.setSlotFromVariable(n,v);
+		Variables.setSlotFromVariable(n,v,localnumberpos);
 	}
 	FORCE_INLINE Class_base* getSlotType(unsigned int n,ABCContext* context)
 	{
@@ -1701,10 +1701,10 @@ FORCE_INLINE void variables_map::setSlotNoCoerce(unsigned int n, asAtom o, ASWor
 	if (!slots_vars[n]->isEqualVar(o))
 		slots_vars[n]->setVarNoCoerce(o,wrk);
 }
-FORCE_INLINE void variables_map::setSlotFromVariable(unsigned int n, variable* v)
+FORCE_INLINE void variables_map::setSlotFromVariable(unsigned int n, variable* v, uint16_t localnumberpos)
 {
 	assert_and_throw(n < slotcount);
-	slots_vars[n]->setVarFromVariable(v);
+	slots_vars[n]->setVarFromVariable(v, localnumberpos);
 }
 FORCE_INLINE void variables_map::setDynamicVarNoCheck(uint32_t nameID, asAtom& v, bool nameIsInteger, ASWorker* wrk, bool prepend)
 {
@@ -1735,11 +1735,16 @@ FORCE_INLINE void variable::setVarNoCoerce(asAtom &v, ASWorker* wrk)
 	}
 }
 
-FORCE_INLINE void variable::setVarFromVariable(variable* v)
+FORCE_INLINE void variable::setVarFromVariable(variable* v, uint16_t localnumberpos)
 {
 	asAtom oldvar = var.value;
-	var.value=v->var.value;
-	var.numbervalue=v->var.numbervalue;
+	if (v->isLocalNumberVar())
+	{
+		var.value.uintval=localnumberpos<<8 | ATOMTYPE_LOCALNUMBER_BIT;
+		var.numbervalue=v->var.numbervalue;
+	}
+	else
+		var.value=v->var.value;
 	if(varIsRefCounted && asAtomHandler::isObject(oldvar))
 	{
 		LOG_CALL("remove old var no coerce:"<<asAtomHandler::toDebugString(oldvar));

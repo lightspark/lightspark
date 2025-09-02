@@ -2159,7 +2159,7 @@ asAtomWithNumber ASObject::getAtomWithNumberByMultiname(const multiname& name, A
 		else if (v->isLocalNumberVar())
 		{
 			res.numbervalue=v->getLocalNumber();
-			res.value = v->getVar(wrk);
+			res.value = *v->getVarValuePtr();
 		}
 		else
 			res.value = v->getVar(wrk);
@@ -4336,11 +4336,6 @@ number_t asAtomHandler::getLocalNumber(call_context* cc,const asAtom& a)
 {
 	assert((a.uintval&0xf) == (ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER|ATOMTYPE_LOCALNUMBER_BIT));
 	uint32_t index = a.uintval>>8;
-	if (index >= cc->mi->body->getMaxLocalNumbers())
-	{
-		LOG(LOG_ERROR,"getlocalnum:"<<index);
-		cc->worker->dumpStacktrace();
-	}
 	assert(index < cc->mi->body->getMaxLocalNumbers());
 	return *cc->localNumbersIncludingSlots[index];
 }

@@ -126,8 +126,7 @@ Path& Path::operator/=(const Path& other)
 {
 	if (other.empty())
 	{
-		tiny_string str = StringType::fromChar(nativeSeparator) + ":";
-		if (!path.empty() && path.findLast(str) == StringType::npos)
+		if (!path.empty() && !path.endsWith(nativeSeparator) && !path.endsWith(':'))
 			path += nativeSeparator;
 		return *this;
 	}

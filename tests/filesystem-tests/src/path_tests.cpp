@@ -469,7 +469,7 @@ TEST_CASE_DECL(Path, decompose)
 		path = path.getStem();
 		CHECK_EQ(s, path.getExtension(), ".bar");
 		path = path.getStem();
-		CHECK_EQ(s, path.getExtension(), "foo");
+		CHECK_EQ(s, path, "foo");
 	}
 
 	CHECK_EQ(s, Path("/foo/.profile").getStem(), ".profile");

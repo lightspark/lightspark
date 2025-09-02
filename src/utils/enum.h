@@ -34,7 +34,7 @@ static constexpr bool operator!(const T& a)
 }
 
 template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
-static T operator~(const T& a)
+static constexpr T operator~(const T& a)
 {
 	return static_cast<T>
 	(
@@ -43,7 +43,7 @@ static T operator~(const T& a)
 }
 
 template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
-static T operator&(const T& a, const T& b)
+static constexpr T operator&(const T& a, const T& b)
 {
 	return static_cast<T>
 	(
@@ -53,7 +53,7 @@ static T operator&(const T& a, const T& b)
 }
 
 template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
-static T operator|(const T& a, const T& b)
+static constexpr T operator|(const T& a, const T& b)
 {
 	return static_cast<T>
 	(
@@ -63,7 +63,7 @@ static T operator|(const T& a, const T& b)
 }
 
 template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
-static T operator^(const T& a, const T& b)
+static constexpr T operator^(const T& a, const T& b)
 {
 	return static_cast<T>
 	(

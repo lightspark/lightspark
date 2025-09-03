@@ -256,7 +256,7 @@ public:
 	bool isCharacterFile() const { return type == FileType::Character; }
 	bool isDir() const { return type == FileType::Directory; }
 	bool isFifo() const { return type == FileType::Fifo; }
-	bool isOther() const { return exists() && !isFile() && !isDir(); }
+	bool isOther() const { return exists() && !isFile() && !isDir() && !isSymlink(); }
 	bool isFile() const { return type == FileType::Regular; }
 	bool isSocket() const { return type == FileType::Socket; }
 	bool isSymlink() const { return type == FileType::Symlink; }

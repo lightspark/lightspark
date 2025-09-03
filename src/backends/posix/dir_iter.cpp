@@ -157,8 +157,8 @@ void DirIterImpl::copyToDirEntry()
 		dirEntry.status = dirEntry.symlinkStatus;
 	else
 	{
-		dirEntry.symlinkStatus.setPerms(Perms::Unknown);
-		dirEntry.symlinkStatus.setType(FileType::None);
+		dirEntry.status.setPerms(Perms::Unknown);
+		dirEntry.status.setType(FileType::None);
 	}
 
 	dirEntry.status.setSize(-1);

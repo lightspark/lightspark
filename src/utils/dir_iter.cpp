@@ -52,6 +52,41 @@ void fs::DirEntry::refresh()
 	}
 }
 
+size_t fs::DirEntry::getFileSize() const
+{
+	if (status.getSize() == size_t(-1))
+		return fs::fileSize(getPath());
+	return status.getSize();
+}
+
+TimeSpec fs::DirEntry::getLastWriteTime() const
+{
+	if (status.getLastWriteTime() == TimeSpec())
+		return fs::getLastWriteTime(getPath());
+	return status.getLastWriteTime();
+}
+
+size_t fs::DirEntry::getHardLinkCount() const
+{
+	if (status.getHardLinks() == size_t(-1))
+		return fs::hardLinkCount(getPath());
+	return status.getHardLinks();
+}
+
+fs::FileStatus fs::DirEntry::getStatus() const
+{
+	if (status.statusKnown() && status.getPerms() != fs::Perms::Unknown)
+		return status;
+	return fs::status(getPath());
+}
+
+fs::FileStatus fs::DirEntry::getSymlinkStatus() const
+{
+	if (symlinkStatus.statusKnown() && symlinkStatus.getPerms() != fs::Perms::Unknown)
+		return symlinkStatus;
+	return fs::symlinkStatus(getPath());
+}
+
 fs::FileStatus fs::DirEntry::tryGetStatus() const
 {
 	return status.statusKnown() ? status : fs::status(getPath());

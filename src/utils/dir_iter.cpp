@@ -54,7 +54,7 @@ void fs::DirEntry::refresh()
 
 fs::FileStatus fs::DirEntry::tryGetStatus() const
 {
-	return status.statusKnown() ? status : fs::status(Path());
+	return status.statusKnown() ? status : fs::status(getPath());
 }
 
 using DirOpts = fs::DirOptions;

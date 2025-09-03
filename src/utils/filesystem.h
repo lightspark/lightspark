@@ -297,11 +297,11 @@ public:
 	bool isSocket() const { return tryGetStatus().isSocket(); }
 	bool isSymlink() const { return tryGetSymlinkStatus().isSymlink(); }
 
-	size_t getFileSize() const { return status.getSize(); }
-	const TimeSpec& getLastWriteTime() const { return status.getLastWriteTime(); }
-	const FileStatus& getStatus() const { return status; }
-	const FileStatus& getSymlinkStatus() const { return symlinkStatus; }
-	size_t getHardLinkCount() const { return status.getHardLinks(); }
+	size_t getFileSize() const;
+	TimeSpec getLastWriteTime() const;
+	FileStatus getStatus() const;
+	FileStatus getSymlinkStatus() const;
+	size_t getHardLinkCount() const;
 
 	bool operator==(const DirEntry& other) const { return path == other.path; }
 	bool operator!=(const DirEntry& other) const { return path != other.path; }

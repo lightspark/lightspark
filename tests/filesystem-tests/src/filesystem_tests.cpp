@@ -385,7 +385,7 @@ TEST_CASE_DECL(FileSystem, DirEntry)
 	CHECK_BOOL(s, !de.isSocket());
 	CHECK_BOOL(s, !de.isSymlink());
 	CHECK_EQ(s, de.getFileSize(), 1234);
-	CHECK_LT(s, const_cast<TimeSpec&>(de.getLastWriteTime()).absDiff(now).getSecs(), 3);
+	CHECK_LT(s, static_cast<TimeSpec>(de.getLastWriteTime()).absDiff(now).getSecs(), 3);
 	CHECK_EQ(s, de.getHardLinkCount(), 1);
 	CHECK_THROWS_AS(s, de.replaceFilename("bar"), fs::Exception);
 	CHECK_NOTHROW(s, de.replaceFilename("foo"));

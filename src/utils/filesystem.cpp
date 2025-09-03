@@ -310,7 +310,7 @@ bool fs::isSocket(const Path& path)
 
 bool fs::isSymlink(const Path& path)
 {
-	return status(path).isSymlink();
+	return symlinkStatus(path).isSymlink();
 }
 
 TimeSpec fs::getLastWriteTime(const Path& path)

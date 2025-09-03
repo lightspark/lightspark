@@ -554,7 +554,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		Log::calls_indent--;
 #endif
 
-	if (saved_cc && resultlocalnumberpos!= UINT16_MAX && mi->returnType==Class<Number>::getRef(getSystemState()).getPtr())
+	if (saved_cc && resultlocalnumberpos!= UINT16_MAX && asAtomHandler::isLocalNumber(cc->locals[mi->body->getReturnValuePos()]))
 	{
 		// result is stored as local number
 		saved_cc->localNumbers[resultlocalnumberpos]=asAtomHandler::getNumber(wrk,cc->locals[mi->body->getReturnValuePos()]);

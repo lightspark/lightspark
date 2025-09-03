@@ -338,7 +338,7 @@ inline void lightspark::ArgumentConversionAtom<uint32_t>::toAbstract(asAtom& ret
 template<>
 inline void lightspark::ArgumentConversionAtom<number_t>::toAbstract(asAtom& ret, ASWorker* wrk,const number_t& val)
 {
-	asAtomHandler::setNumber(ret,wrk,val);
+	wrk->setBuiltinCallResultLocalNumber(ret, val);
 }
 
 template<>

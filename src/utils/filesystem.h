@@ -295,7 +295,7 @@ public:
 	bool isOther() const { return tryGetStatus().isOther(); }
 	bool isFile() const { return tryGetStatus().isFile(); }
 	bool isSocket() const { return tryGetStatus().isSocket(); }
-	bool isSymlink() const { return tryGetStatus().isSymlink(); }
+	bool isSymlink() const { return tryGetSymlinkStatus().isSymlink(); }
 
 	size_t getFileSize() const { return status.getSize(); }
 	const TimeSpec& getLastWriteTime() const { return status.getLastWriteTime(); }
@@ -312,6 +312,7 @@ public:
 private:
 	friend class DirIter;
 	FileStatus tryGetStatus() const;
+	FileStatus tryGetSymlinkStatus() const;
 
 	Path path;
 	FileStatus status;

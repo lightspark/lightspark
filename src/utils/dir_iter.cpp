@@ -57,6 +57,11 @@ fs::FileStatus fs::DirEntry::tryGetStatus() const
 	return status.statusKnown() ? status : fs::status(getPath());
 }
 
+fs::FileStatus fs::DirEntry::tryGetSymlinkStatus() const
+{
+	return symlinkStatus.statusKnown() ? symlinkStatus : fs::symlinkStatus(getPath());
+}
+
 using DirOpts = fs::DirOptions;
 
 fs::DirIter::DirIter

@@ -320,6 +320,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 						break;
 					default:
 						is_iftruefalse=false;
+						opcode_optimized=0;
 						break;
 				}
 			}

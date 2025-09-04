@@ -411,7 +411,9 @@ void ABCVm::abc_pop(call_context* context)
 	//pop
 	RUNTIME_STACK_POP_CREATE(context,o);
 	LOG_CALL("pop "<<asAtomHandler::toDebugString(*o));
-	ASATOM_DECREF_POINTER(o);
+	ASObject* obj = asAtomHandler::getObject(*o);
+	if (obj)
+		obj->decRefAndGCCheck();
 	++(context->exec_pos);
 }
 void ABCVm::abc_dup(call_context* context)

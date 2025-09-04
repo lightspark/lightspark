@@ -49,6 +49,7 @@ struct preloadedcodebuffer
 	{
 	}
 };
+struct scope_entry;
 struct preloadstate
 {
 	std::vector<operands> operandlist;
@@ -64,6 +65,7 @@ struct preloadstate
 	std::vector<Class_base*> defaultlocaltypes;
 	std::vector<bool> defaultlocaltypescacheable;
 	std::vector<bool> canlocalinitialize;
+	std::list<scope_entry> scopelist;
 	SyntheticFunction* function;
 	ASWorker* worker;
 	method_info* mi;
@@ -198,9 +200,9 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, lightspark::Class_base** lastlocalresulttype,std::list<scope_entry>& scopelist,uint32_t simple_getter_opcode_pos);
 void preload_setproperty(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, Class_base** lastlocalresulttype, uint32_t simple_setter_opcode_pos);
 void preload_getproperty(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, Class_base** lastlocalresulttype);
+bool preload_findprop(preloadstate& state,memorystream& code,uint32_t t,bool rewritecode,Class_base** lastlocalresulttype,std::vector<typestackentry>& typestack);
 }
 #define ABC_OP_OPTIMZED_INCREMENT 0x00000100
-#define ABC_OP_OPTIMZED_DECREMENT 0x00000102
 #define ABC_OP_OPTIMZED_PUSHSCOPE 0x00000104
 #define ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME 0x00000106
 #define ABC_OP_OPTIMZED_GETLEX 0x0000010a
@@ -377,5 +379,6 @@ void preload_getproperty(preloadstate& state, std::vector<typestackentry>& types
 #define ABC_OP_OPTIMZED_CALLPROPERTY_BORROWEDSLOT_NOARGS 0x000003d0
 #define ABC_OP_OPTIMZED_CALLPROPVOID_BORROWEDSLOT 0x000003d4
 #define ABC_OP_OPTIMZED_CALLPROPERTY_BORROWEDSLOT_MULTIARGS_CACHED_CALLER 0x000003d8
+#define ABC_OP_OPTIMZED_DECREMENT 0x000003dc
 
 #endif /* SCRIPTING_ABC_INTERPRETER_HELPER_H */

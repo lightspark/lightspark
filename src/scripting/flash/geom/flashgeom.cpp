@@ -298,7 +298,7 @@ ASFUNCTIONBODY_ATOM(ColorTransform,_toString)
 	ret = asAtomHandler::fromObject(abstract_s(wrk,buf));
 }
 
-Transform::Transform(ASWorker* wrk, Class_base* c):ASObject(wrk,c),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(wrk))
+Transform::Transform(ASWorker* wrk, Class_base* c):ASObject(wrk,c),owner(nullptr),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(wrk))
 {
 }
 Transform::Transform(ASWorker* wrk,Class_base* c, DisplayObject* o):ASObject(wrk,c),owner(o),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(wrk))

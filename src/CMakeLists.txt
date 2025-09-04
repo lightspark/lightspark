@@ -98,6 +98,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_interpreter_helper.cpp
   scripting/abc_interpreter_preload_callproperty.cpp
   scripting/abc_interpreter_preload_dup.cpp
+  scripting/abc_interpreter_preload_findprop.cpp
   scripting/abc_interpreter_preload_getlex.cpp
   scripting/abc_interpreter_preload_getproperty.cpp
   scripting/abc_interpreter_preload_setproperty.cpp
@@ -109,7 +110,9 @@ SET(LIBSPARK_SOURCES
   scripting/abc_methods_optimized_coerce_s.cpp
   scripting/abc_methods_optimized_convert_s.cpp
   scripting/abc_methods_optimized_getproperty.cpp
+  scripting/abc_methods_optimized_getscopeobject.cpp
   scripting/abc_methods_optimized_getslot.cpp
+  scripting/abc_methods_optimized_incdec.cpp
   scripting/abc_methods_optimized_newcatch.cpp
   scripting/abc_methods_optimized_negate.cpp
   scripting/abc_methods_optimized_functionbuiltin.cpp

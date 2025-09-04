@@ -384,28 +384,14 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				uint32_t t = code.peeku30FromPosition(pos);
 				if (state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
 				{
-					multiname* name =  state.mi->context->getMultinameImpl(asAtomHandler::nullAtom,nullptr,t,false);
-					if (state.function->inClass && state.function->inClass->isSealed && !state.function->isFromNewFunction() && !state.mi->needsActivation())
+					std::vector<typestackentry> tmptypestack;
+					if (preload_findprop(state,code,t,false,nullptr,tmptypestack))
 					{
-						if (name->isStatic && !state.function->inClass->hasoverriddenmethod(name))
-						{
-							pos = code.skipu30FromPosition(pos);
-							b = code.peekbyteFromPosition(pos);
-							pos++;
-							argsneeded++;
-							break;
-						}
-					}
-					else if (!state.function->inClass && !state.function->isFromNewFunction() && !state.mi->needsActivation())
-					{
-						if (name->isStatic)
-						{
-							pos = code.skipu30FromPosition(pos);
-							b = code.peekbyteFromPosition(pos);
-							pos++;
-							argsneeded++;
-							break;
-						}
+						pos = code.skipu30FromPosition(pos);
+						b = code.peekbyteFromPosition(pos);
+						pos++;
+						argsneeded++;
+						break;
 					}
 				}
 				keepchecking=false;
@@ -413,6 +399,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			}
 			case 0x61://setproperty
 			case 0x68://initproperty
+			case 0x6d://setslot
 			{
 				uint32_t t = code.peeku30FromPosition(pos);
 				if (argsneeded>=2 && !fromdup &&
@@ -653,6 +640,10 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x90://negate
 			case 0x96://not
 			case 0x97://bitnot
+			case 0x91://increment
+			case 0x93://decrement
+			case 0xc0://increment_i
+			case 0xc1://decrement_i
 				if (argsneeded)
 				{
 					b = code.peekbyteFromPosition(pos);
@@ -1023,6 +1014,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		}
 		case 0x61://setproperty
 		case 0x68://initproperty
+		case 0x6d://setslot
 		{
 			uint32_t t = code.peeku30FromPosition(pos);
 			if (state.jumptargets.find(pos) == state.jumptargets.end() && (argsneeded<=1) &&
@@ -1101,7 +1093,6 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0x18://ifge
 		case 0x19://ifstricteq
 		case 0x1a://ifstrictne
-		case 0x6d://setslot
 		case 0x87://astypelate
 		case 0xa0://add
 		case 0xa1://subtract
@@ -1273,7 +1264,12 @@ bool setupInstructionOneArgument(preloadstate& state,int operator_start,int opco
 {
 	bool hasoperands = false;
 #ifdef ENABLE_OPTIMIZATION
-	hasoperands = !checkoperands || (state.jumptargets.find(startcodepos) == state.jumptargets.end() && state.operandlist.size() >= 1 && (constantsallowed || state.operandlist.back().type == OP_LOCAL|| state.operandlist.back().type == OP_CACHED_SLOT));
+	hasoperands = !checkoperands
+				  || (state.jumptargets.find(startcodepos) == state.jumptargets.end()
+					  && state.operandlist.size() >= 1
+					  && (constantsallowed
+						  || state.operandlist.back().type == OP_LOCAL
+						  || state.operandlist.back().type == OP_CACHED_SLOT));
 	Class_base* skiptype = resulttype;
 	if (hasoperands)
 	{
@@ -1337,7 +1333,7 @@ bool setupInstructionOneArgument(preloadstate& state,int operator_start,int opco
 				break;
 		}
 	}
-	if (hasoperands && checkforlocalresult)
+	if (checkforlocalresult && hasoperands)
 		checkForLocalResult(state,code,constantsallowed ? 2 : 1,resulttype,-1,-1,false,fromdup,operator_start_setslot);
 	else
 		clearOperands(state,false,nullptr);

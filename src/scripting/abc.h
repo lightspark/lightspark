@@ -856,7 +856,6 @@ private:
 	static void abc_setlocal_local(call_context* context);
 	static void abc_getglobalscope(call_context* context);
 	static void abc_getscopeobject(call_context* context);
-	static void abc_getscopeobject_localresult(call_context* context);
 	static void abc_getProperty(call_context* context);
 
 	static void abc_initproperty(call_context* context);
@@ -927,12 +926,8 @@ private:
 
 	static void abc_negate(call_context* context); // 0x90
 	static void abc_increment(call_context* context);
-	static void abc_increment_local(call_context* context);
-	static void abc_increment_local_localresult(call_context* context);
 	static void abc_inclocal(call_context* context);
 	static void abc_decrement(call_context* context);
-	static void abc_decrement_local(call_context* context);
-	static void abc_decrement_local_localresult(call_context* context);
 	static void abc_declocal(call_context* context);
 	static void abc_typeof(call_context* context);
 	static void abc_typeof_constant(call_context* context);
@@ -1147,11 +1142,7 @@ private:
 	static void abc_increment_i(call_context* context); // 0xc0
 	static void abc_decrement_i(call_context* context);
 	static void abc_inclocal_i(call_context* context);
-	static void abc_inclocal_i_optimized(call_context* context);
-	static void abc_inclocal_i_postfix(call_context* context);
 	static void abc_declocal_i(call_context* context);
-	static void abc_declocal_i_optimized(call_context* context);
-	static void abc_declocal_i_postfix(call_context* context);
 	static void abc_negate_i(call_context* context);
 	static void abc_add_i(call_context* context);
 	static void abc_add_i_constant_constant(call_context* context);
@@ -1226,16 +1217,6 @@ private:
 
 	static void abc_callFunctionNoArgsVoid_constant(call_context* context);
 	static void abc_callFunctionNoArgsVoid_local(call_context* context);
-
-	static void abc_increment_i_local(call_context* context);
-	static void abc_increment_i_local_localresult(call_context* context);
-	static void abc_increment_i_local_setslotnocoerce(call_context* context);
-	static void abc_decrement_i_local(call_context* context);
-	static void abc_decrement_i_local_localresult(call_context* context);
-	static void abc_decrement_i_local_setslotnocoerce(call_context* context);
-
-	static void abc_getfuncscopeobject(call_context* context);
-	static void abc_getfuncscopeobject_localresult(call_context* context);
 
 	static void abc_invalidinstruction(call_context* context);
 

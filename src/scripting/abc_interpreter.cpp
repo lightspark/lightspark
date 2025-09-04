@@ -30,7 +30,9 @@
 #include "scripting/abc_optimized_functionbuiltin.h"
 #include "scripting/abc_optimized_functionsynthetic.h"
 #include "scripting/abc_optimized_getproperty.h"
+#include "scripting/abc_optimized_getscopeobject.h"
 #include "scripting/abc_optimized_getslot.h"
+#include "scripting/abc_optimized_incdec.h"
 #include "scripting/abc_optimized_negate.h"
 #include "scripting/abc_optimized_newcatch.h"
 #include "scripting/abc_optimized_setproperty.h"
@@ -395,10 +397,10 @@ abc_function ABCVm::abcfunctions[]={
 	abc_invalidinstruction,
 
 	// instructions for optimized opcodes (indicated by 0x03xx)
-	abc_increment_local, // 0x100 ABC_OP_OPTIMZED_INCREMENT
+	abc_increment_constant, // 0x100 ABC_OP_OPTIMZED_INCREMENT
+	abc_increment_local,
+	abc_increment_constant_localresult,
 	abc_increment_local_localresult,
-	abc_decrement_local, // 0x102 ABC_OP_OPTIMZED_DECREMENT
-	abc_decrement_local_localresult,
 	abc_pushScope_constant, // 0x104 ABC_OP_OPTIMZED_PUSHSCOPE
 	abc_pushScope_local,
 	abc_getPropertyStaticName_constant, // 0x106 ABC_OP_OPTIMZED_GETPROPERTY_STATICNAME
@@ -1180,6 +1182,15 @@ abc_function ABCVm::abcfunctions[]={
 	abc_callpropertyBorrowedSlotCached_local,
 	abc_callpropertyBorrowedSlotCached_constant_localResult,
 	abc_callpropertyBorrowedSlotCached_local_localResult,
+	abc_decrement_constant, // 0x3dc ABC_OP_OPTIMZED_DECREMENT
+	abc_decrement_local,
+	abc_decrement_constant_localresult,
+	abc_decrement_local_localresult,
+
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
+	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
 	abc_invalidinstruction,
@@ -1691,7 +1702,6 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 	Class_base* lastlocalresulttype=nullptr;
 	clearOperands(state,true,&lastlocalresulttype);
 	memorystream code(mi->body->code.data(), code_len);
-	std::list<scope_entry> scopelist;
 	Activation_object* activationobject=nullptr;
 	std::list<Catchscope_object*> catchscopelist;
 	int dup_indicator=0;
@@ -1870,7 +1880,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			{
 				uint32_t t = code.readu30();
 #ifdef ENABLE_OPTIMIZATION
-				if (t==1 && state.operandlist.size()>t && function->func_scope.getPtr() && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic))
+				if (t==1 && state.operandlist.size()>t && function->func_scope.getPtr() && (state.scopelist.begin()==state.scopelist.end() || !state.scopelist.back().considerDynamic))
 				{
 					uint32_t i = 0;
 					ASObject** args=LS_STACKALLOC(ASObject*, t);
@@ -2093,6 +2103,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					opcode_skipped=true;
 				}
 				else
+				{
+					for (auto it = state.operandlist.rbegin(); it != state.operandlist.rend(); ++it)
+					{
+						if (it->type == OP_LOCAL && uint32_t(it->index) == t)
+						{
+							// local value is still needed, so don't kill it
+							opcode_skipped=true;
+							break;
+						}
+					}
+				}
+				if (!opcode_skipped)
 #endif
 				{
 					state.preloadedcode.push_back((uint32_t)opcode);
@@ -2124,14 +2146,14 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			}
 			case 0x1c://pushwith
 				removetypestack(typestack,1);
-				scopelist.push_back(scope_entry(asAtomHandler::invalidAtom,true));
+				state.scopelist.push_back(scope_entry(asAtomHandler::invalidAtom,true));
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
 				break;
 			case 0x1d://popscope
-				if (!scopelist.empty())
-					scopelist.pop_back();
+				if (!state.scopelist.empty())
+					state.scopelist.pop_back();
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.refreshOldNewPosition(code);
 				clearOperands(state,true,&lastlocalresulttype);
@@ -2173,228 +2195,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.checkClearOperands(p,&lastlocalresulttype);
 				uint32_t t =code.readu30();
 				removetypestack(typestack,mi->context->constant_pool.multinames[t].runtimeargs);
-				ASObject* resulttype = nullptr;
-				bool classvar=false;
-#ifdef ENABLE_OPTIMIZATION
-				uint32_t scopepos=UINT32_MAX;
-				asAtom o=asAtomHandler::invalidAtom;
-				bool found = false;
-				bool done=false;
-				multiname* name=mi->context->getMultiname(t,nullptr);
-				if (!name
-						&& mi->context->constant_pool.multinames[t].runtimeargs==1
-						&& state.operandlist.size() > 0
-						&& state.operandlist.back().type != OPERANDTYPES::OP_LOCAL
-						&& state.operandlist.back().type != OPERANDTYPES::OP_CACHED_SLOT)
-				{
-					asAtom o = *mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
-					name = mi->context->getMultinameImpl(o,nullptr,t);
-					if (name)
-					{
-						state.operandlist.back().removeArg(state);
-						state.operandlist.pop_back();
-					}
-				}
-				bool isborrowed = false;
-				variable* v = nullptr;
-				Class_base* cls = function->inClass;
-				asAtom otmp = asAtomHandler::invalidAtom;
-				if (name)
-				{
-					if (function->inClass && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
-					{
-						// property may be a slot variable, so check the class instance first
-						v = getTempVariableFromClass(cls,otmp,name,wrk);
-						if (v)
-							isborrowed=true;
-						else
-						{
-							// property not a slot variable, so check the class the function belongs to
-							Class_base* c = cls;
-							do
-							{
-								v = c->findVariableByMultiname(*name,c,nullptr,&isborrowed,false,wrk);
-								if (v)
-									break;
-								if (!c->isSealed)
-									break;
-								c = c->super.getPtr();
-							}
-							while (c);
-							if (v)
-								cls=c;
-						}
-						if (v)
-						{
-							found =true;
-							if ((!function->isStatic || function == function->inClass->getConstructor()) && (isborrowed || v->kind == INSTANCE_TRAIT))
-							{
-								state.preloadedcode.push_back((uint32_t)0xd0); // convert to getlocal_0
-								state.refreshOldNewPosition(code);
-								state.operandlist.push_back(operands(OP_LOCAL,function->inClass, 0,1,state.preloadedcode.size()-1));
-								typestack.push_back(typestackentry(function->inClass,false));
-								ASATOM_DECREF(otmp);
-								break;
-							}
-							if (function->isStatic && !isborrowed && (v->kind & DECLARED_TRAIT))
-							{
-								// if property is a static variable of the class this function belongs to we have to check the scopes first
-								found = false;
-							}
-						}
-					}
-					if (!found && (!function->inClass || function->inClass->isSealed))
-					{
-						uint32_t spos = scopelist.size();
-						auto it=scopelist.rbegin();
-						while(it!=scopelist.rend())
-						{
-							spos--;
-							if (it->considerDynamic)
-							{
-								found = true;
-								break;
-							}
-							if (!asAtomHandler::isObject(it->object))
-							{
-								break;
-							}
-							ASObject* obj = asAtomHandler::getObjectNoCheck(it->object);
-							if (obj->hasPropertyByMultiname(*name, false, true,wrk))
-							{
-								found = true;
-								done=true;
-								if (function->isStatic && obj==function->inClass)
-								{
-									// property is a static variable of the class this function belongs to
-									o=asAtomHandler::fromObjectNoPrimitive(function->inClass);
-									addCachedConstant(state,mi, o,code);
-									resulttype = function->inClass;
-									classvar=true;
-									break;
-								}
-								else
-									scopepos=spos;
-								break;
-							}
-							++it;
-						}
-					}
-					if(!found && !function->func_scope.isNull()) // check scope stack
-					{
-						uint32_t spos = function->func_scope->scope.size();
-						auto it=function->func_scope->scope.rbegin();
-						while(it!=function->func_scope->scope.rend())
-						{
-							spos--;
-							if (it->considerDynamic)
-							{
-								found = true;
-								break;
-							}
-							if (asAtomHandler::is<Class_base>(it->object) && !asAtomHandler::as<Class_base>(it->object)->isSealed)
-							{
-								break;
-							}
-							ASObject* obj = asAtomHandler::toObject(it->object,wrk);
-							if (obj->hasPropertyByMultiname(*name, false, true,wrk))
-							{
-								found = true;
-								done=true;
-								if (obj->is<Global>())
-								{
-									o=asAtomHandler::fromObjectNoPrimitive(obj);
-									addCachedConstant(state,mi, o,code);
-									resulttype=obj;
-									break;
-								}
-								state.preloadedcode.push_back((uint32_t)ABC_OP_OPTIMZED_GETFUNCSCOPEOBJECT);
-								state.refreshOldNewPosition(code);
-								if (checkForLocalResult(state,code,0,obj->is<Class_base>() ? nullptr : obj->getClass()))
-								{
-									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func=abc_getfuncscopeobject_localresult;
-									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint=spos;
-									resulttype = obj;
-								}
-								else
-								{
-									state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint=spos;
-									clearOperands(state,true,&lastlocalresulttype);
-								}
-								break;
-							}
-							++it;
-						}
-					}
-					if (!found	&& (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic)) // class method
-					{
-						ASObject* target=nullptr;
-						if (name->cachedType)
-							target = name->cachedType->getGlobalScope();
-						if (!target || (target->is<Global>() && target->as<Global>()->isAVM1()))
-							mi->context->applicationDomain->findTargetByMultiname(*name, target,wrk);
-						if (target)
-						{
-							found = true;
-							if (target->is<Global>() && (function->isStatic || function->isFromNewFunction()))
-							{
-								variable* vglobal = target->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,wrk);
-								found = (vglobal->kind & TRAIT_KIND::DECLARED_TRAIT)!=0;
-							}
-							if (found && (function->isStatic || !function->mi->needsActivation()))
-							{
-								o=asAtomHandler::fromObjectNoPrimitive(target);
-								addCachedConstant(state,mi, o,code);
-								typestack.push_back(typestackentry(target,false));
-								ASATOM_DECREF(otmp);
-								break;
-							}
-						}
-					}
-				}
-				if (scopepos!= UINT32_MAX)
-				{
-					state.preloadedcode.push_back((uint32_t)0x65); //getscopeobject
-					state.refreshOldNewPosition(code);
-					if (checkForLocalResult(state,code,0,nullptr))
-					{
-						state.preloadedcode.at(state.preloadedcode.size()-1).pcode.func=abc_getscopeobject_localresult;
-						state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint=scopepos;
-					}
-					else
-					{
-						state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg2_uint=scopepos;
-						clearOperands(state,true,&lastlocalresulttype);
-					}
-					done=true;
-				}
-				else if(!done)
-				{
-					if (v && !function->isFromNewFunction()
-							&& (function != cls->getConstructor() || !isborrowed)
-							&& (!function->isStatic || !isborrowed ))
-					{
-						asAtom value = asAtomHandler::fromObjectNoPrimitive(cls);
-						addCachedConstant(state,mi, value,code);
-						typestack.push_back(typestackentry(cls,isborrowed));
-						ASATOM_DECREF(otmp);
-						break;
-					}
-				}
-				ASATOM_DECREF(otmp);
-				if(!done)
-#endif
+				if (!preload_findprop(state,code,t,true,&lastlocalresulttype,typestack))
 				{
 					state.preloadedcode.push_back((uint32_t)opcode);
 					state.refreshOldNewPosition(code);
 					state.preloadedcode.back().pcode.local3.pos=t;
 					clearOperands(state,true,&lastlocalresulttype);
+					typestack.push_back(typestackentry(nullptr,false));
 				}
-				typestack.push_back(typestackentry(resulttype,classvar));
 				break;
 			}
 			case 0x60://getlex
-				preload_getlex(state,typestack,code,opcode,&lastlocalresulttype,scopelist,simple_getter_opcode_pos);
+				preload_getlex(state,typestack,code,opcode,&lastlocalresulttype,state.scopelist,simple_getter_opcode_pos);
 				break;
 			case 0x61://setproperty
 			case 0x68://initproperty
@@ -2475,8 +2287,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.refreshOldNewPosition(code);
 				uint32_t t =code.readu30();
 #ifdef ENABLE_OPTIMIZATION
-				assert_and_throw(t < scopelist.size());
-				auto it = scopelist.begin();
+				assert_and_throw(t < state.scopelist.size());
+				auto it = state.scopelist.begin();
 				for (uint32_t i=0; i < t; i++)
 					++it;
 				asAtom a = (it)->object;
@@ -2752,7 +2564,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						code.readbyte();
 						state.refreshOldNewPosition(code);
 						mi->needsscope=true;
-						scopelist.push_back(scope_entry(function->inClass ? asAtomHandler::fromObjectNoPrimitive(function->inClass) : asAtomHandler::invalidAtom,false));
+						state.scopelist.push_back(scope_entry(function->inClass ? asAtomHandler::fromObjectNoPrimitive(function->inClass) : asAtomHandler::invalidAtom,false));
 						break;
 					}
 				}
@@ -3358,9 +3170,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			}
 			case 0x30://pushscope
 				if (typestack.back().obj)
-					scopelist.push_back(scope_entry(asAtomHandler::fromObjectNoPrimitive(typestack.back().obj),false));
+					state.scopelist.push_back(scope_entry(asAtomHandler::fromObjectNoPrimitive(typestack.back().obj),false));
 				else
-					scopelist.push_back(scope_entry(asAtomHandler::invalidAtom,false));
+					state.scopelist.push_back(scope_entry(asAtomHandler::invalidAtom,false));
 				removetypestack(typestack,1);
 				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_PUSHSCOPE,opcode,code,code.tellg());
 				break;
@@ -3729,7 +3541,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.checkClearOperands(p,&lastlocalresulttype);
 				ASObject* resulttype=nullptr;
 #ifdef ENABLE_OPTIMIZATION
-				if (function->func_scope.getPtr() && (scopelist.begin()==scopelist.end() || !scopelist.back().considerDynamic))
+				if (function->func_scope.getPtr() && (state.scopelist.begin()==state.scopelist.end() || !state.scopelist.back().considerDynamic))
 				{
 					asAtom ret = function->func_scope->scope.front().object;
 					addCachedConstant(state,mi, ret,code);
@@ -3827,7 +3639,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					break;
 				}
 #endif
-				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_INCREMENT,opcode,code,false,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
+				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_INCREMENT,opcode,code,true,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
 				dup_indicator=0;
 				removetypestack(typestack,1);
 				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));
@@ -3841,7 +3653,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					break;
 				}
 #endif
-				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DECREMENT,opcode,code,false,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
+				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DECREMENT,opcode,code,true,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
 				dup_indicator=0;
 				removetypestack(typestack,1);
 				typestack.push_back(typestackentry(Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr(),false));

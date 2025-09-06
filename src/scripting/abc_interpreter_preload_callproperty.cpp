@@ -155,7 +155,9 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 			}
 			if (v)
 			{
-				if (v->isSyntheticFunctionVar() && (fromglobal || (v->getSyntheticFunctionVar()->inClass && v->getSyntheticFunctionVar()->inClass == cls)))
+				if (v->isSyntheticFunctionVar()
+					&& v->getSyntheticFunctionVar()->inClass
+					&& v->getSyntheticFunctionVar()->inClass == cls)
 				{
 					func = v->getSyntheticFunctionVar();
 					resulttype = func->getReturnType();
@@ -626,11 +628,11 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							state.preloadedcode.at(oppos+1).pcode.cachedmultiname3 = name;
 							if (state.operandlist.size() > argcount)
 							{
-								if (canCallFunctionDirect((*it),name,needSuper))
+								if (!fromglobal && canCallFunctionDirect((*it),name,needSuper))
 								{
 									if (v && v->isFunctionVar() && asAtomHandler::isInvalid(v->getFunctionVar()->closure_this))
 									{
-										if (v->isSyntheticFunctionVar() && (v->getSyntheticFunctionVar()->inClass || fromglobal))
+										if (v->isSyntheticFunctionVar() && v->getSyntheticFunctionVar()->inClass)
 										{
 											state.preloadedcode.at(oppos).opcode = (!needResult ? ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_MULTIARGS);
 											state.preloadedcode.at(oppos).pcode.local2.pos = argcount;

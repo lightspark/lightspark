@@ -1187,7 +1187,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 		}
 		if (alreadyset)
 			*alreadyset=false;
-		ASATOM_DECREF(o);
+		if (!wrk->currentCallContext || !wrk->getInstanceWorker()->currentCallContext->exceptionthrown)
+			ASATOM_DECREF(o);
 		// it seems that Adobe allows setters with return values...
 		//assert_and_throw(asAtomHandler::isUndefined(ret));
 		LOG_CALL("End of setter");

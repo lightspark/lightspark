@@ -17,6 +17,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/text/flashtextengine.h"
 #include "scripting/flash/text/flashtext.h"
 #include "scripting/toplevel/Number.h"
@@ -635,13 +636,16 @@ ASFUNCTIONBODY_ATOM(EastAsianJustifier,_constructor)
 
 
 TextBlock::TextBlock(ASWorker* wrk, Class_base *c): ASObject(wrk,c,T_OBJECT,SUBTYPE_TEXTBLOCK)
-  ,applyNonLinearFontScaling(true),baselineFontSize(12),baselineZero("roman"),bidiLevel(0),firstLine(NullRef),lastLine(NullRef),lineRotation("rotate0")
+	,applyNonLinearFontScaling(true),baselineFontSize(12),baselineZero("roman"),bidiLevel(0)
+	,content(asAtomHandler::nullAtom),firstInvalidLine(asAtomHandler::nullAtom),firstLine(asAtomHandler::nullAtom),lastLine(asAtomHandler::nullAtom)
+	,lineRotation("rotate0")
 {
 }
 
 void TextBlock::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("createTextLine","",c->getSystemState()->getBuiltinFunction(createTextLine,0,Class<TextLine>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("recreateTextLine","",c->getSystemState()->getBuiltinFunction(recreateTextLine,0,Class<TextLine>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("releaseLines","",c->getSystemState()->getBuiltinFunction(releaseLines),NORMAL_METHOD,true);
@@ -661,12 +665,92 @@ void TextBlock::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, userData, ASObject);
 }
 
+void TextBlock::finalize()
+{
+	baselineFontDescription.reset();
+	ASATOM_REMOVESTOREDMEMBER(content);
+	content = asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(firstInvalidLine);
+	firstInvalidLine = asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(firstLine);
+	firstLine = asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(lastLine);
+	lastLine = asAtomHandler::nullAtom;
+	textJustifier.reset();
+	tabStops.reset();
+	userData.reset();
+}
+
+bool TextBlock::destruct()
+{
+	applyNonLinearFontScaling=false;
+	baselineFontDescription.reset();
+	baselineFontSize=12;
+	baselineZero="roman";
+	bidiLevel=0;
+	ASATOM_REMOVESTOREDMEMBER(content);
+	content = asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(firstInvalidLine);
+	firstInvalidLine = asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(firstLine);
+	firstLine = asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(lastLine);
+	lastLine = asAtomHandler::nullAtom;
+	lineRotation="rotate0";
+	textJustifier.reset();
+	tabStops.reset();
+	textLineCreationResult="";
+	userData.reset();
+	return ASObject::destruct();
+}
+
+void TextBlock::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+
+	ASObject* o;
+	o = asAtomHandler::getObject(content);
+	if (o)
+		o->prepareShutdown();
+	o = asAtomHandler::getObject(firstInvalidLine);
+	if (o)
+		o->prepareShutdown();
+	o = asAtomHandler::getObject(firstLine);
+	if (o)
+		o->prepareShutdown();
+	o = asAtomHandler::getObject(lastLine);
+	if (o)
+		o->prepareShutdown();
+}
+
+bool TextBlock::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	ASObject* o;
+	o = asAtomHandler::getObject(content);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	o = asAtomHandler::getObject(firstInvalidLine);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	o = asAtomHandler::getObject(firstLine);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	o = asAtomHandler::getObject(lastLine);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+}
+
+
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, applyNonLinearFontScaling)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineFontDescription)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineFontSize)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, baselineZero)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, bidiLevel)
-ASFUNCTIONBODY_GETTER_SETTER(TextBlock, content)
+ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE(TextBlock, content,asAtomHandler::nullAtom)
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextBlock, firstInvalidLine )
 ASFUNCTIONBODY_GETTER(TextBlock, firstLine)
 ASFUNCTIONBODY_GETTER(TextBlock, lastLine)
@@ -679,16 +763,23 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(TextBlock, userData)
 ASFUNCTIONBODY_ATOM(TextBlock,_constructor)
 {
 	TextBlock* th=asAtomHandler::as<TextBlock>(obj);
-	ARG_CHECK(ARG_UNPACK (th->content, NullRef));
+	ARG_CHECK(ARG_UNPACK (th->content, asAtomHandler::nullAtom));
+	if (!asAtomHandler::isNull(th->content) && !asAtomHandler::is<ContentElement>(th->content))
+	{
+		createError<ArgumentError>(wrk,kCheckTypeFailedError,
+								   asAtomHandler::getClass(obj,wrk->getSystemState())->getQualifiedClassName(),
+								   "ContentElement");
+	}
+
 	if (argslen > 1)
 		LOG(LOG_NOT_IMPLEMENTED, "TextBlock constructor ignores some parameters");
 }
 
-bool TextBlock::fillTextLine(_NR<TextLine> textLine, bool fitSomething, _NR<TextLine> previousLine)
+bool TextBlock::fillTextLine(TextLine* textLine, bool fitSomething, _NR<TextLine> previousLine)
 {
-	tiny_string linetext = asAtomHandler::toString(content->as<TextElement>()->text,getInstanceWorker());
+	tiny_string linetext = asAtomHandler::toString(asAtomHandler::as<TextElement>(content)->text,getInstanceWorker());
 	uint32_t startpos = 0;
-	if (!previousLine.isNull())
+	if (previousLine)
 		startpos += previousLine->textBlockBeginIndex + previousLine->getText().numChars();
 	if (linetext.numChars() <= startpos)
 		linetext.clear();
@@ -697,7 +788,7 @@ bool TextBlock::fillTextLine(_NR<TextLine> textLine, bool fitSomething, _NR<Text
 	if (fitSomething && linetext.empty())
 		linetext = " ";
 	textLine->setText(linetext.raw_buf(),true);
-	textLine->checkEmbeddedFont(textLine.getPtr());
+	textLine->checkEmbeddedFont(textLine);
 	textLine->textBlockBeginIndex = startpos;
 	textLine->rawTextLength=textLine->getText().numChars();
 	return textLine->rawTextLength>0;
@@ -720,34 +811,34 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 		return;
 	}
 
-	if (th->content.isNull())
+	if (asAtomHandler::isNull(th->content))
 	{
 		asAtomHandler::setNull(ret);
 		return;
 	}
-	if (!th->content->is<TextElement>())
+	if (!asAtomHandler::is<TextElement>(th->content))
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"TextBlock.createTextLine support for content other than TextElement not yet implemented:"<<th->content->toDebugString());
+		LOG(LOG_NOT_IMPLEMENTED,"TextBlock.createTextLine support for content other than TextElement not yet implemented:"<<asAtomHandler::toDebugString(th->content));
 		asAtomHandler::setNull(ret);
 		return;
 	}
-	if (asAtomHandler::isNull(th->content->as<TextElement>()->text))
+	if (asAtomHandler::isNull(asAtomHandler::as<TextElement>(th->content)->text))
 	{
 		asAtomHandler::setNull(ret);
 		return;
 	}
-	th->incRef();
-	_NR<TextLine> textLine = _NR<TextLine>(Class<TextLine>::getInstanceS(wrk, _MNR(th)));
+	TextLine* textLine = Class<TextLine>::getInstanceS(wrk, th);
 	if (!th->fillTextLine(textLine, fitSomething, previousLine))
 	{
-		textLine.reset();
+		textLine->decRef();
 		// it's not in the specs but it seems that we have to return null if we are at the end of the content
 		asAtomHandler::setNull(ret);
 		th->textLineCreationResult="complete";
 		return;
 	}
 	
-	textLine->previousLine = previousLine;
+	textLine->previousLine = previousLine.isNull() ? asAtomHandler::nullAtom : asAtomHandler::fromObject(previousLine.getPtr());
+	ASATOM_ADDSTOREDMEMBER(textLine->previousLine);
 		
 
 	// Set baseline font
@@ -760,11 +851,11 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	}
 
 	// Set font from FontDescription in TextElement if possible
-	auto elementFormat = th->content->as<TextElement>()->elementFormat;
+	auto elementFormat = asAtomHandler::as<TextElement>(th->content)->elementFormat;
 	if (!elementFormat.isNull() &&
 		!elementFormat->fontDescription.isNull()   )
 	{
-		textLine->font = th->content->as<TextElement>()->elementFormat->fontDescription->fontName;
+		textLine->font = asAtomHandler::as<TextElement>(th->content)->elementFormat->fontDescription->fontName;
 	}
 
 	textLine->specifiedWidth = width;
@@ -773,20 +864,29 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	
 	if (previousLine.isNull())
 	{
-		th->firstLine = textLine;
-		if (th->lastLine.isNull())
-			th->lastLine = textLine;
+		th->firstLine = asAtomHandler::fromObjectNoPrimitive(textLine);
+		ASATOM_ADDSTOREDMEMBER(th->firstLine);
+		if (asAtomHandler::isNull(th->lastLine))
+		{
+			th->lastLine = asAtomHandler::fromObjectNoPrimitive(textLine);
+			ASATOM_ADDSTOREDMEMBER(th->lastLine);
+		}
 	}
 	else
 	{
-		if (th->lastLine == previousLine)
-			th->lastLine = textLine;
-		previousLine->nextLine = textLine;
+		if (asAtomHandler::getObject(th->lastLine) == previousLine.getPtr())
+		{
+			ASATOM_REMOVESTOREDMEMBER(th->lastLine);
+			th->lastLine = asAtomHandler::fromObjectNoPrimitive(textLine);
+			ASATOM_ADDSTOREDMEMBER(th->lastLine);
+		}
+		ASATOM_REMOVESTOREDMEMBER(previousLine->nextLine);
+		previousLine->nextLine = asAtomHandler::fromObjectNoPrimitive(textLine);
+		ASATOM_ADDSTOREDMEMBER(previousLine->nextLine);
 	}
 	
 	th->textLineCreationResult="success";
-	textLine->incRef();
-	ret = asAtomHandler::fromObject(textLine.getPtr());
+	ret = asAtomHandler::fromObject(textLine);
 }
 ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 {
@@ -801,18 +901,18 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 	if (lineOffset != 0.0)
 		LOG(LOG_NOT_IMPLEMENTED, "TextBlock::recreateTextLine ignores parameter lineOffset");
 
-	if (th->content.isNull())
+	if (asAtomHandler::isNull(th->content))
 	{
 		asAtomHandler::setNull(ret);
 		return;
 	}
-	if (!th->content->is<TextElement>())
+	if (!asAtomHandler::is<TextElement>(th->content))
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"TextBlock.recreateTextLine support for content other than TextElement not yet implemented:"<<th->content->toDebugString());
+		LOG(LOG_NOT_IMPLEMENTED,"TextBlock.recreateTextLine support for content other than TextElement not yet implemented:"<<asAtomHandler::toDebugString(th->content));
 		asAtomHandler::setNull(ret);
 		return;
 	}
-	if (asAtomHandler::isNull(th->content->as<TextElement>()->text))
+	if (asAtomHandler::isNull(asAtomHandler::as<TextElement>(th->content)->text))
 	{
 		asAtomHandler::setNull(ret);
 		return;
@@ -833,12 +933,12 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"previousLine");
 		return;
 	}
-	if (!previousLine.isNull() && !previousLine->textBlock.isNull() && th != previousLine->textBlock.getPtr())
+	if (!previousLine.isNull() && th != asAtomHandler::getObject(previousLine->textBlock))
 	{
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"previousLine");
 		return;
 	}
-	if (!th->fillTextLine(textLine, fitSomething, previousLine))
+	if (!th->fillTextLine(textLine.getPtr(), fitSomething, previousLine))
 	{
 		// it's not in the specs but it seems that we have to return null if we are at the end of the content
 		asAtomHandler::setNull(ret);
@@ -847,11 +947,17 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 	}
 	
 	textLine->specifiedWidth = width;
-	textLine->previousLine = previousLine;
+	ASATOM_REMOVESTOREDMEMBER(textLine->previousLine);
+	if (previousLine.isNull())
+		textLine->previousLine = asAtomHandler::nullAtom;
+	else
+		textLine->previousLine = asAtomHandler::fromObjectNoPrimitive(previousLine.getPtr());
+	ASATOM_ADDSTOREDMEMBER(textLine->previousLine);
 	textLine->updateSizes();
 	textLine->width = textLine->textWidth;
-	th->incRef();
-	textLine->textBlock= _MNR(th);
+	ASATOM_REMOVESTOREDMEMBER(textLine->textBlock);
+	textLine->textBlock= asAtomHandler::fromObjectNoPrimitive(th);
+	ASATOM_ADDSTOREDMEMBER(textLine->textBlock);
 	if (width < (int)textLine->textWidth)
 	{
 		th->textLineCreationResult="insufficientWidth";
@@ -860,15 +966,26 @@ ASFUNCTIONBODY_ATOM(TextBlock, recreateTextLine)
 	}
 	if (previousLine.isNull())
 	{
-		th->firstLine = textLine;
-		if (th->lastLine.isNull())
-			th->lastLine = textLine;
+		ASATOM_REMOVESTOREDMEMBER(th->firstLine);
+		th->firstLine = asAtomHandler::fromObjectNoPrimitive(textLine.getPtr());
+		ASATOM_ADDSTOREDMEMBER(th->firstLine);
+		if (asAtomHandler::isNull(th->lastLine))
+		{
+			th->lastLine = asAtomHandler::fromObjectNoPrimitive(textLine.getPtr());
+			ASATOM_ADDSTOREDMEMBER(th->lastLine);
+		}
 	}
 	else
 	{
-		if (th->lastLine == previousLine)
-			th->lastLine = textLine;
-		previousLine->nextLine = textLine;
+		if (asAtomHandler::getObject(th->lastLine) == previousLine.getPtr())
+		{
+			ASATOM_REMOVESTOREDMEMBER(th->lastLine);
+			th->lastLine = asAtomHandler::fromObjectNoPrimitive(textLine.getPtr());
+			ASATOM_ADDSTOREDMEMBER(th->lastLine);
+		}
+		ASATOM_REMOVESTOREDMEMBER(previousLine->nextLine);
+		previousLine->nextLine = asAtomHandler::fromObjectNoPrimitive(textLine.getPtr());
+		ASATOM_ADDSTOREDMEMBER(previousLine->nextLine);
 	}
 
 	textLine->incRef();
@@ -886,14 +1003,14 @@ ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
 	ARG_CHECK(ARG_UNPACK (firstLine) (lastLine));
 
 	// TODO handle non TextElement Content
-	if (th->content.isNull() || !th->content->is<TextElement>())
+	if (asAtomHandler::isNull(th->content) || !asAtomHandler::is<TextElement>(th->content))
 		return;
 	if (firstLine.isNull())
 	{
 		createError<ArgumentError>(wrk,kNullPointerError,"firstLine");
 		return;
 	}
-	if (!firstLine->textBlock.isNull() && firstLine->textBlock != th)
+	if (!asAtomHandler::isNull(firstLine->textBlock) && asAtomHandler::getObject(firstLine->textBlock) != th)
 	{
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"firstLine");
 		return;
@@ -903,36 +1020,48 @@ ASFUNCTIONBODY_ATOM(TextBlock, releaseLines)
 		createError<ArgumentError>(wrk,kNullPointerError,"lastLine");
 		return;
 	}
-	if (!lastLine->textBlock.isNull() && lastLine->textBlock != th)
+	if (!asAtomHandler::isNull(lastLine->textBlock) && asAtomHandler::getObject(lastLine->textBlock) != th)
 	{
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"lastLine");
 		return;
 	}
 
 	bool afterlast = false;
-	_NR<TextLine> tmpLine;
-	_NR<TextLine> tmpLine2;
-	if (th->firstLine == firstLine)
+	if (asAtomHandler::getObject(th->firstLine) == firstLine.getPtr())
+	{
+		ASATOM_REMOVESTOREDMEMBER(th->firstLine);
 		th->firstLine = lastLine->nextLine;
-	if (th->lastLine == lastLine)
+		ASATOM_ADDSTOREDMEMBER(th->firstLine);
+	}
+	if (asAtomHandler::getObject(th->lastLine) == lastLine.getPtr())
+	{
+		ASATOM_REMOVESTOREDMEMBER(th->lastLine);
 		th->lastLine = lastLine->nextLine;
+		ASATOM_ADDSTOREDMEMBER(th->lastLine);
+	}
+
 	while (!firstLine.isNull())
 	{
 		firstLine->validity = "invalid";
-		tmpLine2 = firstLine->nextLine;
+		asAtom tmpline = firstLine->nextLine;
 		if (!afterlast)
 		{
-			if (!firstLine->previousLine.isNull())
+			if (!asAtomHandler::isNull(firstLine->previousLine))
 			{
-				tmpLine = firstLine->previousLine;
-				firstLine->previousLine = NullRef;
+				ASATOM_REMOVESTOREDMEMBER(firstLine->previousLine);
+				firstLine->previousLine = asAtomHandler::nullAtom;
 			}
-			firstLine->textBlock = NullRef;
-			firstLine->nextLine = NullRef;
+			ASATOM_REMOVESTOREDMEMBER(firstLine->textBlock);
+			firstLine->textBlock = asAtomHandler::nullAtom;
+			ASATOM_REMOVESTOREDMEMBER(firstLine->nextLine);
+			firstLine->nextLine = asAtomHandler::nullAtom;
 		}
 		if (firstLine == lastLine)
 			afterlast = true;
-		firstLine = tmpLine2;
+		if (asAtomHandler::isNull(tmpline))
+			break;
+		ASATOM_INCREF(tmpline);
+		firstLine = _MR(asAtomHandler::as<TextLine>(tmpline));
 	}
 }
 
@@ -1065,17 +1194,24 @@ ASFUNCTIONBODY_ATOM(GroupElement,_constructor)
 	LOG(LOG_NOT_IMPLEMENTED, "GroupElement constructor not implemented");
 }
 
-TextLine::TextLine(ASWorker* wrk, Class_base* c, _NR<TextBlock> owner)
-  : DisplayObjectContainer(wrk,c), TextData(), TokenContainer(this), nextLine(nullptr),previousLine(nullptr),userData(nullptr)
-  ,hasGraphicElement(false),hasTabs(false),rawTextLength(0),specifiedWidth(0),textBlockBeginIndex(0)
+TextLine::TextLine(ASWorker* wrk, Class_base* c, TextBlock* owner)
+  : DisplayObjectContainer(wrk,c), TextData(), TokenContainer(this)
+	,textBlock(asAtomHandler::nullAtom),nextLine(asAtomHandler::nullAtom),previousLine(asAtomHandler::nullAtom),userData(asAtomHandler::nullAtom)
+	,hasGraphicElement(false),hasTabs(false),rawTextLength(0),specifiedWidth(0),textBlockBeginIndex(0)
 {
 	subtype = SUBTYPE_TEXTLINE;
-	textBlock = owner;
+	if (owner)
+	{
+		owner->incRef();
+		owner->addStoredMember();
+		textBlock = asAtomHandler::fromObjectNoPrimitive(owner);
+	}
 }
 
 void TextLine::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObjectContainer, CLASS_FINAL | CLASS_SEALED);
+	c->isReusable=true;
 	c->setVariableAtomByQName("MAX_LINE_WIDTH",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)MAX_LINE_WIDTH),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("getBaselinePosition","",c->getSystemState()->getBuiltinFunction(getBaselinePosition,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("flushAtomData","",c->getSystemState()->getBuiltinFunction(flushAtomData),NORMAL_METHOD,true);
@@ -1084,6 +1220,19 @@ void TextLine::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("textWidth","",c->getSystemState()->getBuiltinFunction(getTextWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("textHeight","",c->getSystemState()->getBuiltinFunction(getTextHeight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("unjustifiedTextWidth","",c->getSystemState()->getBuiltinFunction(getUnjustifiedTextWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+
+	// setting these is not allowed in textline
+	c->setDeclaredMethodByQName("contextMenu","",c->getSystemState()->getBuiltinFunction(setterNotAllowed),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("contextMenu","",c->getSystemState()->getBuiltinFunction(getContextMenu),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("focusRect","",c->getSystemState()->getBuiltinFunction(setterNotAllowed),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("focusRect","",c->getSystemState()->getBuiltinFunction(getFocusRect),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tabChildren","",c->getSystemState()->getBuiltinFunction(setterNotAllowed),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tabChildren","",c->getSystemState()->getBuiltinFunction(getTabChildren),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(setterNotAllowed),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(getTabEnabled),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(setterNotAllowed),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(getTabIndex),GETTER_METHOD,true);
+
 	REGISTER_GETTER_RESULTTYPE(c, textBlock,TextBlock);
 	REGISTER_GETTER_RESULTTYPE(c, nextLine,TextLine);
 	REGISTER_GETTER_RESULTTYPE(c, previousLine,TextLine);
@@ -1098,11 +1247,66 @@ void TextLine::sinit(Class_base* c)
 
 void TextLine::finalize()
 {
-	textBlock.reset();
-	nextLine.reset();
-	previousLine.reset();
-	userData.reset();
+	ASATOM_REMOVESTOREDMEMBER(textBlock);
+	textBlock=asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(nextLine);
+	nextLine = asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(previousLine);
+	previousLine = asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(userData);
+	userData = asAtomHandler::nullAtom;
 	DisplayObjectContainer::finalize();
+}
+bool TextLine::destruct()
+{
+	ASATOM_REMOVESTOREDMEMBER(textBlock);
+	textBlock=asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(nextLine);
+	nextLine = asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(previousLine);
+	previousLine = asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(userData);
+	userData = asAtomHandler::nullAtom;
+	return DisplayObjectContainer::destruct();
+}
+void TextLine::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	DisplayObjectContainer::prepareShutdown();
+	ASObject* o;
+	o = asAtomHandler::getObject(textBlock);
+	if (o)
+		o->prepareShutdown();
+	o = asAtomHandler::getObject(nextLine);
+	if (o)
+		o->prepareShutdown();
+	o = asAtomHandler::getObject(previousLine);
+	if (o)
+		o->prepareShutdown();
+	o = asAtomHandler::getObject(userData);
+	if (o)
+		o->prepareShutdown();
+}
+bool TextLine::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (skipCountCylicMemberReferences(gcstate))
+		return gcstate.hasMember(this);
+	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
+	ASObject* o;
+	o = asAtomHandler::getObject(textBlock);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	o = asAtomHandler::getObject(nextLine);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	o = asAtomHandler::getObject(previousLine);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	o = asAtomHandler::getObject(userData);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 ASFUNCTIONBODY_GETTER(TextLine, textBlock)
@@ -1125,6 +1329,31 @@ ASFUNCTIONBODY_ATOM(TextLine, getBaselinePosition)
 ASFUNCTIONBODY_ATOM(TextLine, flushAtomData)
 {
 	// According to specs this method does nothing
+}
+
+ASFUNCTIONBODY_ATOM(TextLine, setterNotAllowed)
+{
+	createErrorWithMessage<ASError>(wrk,2181,"Error #2181: The TextLine class does not implement this property or method.");
+}
+ASFUNCTIONBODY_ATOM(TextLine, getContextMenu)
+{
+	ret = asAtomHandler::nullAtom;
+}
+ASFUNCTIONBODY_ATOM(TextLine, getFocusRect)
+{
+	ret = asAtomHandler::nullAtom;
+}
+ASFUNCTIONBODY_ATOM(TextLine, getTabChildren)
+{
+	ret = asAtomHandler::falseAtom;
+}
+ASFUNCTIONBODY_ATOM(TextLine, getTabEnabled)
+{
+	ret = asAtomHandler::falseAtom;
+}
+ASFUNCTIONBODY_ATOM(TextLine, getTabIndex)
+{
+	ret = asAtomHandler::fromInt(-1);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getDescent)
@@ -1186,10 +1415,10 @@ string TextLine::toDebugString() const
 	res += " (";
 	res += this->validity;
 	res += ")";
-	if (textBlock)
+	if (asAtomHandler::isObject(textBlock))
 	{
 		char buf[100];
-		sprintf(buf," ow:%p",textBlock.getPtr());
+		sprintf(buf," ow:%p",asAtomHandler::getObject(textBlock));
 		res += buf;
 	}
 	res += " \"";

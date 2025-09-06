@@ -197,9 +197,13 @@ class TextLine;
 class TextBlock: public ASObject
 {
 private:
-	bool fillTextLine(NullableRef<TextLine> textLine, bool fitSomething, _NR<TextLine> previousLine);
+	bool fillTextLine(TextLine* textLine, bool fitSomething, _NR<TextLine> previousLine);
 public:
 	TextBlock(ASWorker* wrk,Class_base* c);
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(createTextLine);
@@ -210,10 +214,10 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t,baselineFontSize);
 	ASPROPERTY_GETTER_SETTER(tiny_string,baselineZero);
 	ASPROPERTY_GETTER_SETTER(int,bidiLevel);
-	ASPROPERTY_GETTER_SETTER(_NR<ContentElement>, content);
-	ASPROPERTY_GETTER(_NR<TextLine>, firstInvalidLine );
-	ASPROPERTY_GETTER(_NR<TextLine>, firstLine);
-	ASPROPERTY_GETTER(_NR<TextLine>, lastLine);
+	ASPROPERTY_GETTER_SETTER(asAtom, content);
+	ASPROPERTY_GETTER(asAtom, firstInvalidLine );
+	ASPROPERTY_GETTER(asAtom, firstLine);
+	ASPROPERTY_GETTER(asAtom, lastLine);
 	ASPROPERTY_GETTER_SETTER(tiny_string,lineRotation);
 	ASPROPERTY_GETTER_SETTER(_NR<TextJustifier>, textJustifier);
 	ASPROPERTY_GETTER_SETTER(_NR<Vector>, tabStops);
@@ -260,16 +264,19 @@ private:
 	IDrawable* invalidate(bool smoothing) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
-	TextLine(ASWorker* wrk,Class_base* c, _NR<TextBlock> owner=NullRef);
+	TextLine(ASWorker* wrk,Class_base* c, TextBlock* owner=nullptr);
 	static void sinit(Class_base* c);
 	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	float getScaleFactor() const override { return this->scaling; }
 	void updateSizes();
-	ASPROPERTY_GETTER(_NR<TextBlock>, textBlock);
-	ASPROPERTY_GETTER(_NR<TextLine>, nextLine);
-	ASPROPERTY_GETTER(_NR<TextLine>, previousLine);
+	ASPROPERTY_GETTER(asAtom, textBlock);
+	ASPROPERTY_GETTER(asAtom, nextLine);
+	ASPROPERTY_GETTER(asAtom, previousLine);
 	ASPROPERTY_GETTER_SETTER(tiny_string,validity);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,userData);
+	ASPROPERTY_GETTER_SETTER(asAtom,userData);
 	ASFUNCTION_ATOM(getDescent);
 	ASFUNCTION_ATOM(getAscent);
 	ASFUNCTION_ATOM(getTextWidth);
@@ -277,6 +284,12 @@ public:
 	ASFUNCTION_ATOM(getBaselinePosition);
 	ASFUNCTION_ATOM(getUnjustifiedTextWidth);
 	ASFUNCTION_ATOM(flushAtomData);
+	ASFUNCTION_ATOM(setterNotAllowed);
+	ASFUNCTION_ATOM(getContextMenu);
+	ASFUNCTION_ATOM(getFocusRect);
+	ASFUNCTION_ATOM(getTabChildren);
+	ASFUNCTION_ATOM(getTabEnabled);
+	ASFUNCTION_ATOM(getTabIndex);
 	ASPROPERTY_GETTER(bool,hasGraphicElement);
 	ASPROPERTY_GETTER(bool,hasTabs);
 	ASPROPERTY_GETTER(int,rawTextLength);

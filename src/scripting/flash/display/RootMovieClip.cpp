@@ -143,6 +143,7 @@ void RootMovieClip::commitFrame(bool another)
 			{
 				while (!getVm(sys)->hasEverStarted()) // ensure that all builtin classes are defined
 					sys->sleep_ms(10);
+				setConstructIndicator();
 				constructionComplete();
 				afterConstruction();
 			}

@@ -32,17 +32,44 @@ using namespace std;
 using namespace lightspark;
 
 XMLNode::XMLNode(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLNODE)
-	,parent(nullptr),children(nullptr),childcount(0),node()
+	,parent(nullptr),children(nullptr),childcount(0),nodetype(1),node()
 {
 }
 
 XMLNode::XMLNode(ASWorker* wrk, Class_base* c, pugi::xml_node _n, XMLNode* _p):
-	ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLNODE),parent(_p),children(nullptr),childcount(0),node(_n)
+	ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLNODE),parent(_p),children(nullptr),childcount(0),nodetype(1),node(_n)
 {
 	if (parent)
 	{
 		parent->incRef();
 		parent->addStoredMember();
+	}
+	switch (node.type())
+	{
+		case pugi::node_null:
+		case pugi::node_element:
+		case pugi::node_document:
+			nodetype = 1;
+			break;
+		case pugi::node_cdata:
+		case pugi::node_pcdata:
+			nodetype = 3;
+			break;
+		case pugi::node_pi:
+			nodetype = 7;
+			break;
+		case pugi::node_comment:
+			nodetype = 8;
+			break;
+		case pugi::node_doctype:
+			nodetype = 10;
+			break;
+		case pugi::node_declaration:
+			nodetype = 13;
+			break;
+		default:
+			LOG(LOG_NOT_IMPLEMENTED,"XMLNode.getNodeType: unhandled type:"<<node.type());
+			break;
 	}
 }
 
@@ -124,21 +151,26 @@ ASFUNCTIONBODY_ATOM(XMLNode,_constructor)
 	if(argslen==0)
 		return;
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
-	uint32_t type;
 	tiny_string value;
-	ARG_CHECK(ARG_UNPACK(type)(value));
-	switch (type)
+	ARG_CHECK(ARG_UNPACK(th->nodetype)(value));
+	// it seems flash treats the undocmented types as text nodes(?), see ruffle test avm2/xmlnode
+	switch (th->nodetype)
 	{
 		case 1:
 			if (!value.empty())
 				th->node = th->tmpdoc.root().append_child(value.raw_buf());
 			break;
 		case 3:
+		case 4:
+		case 7:
+		case 8:
+		case 10:
+		case 13:
 			th->node = th->tmpdoc.root().append_child(pugi::node_pcdata);
 			th->node.set_value(value.raw_buf());
 			break;
 		default:
-			LOG(LOG_ERROR,"invalid type for XMLNode constructor:"<<type);
+			LOG(LOG_ERROR,"invalid type for XMLNode constructor:"<<th->nodetype);
 			break;
 	}
 }
@@ -514,32 +546,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,previousSibling)
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeType)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
-	int t = 0;
-	switch (th->node.type())
-	{
-		case pugi::node_null:
-		case pugi::node_element:
-		case pugi::node_document:
-			t = 1;
-			break;
-		case pugi::node_pcdata:
-		case pugi::node_cdata:
-			t = 3;
-			break;
-		// case pugi::node_declaration:
-		// 	t = 5;
-		// 	break;
-		// case pugi::node_pi:
-		// 	t = 9;
-		// 	break;
-		// case pugi::node_document:
-		// 	t = 11;
-		// 	break;
-		default:
-			LOG(LOG_NOT_IMPLEMENTED,"XMLNode.getNodeType: unhandled type:"<<th->node.type());
-			break;
-	}
-	asAtomHandler::setInt(ret,wrk,t);
+	asAtomHandler::setUInt(ret,wrk,th->nodetype);
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeName)
@@ -581,10 +588,15 @@ ASFUNCTIONBODY_ATOM(XMLNode,_setNodeName)
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeValue)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
-	if(th->node.type() == pugi::node_pcdata)
-		ret = asAtomHandler::fromObject(abstract_s(wrk,th->node.value()));
-	else
-		asAtomHandler::setNull(ret);
+	switch(th->node.type())
+	{
+		case pugi::node_pcdata:
+		case pugi::node_cdata:
+			ret = asAtomHandler::fromObject(abstract_s(wrk,th->node.value()));
+			break;
+		default:
+			asAtomHandler::setNull(ret);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,_toString)
@@ -1036,4 +1048,10 @@ void XMLNodeType::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_FINAL | CLASS_SEALED);
 	c->setVariableAtomByQName("ELEMENT_NODE",nsNameAndKind(),asAtomHandler::fromUInt(1),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("TEXT_NODE",nsNameAndKind(),asAtomHandler::fromUInt(3),CONSTANT_TRAIT);
+	// undocumented types
+	c->setVariableAtomByQName("CDATA_NODE",nsNameAndKind(),asAtomHandler::fromUInt(4),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("PROCESSING_INSTRUCTION_NODE",nsNameAndKind(),asAtomHandler::fromUInt(7),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("COMMENT_NODE",nsNameAndKind(),asAtomHandler::fromUInt(8),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("DOCUMENT_TYPE_NODE",nsNameAndKind(),asAtomHandler::fromUInt(10),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("XML_DECLARATION",nsNameAndKind(),asAtomHandler::fromUInt(13),CONSTANT_TRAIT);
 }

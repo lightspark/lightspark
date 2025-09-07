@@ -4441,7 +4441,11 @@ PUGI__NS_BEGIN
 
 	PUGI__FN bool allow_insert_child(xml_node_type parent, xml_node_type child)
 	{
+#ifdef PUGIXML_LIGHTSPARK_MODE // flash seems to allow children in text nodes
+		if (parent != node_document && parent != node_element && parent != node_pcdata) return false;
+#else
 		if (parent != node_document && parent != node_element) return false;
+#endif
 		if (child == node_document || child == node_null) return false;
 		if (parent != node_document && (child == node_declaration || child == node_doctype)) return false;
 

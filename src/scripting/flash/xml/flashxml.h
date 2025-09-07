@@ -37,6 +37,7 @@ protected:
 	XMLNode* parent;
 	Array* children;
 	uint32_t childcount; // this is used to keep track of the real count of child nodes, as the children array may be modified by AS code
+	uint32_t nodetype;
 	pugi::xml_node node;
 	pugi::xml_document tmpdoc; // used for temproary copying/moving of nodes
 	tiny_string toString_priv(pugi::xml_node outputNode);

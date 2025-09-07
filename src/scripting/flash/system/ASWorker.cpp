@@ -233,6 +233,12 @@ void ASWorker::prepareShutdown()
 		swf->prepareShutdown();
 	if (stage)
 		stage->prepareShutdown();
+	ASObject* ogc = this->gcNext;
+	while (ogc != this)
+	{
+		ogc->prepareShutdown();
+		ogc = ogc->gcNext;
+	}
 	parsemutex.unlock();
 }
 

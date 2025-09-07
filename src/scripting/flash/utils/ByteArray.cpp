@@ -1371,12 +1371,13 @@ void ByteArray::acquireBuffer(uint8_t* buf, int bufLen)
 
 void ByteArray::writeU29(uint32_t val)
 {
+	uint32_t fourbytes = (val & 0xff000000) ? 1 : 0;
 	for(uint32_t i=0;i<4;i++)
 	{
 		uint8_t b;
 		if(i<3)
 		{
-			uint32_t tmp=(val >> ((3-i)*7+1));
+			uint32_t tmp=(val >> ((3-i)*7+fourbytes));
 			if(tmp==0)
 				continue;
 

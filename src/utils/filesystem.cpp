@@ -185,7 +185,7 @@ bool fs::copyFile(const Path& from, const Path& to, const CopyOptions& options)
 			return false;
 		overwrite = true;
 	}
-	return Detail::copyFile(from, to, overwrite);
+	return Detail::copyFile(from, to, statusFrom.getPerms(), statusTo.getPerms(), overwrite);
 }
 
 void fs::copySymlink(const Path& symlink, const Path& newSymlink)

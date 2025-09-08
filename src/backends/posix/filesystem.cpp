@@ -64,11 +64,33 @@ Path fs::absolute(const Path& path)
 		return (path.hasRootDir() ? base.getRootName() : base) / path;
 }
 
-bool fs::Detail::copyFile(const Path& from, const Path& to, bool overwrite)
+bool fs::Detail::copyFile
+(
+	const Path& from,
+	const Path& to,
+	const Perms& fromPerms,
+	const Perms& toPerms,
+	bool overwrite
+)
 {
-	std::ifstream is(from.getStr(), std::ios_base::binary | std::ios_base::trunc);
-	std::ofstream os(to.getStr(), std::ios_base::binary);
-	if (!overwrite && !os.fail())
+	auto tryOpen = [&](const Path::StringType& str)
+	{
+		if (overwrite)
+			return std::ofstream(str, std::ios_base::binary | std::ios_base::trunc);
+
+		auto fd = open(str.raw_buf(), O_WRONLY | O_CREAT | O_EXCL | O_TRUNC, Perms::All);
+		bool exclusive = fd >= 0;
+		close(fd);
+
+		if (!exclusive)
+			throw Exception(from, to, std::errc(errno));
+		return std::ofstream(str, std::ios_base::binary | std::ios_base::trunc);
+	};
+	std::ifstream is(from.getStr(), std::ios_base::binary);
+	std::ofstream os = tryOpen(to.getStr());
+	if (is.fail() || os.fail())
+		throw Exception(from, to, std::errc(errno));
+	if (toPerms != fromPerms && chmod(to.rawBuf(), mode_t(fromPerms & Perms::All)) < 0)
 		throw Exception(from, to, std::errc(errno));
 	if (!is.eof() && (os << is.rdbuf()).fail())
 		throw Exception(from, to, std::errc::io_error);

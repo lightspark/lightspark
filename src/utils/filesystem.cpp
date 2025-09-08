@@ -130,9 +130,9 @@ void fs::copy(const Path& from, const Path& to, const CopyOptions& options)
 			else if (bool(options & CopyOptions::CreateHardLinks))
 				createHardLink(from, to);
 			else if (statusTo.isDir())
-				copyFile(from, to / from.getFilename());
+				copyFile(from, to / from.getFilename(), options);
 			else
-				copyFile(from, to);
+				copyFile(from, to, options);
 			break;
 		case FileType::Directory:
 			#ifdef USE_LWG_2936

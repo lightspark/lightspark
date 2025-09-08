@@ -539,7 +539,7 @@ namespace Detail
 {
 
 // Platform specific functions.
-bool copyFile(const Path& from, const Path& to, bool overwrite);
+bool copyFile(const Path& from, const Path& to, const Perms& fromPerms, const Perms& toPerms, bool overwrite);
 bool createDir(const Path& path, const Path& attrs);
 bool createDir(const Path& path, const Perms& perms);
 void createSymlink(const Path& to, const Path& newSymlink, bool toDir);

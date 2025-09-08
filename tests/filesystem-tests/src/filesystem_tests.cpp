@@ -546,14 +546,12 @@ TEST_CASE_DECL(FileSystem, RecursiveDirIter)
 	}
 	{
 		TempDir t;
-		//std::error_code ec;
+		std::error_code code;
 		CHECK_EQ(s, fs::RecursiveDirIter(t.getPath(), fs::DirOptions::None), fs::RecursiveDirIter());
-		/*
-		CHECK_EQ(s, fs::RecursiveDirIter(t.getPath(), fs::directory_options::none, ec), fs::RecursiveDirIter());
-		CHECK_BOOL(s, !ec);
-		CHECK_EQ(s, fs::RecursiveDirIter(t.getPath(), ec), fs::RecursiveDirIter());
-		CHECK_BOOL(s, !ec);
-		*/
+		CHECK_EQ(s, fs::RecursiveDirIter(t.getPath(), fs::DirOptions::None, code), fs::RecursiveDirIter());
+		CHECK_BOOL(s, !code);
+		CHECK_EQ(s, fs::RecursiveDirIter(t.getPath(), code), fs::RecursiveDirIter());
+		CHECK_BOOL(s, !code);
 		generateFile(t.getPath() / "test");
 		fs::RecursiveDirIter rd1(t.getPath());
 		CHECK_BIN(s, fs::RecursiveDirIter(rd1), fs::RecursiveDirIter(), !=);
@@ -2183,18 +2181,16 @@ TEST_CASE_DECL(FileSystem, status)
 	std::stringstream s;
 
 	TempDir t(TempDir::TempOpt::ChangePath);
-	//std::error_code ec;
+	std::error_code code;
 	fs::FileStatus fs;
 	CHECK_NOTHROW(s, fs = fs::status("foo"));
 	CHECK_EQ(s, fs.getType(), FileType::NotFound);
 	CHECK_EQ(s, fs.getPerms(), Perms::Unknown);
-	/*
-	CHECK_NOTHROW(s, fs = fs::status("bar", ec));
+	CHECK_NOTHROW(s, fs = fs::status("bar", code));
 	CHECK_EQ(s, fs.getType(), FileType::NotFound);
 	CHECK_EQ(s, fs.getPerms(), Perms::Unknown);
-	CHECK_EQ(s, ec);
-	ec.clear();
-	*/
+	CHECK_BOOL(s, code);
+	code.clear();
 	fs = fs::status(t.getPath());
 	CHECK_EQ(s, fs.getType(), FileType::Directory);
 	auto ownerRw = Perms::OwnerRead | Perms::OwnerWrite;

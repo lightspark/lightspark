@@ -331,15 +331,15 @@ void fs::setPerms(const Path& path, const fs::Perms& perms, const fs::PermOption
 	if (!(opts & (PermOpts::Replace | PermOpts::Add | PermOpts::Remove)))
 		throw fs::Exception(path, std::errc::invalid_argument);
 
-	auto _perms = perms;
 	auto fileStatus = fs::symlinkStatus(path);
+	auto _perms = fileStatus.getPerms();
 	bool addPerms = bool(opts & PermOpts::Add);
 	bool removePerms = bool(opts & PermOpts::Remove);
 
 	if (addPerms && !removePerms)
-		_perms |= fileStatus.getPerms();
+		_perms |= perms;
 	else if (removePerms && !addPerms)
-		_perms &= ~fileStatus.getPerms();
+		_perms &= ~perms;
 
 	fs::Detail::setPerms(path, _perms, opts, fileStatus);
 }

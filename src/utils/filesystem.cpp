@@ -176,6 +176,8 @@ bool fs::copyFile(const Path& from, const Path& to, const CopyOptions& options)
 	if (statusTo.exists())
 	{
 		if (bool(options & CopyOptions::SkipExisting))
+			return false;
+		if (!statusTo.isFile() || equivalent(from, to) || !(options & (CopyOptions::OverwriteExisting | CopyOptions::UpdateExisting)))
 			throw Exception(from, to, std::errc::file_exists);
 		auto fromTime = statusFrom.getLastWriteTime();
 		auto toTime = statusTo.getLastWriteTime();

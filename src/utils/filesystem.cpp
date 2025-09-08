@@ -139,7 +139,7 @@ void fs::copy(const Path& from, const Path& to, const CopyOptions& options)
 			if (bool(options & CopyOptions::CreateSymlinks))
 				throw Exception(from, to, std::errc::is_a_directory);
 			#endif
-			if (options != CopyOptions::None && bool(options & CopyOptions::Recursive))
+			if (options != CopyOptions::None && !(options & CopyOptions::Recursive))
 				break;
 			if (!statusTo.exists())
 				createDir(to, from);

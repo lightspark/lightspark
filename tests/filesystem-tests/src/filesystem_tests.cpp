@@ -616,7 +616,7 @@ TEST_CASE_DECL(FileSystem, RecursiveDirIter)
 		{
 			result.insert(std::make_pair(it->getPath().getGenericStr(), it.depth()));
 
-			if (it->getPath(), "./d1/d2")
+			if (it->getPath() == "./d1/d2")
 				it.disablePending();
 		}
 		std::stringstream os;
@@ -636,7 +636,7 @@ TEST_CASE_DECL(FileSystem, RecursiveDirIter)
 		while (it != fs::end(it))
 		{
 			result.insert(std::make_pair(it->getPath().getGenericStr(), it.depth()));
-			if (it->getPath(), "./d1/d2")
+			if (it->getPath() == "./d1/d2")
 				it.pop();
 			else
 				++it;

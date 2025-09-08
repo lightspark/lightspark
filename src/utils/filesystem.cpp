@@ -382,7 +382,16 @@ size_t fs::removeAll(const Path& path)
 
 fs::FileStatus fs::status(const Path& path)
 {
-	return Detail::status(path);
+	std::error_code code;
+	auto _status = status(path, code);
+	if (!_status.statusKnown())
+		throw Exception(path, code);
+	return _status;
+}
+
+fs::FileStatus fs::status(const Path& path, std::error_code& code)
+{
+	return Detail::status(path, code);
 }
 
 Path fs::weaklyCanonical(const Path& path)

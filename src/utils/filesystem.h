@@ -202,7 +202,7 @@ class FileStatus;
 namespace Detail
 {
 
-FileStatus status(const Path& path, FileStatus* _symlinkStatus);
+FileStatus status(const Path& path, std::error_code& code, FileStatus* _symlinkStatus);
 
 };
 
@@ -216,7 +216,7 @@ private:
 	size_t hardLinks { size_t(-1) };
 	TimeSpec lastWriteTime;
 
-	friend FileStatus Detail::status(const Path& path, FileStatus* _symlinkStatus);
+	friend FileStatus Detail::status(const Path& path, std::error_code& code, FileStatus* _symlinkStatus);
 	friend class DirEntry;
 	friend class DirIter;
 
@@ -528,6 +528,7 @@ DLL_PUBLIC void rename(const Path& from, const Path& to);
 DLL_PUBLIC void resizeFile(const Path& path, size_t size);
 DLL_PUBLIC SpaceInfo space(const Path& path);
 DLL_PUBLIC FileStatus status(const Path& path);
+DLL_PUBLIC FileStatus status(const Path& path, std::error_code& code);
 DLL_PUBLIC FileStatus symlinkStatus(const Path& path);
 DLL_PUBLIC Path tempDirPath();
 DLL_PUBLIC Path weaklyCanonical(const Path& path);
@@ -544,7 +545,7 @@ bool createDir(const Path& path, const Perms& perms);
 void createSymlink(const Path& to, const Path& newSymlink, bool toDir);
 void setPerms(const Path& path, const Perms& perms, const PermOptions& opts, const FileStatus& fileStatus);
 Path resolveSymlink(const Path& path);
-FileStatus status(const Path& path, FileStatus* _symlinkStatus = nullptr);
+FileStatus status(const Path& path, std::error_code& code, FileStatus* _symlinkStatus = nullptr);
 
 // Non platform specific functions.
 bool isNotFoundError(const std::error_code& code);

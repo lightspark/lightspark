@@ -41,15 +41,10 @@ void fs::DirEntry::replaceFilename(const Path& _path)
 
 void fs::DirEntry::refresh()
 {
-	try
-	{
-		status = fs::Detail::status(path, &symlinkStatus);
-	}
-	catch (...)
-	{
-		if (!status.statusKnown() || !symlinkStatus.isSymlink())
-			std::rethrow_exception(std::current_exception());
-	}
+	std::error_code code;
+	status = fs::Detail::status(path, code, &symlinkStatus);
+	if (code.value() && (!status.statusKnown() || !symlinkStatus.isSymlink()))
+		throw fs::Exception(path, code);
 }
 
 size_t fs::DirEntry::getFileSize() const

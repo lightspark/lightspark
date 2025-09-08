@@ -96,6 +96,11 @@ void fs::copy(const Path& from, const Path& to, const CopyOptions& options)
 	if (!statusFrom.exists())
 		throw Exception(from, to, std::errc::no_such_file_or_directory);
 
+	handleSymlinks = bool(options &
+	(
+		CopyOptions::SkipSymlinks |
+		CopyOptions::CreateSymlinks
+	));
 	FileStatus statusTo = handleSymlinks ? symlinkStatus(to) : status(to);
 
 	bool isInvalid =

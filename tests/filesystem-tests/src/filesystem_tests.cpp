@@ -869,7 +869,7 @@ TEST_CASE_DECL(FileSystem, copyFile)
 	CHECK_EQ(s, fs::copy_file("foo", "bar2", ec));
 	CHECK_EQ(s, !ec);
 	*/
-	compat_usleep(100);
+	compat_msleep(1);
 	generateFile("foo2", 200);
 	CHECK_BOOL(s, fs::copyFile("foo2", "bar", CopyOpts::UpdateExisting));
 	CHECK_EQ(s, fs::fileSize("bar"), 200);

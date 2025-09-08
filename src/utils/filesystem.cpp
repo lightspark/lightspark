@@ -166,12 +166,15 @@ bool fs::copyFile(const Path& from, const Path& to)
 
 bool fs::copyFile(const Path& from, const Path& to, const CopyOptions& options)
 {
-	FileStatus statusFrom = status(from);
+	std::error_code fromCode;
+	FileStatus statusFrom = status(from, fromCode);
 	FileStatus statusTo = status(to);
 
 	bool overwrite = false;
 
-	if (!statusFrom.isFile())
+	if (!statusFrom.isFile() && fromCode.value())
+		throw Exception(from, to, fromCode);
+	else if (!statusFrom.isFile())
 		return false;
 	if (statusTo.exists())
 	{

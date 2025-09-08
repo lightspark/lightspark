@@ -325,7 +325,11 @@ bool fs::isSymlink(const Path& path)
 
 TimeSpec fs::getLastWriteTime(const Path& path)
 {
-	return status(path).getLastWriteTime();
+	std::error_code code;
+	auto ret = status(path, code).getLastWriteTime();
+	if (code.value())
+		throw fs::Exception(path, code);
+	return ret;
 }
 
 void fs::setPerms(const Path& path, const fs::Perms& perms, const fs::PermOptions& opts)

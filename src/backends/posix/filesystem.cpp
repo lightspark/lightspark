@@ -334,6 +334,9 @@ fs::FileStatus fs::Detail::status
 
 	FileStatus fileStatus = fromStatMode(fileStat.st_mode);
 
+	if (_symlinkStatus != nullptr)
+		*_symlinkStatus = fileStatus;
+
 	if (fileStatus.getType() == FileType::Symlink)
 	{
 		if (stat(path.rawBuf(), &fileStat) < 0)

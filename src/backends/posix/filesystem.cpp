@@ -313,13 +313,19 @@ fs::FileStatus fromStatMode(mode_t mode)
 	return FileStatus(type, Perms(mode) & Perms::Mask);
 }
 
-fs::FileStatus fs::Detail::status(const Path& path, FileStatus* _symlinkStatus)
+fs::FileStatus fs::Detail::status
+(
+	const Path& path,
+	std::error_code& code,
+	FileStatus* _symlinkStatus
+)
 {
 	struct stat fileStat;
 	auto onError = [&]
 	{
+		code = std::make_error_code(std::errc(errno));
 		if (errno != ENOENT && errno != ENOTDIR)
-			throw Exception(std::errc(errno));
+			return FileStatus(FileType::None);
 		return FileStatus(FileType::NotFound);
 	};
 

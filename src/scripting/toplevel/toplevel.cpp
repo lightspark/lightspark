@@ -706,11 +706,25 @@ bool SyntheticFunction::isEqual(ASObject *r)
 			 this->inClass == r->as<SyntheticFunction>()->inClass);
 }
 
-Class_base *SyntheticFunction::getReturnType(bool opportunistic)
+Type* SyntheticFunction::getReturnType(bool opportunistic)
 {
 	if (!mi->returnType)
 		checkParamTypes(opportunistic);
-	return (Class_base*)dynamic_cast<const Class_base*>(mi->returnType);
+	return mi->returnType;
+}
+
+Type* SyntheticFunction::getParamType(uint32_t index)
+{
+	if (!mi->returnType)
+		checkParamTypes();
+	if (index < mi->paramTypes.size())
+		return mi->paramTypes[index];
+	return nullptr;
+}
+
+uint32_t SyntheticFunction::getParamOptionalCount()
+{
+	return mi->numOptions();
 }
 
 void SyntheticFunction::checkParamTypes(bool opportunistic)
@@ -783,6 +797,7 @@ IFunction* Function::clone(ASWorker* wrk)
 	ret->subtype = this->subtype;
 	ret->isStatic = this->isStatic;
 	ret->storedmembercount=0;
+	ret->paramTypes=this->paramTypes;
 	return ret;
 }
 
@@ -793,10 +808,12 @@ void Function::prepareShutdown()
 	ASObject* pr = asAtomHandler::getObject(prototype);
 	if (pr)
 		pr->prepareShutdown();
-	if (returnType)
-		returnType->prepareShutdown();
-	if (returnTypeAllArgsInt)
-		returnTypeAllArgsInt->prepareShutdown();
+	ASObject* o = dynamic_cast<ASObject*>(returnType);
+	if (o)
+		o->prepareShutdown();
+	o = dynamic_cast<ASObject*>(returnTypeAllArgsInt);
+	if (o)
+		o->prepareShutdown();
 	IFunction::prepareShutdown();
 }
 
@@ -808,18 +825,26 @@ bool Function::isEqual(ASObject* r)
 	return (val_atom==f->val_atom);
 }
 
-Class_base *Function::getReturnType(bool opportunistic)
+Type *Function::getReturnType(bool opportunistic)
 {
 	if (!returnType && inClass && this->functionname)
 		LOG(LOG_NOT_IMPLEMENTED,"no returntype given for "<<inClass->toDebugString()<<" "<<getSystemState()->getStringFromUniqueId(this->functionname));
 	return returnType;
 }
 
-Class_base *Function::getArgumentDependentReturnType(bool allargsint)
+Type* Function::getArgumentDependentReturnType(bool allargsint)
 {
 	if (!returnType && inClass && this->functionname)
 		LOG(LOG_NOT_IMPLEMENTED,"no arg dependent returntype given for "<<inClass->toDebugString()<<" "<<getSystemState()->getStringFromUniqueId(this->functionname));
 	return allargsint && returnTypeAllArgsInt ? returnTypeAllArgsInt : returnType;
+}
+
+Type* Function::getParamType(uint32_t index)
+{
+	if (paramTypes)
+		return paramTypes[index];
+	LOG(LOG_NOT_IMPLEMENTED,"paramTypes not set for builtin Function:"<<this->toDebugString());
+	return nullptr;
 }
 
 void ASNop(asAtom& ret, ASWorker* wrk, asAtom& , asAtom* args, const unsigned int argslen)

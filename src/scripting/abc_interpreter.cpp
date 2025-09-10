@@ -3448,7 +3448,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 										else if (constructor->is<Class_base>())
 											resulttype = constructor->as<Class_base>();
 										else if (constructor->is<IFunction>())
-											resulttype = constructor->as<IFunction>()->getReturnType();
+											resulttype = dynamic_cast<Class_base*>(constructor->as<IFunction>()->getReturnType());
 									}
 								}
 							}

@@ -87,8 +87,11 @@ void Dictionary::prepareShutdown()
 
 void Dictionary::sinit(Class_base* c)
 {
-	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
+	CLASS_SETUP_CONSTRUCTOR_1_PARAMETER(c, ASObject, _constructor, 1, CLASS_GETREF(c,Boolean),CLASS_DYNAMIC_NOT_FINAL);
+	c->length=-1; // Dictionary class has no length constant
+
 	c->isReusable=true;
+
 	c->prototype->setVariableByQName("toJSON",AS3,c->getSystemState()->getBuiltinFunction(_toJSON),DYNAMIC_TRAIT);
 }
 

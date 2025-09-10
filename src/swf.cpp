@@ -3023,9 +3023,36 @@ void SystemState::removeFromResetParentList(DisplayObject* d)
 	}
 }
 
-ASObject* SystemState::getBuiltinFunction(as_atom_function v, int len, Class_base* returnType, Class_base* returnTypeAllArgsInt)
+ASObject* SystemState::getBuiltinFunction(
+	as_atom_function v,
+	int len,
+	Type* returnType,
+	Type* returnTypeAllArgsInt,
+	uint32_t optional,
+	Type* paramType1,
+	Type* paramType2,
+	Type* paramType3,
+	Type* paramType4,
+	Type* paramType5,
+	Type* paramType6,
+	Type* paramType7
+	)
 {
-	return Class<IFunction>::getFunction(this,v,len,returnType, returnTypeAllArgsInt);
+	return Class<IFunction>::getFunction(
+		this,
+		v,
+		len,
+		returnType,
+		returnTypeAllArgsInt,
+		optional,
+		paramType1,
+		paramType2,
+		paramType3,
+		paramType4,
+		paramType5,
+		paramType6,
+		paramType7
+		);
 }
 
 uint32_t SystemState::getNextInstanceName()

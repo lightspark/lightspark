@@ -160,7 +160,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 					&& v->getSyntheticFunctionVar()->inClass == cls)
 				{
 					func = v->getSyntheticFunctionVar();
-					resulttype = func->getReturnType();
+					resulttype = dynamic_cast<Class_base*>(func->getReturnType());
 					if (func->getMethodInfo()->paramTypes.size() >= argcount)
 					{
 						skipcoerce=true;
@@ -243,7 +243,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 									ASObject* cls = state.operandlist.back().objtype;
 									if (needResult)
 									{
-										resulttype = v->getFunctionVar()->getReturnType();
+										resulttype = dynamic_cast<Class_base*>(v->getFunctionVar()->getReturnType());
 										if (!resulttype && v->isBuiltinFunctionVar())
 											LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method1:"<<*name<<" "<<cls->toDebugString());
 										setupInstructionOneArgument(state,v->isBuiltinFunctionVar() ? ABC_OP_OPTIMZED_CALLBUILTINFUNCTION_NOARGS : ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS ,opcode,code,true, false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_CALLFUNCTION_NOARGS_SETSLOT);
@@ -256,7 +256,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 									{
 										if (resulttype == nullptr && v->isBuiltinFunctionVar())
 										{
-											resulttype = v->getFunctionVar()->getReturnType();
+											resulttype = dynamic_cast<Class_base*>(v->getFunctionVar()->getReturnType());
 											if (resulttype == nullptr)
 												LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method2:"<<*name<<" "<<cls->toDebugString());
 										}
@@ -421,12 +421,12 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							else if (asAtomHandler::is<SyntheticFunction>(func) && needResult)
 							{
 								SyntheticFunction* f = asAtomHandler::as<SyntheticFunction>(func);
-								resulttype = f->getReturnType();
+								resulttype = dynamic_cast<Class_base*>(f->getReturnType());
 							}
 							else if (asAtomHandler::is<Function>(func) && needResult)
 							{
 								Function* f = asAtomHandler::as<Function>(func);
-								resulttype = f->getReturnType();
+								resulttype = dynamic_cast<Class_base*>(f->getReturnType());
 								if (!resulttype)
 									LOG(LOG_NOT_IMPLEMENTED,"missing result type for builtin method3:"<<*name<<" "<<typestack[typestack.size()-2].obj->toDebugString());
 							}
@@ -659,7 +659,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 										else if (v->isBuiltinFunctionVar())
 										{
 											if (needResult)
-												resulttype = v->getFunctionVar()->as<Function>()->getArgumentDependentReturnType(allargsint);
+												resulttype = dynamic_cast<Class_base*>(v->getFunctionVar()->as<Function>()->getArgumentDependentReturnType(allargsint));
 											state.preloadedcode.at(oppos).opcode = (!needResult ? ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_MULTIARGS_VOID : ABC_OP_OPTIMZED_CALLFUNCTIONBUILTIN_MULTIARGS);
 											state.preloadedcode.at(oppos).pcode.local2.pos = argcount;
 											if (skipcoerce)

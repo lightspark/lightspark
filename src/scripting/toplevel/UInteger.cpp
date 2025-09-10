@@ -181,7 +181,7 @@ ASFUNCTIONBODY_ATOM(UInteger,_valueOf)
 
 void UInteger::sinit(Class_base* c)
 {
-	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
+	CLASS_SETUP_CONSTRUCTOR_1_PARAMETER(c, ASObject, _constructor, 1, Type::anyType, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
 	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)0xFFFFFFFF),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)0),CONSTANT_TRAIT);

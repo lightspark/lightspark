@@ -92,9 +92,17 @@ public:
 		checkInternalException();
 		return nullptr;
 	}
-	FORCE_INLINE Class_base* getReturnType(bool opportunistic=false) override
+	FORCE_INLINE Type* getReturnType(bool opportunistic=false) override
 	{
 		return nullptr;
+	}
+	FORCE_INLINE Type* getParamType(uint32_t index) override
+	{
+		return nullptr;
+	}
+	FORCE_INLINE uint32_t getParamOptionalCount() override
+	{
+		return 0;
 	}
 	FORCE_INLINE void setSuper(asAtom s)
 	{

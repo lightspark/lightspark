@@ -27,7 +27,7 @@ using namespace lightspark;
 
 void AVM1Date::sinit(Class_base* c)
 {
-	CLASS_SETUP_CONSTRUCTOR_LENGTH(c, ASObject, _constructor, 7, CLASS_FINAL);
+	CLASS_SETUP_CONSTRUCTOR_7_PARAMETER(c, ASObject, _constructor, 7, CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_FINAL);
 	c->isReusable = true;
 
 	c->prototype->setVariableByQName("getDate","",c->getSystemState()->getBuiltinFunction(getDate,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);

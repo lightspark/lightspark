@@ -216,7 +216,9 @@ Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool opport
 
 Class_base::Class_base(const QName& name, uint32_t _classID, MemoryAccount* m):ASObject(getSys()->worker,Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),
 	qualifiedClassnameID(UINT32_MAX),global(nullptr),
-	context(nullptr),class_name(name),memoryAccount(m),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false),classID(_classID)
+	context(nullptr),class_name(name),memoryAccount(m),length(1),class_index(-1),
+	isFinal(false),isSealed(false),isInterface(false),
+	isReusable(false),use_protected(false),classID(_classID)
 {
 	setSystemState(getSys());
 	setRefConstant();
@@ -289,7 +291,7 @@ void Class_base::initStandardProps()
 	if(super)
 		prototype->prevPrototype=super->prototype;
 	addPrototypeGetter();
-	addLengthGetter();
+	addLengthConstant();
 }
 
 void Class_base::AVM1initPrototype()
@@ -354,12 +356,13 @@ void Class_base::addConstructorGetter()
 
 void Class_base::addPrototypeGetter()
 {
-	setDeclaredMethodByQName("prototype","",getSystemState()->getBuiltinFunction(_getter_prototype),GETTER_METHOD,false);
+	setDeclaredMethodByQName("prototype","",getSystemState()->getBuiltinFunction(_getter_prototype,0,Class<ASObject>::getRef(getSystemState()).getPtr()),GETTER_METHOD,false);
 }
 
-void Class_base::addLengthGetter()
+void Class_base::addLengthConstant()
 {
-	setDeclaredMethodByQName("length","",getSystemState()->getBuiltinFunction(_getter_length),GETTER_METHOD,false);
+	if (length >=0)
+		setVariableAtomByQName("length",nsNameAndKind(getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),asAtomHandler::fromInt(length),CONSTANT_TRAIT);
 }
 
 Class_base::~Class_base()
@@ -411,7 +414,6 @@ void Class_base::_getter_prototype(asAtom& ret, ASWorker* wrk,asAtom& obj, asAto
 	ret = asAtomHandler::fromObject(th->getPrototype(wrk)->getObj());
 	ASATOM_INCREF(ret);
 }
-ASFUNCTIONBODY_GETTER(Class_base, length)
 
 void Class_base::generator(ASWorker* wrk, asAtom& ret, asAtom* args, const unsigned int argslen)
 {
@@ -762,17 +764,36 @@ ASObject *Class_base::describeType(ASWorker* wrk) const
 	std::map<varName,pugi::xml_node> propnames;
 	// variable
 	if(class_index>=0)
-		describeTraits(root, context->classes[class_index].traits,propnames,true);
+	{
+		describeTraits(root, context->classes[class_index].traits,propnames,true,false,false);
+	}
+	else
+	{
+		// builtin class
+		describeVariables(root,this,propnames,Variables,false,false,false);
+	}
+
 
 	// factory
 	node=root.append_child("factory");
-	node.append_attribute("type").set_value(getQualifiedClassName().raw_buf());
-	describeInstance(node,false,false);
+	node.append_attribute("type").set_value(getQualifiedClassName(true).raw_buf());
+	describeInstance(node,false,false,true);
 	return XML::createFromNode(wrk,root);
 }
 
-void Class_base::describeInstance(pugi::xml_node& root, bool istemplate,bool forinstance) const
+void Class_base::describeInstance(pugi::xml_node& root, bool istemplate, bool forinstance, bool forfactory, bool forJSON) const
 {
+	if (forfactory && this==Class_object::getRef(getSystemState()).getPtr())
+	{
+		// prototype
+		pugi::xml_node prototypenode=root.append_child("accessor");
+		prototypenode.append_attribute("name").set_value("prototype");
+		prototypenode.append_attribute("access").set_value("readonly");
+		prototypenode.append_attribute("type").set_value("*");
+		prototypenode.append_attribute("declaredBy").set_value("Class");
+	}
+
+	describeConstructor(root);
 	// extendsClass
 	const Class_base* c=super.getPtr();
 	while(c)
@@ -798,46 +819,54 @@ void Class_base::describeInstance(pugi::xml_node& root, bool istemplate,bool for
 				continue;
 			allinterfaces.insert(*it);
 			pugi::xml_node node=root.append_child("implementsInterface");
-			node.append_attribute("type").set_value((*it)->getQualifiedClassName().raw_buf());
+			node.append_attribute("type").set_value((*it)->getQualifiedClassName(true).raw_buf());
 		}
 		c=c->super.getPtr();
 	}
-	describeConstructor(root);
 
 	// variables, methods, accessors
-	c=this;
-	if (c->class_index<0)
-	{
-		// builtin class
-		LOG(LOG_NOT_IMPLEMENTED, "describeType for builtin classes not completely implemented:"<<this->class_name);
-		std::map<tiny_string, pugi::xml_node*> instanceNodes;
-		if(!istemplate)
-			describeVariables(root,c,instanceNodes,Variables,false,forinstance);
-		describeVariables(root,c,instanceNodes,borrowedVariables,istemplate,false);
-	}
 	std::map<varName,pugi::xml_node> propnames;
+	c=this;
 	bool bfirst = true;
 	while(c && c->class_index>=0)
 	{
-		c->describeTraits(root, c->context->instances[c->class_index].traits,propnames,bfirst);
+		c->describeTraits(root, c->context->instances[c->class_index].traits,propnames,bfirst,forinstance,forfactory);
 		bfirst = false;
 		c=c->super.getPtr();
 		if (istemplate)
 			break;
 	}
+	if ((this->isBuiltin() || forJSON) && c && c->class_index<0 && !forfactory)
+	{
+		// builtin class
+		while(c)
+		{
+			describeVariables(root,c,propnames,forinstance || !bfirst ? c->borrowedVariables : c->Variables,istemplate,forinstance, forJSON);
+			bfirst = false;
+			c = c->super.getPtr();
+		}
+	}
+
 }
 
-void Class_base::describeVariables(pugi::xml_node& root, const Class_base* c, std::map<tiny_string, pugi::xml_node*>& instanceNodes, const variables_map& map, bool isTemplate,bool forinstance) const
+void Class_base::describeVariables(pugi::xml_node& root, const Class_base* c, std::map<varName,pugi::xml_node>& propnames, const variables_map& map, bool isTemplate,bool forinstance, bool forJSON) const
 {
 	variables_map::const_var_iterator it=map.Variables.cbegin();
 	for(;it!=map.Variables.cend();++it)
 	{
 		const char* nodename;
 		const char* access = nullptr;
+		tiny_string type;
+		tiny_string returnType;
+		tiny_string declaredBy;
+		if (!forJSON && forinstance && it->second.ns.nsNameId == BUILTIN_STRINGS::STRING_AS3NS)
+			continue;
+		IFunction* f=nullptr;
 		switch (it->second.kind)
 		{
 			case CONSTANT_TRAIT:
 				nodename = "constant";
+				type = it->second.getClassVar(getSystemState())->getQualifiedClassName(true).raw_buf();
 				break;
 			case INSTANCE_TRAIT:
 			case DECLARED_TRAIT:
@@ -846,11 +875,29 @@ void Class_base::describeVariables(pugi::xml_node& root, const Class_base* c, st
 					if (isTemplate)
 						continue;
 					nodename="method";
+					if (it->second.kind==INSTANCE_TRAIT)
+						type = it->second.getClassVar(getSystemState())->getQualifiedClassName(true).raw_buf();
+					else
+					{
+						f = it->second.getFunctionVar();
+						if (f)
+						{
+							Type* rt = f->getReturnType();
+							if (rt==Type::anyType)
+								returnType="*";
+							else if (rt==Type::voidType)
+								returnType="void";
+							else if (rt)
+							{
+								Class_base* c = dynamic_cast<Class_base*>(rt);
+								if (c)
+									returnType=c->getQualifiedClassName(true);
+							}
+						}
+					}
 				}
 				else
 				{
-					if (!isTemplate && forinstance && it->second.kind != INSTANCE_TRAIT)
-						continue;
 					nodename="accessor";
 					if (asAtomHandler::isValid(it->second.getter) && asAtomHandler::isValid(it->second.setter))
 						access = "readwrite";
@@ -864,38 +911,84 @@ void Class_base::describeVariables(pugi::xml_node& root, const Class_base* c, st
 				continue;
 		}
 		tiny_string name = getSystemState()->getStringFromUniqueId(it->first);
-		if (name == "constructor")
+		if (name == "constructor" || name == "prototype")
 			continue;
-		auto existing=instanceNodes.find(name);
-		if(existing != instanceNodes.cend())
+		varName vn(it->first,nsNameAndKind());
+		auto existing=propnames.find(vn);
+		if(existing != propnames.cend())
 			continue;
 
 		pugi::xml_node node=root.append_child(nodename);
 		node.append_attribute("name").set_value(name.raw_buf());
 		if (access)
 			node.append_attribute("access").set_value(access);
-		if (isTemplate)
+
+		ASObject* obj = nullptr;
+		if (asAtomHandler::isFunction(it->second.getter))
+			obj = asAtomHandler::getObject(it->second.getter);
+		else if (asAtomHandler::isFunction(it->second.setter))
+			obj = asAtomHandler::getObject(it->second.setter);
+		if (obj)
 		{
-			ASObject* obj = NULL;
-			if (asAtomHandler::isFunction(it->second.getter))
-				obj = asAtomHandler::getObject(it->second.getter);
-			else if (asAtomHandler::isFunction(it->second.setter))
-				obj = asAtomHandler::getObject(it->second.setter);
-			if (obj)
+			if (obj->is<SyntheticFunction>())
+				node.append_attribute("type").set_value(obj->as<SyntheticFunction>()->getMethodInfo()->returnTypeName()->qualifiedString(getSystemState(),true).raw_buf());
+			else if (obj->is<Function>())
 			{
-				if (obj->is<SyntheticFunction>())
-					node.append_attribute("type").set_value(obj->as<SyntheticFunction>()->getMethodInfo()->returnTypeName()->qualifiedString(getSystemState(),true).raw_buf());
-				else if (obj->is<Function>())
+				if (obj->as<Function>()->returnType)
 				{
-					if (obj->as<Function>()->returnType)
-						node.append_attribute("type").set_value(obj->as<Function>()->returnType->getQualifiedClassName(true).raw_buf());
+					Class_base* c = dynamic_cast<Class_base*>(obj->as<Function>()->returnType);
+					assert (c);
+					node.append_attribute("type").set_value(c->getQualifiedClassName(true).raw_buf());
+				}
+				else
+					LOG(LOG_NOT_IMPLEMENTED,"describeType: return type not known:"<<this->class_name<<"  property "<<name);
+			}
+		}
+		if (it->second.kind != CONSTANT_TRAIT)
+		{
+			if (isTemplate)
+				declaredBy="__AS3__.vec::Vector.<*>";
+			else
+				declaredBy=c->getQualifiedClassName(true);
+			if (!it->second.ns.hasEmptyName())
+				node.append_attribute("uri").set_value(getSystemState()->getStringFromUniqueId(it->second.ns.nsNameId).raw_buf());
+		}
+		if (!type.empty())
+			node.append_attribute("type").set_value(type.raw_buf());
+		if (!declaredBy.empty())
+			node.append_attribute("declaredBy").set_value(declaredBy.raw_buf());
+		if (!returnType.empty())
+			node.append_attribute("returnType").set_value(returnType.raw_buf());
+		if (f)
+		{
+			uint32_t startoptional = f->length-f->getParamOptionalCount();
+			for (uint32_t i = 0; i < f->length; i++)
+			{
+				pugi::xml_node paramnode = node.append_child("parameter");
+				paramnode.append_attribute("index").set_value(i+1);
+				Type* tp = f->getParamType(i);
+				if (tp)
+				{
+					tiny_string t;
+					if (tp == Type::anyType)
+						t="*";
+					else if (tp == Type::voidType)
+						t="void";
 					else
-						LOG(LOG_NOT_IMPLEMENTED,"describeType: return type not known:"<<this->class_name<<"  property "<<name);
+						t=dynamic_cast<Class_base*>(tp)->getQualifiedClassName(true);
+					paramnode.append_attribute("type").set_value(t.raw_buf());
+					paramnode.append_attribute("optional").set_value(i >= startoptional);
+				}
+				else
+				{
+					LOG(LOG_NOT_IMPLEMENTED,"describeType: missing argument type:"<<i<<" "<<f->toDebugString());
+					paramnode.append_attribute("type").set_value("*");
+					paramnode.append_attribute("optional").set_value(true);
 				}
 			}
-			node.append_attribute("declaredBy").set_value("__AS3__.vec::Vector.<*>");
 		}
-		instanceNodes[name] = &node;
+
+		propnames[vn] = node;
 	}
 }
 void Class_base::describeConstructor(pugi::xml_node &root) const
@@ -906,16 +999,31 @@ void Class_base::describeConstructor(pugi::xml_node &root) const
 	{
 		if (!this->getTemplate())
 		{
-			if (this->constructor->as<IFunction>()->length == 0)
-				return;
-			LOG(LOG_NOT_IMPLEMENTED,"describeConstructor for builtin classes is not completely implemented");
 			pugi::xml_node node=root.append_child("constructor");
+			uint32_t startoptional = this->constructor->as<IFunction>()->length-this->constructor->as<IFunction>()->getParamOptionalCount();
 			for (uint32_t i = 0; i < this->constructor->as<IFunction>()->length; i++)
 			{
 				pugi::xml_node paramnode = node.append_child("parameter");
 				paramnode.append_attribute("index").set_value(i+1);
-				paramnode.append_attribute("type").set_value("*"); // TODO
-				paramnode.append_attribute("optional").set_value(false); // TODO
+				Type* tp = this->constructor->as<IFunction>()->getParamType(i);
+				if (tp)
+				{
+					tiny_string t;
+					if (tp == Type::anyType)
+						t="*";
+					else if (tp == Type::voidType)
+						t="void";
+					else
+						t=dynamic_cast<Class_base*>(tp)->getQualifiedClassName(true);
+					paramnode.append_attribute("type").set_value(t.raw_buf());
+					paramnode.append_attribute("optional").set_value(i >= startoptional);
+				}
+				else
+				{
+					LOG(LOG_NOT_IMPLEMENTED,"describeType: missing constructor argument type:"<<i<<" "<<this->toDebugString());
+					paramnode.append_attribute("type").set_value("*");
+					paramnode.append_attribute("optional").set_value(true);
+				}
 			}
 		}
 		return;
@@ -934,34 +1042,37 @@ void Class_base::describeConstructor(pugi::xml_node &root) const
 	}
 }
 
-void Class_base::describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits, std::map<varName,pugi::xml_node> &propnames, bool first) const
+void Class_base::describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits, std::map<varName,pugi::xml_node> &propnames, bool first, bool forinstance, bool forfactory) const
 {
 	std::map<u30, pugi::xml_node> accessorNodes;
 	for(unsigned int i=0;i<traits.size();i++)
 	{
 		traits_info& t=traits[i];
 		int kind=t.kind&0xf;
-		multiname* mname=context->getMultiname(t.name,NULL);
+		multiname* mname=context->getMultiname(t.name,nullptr);
 		if (mname->name_type!=multiname::NAME_STRING ||
 			(mname->ns.size()==1 && (mname->ns[0].kind != NAMESPACE)) ||
+			(!forinstance && forfactory
+			  && (!first || (this->super && !this->super->isBuiltin()))
+			  && mname->ns[0].nsNameId == BUILTIN_STRINGS::STRING_AS3NS) ||
+			(forinstance
+			  && (!first || (this->super && !this->super->isBuiltin()))
+			  && mname->ns[0].nsNameId == BUILTIN_STRINGS::STRING_AS3NS) ||
 			mname->ns.size() > 1)
 			continue;
 		pugi::xml_node node;
 		varName vn(mname->name_s_id,mname->ns.size()==1 && first && !(kind==traits_info::Getter || kind==traits_info::Setter) ? mname->ns[0] : nsNameAndKind());
 		auto existing=accessorNodes.find(t.name);
-		if(existing==accessorNodes.end())
+		auto existingprop = propnames.find(vn);
+		if (existingprop != propnames.end())
 		{
-			auto it = propnames.find(vn);
-			if (it != propnames.end())
-			{
-				if (!(kind==traits_info::Getter || kind==traits_info::Setter))
-					describeMetadata(it->second,t);
+			if (!(kind==traits_info::Getter || kind==traits_info::Setter))
 				continue;
-			}
 		}
+
 		if(kind==traits_info::Slot || kind==traits_info::Const)
 		{
-			multiname* type=context->getMultiname(t.type_name,NULL);
+			multiname* type=context->getMultiname(t.type_name,nullptr);
 			const char *nodename=kind==traits_info::Const?"constant":"variable";
 			node=root.append_child(nodename);
 			node.append_attribute("name").set_value(getSystemState()->getStringFromUniqueId(mname->name_s_id).raw_buf());
@@ -974,7 +1085,7 @@ void Class_base::describeTraits(pugi::xml_node &root, std::vector<traits_info>& 
 		{
 			node=root.append_child("method");
 			node.append_attribute("name").set_value(getSystemState()->getStringFromUniqueId(mname->name_s_id).raw_buf());
-			node.append_attribute("declaredBy").set_value(getQualifiedClassName().raw_buf());
+			node.append_attribute("declaredBy").set_value(getQualifiedClassName(true).raw_buf());
 
 			method_info& method=context->methods[t.method];
 			const multiname* rtname=method.returnTypeName();
@@ -996,6 +1107,7 @@ void Class_base::describeTraits(pugi::xml_node &root, std::vector<traits_info>& 
 		}
 		else if (kind==traits_info::Getter || kind==traits_info::Setter)
 		{
+			const char* access=nullptr;
 			// The getters and setters are separate
 			// traits. Check if we have already created a
 			// node for this multiname with the
@@ -1003,15 +1115,25 @@ void Class_base::describeTraits(pugi::xml_node &root, std::vector<traits_info>& 
 			// the access attribute to "readwrite".
 			if(existing==accessorNodes.end())
 			{
-				node=root.append_child("accessor");
-				node.append_attribute("name").set_value(getSystemState()->getStringFromUniqueId(mname->name_s_id).raw_buf());
+				if (existingprop == propnames.end())
+				{
+					node=root.append_child("accessor");
+					node.append_attribute("name").set_value(getSystemState()->getStringFromUniqueId(mname->name_s_id).raw_buf());
+				}
+				else
+				{
+					node=existingprop->second;
+					pugi::xml_attribute prevAttr=node.attribute("access");
+					tiny_string prevAccess=prevAttr.value();
+					if((kind==traits_info::Getter && prevAccess=="readonly") ||
+						(kind==traits_info::Setter && prevAccess=="writeonly"))
+						continue;
+				}
+
 			}
 			else
-			{
 				node=existing->second;
-			}
 
-			const char* access=NULL;
 			pugi::xml_attribute oldAttr=node.attribute("access");
 			tiny_string oldAccess=oldAttr.value();
 
@@ -1020,7 +1142,8 @@ void Class_base::describeTraits(pugi::xml_node &root, std::vector<traits_info>& 
 			else if(kind==traits_info::Setter && oldAccess=="")
 				access="writeonly";
 			else if((kind==traits_info::Getter && oldAccess=="writeonly") ||
-				(kind==traits_info::Setter && oldAccess=="readonly"))
+				(kind==traits_info::Setter && oldAccess=="readonly") ||
+					 oldAccess=="readwrite")
 				access="readwrite";
 
 			node.remove_attribute("access");
@@ -1042,16 +1165,18 @@ void Class_base::describeTraits(pugi::xml_node &root, std::vector<traits_info>& 
 				node.remove_attribute("type");
 				node.append_attribute("type").set_value(type.raw_buf());
 			}
+			tiny_string declaredby=node.attribute("declaredBy").value();
+			if (declaredby.empty())
+				declaredby = getQualifiedClassName(true).raw_buf();
+			node.remove_attribute("declaredBy");
+			node.append_attribute("declaredBy").set_value(declaredby.raw_buf());
 			if (mname->ns.size() > 0 && !mname->ns[0].hasEmptyName())
 			{
 				node.remove_attribute("uri");
 				node.append_attribute("uri").set_value(getSystemState()->getStringFromUniqueId(mname->ns[0].nsNameId).raw_buf());
 			}
-
-			node.remove_attribute("declaredBy");
-			node.append_attribute("declaredBy").set_value(getQualifiedClassName().raw_buf());
-
-			describeMetadata(node, t);
+			if (oldAccess!="readwrite")
+				describeMetadata(node, t);
 			accessorNodes[t.name]=node;
 		}
 		propnames.insert(make_pair(vn,node));

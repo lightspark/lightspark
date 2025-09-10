@@ -123,7 +123,9 @@ public:
 	ASObject *describeType(ASWorker* wrk) const override;
 	uint32_t functionname;
 	virtual multiname* callGetter(asAtom& ret, asAtom& target,ASWorker* wrk, uint16_t resultlocalnumberpos) =0;
-	virtual Class_base* getReturnType(bool opportunistic=false) =0;
+	virtual Type* getReturnType(bool opportunistic=false) =0;
+	virtual Type* getParamType(uint32_t index) =0;
+	virtual uint32_t getParamOptionalCount() =0;
 	std::string toDebugString() const override;
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 				std::map<const ASObject*, uint32_t>& objMap,

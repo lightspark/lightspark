@@ -583,7 +583,19 @@ public:
 	void resetParentList();
 	bool isInResetParentList(DisplayObject* d);
 	void removeFromResetParentList(DisplayObject* d);
-	ASObject* getBuiltinFunction(as_atom_function v, int len = 0, Class_base* returnType=nullptr, Class_base* returnTypeAllArgsInt=nullptr);
+	ASObject* getBuiltinFunction(as_atom_function v,
+								 int len = 0,
+								 Type* returnType=nullptr,
+								 Type* returnTypeAllArgsInt=nullptr,
+								 uint32_t optional=0, // number of optional parameters
+								 Type* paramType1=nullptr,
+								 Type* paramType2=nullptr,
+								 Type* paramType3=nullptr,
+								 Type* paramType4=nullptr,
+								 Type* paramType5=nullptr,
+								 Type* paramType6=nullptr,
+								 Type* paramType7=nullptr
+								 );
 };
 
 class DLL_PUBLIC ParseThread: public IThreadJob

@@ -40,7 +40,7 @@ Date::~Date()
 
 void Date::sinit(Class_base* c)
 {
-	CLASS_SETUP_CONSTRUCTOR_LENGTH(c, ASObject, _constructor, 7, CLASS_FINAL);
+	CLASS_SETUP_CONSTRUCTOR_7_PARAMETER(c, ASObject, _constructor, 7, CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_FINAL);
 	c->isReusable = true;
 	c->setDeclaredMethodByQName("getTimezoneOffset",AS3,c->getSystemState()->getBuiltinFunction(getTimezoneOffset,0,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(valueOf,0,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);

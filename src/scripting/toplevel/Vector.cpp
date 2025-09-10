@@ -551,7 +551,7 @@ ASObject *Vector::describeType(ASWorker* wrk) const
 	node.append_attribute("type").set_value("__AS3__.vec::Vector.<*>");
 
 	if(prot)
-		prot->describeInstance(root,true,true);
+		prot->describeInstance(root,true,true,false);
 
 	//LOG(LOG_INFO,"describeType:"<< Class<XML>::getInstanceS(getInstanceWorker(),root)->toXMLString_internal());
 

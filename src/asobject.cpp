@@ -304,7 +304,8 @@ void ASObject::addOwnedObject(ASObject* obj)
 void ASObject::sinit(Class_base* c)
 {
 	c->setDeclaredMethodByQName("hasOwnProperty",AS3,c->getSystemState()->getBuiltinFunction(hasOwnProperty,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true,true,6);
-	c->setDeclaredMethodByQName("setPropertyIsEnumerable",AS3,c->getSystemState()->getBuiltinFunction(setPropertyIsEnumerable),NORMAL_METHOD,true);
+	// contrary to specs setPropertyIsEnumerable seems to be only declared in prototype
+	//c->setDeclaredMethodByQName("setPropertyIsEnumerable",AS3,c->getSystemState()->getBuiltinFunction(setPropertyIsEnumerable),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("isPrototypeOf",AS3,c->getSystemState()->getBuiltinFunction(isPrototypeOf,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("propertyIsEnumerable",AS3,c->getSystemState()->getBuiltinFunction(propertyIsEnumerable,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 
@@ -3546,7 +3547,7 @@ ASObject *ASObject::describeType(ASWorker* wrk) const
 	root.append_attribute("isStatic").set_value("false");
 
 	if(prot)
-		prot->describeInstance(root,false,true);
+		prot->describeInstance(root,false,true,false);
 
 	//LOG(LOG_INFO,"describeType:"<< Class<XML>::getInstanceS(getInstanceWorker(),root)->toXMLString_internal());
 

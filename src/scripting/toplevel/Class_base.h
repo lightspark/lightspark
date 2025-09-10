@@ -24,6 +24,305 @@
 #include "asobject.h"
 #include "scripting/flash/system/ASWorker.h"
 
+/* general purpose body for an AS function */
+#define ASFUNCTIONBODY_ATOM(c,name) \
+void c::name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen)
+
+/* full body for a getter declared by ASPROPERTY_GETTER or ASFUNCTION_GETTER */
+#define ASFUNCTIONBODY_GETTER(c,name) \
+	void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(!asAtomHandler::is<c>(obj)) { \
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+		c* th = asAtomHandler::as<c>(obj); \
+		if(argslen != 0) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; } \
+		ArgumentConversionAtom<decltype(th->name)>::toAbstract(ret,wrk,th->name); \
+}
+
+#define ASFUNCTIONBODY_GETTER_STATIC(c,name) \
+void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(asAtomHandler::getObject(obj) != Class<c>::getRef(wrk->getSystemState()).getPtr()) { \
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; } \
+		if(argslen != 0) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; } \
+		ArgumentConversionAtom<decltype(wrk->getSystemState()->static_##c##_##name)>::toAbstract(ret,wrk,wrk->getSystemState()->static_##c##_##name); \
+}
+
+#define ASFUNCTIONBODY_GETTER_STRINGID(c,name) \
+void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(!asAtomHandler::is<c>(obj)) { \
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; } \
+		c* th = asAtomHandler::as<c>(obj); \
+		if(argslen != 0) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		ret = asAtomHandler::fromStringID(th->name); \
+}
+
+#define ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
+void c::_getter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+		c* th = asAtomHandler::as<c>(obj); \
+		if(argslen != 0) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		LOG(LOG_NOT_IMPLEMENTED,asAtomHandler::getObject(obj)->getClassName() <<"."<< #name << " getter is not implemented"); \
+		ArgumentConversionAtom<decltype(th->name)>::toAbstract(ret,wrk,th->name); \
+}
+
+/* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER */
+#define ASFUNCTIONBODY_SETTER(c,name) \
+void c::_setter_##name(asAtom& ret,ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+		c* th = asAtomHandler::as<c>(obj); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		decltype(th->name) oldValue = th->name; \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
+		ArgumentConversionAtom<decltype(th->name)>::cleanupOldValue(oldValue); \
+}
+#define ASFUNCTIONBODY_SETTER_ATOMTYPE(c,name,a) \
+void c::_setter_##name(asAtom& ret,ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+		c* th = asAtomHandler::as<c>(obj); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		decltype(th->name) oldValue = th->name; \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],a); \
+		ArgumentConversionAtom<decltype(th->name)>::cleanupOldValue(oldValue); \
+}
+#define ASFUNCTIONBODY_SETTER_STATIC(c,name) \
+void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(asAtomHandler::getObject(obj) != Class<c>::getRef(wrk->getSystemState()).getPtr()) { \
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		wrk->getSystemState()->static_##c##_##name = ArgumentConversionAtom<decltype(wrk->getSystemState()->static_##c##_##name)>::toConcrete(wrk,args[0],wrk->getSystemState()->static_##c##_##name); \
+}
+
+#define ASFUNCTIONBODY_SETTER_STRINGID(c,name) \
+void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+		c* th = asAtomHandler::as<c>(obj); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		th->name = asAtomHandler::toStringId(args[0],wrk); \
+}
+
+#define ASFUNCTIONBODY_SETTER_NOT_IMPLEMENTED(c,name) \
+void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+		c* th = asAtomHandler::as<c>(obj); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		LOG(LOG_NOT_IMPLEMENTED,asAtomHandler::getObject(obj)->getClassName() <<"."<< #name << " setter is not implemented"); \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
+}
+
+/* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER.
+ * After the property has been updated, the callback member function is called with the old value
+ * as parameter */
+#define ASFUNCTIONBODY_SETTER_CB(c,name,callback) \
+void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+		c* th = asAtomHandler::as<c>(obj); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		decltype(th->name) oldValue = th->name; \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
+		th->callback(oldValue); \
+		ArgumentConversionAtom<decltype(th->name)>::cleanupOldValue(oldValue); \
+}
+
+#define ASFUNCTIONBODY_SETTER_ATOMTYPE_CB(c,name,a,callback) \
+void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+		c* th = asAtomHandler::as<c>(obj); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		decltype(th->name) oldValue = th->name; \
+		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],a); \
+		th->callback(oldValue); \
+		ArgumentConversionAtom<decltype(th->name)>::cleanupOldValue(oldValue); \
+}
+
+#define ASFUNCTIONBODY_SETTER_STRINGID_CB(c,name,callback) \
+void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen) \
+{ \
+		if(!asAtomHandler::is<c>(obj)) {\
+			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
+		c* th = asAtomHandler::as<c>(obj); \
+		if(argslen != 1) {\
+			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		decltype(th->name) oldValue = th->name; \
+		th->name = asAtomHandler::toStringId(args[0],wrk); \
+		th->callback(oldValue); \
+}
+
+/* full body for a getter declared by ASPROPERTY_GETTER_SETTER or ASFUNCTION_GETTER_SETTER */
+#define ASFUNCTIONBODY_GETTER_SETTER(c,name) \
+ASFUNCTIONBODY_GETTER(c,name) \
+	ASFUNCTIONBODY_SETTER(c,name)
+
+#define ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE(c,name,a) \
+	ASFUNCTIONBODY_GETTER(c,name) \
+	ASFUNCTIONBODY_SETTER_ATOMTYPE(c,name,a)
+
+#define ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(c,name) \
+	ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(c,name) \
+	ASFUNCTIONBODY_SETTER_NOT_IMPLEMENTED(c,name)
+
+#define ASFUNCTIONBODY_GETTER_SETTER_CB(c,name,callback) \
+	ASFUNCTIONBODY_GETTER(c,name) \
+	ASFUNCTIONBODY_SETTER_CB(c,name,callback)
+
+#define ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE_CB(c,name,a,callback) \
+	ASFUNCTIONBODY_GETTER(c,name) \
+	ASFUNCTIONBODY_SETTER_ATOMTYPE_CB(c,name,a,callback)
+
+#define ASFUNCTIONBODY_GETTER_SETTER_STATIC(c,name) \
+	ASFUNCTIONBODY_GETTER_STATIC(c,name) \
+	ASFUNCTIONBODY_SETTER_STATIC(c,name)
+
+#define ASFUNCTIONBODY_GETTER_SETTER_STRINGID(c,name) \
+	ASFUNCTIONBODY_GETTER_STRINGID(c,name) \
+	ASFUNCTIONBODY_SETTER_STRINGID(c,name)
+
+#define ASFUNCTIONBODY_GETTER_SETTER_STRINGID_CB(c,name,callback) \
+	ASFUNCTIONBODY_GETTER_STRINGID(c,name) \
+	ASFUNCTIONBODY_SETTER_STRINGID_CB(c,name,callback)
+
+/* registers getter/setter with Class_base. To be used in ::sinit()-functions */
+#define REGISTER_GETTER_RESULTTYPE(c,name,cls) \
+	c->setDeclaredMethodByQName(#name,"",c->getSystemState()->getBuiltinFunction(_getter_##name,0,Class<cls>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true)
+
+
+#define REGISTER_GETTER_SETTER_RESULTTYPE(c,name,cls) \
+		REGISTER_GETTER_RESULTTYPE(c,name,cls); \
+	REGISTER_SETTER(c,name)
+
+#define REGISTER_GETTER(c,name) \
+	c->setDeclaredMethodByQName(#name,"",c->getSystemState()->getBuiltinFunction(_getter_##name),GETTER_METHOD,true)
+
+#define REGISTER_SETTER(c,name) \
+	c->setDeclaredMethodByQName(#name,"",c->getSystemState()->getBuiltinFunction(_setter_##name),SETTER_METHOD,true)
+
+#define REGISTER_GETTER_SETTER(c,name) \
+	REGISTER_GETTER(c,name); \
+	REGISTER_SETTER(c,name)
+
+#define REGISTER_GETTER_STATIC(c,name) \
+	c->setDeclaredMethodByQName(#name,"",c->getSystemState()->getBuiltinFunction(_getter_##name),GETTER_METHOD,false)
+
+#define REGISTER_SETTER_STATIC(c,name) \
+	c->setDeclaredMethodByQName(#name,"",c->getSystemState()->getBuiltinFunction(_setter_##name),SETTER_METHOD,false)
+
+#define REGISTER_GETTER_STATIC_RESULTTYPE(c,name,cls) \
+	c->setDeclaredMethodByQName(#name,"",c->getSystemState()->getBuiltinFunction(_getter_##name,0,Class<cls>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false)
+
+#define REGISTER_GETTER_SETTER_STATIC(c,name) \
+	REGISTER_GETTER_STATIC(c,name); \
+	REGISTER_SETTER_STATIC(c,name)
+
+#define REGISTER_GETTER_SETTER_STATIC_RESULTTYPE(c,name,cls) \
+	REGISTER_GETTER_STATIC_RESULTTYPE(c,name,cls); \
+	REGISTER_SETTER_STATIC(c,name)
+
+#define CLASS_DYNAMIC_NOT_FINAL 0
+#define CLASS_FINAL 1
+#define CLASS_SEALED 2
+
+#define CLASS_GETREF(c,name) \
+Class<name>::getRef(c->getSystemState()).getPtr()
+
+#define CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes) \
+	c->setSuper(Class<superClass>::getRef(c->getSystemState())); \
+	c->setConstructor(nullptr); \
+	c->isFinal = ((attributes) & CLASS_FINAL) != 0;	\
+	c->isSealed = ((attributes) & CLASS_SEALED) != 0
+
+#define CLASS_SETUP(c, superClass, constructor, attributes) \
+CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
+c->setConstructor(c->getSystemState()->getBuiltinFunction(constructor));
+
+#define CLASS_SETUP_CONSTRUCTOR_1_PARAMETER(c, superClass, constructor, optional, paramtype1, attributes) \
+CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
+c->setConstructor(c->getSystemState()->getBuiltinFunction((constructor), 1, nullptr,nullptr,(optional) \
+,paramtype1 \
+));
+
+#define CLASS_SETUP_CONSTRUCTOR_2_PARAMETER(c, superClass, constructor, optional, paramtype1, paramtype2, attributes) \
+CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
+c->setConstructor(c->getSystemState()->getBuiltinFunction((constructor), 2, nullptr,nullptr,(optional) \
+,paramtype1 \
+,paramtype2 \
+));
+
+#define CLASS_SETUP_CONSTRUCTOR_3_PARAMETER(c, superClass, constructor, optional, paramtype1, paramtype2, paramtype3, attributes) \
+CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
+c->setConstructor(c->getSystemState()->getBuiltinFunction((constructor), 3, nullptr,nullptr,(optional) \
+,paramtype1 \
+,paramtype2 \
+,paramtype3 \
+));
+
+#define CLASS_SETUP_CONSTRUCTOR_4_PARAMETER(c, superClass, constructor, optional, paramtype1, paramtype2, paramtype3, paramtype4, attributes) \
+CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
+c->setConstructor(c->getSystemState()->getBuiltinFunction((constructor), 4, nullptr,nullptr,(optional) \
+,paramtype1 \
+,paramtype2 \
+,paramtype3 \
+,paramtype4 \
+));
+
+#define CLASS_SETUP_CONSTRUCTOR_5_PARAMETER(c, superClass, constructor, optional, paramtype1, paramtype2, paramtype3, paramtype4, paramtype5, attributes) \
+CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
+c->setConstructor(c->getSystemState()->getBuiltinFunction((constructor), 5, nullptr,nullptr,(optional) \
+,paramtype1 \
+,paramtype2 \
+,paramtype3 \
+,paramtype4 \
+,paramtype5 \
+));
+
+#define CLASS_SETUP_CONSTRUCTOR_6_PARAMETER(c, superClass, constructor, optional, paramtype1, paramtype2, paramtype3, paramtype4, paramtype5, paramtype6, attributes) \
+CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
+c->setConstructor(c->getSystemState()->getBuiltinFunction((constructor), 6, nullptr,nullptr,(optional) \
+,paramtype1 \
+,paramtype2 \
+,paramtype3 \
+,paramtype4 \
+,paramtype5 \
+,paramtype6 \
+));
+
+#define CLASS_SETUP_CONSTRUCTOR_7_PARAMETER(c, superClass, constructor, optional, paramtype1, paramtype2, paramtype3, paramtype4, paramtype5, paramtype6, paramtype7, attributes) \
+CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes); \
+c->setConstructor(c->getSystemState()->getBuiltinFunction((constructor), 7, nullptr,nullptr,(optional) \
+,paramtype1 \
+,paramtype2 \
+,paramtype3 \
+,paramtype4 \
+,paramtype5 \
+,paramtype6 \
+,paramtype7 \
+));
 
 namespace pugi
 {
@@ -151,8 +450,8 @@ private:
 	nsNameAndKind protected_ns;
 	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns, ApplicationDomain* appdomain);
 	IFunction* constructor;
-	void describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits, std::map<varName,pugi::xml_node> &propnames, bool first) const;
-	void describeVariables(pugi::xml_node &root, const Class_base* c, std::map<tiny_string, pugi::xml_node *> &instanceNodes, const variables_map& map, bool isTemplate, bool forinstance) const;
+	void describeTraits(pugi::xml_node &root, std::vector<traits_info>& traits, std::map<varName,pugi::xml_node> &propnames, bool first, bool forinstance, bool forfactory) const;
+	void describeVariables(pugi::xml_node &root, const Class_base* c, std::map<varName, pugi::xml_node>& propnames, const variables_map& map, bool isTemplate, bool forinstance, bool forJSON) const;
 	void describeConstructor(pugi::xml_node &root) const;
 	virtual void describeClassMetadata(pugi::xml_node &root) const {}
 	uint32_t qualifiedClassnameID;
@@ -178,7 +477,7 @@ public:
 	const QName class_name;
 	//Memory reporter to keep track of used bytes
 	MemoryAccount* memoryAccount;
-	ASPROPERTY_GETTER(int32_t,length);
+	int32_t length;
 	int32_t class_index;
 	bool isFinal:1;
 	bool isSealed:1;
@@ -193,7 +492,7 @@ public:
 	uint32_t classID;
 	void addConstructorGetter();
 	void addPrototypeGetter();
-	void addLengthGetter();
+	void addLengthConstant();
 	inline virtual void setupDeclaredTraits(ASObject *target, bool checkclone=true) { target->traitsInitialized = true; }
 	void handleConstruction(asAtom &target, asAtom *args, unsigned int argslen, bool buildAndLink, bool _explicit = false, bool callSyntheticConstructor = true);
 	void setConstructor(ASObject* c);
@@ -224,7 +523,7 @@ public:
 	tiny_string toString();
 	virtual void generator(ASWorker* wrk,asAtom &ret, asAtom* args, const unsigned int argslen);
 	ASObject *describeType(ASWorker* wrk) const override;
-	void describeInstance(pugi::xml_node &root, bool istemplate, bool forinstance) const;
+	void describeInstance(pugi::xml_node &root, bool istemplate, bool forinstance, bool forfactory, bool forJSON=false) const;
 	virtual const Template_base* getTemplate() const { return nullptr; }
 	/*
 	 * Converts the given object to an object of this Class_base's type.

@@ -205,22 +205,38 @@ protected:
 	as_atom_function val_atom;
 	
 	// type of the return value
-	Class_base* returnType;
+	Type* returnType;
 	// type of the return value if all arguments are integer
-	Class_base* returnTypeAllArgsInt;
-	Function(ASWorker* wrk,Class_base* c,as_atom_function v = nullptr):IFunction(wrk,c,SUBTYPE_FUNCTION),val_atom(v),returnType(nullptr),returnTypeAllArgsInt(nullptr) {}
+	Type* returnTypeAllArgsInt;
+
+	Type** paramTypes;// array of the types of the parameters of this function
+	uint32_t optionalParams;// number of params that are optional
+	Function(ASWorker* wrk,Class_base* c,as_atom_function v = nullptr):IFunction(wrk,c,SUBTYPE_FUNCTION)
+		,val_atom(v)
+		,returnType(nullptr)
+		,returnTypeAllArgsInt(nullptr)
+		,paramTypes(nullptr)
+		,optionalParams(0)
+	{}
 	method_info* getMethodInfo() const override { return nullptr; }
 	IFunction* clone(ASWorker* wrk) override;
 	bool destruct() override
 	{
 		returnType=nullptr;
 		returnTypeAllArgsInt=nullptr;
+		if (!this->clonedFrom && paramTypes)
+			delete[] paramTypes;
+		paramTypes=nullptr;
+		optionalParams=0;
 		return IFunction::destruct();
 	}
 	void finalize() override
 	{
 		returnType=nullptr;
 		returnTypeAllArgsInt=nullptr;
+		if (!this->clonedFrom && paramTypes)
+			delete[] paramTypes;
+		paramTypes=nullptr;
 		IFunction::finalize();
 	}
 	void prepareShutdown() override;
@@ -260,8 +276,10 @@ public:
 		wrk->popBuiltinCallResultLocalNumber();
 		return nullptr;
 	}
-	Class_base* getReturnType(bool opportunistic=false) override;
-	Class_base* getArgumentDependentReturnType(bool allargsint);
+	Type* getReturnType(bool opportunistic=false) override;
+	Type* getParamType(uint32_t index) override;
+	uint32_t getParamOptionalCount() override { return optionalParams; }
+	Type* getArgumentDependentReturnType(bool allargsint);
 };
 
 /* Special object used as prototype for the Function class
@@ -351,7 +369,10 @@ public:
 	FORCE_INLINE multiname* getSimpleName() {
 		return simpleGetterOrSetterName;
 	}
-	Class_base* getReturnType(bool opportunistic=false) override;
+	Type* getReturnType(bool opportunistic=false) override;
+	Type* getParamType(uint32_t index) override;
+	uint32_t getParamOptionalCount() override;
+
 	void checkParamTypes(bool opportunistic=false);
 	void checkExceptionTypes();
 	bool canSkipCoercion(int param, Class_base* cls);
@@ -384,7 +405,20 @@ public:
 		ret->incRef();
 		return _MR(ret);
 	}
-	static Function* getFunction(SystemState* sys,as_atom_function v, int len = 0, Class_base* returnType=nullptr, Class_base* returnTypeAllArgsInt=nullptr)
+	static Function* getFunction(SystemState* sys,
+								 as_atom_function v,
+								 int len = 0,
+								 Type* returnType=nullptr,
+								 Type* returnTypeAllArgsInt=nullptr,
+								 uint32_t optional=0, // number of optional parameters
+								 Type* paramType1=nullptr,
+								 Type* paramType2=nullptr,
+								 Type* paramType3=nullptr,
+								 Type* paramType4=nullptr,
+								 Type* paramType5=nullptr,
+								 Type* paramType6=nullptr,
+								 Type* paramType7=nullptr
+								 )
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(sys);
 		Function*  ret = new (c->memoryAccount) Function(c->getInstanceWorker(),c);
@@ -397,6 +431,38 @@ public:
 		ret->length = len;
 		ret->constructIndicator = true;
 		ret->constructorCallComplete = true;
+		ret->optionalParams=optional;
+		if (ret->length)
+		{
+			ret->paramTypes=new Type*[ret->length];
+			switch (ret->length)
+			{
+				case 7:
+					ret->paramTypes[6]=paramType7;
+					//fallthrough
+				case 6:
+					ret->paramTypes[5]=paramType6;
+					//fallthrough
+				case 5:
+					ret->paramTypes[4]=paramType5;
+					//fallthrough
+				case 4:
+					ret->paramTypes[3]=paramType4;
+					//fallthrough
+				case 3:
+					ret->paramTypes[2]=paramType3;
+					//fallthrough
+				case 2:
+					ret->paramTypes[1]=paramType2;
+					//fallthrough
+				case 1:
+					ret->paramTypes[0]=paramType1;
+					break;
+				default:
+					LOG(LOG_NOT_IMPLEMENTED,"more than 7 parameters in builtin function");
+					break;
+			}
+		}
 		return ret;
 	}
 

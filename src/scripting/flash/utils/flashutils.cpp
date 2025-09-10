@@ -35,6 +35,7 @@
 #include "scripting/flash/display/DisplayObject.h"
 #include <sstream>
 #include <zlib.h>
+#include <3rdparty/pugixml/src/pugixml.hpp>
 
 using namespace std;
 using namespace lightspark;
@@ -195,20 +196,128 @@ ASFUNCTIONBODY_ATOM(lightspark,getDefinitionByName)
 ASFUNCTIONBODY_ATOM(lightspark,describeType)
 {
 	assert_and_throw(argslen>=1);
-	ASObject* o = asAtomHandler::toObject(args[0],wrk);
-	if (o->is<Class_inherit>())
-		o->as<Class_inherit>()->checkScriptInit();
-	ret = asAtomHandler::fromObject(o->describeType(wrk));
-}
+	ASObject* o = asAtomHandler::getObject(args[0]);
+	if (o)
+	{
+		if (o->is<Class_inherit>())
+			o->as<Class_inherit>()->checkScriptInit();
+		ret = asAtomHandler::fromObject(o->describeType(wrk));
+		return;
+	}
 
+	switch (asAtomHandler::getObjectType(args[0]))
+	{
+		case T_INTEGER:
+			o = Class<Integer>::getInstanceSNoArgs(wrk);
+			break;
+		case T_UINTEGER:
+			o = Class<UInteger>::getInstanceSNoArgs(wrk);
+			break;
+		case T_NUMBER:
+			o = Class<Number>::getInstanceSNoArgs(wrk);
+			break;
+		case T_STRING:
+			o = Class<ASString>::getInstanceSNoArgs(wrk);
+			break;
+		default:
+			return;
+	}
+	ret = asAtomHandler::fromObject(o->describeType(wrk));
+	o->decRef();
+}
+asAtom fillForDescribeTypeJSON(pugi::xml_node& node, ASWorker* wrk,const tiny_string& accessor, bool needsparams)
+{
+	ASObject* var = new_asobject(wrk);
+	multiname mvar(nullptr);
+	mvar.name_type=multiname::NAME_STRING;
+	mvar.isAttribute = false;
+	asAtom varAtom;
+
+	if (!accessor.empty())
+	{
+		mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("access");
+		varAtom =asAtomHandler::fromStringID(wrk->getSystemState()->getUniqueStringId(accessor));
+		var->setVariableByMultiname(mvar,varAtom,CONST_ALLOWED,nullptr,wrk);
+	}
+	mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("name");
+	varAtom = asAtomHandler::fromString(wrk->getSystemState(),node.attribute("name").as_string());
+	var->setVariableByMultiname(mvar,varAtom,CONST_ALLOWED,nullptr,wrk);
+	if (needsparams)
+	{
+		mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("returnType");
+		varAtom = asAtomHandler::fromString(wrk->getSystemState(),node.attribute("returnType").as_string());
+		var->setVariableByMultiname(mvar,varAtom,CONST_ALLOWED,nullptr,wrk);
+		varAtom = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
+		Array* params = Class<Array>::getInstanceS(wrk);
+		for (auto it = node.children().begin(); it != node.children().end(); it++)
+		{
+			ASObject* param = new_asobject(wrk);
+			mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("type");
+			varAtom = asAtomHandler::fromString(wrk->getSystemState(),(*it).attribute("type").as_string());
+			param->setVariableByMultiname(mvar,varAtom,CONST_ALLOWED,nullptr,wrk);
+			mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("optional");
+			varAtom = asAtomHandler::fromBool((*it).attribute("optional").as_bool());
+			param->setVariableByMultiname(mvar,varAtom,CONST_ALLOWED,nullptr,wrk);
+			params->push(asAtomHandler::fromObjectNoPrimitive(param));
+		}
+		mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("parameters");
+		varAtom = asAtomHandler::fromObjectNoPrimitive(params);
+		var->setVariableByMultiname(mvar,varAtom,CONST_ALLOWED,nullptr,wrk);
+	}
+	else
+	{
+		mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("type");
+		varAtom = asAtomHandler::fromString(wrk->getSystemState(),node.attribute("type").as_string());
+		var->setVariableByMultiname(mvar,varAtom,CONST_ALLOWED,nullptr,wrk);
+	}
+	mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("uri");
+	varAtom = asAtomHandler::fromString(wrk->getSystemState(),node.attribute("uri").as_string("null"));
+	var->setVariableByMultiname(mvar,varAtom,CONST_ALLOWED,nullptr,wrk);
+	tiny_string declaredBy = node.attribute("declaredBy").as_string();
+	if (!declaredBy.empty())
+	{
+		mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("declaredBy");
+		varAtom = asAtomHandler::fromString(wrk->getSystemState(),declaredBy);
+		var->setVariableByMultiname(mvar,varAtom,CONST_ALLOWED,nullptr,wrk);
+	}
+
+	mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("metadata");
+	varAtom = asAtomHandler::nullAtom;
+	auto metadata = node.children("metadata");
+	for (auto itmeta = metadata.begin(); itmeta != metadata.end(); itmeta++)
+	{
+		LOG(LOG_NOT_IMPLEMENTED,"describeTypeJson with metadata");
+	}
+	var->setVariableByMultiname(mvar,varAtom,CONST_ALLOWED,nullptr,wrk);
+	return asAtomHandler::fromObjectNoPrimitive(var);
+}
 ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 {
-	_NR<ASObject> o;
+	asAtom arg= asAtomHandler::invalidAtom;
 	uint32_t flags;
-	ARG_CHECK(ARG_UNPACK(o)(flags));
-	ASObject* res = new_asobject(wrk);
+	ARG_CHECK(ARG_UNPACK(arg)(flags));
 
-	if (o)
+	bool HIDE_NSURI_METHODS = flags & 0x0001;
+	bool INCLUDE_BASES = flags & 0x0002;
+	bool INCLUDE_INTERFACES = flags & 0x0004;
+	bool INCLUDE_VARIABLES = flags & 0x0008;
+	bool INCLUDE_ACCESSORS = flags & 0x0010;
+	bool INCLUDE_METHODS = flags & 0x0020;
+	bool INCLUDE_METADATA = flags & 0x0040;
+	bool INCLUDE_CONSTRUCTOR = flags & 0x0080;
+	bool INCLUDE_TRAITS = flags & 0x0100;
+	bool USE_ITRAITS = flags & 0x0200;
+	bool HIDE_OBJECT = flags & 0x0400;
+	if (HIDE_NSURI_METHODS)
+		LOG(LOG_NOT_IMPLEMENTED, "describeTypeJSON: flag HIDE_NSURI_METHODS not implemented");
+	if (USE_ITRAITS)
+		LOG(LOG_NOT_IMPLEMENTED, "describeTypeJSON: flag USE_ITRAITS not implemented");
+	if (HIDE_OBJECT)
+		LOG(LOG_NOT_IMPLEMENTED, "describeTypeJSON: flag USE_ITRAITS not implemented");
+
+	ASObject* res = new_asobject(wrk);
+	ASObject* o = asAtomHandler::getObject(arg);
+	if (o && (!USE_ITRAITS || o->is<Class_base>()))
 	{
 		asAtom v;
 		Class_base* cls = nullptr;
@@ -224,57 +333,130 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 		v = asAtomHandler::fromString(wrk->getSystemState(),cls->getQualifiedClassName(true));
 		res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("isDynamic");
-		v = asAtomHandler::fromBool(!cls->isSealed);
+		v = asAtomHandler::fromBool(o->is<Class_base>() || !cls->isSealed);
 		res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("isFinal");
-		v = asAtomHandler::fromBool(!cls->isFinal);
+		v = asAtomHandler::fromBool(o->is<Class_base>() || cls->isFinal);
 		res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
-	
-		ASObject* traits = new_asobject(wrk);
-	
-		bool INCLUDE_BASES = flags & 0x0002;
-		bool INCLUDE_INTERFACES = flags & 0x0004;
-		bool INCLUDE_VARIABLES = flags & 0x0008;
-		bool INCLUDE_ACCESSORS = flags & 0x0010;
-		bool INCLUDE_METHODS = flags & 0x0020;
-		bool INCLUDE_METADATA = flags & 0x0040;
-		bool INCLUDE_CONSTRUCTOR = flags & 0x0080;
-		bool INCLUDE_TRAITS = flags & 0x0100;
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("isStatic");
+		v = asAtomHandler::fromBool(o->is<Class_base>());
+		res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 
+
+		ASObject* traits = nullptr;
 		if (INCLUDE_TRAITS)
 		{
-			if (INCLUDE_METADATA)
-			{
-				LOG(LOG_NOT_IMPLEMENTED,"describeTypeJSON flag INCLUDE_METADATA");
-			}
+			traits = new_asobject(wrk);
+			pugi::xml_document root;
+			cls->describeInstance(root,false,!o->is<Class_base>(),false,true);
+
+			m.name_s_id=wrk->getSystemState()->getUniqueStringId("bases");
+			v = asAtomHandler::nullAtom;
 			if (INCLUDE_BASES)
 			{
 				Array* bases = Class<Array>::getInstanceS(wrk);
-				Class_base* baseclass = cls;
-				while (baseclass)
-				{
-					bases->push(asAtomHandler::fromString(wrk->getSystemState(),baseclass->getQualifiedClassName(true)));
-					baseclass = baseclass->super.getPtr();
-				}
-				m.name_s_id=wrk->getSystemState()->getUniqueStringId("bases");
+				auto children = root.children("extendsClass");
+				for (auto it = children.begin(); it != children.end(); it++)
+					bases->push(asAtomHandler::fromString(wrk->getSystemState(),(*it).attribute("type").as_string()));
 				v = asAtomHandler::fromObject(bases);
-				traits->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 			}
+			traits->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+
+			m.name_s_id=wrk->getSystemState()->getUniqueStringId("interfaces");
+			v = asAtomHandler::nullAtom;
 			if (INCLUDE_INTERFACES)
 			{
-				LOG(LOG_NOT_IMPLEMENTED,"describeTypeJSON flag INCLUDE_INTERFACES");
+				Array* interfaces = Class<Array>::getInstanceS(wrk);
+				auto ifacevars = root.children("implementsInterface");
+				for (auto it = ifacevars.begin(); it != ifacevars.end(); it++)
+				{
+					asAtom iface = asAtomHandler::fromString(wrk->getSystemState(),(*it).attribute("type").as_string());
+					interfaces->push(iface);
+				}
+				v = asAtomHandler::fromObject(interfaces);
 			}
+			traits->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+
+			m.name_s_id=wrk->getSystemState()->getUniqueStringId("constructor");
+			v = asAtomHandler::nullAtom;
 			if (INCLUDE_CONSTRUCTOR)
 			{
-				LOG(LOG_NOT_IMPLEMENTED,"describeTypeJSON flag INCLUDE_CONSTRUCTOR");
+				Array* params = Class<Array>::getInstanceS(wrk);
+				multiname mvar(nullptr);
+				mvar.name_type=multiname::NAME_STRING;
+				mvar.isAttribute = false;
+				auto node = root.child("constructor");
+				for (auto it = node.children().begin(); it != node.children().end(); it++)
+				{
+					ASObject* param = new_asobject(wrk);
+					mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("type");
+					v = asAtomHandler::fromString(wrk->getSystemState(),(*it).attribute("type").as_string());
+					param->setVariableByMultiname(mvar,v,CONST_ALLOWED,nullptr,wrk);
+					mvar.name_s_id=wrk->getSystemState()->getUniqueStringId("optional");
+					v = asAtomHandler::fromBool((*it).attribute("optional").as_bool());
+					param->setVariableByMultiname(mvar,v,CONST_ALLOWED,nullptr,wrk);
+					params->push(asAtomHandler::fromObjectNoPrimitive(param));
+				}
+				v = asAtomHandler::fromObjectNoPrimitive(params);
 			}
-			if (INCLUDE_ACCESSORS || INCLUDE_METHODS || INCLUDE_VARIABLES)
+			traits->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+
+			m.name_s_id=wrk->getSystemState()->getUniqueStringId("accessors");
+			v = asAtomHandler::nullAtom;
+			if (INCLUDE_ACCESSORS)
 			{
-				LOG(LOG_NOT_IMPLEMENTED,"describeTypeJSON flag INCLUDE_ACCESSORS || INCLUDE_METHODS || INCLUDE_VARIABLES");
+				Array* accessors = Class<Array>::getInstanceS(wrk);
+
+				auto childrenvars = root.children("accessor");
+				for (auto it = childrenvars.begin(); it != childrenvars.end(); it++)
+					accessors->push(fillForDescribeTypeJSON(*it,wrk,(*it).attribute("access").as_string(),false));
+				v = asAtomHandler::fromObjectNoPrimitive(accessors);
 			}
+			traits->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+
+			m.name_s_id=wrk->getSystemState()->getUniqueStringId("methods");
+			v = asAtomHandler::nullAtom;
+			if (INCLUDE_METHODS)
+			{
+				Array* methods = Class<Array>::getInstanceS(wrk);
+
+				auto methodvars = root.children("method");
+				for (auto it = methodvars.begin(); it != methodvars.end(); it++)
+					methods->push(fillForDescribeTypeJSON(*it,wrk,"",true));
+				v = asAtomHandler::fromObjectNoPrimitive(methods);
+			}
+			traits->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+
+			m.name_s_id=wrk->getSystemState()->getUniqueStringId("variables");
+			v = asAtomHandler::nullAtom;
+			if (INCLUDE_VARIABLES)
+			{
+				Array* variables = Class<Array>::getInstanceS(wrk);
+
+				auto childrenvars = root.children("variable");
+				for (auto it = childrenvars.begin(); it != childrenvars.end(); it++)
+					variables->push(fillForDescribeTypeJSON(*it,wrk,"readwrite",false));
+				auto childrenconsts = root.children("constant");
+				for (auto it = childrenconsts.begin(); it != childrenconsts.end(); it++)
+					variables->push(fillForDescribeTypeJSON(*it,wrk,"readonly",false));
+				v = asAtomHandler::fromObjectNoPrimitive(variables);
+			}
+			traits->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
+			m.name_s_id=wrk->getSystemState()->getUniqueStringId("metadata");
+			v = asAtomHandler::nullAtom;
+			if (INCLUDE_METADATA)
+			{
+				Array* variables = Class<Array>::getInstanceS(wrk);
+				auto metadata = root.children("metadata");
+				for (auto it = metadata.begin(); it != metadata.end(); it++)
+					variables->push(asAtomHandler::fromString(wrk->getSystemState(),(*it).attribute("name").as_string()));
+				v = asAtomHandler::fromObjectNoPrimitive(variables);
+			}
+			traits->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 		}
+
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("traits");
-		v = asAtomHandler::fromObjectNoPrimitive(traits);
+		v = traits ? asAtomHandler::fromObjectNoPrimitive(traits) : asAtomHandler::nullAtom;
 		res->setVariableByMultiname(m,v,CONST_ALLOWED,nullptr,wrk);
 	}
 	else

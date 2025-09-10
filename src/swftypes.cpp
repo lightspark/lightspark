@@ -65,7 +65,15 @@ const tiny_string multiname::qualifiedString(SystemState* sys, bool forDescribeT
 	{
 		tiny_string ret=nsName;
 		ret+= forDescribeType ? "::" : ".";
-		ret+=name;
+		if (forDescribeType && nsName=="__AS3__.vec" && name.startsWith("Vector$"))
+		{
+			tiny_string tmp("Vector.<");
+			tmp += name.substr_bytes(7,UINT32_MAX);
+			tmp += ">";
+			ret+=tmp;
+		}
+		else
+			ret+=name;
 		return ret;
 	}
 }
@@ -1785,6 +1793,8 @@ tiny_string QName::getQualifiedName(SystemState *sys,bool fullName) const
 			t = "Vector.<*>";
 		ret += t;
 	}
+	else if (fullName && nsStringId == BUILTIN_STRINGS::STRING_OBJECT)
+		ret = "*";
 	else
 	{
 		if(fullName && nsStringId != BUILTIN_STRINGS::EMPTY)

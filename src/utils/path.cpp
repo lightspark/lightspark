@@ -196,6 +196,9 @@ void Path::postprocessPath(const Format& format)
 {
 	// TODO: Throw on invalid UTF-8 data.
 
+	if (path.empty())
+		return;
+
 	postprocessPathImpl(format);
 
 	StringSizeType offset = hasRootNamePrefix() ? 2 : 0;

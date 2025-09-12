@@ -360,10 +360,7 @@ public:
 		if (type != STATIC)
 			resetToStatic();
 		isASCII = c<0x80;
-		hasNull = c == 0;
-		if (hasNull)
-			stringSize = 1;
-		else if (isASCII)
+		if (isASCII)
 		{
 			buf[0] = c&0xff;
 			stringSize = 2;
@@ -371,8 +368,9 @@ public:
 		else
 			stringSize = unicodeToUTF8(c,buf);
 		buf[stringSize-1] = '\0';
+		hasNull = c == 0;
 		isInteger = c >= '0' && c <= '9';
-		numchars = !hasNull;
+		numchars = 1;
 	}
 	
 	bool contains(const tiny_string& str) const;

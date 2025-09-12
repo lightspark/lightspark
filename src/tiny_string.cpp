@@ -317,9 +317,7 @@ uint32_t tiny_string::unicodeToUTF8(uint32_t c, char* buf)
 {
 	uint32_t stringSize = 0;
 	bool isASCII = c<0x80;
-	if (c == '\0')
-		stringSize = 1;
-	else if (isASCII)
+	if (isASCII)
 	{
 		buf[0] = c&0xff;
 		stringSize = 2;

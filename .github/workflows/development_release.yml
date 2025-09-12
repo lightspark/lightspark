@@ -71,6 +71,7 @@
               mingw-w64-x86_64-rtmpdump
               mingw-w64-x86_64-ffmpeg
               mingw-w64-x86_64-SDL2
+              mingw-w64-x86_64-nsis
               upx
               git
               base-devel
@@ -124,6 +125,7 @@
               mingw-w64-i686-rtmpdump
               mingw-w64-i686-ffmpeg
               mingw-w64-i686-SDL2
+              mingw-w64-i686-nsis
               upx
               git
               base-devel

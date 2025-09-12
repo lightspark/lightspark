@@ -66,6 +66,19 @@ tiny_string::tiny_string(const std::string& r):_buf_static(),buf(_buf_static),st
 	init();
 }
 
+tiny_string::tiny_string(CharIterator first, CharIterator last) :
+_buf_static(),
+buf(_buf_static),
+stringSize(last.ptr() - first.ptr() + 1),
+type(STATIC)
+{
+	if (stringSize > STATIC_SIZE)
+		createBuffer(stringSize);
+	memcpy(buf, first.ptr(), stringSize - 1);
+	buf[stringSize - 1] = '\0';
+	init();
+}
+
 tiny_string::~tiny_string()
 {
 	resetToStatic();
@@ -304,7 +317,9 @@ uint32_t tiny_string::unicodeToUTF8(uint32_t c, char* buf)
 {
 	uint32_t stringSize = 0;
 	bool isASCII = c<0x80;
-	if (isASCII)
+	if (c == '\0')
+		stringSize = 1;
+	else if (isASCII)
 	{
 		buf[0] = c&0xff;
 		stringSize = 2;
@@ -592,7 +607,7 @@ uint32_t tiny_string::findFirstInv(const tiny_string& str, uint32_t start) const
 		for (auto ch2 : str)
 		{
 			if (ch != ch2)
-				break;
+				return i;
 		}
 	}
 

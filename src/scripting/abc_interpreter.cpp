@@ -3632,6 +3632,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				break;
 			case 0x91://increment
 #ifdef ENABLE_OPTIMIZATION
+				if (!state.operandlist.empty()
+					&& state.operandlist.back().type != OP_LOCAL
+					&& state.operandlist.back().type != OP_CACHED_SLOT)
+				{
+					// argument is a constant, so we can compute the result directly
+					asAtom a = state.mi->context->constantAtoms_cached[state.preloadedcode.back().pcode.arg3_uint];
+					asAtomHandler::increment(a,state.worker,false);
+					state.operandlist.back().removeArg(state);
+					state.operandlist.pop_back();
+					addCachedConstant(state,mi, a,code);
+					break;
+				}
 				if (typestack.back().obj == Class<Integer>::getRef(function->getSystemState()).getPtr())
 				{
 					// argument is an int, so we can use the increment_i optimization instead
@@ -3646,6 +3658,19 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				break;
 			case 0x93://decrement
 #ifdef ENABLE_OPTIMIZATION
+				if (!state.operandlist.empty()
+					&& state.operandlist.back().type != OP_LOCAL
+					&& state.operandlist.back().type != OP_CACHED_SLOT)
+				{
+					// argument is a constant, so we can compute the result directly
+					asAtom a = state.mi->context->constantAtoms_cached[state.preloadedcode.back().pcode.arg3_uint];
+					asAtomHandler::decrement(a,state.worker,false);
+					state.operandlist.back().removeArg(state);
+					state.operandlist.pop_back();
+					addCachedConstant(state,mi, a,code);
+					break;
+				}
+
 				if (typestack.back().obj == Class<Integer>::getRef(function->getSystemState()).getPtr())
 				{
 					// argument is an int, so we can use the decrement_i optimization instead

@@ -164,13 +164,13 @@ bool canCallFunctionDirect(operands& op,multiname* name, bool ignoreoverridden)
 		if (!op.objtype->as<Class_inherit>()->checkScriptInit())
 			return false;
 	}
-	return ((op.type == OP_LOCAL || op.type == OP_CACHED_CONSTANT || op.type == OP_CACHED_SLOT) &&
+	return
 		op.objtype &&
 		!op.objtype->isInterface && // it's not an interface
 		(
 		ignoreoverridden ||
 		!op.objtype->as<Class_base>()->hasoverriddenmethod(name) // current method is not in overridden methods
-		));
+		);
 }
 bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden)
 {
@@ -769,6 +769,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0xaf://greaterthan
 			case 0xb0://greaterequals
 			case 0xb3://istypelate
+			case 0x87://astypelate
 				if (argsneeded>=2)
 				{
 					b = code.peekbyteFromPosition(pos);
@@ -1973,8 +1974,24 @@ void setupInstructionIncDecInteger(preloadstate& state,memorystream& code,std::v
 {
 	removetypestack(typestack,1);
 	uint32_t p = code.tellg();
-	// optimize common case of increment/decrement local variable
 #ifdef ENABLE_OPTIMIZATION
+	if (!state.operandlist.empty()
+		&& state.operandlist.back().type != OP_LOCAL
+		&& state.operandlist.back().type != OP_CACHED_SLOT)
+	{
+		// argument is a constant, so we can compute the result directly
+		asAtom a = state.mi->context->constantAtoms_cached[state.preloadedcode.back().pcode.arg3_uint];
+		if (opcode == 0xc0) //increment_i
+			asAtomHandler::increment(a,state.worker,false);
+		else
+			asAtomHandler::decrement(a,state.worker,false);
+		state.operandlist.back().removeArg(state);
+		state.operandlist.pop_back();
+		addCachedConstant(state,state.mi, a,code);
+		typestack.push_back(typestackentry(Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr(),false));
+		return;
+	}
+	// optimize common case of increment/decrement local variable
 	if (state.operandlist.size() > 0 &&
 			state.operandlist.back().type == OP_LOCAL &&
 			state.operandlist.back().objtype == Class<Integer>::getRef(state.function->getSystemState()).getPtr() &&

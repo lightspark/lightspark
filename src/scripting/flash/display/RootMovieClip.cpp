@@ -195,6 +195,12 @@ void RootMovieClip::constructionComplete(bool _explicit, bool forInitAction)
 		// add to stage before continuing construction to make sure stage is available from AS code
 		incRef();
 		getSystemState()->stage->insertLegacyChildAt(-16384, this, false, false);
+		if (needsActionScript3() && !this->hasMainClass)
+		{
+			if (!framecontainer)
+				framecontainer=new FrameContainer();
+			advanceFrame(true);
+		}
 	}
 	if (needsActionScript3())
 	{

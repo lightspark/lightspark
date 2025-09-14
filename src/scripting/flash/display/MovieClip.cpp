@@ -527,10 +527,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,_constructor)
 void MovieClip::afterLegacyInsert()
 {
 	if(!getConstructIndicator() && !needsActionScript3())
-	{
-		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
-		getClass()->handleConstruction(obj,nullptr,0,true);
-	}
+		handleConstruction();
 	lastratio = this->Ratio;
 	Sprite::afterLegacyInsert();
 }
@@ -1519,7 +1516,9 @@ void MovieClip::constructionComplete(bool _explicit, bool forInitAction)
 	/* If this object was 'new'ed from AS code, the first
 	 * frame has not been initalized yet, so init the frame
 	 * now */
-	if(state.last_FP == -1 && !forInitAction)
+	if(state.last_FP == -1
+		&& !needsActionScript3()
+		&& !forInitAction)
 	{
 		if (!framecontainer)
 			framecontainer=new FrameContainer();
@@ -1531,6 +1530,12 @@ void MovieClip::constructionComplete(bool _explicit, bool forInitAction)
 }
 void MovieClip::beforeConstruction(bool _explicit)
 {
+	if(state.last_FP == -1 && needsActionScript3())
+	{
+		if (!framecontainer)
+			framecontainer=new FrameContainer();
+		advanceFrame(true);
+	}
 	Sprite::beforeConstruction(_explicit);
 }
 void MovieClip::afterConstruction(bool _explicit)

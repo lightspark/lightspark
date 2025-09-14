@@ -2037,9 +2037,21 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			if (!placedTag->bindedTo)
 				instance->setIsInitialized();
 			if (instance->is<BitmapData>())
+			{
+				if (parent->loadedFrom->usesActionScript3)
+				{
+					// call constructor for BitmapData in case it's bound
+					asAtom target = asAtomHandler::fromObjectNoPrimitive(instance);
+					asAtom args[2];
+					args[0] = asAtomHandler::fromInt(1);
+					args[1] = asAtomHandler::fromInt(1);
+					instance->getClass()->handleConstruction(target,args,2,true);
+				}
+
 				toAdd = parent->loadedFrom->usesActionScript3 ?
 							Class<Bitmap>::getInstanceS(instance->getInstanceWorker(),_R<BitmapData>(instance->as<BitmapData>())) :
 							Class<AVM1Bitmap>::getInstanceS(instance->getInstanceWorker(),_R<AVM1BitmapData>(instance->as<AVM1BitmapData>()));
+			}
 			else
 				toAdd=dynamic_cast<DisplayObject*>(instance);
 			if(!toAdd && instance)
@@ -2540,8 +2552,15 @@ ASObject* DefineButtonTag::instance(Class_base* c, bool temporary)
 					state->setFilters(i->FilterList);
 				if (!i->ColorTransform.isIdentity())
 					state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(loadedFrom->getInstanceWorker(),i->ColorTransform));
-				state->constructionComplete(true);
-				state->afterConstruction(true);
+				if (loadedFrom->usesActionScript3)
+				{
+					state->handleConstruction();
+				}
+				else
+				{
+					state->constructionComplete(true);
+					state->afterConstruction(true);
+				}
 			}
 			else
 				state->incRef();

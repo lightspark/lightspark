@@ -67,7 +67,7 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 
 
 
-Sprite::Sprite(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),hasMouse(false),initializingFrame(false)
+Sprite::Sprite(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),hasMouse(false)
 	,dragged(false),buttonMode(false),useHandCursor(true)
 {
 	subtype=SUBTYPE_SPRITE;
@@ -85,7 +85,6 @@ bool Sprite::destruct()
 	useHandCursor = true;
 	streamingsound=false;
 	hasMouse=false;
-	initializingFrame=false;
 	sound.reset();
 	soundtransform.reset();
 	return DisplayObjectContainer::destruct();
@@ -665,11 +664,7 @@ void Sprite::initFrame()
 	{
 		if (!initializingFrame)
 		{
-			// it's possible that legacy MovieClips are defined as inherited directly from Sprite
-			// so we have to set initializingFrame here
-			initializingFrame=true;
 			DisplayObjectContainer::initFrame();
-			initializingFrame=false;
 		}
 		else
 		{
@@ -720,6 +715,8 @@ void DisplayObjectContainer::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("contains","",c->getSystemState()->getBuiltinFunction(contains,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",c->getSystemState()->getBuiltinFunction(_setMouseChildren,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",c->getSystemState()->getBuiltinFunction(_getMouseChildren),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stopAllMovieClips","",c->getSystemState()->getBuiltinFunction(stopAllMovieClips),NORMAL_METHOD,true);
+
 	REGISTER_GETTER_SETTER(c, tabChildren);
 }
 
@@ -729,6 +726,7 @@ DisplayObjectContainer::DisplayObjectContainer(ASWorker* wrk, Class_base* c):Int
 	boundsrectXmin(0),boundsrectYmin(0),boundsrectXmax(0),boundsrectYmax(0),boundsRectDirty(true),
 	boundsrectVisibleXmin(0),boundsrectVisibleYmin(0),boundsrectVisibleXmax(0),boundsrectVisibleYmax(0),
 	boundsRectVisibleDirty(true),
+	initializingFrame(false),
 	tabChildren(true)
 {
 	subtype=SUBTYPE_DISPLAYOBJECTCONTAINER;
@@ -899,13 +897,26 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 			it++;
 			if(fromtag)
 			{
-				while(it!=dynamicDisplayList.end() && !(*it)->legacy)
+				while(it!=dynamicDisplayList.end() && (*it)->getRawDepth()>=0)
 				{
 					it++; // skip all children previously added through actionscript
 					insertpos++;
 				}
 			}
 		}
+	}
+	else if (!dynamicDisplayList.empty())
+	{
+		if(fromtag)
+		{
+			auto it=dynamicDisplayList.begin();
+			while(it!=dynamicDisplayList.end() && (*it)->getRawDepth()>=0)
+			{
+				it++; // skip all children previously added through actionscript
+				insertpos++;
+			}
+		}
+
 	}
 	if((!loadedFrom->usesActionScript3 || obj->isConstructed())
 		&& obj->name != BUILTIN_STRINGS::EMPTY
@@ -1060,6 +1071,7 @@ bool DisplayObjectContainer::destruct()
 	mouseChildren = true;
 	boundsRectDirty = true;
 	boundsRectVisibleDirty = true;
+	initializingFrame=false;
 	tabChildren = true;
 	legacyChildrenMarkedForDeletion.clear();
 	mapDepthToLegacyChild.clear();
@@ -1498,15 +1510,21 @@ void DisplayObjectContainer::setOnStage(bool staged, bool force,bool inskipping)
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_constructor)
 {
-	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
 	InteractiveObject::_constructor(ret,wrk,obj,nullptr,0);
-	if (th->needsActionScript3())
+}
+
+void DisplayObjectContainer::constructionComplete(bool _explicit, bool forInitAction)
+{
+	if (needsActionScript3())
 	{
 		std::vector<_R<DisplayObject>> list;
-		th->cloneDisplayList(list);
+		cloneDisplayList(list);
+		initializingFrame=true;
 		for (auto child : list)
 			child->initFrame();
+		initializingFrame=false;
 	}
+	DisplayObject::constructionComplete(_explicit,forInitAction);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getNumChildren)
@@ -1740,6 +1758,8 @@ void DisplayObjectContainer::_removeFromDisplayList(DisplayObject* child)
 void DisplayObjectContainer::_removeAllChildren()
 {
 	Locker l(mutexDisplayList);
+	if (dynamicDisplayList.empty())
+		return; // no need to request invalidation if this container is already empty
 	auto it=dynamicDisplayList.begin();
 	while (it!=dynamicDisplayList.end())
 	{
@@ -1802,6 +1822,25 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,contains)
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
 	bool res=th->_contains(d);
 	asAtomHandler::setBool(ret,res);
+}
+ASFUNCTIONBODY_ATOM(DisplayObjectContainer,stopAllMovieClips)
+{
+	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
+
+	th->stopAllMovieClipsIntern();
+}
+void DisplayObjectContainer::stopAllMovieClipsIntern()
+{
+	if (is<MovieClip>())
+		as<MovieClip>()->setStopped();
+	auto it=dynamicDisplayList.begin();
+	for(;it!=dynamicDisplayList.end();++it)
+	{
+		if ((*it)->is<MovieClip>())
+			(*it)->as<MovieClip>()->setStopped();
+		if((*it)->is<DisplayObjectContainer>())
+			(*it)->as<DisplayObjectContainer>()->stopAllMovieClipsIntern();
+	}
 }
 
 //Only from VM context
@@ -1962,7 +2001,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_setChildIndex)
 void DisplayObjectContainer::setChildIndexIntern(DisplayObject *child, int index)
 {
 	int curIndex = this->getChildIndex(child);
-	if(curIndex == index || curIndex < 0)
+	if(curIndex < 0)
 		return;
 	auto itrem = this->dynamicDisplayList.begin()+curIndex;
 	this->dynamicDisplayList.erase(itrem); //remove from old position
@@ -2085,6 +2124,11 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getChildAt)
 {
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
 	assert_and_throw(argslen==1);
+	if (!th->getConstructIndicator())
+	{
+		ret = asAtomHandler::nullAtom;
+		return;
+	}
 	unsigned int index=asAtomHandler::toInt(args[0]);
 	if(index>=th->dynamicDisplayList.size())
 	{
@@ -2314,6 +2358,10 @@ void DisplayObjectContainer::declareFrame(bool implicit)
  * This is called in vm's thread context */
 void DisplayObjectContainer::initFrame()
 {
+	// it's possible that legacy MovieClips are defined as inherited directly from Sprite
+	// so we have to set initializingFrame here
+	initializingFrame=true;
+
 	/* call our own constructor, if necassary */
 	DisplayObject::initFrame();
 
@@ -2326,6 +2374,7 @@ void DisplayObjectContainer::initFrame()
 	auto it=tmplist.begin();
 	for(;it!=tmplist.end();it++)
 		(*it)->initFrame();
+	initializingFrame=false;
 }
 
 void DisplayObjectContainer::executeFrameScript()

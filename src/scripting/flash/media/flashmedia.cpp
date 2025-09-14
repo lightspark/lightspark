@@ -539,10 +539,20 @@ Sound::Sound(ASWorker* wrk, Class_base* c)
 Sound::Sound(ASWorker* wrk,Class_base* c, _R<StreamCache> data, AudioFormat _format, number_t duration_in_ms)
 	:EventDispatcher(wrk,c),downloader(nullptr),soundData(data),soundChannel(nullptr),rawDataStreamDecoder(nullptr),rawDataStartPosition(0),rawDataStreamBuf(nullptr),rawDataStream(nullptr),buffertime(1000),
 	 container(false),sampledataprocessed(true),format(_format),
-	 bytesLoaded(soundData->getReceivedLength()),
-	 bytesTotal(soundData->getReceivedLength()),length(duration_in_ms)
+	bytesLoaded(0),
+	bytesTotal(0),length(duration_in_ms)
 {
 	subtype=SUBTYPE_SOUND;
+}
+
+void Sound::constructionComplete(bool _explicit, bool forInitAction)
+{
+	EventDispatcher::constructionComplete(_explicit,forInitAction);
+	if (soundData)
+	{
+		bytesLoaded = soundData->getReceivedLength();
+		bytesTotal = soundData->getReceivedLength();
+	}
 }
 
 Sound::~Sound()

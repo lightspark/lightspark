@@ -51,9 +51,6 @@ BitmapData::BitmapData(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUB
 
 BitmapData::BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b):ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(b),locked(0),needsupload(true),transparent(true)
 {
-	traitsInitialized = true;
-	constructIndicator = true;
-	constructorCallComplete = true;
 }
 
 BitmapData::BitmapData(ASWorker* wrk,Class_base* c, const BitmapData& other)
@@ -185,7 +182,7 @@ void BitmapData::notifyUsers()
 bool BitmapData::checkDisposed(asAtom& ret)
 {
 	ret = getInstanceWorker()->needsActionScript3() ? asAtomHandler::undefinedAtom : asAtomHandler::fromInt(-1);
-	if(pixels.isNull())
+	if(pixels.isNull() || (getInstanceWorker()->needsActionScript3() && !this->isConstructed()))
 	{
 		createError<ArgumentError>(getInstanceWorker(),kInvalidBitmapData);
 		return true;

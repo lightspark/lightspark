@@ -2335,6 +2335,7 @@ void SystemState::runInnerGotoFrame(DisplayObject* innerClip, const std::vector<
 
 	setFramePhase(FramePhase::INIT_FRAME);
 	stage->initFrame();
+	setFramePhase(FramePhase::FRAME_CONSTRUCTED);
 	handleBroadcastEvent("frameConstructed");
 
 	setFramePhase(FramePhase::EXECUTE_FRAMESCRIPT);

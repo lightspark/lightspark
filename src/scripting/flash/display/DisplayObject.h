@@ -145,6 +145,7 @@ protected:
 	virtual void afterSetLegacyMatrix() {}
 	bool skipCountCylicMemberReferences(garbagecollectorstate& gcstate);
 public:
+	void handleConstruction();
 	bool boundsRectGlobal(RectF& rect, bool fromcurrentrendering=true);
 	virtual bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 	{
@@ -364,7 +365,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(number_t, rotationX);
 	ASPROPERTY_GETTER_SETTER(number_t, rotationY);
 	ASPROPERTY_GETTER_SETTER(asAtom, opaqueBackground);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>, metaData);
+	ASPROPERTY_GETTER_SETTER(asAtom, metaData);
 	
 	ASFUNCTION_ATOM(AVM1_getScaleX);
 	ASFUNCTION_ATOM(AVM1_setScaleX);

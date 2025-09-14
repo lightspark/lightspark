@@ -881,6 +881,9 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 
 	if (event->type == "exitFrame")
 		event->getSystemState()->setFramePhase(FramePhase::EXIT_FRAME);
+	else if (event->type == "frameConstructed")
+		event->getSystemState()->setFramePhase(FramePhase::FRAME_CONSTRUCTED);
+
 	if (dispatcher && dispatcher->is<DisplayObject>() && event->type == "enterFrame" && (
 				(dispatcher->is<RootMovieClip>() && dispatcher->as<RootMovieClip>()->isWaitingForParser()) || // RootMovieClip is not yet completely parsed
 				(dispatcher->as<DisplayObject>()->legacy && !dispatcher->as<DisplayObject>()->isOnStage()))) // it seems that enterFrame event is only executed for DisplayObjects that are on stage or added from ActionScript
@@ -1059,7 +1062,7 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 	event->setTarget(asAtomHandler::invalidAtom);
 	if (event->is<ProgressEvent>())
 		event->as<ProgressEvent>()->accesmutex.unlock();
-	if (event->type == "exitFrame")
+	if (event->type == "exitFrame" || event->type == "frameConstructed")
 		event->getSystemState()->setFramePhase(FramePhase::NO_PHASE);
 }
 

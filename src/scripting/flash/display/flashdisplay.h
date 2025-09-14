@@ -143,6 +143,7 @@ private:
 	void setChildIndexIntern(DisplayObject* child, int index);
 protected:
 	std::vector < DisplayObject* > dynamicDisplayList;
+	bool initializingFrame;
 	void clearDisplayList();
 	//The lock should only be taken when doing write operations
 	//As the RenderThread only reads, it's safe to read without the lock
@@ -153,11 +154,13 @@ protected:
 	virtual void resetToStart() {}
 	ASPROPERTY_GETTER_SETTER(bool, tabChildren);
 	void LegacyChildEraseDeletionMarked();
+	void stopAllMovieClipsIntern();
 public:
 	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override
 	{
 		return false;
 	}
+	void constructionComplete(bool _explicit = false, bool forInittAcion = false) override;
 	DisplayObject* getLastFrameChildAtDepth(int depth, uint32_t CharacterId);
 	void fillGraphicsData(Vector* v, bool recursive) override;
 	bool LegacyChildRemoveDeletionMark(int32_t depth);
@@ -234,6 +237,7 @@ public:
 	ASFUNCTION_ATOM(_setMouseChildren);
 	ASFUNCTION_ATOM(swapChildren);
 	ASFUNCTION_ATOM(swapChildrenAt);
+	ASFUNCTION_ATOM(stopAllMovieClips);
 };
 
 class Sprite: public DisplayObjectContainer, public TokenContainer
@@ -251,7 +255,6 @@ private:
 	bool hasMouse;
 	void afterSetUseHandCursor(bool oldValue);
 protected:
-	bool initializingFrame;
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void resetToStart() override;

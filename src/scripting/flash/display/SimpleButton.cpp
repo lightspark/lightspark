@@ -504,10 +504,7 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DefineButtonTag *tag)
 	if (tag)
 		this->loadedFrom = tag->loadedFrom;
 	if (!needsActionScript3())
-	{
-		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
-		getClass()->handleConstruction(obj,nullptr,0,true);
-	}
+		handleConstruction();
 	if (tag && tag->sounds)
 	{
 		if (tag->sounds->SoundID0_OverUpToIdle)
@@ -640,11 +637,17 @@ void SimpleButton::beforeConstruction(bool _explicit)
 		// for some reason adobe seems to execute some kind of "inner goto" handling _before_ calling the builtin constructor of the button
 		// if the button is binded to a class
 		// see ruffle test avm2/button_nested_frame
+		// FramePhase oldPhase = getSystemState()->getFramePhase();
+		// getSystemState()->setFramePhase(FramePhase::INIT_FRAME);
 		getSystemState()->stage->initFrame();
+		// getSystemState()->setFramePhase(FramePhase::FRAME_CONSTRUCTED);
 		getSystemState()->handleBroadcastEvent("frameConstructed");
 		setNameOnParent();
+		// getSystemState()->setFramePhase(FramePhase::EXECUTE_FRAMESCRIPT);
 		getSystemState()->stage->executeFrameScript();
+		// getSystemState()->setFramePhase(FramePhase::EXIT_FRAME);
 		getSystemState()->handleBroadcastEvent("exitFrame");
+		// getSystemState()->setFramePhase(oldPhase);
 	}
 	DisplayObjectContainer::beforeConstruction(_explicit);
 }
@@ -661,10 +664,16 @@ void SimpleButton::constructionComplete(bool _explicit, bool forInitAction)
 		// for some reason adobe seems to execute some kind of "inner goto" handling _after_ calling the builtin constructor of the button
 		// if the button is _not_ binded to a class and the up state consist of more than one sprite
 		// see ruffle test avm2/button_nested_frame
+		// FramePhase oldPhase = getSystemState()->getFramePhase();
+		// getSystemState()->setFramePhase(FramePhase::INIT_FRAME);
 		getSystemState()->stage->initFrame();
+		// getSystemState()->setFramePhase(FramePhase::FRAME_CONSTRUCTED);
 		getSystemState()->handleBroadcastEvent("frameConstructed");
+		// getSystemState()->setFramePhase(FramePhase::EXECUTE_FRAMESCRIPT);
 		getSystemState()->stage->executeFrameScript();
+		// getSystemState()->setFramePhase(FramePhase::EXIT_FRAME);
 		getSystemState()->handleBroadcastEvent("exitFrame");
+		// getSystemState()->setFramePhase(oldPhase);
 	}
 }
 

@@ -163,7 +163,8 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	scrollRect(asAtomHandler::undefinedAtom),
 	loadedFrom(nullptr),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
 	name(UINT32_MAX),
-	opaqueBackground(asAtomHandler::nullAtom)
+	opaqueBackground(asAtomHandler::nullAtom),
+	metaData(asAtomHandler::nullAtom)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
 	if (wrk->rootClip)
@@ -205,6 +206,10 @@ void DisplayObject::finalize()
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
 	scalingGrid.reset();
+	ASATOM_REMOVESTOREDMEMBER(opaqueBackground);
+	opaqueBackground=asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(metaData);
+	metaData=asAtomHandler::nullAtom;
 	ASATOM_REMOVESTOREDMEMBER(scrollRect);
 	scrollRect=asAtomHandler::undefinedAtom;
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
@@ -256,6 +261,10 @@ bool DisplayObject::destruct()
 	accessibilityProperties.reset();
 	colorTransform.reset();
 	scalingGrid.reset();
+	ASATOM_REMOVESTOREDMEMBER(opaqueBackground);
+	opaqueBackground=asAtomHandler::nullAtom;
+	ASATOM_REMOVESTOREDMEMBER(metaData);
+	metaData=asAtomHandler::nullAtom;
 	ASATOM_REMOVESTOREDMEMBER(scrollRect);
 	scrollRect=asAtomHandler::undefinedAtom;
 	loadedFrom=getSystemState()->mainClip->applicationDomain.getPtr();
@@ -325,6 +334,12 @@ void DisplayObject::prepareShutdown()
 		scalingGrid->prepareShutdown();
 	if (filters)
 		filters->prepareShutdown();
+	ASObject* op = asAtomHandler::getObject(opaqueBackground);
+	if (op)
+		op->prepareShutdown();
+	ASObject* me = asAtomHandler::getObject(metaData);
+	if (me)
+		me->prepareShutdown();
 	ASObject* sr = asAtomHandler::getObject(scrollRect);
 	if (sr)
 		sr->prepareShutdown();
@@ -371,6 +386,12 @@ bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		if (o)
 			ret = o->countAllCylicMemberReferences(gcstate) || ret;
 	}
+	ASObject* op = asAtomHandler::getObject(opaqueBackground);
+	if (op)
+		ret = op->countAllCylicMemberReferences(gcstate) || ret;
+	ASObject* me = asAtomHandler::getObject(metaData);
+	if (me)
+		ret = me->countAllCylicMemberReferences(gcstate) || ret;
 	ASObject* sr = asAtomHandler::getObject(scrollRect);
 	if (sr)
 		ret = sr->countAllCylicMemberReferences(gcstate) || ret;
@@ -2223,8 +2244,7 @@ void DisplayObject::initFrame()
 	if(!inInitFrame && !isConstructed() && getClass() && needsActionScript3())
 	{
 		inInitFrame=true;
-		asAtom o = asAtomHandler::fromObject(this);
-		getClass()->handleConstruction(o,nullptr,0,true);
+		handleConstruction();
 
 		/*
 		 * Legacy objects have their display list properties set on creation, but
@@ -2489,6 +2509,12 @@ bool DisplayObject::skipCountCylicMemberReferences(garbagecollectorstate& gcstat
 		}
 	}
 	return false;
+}
+
+void DisplayObject::handleConstruction()
+{
+	asAtom o = asAtomHandler::fromObject(this);
+	getClass()->handleConstruction(o,nullptr,0,true);
 }
 
 bool DisplayObject::boundsRectGlobal(RectF& rect, bool fromcurrentrendering)

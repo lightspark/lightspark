@@ -149,7 +149,12 @@ public:
 	AVM1BitmapData(ASWorker* wrk,Class_base* c):BitmapData(wrk,c) {}
 	AVM1BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b):BitmapData(wrk,c,b) {}
 	AVM1BitmapData(ASWorker* wrk,Class_base* c, const BitmapData& other):BitmapData(wrk,c,other) {}
-	AVM1BitmapData(ASWorker* wrk,Class_base* c, uint32_t width, uint32_t height):BitmapData(wrk,c,width,height) {}
+	AVM1BitmapData(ASWorker* wrk,Class_base* c, uint32_t width, uint32_t height):BitmapData(wrk,c,width,height)
+	{
+		traitsInitialized = true;
+		constructIndicator = true;
+		constructorCallComplete = true;
+	}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(loadBitmap);
 };

@@ -58,8 +58,6 @@ void ApplicationDomain::cbDomainMemory(_NR<ByteArray> oldvalue)
 	if (!this->domainMemory.isNull() && this->domainMemory->getLength() < MIN_DOMAIN_MEMORY_LIMIT)
 	{
 		createError<ASError>(this->getInstanceWorker(),kEndOfFileError);
-		if (domainMemory)
-			domainMemory->incRef(); //  will be decreffed when handling exception after setter call
 		domainMemory=oldvalue;
 		return;
 	}

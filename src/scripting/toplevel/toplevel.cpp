@@ -530,7 +530,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 			{
 				if (saved_cc)
 					saved_cc->exceptionthrown=excobj;
-				else
+				else if (isScriptInit() && !inClass)
 				{
 					if (!isMethod() && this->fromNewFunction)
 					{
@@ -542,6 +542,11 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 					}
 					resetLocals(cc, saved_cc, obj);
 					throw excobj;
+				}
+				else
+				{
+					LOG(LOG_ERROR,"unhandled exception:"<<this->toDebugString()<<" "<<excobj->toDebugString());
+					excobj->decRef();
 				}
 				break;
 			}

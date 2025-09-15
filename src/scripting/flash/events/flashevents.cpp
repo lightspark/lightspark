@@ -210,6 +210,7 @@ ASFUNCTIONBODY_ATOM(Event,formatToString)
 		th->getVariableByMultiname(value,propName,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isValid(value))
 			msg += asAtomHandler::toString(value,wrk);
+		ASATOM_DECREF(value);
 	}
 	msg += "]";
 
@@ -983,6 +984,13 @@ void EventDispatcher::handleEvent(_R<Event> e)
 			v = e->getInstanceWorker()->getCurrentGlobalAtom(asAtomHandler::nullAtom);
 		asAtom ret=asAtomHandler::invalidAtom;
 		asAtomHandler::callFunction(tmpListener[i].f,tmpListener[i].worker,ret,v,&arg0,1,false);
+		call_context* cc = this->getInstanceWorker()->currentCallContext;
+		if (cc && cc->exceptionthrown)
+		{
+			LOG_CALL("unhandled exception in event handler:" << e->toDebugString()<<" "<<cc->exceptionthrown->toDebugString());
+			cc->exceptionthrown->decRef();
+			cc->exceptionthrown=nullptr;
+		}
 		ASATOM_DECREF(ret);
 		//And now no more, f can also be deleted
 		ASATOM_DECREF(tmpListener[i].f);

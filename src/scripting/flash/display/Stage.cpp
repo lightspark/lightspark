@@ -23,6 +23,7 @@
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display3d/flashdisplay3d.h"
 #include "scripting/flash/events/FocusEvent.h"
+#include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "scripting/flash/media/flashmedia.h"
 #include "scripting/flash/ui/keycodes.h"
@@ -74,7 +75,32 @@ void Stage::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("color","",c->getSystemState()->getBuiltinFunction(_getColor,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("color","",c->getSystemState()->getBuiltinFunction(_setColor),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("isFocusInaccessible","",c->getSystemState()->getBuiltinFunction(_isFocusInaccessible,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	
+
+	// override setter for DisplayObject properties that are not settable on Stage
+	c->setDeclaredMethodByQName("accessibilityProperties","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alpha","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blendMode","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("cacheAsBitmap","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("contextMenu","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("filters","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("focusRect","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loaderInfo","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mask","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mouseEnabled","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("opaqueBackground","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rotation","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scale9Grid","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleX","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleY","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scrollRect","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("transform","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("visible","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);
+
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,align,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,colorCorrection,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,displayState,ASString);
@@ -109,6 +135,11 @@ ASFUNCTIONBODY_GETTER(Stage,nativeWindow)
 ASFUNCTIONBODY_ATOM(Stage,setAspectRatio)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"flash.display.Stage.setAspectRatio is stubbed");
+}
+
+ASFUNCTIONBODY_ATOM(Stage,property_unsettable)
+{
+	createErrorWithMessage<ASError>(wrk,2071,"Error #2071: The Stage class does not implement this property or method.");
 }
 
 void Stage::onDisplayState(const tiny_string& old_value)

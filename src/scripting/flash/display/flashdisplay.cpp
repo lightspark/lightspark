@@ -1149,8 +1149,8 @@ InteractiveObject::InteractiveObject(ASWorker* wrk, Class_base* c):DisplayObject
 	avm1focusrect(asAtomHandler::invalidAtom),avm1tabindex(asAtomHandler::undefinedAtom),
 	accessibilityImplementation(NullRef),
 	contextMenu(asAtomHandler::undefinedAtom),
-	tabEnabled(asAtomHandler::undefinedAtom),tabIndex(-1)
-
+	tabEnabled(asAtomHandler::undefinedAtom),tabIndex(-1),
+	focusRect(asAtomHandler::nullAtom)
 {
 	subtype=SUBTYPE_INTERACTIVE_OBJECT;
 }
@@ -1205,7 +1205,7 @@ bool InteractiveObject::destruct()
 	mouseEnabled = true;
 	doubleClickEnabled =false;
 	accessibilityImplementation.reset();
-	focusRect.reset();
+	focusRect = asAtomHandler::nullAtom;
 	tabIndex = -1;
 	ASATOM_REMOVESTOREDMEMBER(avm1tabindex);
 	avm1tabindex=asAtomHandler::undefinedAtom;
@@ -1218,7 +1218,7 @@ void InteractiveObject::finalize()
 	ASATOM_REMOVESTOREDMEMBER(tabEnabled);
 	tabEnabled = asAtomHandler::undefinedAtom;
 	accessibilityImplementation.reset();
-	focusRect.reset();
+	focusRect = asAtomHandler::nullAtom;
 	ASATOM_REMOVESTOREDMEMBER(avm1tabindex);
 	avm1tabindex=asAtomHandler::undefinedAtom;
 	DisplayObject::finalize();
@@ -1234,8 +1234,6 @@ void InteractiveObject::prepareShutdown()
 		o->prepareShutdown();
 	if (accessibilityImplementation)
 		accessibilityImplementation->prepareShutdown();
-	if (focusRect)
-		focusRect->prepareShutdown();
 }
 
 bool InteractiveObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -1248,8 +1246,6 @@ bool InteractiveObject::countCylicMemberReferences(garbagecollectorstate& gcstat
 		ret = o->countAllCylicMemberReferences(gcstate) || ret;
 	if (accessibilityImplementation)
 		ret = accessibilityImplementation->countAllCylicMemberReferences(gcstate) || ret;
-	if (focusRect)
-		ret = focusRect->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 
@@ -1303,7 +1299,7 @@ ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, accessibilityImplementation)
 ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE_CB(InteractiveObject, contextMenu,asAtomHandler::undefinedAtom,onContextMenu)
 ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE(InteractiveObject, tabEnabled,asAtomHandler::undefinedAtom)
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, tabIndex)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(InteractiveObject, focusRect) // stub
+ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE_CB(InteractiveObject, focusRect,asAtomHandler::nullAtom, onFocusRect)
 
 ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_getfocusrect)
 {
@@ -1382,6 +1378,17 @@ void InteractiveObject::onContextMenu(asAtom oldValue)
 	ASATOM_REMOVESTOREDMEMBER(oldValue);
 	if (asAtomHandler::is<ContextMenu>(contextMenu))
 		asAtomHandler::as<ContextMenu>(contextMenu)->owner = this;
+}
+void InteractiveObject::onFocusRect(asAtom oldValue)
+{
+	LOG(LOG_NOT_IMPLEMENTED,"focusRect can be set but is not yet rendered");
+	if (asAtomHandler::isNullOrUndefined(focusRect))
+		focusRect=asAtomHandler::nullAtom;
+	else if (!asAtomHandler::isBool(focusRect))
+	{
+		ASATOM_REMOVESTOREDMEMBER(focusRect);
+		focusRect=asAtomHandler::falseAtom;
+	}
 }
 
 bool DisplayObjectContainer::fillTabStopsAutomatic(std::map<int32_t, DisplayObject*>& distancemap, bool& hasTabIndices)

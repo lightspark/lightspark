@@ -74,6 +74,7 @@ protected:
 	asAtom avm1tabindex;
 	void setOnStage(bool staged, bool force, bool inskipping=false) override;
 	void onContextMenu(asAtom oldValue);
+	void onFocusRect(asAtom oldValue);
 	~InteractiveObject();
 public:
 	bool isHittable(HIT_TYPE type)
@@ -94,7 +95,7 @@ public:
 	ASPROPERTY_GETTER_SETTER(asAtom,contextMenu); // adobe seems to allow DisplayObjects, too
 	ASPROPERTY_GETTER_SETTER(asAtom,tabEnabled);
 	ASPROPERTY_GETTER_SETTER(int32_t,tabIndex);
-	ASPROPERTY_GETTER_SETTER(_NR<ASObject>,focusRect);
+	ASPROPERTY_GETTER_SETTER(asAtom,focusRect);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_setMouseEnabled);
 	ASFUNCTION_ATOM(_getMouseEnabled);

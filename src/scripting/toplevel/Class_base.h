@@ -105,7 +105,9 @@ void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, co
 			createError<ArgumentError>(wrk,0,"Function applied to wrong object"); return; }\
 		if(argslen != 1) {\
 			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
+		decltype(wrk->getSystemState()->static_##c##_##name) oldValue = wrk->getSystemState()->static_##c##_##name; \
 		wrk->getSystemState()->static_##c##_##name = ArgumentConversionAtom<decltype(wrk->getSystemState()->static_##c##_##name)>::toConcrete(wrk,args[0],wrk->getSystemState()->static_##c##_##name); \
+		ArgumentConversionAtom<decltype(wrk->getSystemState()->static_##c##_##name)>::cleanupOldValue(oldValue); \
 }
 
 #define ASFUNCTIONBODY_SETTER_STRINGID(c,name) \
@@ -128,7 +130,9 @@ void c::_setter_##name(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, co
 		if(argslen != 1) {\
 			createError<ArgumentError>(wrk,0,"Arguments provided in getter"); return; }\
 		LOG(LOG_NOT_IMPLEMENTED,asAtomHandler::getObject(obj)->getClassName() <<"."<< #name << " setter is not implemented"); \
+		decltype(th->name) oldValue = th->name; \
 		th->name = ArgumentConversionAtom<decltype(th->name)>::toConcrete(wrk,args[0],th->name); \
+		ArgumentConversionAtom<decltype(th->name)>::cleanupOldValue(oldValue); \
 }
 
 /* full body for a getter declared by ASPROPERTY_SETTER or ASFUNCTION_SETTER.

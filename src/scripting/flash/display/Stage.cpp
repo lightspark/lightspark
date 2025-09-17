@@ -343,6 +343,12 @@ void Stage::prepareShutdown()
 {
 	if (this->preparedforshutdown)
 		return;
+	while (this->hiddenNextDisplayObject != this)
+	{
+		auto h = this->hiddenNextDisplayObject;
+		h->prepareShutdown();
+		removeHiddenObject(h);
+	}
 	DisplayObjectContainer::prepareShutdown();
 	if (fullScreenSourceRect)
 		fullScreenSourceRect->prepareShutdown();

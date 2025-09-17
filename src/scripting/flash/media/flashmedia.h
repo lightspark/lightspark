@@ -79,6 +79,7 @@ public:
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	void constructionComplete(bool _explicit = false, bool forInitAction = false) override;
+	void afterHandleEvent(Event* ev) override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(load);
 	ASFUNCTION_ATOM(play);

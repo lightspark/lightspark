@@ -198,7 +198,12 @@ void LoaderInfo::prepareShutdown()
 	if (uncaughtErrorEvents)
 		uncaughtErrorEvents->prepareShutdown();
 	if (content)
-		content->prepareShutdown();
+	{
+		DisplayObject* o = content;
+		content=nullptr;
+		o->prepareShutdown();
+		o->removeStoredMember();
+	}
 }
 
 bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -278,7 +283,6 @@ void LoaderInfo::setOpened(bool fromBytes)
 	{
 		if (isVmThread())
 		{
-			this->incRef();
 			getVm(getSystemState())->publicHandleEvent(this,_MR(p));
 		}
 		else
@@ -345,15 +349,16 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 			{
 				assert(bytesLoaded==bytesTotal);
 				ProgressEvent* p = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal);
-				this->incRef();
 
 				if (isVmThread())
 					getVm(getSystemState())->publicHandleEvent(this,_MR(p));
 				else
 				{
+					this->incRef();
 					if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
 						addLoaderEvent(p);
 				}
+				spinlock.unlock();
 			}
 			else
 			{

@@ -133,6 +133,8 @@ void LoaderThread::execute()
 	{
 		if (res->is<RootMovieClip>())
 		{
+			if (res->needsActionScript3() && !res->as<RootMovieClip>()->hasMainClass)
+				loaderInfo->setComplete();
 			res->as<RootMovieClip>()->AVM1setLevel(loader->AVM1getLevel());
 		}
 	}

@@ -449,20 +449,19 @@ ASFUNCTIONBODY_ATOM(XMLList,parent)
 	}
 
 	auto it=th->nodes.begin();
-	ASObject *parent=(*it)->getParentNode();
+	ret=(*it)->getParentNode();
 	++it;
 
 	for(; it!=th->nodes.end(); ++it)
 	{
-		ASObject *otherParent=(*it)->getParentNode();
-		if(!parent->isEqual(otherParent))
+		asAtom otherParent=(*it)->getParentNode();
+		if(!asAtomHandler::isEqual(ret,wrk,otherParent))
 		{
 			asAtomHandler::setUndefined(ret);
 			return;
 		}
 	}
-
-	ret = asAtomHandler::fromObject(parent);
+	ASATOM_INCREF(ret);
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,valueOf)
@@ -538,18 +537,19 @@ ASFUNCTIONBODY_ATOM(XMLList,text)
 ASFUNCTIONBODY_ATOM(XMLList,contains)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
-	_NR<ASObject> value;
+	asAtom value = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK (value));
-	if(!value->is<XML>())
+	if(!asAtomHandler::is<XML>(value))
 	{
 		asAtomHandler::setBool(ret,false);
 		return;
 	}
 
+	XML* v = asAtomHandler::as<XML>(value);
 	auto it=th->nodes.begin();
 	for(; it!=th->nodes.end(); ++it)
 	{
-		if((*it)->isEqual(value.getPtr()))
+		if((*it)->isEqual(v))
 		{
 			asAtomHandler::setBool(ret,true);
 			return;
@@ -1318,7 +1318,6 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 				nodes[idx]->nodevalue = asAtomHandler::toString(o,wrk);
 				nodes[idx]->nodenamespace_uri = BUILTIN_STRINGS::EMPTY;
 				nodes[idx]->nodenamespace_prefix = BUILTIN_STRINGS::EMPTY;
-				ASATOM_DECREF(o);
 			}
 			else
 			{
@@ -1333,9 +1332,24 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 				tmp->constructed = true;
 				nodes[idx]->childrenlist->append(_MNR(tmp));
 			}
+			ASATOM_DECREF(o);
 		}
 		else
-			nodes[idx] = _MNR(asAtomHandler::as<XML>(o));
+		{
+			XML* n = asAtomHandler::as<XML>(o);
+			XML* par = nodes[idx]->parentNode;
+			while (par)
+			{
+				if (par == n)
+				{
+					createError<TypeError>(getInstanceWorker(),kXMLIllegalCyclicalLoop);
+					ASATOM_DECREF(o)
+					return;
+				}
+				par = par->parentNode;
+			}
+			nodes[idx] = _MNR(n);
+		}
 	}
 	else
 	{

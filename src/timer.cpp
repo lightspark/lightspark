@@ -240,6 +240,17 @@ void TimerThread::removeJob_noLock(ITickJob* job)
 		newEvent.signal();
 }
 
+void LSTimers::cleanup()
+{
+	Locker l(timerMutex);
+	for (auto it = timers.begin(); it != timers.end(); it++)
+	{
+		if ((*it).job)
+			(*it).job->tickFence();
+	}
+	timers.clear();
+}
+
 TimeSpec LSTimers::updateTimers(const TimeSpec& delta, bool allowFrameTimers)
 {
 	Locker l(timerMutex);

@@ -1809,7 +1809,7 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 		//try to find a global object where this is defined
 		ASObject* target;
 		asAtom o=asAtomHandler::invalidAtom;
-		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target,th->worker);
+		GET_VARIABLE_RESULT r = getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target,th->worker);
 		if(asAtomHandler::isValid(o))
 			ret=target;
 		else //else push the current global object
@@ -1822,6 +1822,8 @@ ASObject* ABCVm::findProperty(call_context* th, multiname* name)
 				ret =asAtomHandler::toObject(th->scope_stack[0],th->worker);
 			}
 		}
+		if (r & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
+			ASATOM_DECREF(o);
 	}
 
 	//TODO: make this a regular assert
@@ -1963,10 +1965,12 @@ void ABCVm::findPropStrictCache(asAtom &ret, call_context* th)
 	{
 		ASObject* target;
 		asAtom o=asAtomHandler::invalidAtom;
-		getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target,th->worker);
+		GET_VARIABLE_RESULT r = getCurrentApplicationDomain(th)->getVariableAndTargetByMultiname(o,*name, target,th->worker);
 		if(asAtomHandler::isValid(o))
 		{
 			ret=asAtomHandler::fromObject(target);
+			if (r & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
+				ASATOM_DECREF(o);
 		}
 		else
 		{
@@ -3136,25 +3140,27 @@ ASObject* ABCVm::esc_xelem(ASObject* o)
 /* This should walk prototype chain of value, trying to find type. See ECMA.
  * Its usage is disouraged in AS3 in favour of 'is' and 'as' (opcodes isType and asType)
  */
-bool ABCVm::instanceOf(ASObject* value, ASObject* type)
+bool ABCVm::instanceOf(const asAtom& value, const asAtom& type)
 {
-	LOG_CALL("instanceOf "<<value->toDebugString()<<" "<<type->toDebugString());
-	if(type->is<IFunction>())
+	LOG_CALL("instanceOf "<<asAtomHandler::toDebugString(value)<<" "<<asAtomHandler::toDebugString(type));
+	if(asAtomHandler::is<IFunction>(type))
 	{
-		IFunction* t=static_cast<IFunction*>(type);
+		IFunction* t=asAtomHandler::as<IFunction>(type);
 		asAtom functionProto=t->prototype;
 		//Only Function_object instances may come from functions
-		ASObject* proto=value;
-		while(proto->is<Function_object>())
+		ASObject* pr=asAtomHandler::getObject(value);
+		ASObject* proto= pr;
+		while(proto && proto->is<Function_object>())
 		{
 			if(proto->as<Function_object>()->functionPrototype.uintval==functionProto.uintval)
 				return true;
 			proto=asAtomHandler::getObject(proto->as<Function_object>()->functionPrototype);
 		}
-		if (value->is<DisplayObject>())
+		if (asAtomHandler::is<DisplayObject>(value))
 		{
-			AVM1Function* constr = value->getInstanceWorker()->AVM1getClassConstructor(value->as<DisplayObject>());
-			bool res = type== constr;
+			DisplayObject* v = asAtomHandler::as<DisplayObject>(value);
+			AVM1Function* constr = v->getInstanceWorker()->AVM1getClassConstructor(v);
+			bool res = t== constr;
 			if (!res && constr)
 			{
 				ASObject* pr = asAtomHandler::getObject(constr->prototype);
@@ -3165,9 +3171,9 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 					pr=pr->getprop_prototype();
 				}
 			}
-			return type== value->getInstanceWorker()->AVM1getClassConstructor(value->as<DisplayObject>());
+			return t== v->getInstanceWorker()->AVM1getClassConstructor(v);
 		}
-		proto = value->getprop_prototype();
+		proto = pr->getprop_prototype();
 		while(proto)
 		{
 			if(proto==asAtomHandler::getObject(functionProto))
@@ -3177,33 +3183,34 @@ bool ABCVm::instanceOf(ASObject* value, ASObject* type)
 		return false;
 	}
 
-	if(!type->is<Class_base>())
+	if(!asAtomHandler::is<Class_base>(type))
 	{
-		createError<TypeError>(value->getInstanceWorker(),kCantUseInstanceofOnNonObjectError);
+		createError<TypeError>(getWorker(),kCantUseInstanceofOnNonObjectError);
 		return false;
 	}
 
-	if(value->is<Null>())
+	if(asAtomHandler::isNullOrUndefined(value))
 		return false;
 
-	if(value->is<Vector>() && type->is<TemplatedClass<Vector>>()
-		&& !type->as<TemplatedClass<Vector>>()->getTypes().empty()
-		&& type->as<TemplatedClass<Vector>>()->getTypes()[0] == Type::anyType)
+	ASObject* t = asAtomHandler::getObjectNoCheck(type);
+	if(asAtomHandler::is<Vector>(value) && t->is<TemplatedClass<Vector>>()
+		&& !t->as<TemplatedClass<Vector>>()->getTypes().empty()
+		&& t->as<TemplatedClass<Vector>>()->getTypes()[0] == Type::anyType)
 	{
 		return true;
 	}
 
-	if(value->is<Class_base>())
+	if(asAtomHandler::is<Class_base>(value))
 		// Classes are instance of Class and Object but not
 		// itself or super classes
-		return type == Class_object::getClass(type->getSystemState()) || 
-			type == Class<ASObject>::getClass(type->getSystemState());
-	if (value->is<Function_object>())
+		return t == Class_object::getClass(t->getSystemState()) ||
+			t == Class<ASObject>::getClass(t->getSystemState());
+	if (asAtomHandler::is<Function_object>(value))
 	{
-		Function_object* t=static_cast<Function_object*>(value);
-		value = asAtomHandler::getObject(t->functionPrototype);
+		Function_object* f=asAtomHandler::as<Function_object>(value);
+		return asAtomHandler::getClass(f->functionPrototype,t->getSystemState(),false) && asAtomHandler::getClass(f->functionPrototype,t->getSystemState(),false)->isSubClass(t->as<Class_base>(), false);
 	}
-	return value->getClass() && value->getClass()->isSubClass(type->as<Class_base>(), false);
+	return asAtomHandler::getClass(value,t->getSystemState(),false) && asAtomHandler::getClass(value,t->getSystemState(),false)->isSubClass(t->as<Class_base>(), false);
 }
 
 Namespace* ABCVm::pushNamespace(call_context* th, int n)

@@ -604,6 +604,7 @@ void ABCVm::abc_getlexfromslot(call_context* context)
 	RUNTIME_STACK_PUSH(context,a);
 	++(context->exec_pos);
 }
+
 void ABCVm::abc_getlexfromslot_localresult(call_context* context)
 {
 	uint32_t t = context->exec_pos->arg1_uint;
@@ -1233,12 +1234,14 @@ void ABCVm::constructpropnoargs_intern(call_context* context,asAtom& ret,asAtom&
 		{
 			context->explicitConstruction = false;
 			createError<TypeError>(context->worker,kConstructOfNonFunctionError);
+			ASATOM_DECREF(o);
 			return;
 		}
 		else
 		{
 			context->explicitConstruction = false;
 			createError<TypeError>(context->worker,kNotConstructorError);
+			ASATOM_DECREF(o);
 			return;
 		}
 	}
@@ -3551,7 +3554,7 @@ void ABCVm::abc_istypelate_local_local_localresult(call_context* context)
 
 void ABCVm::abc_instanceof_constant_constant(call_context* context)
 {
-	bool ret = instanceOf(asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker),asAtomHandler::toObject(*context->exec_pos->arg2_constant,context->worker));
+	bool ret = instanceOf(*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant);
 	LOG_CALL("instanceof_cc "<<ret);
 
 	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
@@ -3559,7 +3562,7 @@ void ABCVm::abc_instanceof_constant_constant(call_context* context)
 }
 void ABCVm::abc_instanceof_local_constant(call_context* context)
 {
-	bool ret = instanceOf(asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->worker),asAtomHandler::toObject(*context->exec_pos->arg2_constant,context->worker));
+	bool ret = instanceOf(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant);
 	LOG_CALL("instanceof_lc "<<ret);
 
 	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
@@ -3567,7 +3570,7 @@ void ABCVm::abc_instanceof_local_constant(call_context* context)
 }
 void ABCVm::abc_instanceof_constant_local(call_context* context)
 {
-	bool ret = instanceOf(asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker),asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker));
+	bool ret = instanceOf(*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
 	LOG_CALL("instanceof_cl "<<ret);
 
 	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
@@ -3575,7 +3578,7 @@ void ABCVm::abc_instanceof_constant_local(call_context* context)
 }
 void ABCVm::abc_instanceof_local_local(call_context* context)
 {
-	bool ret = instanceOf(asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->worker),asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker));
+	bool ret = instanceOf(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
 	LOG_CALL("instanceof_ll "<<ret);
 
 	RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
@@ -3583,7 +3586,7 @@ void ABCVm::abc_instanceof_local_local(call_context* context)
 }
 void ABCVm::abc_instanceof_constant_constant_localresult(call_context* context)
 {
-	bool ret = instanceOf(asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker),asAtomHandler::toObject(*context->exec_pos->arg2_constant,context->worker));
+	bool ret = instanceOf(*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant);
 	LOG_CALL("instanceof_ccl "<<ret);
 
 	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
@@ -3592,7 +3595,7 @@ void ABCVm::abc_instanceof_constant_constant_localresult(call_context* context)
 }
 void ABCVm::abc_instanceof_local_constant_localresult(call_context* context)
 {
-	bool ret = instanceOf(asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->worker),asAtomHandler::toObject(*context->exec_pos->arg2_constant,context->worker));
+	bool ret = instanceOf(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant);
 	LOG_CALL("instanceof_lcl "<<ret);
 
 	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
@@ -3601,7 +3604,7 @@ void ABCVm::abc_instanceof_local_constant_localresult(call_context* context)
 }
 void ABCVm::abc_instanceof_constant_local_localresult(call_context* context)
 {
-	bool ret = instanceOf(asAtomHandler::toObject(*context->exec_pos->arg1_constant,context->worker),asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker));
+	bool ret = instanceOf(*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
 	LOG_CALL("instanceof_cll "<<ret);
 
 	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
@@ -3610,7 +3613,7 @@ void ABCVm::abc_instanceof_constant_local_localresult(call_context* context)
 }
 void ABCVm::abc_instanceof_local_local_localresult(call_context* context)
 {
-	bool ret = instanceOf(asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->worker),asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker));
+	bool ret = instanceOf(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
 	LOG_CALL("instanceof_lll "<<ret<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
 
 	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
@@ -4264,6 +4267,7 @@ void ABCVm::abc_callvoid_constant_constant(call_context* context)
 	LOG_CALL("callvoid_cc " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
 	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
+	ASATOM_DECREF(ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callvoid_local_constant(call_context* context)
@@ -4274,6 +4278,7 @@ void ABCVm::abc_callvoid_local_constant(call_context* context)
 	LOG_CALL("callvoid_lc " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
 	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
+	ASATOM_DECREF(ret);
 	++(context->exec_pos);
 }
 
@@ -4285,6 +4290,7 @@ void ABCVm::abc_callvoid_constant_local(call_context* context)
 	LOG_CALL("callvoid_cl " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
 	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
+	ASATOM_DECREF(ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_callvoid_local_local(call_context* context)
@@ -4295,6 +4301,7 @@ void ABCVm::abc_callvoid_local_local(call_context* context)
 	LOG_CALL("callvoid_ll " << asAtomHandler::toDebugString(func)<<" "<<context->exec_pos->local3.flags);
 	asAtom ret = asAtomHandler::invalidAtom;
 	callFunctionClassRegexp(context, func, obj,ret);
+	ASATOM_DECREF(ret);
 	++(context->exec_pos);
 }
 

@@ -1646,6 +1646,8 @@ class TextLine;
 class TextLineMetrics;
 class Texture;
 class TextureBase;
+class Timer;
+class TimerEvent;
 class ThrottleEvent;
 class Type;
 class TypeError;
@@ -1757,7 +1759,8 @@ template<> inline bool ASObject::is<Event>() const
 			|| subtype == SUBTYPE_NATIVEWINDOWBOUNDSEVENT
 			|| subtype == SUBTYPE_FOCUSEVENT
 			|| subtype == SUBTYPE_HTTPSTATUSEVENT
-			|| subtype == SUBTYPE_STATUSEVENT;
+			|| subtype == SUBTYPE_STATUSEVENT
+			|| subtype == SUBTYPE_TIMEREVENT;
 }
 template<> inline bool ASObject::is<ExtensionContext>() const { return subtype==SUBTYPE_EXTENSIONCONTEXT; }
 template<> inline bool ASObject::is<FontDescription>() const { return subtype==SUBTYPE_FONTDESCRIPTION; }
@@ -1851,6 +1854,8 @@ template<> inline bool ASObject::is<TextLine>() const { return subtype==SUBTYPE_
 template<> inline bool ASObject::is<TextLineMetrics>() const { return subtype==SUBTYPE_TEXTLINEMETRICS; }
 template<> inline bool ASObject::is<Texture>() const { return subtype==SUBTYPE_TEXTURE; }
 template<> inline bool ASObject::is<TextureBase>() const { return subtype==SUBTYPE_TEXTUREBASE || subtype==SUBTYPE_TEXTURE || subtype==SUBTYPE_CUBETEXTURE || subtype==SUBTYPE_RECTANGLETEXTURE || subtype==SUBTYPE_TEXTURE || subtype==SUBTYPE_VIDEOTEXTURE; }
+template<> inline bool ASObject::is<Timer>() const { return subtype==SUBTYPE_TIMER; }
+template<> inline bool ASObject::is<TimerEvent>() const { return subtype==SUBTYPE_TIMEREVENT; }
 template<> inline bool ASObject::is<ThrottleEvent>() const { return subtype==SUBTYPE_THROTTLE_EVENT; }
 template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<TypeError>() const { return subtype==SUBTYPE_TYPEERROR; }

@@ -261,4 +261,5 @@ void AVM1Scope::prepareShutdown()
 	ASObject* v = asAtomHandler::getObject(values);
 	if (v)
 		v->prepareShutdown();
+	ASATOM_REMOVESTOREDMEMBER(values)
 }

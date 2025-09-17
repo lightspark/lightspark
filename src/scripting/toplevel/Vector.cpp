@@ -268,7 +268,7 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 	}
 	else
 	{
-		createError<ArgumentError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Vector");
+		createError<ArgumentError>(wrk,kCheckTypeFailedError, asAtomHandler::getClass(args[0],wrk->getSystemState())->getQualifiedClassName(), "Vector");
 	}
 }
 
@@ -318,9 +318,16 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 			{
 				if (asAtomHandler::isValid(*it))
 				{
-					res->vec[index]= *it;
+					asAtom v = *it;
 					bool isNewObject=false;
-					res->checkValue(res->vec[index],false,&isNewObject);
+					res->checkValue(v,false,&isNewObject);
+					if (wrk->currentCallContext && wrk->currentCallContext->exceptionthrown)
+					{
+						if (isNewObject)
+							ASATOM_DECREF(v);
+						break;
+					}
+					res->vec[index]= v;
 					ASObject* obj = asAtomHandler::getObject(res->vec[index]);
 					if (obj)
 					{
@@ -335,12 +342,21 @@ ASFUNCTIONBODY_ATOM(Vector,_concat)
 		else
 		{
 			asAtom v = args[pos];
-			asAtomHandler::localNumberToGlobalNumber(wrk,v);
-			if (!th->vec_type->coerce(th->getInstanceWorker(),v))
-				ASATOM_INCREF(v);
+			bool isNewObject=false;
+			res->checkValue(v,false,&isNewObject);
+			if (wrk->currentCallContext && wrk->currentCallContext->exceptionthrown)
+			{
+				if (isNewObject)
+					ASATOM_DECREF(v);
+				break;
+			}
 			ASObject* obj = asAtomHandler::getObject(v);
 			if (obj)
+			{
+				if (!isNewObject)
+					obj->incRef();
 				obj->addStoredMember();
+			}
 			res->vec[index] = v;
 			index++;
 		}
@@ -357,7 +373,7 @@ ASFUNCTIONBODY_ATOM(Vector,filter)
 	}
 	if (!asAtomHandler::is<IFunction>(args[0]))
 	{
-		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::getClass(args[0],wrk->getSystemState())->getQualifiedClassName(), "Function");
 		return;
 	}
 	Vector* th=asAtomHandler::as<Vector>(obj);
@@ -409,7 +425,7 @@ ASFUNCTIONBODY_ATOM(Vector, some)
 	}
 	if (!asAtomHandler::is<IFunction>(args[0]))
 	{
-		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::getClass(args[0],wrk->getSystemState())->getQualifiedClassName(), "Function");
 		return;
 	}
 	Vector* th=static_cast<Vector*>(asAtomHandler::getObject(obj));
@@ -453,7 +469,7 @@ ASFUNCTIONBODY_ATOM(Vector, every)
 	}
 	if (!asAtomHandler::is<IFunction>(args[0]))
 	{
-		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::getClass(args[0],wrk->getSystemState())->getQualifiedClassName(), "Function");
 		return;
 	}
 	asAtom f = args[0];
@@ -667,7 +683,7 @@ ASFUNCTIONBODY_ATOM(Vector,forEach)
 	}
 	if (!asAtomHandler::is<IFunction>(args[0]))
 	{
-		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::getClass(args[0],wrk->getSystemState())->getQualifiedClassName(), "Function");
 		return;
 	}
 	asAtom f = args[0];
@@ -837,14 +853,16 @@ asAtom Vector::getDefaultValue()
 bool Vector::checkValue(asAtom& o, bool allowconversion,bool* isNewObject)
 {
 	asAtom oldValue = o;
-	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
+	bool waslocalnumber=asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	if (!vec_type->coerceForTemplate(getInstanceWorker(),o,allowconversion))
 	{
 		Class_base* cls = dynamic_cast<Class_base*>(vec_type);
 		if(cls && cls != Class<ASObject>::getRef(getSystemState()).getPtr() && (!asAtomHandler::getObject(o) || !asAtomHandler::getObject(o)->getClass() || !asAtomHandler::getObject(o)->getClass()->isSubClass(cls)))
-			createError<TypeError>(getInstanceWorker(),kCheckTypeFailedError, asAtomHandler::toObject(o,getInstanceWorker())->getClassName(), cls->getQualifiedClassName());
+			createError<TypeError>(getInstanceWorker(),kCheckTypeFailedError, asAtomHandler::getClass(o,getSystemState())->getQualifiedClassName(), cls->getQualifiedClassName());
 		if (isNewObject)
 			*isNewObject=false;
+		if (waslocalnumber)
+			ASATOM_DECREF(o);
 		return false;
 	}
 	if (isNewObject && oldValue.uintval != o.uintval)
@@ -1062,6 +1080,7 @@ number_t Vector::sortComparatorWrapper::compare(const asAtom& d1, const asAtom& 
 	number_t res = asAtomHandler::toNumber(ret);
 	if (res == 0)
 		src->hasDuplicates=true;
+	ASATOM_DECREF(ret);
 	return  res;
 }
 
@@ -1336,7 +1355,7 @@ ASFUNCTIONBODY_ATOM(Vector,_map)
 	
 	if (argslen >= 1 && !asAtomHandler::is<IFunction>(args[0]))
 	{
-		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::toObject(args[0],wrk)->getClassName(), "Function");
+		createError<TypeError>(wrk,kCheckTypeFailedError, asAtomHandler::getClass(args[0],wrk->getSystemState())->getQualifiedClassName(), "Function");
 		return;
 	}
 	asAtom func=asAtomHandler::invalidAtom;
@@ -1358,11 +1377,15 @@ ASFUNCTIONBODY_ATOM(Vector,_map)
 			res->decRef();
 			return;
 		}
-		res->checkValue(funcRet,true);
-		ASObject* ob = asAtomHandler::getObject(funcRet);
+		asAtom v = funcRet;
+		bool isNewObject= false;
+		res->checkValue(v,true,&isNewObject);
+		if (isNewObject)
+			ASATOM_DECREF(funcRet);
+		ASObject* ob = asAtomHandler::getObject(v);
 		if(ob)
 			ob->addStoredMember();
-		res->vec.push_back(funcRet);
+		res->vec.push_back(v);
 	}
 
 	ret = asAtomHandler::fromObject(res);
@@ -1666,10 +1689,11 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 		}
 		return ASObject::setVariableByMultiname(name, o, allowConst,alreadyset,wrk);
 	}
-	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	asAtom v = o;
-	if (this->vec_type->coerce(getInstanceWorker(), o))
-		ASATOM_DECREF(v);
+	bool isNewObject=false;
+	checkValue(v,false,&isNewObject);
+	if (isNewObject)
+		ASATOM_DECREF(o);
 	if(index < vec.size())
 	{
 		if (vec[index].uintval == o.uintval)
@@ -1682,18 +1706,18 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 			ASObject* obj = asAtomHandler::getObject(vec[index]);
 			if (obj)
 				obj->removeStoredMember();
-			obj = asAtomHandler::getObject(o);
+			obj = asAtomHandler::getObject(v);
 			if (obj)
 				obj->addStoredMember();
-			vec[index] = o;
+			vec[index] = v;
 		}
 	}
 	else if(!fixed && index == vec.size())
 	{
-		ASObject* obj = asAtomHandler::getObject(o);
+		ASObject* obj = asAtomHandler::getObject(v);
 		if (obj)
 			obj->addStoredMember();
-		vec.push_back(o);
+		vec.push_back(v);
 	}
 	else
 	{
@@ -1702,6 +1726,7 @@ multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLO
 		createError<RangeError>(getInstanceWorker(),kOutOfRangeError,
 				       Integer::toString(index),
 				       Integer::toString(vec.size()));
+		ASATOM_DECREF(v);
 	}
 	return nullptr;
 }
@@ -1714,31 +1739,32 @@ void Vector::setVariableByInteger(int index, asAtom &o, CONST_ALLOWED_FLAG allow
 		return;
 	}
 	*alreadyset = false;
-	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	asAtom v = o;
-	if (this->vec_type->coerce(getInstanceWorker(), o))
-		ASATOM_DECREF(v);
+	bool isNewObject=false;
+	checkValue(v,true,&isNewObject);
+	if (isNewObject)
+		ASATOM_DECREF(o);
 	if(size_t(index) < vec.size())
 	{
-		if (vec[index].uintval != o.uintval)
+		if (vec[index].uintval != v.uintval)
 		{
 			ASObject* obj = asAtomHandler::getObject(vec[index]);
 			if (obj)
 				obj->removeStoredMember();
-			obj = asAtomHandler::getObject(o);
+			obj = asAtomHandler::getObject(v);
 			if (obj)
 				obj->addStoredMember();
-			vec[index] = o;
+			vec[index] = v;
 		}
 		else
 			*alreadyset=true;
 	}
 	else if(!fixed && size_t(index) == vec.size())
 	{
-		ASObject* obj = asAtomHandler::getObject(o);
+		ASObject* obj = asAtomHandler::getObject(v);
 		if (obj)
 			obj->addStoredMember();
-		vec.push_back(o);
+		vec.push_back(v);
 	}
 	else
 	{
@@ -1747,6 +1773,7 @@ void Vector::setVariableByInteger(int index, asAtom &o, CONST_ALLOWED_FLAG allow
 		createError<RangeError>(getInstanceWorker(),kOutOfRangeError,
 				       Integer::toString(index),
 				       Integer::toString(vec.size()));
+		ASATOM_DECREF(v);
 	}
 }
 

@@ -2067,8 +2067,11 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		else
 		{
 			asAtom a = obj->getVar(wrk,asAtomHandler::getLocalNumberPos(ret));
-			if (!(opt & NO_INCREF))
+			if (obj->isLocalNumberVar() && asAtomHandler::getLocalNumberPos(ret)==UINT16_MAX) // local number is converted into a new Number object
+				res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISINCREFFED);
+			if (!(opt & NO_INCREF) && !obj->isLocalNumberVar())
 				ASATOM_INCREF(a);
+
 			asAtomHandler::set(ret,a);
 		}
 	}
@@ -2430,19 +2433,29 @@ void variables_map::destroyContents()
 }
 void variables_map::prepareShutdown()
 {
-	var_iterator it=Variables.begin();
-	while(it!=Variables.end())
+	while(!Variables.empty())
 	{
-		ASObject* v = it->second.isRefcountedVar() && it->second.isAccessibleObjectVar() ? it->second.getObjectVar() : nullptr;
-		if (v)
-			v->prepareShutdown();
-		v = asAtomHandler::getObject(it->second.getter);
-		if (v)
-			v->prepareShutdown();
-		v = asAtomHandler::getObject(it->second.setter);
-		if (v)
-			v->prepareShutdown();
-		it++;
+		var_iterator it=Variables.begin();
+		ASObject* var = it->second.isRefcountedVar() && it->second.isAccessibleObjectVar() ? it->second.getObjectVar() : nullptr;
+		ASObject* getter = asAtomHandler::getObject(it->second.getter);
+		ASObject* setter = asAtomHandler::getObject(it->second.setter);
+		Variables.erase(it);
+
+		if (var)
+		{
+			var->prepareShutdown();
+			var->removeStoredMember();
+		}
+		if (getter)
+		{
+			getter->prepareShutdown();
+			getter->removeStoredMember();
+		}
+		if (setter)
+		{
+			setter->prepareShutdown();
+			setter->removeStoredMember();
+		}
 	}
 }
 bool variables_map::cloneInstance(variables_map &map)
@@ -4897,6 +4910,7 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 			else //if(val2->getClass()==xmlListClass)
 				newList->append(_MNR(static_cast<XMLList*>(val2)));
 
+			ASATOM_DECREF(ret);
 			if (forceint)
 			{
 				setInt(ret,wrk,newList->toInt());

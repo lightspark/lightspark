@@ -706,21 +706,23 @@ void EventDispatcher::prepareShutdown()
 	ASObject* t = asAtomHandler::getObject(forcedTarget);
 	if (t)
 		t->prepareShutdown();
+
 	auto it=handlers.begin();
 	while(it!=handlers.end())
 	{
-		auto it2 = it->second.begin();
-		while (it2 != it->second.end())
+		std::list<listener> tmplist = it->second;
+		it = handlers.erase(it);
+		auto it2 = tmplist.begin();
+		while (it2 != tmplist.end())
 		{
 			ASObject* f = asAtomHandler::getObject((*it2).f);
+			it2 = tmplist.erase(it2);
 			if (f)
 			{
 				f->prepareShutdown();
 				f->removeStoredMember();
 			}
-			it2 = it->second.erase(it2);
 		}
-		it++;
 	}
 }
 void EventDispatcher::clearEventListeners()

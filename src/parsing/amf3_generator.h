@@ -91,44 +91,46 @@ class Amf3Deserializer
 {
 private:
 	ByteArray* input;
-	tiny_string parseStringVR(std::vector<tiny_string>& stringMap) const;
+	tiny_string parserError;
+	tiny_string parseStringVR(std::vector<tiny_string>& stringMap);
 	
 	asAtom parseObject(std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap) const;
+			std::vector<TraitsRef>& traitsMap);
 	asAtom parseArray(std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap) const;
+			std::vector<TraitsRef>& traitsMap);
 	asAtom parseVector(uint8_t marker, std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap) const;
+			std::vector<TraitsRef>& traitsMap);
 	asAtom parseDictionary(std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap) const;
-	asAtom parseByteArray(std::vector<asAtom>& objMap) const;
+			std::vector<TraitsRef>& traitsMap);
+	asAtom parseByteArray(std::vector<asAtom>& objMap);
 	asAtom parseValue(std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap) const;
-	asAtom parseInteger() const;
-	asAtom parseDouble() const;
-	asAtom parseDate() const;
-	asAtom parseXML(std::vector<asAtom>& objMap, bool legacyXML) const;
+			std::vector<TraitsRef>& traitsMap);
+	asAtom parseInteger();
+	asAtom parseDouble();
+	asAtom parseDate();
+	asAtom parseXML(std::vector<asAtom>& objMap, bool legacyXML);
 
 
 	asAtom parseECMAArrayAMF0(std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap) const;
+			std::vector<TraitsRef>& traitsMap);
 	asAtom parseStrictArrayAMF0(std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap) const;
+			std::vector<TraitsRef>& traitsMap);
 	asAtom parseObjectAMF0(std::vector<tiny_string>& stringMap,
 			std::vector<asAtom>& objMap,
-			std::vector<TraitsRef>& traitsMap, const tiny_string& clsname="") const;
+			std::vector<TraitsRef>& traitsMap, const tiny_string& clsname="");
 public:
 	Amf3Deserializer(ByteArray* i):input(i) {}
-	asAtom readObject() const;
+	asAtom readObject();
 	void readSharedObject(ASObject* ret);
-	tiny_string parseStringAMF0() const;
+	tiny_string parseStringAMF0();
+	tiny_string getParserError() const { return parserError; }
 };
 
 }

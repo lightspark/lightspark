@@ -1495,9 +1495,9 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0xb1:
 			{
 				//instanceof
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,type);
-				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,value);
-				bool ret=instanceOf(value, type);
+				RUNTIME_STACK_POP_CREATE(context,type);
+				RUNTIME_STACK_POP_CREATE(context,value);
+				bool ret=instanceOf(*value, *type);
 				RUNTIME_STACK_PUSH(context,asAtomHandler::fromBool(ret));
 				break;
 			}

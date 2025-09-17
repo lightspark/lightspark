@@ -778,7 +778,6 @@ void lightspark::abc_callpropertyStaticName_constant_localresult(call_context* c
 	{
 		asAtom func = context->exec_pos->cachedvar3->getVar(context->worker);
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
-		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
 	}
 	else
@@ -800,7 +799,6 @@ void lightspark::abc_callpropertyStaticName_local_localresult(call_context* cont
 	{
 		asAtom func = context->exec_pos->cachedvar3->getVar(context->worker);
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
-		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
 	}
 	else

@@ -2756,14 +2756,14 @@ void Array::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap
 					if (i < ARRAY_SIZE_THRESHOLD)
 					{
 						if (asAtomHandler::isInvalid(data_first.at(i)))
-							out->writeByte(undefined_marker);
+							out->writeByte(amf0_undefined_marker);
 						else
 							asAtomHandler::serialize(out,stringMap, objMap, traitsMap,wrk,data_first.at(i));
 					}
 					else
 					{
 						if (data_second.find(i) == data_second.end())
-							out->writeByte(undefined_marker);
+							out->writeByte(amf0_undefined_marker);
 						else
 							asAtomHandler::serialize(out,stringMap, objMap, traitsMap,wrk,data_second.at(i));
 					}

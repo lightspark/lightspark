@@ -36,17 +36,19 @@ class Timer: public EventDispatcher, public ITickJob
 private:
 	void tick();
 	void tickFence();
-	//tickJobInstance keeps a reference to self while this
-	//instance is being used by the timer thread.
-	_NR<Timer> tickJobInstance;
 protected:
 	bool running;
 	uint32_t delay;
 	uint32_t repeatCount;
 	uint32_t currentCount;
 public:
-	Timer(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c),running(false),delay(0),repeatCount(0),currentCount(0){}
+	Timer(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+	void afterHandleEvent(Event* ev) override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getCurrentCount);
 	ASFUNCTION_ATOM(_getRepeatCount);

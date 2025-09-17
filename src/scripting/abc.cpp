@@ -2067,12 +2067,13 @@ void ABCVm::parseRPCMessage(_R<ByteArray> message, _NR<ASObject> client, _NR<Res
 			responder->getVariableByMultiname(callback,onResultName,GET_VARIABLE_OPTION::NONE,responder->getInstanceWorker());
 			if(asAtomHandler::isFunction(callback))
 			{
-				ASATOM_INCREF(ret);
 				asAtom callbackArgs[1] { ret };
+				responder->incRef();
 				asAtom v = asAtomHandler::fromObject(responder.getPtr());
 				asAtom r=asAtomHandler::invalidAtom;
 				asAtomHandler::callFunction(callback,responder->getInstanceWorker(),r,v, callbackArgs, 1,true);
 			}
+			ASATOM_DECREF(callback);
 		}
 	}
 }

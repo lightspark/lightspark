@@ -1450,11 +1450,11 @@ void ABCVm::abc_greaterequals(call_context* context)
 void ABCVm::abc_instanceof(call_context* context)
 {
 	//instanceof
-	RUNTIME_STACK_POP_CREATE_ASOBJECT(context,type);
+	RUNTIME_STACK_POP_CREATE(context,type);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	bool ret = instanceOf(asAtomHandler::toObject(*pval,context->worker),type);
+	bool ret = instanceOf(*pval,*type);
 	ASATOM_DECREF_POINTER(pval);
-	type->decRef();
+	ASATOM_DECREF_POINTER(type);
 	asAtomHandler::setBool(*pval,ret);
 	++(context->exec_pos);
 }

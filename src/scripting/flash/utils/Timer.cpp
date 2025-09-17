@@ -47,20 +47,25 @@ void Timer::tick()
 			this->incRef();
 			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getInstanceWorker(),"timerComplete")));
 			stopMe=true;
-			running=false;
 		}
 	}
 }
 
 void Timer::tickFence()
 {
-	tickJobInstance = NullRef;
+	this->removeStoredMember();
+}
+
+Timer::Timer(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),running(false),delay(0),repeatCount(0),currentCount(0)
+{
+	subtype=SUBTYPE_TIMER;
 }
 
 
 void Timer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("currentCount","",c->getSystemState()->getBuiltinFunction(_getCurrentCount,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("repeatCount","",c->getSystemState()->getBuiltinFunction(_getRepeatCount,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("repeatCount","",c->getSystemState()->getBuiltinFunction(_setRepeatCount),SETTER_METHOD,true);
@@ -70,6 +75,37 @@ void Timer::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("start","",c->getSystemState()->getBuiltinFunction(start),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("reset","",c->getSystemState()->getBuiltinFunction(reset),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stop","",c->getSystemState()->getBuiltinFunction(stop),NORMAL_METHOD,true);
+}
+
+void Timer::finalize()
+{
+	EventDispatcher::finalize();
+}
+bool Timer::destruct()
+{
+	running=false;
+	delay=0;
+	repeatCount=0;
+	currentCount=0;
+	return EventDispatcher::destruct();
+}
+void Timer::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+}
+bool Timer::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (running)
+		return gcstate.hasMember(this);
+	return EventDispatcher::countCylicMemberReferences(gcstate);
+}
+
+void Timer::afterHandleEvent(Event* ev)
+{
+	if (stopMe && ev->type=="timer" && ev->is<TimerEvent>())
+		running=false;
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_constructor)
@@ -104,7 +140,6 @@ ASFUNCTIONBODY_ATOM(Timer,_setRepeatCount)
 	{
 		getSys()->removeJob(th);
 		th->running=false;
-		th->tickJobInstance = NullRef;
 	}
 }
 
@@ -142,7 +177,7 @@ ASFUNCTIONBODY_ATOM(Timer,start)
 	th->running=true;
 	th->stopMe=false;
 	th->incRef();
-	th->tickJobInstance = _MNR(th);
+	th->addStoredMember();
 	// according to spec Adobe handles timers 60 times per second, so minimum delay is 17 ms
 	if(th->repeatCount==1)
 		wrk->getSystemState()->addWait(th->delay < 17 ? 17 : th->delay,th);
@@ -159,8 +194,6 @@ ASFUNCTIONBODY_ATOM(Timer,reset)
 		wrk->getSystemState()->removeJob(th);
 		//NOTE: although no new events will be sent now there might be old events in the queue.
 		//Is this behaviour right?
-		//This is not anymore used by the timer, so it can die
-		th->tickJobInstance = NullRef;
 		th->running=false;
 	}
 	th->currentCount=0;
@@ -175,9 +208,6 @@ ASFUNCTIONBODY_ATOM(Timer,stop)
 		wrk->getSystemState()->removeJob(th);
 		//NOTE: although no new events will be sent now there might be old events in the queue.
 		//Is this behaviour right?
-
-		//This is not anymore used by the timer, so it can die
-		th->tickJobInstance = NullRef;
 		th->running=false;
 	}
 }

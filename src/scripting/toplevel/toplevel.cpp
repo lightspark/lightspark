@@ -675,16 +675,15 @@ void SyntheticFunction::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	IFunction::prepareShutdown();
-	if (!func_scope.isNull())
+	while(!func_scope.isNull() && !func_scope->scope.empty())
 	{
-		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
-		{
-			ASObject* o = asAtomHandler::getObject(it->object);
-			if (o)
-				o->prepareShutdown();
-			if (o && !o->is<Global>())
-				o->removeStoredMember();
-		}
+		auto s = func_scope->scope.back();
+		func_scope->scope.pop_back();
+		ASObject* o = asAtomHandler::getObject(s.object);
+		if (o)
+			o->prepareShutdown();
+		if (o && !o->is<Global>())
+			o->removeStoredMember();
 	}
 	func_scope.reset();
 }
@@ -873,7 +872,11 @@ IFunction* Class<IFunction>::getNopFunction()
 void Class<IFunction>::getInstance(ASWorker* worker,asAtom& ret,bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass, bool callSyntheticConstructor)
 {
 	if (argslen > 0)
+	{
 		createError<EvalError>(worker,kFunctionConstructorError);
+		for (uint32_t i=0; i < argslen; i++)
+			ASATOM_DECREF(args[i]);
+	}
 	ASObject* res = getNopFunction();
 	if (construct)
 		res->setConstructIndicator();

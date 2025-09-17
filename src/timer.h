@@ -148,6 +148,7 @@ private:
 	TimeSpec getFrameRate() const;
 public:
 	LSTimers(SystemState* _sys) : sys(_sys) {}
+	void cleanup();
 
 	void addTick(const TimeSpec& tickTime, ITickJob* job) { addJob(tickTime, TimerType::Tick, job); }
 	void addFrameTick(ITickJob* job) { addJob(getFrameRate(), TimerType::Frame, job); }

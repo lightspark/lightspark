@@ -526,7 +526,7 @@ private:
 	static bool strictEquals(ASObject*,ASObject*);
 	static ASObject* esc_xattr(ASObject* o);
 	static ASObject* esc_xelem(ASObject* o);
-	static bool instanceOf(ASObject* value, ASObject* type);
+	static bool instanceOf(const asAtom& value, const asAtom& type);
 	static Namespace* pushNamespace(call_context* th, int n);
 	static void dxns(call_context* th, int n);
 	static void dxnslate(call_context* th, ASObject* value);

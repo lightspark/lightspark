@@ -226,13 +226,6 @@ ASFUNCTIONBODY_ATOM(Sprite,_setter_hitArea)
 ASFUNCTIONBODY_ATOM(Sprite,getSoundTransform)
 {
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
-	if (th->sound && th->sound->soundTransform)
-	{
-		ret = asAtomHandler::fromObject(th->sound->soundTransform.getPtr());
-		ASATOM_INCREF(ret);
-	}
-	else
-		asAtomHandler::setNull(ret);
 	if (!th->soundtransform)
 	{
 		if (th->sound)

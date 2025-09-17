@@ -584,6 +584,7 @@ void SystemState::stopEngines()
 		timerThread->wait();
 	if (frameTimerThread != nullptr)
 		frameTimerThread->wait();
+	timers.cleanup();
 	/* first shutdown the vm, because it can use all the others */
 	if(currentVm)
 		currentVm->shutdown();
@@ -709,8 +710,7 @@ SystemState::~SystemState()
 	dumpFunctionCallCount();
 #endif
 	mutexFrameListeners.lock();
-	for (auto it = frameListeners.begin(); it != frameListeners.end(); it++)
-		(*it)->prepareShutdown();
+	frameListeners.clear();
 	mutexFrameListeners.unlock();
 
 	this->resetParentList();

@@ -86,8 +86,10 @@ public:
 									  "?"); // TODO
 			return asAtomHandler::invalidAtom;
 		}
-		asAtomHandler::localNumberToGlobalNumber(wrk,obj);
-		ASATOM_ADDSTOREDMEMBER(obj);
+		if (asAtomHandler::localNumberToGlobalNumber(wrk,obj))
+			asAtomHandler::getObjectNoCheck(obj)->addStoredMember();
+		else
+			ASATOM_ADDSTOREDMEMBER(obj);
 		return obj;
 	}
 	static void toAbstract(asAtom& ret, ASWorker* wrk,asAtom val)

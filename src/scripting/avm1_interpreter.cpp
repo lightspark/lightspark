@@ -649,7 +649,7 @@ bool ACTIONRECORD::implementsInterface(asAtom type, ASObject* value, ASWorker* w
 				   || asAtomHandler::getObject(type) == Class<Array>::getRef(wrk->getSystemState()).getPtr()))
 		implementsinterface = true; // special case comparing AVM1Array to Array
 	else
-		implementsinterface = ABCVm::instanceOf(value,asAtomHandler::getObject(type));
+		implementsinterface = ABCVm::instanceOf(asAtomHandler::fromObject(value),type);
 	return implementsinterface;
 }
 Mutex executeactionmutex;

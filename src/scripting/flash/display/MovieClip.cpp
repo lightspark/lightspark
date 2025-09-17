@@ -224,6 +224,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,addFrameScript)
 		IFunction* func = asAtomHandler::as<IFunction>(args[i+1]);
 		func->incRef();
 		func->addStoredMember();
+		auto it = th->frameScripts.find(frame);
+		if (it != th->frameScripts.end())
+			ASATOM_REMOVESTOREDMEMBER(it->second);
 		th->frameScripts[frame]=args[i+1];
 	}
 }

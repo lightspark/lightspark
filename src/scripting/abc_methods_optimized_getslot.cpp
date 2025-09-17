@@ -133,9 +133,11 @@ void lightspark::abc_getSlotFromScopeObject(call_context* context)
 	uint32_t tslot = instrptr->arg2_uint;
 	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
 	ASObject* obj = asAtomHandler::getObjectNoCheck(context->scope_stack[t]);
+	variable* var = obj->getSlotVar(tslot+1);
 	asAtom res = obj->getSlotNoCheck(tslot);
 	LOG_CALL("getSlotFromScopeObject " << t << " " << tslot<<" "<< asAtomHandler::toDebugString(res) << " "<< obj->toDebugString());
-	ASATOM_INCREF(res);
+	if (!var->isLocalNumberVar())
+		ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 }
 void lightspark::abc_getSlotFromScopeObject_localresult(call_context* context)

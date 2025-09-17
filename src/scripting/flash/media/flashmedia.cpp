@@ -555,6 +555,16 @@ void Sound::constructionComplete(bool _explicit, bool forInitAction)
 	}
 }
 
+void Sound::afterHandleEvent(Event* ev)
+{
+	if (progressEvent)
+	{
+		Locker l(progressEvent->accesmutex);
+		if (ev == progressEvent.getPtr())
+			progressEvent.reset();
+	}
+}
+
 Sound::~Sound()
 {
 }
@@ -588,6 +598,7 @@ void Sound::finalize()
 	if (soundChannel)
 		soundChannel->removeStoredMember();
 	soundChannel=nullptr;
+	progressEvent.reset();
 	EventDispatcher::finalize();
 }
 
@@ -607,6 +618,7 @@ bool Sound::destruct()
 	if (soundChannel)
 		soundChannel->removeStoredMember();
 	soundChannel=nullptr;
+	progressEvent.reset();
 	return EventDispatcher::destruct();
 }
 
@@ -663,17 +675,16 @@ ASFUNCTIONBODY_ATOM(Sound,load)
 
 	//The URL is valid so we can start the download
 
+	th->incRef(); // will be decreffed in setBytesLoaded
 	if(th->postData.empty())
 	{
 		//This is a GET request
 		//Use disk cache our downloaded files
-		th->incRef();
 		th->downloader=th->getSystemState()->downloadManager->download(th->url, th->soundData, th);
 	}
 	else
 	{
 		list<tiny_string> headers=urlRequest->getHeaders();
-		th->incRef();
 		th->downloader=th->getSystemState()->downloadManager->downloadWithData(th->url,
 				th->soundData, th->postData, headers, th);
 		//Clean up the postData for the next load
@@ -681,7 +692,6 @@ ASFUNCTIONBODY_ATOM(Sound,load)
 	}
 	if(th->downloader->hasFailed())
 	{
-		th->incRef();
 		getVm(th->getSystemState())->addEvent(_MR(th),_MR(Class<IOErrorEvent>::getInstanceS(wrk)));
 	}
 }
@@ -911,7 +921,6 @@ void Sound::setBytesTotal(uint32_t b)
 {
 	bytesTotal=b;
 }
-
 void Sound::setBytesLoaded(uint32_t b)
 {
 	if(b!=bytesLoaded)
@@ -922,7 +931,6 @@ void Sound::setBytesLoaded(uint32_t b)
 		{
 			this->incRef();
 			progressEvent = _MR(Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal));
-			progressEvent->incRef();
 			getVm(getSystemState())->addIdleEvent(_MR(this),progressEvent);
 		}
 		else
@@ -943,6 +951,7 @@ void Sound::setBytesLoaded(uint32_t b)
 			this->incRef();
 			getVm(getSystemState())->addIdleEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"complete")));
 		}
+		this->decRef(); // was increffed in Sound.load
 	}
 }
 

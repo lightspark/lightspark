@@ -136,27 +136,43 @@ void AVM1Function::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	IFunction::prepareShutdown();
+	if (context.scope)
+	{
+		context.scope->prepareShutdown();
+		context.scope->decRef();
+		context.scope=nullptr;
+	}
+	if (context.globalScope)
+	{
+		context.globalScope->prepareShutdown();
+		context.globalScope->decRef();
+		context.globalScope=nullptr;
+	}
+	if (scope)
+	{
+		scope->prepareShutdown();
+		scope->decRef();
+		scope=nullptr;
+	}
 	if (clip)
 	{
 		clip->prepareShutdown();
 		clip->removeStoredMember();
 	}
 	clip=nullptr;
-	if (context.scope)
-		context.scope->prepareShutdown();
-	if (context.globalScope)
-		context.globalScope->prepareShutdown();
-	if (scope)
-		scope->prepareShutdown();
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
 		su->prepareShutdown();
+	ASATOM_REMOVESTOREDMEMBER(superobj);
+	superobj=asAtomHandler::invalidAtom;
 	for (auto it = implementedinterfaces.begin(); it != implementedinterfaces.end(); it++)
 	{
 		ASObject* iface = asAtomHandler::getObject(*it);
 		if (iface)
 			iface->prepareShutdown();
+		ASATOM_REMOVESTOREDMEMBER(*it);
 	}
+	implementedinterfaces.clear();
 }
 
 bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)

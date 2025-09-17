@@ -596,13 +596,12 @@ ASFUNCTIONBODY_ATOM(System,disposeXML)
 	_NR<XML> xmlobj;
 	ARG_CHECK(ARG_UNPACK (xmlobj));
 	LOG(LOG_NOT_IMPLEMENTED,"disposeXML only removes the node from its parent");
-	if (!xmlobj.isNull() && xmlobj->getParentNode()->is<XML>())
+	if (!xmlobj.isNull() && asAtomHandler::isObject(xmlobj->getParentNode()))
 	{
-		XML* parent = xmlobj->getParentNode()->as<XML>();
+		XML* parent = asAtomHandler::as<XML>(xmlobj->getParentNode());
 		XMLList* l = parent->getChildrenlist();
 		if (l)
 			l->removeNode(xmlobj.getPtr());
-		parent->decRef();
 	}
 }
 ASFUNCTIONBODY_ATOM(System,pauseForGCIfCollectionImminent)

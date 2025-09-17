@@ -224,8 +224,8 @@ public:
 class TimerEvent: public Event
 {
 public:
-	TimerEvent(ASWorker* wrk, Class_base* c):Event(wrk, c, "DEPRECATED"){}
-	TimerEvent(ASWorker* wrk, Class_base* c,const tiny_string& t):Event(wrk,c,t,true){}
+	TimerEvent(ASWorker* wrk, Class_base* c):Event(wrk, c, "DEPRECATED",true,false,SUBTYPE_TIMEREVENT){}
+	TimerEvent(ASWorker* wrk, Class_base* c,const tiny_string& t):Event(wrk,c,t,true,false,SUBTYPE_TIMEREVENT){}
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(updateAfterEvent);
 };

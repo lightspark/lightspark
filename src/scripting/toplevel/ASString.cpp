@@ -242,12 +242,15 @@ ASFUNCTIONBODY_ATOM(ASString,match)
 				break;
 
 			if (re->lastIndex == prevLastIndex)
+			{
 				// ECMA-262 Section 15.5.4.10 says
 				// that we should increase
 				// re->lastIndex by one and repeat,
 				// but this is closer to the observed
 				// behaviour.
+				match->decRef();
 				break;
+			}
 
 			prevLastIndex = re->lastIndex;
 

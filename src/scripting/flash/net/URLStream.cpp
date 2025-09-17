@@ -34,7 +34,7 @@ using namespace std;
 using namespace lightspark;
 
 URLStreamThread::URLStreamThread(_R<URLRequest> request, _R<URLStream> ldr, _R<ByteArray> bytes)
-  : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr), data(bytes),streambuffer(NULL),timestamp_last_progress(0),bytes_total(0)
+  : DownloaderThreadBase(request, ldr.getPtr()), loader(ldr), data(bytes),streambuffer(nullptr),timestamp_last_progress(0),bytes_total(0)
 {
 }
 
@@ -66,18 +66,15 @@ void URLStreamThread::execute()
 	//TODO: support httpStatus
 
 	_R<MemoryStreamCache> cache(_MR(new MemoryStreamCache(loader->getSystemState())));
+	data->setLength(0);
+	streambuffer = cache->createReader();
 	if(!createDownloader(cache, loader,this))
 		return;
-	data->setLength(0);
 
 	bool success=false;
 	if(!downloader->hasFailed())
 	{
-		loader->incRef();
 		getVm(loader->getSystemState())->addEvent(loader,_MR(Class<Event>::getInstanceS(loader->getInstanceWorker(),"open")));
-		streambuffer = cache->createReader();
-		loader->incRef();
-		getVm(loader->getSystemState())->addEvent(loader,_MR(Class<ProgressEvent>::getInstanceS(loader->getInstanceWorker(),0,bytes_total)));
 		cache->waitForTermination();
 		if(!downloader->hasFailed() && !threadAborting)
 		{
@@ -99,16 +96,13 @@ void URLStreamThread::execute()
 	// Don't send any events if the thread is aborting
 	if(success && !threadAborting)
 	{
-		loader->incRef();
 		getVm(loader->getSystemState())->addEvent(loader,_MR(Class<ProgressEvent>::getInstanceS(loader->getInstanceWorker(),downloader->getLength(),downloader->getLength())));
 		//Send a complete event for this object
-		loader->incRef();
 		getVm(loader->getSystemState())->addEvent(loader,_MR(Class<Event>::getInstanceS(loader->getInstanceWorker(),"complete")));
 	}
 	else if(!success && !threadAborting)
 	{
 		//Notify an error during loading
-		loader->incRef();
 		getVm(loader->getSystemState())->addEvent(loader,_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
 	}
 
@@ -116,7 +110,7 @@ void URLStreamThread::execute()
 		//Acquire the lock to ensure consistency in threadAbort
 		Locker l(downloaderLock);
 		getSys()->downloadManager->destroy(downloader);
-		downloader = NULL;
+		downloader = nullptr;
 	}
 }
 
@@ -164,14 +158,14 @@ void URLStream::threadFinished(IThreadJob* finishedJob)
 	// job.
 	Locker l(spinlock);
 	if(finishedJob==job)
-		job=NULL;
+		job=nullptr;
 
 	delete finishedJob;
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,_constructor)
 {
-	EventDispatcher::_constructor(ret,wrk,obj,NULL,0);
+	EventDispatcher::_constructor(ret,wrk,obj,nullptr,0);
 }
 
 ASFUNCTIONBODY_ATOM(URLStream,load)
@@ -203,9 +197,9 @@ ASFUNCTIONBODY_ATOM(URLStream,load)
 		return;
 
 	th->incRef();
-	URLStreamThread *job=new URLStreamThread(urlRequest, _MR(th), th->data);
-	getSys()->addJob(job);
-	th->job=job;
+	th->job=new URLStreamThread(urlRequest, _MR(th), th->data);
+	_R<StartJobEvent> event=_MR(new (th->getSystemState()->unaccountedMemory) StartJobEvent(th->job));
+	getVm(th->getSystemState())->addEvent(NullRef,event);
 	th->connected = true;
 }
 
@@ -230,7 +224,7 @@ URLStream::URLStream(ASWorker* wrk, Class_base *c):EventDispatcher(wrk,c),data(_
 
 ASFUNCTIONBODY_ATOM(URLStream,bytesAvailable) {
 	URLStream* th=asAtomHandler::as<URLStream>(obj);
-	asAtom v = asAtomHandler::fromObject(th->data.getPtr());
+	asAtom v = asAtomHandler::fromObjectNoPrimitive(th->data.getPtr());
 	ByteArray::_getBytesAvailable(ret,wrk,v, args, argslen);
 }
 

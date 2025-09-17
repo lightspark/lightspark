@@ -173,7 +173,7 @@ public:
 	bool hasSimpleContent() const;
 	bool hasComplexContent() const;
 	pugi::xml_node_type getNodeKind() const;
-	ASObject *getParentNode();
+	asAtom getParentNode();
 	void copy(XML* res, XML* parent=nullptr);
 	void normalize();
 	bool isEqual(ASObject* r) override;

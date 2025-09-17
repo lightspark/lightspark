@@ -317,7 +317,7 @@ void ASSocket::connect(tiny_string host, int port)
 	}
 
 	if (host.empty())
-		host = getSys()->mainClip->getOrigin().getHostname();
+		host = getSystemState()->mainClip->getOrigin().getHostname();
 
 	if (isConnected())
 	{
@@ -347,7 +347,7 @@ void ASSocket::connect(tiny_string host, int port)
 		return;
 
 	SecurityManager::EVALUATIONRESULT evaluationResult;
-	evaluationResult = getSys()->securityManager->evaluateSocketConnection(url, true);
+	evaluationResult = getSystemState()->securityManager->evaluateSocketConnection(url, true);
 	if(evaluationResult != SecurityManager::ALLOWED)
 	{
 		incRef();
@@ -356,9 +356,9 @@ void ASSocket::connect(tiny_string host, int port)
 	}
 
 	incRef();
-	ASSocketThread *thread = new ASSocketThread(_MR(this), host, port, timeout);
-	getSys()->addJob(thread);
-	job = thread;
+	job = new ASSocketThread(_MR(this), host, port, timeout);
+	_R<StartJobEvent> event=_MR(new (getSystemState()->unaccountedMemory) StartJobEvent(job));
+	getVm(getSystemState())->addEvent(NullRef,event);
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket, _connect)
@@ -912,13 +912,11 @@ void ASSocketThread::execute()
 {
 	if (!sock.connect(hostname, port))
 	{
-		owner->incRef();
 		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 		return;
 	}
 	if (!threadAborting)
 	{
-		owner->incRef();
 		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getInstanceWorker(),"connect")));
 	}
 
@@ -940,7 +938,6 @@ void ASSocketThread::execute()
 		int status = select(maxfd+1, &readfds, nullptr, nullptr, &timeout);
 		if (status  < 0)
 		{
-			owner->incRef();
 			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 			return;
 		}
@@ -952,7 +949,6 @@ void ASSocketThread::execute()
 			ssize_t nbytes = read(signalListener, &cmd, 1);
 			if (nbytes < 0)
 			{
-				owner->incRef();
 				getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 				return;
 			}
@@ -1005,20 +1001,17 @@ void ASSocketThread::readSocket(const SocketIO& sock)
 	ssize_t nbytes = receive();
 	if (nbytes > 0)
 	{
-		owner->incRef();
 		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<ProgressEvent>::getInstanceS(owner->getInstanceWorker(),nbytes,0,"socketData")));
 	}
 	else if (nbytes == 0)
 	{
 		// The server has closed the socket
-		owner->incRef();
 		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getInstanceWorker(),"close")));
 		threadAborting = true;
 	}
 	else
 	{
 		// Error
-		owner->incRef();
 		getVm(owner->getSystemState())->addEvent(owner, _MR(Class<IOErrorEvent>::getInstanceS(owner->getInstanceWorker())));
 		threadAborting = true;
 	}
@@ -1044,7 +1037,6 @@ void ASSocketThread::executeCommand(char cmd, SocketIO& sock)
 		case SOCKET_COMMAND_CLOSE:
 		{
 			sock.close();
-			owner->incRef();
 			getVm(owner->getSystemState())->addEvent(owner, _MR(Class<Event>::getInstanceS(owner->getInstanceWorker(),"close")));
 			threadAborting = true;
 			break;

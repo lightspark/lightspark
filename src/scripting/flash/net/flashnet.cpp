@@ -481,8 +481,8 @@ void URLLoaderThread::execute()
 	// Don't send any events if the thread is aborting
 	if(success && !threadAborting)
 	{
-		//Send a complete event for this object
 		loader->setData(data);
+		ASATOM_DECREF(data);
 
 		getVm(loader->getSystemState())->addEvent(loader,_MR(Class<ProgressEvent>::getInstanceS(loader->getInstanceWorker(),downloader->getLength(),downloader->getLength())));
 		//Send a complete event for this object
@@ -583,6 +583,7 @@ void URLLoader::threadFinished(IThreadJob *finishedJob)
 void URLLoader::setData(asAtom newData)
 {
 	Locker l(spinlock);
+	ASATOM_REMOVESTOREDMEMBER(data);
 	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),newData);
 	ASATOM_ADDSTOREDMEMBER(newData);
 	data=newData;
@@ -2466,6 +2467,7 @@ void URLVariables::decode(const tiny_string& s)
 					arr=Class<Array>::cast(asAtomHandler::getObject(curValue));
 
 				arr->push(asAtomHandler::fromObject(abstract_s(getInstanceWorker(),value)));
+				ASATOM_DECREF(curValue);
 			}
 			else
 			{

@@ -86,10 +86,43 @@ public:
 	using iterator = Iter;
 	using const_iterator = Iter;
 	using ConstIter = Iter;
+
+	static PlatformStringType toPlatformStr(const StringType& str);
+	static StringType fromPlatformStr(const PlatformStringType& str);
+	static StringType fromPlatformStr(const PlatformValueType* str)
+	{
+		return fromPlatformStr(PlatformStringType(str));
+	}
+
+	static StringType fromPlatformStr(const PlatformValueType* str, size_t size)
+	{
+		return fromPlatformStr(PlatformStringType(str, size));
+	}
+
+	PlatformStringType getPlatformStr() const { return toPlatformStr(path); }
 private:
+	template<typename T>
+	using IsNativeStr = Disj
+	<
+		IsSame<RemoveCVRef<T>, StringType>, Conj
+		<
+			IsPtr<Decay<T>>,
+			IsSame<RemoveCVRefPtr<Decay<T>>, char>
+		>
+	>;
+	template<typename T>
+	using IsPlatformStr = Conj<Neg<IsNativeStr<T>>, Disj
+	<
+		IsSame<RemoveCVRef<T>, PlatformStringType>, Conj
+		<
+			IsPtr<Decay<T>>,
+			IsSame<RemoveCVRefPtr<Decay<T>>, PlatformValueType>
+		>
+	>>;
+
 	friend class FileSystem::DirIter;
 
-	void appendName(const StringPtr name);
+	void appendName(const PlatformValueType* name);
 
 	template<typename InputIter>
 	class InputIterRange
@@ -140,21 +173,31 @@ public:
 	// TODO: Add locale based versions.
 	Path
 	(
-		const StringType& str,
-		const Format& fmt = Format::Auto
-	) : path(str) { postprocessPath(fmt); }
-
-	Path
-	(
 		StringType&& str,
 		const Format& fmt = Format::Auto
 	) : path(std::move(str)) { postprocessPath(fmt); }
 
+	template<typename T, EnableIf
+	<(
+		!IsPlatformStr<T>::value &&
+		IsNativeStr<T>::value
+	), bool> = false>
 	Path
 	(
-		const char* str,
+		const T& str,
 		const Format& fmt = Format::Auto
-	) : path(std::move(str)) { postprocessPath(fmt); }
+	) : path(str) { postprocessPath(fmt); }
+
+	template<typename T, EnableIf
+	<(
+		IsPlatformStr<T>::value &&
+		!IsNativeStr<T>::value
+	), bool> = false>
+	Path
+	(
+		const T& str,
+		const Format& fmt = Format::Auto
+	) : path(fromPlatformStr(str)) { postprocessPath(fmt); }
 
 	template<typename InputIter>
 	Path

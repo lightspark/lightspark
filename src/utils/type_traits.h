@@ -41,7 +41,13 @@ using RemoveCV = typename std::remove_cv<T>::type;
 template<typename T>
 using RemoveRef = typename std::remove_reference<T>::type;
 template<typename T>
+using RemovePtr = typename std::remove_pointer<T>::type;
+template<typename T>
+using RemoveCVPtr = RemoveCV<RemovePtr<T>>;
+template<typename T>
 using RemoveCVRef = RemoveCV<RemoveRef<T>>;
+template<typename T>
+using RemoveCVRefPtr = RemoveCVRef<RemovePtr<T>>;
 template<bool B>
 using BoolConstant = std::integral_constant<bool, B>;
 template<bool B, typename T, typename F>
@@ -53,6 +59,8 @@ template<typename T, typename U>
 using IsSame = std::is_same<T, U>;
 template<typename T>
 using IsVoid = std::is_void<T>;
+template<typename T>
+using IsPtr = std::is_pointer<T>;
 template<typename T>
 using IsRef = std::is_reference<T>;
 template<typename T>

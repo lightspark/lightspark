@@ -252,7 +252,7 @@ Path& Path::replaceExtension(const Path& _path)
 	return concat(_path);
 }
 
-void Path::appendName(const StringPtr name)
+void Path::appendName(const PlatformValueType* name)
 {
 	if (path.empty())
 	{

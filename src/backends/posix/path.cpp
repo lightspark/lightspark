@@ -43,6 +43,16 @@ ConstStrIter Path::Iter::decImpl(const ConstStrIter& it) const
 	).base();
 }
 
+Path::PlatformStringType Path::toPlatformStr(const StringType& str)
+{
+	return str;
+}
+
+Path::StringType Path::fromPlatformStr(const PlatformStringType& str)
+{
+	return str;
+}
+
 size_t Path::rootNameLengthImpl() const
 {
 	// Nothing to do here.

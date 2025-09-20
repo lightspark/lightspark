@@ -217,6 +217,7 @@ private:
 	TimeSpec lastWriteTime;
 
 	friend FileStatus Detail::status(const Path& path, std::error_code& code, FileStatus* _symlinkStatus);
+	friend struct StatusFromImpl;
 	friend class DirEntry;
 	friend class DirIter;
 

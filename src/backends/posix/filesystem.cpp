@@ -34,6 +34,7 @@
 #endif
 #include <unistd.h>
 
+#include "backends/posix/filesystem.h"
 #include "utils/array.h"
 #include "utils/enum.h"
 #include "utils/filesystem.h"
@@ -315,9 +316,8 @@ Path fs::tempDirPath()
 	return Path("/tmp");
 }
 
-fs::FileStatus fromStatMode(mode_t mode)
+fs::FileStatus fs::StatusFromImpl::fromStatMode(mode_t mode)
 {
-	using namespace fs;
 	FileType type;
 
 	switch (mode & S_IFMT)
@@ -354,7 +354,7 @@ fs::FileStatus fs::Detail::status
 	if (lstat(path.rawBuf(), &fileStat) < 0)
 		return onError();
 
-	FileStatus fileStatus = fromStatMode(fileStat.st_mode);
+	FileStatus fileStatus = StatusFromImpl::fromStatMode(fileStat.st_mode);
 
 	if (_symlinkStatus != nullptr)
 		*_symlinkStatus = fileStatus;
@@ -363,7 +363,7 @@ fs::FileStatus fs::Detail::status
 	{
 		if (stat(path.rawBuf(), &fileStat) < 0)
 			return onError();
-		fileStatus = fromStatMode(fileStat.st_mode);
+		fileStatus = StatusFromImpl::fromStatMode(fileStat.st_mode);
 	}
 
 	fileStatus.setSize(fileStat.st_size);
@@ -385,7 +385,7 @@ fs::FileStatus fs::symlinkStatus(const Path& path)
 	struct stat fileStat;
 
 	if (!lstat(path.rawBuf(), &fileStat))
-		return fromStatMode(fileStat.st_mode);
+		return StatusFromImpl::fromStatMode(fileStat.st_mode);
 
 	if (errno != ENOENT && errno != ENOTDIR)
 		throw Exception(std::errc(errno));

@@ -17,18 +17,34 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef UTILS_BACKENDS_PATH_H
-#define UTILS_BACKENDS_PATH_H 1
+#ifndef UTILS_BACKENDS_WINDOWS_FILESYSTEM_H
+#define UTILS_BACKENDS_WINDOWS_FILESYSTEM_H 1
 
-// Check if compiling for Windows.
-#ifdef _WIN32
-#include "backends/windows/path.h"
-// Check if compiling for POSIX based systems.
-#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-#include <unistd.h>
-#ifdef _POSIX_VERSION
-#include "backends/posix/path.h"
-#endif
-#endif
+#include <system_error>
 
-#endif /* UTILS_BACKENDS_PATH_H */
+#include <intsafe.h>
+
+std::error_code makeSysError(DWORD error = 0);
+
+namespace lightspark
+{
+
+class Path;
+
+namespace FileSystem
+{
+
+class FileStatus;
+
+struct StatusFromImpl
+{
+	template<typename T>
+	static FileStatus fromINFO(const Path& path, const T& info, std::error_code& code);
+	template<typename T>
+	static FileStatus fromINFO(const Path& path, const T& info);
+};
+
+};
+
+};
+#endif /* UTILS_BACKENDS_WINDOWS_FILESYSTEM_H */

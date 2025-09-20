@@ -411,6 +411,13 @@ IF (UNIX)
     backends/posix/dir_iter.cpp
     backends/posix/path.cpp
   )
+ELSEIF (WIN32)
+  SET(LIBSPARK_SOURCES
+    ${LIBSPARK_SOURCES}
+    backends/windows/filesystem.cpp
+    backends/windows/dir_iter.cpp
+    backends/windows/path.cpp
+  )
 ENDIF(UNIX)
 
 # needed for jxr image decoder

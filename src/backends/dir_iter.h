@@ -20,8 +20,11 @@
 #ifndef BACKENDS_DIR_ITER_H
 #define BACKENDS_DIR_ITER_H 1
 
+// Check if compiling for Windows.
+#ifdef _WIN32
+#include "backends/windows/dir_iter.h"
 // Check if compiling for POSIX based systems.
-#if defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
+#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
 #include <unistd.h>
 #ifdef _POSIX_VERSION
 #include "backends/posix/dir_iter.h"

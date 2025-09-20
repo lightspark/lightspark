@@ -17,18 +17,40 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef UTILS_BACKENDS_PATH_H
-#define UTILS_BACKENDS_PATH_H 1
+#ifndef BACKENDS_WINDOWS_DIR_ITER_H
+#define BACKENDS_WINDOWS_DIR_ITER_H 1
 
-// Check if compiling for Windows.
-#ifdef _WIN32
-#include "backends/windows/path.h"
-// Check if compiling for POSIX based systems.
-#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-#include <unistd.h>
-#ifdef _POSIX_VERSION
-#include "backends/posix/path.h"
-#endif
-#endif
+#include <fileapi.h>
+#include <winnt.h>
 
-#endif /* UTILS_BACKENDS_PATH_H */
+#include "compat.h"
+#include "tiny_string.h"
+#include "utils/filesystem.h"
+#include "utils/path.h"
+#include "utils/timespec.h"
+
+namespace lightspark
+{
+
+// Based on `ghc::filesystem` from https://github.com/gulrak/filesystem
+namespace FileSystem
+{
+
+class DirIter::Impl : public DirIter::ImplBase
+{
+private:
+	HANDLE handle;
+	WIN32_FIND_DATAW findData;
+public:
+	Impl(const Path& path, const DirOptions& opts);
+	Impl(const Impl& other) = delete;
+	~Impl();
+
+	void inc(std::error_code& code);
+	void copyToDirEntry(std::error_code& code);
+};
+
+};
+
+};
+#endif /* BACKENDS_WINDOWS_DIR_ITER_H */

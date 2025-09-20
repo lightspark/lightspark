@@ -21,17 +21,16 @@
 #define UTILS_BACKENDS_POSIX_PATH_H 1
 
 #include <cstdint>
+#include <string>
 
 namespace lightspark
 {
 
-class tiny_string;
-
 template<typename T>
 struct PathHelper
 {
-	using PlatformValueType = uint32_t;
-	using PlatformStringType = tiny_string;
+	using PlatformValueType = std::string::value_type;
+	using PlatformStringType = std::string;
 
 	using ValueType = T;
 

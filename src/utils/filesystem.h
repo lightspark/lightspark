@@ -202,7 +202,7 @@ class FileStatus;
 namespace Detail
 {
 
-FileStatus status(const Path& path, std::error_code& code, FileStatus* _symlinkStatus);
+FileStatus status(const Path& path, std::error_code& code, FileStatus* _symlinkStatus, size_t depth);
 
 };
 
@@ -216,7 +216,7 @@ private:
 	size_t hardLinks { size_t(-1) };
 	TimeSpec lastWriteTime;
 
-	friend FileStatus Detail::status(const Path& path, std::error_code& code, FileStatus* _symlinkStatus);
+	friend FileStatus Detail::status(const Path& path, std::error_code& code, FileStatus* _symlinkStatus, size_t depth);
 	friend struct StatusFromImpl;
 	friend class DirEntry;
 	friend class DirIter;
@@ -546,7 +546,7 @@ bool createDir(const Path& path, const Perms& perms);
 void createSymlink(const Path& to, const Path& newSymlink, bool toDir);
 void setPerms(const Path& path, const Perms& perms, const PermOptions& opts, const FileStatus& fileStatus);
 Path resolveSymlink(const Path& path);
-FileStatus status(const Path& path, std::error_code& code, FileStatus* _symlinkStatus = nullptr);
+FileStatus status(const Path& path, std::error_code& code, FileStatus* _symlinkStatus = nullptr, size_t depth = 0);
 
 // Non platform specific functions.
 bool isNotFoundError(const std::error_code& code);

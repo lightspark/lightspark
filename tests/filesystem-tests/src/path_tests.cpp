@@ -323,8 +323,8 @@ TEST_CASE_DECL(Path, compare)
 
 	#ifdef _WIN32
 	CHECK_EQ(s, Path("c:\\a\\b").compare("C:\\a\\b"), 0);
-	CHECK_NE(s, Path("c:\\a\\b").compare("d:\\a\\b"), 0);
-	CHECK_NE(s, Path("c:\\a\\b").compare("C:\\A\\b"), 0);
+	CHECK_BIN(s, Path("c:\\a\\b").compare("d:\\a\\b"), 0, !=);
+	CHECK_BIN(s, Path("c:\\a\\b").compare("C:\\A\\b"), 0, !=);
 	#endif
 
 	#ifdef USE_LWG_2936

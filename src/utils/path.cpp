@@ -262,7 +262,7 @@ void Path::appendName(const PlatformValueType* name)
 
 	if (!path.endsWith(StringType::fromChar(nativeSeparator)))
 		path += nativeSeparator;
-	path += name;
+	path += Path(name);
 	checkLongPath();
 }
 

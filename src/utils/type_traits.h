@@ -49,6 +49,8 @@ using CondT = typename std::conditional<B, T, F>::type;
 template<typename T>
 using UnderlyingType = typename std::underlying_type<T>::type;
 
+template<typename T, typename U>
+using IsSame = std::is_same<T, U>;
 template<typename T>
 using IsVoid = std::is_void<T>;
 template<typename T>

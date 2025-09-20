@@ -17,18 +17,32 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef UTILS_BACKENDS_PATH_H
-#define UTILS_BACKENDS_PATH_H 1
+#ifndef UTILS_BACKENDS_WINDOWS_PATH_H
+#define UTILS_BACKENDS_WINDOWS_PATH_H 1
 
-// Check if compiling for Windows.
-#ifdef _WIN32
-#include "backends/windows/path.h"
-// Check if compiling for POSIX based systems.
-#elif defined(__unix__) || (defined(__APPLE__) && defined(__MACH__))
-#include <unistd.h>
-#ifdef _POSIX_VERSION
-#include "backends/posix/path.h"
-#endif
-#endif
+#include <string>
 
-#endif /* UTILS_BACKENDS_PATH_H */
+namespace lightspark
+{
+
+class tiny_string;
+
+template<typename T>
+struct PathHelper
+{
+	using PlatformValueType = std::wstring::value_type;
+	using PlatformStringType = std::wstring;
+
+	using ValueType = T;
+
+	static constexpr ValueType nativeSeparator = '\\';
+	static constexpr ValueType preferredSeparator = '\\';
+};
+
+template<typename T>
+constexpr T PathHelper<T>::nativeSeparator;
+template<typename T>
+constexpr T PathHelper<T>::preferredSeparator;
+
+};
+#endif /* UTILS_BACKENDS_WINDOWS_PATH_H */

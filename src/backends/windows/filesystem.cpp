@@ -458,7 +458,7 @@ bool fs::remove(const Path& path)
 		throw Exception(path, makeSysError());
 	else if (isDir && !RemoveDirectoryW(platStr.c_str()))
 		throw Exception(path, makeSysError());
-	else if (!DeleteFileW(platStr.c_str()))
+	else if (!isDir && !DeleteFileW(platStr.c_str()))
 		throw Exception(path, makeSysError());
 
 	return true;

@@ -235,15 +235,7 @@ public:
 	template<typename InputIter>
 	Path& concat(InputIter first, InputIter last)
 	{
-		#if 1
 		return *this += Path(first, last);
-		#elif 1
-		path += StringType(first, last);
-		postprocessPath(Format::Native);
-		return *this;
-		#else
-		return concat(StringType(first, last));
-		#endif
 	}
 
 	void clear()

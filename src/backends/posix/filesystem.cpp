@@ -339,7 +339,8 @@ fs::FileStatus fs::Detail::status
 (
 	const Path& path,
 	std::error_code& code,
-	FileStatus* _symlinkStatus
+	FileStatus* _symlinkStatus,
+	size_t depth
 )
 {
 	struct stat fileStat;

@@ -366,7 +366,7 @@ public:
 	}
 };
 
-class Path::Iter
+class DLL_PUBLIC Path::Iter
 {
 private:
 	friend class Path;

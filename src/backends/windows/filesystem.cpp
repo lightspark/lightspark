@@ -635,7 +635,7 @@ fs::FileStatus fs::StatusFromImpl::fromINFO
 		info.nFileSizeLow
 	));
 	ret.setLastWriteTime(fromFILETIME(info.ftLastWriteTime));
-	ret.setHardLinks(0);
+	ret.setHardLinks(size_t(-1));
 	return ret;
 }
 

@@ -508,6 +508,8 @@ void fs::resizeFile(const Path& path, size_t size)
 		throw Exception(path, makeSysError());
 	if (!SetFilePointerEx(file.getHandle(), bigInt, nullptr, FILE_BEGIN))
 		throw Exception(path, makeSysError());
+	if (!SetEndOfFile(file.getHandle()))
+		throw Exception(path, makeSysError());
 }
 
 fs::SpaceInfo fs::space(const Path& path)

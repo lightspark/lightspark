@@ -442,7 +442,7 @@ void fs::Detail::setPerms
 		oldAttr | FILE_ATTRIBUTE_READONLY
 	);
 
-	if (oldAttr != newAttr || !SetFileAttributesW(platStr.c_str(), newAttr))
+	if (oldAttr != newAttr && !SetFileAttributesW(platStr.c_str(), newAttr))
 		throw Exception(path, makeSysError());
 }
 

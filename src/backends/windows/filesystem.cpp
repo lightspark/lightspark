@@ -306,7 +306,7 @@ void fs::currentPath(const Path& path)
 bool fs::equivalent(const Path& a, const Path& b)
 {
 	auto platA = a.getPlatformStr();
-	auto platB = a.getPlatformStr();
+	auto platB = b.getPlatformStr();
 	auto shareFlags = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
 	UniqueHandle fileA(CreateFileW
 	(

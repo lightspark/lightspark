@@ -409,7 +409,7 @@ void fs::setLastWriteTime(const Path& path, const TimeSpec& newTime)
 	UniqueHandle file(CreateFileW
 	(
 		platStr.c_str(),
-		0,
+		FILE_WRITE_ATTRIBUTES,
 		shareFlags,
 		nullptr,
 		OPEN_EXISTING,

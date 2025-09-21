@@ -761,7 +761,7 @@ void fs::createHardLink(const Path& to, const Path& newHardLink)
 
 	auto platTo = to.getPlatformStr();
 	auto platHardLink = newHardLink.getPlatformStr();
-	if (!CreateHardLinkW(platTo.c_str(), platHardLink.c_str(), nullptr))
+	if (!CreateHardLinkW(platHardLink.c_str(), platTo.c_str(), nullptr))
 		throw Exception(to, newHardLink, makeSysError());
 }
 

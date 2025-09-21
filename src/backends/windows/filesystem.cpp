@@ -286,11 +286,14 @@ Path fs::Detail::resolveSymlink(const Path& path)
 
 Path fs::currentPath()
 {
+	// NOTE: `GetCurrentDirectoryW` returns the required size of the
+	// buffer, **including the null terminator**, if the supplied buffer
+	// isn't large enough.
 	auto pathSize = GetCurrentDirectoryW(0, nullptr);
-	std::vector<wchar_t> buf(pathSize + 1);
+	std::vector<wchar_t> buf(pathSize);
 	if (!GetCurrentDirectoryW(pathSize, buf.data()))
 		throw Exception(makeSysError());
-	return Path(std::wstring(buf.data(), pathSize), Path::Format::Native);
+	return Path(std::wstring(buf.data(), pathSize - 1), Path::Format::Native);
 }
 
 void fs::currentPath(const Path& path)

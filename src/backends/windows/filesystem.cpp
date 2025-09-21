@@ -337,6 +337,11 @@ bool fs::equivalent(const Path& a, const Path& b)
 	#endif
 		throw Exception(a, b, makeSysError(errorA ? errorA : 0));
 
+	#ifndef USE_LWG_2937
+	if (fileA.isNull() || fileB.isNull())
+		return false;
+	#endif
+
 	BY_HANDLE_FILE_INFORMATION infoA;
 	if (!GetFileInformationByHandle(fileA.getHandle(), &infoA))
 		throw Exception(a, b, makeSysError());

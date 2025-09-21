@@ -1802,7 +1802,7 @@ static time_t toTimeT(const TimeSpec& time)
 
 static TimeSpec fromTimeT(time_t time)
 {
-	return TimeSpec::fromSec(time) + sysNow();
+	return TimeSpec::fromSec(time);
 }
 
 static TimeSpec timeFromString(const StringType& str)

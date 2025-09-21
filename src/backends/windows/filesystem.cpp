@@ -93,7 +93,7 @@ bool fs::Detail::createDir(const Path& path, const Path& attrs)
 	auto platAttrs = attrs.getPlatformStr();
 	if (!attrs.empty() && !CreateDirectoryExW(platAttrs.c_str(), platStr.c_str(), nullptr))
 		throw Exception(path, makeSysError());
-	if (!CreateDirectoryW(platStr.c_str(), nullptr))
+	else if (attrs.empty() && !CreateDirectoryW(platStr.c_str(), nullptr))
 		throw Exception(path, makeSysError());
 	return true;
 }

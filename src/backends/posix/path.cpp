@@ -29,7 +29,7 @@ namespace fs = FileSystem;
 
 using ConstStrIter = Path::ConstStrIter;
 
-Optional<ConstStrIter> Path::Iter::incImpl(const ConstStrIter& it) const
+Optional<ConstStrIter> Path::Iter::incImpl(const ConstStrIter& it, bool fromStart) const
 {
 	return nullOpt;
 }

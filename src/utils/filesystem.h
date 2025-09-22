@@ -539,7 +539,6 @@ DLL_PUBLIC size_t hardLinkCount(const Path& path);
 namespace Detail
 {
 
-// Platform specific functions.
 bool copyFile(const Path& from, const Path& to, const Perms& fromPerms, const Perms& toPerms, bool overwrite);
 bool createDir(const Path& path, const Path& attrs);
 bool createDir(const Path& path, const Perms& perms);
@@ -547,8 +546,6 @@ void createSymlink(const Path& to, const Path& newSymlink, bool toDir);
 void setPerms(const Path& path, const Perms& perms, const PermOptions& opts, const FileStatus& fileStatus);
 Path resolveSymlink(const Path& path);
 FileStatus status(const Path& path, std::error_code& code, FileStatus* _symlinkStatus = nullptr, size_t depth = 0);
-
-// Non platform specific functions.
 bool isNotFoundError(const std::error_code& code);
 
 };

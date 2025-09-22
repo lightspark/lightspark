@@ -21,6 +21,7 @@
 #include <iterator>
 
 #include "utils/filesystem.h"
+#include "utils/optional.h"
 #include "utils/path.h"
 
 using namespace lightspark;
@@ -28,9 +29,9 @@ namespace fs = FileSystem;
 
 using ConstStrIter = Path::ConstStrIter;
 
-ConstStrIter Path::Iter::incImpl(const ConstStrIter& it) const
+Optional<ConstStrIter> Path::Iter::incImpl(const ConstStrIter& it) const
 {
-	return last;
+	return nullOpt;
 }
 
 ConstStrIter Path::Iter::decImpl(const ConstStrIter& it) const

@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include "utils/filesystem.h"
+#include "utils/optional.h"
 #include "utils/path.h"
 
 using namespace lightspark;
@@ -41,8 +42,12 @@ ConstStrIter Path::Iter::inc(const ConstStrIter& pos) const
 	else if (*it++ != nativeSeparator)
 	{
 		// Handle implementation specific stuff.
-		auto ret = incImpl(it);
-		return ret != last ? ret : std::find(it, last, nativeSeparator);
+		return incImpl(it).valueOr(std::find
+		(
+			it,
+			last,
+			nativeSeparator
+		));
 	}
 
 	// The only way to be on a separator, is if it's either a network

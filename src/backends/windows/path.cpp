@@ -25,6 +25,7 @@
 #include <windef.h>
 
 #include "utils/filesystem.h"
+#include "utils/optional.h"
 #include "utils/path.h"
 
 using namespace lightspark;
@@ -32,13 +33,13 @@ namespace fs = FileSystem;
 
 using ConstStrIter = Path::ConstStrIter;
 
-ConstStrIter Path::Iter::incImpl(const ConstStrIter& it) const
+Optional<ConstStrIter> Path::Iter::incImpl(const ConstStrIter& it) const
 {
 	auto _it = it;
 	bool fromStart = it == first || it == prefix;
 	if (fromStart && it != last && *it == ':')
 		return ++_it;
-	return last;
+	return nullOpt;
 }
 
 ConstStrIter Path::Iter::decImpl(const ConstStrIter& it) const

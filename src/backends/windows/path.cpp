@@ -97,7 +97,11 @@ int Path::compareImpl(const Path& other) const
 	#else
 	if (ret)
 		return ret;
-	return path.compare(other.path);
+	return path.substr
+	(
+		rootLength1,
+		StringType::npos
+	).compare(other.path.substr(rootLength2, StringType::npos));
 	#endif
 }
 

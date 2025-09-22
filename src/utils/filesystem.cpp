@@ -430,12 +430,3 @@ Path fs::weaklyCanonical(const Path& path)
 
 	return ret.lexicallyNormal();
 }
-
-bool fs::Detail::isNotFoundError(const std::error_code& code)
-{
-	return
-	(
-		std::errc(code.value()) == std::errc::no_such_file_or_directory ||
-		std::errc(code.value()) == std::errc::not_a_directory
-	);
-}

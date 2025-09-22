@@ -549,16 +549,6 @@ Path fs::tempDirPath()
 	return Path(std::wstring(buf.data()));
 }
 
-bool isNotFound(DWORD error)
-{
-	return
-	(
-		error == ERROR_FILE_NOT_FOUND ||
-		error == ERROR_PATH_NOT_FOUND ||
-		error == ERROR_INVALID_NAME
-	);
-}
-
 template<typename T>
 bool isSymlinkFromINFO(const Path& path, const T& info, std::error_code& code)
 {
@@ -681,7 +671,7 @@ fs::FileStatus fs::Detail::status
 	auto onError = [&]
 	{
 		code = makeSysError();
-		if (!isNotFound(code.value()))
+		if (!isNotFoundError(code))
 			return FileStatus(FileType::None);
 		return FileStatus(FileType::NotFound);
 	};
@@ -727,9 +717,9 @@ fs::FileStatus fs::symlinkStatus(const Path& path)
 {
 	auto onError = [&]
 	{
-		auto error = GetLastError();
-		if (!isNotFound(error))
-			throw Exception(path, makeSysError());
+		auto code = makeSysError();
+		if (!Detail::isNotFoundError(code))
+			throw Exception(path, code);
 		return FileStatus(FileType::NotFound);
 	};
 
@@ -788,4 +778,14 @@ size_t fs::hardLinkCount(const Path& path)
 		throw Exception(path, makeSysError());
 
 	return info.nNumberOfLinks;
+}
+
+bool fs::Detail::isNotFoundError(const std::error_code& code)
+{
+	return
+	(
+		code.value() == ERROR_FILE_NOT_FOUND ||
+		code.value() == ERROR_PATH_NOT_FOUND ||
+		code.value() == ERROR_INVALID_NAME
+	);
 }

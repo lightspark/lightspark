@@ -373,7 +373,7 @@ class DLL_PUBLIC Path::Iter
 private:
 	friend class Path;
 
-	Optional<ConstStrIter> incImpl(const ConstStrIter& pos) const;
+	Optional<ConstStrIter> incImpl(const ConstStrIter& pos, bool fromStart) const;
 	ConstStrIter decImpl(const ConstStrIter& pos) const;
 
 	ConstStrIter inc(const ConstStrIter& pos) const;

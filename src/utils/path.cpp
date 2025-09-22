@@ -42,7 +42,7 @@ ConstStrIter Path::Iter::inc(const ConstStrIter& pos) const
 	else if (*it++ != nativeSeparator)
 	{
 		// Handle implementation specific stuff.
-		return incImpl(it).valueOr(std::find
+		return incImpl(it, fromStart).valueOr(std::find
 		(
 			it,
 			last,

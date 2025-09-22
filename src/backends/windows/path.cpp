@@ -33,10 +33,9 @@ namespace fs = FileSystem;
 
 using ConstStrIter = Path::ConstStrIter;
 
-Optional<ConstStrIter> Path::Iter::incImpl(const ConstStrIter& it) const
+Optional<ConstStrIter> Path::Iter::incImpl(const ConstStrIter& it, bool fromStart) const
 {
 	auto _it = it;
-	bool fromStart = it == first || it == prefix;
 	if (fromStart && it != last && *it == ':')
 		return ++_it;
 	return nullOpt;

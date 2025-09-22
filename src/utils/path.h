@@ -42,6 +42,8 @@ struct iterator_traits<lightspark::CharIterator>
 namespace lightspark
 {
 
+template<typename T>
+class Optional;
 class Path;
 
 namespace FileSystem
@@ -371,7 +373,7 @@ class DLL_PUBLIC Path::Iter
 private:
 	friend class Path;
 
-	ConstStrIter incImpl(const ConstStrIter& pos) const;
+	Optional<ConstStrIter> incImpl(const ConstStrIter& pos) const;
 	ConstStrIter decImpl(const ConstStrIter& pos) const;
 
 	ConstStrIter inc(const ConstStrIter& pos) const;

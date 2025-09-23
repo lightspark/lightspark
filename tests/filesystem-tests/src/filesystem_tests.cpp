@@ -31,7 +31,10 @@
 #include <vector>
 
 #ifdef _WIN32
+#include <securitybaseapi.h>
 #include <windows.h>
+#include <shellapi.h>
+#include <versionhelpers.h>
 #else
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -115,6 +118,97 @@ void generateFile(const Path& path, ssize_t size)
 }
 
 #ifdef _WIN32
+static bool hasAdminPerms()
+{
+	#ifndef ELEVATE_PERMS
+	static Optional<BOOL> _isAdmin;
+
+	if (_isAdmin.hasValue())
+		return _isAdmin.getValue();
+	#endif
+
+	BOOL isAdmin = FALSE;
+	PSID adminGroup = nullptr;
+
+	auto cleanup = [&]
+	{
+		#ifndef ELEVATE_PERMS
+		_isAdmin = isAdmin;
+		#endif
+		(void)GetLastError();
+		if (adminGroup != nullptr)
+		{
+			FreeSid(adminGroup);
+			adminGroup = nullptr;
+		}
+		return isAdmin;
+	};
+
+	SID_IDENTIFIER_AUTHORITY ntAuth = SECURITY_NT_AUTHORITY;
+
+	// Create, and init the admin group SID.
+	auto ret = AllocateAndInitializeSid
+	(
+		&ntAuth,
+		2,
+		SECURITY_BUILTIN_DOMAIN_RID,
+		DOMAIN_ALIAS_RID_ADMINS,
+		0,
+		0,
+		0,
+		0,
+		0,
+		0,
+		&adminGroup
+	);
+
+	if (!ret)
+		return cleanup();
+
+	// Figure out if the admin group SID is enabled in the primary access
+	// token of the process.
+	if (!CheckTokenMembership(nullptr, adminGroup, &isAdmin))
+		return cleanup();
+
+	return cleanup();
+}
+
+#ifdef ELEVATE_PERMS
+static bool tryElevatePerms()
+{
+	static bool first = true;
+
+	if (!first)
+		return false;
+
+	std::vector<wchar_t> path(MAX_PATH);
+	if (!GetModuleFileNameW(nullptr, path.data(), path.size()))
+	{
+		(void)GetLastError();
+		return false;
+	}
+
+	SHELLEXECUTEINFOW info = { sizeof(info) };
+	info.fMask = SEE_MASK_DEFAULT;
+	info.lpVerb = L"runas";
+	info.lpFile = path.data();
+	info.hwnd = nullptr;
+	info.nShow = SW_NORMAL;
+
+	if (ShellExecuteExW(&info))
+	{
+		exit(1);
+		return true;
+	}
+
+	first = false;
+	if (GetLastError() == ERROR_CANCELLED)
+		std::cerr << "WARNING: The user explcitly denied permission elevation." << std::endl;
+
+	return false;
+}
+#endif
+
 #if !defined(_WIN64) && defined(KEY_WOW64_64KEY)
 static bool isWow64Proc()
 {
@@ -133,6 +227,19 @@ bool isSymlinkCreationSupported()
 		std::cerr << "WARNING: Symlink creation isn't supported." << std::endl;
 		return false;
 	};
+
+	if (!IsWindowsVistaOrGreater())
+		return printWarning();
+	else if (hasAdminPerms())
+		return true;
+	else if (!IsWindows10OrGreater())
+	{
+		#ifdef ELEVATE_PERMS
+		return tryElevatePerms() || printWarning();
+		#else
+		return printWarning();
+		#endif
+	}
 
 	HKEY key;
 	REGSAM flags = KEY_READ;

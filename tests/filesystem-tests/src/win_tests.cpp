@@ -233,21 +233,21 @@ TEST_CASE_DECL(Win, pathNamespace)
 
 TEST_CASE_DECL(Win, mappedFolder)
 {
-
 	// NOTE: This test expects a mounted volume located at `C:\fs-test`.
 	// Otherwise, this test is ignored.
+	Path mountPoint("C:\\fs-test");
 
-	if (!Path("C:\\fs-test").exists())
+	if (!mountPoint.exists())
 		return Outcome(OutcomeType::Ignored);
 
 	std::stringstream s;
 
-	CHECK_EQ
-	(
-		s,
-		fs::canonical(R"(C:\fs-test\Test.txt)").getStr(),
-		R"(C:\fs-test\Test.txt)"
-	);
+	auto path = mountPoint / "test.txt";
+	generateFile(path);
+	REQUIRE_BOOL(path.exists());
+	CHECK_EQ(s, fs::canonical(path).getStr(), R"(C:\fs-test\test.txt)");
+	CHECK_BOOL(s, fs::remove(path));
+	CHECK_BOOL(s, !path.exists());
 
 	if (!s.str().empty())
 		return Outcome(Failed { tiny_string(s.str()) });

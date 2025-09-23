@@ -29,9 +29,14 @@ using namespace libtestpp;
 
 namespace lightspark
 {
+	class tiny_string;
 	template<typename T>
 	class Optional;
+	class Path;
 };
+
+tiny_string iter(const Path& path);
+tiny_string reverseIter(const Path& path);
 
 TEST_CASE_DECL(Path, nativeSeparator);
 #ifndef _WIN32

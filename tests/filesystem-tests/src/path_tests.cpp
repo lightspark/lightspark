@@ -688,7 +688,7 @@ TEST_CASE_DECL(Path, gen)
 	return Outcome(OutcomeType::Passed);
 }
 
-static StringType iter(const Path& path)
+StringType iter(const Path& path)
 {
 	std::stringstream s;
 	s << path.begin()->getGenericStr();
@@ -697,7 +697,7 @@ static StringType iter(const Path& path)
 	return s.str();
 }
 
-static StringType reverseIter(const Path& path)
+StringType reverseIter(const Path& path)
 {
 	std::stringstream s;
 	auto it = path.end();

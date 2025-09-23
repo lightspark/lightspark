@@ -114,13 +114,12 @@ void DirIterImpl::inc(std::error_code& code)
 void DirIterImpl::copyToDirEntry(std::error_code& code)
 {
 	if (findData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
-	{
 		dirEntry.status = Detail::status(dirEntry.path, code, &dirEntry.symlinkStatus);
-		return;
+	else
+	{
+		dirEntry.status = StatusFromImpl::fromINFO(dirEntry.path, findData, code);
+		dirEntry.symlinkStatus = dirEntry.status;
 	}
-
-	dirEntry.status = StatusFromImpl::fromINFO(dirEntry.path, findData, code);
-	dirEntry.symlinkStatus = dirEntry.status;
 
 	if (!code.value())
 		return;

@@ -701,7 +701,7 @@ fs::FileStatus fs::Detail::status
 
 	const auto& reparseTag = reparseData->ReparseTag;
 	if (!IsReparseTagMicrosoft(reparseTag) || reparseTag != IO_REPARSE_TAG_SYMLINK)
-		return onError();
+		return StatusFromImpl::fromINFO(path, attr, code);
 
 	// TODO: Add error code version of `resolveSymlink()`.
 	auto target = resolveSymlink(path);

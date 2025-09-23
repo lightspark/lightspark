@@ -268,7 +268,7 @@ Path fs::Detail::resolveSymlink(const Path& path)
 			ret =
 			(
 				subName.endsWith(printName) &&
-				printName.startsWith("\\??\\")
+				subName.startsWith("\\??\\")
 			) ? printName : subName;
 
 			if (symlinkBuf.Flags & SYMLINK_FLAG_RELATIVE)

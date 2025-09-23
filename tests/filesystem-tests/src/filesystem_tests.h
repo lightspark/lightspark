@@ -21,6 +21,7 @@
 #define FILESYSTEM_TESTS_H 1
 
 #include <libtest++/test_runner.h>
+#include <lightspark/utils/path.h>
 
 #include "macros.h"
 
@@ -32,6 +33,25 @@ namespace lightspark
 	template<typename T>
 	class Optional;
 };
+
+class TempDir
+{
+private:
+	Path path;
+	Path originalDir;
+public:
+	enum class TempOpt
+	{
+		None,
+		ChangePath
+	};
+
+	TempDir(const TempOpt& opt = TempOpt::None);
+	~TempDir();
+	const Path& getPath() const { return path; }
+};
+
+void generateFile(const Path& path, ssize_t size = -1);
 
 TEST_CASE_DECL(FileSystem, Exception);
 TEST_CASE_DECL(FileSystem, Perms);

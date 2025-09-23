@@ -69,57 +69,42 @@ using SysClock = chrono::system_clock;
 using FloatDuration = chrono::duration<float, std::ratio<1>>;
 using NsecDuration = chrono::nanoseconds;
 
-class TempDir
+TempDir::TempDir(const TempOpt& opt)
 {
-private:
-	Path path;
-	Path originalDir;
-public:
-	enum class TempOpt
+	using HighResClock = chrono::high_resolution_clock;
+	static auto seed = HighResClock::now().time_since_epoch().count();
+	static auto rng = std::bind
+	(
+		std::uniform_int_distribution<int>(0, 35),
+		std::mt19937(uint64_t(seed) ^ uint64_t(ptrdiff_t(&opt)))
+	);
+
+	StringType filename;
+	do
 	{
-		None,
-		ChangePath
-	};
+		StringType filename = "test-";
+		for (size_t i = 0; i < 8; ++i)
+			filename += "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[rng()];
+		path = fs::canonical(fs::tempDirPath()) / filename;
+	} while (path.exists());
 
-	TempDir(const TempOpt& opt = TempOpt::None)
+	fs::createDirs(path);
+
+	if (opt == TempOpt::ChangePath)
 	{
-		using HighResClock = chrono::high_resolution_clock;
-		static auto seed = HighResClock::now().time_since_epoch().count();
-		static auto rng = std::bind
-		(
-			std::uniform_int_distribution<int>(0, 35),
-			std::mt19937(uint64_t(seed) ^ uint64_t(ptrdiff_t(&opt)))
-		);
-
-		StringType filename;
-		do
-		{
-			StringType filename = "test-";
-			for (size_t i = 0; i < 8; ++i)
-				filename += "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"[rng()];
-			path = fs::canonical(fs::tempDirPath()) / filename;
-		} while (path.exists());
-
-		fs::createDirs(path);
-
-		if (opt == TempOpt::ChangePath)
-		{
-			originalDir = fs::currentPath();
-			fs::currentPath(path);
-		}
+		originalDir = fs::currentPath();
+		fs::currentPath(path);
 	}
+}
 
-	~TempDir()
-	{
-		if (!originalDir.empty())
-			fs::currentPath(originalDir);
-		fs::removeAll(path);
-	}
+TempDir::~TempDir()
+{
+	if (!originalDir.empty())
+		fs::currentPath(originalDir);
+	fs::removeAll(path);
+}
 
-	const Path& getPath() const { return path; }
-};
-
-static void generateFile(const Path& path, ssize_t size = -1)
+void generateFile(const Path& path, ssize_t size)
 {
 	std::ofstream file(path.getStr());
 

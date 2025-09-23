@@ -1,0 +1,419 @@
+/**************************************************************************
+    Lightspark, a free flash player implementation
+
+    Copyright (C) 2025  mr b0nk 500 (b0nk@b0nk.xyz)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+**************************************************************************/
+
+#include <fstream>
+#include <vector>
+
+#if defined(__APPLE__) && defined(__MACH__)
+#include <Availability.h>
+#endif
+
+#include <fcntl.h>
+#include <limits.h>
+#include <sys/stat.h>
+#include <sys/statvfs.h>
+#if _POSIX_C_SOURCE < 200809L || _XOPEN_SOURCE < 700
+#include <utime.h>
+#include <sys/time.h>
+#endif
+#include <unistd.h>
+
+#include "backends/posix/filesystem.h"
+#include "utils/array.h"
+#include "utils/enum.h"
+#include "utils/filesystem.h"
+#include "utils/path.h"
+#include "utils/timespec.h"
+
+using namespace lightspark;
+namespace fs = FileSystem;
+
+Path fs::absolute(const Path& path)
+{
+	auto base = currentPath();
+
+	if (path.empty())
+		return base / path;
+
+	if (path.hasRootName())
+	{
+		return !path.hasRootDir() ?
+		(
+			path.getRootName() /
+			base.getRootDir() /
+			base.getRelative() /
+			path.getRelative()
+		) : path;
+	}
+	else
+		return (path.hasRootDir() ? base.getRootName() : base) / path;
+}
+
+bool fs::Detail::copyFile
+(
+	const Path& from,
+	const Path& to,
+	const Perms& fromPerms,
+	const Perms& toPerms,
+	bool overwrite
+)
+{
+	auto tryOpen = [&](const Path::StringType& str)
+	{
+		if (overwrite)
+			return std::ofstream(str, std::ios_base::binary | std::ios_base::trunc);
+
+		auto fd = open(str.raw_buf(), O_WRONLY | O_CREAT | O_EXCL | O_TRUNC, Perms::All);
+		bool exclusive = fd >= 0;
+		close(fd);
+
+		if (!exclusive)
+			throw Exception(from, to, std::errc(errno));
+		return std::ofstream(str, std::ios_base::binary | std::ios_base::trunc);
+	};
+	std::ifstream is(from.getStr(), std::ios_base::binary);
+	std::ofstream os = tryOpen(to.getStr());
+	if (is.fail() || os.fail())
+		throw Exception(from, to, std::errc(errno));
+	if (toPerms != fromPerms && chmod(to.rawBuf(), mode_t(fromPerms & Perms::All)) < 0)
+		throw Exception(from, to, std::errc(errno));
+	if (!is.eof() && (os << is.rdbuf()).fail())
+		throw Exception(from, to, std::errc::io_error);
+	return true;
+}
+
+bool fs::Detail::createDir(const Path& path, const Path& attrs)
+{
+	Perms attribs = Perms::All;
+	if (!attrs.empty())
+	{
+		struct stat fileStat;
+		if (stat(attrs.rawBuf(), &fileStat) < 0)
+			throw Exception(path, std::errc(errno));
+		attribs = Perms(fileStat.st_mode);
+	}
+
+	return Detail::createDir(path, attribs);
+}
+
+bool fs::Detail::createDir(const Path& path, const Perms& perms)
+{
+	if (mkdir(path.rawBuf(), mode_t(perms)) < 0)
+		throw Exception(path, std::errc(errno));
+	return true;
+}
+
+void fs::Detail::createSymlink(const Path& to, const Path& newSymlink, bool toDir)
+{
+	if (symlink(to.rawBuf(), newSymlink.rawBuf()) < 0)
+		throw Exception(to, newSymlink, std::errc(errno));
+
+}
+
+Path fs::Detail::resolveSymlink(const Path& path)
+{
+	size_t bufferSize = 256;
+	std::vector<char> buffer;
+
+	for (;; bufferSize *= 2)
+	{
+		buffer.resize(bufferSize, '\0');
+		ssize_t ret = readlink(path.rawBuf(), buffer.data(), buffer.size());
+		if (ret < 0)
+			throw Exception(path, std::errc(errno));
+		else if (ret < ssize_t(bufferSize))
+			return Path(std::string(buffer.data(), ret));
+	}
+
+	return Path();
+}
+
+Path fs::currentPath()
+{
+	auto pathLen = std::max<size_t>
+	(
+		pathconf(".", _PC_PATH_MAX),
+		PATH_MAX
+	);
+
+	std::vector<char> buf(pathLen + 1);
+
+	if (getcwd(buf.data(), pathLen) == nullptr)
+		throw Exception(std::errc(errno));
+	return Path(buf.data());
+}
+
+void fs::currentPath(const Path& path)
+{
+	if (chdir(path.rawBuf()) < 0)
+		throw Exception(std::errc(errno));
+}
+
+bool fs::equivalent(const Path& a, const Path& b)
+{
+	struct stat statA;
+	struct stat statB;
+
+	auto retA = stat(a.rawBuf(), &statA);
+	auto errnoA = errno;
+	auto retB = stat(b.rawBuf(), &statB);
+
+	#ifdef USE_LWG_2936
+	bool throwException = retA < 0 || retB < 0;
+	#else
+	bool throwException = retA < 0 && retB < 0;
+	#endif
+
+	if (throwException)
+		throw Exception(std::errc(errnoA ? errnoA : errno));
+
+	#ifndef USE_LWG_2936
+	if (retA < 0 || retB < 0)
+		return false;
+	#endif
+
+	return
+	(
+		statA.st_dev == statB.st_dev &&
+		statA.st_ino == statB.st_ino &&
+		statA.st_size == statB.st_size &&
+		statA.st_mtime == statB.st_mtime
+	);
+}
+
+size_t fs::fileSize(const Path& path)
+{
+	struct stat fileStat;
+
+	if (stat(path.rawBuf(), &fileStat) < 0)
+		throw Exception(std::errc(errno));
+	return fileStat.st_size;
+}
+
+void fs::setLastWriteTime(const Path& path, const TimeSpec& newTime)
+{
+	#if _POSIX_C_SOURCE >= 200809L || _XOPEN_SOURCE >= 700
+	timespec times[2];
+	times[0].tv_sec = 0;
+	times[0].tv_nsec = UTIME_OMIT;
+	times[1] = newTime;
+	if (utimensat(AT_FDCWD, path.rawBuf(), times, 0) < 0)
+	#else
+	struct stat fileStat;
+	if (stat(path.rawBuf(), &fileStat) < 0)
+		throw Exception(path, std::errc(errno));
+
+	#if defined(__APPLE__) && defined(__MACH__)
+	timeval times[2];
+	times[0].tv_sec = fileStat.st_atimespec.tv_sec;
+	times[0].tv_usec = fileStat.st_atimespec.tv_nsec / TimeSpec::nsPerUs;
+	times[1].tv_sec = newTime.getSecs();
+	times[1].tv_usec = newTime.toUs() % TimeSpec::usPerSec;
+
+	if (utimes(path.rawBuf(), times) < 0)
+	#else
+	utimbuf times;
+	times.modtime = newTime.getSecs();
+	times.actime = fileStat.st_atime;
+
+	if (utime(path.rawBuf(), &times) < 0)
+	#endif
+	#endif
+		throw Exception(path, std::errc(errno));
+}
+
+void fs::Detail::setPerms
+(
+	const Path& path,
+	const Perms& perms,
+	const PermOptions& opts,
+	const FileStatus& fileStatus
+)
+{
+	using PermOpts = PermOptions;
+	#if _POSIX_C_SOURCE >= 200809L || _XOPEN_SOURCE >= 700
+	int flag = bool(opts & PermOpts::NoFollow) ? AT_SYMLINK_NOFOLLOW : 0;
+	if (fchmodat(AT_FDCWD, path.rawBuf(), mode_t(perms), flag) < 0)
+	#else
+	if (bool(opts & PermOpts::NoFollow) && fileStatus.isSymlink())
+		throw Exception(path, std::errc::not_supported);
+	if (chmod(path.rawBuf(), mode_t(perms)) < 0)
+	#endif
+		throw Exception(path, std::errc(errno));
+}
+
+bool fs::remove(const Path& path)
+{
+	if (!::remove(path.rawBuf()))
+		return true;
+	else if (errno == ENOENT)
+		return false;
+	throw Exception(std::errc(errno));
+}
+
+void fs::rename(const Path& from, const Path& to)
+{
+	if (from != to && ::rename(from.rawBuf(), to.rawBuf()) < 0)
+		throw Exception(std::errc(errno));
+}
+
+void fs::resizeFile(const Path& path, size_t size)
+{
+	if (truncate(path.rawBuf(), off_t(size)) < 0)
+		throw Exception(std::errc(errno));
+}
+
+fs::SpaceInfo fs::space(const Path& path)
+{
+	struct statvfs statVFS;
+	if (statvfs(path.rawBuf(), &statVFS) < 0)
+		throw Exception(std::errc(errno));
+
+	return SpaceInfo
+	{
+		// `capacity`
+		size_t(statVFS.f_blocks * statVFS.f_frsize),
+		// `free`
+		size_t(statVFS.f_bfree * statVFS.f_frsize),
+		// `available`
+		size_t(statVFS.f_bavail * statVFS.f_frsize)
+	};
+}
+
+Path fs::tempDirPath()
+{
+	static constexpr auto envVars = makeArray
+	(
+		"TMPDIR",
+		"TMP",
+		"TEMP",
+		"TEMPDIR"
+	);
+
+	for (auto envVar : envVars)
+	{
+		auto tmpPath = getenv(envVar);
+		if (tmpPath != nullptr)
+			return Path(tmpPath);
+	}
+
+	return Path("/tmp");
+}
+
+fs::FileStatus fs::StatusFromImpl::fromStatMode(mode_t mode)
+{
+	FileType type;
+
+	switch (mode & S_IFMT)
+	{
+		case S_IFDIR: type = FileType::Directory; break;
+		case S_IFREG: type = FileType::Regular; break;
+		case S_IFCHR: type = FileType::Character; break;
+		case S_IFBLK: type = FileType::Block; break;
+		case S_IFIFO: type = FileType::Fifo; break;
+		case S_IFLNK: type = FileType::Symlink; break;
+		case S_IFSOCK: type = FileType::Socket; break;
+		default: type = FileType::Unknown; break;
+	}
+
+	return FileStatus(type, Perms(mode) & Perms::Mask);
+}
+
+fs::FileStatus fs::Detail::status
+(
+	const Path& path,
+	std::error_code& code,
+	FileStatus* _symlinkStatus,
+	size_t depth
+)
+{
+	struct stat fileStat;
+	auto onError = [&]
+	{
+		code = std::make_error_code(std::errc(errno));
+		if (errno != ENOENT && errno != ENOTDIR)
+			return FileStatus(FileType::None);
+		return FileStatus(FileType::NotFound);
+	};
+
+	if (lstat(path.rawBuf(), &fileStat) < 0)
+		return onError();
+
+	FileStatus fileStatus = StatusFromImpl::fromStatMode(fileStat.st_mode);
+
+	if (_symlinkStatus != nullptr)
+		*_symlinkStatus = fileStatus;
+
+	if (fileStatus.getType() == FileType::Symlink)
+	{
+		if (stat(path.rawBuf(), &fileStat) < 0)
+			return onError();
+		fileStatus = StatusFromImpl::fromStatMode(fileStat.st_mode);
+	}
+
+	fileStatus.setSize(fileStat.st_size);
+	fileStatus.setHardLinks(fileStat.st_nlink);
+	#if _POSIX_C_SOURCE >= 200809L || _XOPEN_SOURCE >= 700
+	fileStatus.setLastWriteTime(TimeSpec
+	(
+		fileStat.st_mtim.tv_sec,
+		fileStat.st_mtim.tv_nsec
+	));
+	#else
+	fileStatus.setLastWriteTime(TimeSpec::fromSec(fileStat.st_mtime));
+	#endif
+	return fileStatus;
+}
+
+fs::FileStatus fs::symlinkStatus(const Path& path)
+{
+	struct stat fileStat;
+
+	if (!lstat(path.rawBuf(), &fileStat))
+		return StatusFromImpl::fromStatMode(fileStat.st_mode);
+
+	if (errno != ENOENT && errno != ENOTDIR)
+		throw Exception(std::errc(errno));
+
+	return FileStatus(FileType::NotFound);
+}
+
+void fs::createHardLink(const Path& to, const Path& newHardLink)
+{
+	if (link(to.rawBuf(), newHardLink.rawBuf()) < 0)
+		throw Exception(to, newHardLink, std::errc(errno));
+}
+
+size_t fs::hardLinkCount(const Path& path)
+{
+	FileStatus fileStatus = status(path);
+
+	if (fileStatus.getType() == FileType::NotFound)
+		throw Exception(path, std::errc::no_such_file_or_directory);
+	return fileStatus.getHardLinks();
+}
+
+bool fs::Detail::isNotFoundError(const std::error_code& code)
+{
+	return
+	(
+		std::errc(code.value()) == std::errc::no_such_file_or_directory ||
+		std::errc(code.value()) == std::errc::not_a_directory
+	);
+}

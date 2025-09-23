@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -20,27 +20,74 @@
 #ifndef UTILS_ENUM_H
 #define UTILS_ENUM_H 1
 
-#include <type_traits>
+#include "utils/type_traits.h"
 
 namespace lightspark
 {
 
-template<typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = false>
+// NOTE: This needs to be `constexpr` due to it otherwise causing build
+// errors on GCC 11, and earlier.
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
+static constexpr bool operator!(const T& a)
+{
+	return !bool(a);
+}
+
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
+static constexpr T operator~(const T& a)
+{
+	return static_cast<T>
+	(
+		~static_cast<UnderlyingType<T>>(a)
+	);
+}
+
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
+static constexpr T operator&(const T& a, const T& b)
+{
+	return static_cast<T>
+	(
+		static_cast<UnderlyingType<T>>(a) &
+		static_cast<UnderlyingType<T>>(b)
+	);
+}
+
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
+static constexpr T operator|(const T& a, const T& b)
+{
+	return static_cast<T>
+	(
+		static_cast<UnderlyingType<T>>(a) |
+		static_cast<UnderlyingType<T>>(b)
+	);
+}
+
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
+static constexpr T operator^(const T& a, const T& b)
+{
+	return static_cast<T>
+	(
+		static_cast<UnderlyingType<T>>(a) ^
+		static_cast<UnderlyingType<T>>(b)
+	);
+}
+
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
 static T& operator&=(T& a, T b)
 {
-	return a = static_cast<T>(a & b);
+	return a = a & b;
 }
 
-template<typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = false>
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
 static T& operator|=(T& a, T b)
 {
-	return a = static_cast<T>(a | b);
+	return a = a | b;
 }
 
-template<typename T, typename std::enable_if<std::is_enum<T>::value, bool>::type = false>
+template<typename T, EnableIf<IsEnum<T>::value, bool> = false>
 static T& operator^=(T& a, T b)
 {
-	return a = static_cast<T>(a ^ b);
+	return a = a ^ b;
 }
 
 };

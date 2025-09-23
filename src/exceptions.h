@@ -23,6 +23,7 @@
 #include "compat.h"
 #include <exception>
 #include <string>
+#include <system_error>
 
 #define STRINGIFY(n) #n
 #define TOSTRING(x) STRINGIFY(x)
@@ -69,6 +70,23 @@ public:
 
 private:
 	Type type;
+};
+
+class SystemException: public LightsparkException
+{
+public:
+	SystemException(const std::string& c, const std::error_code& _code) :
+	LightsparkException(c),
+	code(_code) {}
+
+	const char* what() const throw()
+	{
+		return cause.length() ? cause.c_str() : "Lightspark system error";
+	}
+
+	const std::error_code& getCode() const { return code; }
+private:
+	std::error_code code;
 };
 
 class RunTimeException: public LightsparkException

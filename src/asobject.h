@@ -1536,6 +1536,8 @@ class AVM1LoadVars;
 class AVM1LocalConnection;
 class AVM1MovieClip;
 class AVM1MovieClipLoader;
+class AVM1Point;
+class AVM1Rectangle;
 class AVM1Sound;
 class AVM1Super_object;
 class AVM1XMLDocument;
@@ -1692,6 +1694,8 @@ template<> inline bool ASObject::is<AVM1LocalConnection>() const { return subtyp
 template<> inline bool ASObject::is<AVM1Movie>() const { return subtype == SUBTYPE_AVM1MOVIE; }
 template<> inline bool ASObject::is<AVM1MovieClip>() const { return subtype == SUBTYPE_AVM1MOVIECLIP; }
 template<> inline bool ASObject::is<AVM1MovieClipLoader>() const { return subtype == SUBTYPE_AVM1MOVIECLIPLOADER; }
+template<> inline bool ASObject::is<AVM1Point>() const { return subtype == SUBTYPE_AVM1POINT; }
+template<> inline bool ASObject::is<AVM1Rectangle>() const { return subtype == SUBTYPE_AVM1RECTANGLE; }
 template<> inline bool ASObject::is<AVM1Sound>() const { return subtype == SUBTYPE_AVM1SOUND; }
 template<> inline bool ASObject::is<AVM1Super_object>() const { return subtype == SUBTYPE_AVM1SUPEROBJECT; }
 template<> inline bool ASObject::is<AVM1XMLDocument>() const { return subtype == SUBTYPE_AVM1XMLDOCUMENT; }
@@ -1817,12 +1821,12 @@ template<> inline bool ASObject::is<NativeWindowBoundsEvent>() const { return su
 template<> inline bool ASObject::is<NetStream>() const { return subtype==SUBTYPE_NETSTREAM; }
 template<> inline bool ASObject::is<Number>() const { return type==T_NUMBER; }
 template<> inline bool ASObject::is<ObjectConstructor>() const { return subtype==SUBTYPE_OBJECTCONSTRUCTOR; }
-template<> inline bool ASObject::is<Point>() const { return subtype==SUBTYPE_POINT; }
+template<> inline bool ASObject::is<Point>() const { return subtype==SUBTYPE_POINT || subtype==SUBTYPE_AVM1POINT; }
 template<> inline bool ASObject::is<Program3D>() const { return subtype==SUBTYPE_PROGRAM3D; }
 template<> inline bool ASObject::is<ProgressEvent>() const { return subtype==SUBTYPE_PROGRESSEVENT; }
 template<> inline bool ASObject::is<Proxy>() const { return subtype==SUBTYPE_PROXY; }
 template<> inline bool ASObject::is<RangeError>() const { return subtype==SUBTYPE_RANGEERROR; }
-template<> inline bool ASObject::is<Rectangle>() const { return subtype==SUBTYPE_RECTANGLE; }
+template<> inline bool ASObject::is<Rectangle>() const { return subtype==SUBTYPE_RECTANGLE || subtype==SUBTYPE_AVM1RECTANGLE; }
 template<> inline bool ASObject::is<RectangleTexture>() const { return subtype==SUBTYPE_RECTANGLETEXTURE; }
 template<> inline bool ASObject::is<ReferenceError>() const { return subtype==SUBTYPE_REFERENCEERROR; }
 template<> inline bool ASObject::is<RegExp>() const { return subtype==SUBTYPE_REGEXP; }

@@ -31,6 +31,7 @@ class Rectangle: public ASObject
 {
 private:
 	std::set<DisplayObject*> users;
+protected:
 	void notifyUsers();
 public:
 	Rectangle(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_RECTANGLE),x(0),y(0),width(0),height(0) {}
@@ -50,12 +51,14 @@ public:
 	ASFUNCTION_ATOM(_setHeight);
 	ASFUNCTION_ATOM(_getLeft);
 	ASFUNCTION_ATOM(_setLeft);
+	ASFUNCTION_ATOM(_setX);
 	ASFUNCTION_ATOM(_getRight);
 	ASFUNCTION_ATOM(_setRight);
 	ASFUNCTION_ATOM(_getSize);
 	ASFUNCTION_ATOM(_setSize);
 	ASFUNCTION_ATOM(_getTop);
 	ASFUNCTION_ATOM(_setTop);
+	ASFUNCTION_ATOM(_setY);
 	ASFUNCTION_ATOM(_getTopLeft);
 	ASFUNCTION_ATOM(_setTopLeft);
 	ASFUNCTION_ATOM(_getWidth);

@@ -190,6 +190,8 @@
 #include "scripting/avm1/avm1array.h"
 #include "scripting/avm1/avm1date.h"
 #include "scripting/avm1/avm1filter.h"
+#include "scripting/avm1/avm1point.h"
+#include "scripting/avm1/avm1rectangle.h"
 
 using namespace lightspark;
 

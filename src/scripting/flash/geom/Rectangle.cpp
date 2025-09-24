@@ -36,7 +36,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("left","",c->getSystemState()->getBuiltinFunction(_getLeft,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("left","",c->getSystemState()->getBuiltinFunction(_setLeft),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(_getLeft,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(_setLeft),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(_setX),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("right","",c->getSystemState()->getBuiltinFunction(_getRight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("right","",c->getSystemState()->getBuiltinFunction(_setRight),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_getWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
@@ -45,7 +45,7 @@ void Rectangle::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("top","",c->getSystemState()->getBuiltinFunction(_getTop,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("top","",c->getSystemState()->getBuiltinFunction(_setTop),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(_getTop,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(_setTop),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(_setY),SETTER_METHOD,true);
 
 	c->setDeclaredMethodByQName("bottom","",c->getSystemState()->getBuiltinFunction(_getBottom,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bottom","",c->getSystemState()->getBuiltinFunction(_setBottom),SETTER_METHOD,true);
@@ -135,6 +135,18 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setLeft)
 	ARG_CHECK(ARG_UNPACK(val));
 	if (th->x != val)
 	{
+		th->width+=(th->x-val);
+		th->x=val;
+		th->notifyUsers();
+	}
+}
+ASFUNCTIONBODY_ATOM(Rectangle,_setX)
+{
+	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
+	number_t val;
+	ARG_CHECK(ARG_UNPACK(val));
+	if (th->x != val)
+	{
 		th->x=val;
 		th->notifyUsers();
 	}
@@ -183,6 +195,18 @@ ASFUNCTIONBODY_ATOM(Rectangle,_getTop)
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setTop)
+{
+	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
+	number_t val;
+	ARG_CHECK(ARG_UNPACK(val));
+	if (th->y != val)
+	{
+		th->height+=(th->y-val);
+		th->y=val;
+		th->notifyUsers();
+	}
+}
+ASFUNCTIONBODY_ATOM(Rectangle,_setY)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	number_t val;
@@ -248,6 +272,8 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setTopLeft)
 	ARG_CHECK(ARG_UNPACK(point));
 	if (th->x != point.x || th->y != point.y)
 	{
+		th->width+=(th->x-point.x);
+		th->height+=(th->y-point.y);
 		th->x = point.x;
 		th->y = point.y;
 		th->notifyUsers();
@@ -316,8 +342,8 @@ ASFUNCTIONBODY_ATOM(Rectangle,contains)
 	number_t x = asAtomHandler::toNumber(args[0]);
 	number_t y = asAtomHandler::toNumber(args[1]);
 
-	asAtomHandler::setBool(ret,th->x <= x && x <= th->x + th->width
-						&& th->y <= y && y <= th->y + th->height );
+	asAtomHandler::setBool(ret,th->x <= x && x < th->x + th->width
+						&& th->y <= y && y < th->y + th->height );
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,containsPoint)
@@ -328,8 +354,8 @@ ASFUNCTIONBODY_ATOM(Rectangle,containsPoint)
 	number_t x = br->getX();
 	number_t y = br->getY();
 
-	asAtomHandler::setBool(ret,th->x <= x && x <= th->x + th->width
-						&& th->y <= y && y <= th->y + th->height );
+	asAtomHandler::setBool(ret,th->x <= x && x < th->x + th->width
+						&& th->y <= y && y < th->y + th->height );
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,containsRect)
@@ -467,6 +493,11 @@ ASFUNCTIONBODY_ATOM(Rectangle,intersects)
 	}
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
 	Rectangle* ti = asAtomHandler::as<Rectangle>(args[0]);
+	if (th->width==0 || th->height==0 || ti->width==0 || th->height==0)
+	{
+		ret = asAtomHandler::falseAtom;
+		return;
+	}
 
 	number_t thtop = th->y;
 	number_t thleft = th->x;
@@ -485,8 +516,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,intersects)
 ASFUNCTIONBODY_ATOM(Rectangle,isEmpty)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-
-	asAtomHandler::setBool(ret,th->width <= 0 || th->height <= 0 );
+	asAtomHandler::setBool(ret,th->width <= 0 || th->height <= 0);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,offset)
@@ -547,16 +577,31 @@ ASFUNCTIONBODY_ATOM(Rectangle,_union)
 	res->width = th->width;
 	res->height = th->height;
 
-	if ( ti->width == 0 || ti->height == 0 )
+	if ( ti->width <= 0 || ti->height <= 0 )
 	{
+		ret = asAtomHandler::fromObject(res);
+		return;
+	}
+	if ( th->width <= 0 || th->height <= 0 )
+	{
+		res->x = ti->x;
+		res->y = ti->y;
+		res->width = ti->width;
+		res->height = ti->height;
 		ret = asAtomHandler::fromObject(res);
 		return;
 	}
 
 	res->x = min(th->x, ti->x);
 	res->y = min(th->y, ti->y);
-	res->width = max(th->x + th->width, ti->x + ti->width);
-	res->height = max(th->y + th->height, ti->y + ti->height);
+	if (std::isnan(th->width) || std::isnan(ti->width))
+		res->width=Number::NaN;
+	else
+		res->width = max(th->x + th->width, ti->x + ti->width)-res->x;
+	if (std::isnan(th->height) || std::isnan(ti->height))
+		res->height=Number::NaN;
+	else
+		res->height = max(th->y + th->height, ti->y + ti->height)-res->y;
 
 	ret = asAtomHandler::fromObject(res);
 }

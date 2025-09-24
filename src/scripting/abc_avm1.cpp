@@ -28,11 +28,11 @@
 #include "scripting/avm1/avm1array.h"
 #include "scripting/avm1/avm1date.h"
 #include "scripting/avm1/avm1filter.h"
+#include "scripting/avm1/avm1point.h"
+#include "scripting/avm1/avm1rectangle.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/geom/flashgeom.h"
-#include "scripting/flash/geom/Rectangle.h"
-#include "scripting/flash/geom/Point.h"
 #include "scripting/flash/filters/BevelFilter.h"
 #include "scripting/flash/filters/BlurFilter.h"
 #include "scripting/flash/filters/ColorMatrixFilter.h"
@@ -145,8 +145,8 @@ void ABCVm::registerClassesAVM1()
 		flashgeompackage->setVariableByQName("Matrix","flash.geom",Class<Matrix>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashgeompackage->setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashgeompackage->setVariableByQName("Transform","flash.geom",Class<Transform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
-		flashgeompackage->setVariableByQName("Rectangle","flash.geom",Class<Rectangle>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
-		flashgeompackage->setVariableByQName("Point","flash.geom",Class<Point>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashgeompackage->setVariableByQName("Rectangle","flash.geom",Class<AVM1Rectangle>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashgeompackage->setVariableByQName("Point","flash.geom",Class<AVM1Point>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 
 		ASObject* flashnetpackage = new_asobject(m_sys->worker);
 		flashpackage->setVariableByQName("net",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashnetpackage,CONSTANT_TRAIT);

@@ -29,7 +29,7 @@ namespace lightspark
 
 class Point: public ASObject
 {
-private:
+protected:
 	number_t x,y;
 	static number_t lenImpl(number_t x, number_t y);
 public:

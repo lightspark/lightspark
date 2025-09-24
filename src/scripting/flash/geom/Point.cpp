@@ -204,6 +204,8 @@ ASFUNCTIONBODY_ATOM(Point,normalize)
 	Point* th=asAtomHandler::as<Point>(obj);
 	number_t thickness = argslen > 0 ? asAtomHandler::toNumber(args[0]) : 1.0;
 	number_t len = th->len();
+	if (std::isnan(len))
+		return;
 	th->x = len == 0 ? 0 : th->x * thickness / len;
 	th->y = len == 0 ? 0 : th->y * thickness / len;
 }

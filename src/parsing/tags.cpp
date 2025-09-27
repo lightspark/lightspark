@@ -471,7 +471,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	textData.isPassword = Password;
 }
 
-ASObject* DefineEditTextTag::instance(Class_base* c, bool temporary)
+ASObject* DefineEditTextTag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
 {
 	if(c==nullptr)
 	{
@@ -621,7 +621,7 @@ DefineSpriteTag::~DefineSpriteTag()
 	delete framecontainer;
 }
 
-ASObject* DefineSpriteTag::instance(Class_base* c, bool temporary)
+ASObject* DefineSpriteTag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
 {
 	Class_base* retClass=nullptr;
 	if(c)
@@ -766,7 +766,7 @@ void FontTag::fillTokens(int glyphposition, const RGBA& color, tokensVector* tk,
 	tk->stroketokens = it->second.at(glyphposition).stroketokens;
 }
 
-ASObject* FontTag::instance(Class_base* c, bool temporary)
+ASObject* FontTag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
 {
 	Class_base* retClass=nullptr;
 	if(c)
@@ -1357,7 +1357,7 @@ DefineFont4Tag::DefineFont4Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 		LOG(LOG_NOT_IMPLEMENTED,"DefineFont4Tag with FontData");
 	ignore(in,dest-in.tellg());
 }
-ASObject* DefineFont4Tag::instance(Class_base* c, bool temporary)
+ASObject* DefineFont4Tag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
 {
 	tiny_string fontname = FontName;
 	Class_base* retClass=nullptr;
@@ -1471,7 +1471,7 @@ DefineBitsLosslessTag::DefineBitsLosslessTag(RECORDHEADER h, istream& in, int ve
 	}
 }
 
-ASObject* BitmapTag::instance(Class_base* c, bool temporary)
+ASObject* BitmapTag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
 {
 	//Flex imports bitmaps using BitmapAsset as the base class, which is derived from bitmap
 	//Also BitmapData is used in the wild though, so support both cases
@@ -1539,7 +1539,7 @@ DefineTextTag::~DefineTextTag()
 	tokens.destruct();
 }
 
-ASObject* DefineTextTag::instance(Class_base* c, bool temporary)
+ASObject* DefineTextTag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
 {
 	/* we cannot call computeCached in the constructor
 	 * because loadedFrom is not available there for dictionary lookups
@@ -1631,11 +1631,11 @@ void DefineTextTag::computeCached()
 	}
 }
 
-DefineShapeTag::DefineShapeTag(RECORDHEADER h,int v,RootMovieClip* root):DictionaryTag(h,root),Shapes(v),tokens(nullptr)
+DefineShapeTag::DefineShapeTag(RECORDHEADER h,int v,RootMovieClip* root):DictionaryTag(h,root),Shapes(v),tokens(nullptr),forActionScript3(root->needsActionScript3())
 {
 }
 
-DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root),Shapes(1),tokens(nullptr)
+DefineShapeTag::DefineShapeTag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DictionaryTag(h,root),Shapes(1),tokens(nullptr),forActionScript3(root->needsActionScript3())
 {
 	LOG(LOG_TRACE,"DefineShapeTag");
 	in >> ShapeId >> ShapeBounds >> Shapes;
@@ -1661,7 +1661,7 @@ DefineShapeTag::~DefineShapeTag()
 	}
 }
 
-ASObject* DefineShapeTag::instance(Class_base *c, bool temporary)
+ASObject* DefineShapeTag::instance(Class_base *c, ASObject* prevInstance, bool temporary)
 {
 	if (!tokens)
 	{
@@ -1677,21 +1677,36 @@ ASObject* DefineShapeTag::instance(Class_base *c, bool temporary)
 		TokenContainer::FromShaperecordListToShapeVector(Shapes.ShapeRecords,*tokens,false,MATRIX(),Shapes.FillStyles.FillStyles,Shapes.LineStyles.LineStyles2,ShapeBounds);
 	}
 	Shape* ret=nullptr;
-	if(c==nullptr)
+	if (!temporary && prevInstance && prevInstance->is<Shape>())
 	{
-		ret= loadedFrom->usesActionScript3 ?
-					Class<Shape>::getInstanceSNoArgs(loadedFrom->getInstanceWorker()):
-					Class<AVM1Shape>::getInstanceSNoArgs(loadedFrom->getInstanceWorker());
+		// adobe seems to reuse the previous instance and just replace the graphics if the previous instance was a shape
+		// see ruffle test timeline/nav/shape
+		ret = prevInstance->as<Shape>();
+		ret->markAsChanged();
 	}
 	else
 	{
-		ret= loadedFrom->usesActionScript3 ?
-					 new (c->memoryAccount) Shape(loadedFrom->getInstanceWorker(),c):
-					new (c->memoryAccount) AVM1Shape(loadedFrom->getInstanceWorker(),c);
+		if(c==nullptr)
+		{
+			ret= loadedFrom->usesActionScript3 ?
+					  Class<Shape>::getInstanceSNoArgs(loadedFrom->getInstanceWorker()):
+					  Class<AVM1Shape>::getInstanceSNoArgs(loadedFrom->getInstanceWorker());
+		}
+		else
+		{
+			ret= loadedFrom->usesActionScript3 ?
+					  new (c->memoryAccount) Shape(loadedFrom->getInstanceWorker(),c):
+					  new (c->memoryAccount) AVM1Shape(loadedFrom->getInstanceWorker(),c);
+		}
 	}
 	if (!temporary)
 		ret->setupShape(this, 1.0f/20.0f);
 	return ret;
+}
+
+bool DefineShapeTag::needsDefaultName(DisplayObject* currchar) const
+{
+	return forActionScript3 && (!currchar || currchar->is<Shape>());
 }
 
 DefineShape2Tag::DefineShape2Tag(RECORDHEADER h, std::istream& in,RootMovieClip* root):DefineShapeTag(h,2,root)
@@ -1742,7 +1757,7 @@ DefineMorphShapeTag::~DefineMorphShapeTag()
 		it = tokensmap.erase(it);
 	}
 }
-ASObject* DefineMorphShapeTag::instance(Class_base* c, bool temporary)
+ASObject* DefineMorphShapeTag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
 {
 	assert_and_throw(bindedTo==nullptr);
 	if(c==nullptr)
@@ -1913,7 +1928,7 @@ void PlaceObjectTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	if (!toAdd)
 	{
 		// reserve an instance<x> name for the new DisplayObject (if necessary) before construction to match adobe naming mechanism
-		uint32_t defaultNameID = placedTag->needsDefaultName() ? parent->getSystemState()->getNextInstanceName() : UINT32_MAX;
+		uint32_t defaultNameID = placedTag->needsDefaultName(nullptr) ? parent->getSystemState()->getNextInstanceName() : UINT32_MAX;
 		//We can create the object right away
 		ASObject* instance = placedTag->instance();
 		if (!placedTag->bindedTo)
@@ -1996,6 +2011,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		}
 	}
 	bool newInstance = false;
+	bool reused = false;
 	if(PlaceFlagHasCharacter && (!exists || (currchar->getTagID() != CharacterId)))
 	{
 		//A new character must be placed
@@ -2029,11 +2045,11 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		if (!toAdd)
 		{
 			// reserve an instance<x> name for the new DisplayObject (if necessary) before construction to match adobe naming mechanism
-			uint32_t defaultNameID = !this->PlaceFlagHasName && placedTag->needsDefaultName() ? parent->getSystemState()->getNextInstanceName() : UINT32_MAX ;
+			uint32_t defaultNameID = !this->PlaceFlagHasName && placedTag->needsDefaultName(!PlaceFlagMove || placedTag->bindedTo ? nullptr : currchar) ? parent->getSystemState()->getNextInstanceName() : UINT32_MAX ;
 
 			//We can create the object right away
 
-			ASObject* instance = placedTag->instance();
+			ASObject* instance = placedTag->instance(nullptr,!PlaceFlagMove || placedTag->bindedTo ? nullptr : currchar);
 			if (!placedTag->bindedTo)
 				instance->setIsInitialized();
 			if (instance->is<BitmapData>())
@@ -2062,8 +2078,9 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 				instance->decRef();
 				return;
 			}
+			reused = toAdd == currchar;
 			newInstance = true;
-			if(defaultNameID != UINT32_MAX)
+			if(!reused && defaultNameID != UINT32_MAX)
 			{
 				toAdd->name = defaultNameID;
 				toAdd->hasDefaultName=true;
@@ -2082,8 +2099,14 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			toAdd->placeFrame = parent->as<MovieClip>()->state.FP;
 
 		setProperties(toAdd, parent);
-
-		if(exists)
+		if (reused)
+		{
+			// ensure DisplayObject is properly setup in parent for reuse
+			parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth,UINT32_MAX);
+			parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
+			currchar->markedForLegacyDeletion=false;
+		}
+		else if(exists)
 		{
 			if(!PlaceFlagHasColorTransform) // reuse colortransformation of existing DispayObject at this depth
 				toAdd->colorTransform= parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth)->colorTransform;
@@ -2091,7 +2114,6 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			if(PlaceFlagMove || (currchar->getTagID() != CharacterId))
 			{
 				parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
-
 				if (toAdd->is<MovieClip>() && PlaceFlagHasClipAction)
 					toAdd->as<MovieClip>()->setupActions(ClipActions);
 				/* parent becomes the owner of toAdd */
@@ -2127,19 +2149,34 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	if (exists
 		&& (currchar->getTagID() == CharacterId)
 		&& nameID != BUILTIN_STRINGS::EMPTY
-		&& nameID != UINT32_MAX)
+		&& nameID != UINT32_MAX
+		&& !reused)
 	{
 		// reuse name of existing DispayObject at this depth
 		asAtom v = asAtomHandler::fromObject(currchar);
 		currchar->name = nameID;
-		currchar->incRef();
 		if (currchar->hasDefaultName)
 		{
 			// special handling for defaultName in case currchar is not dynamic
-			parent->setDynamicVariableNoCheck(nameID,v,false,parent->getInstanceWorker());
+			multiname objName(nullptr);
+			objName.name_type=multiname::NAME_STRING;
+			objName.name_s_id=nameID;
+			objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
+			variable* var = parent->findVariableByMultiname(objName,nullptr,nullptr,nullptr,true,parent->getInstanceWorker());
+			if (var)
+			{
+				if (var->getObjectVar() != currchar)
+					var->setVarNoCoerce(v,parent->getInstanceWorker());
+			}
+			else
+			{
+				currchar->incRef();
+				parent->setDynamicVariableNoCheck(nameID,v,false,parent->getInstanceWorker());
+			}
 		}
 		else
 		{
+			currchar->incRef();
 			multiname objName(nullptr);
 			objName.name_type=multiname::NAME_STRING;
 			objName.name_s_id=currchar->name;
@@ -2493,7 +2530,7 @@ DefineButtonTag::~DefineButtonTag()
 		delete sounds;
 }
 
-ASObject* DefineButtonTag::instance(Class_base* c, bool temporary)
+ASObject* DefineButtonTag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
 {
 	Class_base* realClass=(c)?c:bindedTo;
 
@@ -2541,7 +2578,7 @@ ASObject* DefineButtonTag::instance(Class_base* c, bool temporary)
 				state->loadedFrom=this->loadedFrom;
 				if (dict->nameID!= BUILTIN_STRINGS::EMPTY)
 					state->name = dict->nameID;
-				else if (dict->needsDefaultName())
+				else if (dict->needsDefaultName(state))
 				{
 					state->name = loadedFrom->getSystemState()->getNextInstanceName();
 					state->hasDefaultName=true;
@@ -2587,7 +2624,7 @@ DefineVideoStreamTag::~DefineVideoStreamTag()
 {
 }
 
-ASObject* DefineVideoStreamTag::instance(Class_base* c, bool temporary)
+ASObject* DefineVideoStreamTag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
 {
 	Class_base* classRet = nullptr;
 	if(c)
@@ -2622,7 +2659,7 @@ DefineBinaryDataTag::DefineBinaryDataTag(RECORDHEADER h,std::istream& s,RootMovi
 	s.read((char*)bytes,size);
 }
 
-ASObject* DefineBinaryDataTag::instance(Class_base* c, bool temporary)
+ASObject* DefineBinaryDataTag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
 {
 	uint8_t* b = new uint8_t[len];
 	memcpy(b,bytes,len);
@@ -2825,7 +2862,7 @@ DefineSoundTag::DefineSoundTag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 #endif
 }
 
-ASObject* DefineSoundTag::instance(Class_base* c, bool temporary)
+ASObject* DefineSoundTag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
 {
 	Class_base* retClass=nullptr;
 	if (c)

@@ -217,7 +217,7 @@ void Class_inherit::getInstanceTemporary(ASWorker* worker, asAtom& ret)
 {
 	if(tag)
 	{
-		ret=asAtomHandler::fromObject(tag->instance(this,true));
+		ret=asAtomHandler::fromObject(tag->instance(this,nullptr,true));
 	}
 	else if (super)
 	{

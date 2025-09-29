@@ -829,6 +829,17 @@ void ABCVm::addDeletableObject(ASObject *obj)
 	obj->addStoredMember();
 	deletableObjects.push_back(obj);
 }
+void ABCVm::clearDeletableObjects()
+{
+	deletable_objects_mutex.lock();
+	for (auto it = deletableObjects.begin(); it != deletableObjects.end(); it++)
+	{
+		(*it)->removeStoredMember();
+	}
+	deletableObjects.clear();
+	deletable_objects_mutex.unlock();
+}
+
 
 void ABCVm::finalize()
 {

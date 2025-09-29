@@ -1287,6 +1287,7 @@ public:
 	bool hasEverStarted() const { return status!=CREATED; }
 	bool hasTerminated() const { return status == TERMINATED; }
 	void addDeletableObject(ASObject *obj);
+	void clearDeletableObjects();
 
 	static Global* getGlobalScope(call_context* th);
 	static bool strictEqualImpl(ASObject*, ASObject*);

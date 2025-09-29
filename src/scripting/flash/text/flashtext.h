@@ -177,6 +177,7 @@ public:
 	float getScaleFactor() const override { return this->scaling; }
 	bool isInUpdateVarBinding() const { return inUpdateVarBinding; }
 	bool isFocusable() override;
+	int getTextCharCount();
 	void refreshSurfaceState() override;
 
 	ASFUNCTION_ATOM(_constructor);
@@ -233,7 +234,7 @@ public:
 	ASFUNCTION_GETTER_SETTER(backgroundColor);
 	ASFUNCTION_GETTER_SETTER(border);
 	ASFUNCTION_GETTER_SETTER(borderColor);
-	ASPROPERTY_GETTER(uint32_t, caretIndex);
+	ASPROPERTY_GETTER(int32_t, caretIndex);
 	ASPROPERTY_GETTER_SETTER(bool, condenseWhite);
 	ASPROPERTY_GETTER_SETTER(bool, embedFonts);
 	ASPROPERTY_GETTER_SETTER(int32_t, maxChars);

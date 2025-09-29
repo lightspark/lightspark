@@ -233,6 +233,7 @@ void DisplayObject::finalize()
 	if (broadcastEventListenerCount)
 		getSystemState()->unregisterFrameListener(this);
 	broadcastEventListenerCount=0;
+	filters.reset();
 	EventDispatcher::finalize();
 }
 
@@ -366,6 +367,7 @@ void DisplayObject::prepareShutdown()
 	setMask(NullRef);
 	setClipMask(NullRef);
 	setParent(nullptr);
+	getSystemState()->removeFromResetParentList(this);
 	onStage=false;
 }
 

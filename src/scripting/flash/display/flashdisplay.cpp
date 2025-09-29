@@ -1102,8 +1102,6 @@ void DisplayObjectContainer::prepareShutdown()
 	{
 		DisplayObject* d = dynamicDisplayList[i];
 		dynamicDisplayList.pop_back();
-		d->setParent(nullptr);
-		getSystemState()->removeFromResetParentList(d);
 		d->prepareShutdown();
 		d->removeStoredMember();
 	}

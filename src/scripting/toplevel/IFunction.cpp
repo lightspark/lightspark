@@ -60,7 +60,11 @@ void IFunction::prepareShutdown()
 	if (clonedFrom)
 		clonedFrom->prepareShutdown();
 	if (asAtomHandler::isAccessibleObject(closure_this))
+	{
 		asAtomHandler::getObjectNoCheck(closure_this)->prepareShutdown();
+		ASATOM_REMOVESTOREDMEMBER(closure_this);
+		closure_this=asAtomHandler::invalidAtom;
+	}
 	ASObject* pr = asAtomHandler::getObject(prototype);
 	if (pr)
 		pr->prepareShutdown();

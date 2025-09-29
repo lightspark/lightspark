@@ -343,6 +343,13 @@ void Stage::prepareShutdown()
 {
 	if (this->preparedforshutdown)
 		return;
+	while(!avm1FocusListeners.empty())
+	{
+		asAtom a = avm1FocusListeners.back();
+		ASATOM_PREPARESHUTDOWN(a);
+		ASATOM_REMOVESTOREDMEMBER(a);
+		avm1FocusListeners.pop_back();
+	}
 	while (this->hiddenNextDisplayObject != this)
 	{
 		auto h = this->hiddenNextDisplayObject;
@@ -653,11 +660,13 @@ void Stage::setTabFocusTarget(bool next)
 		setFocusTarget(newfocustarget->as<InteractiveObject>());
 	}
 }
-void Stage::setFocusTarget(InteractiveObject* f)
+bool Stage::setFocusTarget(InteractiveObject* f)
 {
 	Locker l(focusSpinlock);
-	if (f==focus || (f && !f->isFocusable()))
-		return;
+	if (f==focus)
+		return true;
+	if (f && !f->isFocusable())
+		return false;
 	InteractiveObject* oldfocus = focus;
 	focus = f;
 	if (oldfocus)
@@ -699,6 +708,25 @@ void Stage::setFocusTarget(InteractiveObject* f)
 		}
 	}
 	l.release();
+
+	// handle AVM1 focus listeners
+	avm1listenerMutex.lock();
+	vector<asAtom> tmplisteners = avm1FocusListeners;
+	for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
+	{
+		ASATOM_INCREF(*it);
+	}
+	avm1listenerMutex.unlock();
+	for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
+	{
+		ASObject* o = asAtomHandler::getObject(*it);
+		if (o)
+		{
+			o->AVM1HandleSetFocusEvent(focus, oldfocus);
+			o->decRef();
+		}
+	}
+
 	if (oldfocus)
 		oldfocus->requestInvalidation(getSystemState());
 	if (focus)
@@ -706,6 +734,7 @@ void Stage::setFocusTarget(InteractiveObject* f)
 	l.acquire();
 	if (oldfocus)
 		oldfocus->removeStoredMember();
+	return true;
 }
 
 void Stage::checkResetFocusTarget(InteractiveObject* removedtarget)
@@ -1044,12 +1073,12 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 				if (o)
 					o->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
 			}
-			for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
-			{
-				ASObject* o = asAtomHandler::getObject(*it);
-				if (o)
-					o->AVM1HandleSetFocusEvent(dispatcher);
-			}
+			// for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
+			// {
+			// 	ASObject* o = asAtomHandler::getObject(*it);
+			// 	if (o)
+			// 		o->AVM1HandleSetFocusEvent(dispatcher);
+			// }
 			for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
 			{
 				ASObject* o = asAtomHandler::getObject(*it);
@@ -1267,7 +1296,32 @@ bool Stage::AVM1RemoveResizeListener(ASObject *o)
 	}
 	return false;
 }
+void Stage::AVM1AddFocusListener(asAtom listener)
+{
+	Locker l(avm1listenerMutex);
+	for (auto it = avm1FocusListeners.begin(); it != avm1FocusListeners.end(); it++)
+	{
+		if ((*it).uintval == listener.uintval)
+			return;
+	}
+	ASATOM_ADDSTOREDMEMBER(listener);
+	avm1FocusListeners.push_back(listener);
+}
 
+bool Stage::AVM1RemoveFocusListener(asAtom listener)
+{
+	Locker l(avm1listenerMutex);
+	for (auto it = avm1FocusListeners.begin(); it != avm1FocusListeners.end(); it++)
+	{
+		if ((*it).uintval == listener.uintval)
+		{
+			avm1FocusListeners.erase(it);
+			ASATOM_REMOVESTOREDMEMBER(listener);
+			return true;
+		}
+	}
+	return false;
+}
 ASFUNCTIONBODY_ATOM(Stage,_getFocus)
 {
 	Stage* th=asAtomHandler::as<Stage>(obj);

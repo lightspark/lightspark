@@ -1429,7 +1429,7 @@ public:
 	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
 	virtual bool AVM1HandleMouseEvent(EventDispatcher* dispatcher,MouseEvent* e);
 	bool AVM1HandleMouseEventStandard(ASObject *dispobj, MouseEvent *e);
-	void AVM1HandleSetFocusEvent(ASObject *dispobj);
+	void AVM1HandleSetFocusEvent(ASObject *dispobj, ASObject* oldfocus);
 	virtual void AVM1HandlePressedEvent(ASObject *dispobj);
 	// updates AVM1 bindings in target for all members of this ASObject
 	void AVM1UpdateAllBindings(DisplayObject* target, ASWorker* wrk);

@@ -132,9 +132,11 @@ TextField::TextField(ASWorker* wrk, Class_base* c, const TextData& textData, boo
 	  fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),linemutex(new Mutex()),inAVM1syncVar(false),
 	  inUpdateVarBinding(false),
 	  alwaysShowSelection(false),
+	  caretIndex(-1),
 	  condenseWhite(false),
-	  embedFonts(false), maxChars(_tag ? int32_t(_tag->MaxLength) : 0), mouseWheelEnabled(true),
-	  selectable(_selectable), selectionBeginIndex(0), selectionEndIndex(0),
+	  embedFonts(false), maxChars(_tag ? int32_t(_tag->MaxLength) : 0),
+	  mouseWheelEnabled(true),
+	  selectable(_selectable), selectionBeginIndex(-1), selectionEndIndex(-1),
 	  sharpness(0), thickness(0), useRichTextClipboard(false)
 {
 	subtype=SUBTYPE_TEXTFIELD;
@@ -1113,20 +1115,20 @@ ASFUNCTIONBODY_ATOM(TextField,_setSelection)
 
 	if (th->selectionBeginIndex < 0)
 		th->selectionBeginIndex = 0;
-
-	Locker l(*th->linemutex);
-	tiny_string text = th->getText();
-	if (th->selectionEndIndex >= (int32_t)text.numChars())
-		th->selectionEndIndex = text.numChars()-1;
-
 	if (th->selectionEndIndex < 0)
 		th->selectionEndIndex = 0;
 
-	if (th->selectionBeginIndex > th->selectionEndIndex)
-		th->selectionBeginIndex = th->selectionEndIndex;
+	Locker l(*th->linemutex);
+	tiny_string text = th->getText();
+	if (th->selectionBeginIndex >= (int32_t)text.numChars())
+		th->selectionBeginIndex = text.numChars();
+	if (th->selectionEndIndex >= (int32_t)text.numChars())
+		th->selectionEndIndex = text.numChars();
 
-	if (th->selectionBeginIndex == th->selectionEndIndex)
-		th->caretIndex = th->selectionBeginIndex;
+	th->caretIndex = th->selectionEndIndex;
+	if (th->selectionBeginIndex > th->selectionEndIndex)
+		std::swap(th->selectionBeginIndex,th->selectionEndIndex);
+
 
 	LOG(LOG_NOT_IMPLEMENTED, "TextField selection will not be rendered");
 }
@@ -1137,6 +1139,8 @@ ASFUNCTIONBODY_ATOM(TextField,_replaceSelectedText)
 	tiny_string newText;
 	ARG_CHECK(ARG_UNPACK(newText));
 	th->replaceText(th->selectionBeginIndex, th->selectionEndIndex, newText);
+	th->selectionBeginIndex+=newText.numChars();
+	th->caretIndex=th->selectionEndIndex=th->selectionBeginIndex;
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_replaceText)
@@ -1798,11 +1802,6 @@ void TextField::gotFocus()
 	if (this->type != ET_EDITABLE)
 		return;
 	SDL_StartTextInput();
-	linemutex->lock();
-	selectionBeginIndex = getText().numChars();
-	linemutex->unlock();
-	selectionEndIndex = selectionBeginIndex;
-	caretIndex=selectionBeginIndex;
 	getSystemState()->addTick(500,this);
 }
 
@@ -1816,7 +1815,9 @@ void TextField::textInputChanged(const tiny_string &newtext)
 	
 	if (maxChars == 0 || tmptext.numChars()+newtext.numChars() <= uint32_t(maxChars))
 	{
-		if (caretIndex < tmptext.numChars())
+		if (caretIndex< 0)
+			caretIndex=0;
+		if (caretIndex < int(tmptext.numChars()))
 			tmptext.replace(caretIndex,0,newtext);
 		else
 			tmptext+=newtext;
@@ -1851,7 +1852,13 @@ uint32_t TextField::getTagID() const
 
 bool TextField::isFocusable()
 {
-	return type==ET_EDITABLE && selectable;
+	return selectable;
+}
+
+int TextField::getTextCharCount()
+{
+	Locker l(*linemutex);
+	return getText().numChars();
 }
 
 void TextField::textUpdated()
@@ -1861,8 +1868,6 @@ void TextField::textUpdated()
 		avm1SyncTagVar();
 	scrollH = 0;
 	scrollV = 1;
-	selectionBeginIndex = 0;
-	selectionEndIndex = 0;
 	linemutex->lock();
 	checkEmbeddedFont(this);
 	linemutex->unlock();
@@ -1908,7 +1913,7 @@ void TextField::defaultEventBehavior(_R<Event> e)
 					{
 						caretIndex--;
 						tiny_string tmptext = getText();
-						if (caretIndex < tmptext.numChars())
+						if (caretIndex < int(tmptext.numChars()))
 							tmptext.replace(caretIndex,1,"");
 						else
 							tmptext = tmptext.substr(0,tmptext.numChars()-1);
@@ -1925,7 +1930,7 @@ void TextField::defaultEventBehavior(_R<Event> e)
 					break;
 				case AS3KEYCODE_RIGHT:
 					linemutex->lock();
-					if (this->caretIndex < this->getText().numChars())
+					if (this->caretIndex < int(this->getText().numChars()))
 						this->caretIndex++;
 					linemutex->unlock();
 					break;

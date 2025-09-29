@@ -3047,31 +3047,26 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 		LOG(LOG_NOT_IMPLEMENTED,"handling avm1 mouse event "<<e->type);
 	return false;
 }
-void ASObject::AVM1HandleSetFocusEvent(ASObject *dispobj)
+void ASObject::AVM1HandleSetFocusEvent(ASObject *dispobj, ASObject* oldfocus)
 {
-	InteractiveObject* oldfocus = getSystemState()->stage->getFocusTarget();
 	if (dispobj && oldfocus==dispobj)
 		return;
-	if ((dispobj && dispobj->is<TextField>())
-		|| (oldfocus && oldfocus->is<TextField>()))
-	{
-		asAtom func=asAtomHandler::invalidAtom;
-		multiname m(nullptr);
-		m.name_type=multiname::NAME_STRING;
-		m.isAttribute = false;
-		asAtom ret=asAtomHandler::invalidAtom;
-		asAtom obj = asAtomHandler::fromObject(this);
-		ASWorker* wrk = getInstanceWorker();
-		asAtom args[2];
-		args[0] = !oldfocus || oldfocus==getSystemState()->stage || oldfocus->is<RootMovieClip>() ? asAtomHandler::nullAtom : asAtomHandler::fromObject(oldfocus);
-		args[1] = !dispobj || dispobj==getSystemState()->stage || dispobj->is<RootMovieClip>() || !dispobj->is<TextField>() ? asAtomHandler::nullAtom : asAtomHandler::fromObject(dispobj);
-		m.name_s_id=BUILTIN_STRINGS::STRING_ONSETFOCUS;
-		AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
-		if (asAtomHandler::is<AVM1Function>(func))
-			asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,2);
-		ASATOM_DECREF(func);
-		ASATOM_DECREF(ret)
-	}
+	asAtom func=asAtomHandler::invalidAtom;
+	multiname m(nullptr);
+	m.name_type=multiname::NAME_STRING;
+	m.isAttribute = false;
+	asAtom ret=asAtomHandler::invalidAtom;
+	asAtom obj = asAtomHandler::fromObject(this);
+	ASWorker* wrk = getInstanceWorker();
+	asAtom args[2];
+	args[0] = !oldfocus ? asAtomHandler::nullAtom : asAtomHandler::fromObject(oldfocus);
+	args[1] = !dispobj ? asAtomHandler::nullAtom : asAtomHandler::fromObject(dispobj);
+	m.name_s_id=BUILTIN_STRINGS::STRING_ONSETFOCUS;
+	AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
+	if (asAtomHandler::is<AVM1Function>(func))
+		asAtomHandler::as<AVM1Function>(func)->call(&ret,&obj,args,2);
+	ASATOM_DECREF(func);
+	ASATOM_DECREF(ret)
 }
 
 void ASObject::AVM1HandlePressedEvent(ASObject *dispobj)

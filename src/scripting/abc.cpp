@@ -1869,9 +1869,7 @@ void ABCVm::initVM(std::string* errStr)
 void ABCVm::shutdownVM()
 {
 	status = TERMINATED;
-	for (auto it = deletableObjects.begin(); it != deletableObjects.end(); it++)
-		(*it)->removeStoredMember();
-	deletableObjects.clear();
+	clearDeletableObjects();
 	if (!m_sys->runSingleThreaded && m_sys->isShuttingDown())
 		m_sys->signalTerminated();
 #ifdef LLVM_ENABLED
@@ -1915,11 +1913,7 @@ int ABCVm::Run(void* d)
 #endif
 	while(true)
 	{
-		th->deletable_objects_mutex.lock();
-		for (auto it = th->deletableObjects.begin(); it != th->deletableObjects.end(); it++)
-			(*it)->removeStoredMember();
-		th->deletableObjects.clear();
-		th->deletable_objects_mutex.unlock();
+		th->clearDeletableObjects();
 		th->event_queue_mutex.lock();
 		while(th->events_queue.empty() && !th->shuttingdown)
 			th->sem_event_cond.wait(th->event_queue_mutex);

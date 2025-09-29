@@ -62,6 +62,7 @@ bool AVM1MovieClip::destruct()
 		droptarget->removeStoredMember();
 	droptarget=nullptr;
 	color.reset();
+	focusEnabled=asAtomHandler::undefinedAtom;
 	getSystemState()->stage->AVM1RemoveEventListener(this);
 	return MovieClip::destruct();
 }
@@ -96,12 +97,19 @@ void AVM1MovieClip::sinit(Class_base* c)
 	c->prototype->setDeclaredMethodByQName("startDrag","",c->getSystemState()->getBuiltinFunction(startDrag),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("stopDrag","",c->getSystemState()->getBuiltinFunction(stopDrag),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("attachAudio","",c->getSystemState()->getBuiltinFunction(attachAudio),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("focusEnabled","",c->getSystemState()->getBuiltinFunction(getFocusEnabled),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("focusEnabled","",c->getSystemState()->getBuiltinFunction(setFocusEnabled),SETTER_METHOD,false);
 }
 
 void AVM1MovieClip::setColor(AVM1Color* c)
 {
 	c->incRef();
 	this->color = _MNR(c);
+}
+
+bool AVM1MovieClip::isFocusable()
+{
+	return asAtomHandler::AVM1toBool(focusEnabled,getInstanceWorker(),getInstanceWorker()->AVM1getSwfVersion());
 }
 
 ASFUNCTIONBODY_ATOM(AVM1MovieClip,startDrag)
@@ -166,6 +174,26 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClip,attachAudio)
 //	AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"AVM1MovieClip.attachAudio");
 }
+
+ASFUNCTIONBODY_ATOM(AVM1MovieClip,getFocusEnabled)
+{
+	ret = asAtomHandler::falseAtom;
+	if (asAtomHandler::is<AVM1MovieClip>(obj))
+	{
+		AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
+		ret = th->focusEnabled;
+	}
+}
+ASFUNCTIONBODY_ATOM(AVM1MovieClip,setFocusEnabled)
+{
+	if (asAtomHandler::is<AVM1MovieClip>(obj))
+	{
+		AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
+		if (argslen > 0)
+			th->focusEnabled=asAtomHandler::fromBool(asAtomHandler::AVM1toBool(args[0],wrk,wrk->AVM1getSwfVersion()));
+	}
+}
+
 
 void AVM1Shape::sinit(Class_base* c)
 {

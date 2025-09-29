@@ -48,6 +48,7 @@ private:
 	vector<asAtom> avm1MouseListeners;
 	vector<ASObject*> avm1EventListeners;
 	vector<ASObject*> avm1ResizeListeners;
+	vector<asAtom> avm1FocusListeners;
 	// double linked list of AVM1 MovieClips currently on Stage that have scripts to execute
 	// this is needed to execute the scripts in the correct order
 	DisplayObject* avm1DisplayObjectFirst;
@@ -81,7 +82,7 @@ public:
 	_NR<Stage> getStage() override;
 	InteractiveObject* getFocusTarget();
 	void setTabFocusTarget(bool next);
-	void setFocusTarget(InteractiveObject* focus);
+	bool setFocusTarget(InteractiveObject* focus);
 	void checkResetFocusTarget(InteractiveObject* removedtarget);
 	void addHiddenObject(DisplayObject* o);
 	void removeHiddenObject(DisplayObject* o);
@@ -142,6 +143,8 @@ public:
 	void AVM1RemoveEventListener(ASObject *o);
 	void AVM1AddResizeListener(ASObject *o);
 	bool AVM1RemoveResizeListener(ASObject *o);
+	void AVM1AddFocusListener(asAtom listener);
+	bool AVM1RemoveFocusListener(asAtom listener);
 	void AVM1AddDisplayObject(DisplayObject* dobj);
 	void AVM1RemoveDisplayObject(DisplayObject* dobj);
 	void AVM1AddScriptToExecute(AVM1scriptToExecute& script);

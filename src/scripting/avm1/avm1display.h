@@ -42,12 +42,17 @@ private:
 	// this is only needed to make this movieclip the owner of the color (avoids circular references if color is also set as variable)
 	_NR<AVM1Color> color;
 	DisplayObject* droptarget;
+	asAtom focusEnabled;
 public:
-	AVM1MovieClip(ASWorker* wrk,Class_base* c):MovieClip(wrk,c),droptarget(nullptr)
+	AVM1MovieClip(ASWorker* wrk,Class_base* c):MovieClip(wrk,c)
+		,droptarget(nullptr)
+		,focusEnabled(asAtomHandler::undefinedAtom)
 	{
 		subtype = SUBTYPE_AVM1MOVIECLIP;
 	}
-	AVM1MovieClip(ASWorker* wrk,Class_base* c, FrameContainer* f, uint32_t defineSpriteTagID,uint32_t nameID=BUILTIN_STRINGS::EMPTY):MovieClip(wrk,c,f,defineSpriteTagID),droptarget(nullptr)
+	AVM1MovieClip(ASWorker* wrk,Class_base* c, FrameContainer* f, uint32_t defineSpriteTagID,uint32_t nameID=BUILTIN_STRINGS::EMPTY):MovieClip(wrk,c,f,defineSpriteTagID)
+		,droptarget(nullptr)
+		,focusEnabled(asAtomHandler::undefinedAtom)
 	{
 		subtype = SUBTYPE_AVM1MOVIECLIP;
 		name=nameID;
@@ -61,8 +66,11 @@ public:
 	ASFUNCTION_ATOM(startDrag);
 	ASFUNCTION_ATOM(stopDrag);
 	ASFUNCTION_ATOM(attachAudio);
+	ASFUNCTION_ATOM(setFocusEnabled);
+	ASFUNCTION_ATOM(getFocusEnabled);
 	void setColor(AVM1Color* c);
 	DisplayObject* getDroptarget() const { return droptarget; }
+	bool isFocusable() override;
 };
 
 class AVM1Shape: public Shape

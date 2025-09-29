@@ -577,15 +577,28 @@ void SimpleButton::prepareShutdown()
 		return;
 	DisplayObjectContainer::prepareShutdown();
 	if (lastParent)
-		lastParent->prepareShutdown();
+	{
+		DisplayObject* d = lastParent;
+		lastParent=nullptr;
+		d->prepareShutdown();
+		d->removeStoredMember();
+	}
 	for (uint32_t i=0; i<4; i++)
 	{
-		for (auto it = states[i].begin(); it != states[i].end(); it++)
+		while (!states[i].empty())
 		{
-			(*it).second->prepareShutdown();
+			DisplayObject* d = states[i].back().second;
+			states[i].pop_back();
+			d->prepareShutdown();
+			d->removeStoredMember();
 		}
 		if (parentSprite[i])
-			parentSprite[i]->prepareShutdown();
+		{
+			DisplayObject* d = parentSprite[i];
+			parentSprite[i]=nullptr;
+			d->prepareShutdown();
+			d->removeStoredMember();
+		}
 	}
 	if(soundchannel_OverUpToIdle)
 		soundchannel_OverUpToIdle->prepareShutdown();

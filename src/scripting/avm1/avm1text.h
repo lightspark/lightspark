@@ -35,6 +35,7 @@ public:
 		:TextField(wrk,c,textData,_selectable,readOnly,varname,_tag)
 	{}
 	static void sinit(Class_base* c);
+	bool isFocusable() override { return true; }
 };
 class AVM1TextFormat: public TextFormat
 {
@@ -51,8 +52,13 @@ public:
 	{}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(addListener);
+	ASFUNCTION_ATOM(removeListener);
 	ASFUNCTION_ATOM(getFocus);
 	ASFUNCTION_ATOM(setFocus);
+	ASFUNCTION_ATOM(getBeginIndex);
+	ASFUNCTION_ATOM(getCaretIndex);
+	ASFUNCTION_ATOM(getEndIndex);
+	ASFUNCTION_ATOM(setSelection);
 };
 class AVM1StyleSheet: public StyleSheet
 {

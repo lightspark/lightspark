@@ -59,6 +59,7 @@ public:
 	void constructionComplete(bool _explicit = false, bool forInitAction = false) override;
 	void afterConstruction(bool _explicit = false) override;
 	bool needsActionScript3() const override;
+	bool isFocusable() override { return false; }
 	ParseThread* parsethread;
 	uint32_t fileLength;
 	uint32_t executingFrameScriptCount;

@@ -194,6 +194,7 @@ SET(CMAKE_INSTALL_PREFIX "/usr/local" CACHE PATH "Install prefix, default is /us
 SET(COMPILE_LIGHTSPARK TRUE CACHE BOOL "Compile Lightspark?")
 SET(COMPILE_TIGHTSPARK FALSE CACHE BOOL "Compile Tightspark?")
 SET(ENABLE_TEST_RUNNER FALSE CACHE BOOL "Build the test runner?")
+SET(ENABLE_FILESYSTEM_TESTS FALSE CACHE BOOL "Build the `FileSystem` tests?")
 IF(EMSCRIPTEN)
 SET(COMPILE_NPAPI_PLUGIN FALSE)
 SET(COMPILE_PPAPI_PLUGIN FALSE)
@@ -540,6 +541,10 @@ endif(UNIX)
 ADD_SUBDIRECTORY(src)
 if (ENABLE_TEST_RUNNER)
 	ADD_SUBDIRECTORY(tests/test-runner EXCLUDE_FROM_ALL)
+endif()
+
+if (ENABLE_FILESYSTEM_TESTS)
+	ADD_SUBDIRECTORY(tests/filesystem-tests EXCLUDE_FROM_ALL)
 endif()
 
 #-- CPack setup - use 'make package' to build

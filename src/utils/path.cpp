@@ -360,7 +360,7 @@ Path Path::getParent() const
 	
 	auto it = end().dec(path.end());
 	auto it2 = std::next(path.begin(), rootLen);
-	if (std::distance(it, it2) > 0 && *it != nativeSeparator)
+	if (std::distance(it2, it) > 0 && *it != nativeSeparator)
 		--it;
 	return Path(path.begin(), it, Format::Native);
 }

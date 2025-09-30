@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
     Copyright (C) 2024  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
@@ -74,7 +74,7 @@ injector(_injector),
 eventLoop(this),
 remainingTicks(-1),
 currentTick(0),
-swfFile(test.swfPath)
+swfFile(test.swfPath.getStr())
 {
 	Log::setLogLevel(debug ? logLevel : LOG_LEVEL(-1));
 
@@ -99,8 +99,8 @@ swfFile(test.swfPath)
 	setTLSWorker(sys->worker);
 	EngineData::initSDL();
 	sys->setParamsAndEngine(new TestRunnerEngineData(rootPath, this), true);
-	sys->mainClip->setOrigin(tiny_string("/")+test.swfFilename);
-	sys->mainClip->setBaseURL(tiny_string("file://") + test.rootPath.generic_string()+"/");
+	sys->mainClip->setOrigin(Path("/") / test.swfFilename);
+	sys->mainClip->setBaseURL(tiny_string("file://") + (test.rootPath / "").getGenericStr());
 	sys->securityManager->setSandboxType(SecurityManager::LOCAL_TRUSTED);
 	sys->ignoreUnhandledExceptions = true;
 	sys->useFastInterpreter = true;
@@ -175,7 +175,7 @@ TestStatus TestRunner::test()
 
 void TestRunner::compareOutput(const tiny_string& actualOutput)
 {
-	std::ifstream stream(outputPath);
+	std::ifstream stream(outputPath.getStr());
 	tiny_string expectedOutput = std::string
 	(
 		std::istreambuf_iterator<char> { stream },

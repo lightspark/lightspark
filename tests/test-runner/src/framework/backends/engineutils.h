@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
     Copyright (C) 2024  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
@@ -23,8 +23,7 @@
 
 #include <cstdint>
 #include <lightspark/platforms/engineutils.h>
-
-#include "utils/filesystem_overloads.h"
+#include <lightspark/utils/path.h>
 
 using namespace lightspark;
 
@@ -40,7 +39,7 @@ struct TestRunner;
 class TestRunnerEngineData : public EngineData
 {
 private:
-	path_t basePath;
+	Path basePath;
 	TestRunner* runner;
 protected:
 	SDL_Window* createWidget(uint32_t w, uint32_t h) override;
@@ -48,7 +47,7 @@ protected:
 public:
 	TestRunnerEngineData
 	(
-		const path_t& _basePath,
+		const Path& _basePath,
 		TestRunner* _runner
 	) :
 	basePath(_basePath),

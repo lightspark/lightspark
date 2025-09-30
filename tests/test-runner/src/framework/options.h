@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
     Copyright (C) 2024  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
@@ -31,9 +31,12 @@
 #include <lightspark/utils/optional.h>
 #include <lightspark/utils/timespec.h>
 
-#include "utils/filesystem_overloads.h"
-
 using namespace lightspark;
+
+namespace lightspark
+{
+	class Path;
+};
 
 enum class TestFormat;
 
@@ -135,9 +138,9 @@ struct TestOptions
 	Optional<double> screenDPI;
 	bool usesAssert;
 
-	TestOptions(const tiny_string& _name, const path_t& path, const TestFormat& testFormat);
+	TestOptions(const tiny_string& _name, const Path& path, const TestFormat& testFormat);
 
-	path_t getOutputPath(const path_t& testDir) const;
+	Path getOutputPath(const Path& testDir) const;
 };
 
 #endif /* FRAMEWORK_OPTIONS_H */

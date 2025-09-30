@@ -1,8 +1,8 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
-	Copyright (C) 2025  Ludger Krämer <dbluelle@onlinehome.de>
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2025  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -47,7 +47,7 @@ static tiny_string toInputFileName(const TestFormat& testFormat)
 	return "";
 }
 
-static ::Impl<InputParser> toInputParser(const TestFormat& testFormat, const path_t& inputPath)
+static ::Impl<InputParser> toInputParser(const TestFormat& testFormat, const Path& inputPath)
 {
 	switch (testFormat)
 	{
@@ -66,7 +66,7 @@ static ::Impl<InputParser> toInputParser(const TestFormat& testFormat, const pat
 Test::Test
 (
 	const TestOptions& _options,
-	const path_t& testDir,
+	const Path& testDir,
 	const tiny_string& swfFile,
 	const tiny_string& _name,
 	const TestFormat& _format
@@ -107,6 +107,6 @@ TestRunner Test::createTestRunner(bool debug, const LOG_LEVEL& logLevel) const
 
 InputInjector Test::inputInjector() const
 {
-	bool hasInputFile = fs::is_regular_file(inputPath);
+	bool hasInputFile = inputPath.isFile();
 	return hasInputFile ? InputInjector(toInputParser(format, inputPath)) : InputInjector();
 }

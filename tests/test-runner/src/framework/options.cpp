@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
     Copyright (C) 2024  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
@@ -22,9 +22,10 @@
 #include <cstdint>
 #include <string>
 
+#include <lightspark/utils/path.h>
+
 #include "framework/options.h"
 #include "framework/test.h"
-#include "utils/filesystem_overloads.h"
 #include "utils/token_parser/enum.h"
 #include "utils/token_parser/member.h"
 #include "utils/token_parser/token_parser.h"
@@ -204,11 +205,11 @@ static LSMemberInfo playerOptionsInfo
 	}
 };
 
-static bool isTestInfoFile(const path_t& path, const LSToken& token)
+static bool isTestInfoFile(const Path& path, const LSToken& token)
 {
 	return
 	(
-		path.filename() == "test_info" &&
+		path.getFilename() == "test_info" &&
 		token.isDirective() &&
 		token.dir.name == "test"
 	);
@@ -550,7 +551,7 @@ ImageTrigger::ImageTrigger(const ImageTrigger::Type& _type) : type(_type)
 TestOptions::TestOptions
 (
 	const tiny_string& _name,
-	const path_t& path,
+	const Path& path,
 	const TestFormat& testFormat
 ) :
 name(_name),
@@ -567,11 +568,11 @@ usesAssert(false)
 		{
 			try
 			{
-				auto block = LSTokenParser().parseFile(path.string());
+				auto block = LSTokenParser().parseFile(path);
 				if (!isTestInfoFile(path, block.front()))
 				{
 					std::stringstream s;
-					s << path << " isn't a valid `test_info` file.";
+					s << path.getStr() << " isn't a valid `test_info` file.";
 					throw TestRunnerException(s.str());
 				}
 
@@ -591,7 +592,7 @@ usesAssert(false)
 			}
 			catch (const std::exception& e)
 			{
-				std::cerr << "Error parsing file " << path <<
+				std::cerr << "Error parsing file " << path.getStr() <<
 				". Reason: " << e.what() << std::endl;
 				std::exit(1);
 			}
@@ -601,7 +602,8 @@ usesAssert(false)
 		{
 			try
 			{
-				auto data = toml::parse_file(path.string());
+				std::string _path = path.getStr();
+				auto data = toml::parse_file(_path);
 				numFrames = tomlTryFindFlat<size_t>
 				(
 					data,
@@ -641,7 +643,7 @@ usesAssert(false)
 			catch (const toml::parse_error& e)
 			{
 				auto source = e.source();
-				auto _path = source.path != nullptr ? *source.path : path.string();
+				auto _path = source.path != nullptr ? tiny_string(*source.path) : path.getStr();
 				std::cerr << "Error parsing file " << _path << ':' <<
 				std::endl << "reason: " << e.description() <<
 				std::endl << '(' << source.begin << ')' <<
@@ -656,7 +658,7 @@ usesAssert(false)
 	}
 }
 
-path_t TestOptions::getOutputPath(const path_t& testDir) const
+Path TestOptions::getOutputPath(const Path& testDir) const
 {
 	return testDir / outputPath;
 }

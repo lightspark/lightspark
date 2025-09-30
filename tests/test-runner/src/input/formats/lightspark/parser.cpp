@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -30,7 +30,7 @@ std::vector<LSEventStorage> LSInputParser::parse()
 {
 	try
 	{
-		const auto movie = LSMovieParser(path.string()).getMovie();
+		const auto movie = LSMovieParser(path).getMovie();
 		std::vector<LSEventStorage> ret;
 		for (size_t i = 0; i < movie.numFrames(); ++i)
 		{
@@ -52,7 +52,7 @@ std::vector<LSEventStorage> LSInputParser::parse()
 	catch (const std::exception& e)
 	{
 		std::stringstream s;
-		s << "Failed to Parse LSM file " << path << ". Reason: " << e.what();
+		s << "Failed to Parse LSM file " << path.getStr() << ". Reason: " << e.what();
 		throw TestRunnerException(s.str());
 	}
 }

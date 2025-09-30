@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -67,7 +67,7 @@ void TestRunnerDownloadManager::destroy(Downloader* downloader)
 		delete downloader;
 }
 
-void TestRunnerDownloader::run(const path_t& basePath, bool dataGeneration)
+void TestRunnerDownloader::run(const Path& basePath, bool dataGeneration)
 {
 	if (url.empty() && isLocal && !dataGeneration)
 	{
@@ -104,7 +104,7 @@ void TestRunnerDownloader::run(const path_t& basePath, bool dataGeneration)
 		// Convert a URL such as `https://localhost/foo/bar` into a local
 		// path `basePath/localhost/foo/bar`.
 		URLInfo fsURL(url);
-		path_t _path = basePath;
+		Path _path = basePath;
 		try
 		{
 			if (!fsURL.getHostname().empty())
@@ -123,7 +123,7 @@ void TestRunnerDownloader::run(const path_t& basePath, bool dataGeneration)
 			setFailed();
 			return;
 		}
-		path = _path.generic_string();
+		path = _path.getGenericStr();
 	}
 
 	//If the caching is selected, we override the normal behaviour and use the local file as the cache file
@@ -151,7 +151,7 @@ void TestRunnerDownloader::run(const path_t& basePath, bool dataGeneration)
 	{
 		std::ifstream file
 		(
-			path_t((std::string)URLInfo::decode(path, URLInfo::ENCODE_ESCAPE)),
+			Path(URLInfo::decode(path, URLInfo::ENCODE_ESCAPE)).getStr(),
 			std::ios::in | std::ios::binary
 		);
 

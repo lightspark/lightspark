@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -34,7 +34,7 @@ namespace lightspark
 class RuffleInputParser : public InputParser
 {
 public:
-	RuffleInputParser(const path_t& path) : InputParser(path) {}
+	RuffleInputParser(const Path& path) : InputParser(path) {}
 	std::vector<LSEventStorage> parse() override;
 };
 

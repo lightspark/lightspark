@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
     Copyright (C) 2025  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,7 @@ bool MouseMove::mouseButtonPressed=false;
 
 std::vector<LSEventStorage> RuffleInputParser::parse()
 {
-	std::ifstream input(path);
+	std::ifstream input(path.getStr());
 	cereal::JSONInputArchive archive(input);
 	std::vector<AutomatedEvent> events;
 	archive(events);

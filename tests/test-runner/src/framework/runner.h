@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -24,13 +24,13 @@
 #include <fstream>
 #include <lightspark/logger.h>
 #include <lightspark/tiny_string.h>
+#include <lightspark/utils/path.h>
 #include <lightspark/utils/timespec.h>
 
 #include "framework/backends/event_loop.h"
 #include "framework/backends/logger.h"
 #include "framework/options.h"
 #include "input/injector.h"
-#include "utils/filesystem_overloads.h"
 
 using namespace lightspark;
 
@@ -53,8 +53,8 @@ struct TestRunner
 private:
 	bool isDone;
 public:
-	path_t rootPath;
-	path_t outputPath;
+	Path rootPath;
+	Path outputPath;
 	TestOptions options;
 	SystemState* sys;
 	ParseThread* pt;

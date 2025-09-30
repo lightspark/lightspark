@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -21,7 +21,6 @@
 #include <csignal>
 #include <cstdint>
 #include <cstdlib>
-#include <filesystem>
 #include <iostream>
 #include <regex>
 #include <vector>
@@ -40,16 +39,19 @@
 #include <lightspark/logger.h>
 #include <lightspark/swf.h>
 #include <lightspark/tiny_string.h>
+#include <lightspark/utils/filesystem.h>
 #include <lightspark/utils/optional.h>
+#include <lightspark/utils/path.h>
 
 #include "config.h"
 #include "framework/test.h"
 #include "framework/runner.h"
 #include "utils/args_parser.h"
-#include "utils/filesystem_overloads.h"
 
 using namespace lightspark;
 using namespace libtestpp;
+
+namespace fs = FileSystem;
 
 static TestFormat fromStr(const tiny_string& name)
 {
@@ -108,9 +110,9 @@ static tiny_string toInfoFileName(const TestFormat& testFormat)
 	return "";
 }
 
-static path_t stripPrefix(const path_t& path, const path_t& prefix)
+static Path stripPrefix(const Path& path, const Path& prefix)
 {
-	return path.lexically_relative(prefix);
+	return path.lexicallyRelative(prefix);
 }
 
 struct Options : public Arguments
@@ -177,11 +179,11 @@ bool isCandidate(const Arguments& args, const tiny_string& testName, const TestF
 	return true;
 }
 
-Trial runTest(const Options& options, const path_t& file, const tiny_string& name, const TestFormat& testFormat)
+Trial runTest(const Options& options, const Path& file, const tiny_string& name, const TestFormat& testFormat)
 {
 	using OutcomeType = Outcome::Type;
 
-	auto root = file.parent_path();
+	auto root = file.getParent();
 	Test test(TestOptions(name, file, testFormat), root, "test.swf", name, testFormat);
 
 	bool ignore = !test.shouldRun();
@@ -230,7 +232,7 @@ Trial runTest(const Options& options, const path_t& file, const tiny_string& nam
 	}).with_ignored_flag(ignore);
 }
 
-Optional<Trial> lookUpTest(const path_t& root, const Options& options)
+Optional<Trial> lookUpTest(const Path& root, const Options& options)
 {
 	auto name = filterToTestName(*options.filter);
 	TestFormat testFormat = fromStr(name);
@@ -244,13 +246,13 @@ Optional<Trial> lookUpTest(const path_t& root, const Options& options)
 	// Make sure that:
 	//	1. There's no path traversal (e.g. `../../test`)
 	//	2. The path is still exact (e.g. `foo/../foo/test`)
-	if (stripPrefix(path, absRoot) != (path_t((std::string)dirName)/realName/infoFile) || !fs::is_regular_file(path))
+	if (stripPrefix(path, absRoot) != (Path(dirName)/realName/infoFile) || !path.isFile())
 		return nullOpt;
 	return runTest
 	(
 		options,
 		path,
-		stripPrefix(path.parent_path(), absRoot/dirName).generic_string(),
+		stripPrefix(path.getParent(), absRoot/dirName).getGenericStr(),
 		testFormat
 	);
 }
@@ -342,7 +344,7 @@ int main(int argc, char* argv[])
 	// This is an important optimization, as we currently can't run
 	// tests in parallel, due to Lightspark making heavy use of threads.
 	bool filterExact = options.exact && options.filter.hasValue();
-	path_t root = path_t(TESTS_DIR).append("swfs");
+	Path root = Path(TESTS_DIR).append("swfs");
 	std::vector<Trial> tests;
 
 	if (filterExact)
@@ -356,24 +358,24 @@ int main(int argc, char* argv[])
 	else
 	{
 		TestFormat testFormat;
-		for (auto it = fs::recursive_directory_iterator(root); it != fs::end(it); it++)
+		for (auto it = fs::RecursiveDirIter(root); it != fs::end(it); it++)
 		{
 			auto entry = *it;
-			auto path = entry.path();
-			if (entry.is_directory() && it.depth() == 0)
-				testFormat = fromDirName(std::prev(path.end())->string());
-			else if (entry.is_regular_file())
+			auto path = entry.getPath();
+			if (entry.isDir() && it.depth() == 0)
+				testFormat = fromDirName(std::prev(path.end())->getStr());
+			else if (entry.isFile())
 			{
 				auto infoFile = toInfoFileName(testFormat);
 				// Skip invalid tests.
-				if (!infoFile.empty() && path.filename() != infoFile)
+				if (!infoFile.empty() && path.getFilename() != infoFile)
 					continue;
 
 				auto name = stripPrefix
 				(
-					path.parent_path(),
+					path.getParent(),
 					root / toDirName(testFormat)
-				).generic_string();
+				).getGenericStr();
 
 				if (!name.empty() && isCandidate(options, name, testFormat))
 					tests.push_back(runTest(options, path, name, testFormat));

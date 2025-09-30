@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -22,15 +22,16 @@
 
 #include <vector>
 
+#include <lightspark/utils/path.h>
+
 #include "input/events.h"
-#include "utils/filesystem_overloads.h"
 
 class InputParser
 {
 protected:
-	path_t path;
+	Path path;
 public:
-	InputParser(const path_t& _path) : path(_path) {}
+	InputParser(const Path& _path) : path(_path) {}
 	virtual ~InputParser() {}
 	// Parse input data.
 	virtual std::vector<LSEventStorage> parse() = 0;

@@ -1,8 +1,8 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
-	Copyright (C) 2025  Ludger Krämer <dbluelle@onlinehome.de>
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2025  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -23,9 +23,9 @@
 
 #include <lightspark/logger.h>
 #include <lightspark/tiny_string.h>
+#include <lightspark/utils/path.h>
 
 #include "framework/options.h"
-#include "utils/filesystem_overloads.h"
 
 using namespace lightspark;
 
@@ -62,10 +62,10 @@ struct Test
 	};
 
 	TestOptions options;
-	path_t swfPath;
-	path_t inputPath;
-	path_t outputPath;
-	path_t rootPath;
+	Path swfPath;
+	Path inputPath;
+	Path outputPath;
+	Path rootPath;
 	tiny_string swfFilename;
 	tiny_string name;
 	TestFormat format;
@@ -74,7 +74,7 @@ struct Test
 	Test
 	(
 		const TestOptions& _options,
-		const path_t& testDir,
+		const Path& testDir,
 		const tiny_string& swfFile,
 		const tiny_string& _name,
 		const TestFormat& _format

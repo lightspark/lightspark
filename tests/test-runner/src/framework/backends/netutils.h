@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -28,17 +28,16 @@
 #include <lightspark/backends/streamcache.h>
 #include <lightspark/backends/urlutils.h>
 #include <lightspark/tiny_string.h>
-
-#include "utils/filesystem_overloads.h"
+#include <lightspark/utils/path.h>
 
 using namespace lightspark;
 
 class TestRunnerDownloadManager : public DownloadManager
 {
 private:
-	path_t basePath;
+	Path basePath;
 public:
-	TestRunnerDownloadManager(const path_t& _basePath) : basePath(_basePath)
+	TestRunnerDownloadManager(const Path& _basePath) : basePath(_basePath)
 	{
 		type = STANDALONE;
 	}
@@ -83,7 +82,7 @@ public:
 		bool _isLocal
 	) : Downloader(url, cache, data, headers, owner), isLocal(_isLocal) {}
 
-	void run(const path_t& basePath, bool dataGeneration);
+	void run(const Path& basePath, bool dataGeneration);
 };
 
 #endif /* FRAMEWORK_BACKENDS_NETUTILS_H */

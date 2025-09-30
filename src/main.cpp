@@ -17,8 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <glib.h>
-#include <glib/gstdio.h>
 #include "version.h"
 #include "backends/security.h"
 #include "backends/config.h"
@@ -101,7 +99,8 @@ public:
 		Path cachePath = tiny_string(config->getCacheDirectory());
 		sharedObjectDatapath = userDataPath / "data";
 		// move sharedObject data from old location to new location, if new location doesn't exist yet
-		if (!tryMoveDir(sharedObjectDatapath, cachePath / "data"))
+		Path oldpath = cachePath / "data";
+		if (oldpath.exists() && !tryMoveDir(sharedObjectDatapath, oldpath))
 			LOG(LOG_ERROR, "couldn't move shared object data from cache directory to user data directory");
 
 		// TODO: Make `sharedObjectDatapath` a `Path`, rather than a `tiny_string`.
@@ -110,7 +109,8 @@ public:
 		appStoragePath = userDataPath / fileDataPath;
 
 		// move ApplicationStorage data from old location to new location, if new location doesn't exist yet
-		if (!tryMoveDir(appStoragePath, cachePath / fileDataPath))
+		oldpath = cachePath / fileDataPath;
+		if (oldpath.exists() && !tryMoveDir(appStoragePath, cachePath / fileDataPath))
 			LOG(LOG_ERROR, "couldn't move appstorage data from cache directory to user data directory");
 
 		appStoragePath /= "appstorage";

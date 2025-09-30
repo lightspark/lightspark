@@ -26,7 +26,7 @@
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Vector.h"
 #include "scripting/flash/events/StatusEvent.h"
-#include <glib.h>
+#include "utils/filesystem.h"
 
 using namespace lightspark;
 
@@ -430,16 +430,11 @@ ASFUNCTIONBODY_ATOM(ExtensionContext,dispose)
 
 void ExtensionContext::registerExtension(const tiny_string& filepath)
 {
-	tiny_string extdir(g_path_get_dirname(filepath.raw_buf()));
-	extdir+=G_DIR_SEPARATOR_S;
-	extdir+="META-INF";
-	extdir+=G_DIR_SEPARATOR_S;
-	extdir+="ANE";
-	extdir+=G_DIR_SEPARATOR_S;
-	tiny_string extxml=extdir;
-	extxml+="extension.xml";
+	Path p(filepath);
+	Path extdir = p.getDir() / "META-INF" / "ANE";
+	Path extxml = extdir / "extension.xml";
 	pugi::xml_document doc;
-	pugi::xml_parse_result res = doc.load_file(extxml.raw_buf());
+	pugi::xml_parse_result res = doc.load_file(extxml.rawBuf());
 	if (res.status != pugi::status_ok)
 		LOG(LOG_ERROR,"failed to parse extension xml file:"<<res.status<<" "<<extxml);
 	else
@@ -470,10 +465,8 @@ void ExtensionContext::registerExtension(const tiny_string& filepath)
 					LOG(LOG_ERROR,"native library not found:"<<filepath);
 				else
 				{
-					tiny_string lib = extdir+platformname;
-					lib += G_DIR_SEPARATOR_S;
-					lib += nativelibraryname;
-					fre.librarypath=lib;
+					Path lib = extdir / platformname / nativelibraryname;
+					fre.librarypath=lib.rawBuf();
 					uint32_t extid = getSys()->getUniqueStringId(extensionid);
 					extensions.insert(make_pair(extid,fre));
 				}

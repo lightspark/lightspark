@@ -681,7 +681,7 @@ void EngineData::setLocalStorageAllowedMarker(bool allowed)
 		std::ofstream(path.getStr());
 		fs::setPerms(path, fs::Perms::OwnerRead | fs::Perms::OwnerWrite);
 	}
-	else
+	else if (!allowed)
 		fs::remove(path);
 }
 bool EngineData::getLocalStorageAllowedMarker()

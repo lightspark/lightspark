@@ -454,6 +454,7 @@ void InputThread::handleMouseMove(const LSMouseMoveEvent& event)
 			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOver",local.x,local.y,true,event.modifiers,event.pressed,currentMouseOver)),true);
 		currentMouseOver = selected;
 	}
+	mutexListeners.lock();
 	if (selected != lastRolledOver)
 	{
 		if (lastRolledOver)
@@ -462,6 +463,7 @@ void InputThread::handleMouseMove(const LSMouseMoveEvent& event)
 			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOver",local.x,local.y,true,event.modifiers,event.pressed,lastRolledOver)));
 		lastRolledOver = selected;
 	}
+	mutexListeners.unlock();
 }
 
 void InputThread::handleScrollEvent(const LSMouseWheelEvent& event)
@@ -917,4 +919,24 @@ void InputThread::setLastKeyUp(KeyboardEvent *e)
 	lastKeyUp = e->getKeyCode();
 	keyDownSet.erase(e->getKeyCode());
 	lastKeyDown = AS3KEYCODE_UNKNOWN;
+}
+
+void InputThread::CheckRemovedInteractiveObject(InteractiveObject* o)
+{
+	if (o->needsActionScript3() || !o->is<SimpleButton>())
+	{
+		Locker locker(inputDataSpinlock);
+		if (currentMouseOver.getPtr()==o)
+			currentMouseOver.reset();
+	}
+
+	{
+		Locker locker(mutexListeners);
+		if (lastMouseDownTarget.getPtr()==o)
+			lastMouseDownTarget.reset();
+		if (lastMouseUpTarget.getPtr()==o)
+			lastMouseUpTarget.reset();
+		if (lastRolledOver.getPtr()==o)
+			lastRolledOver.reset();
+	}
 }

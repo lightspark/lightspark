@@ -132,9 +132,17 @@ void XMLNode::prepareShutdown()
 		return;
 	ASObject::prepareShutdown();
 	if (children)
+	{
 		children->prepareShutdown();
+		children->removeStoredMember();
+		children=nullptr;
+	}
 	if (parent)
+	{
 		parent->prepareShutdown();
+		parent->removeStoredMember();
+		parent=nullptr;
+	}
 }
 bool XMLNode::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
@@ -358,6 +366,7 @@ void XMLNode::removeChild(const pugi::xml_node& child)
 				asAtom arrarg = asAtomHandler::fromUInt(i);
 				this->children->removeAt(tmp,getInstanceWorker(),arrobj,&arrarg,1);
 				ASATOM_DECREF(tmp);
+				break;
 			}
 		}
 	}

@@ -2626,7 +2626,9 @@ ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE
 	objfreelist(c ? c->getFreeList(wrk) : nullptr),
 	classdef(c),proxyMultiName(nullptr),sys(c?c->sys: wrk && wrk != this ? wrk->getSystemState() :nullptr),worker(wrk),gcNext(nullptr),gcPrev(nullptr),
 	stringId(UINT32_MAX),storedmembercount(0),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
-	markedforgarbagecollection(false),deletedingarbagecollection(false),implEnable(true)
+	markedforgarbagecollection(false),
+	deletedingarbagecollection(false),
+	implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -2644,7 +2646,9 @@ ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE
 }
 ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),classdef(nullptr),proxyMultiName(nullptr),sys(o.classdef? o.classdef->sys : nullptr),worker(o.worker),gcNext(nullptr),gcPrev(nullptr),
 	stringId(o.stringId),storedmembercount(o.storedmembercount),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
-	markedforgarbagecollection(false),deletedingarbagecollection(false),implEnable(true)
+	markedforgarbagecollection(false),
+	deletedingarbagecollection(false),
+	implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -2658,7 +2662,9 @@ ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),classdef(nullpt
 
 ASObject::ASObject(MemoryAccount* m):objfreelist(nullptr),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),worker(nullptr),gcNext(nullptr),gcPrev(nullptr),
 	stringId(UINT32_MAX),storedmembercount(0),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
-	markedforgarbagecollection(false),deletedingarbagecollection(false),implEnable(true)
+	markedforgarbagecollection(false),
+	deletedingarbagecollection(false),
+	implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -2702,7 +2708,7 @@ bool ASObject::removefromGarbageCollection()
 
 bool ASObject::addToGarbageCollection()
 {
-	if (getInstanceWorker() && canHaveCyclicMemberReference())
+	if (getInstanceWorker() && canHaveCyclicMemberReference() && !markedforgarbagecollection)
 	{
 		getInstanceWorker()->addObjectToGarbageCollector(this);
 		markedforgarbagecollection = true;
@@ -2737,6 +2743,7 @@ void ASObject::removeStoredMember()
 	assert(storedmembercount<=uint32_t(this->getRefCount()));
 	storedmembercount--;
 	if (storedmembercount
+		&& !markedforgarbagecollection
 		&& ((uint32_t)this->getRefCount() == storedmembercount+1))
 	{
 		getInstanceWorker()->addObjectToGarbageCollector(this);
@@ -2775,7 +2782,7 @@ bool ASObject::handleGarbageCollection()
 			{
 				LOG(LOG_CALLS,"handleGarbageCollection stopped:"<<this<<" "<<this->getRefCount()<<"/"<<this->storedmembercount<<" "<<(*it)<<" "<<(*it)->gccounter.count<<"/"<<(*it)->getRefCount()<<" "<<(*it)->gccounter.hasmember);
 				c = UINT32_MAX;
-				if (!(*it)->gccounter.ignore && (*it)->isMarkedForGarbageCollection() && !deletedingarbagecollection)
+				if (!(*it)->gccounter.ignore && (*it)->markedforgarbagecollection && !deletedingarbagecollection)
 				{
 					getInstanceWorker()->addObjectToGarbageCollector(this);
 					gcstate.reset();

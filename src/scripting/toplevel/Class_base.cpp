@@ -500,7 +500,11 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 		if (this->isBuiltin())
 			asAtomHandler::getObjectNoCheck(target)->constructionComplete(_explicit);
 		if(buildAndLink)
+		{
 			asAtomHandler::getObjectNoCheck(target)->afterConstruction(_explicit);
+			if (_explicit)
+				this->getInstanceWorker()->addExplicitConstructedObject(target);
+		}
 	}
 	else
 		t->decRef();

@@ -97,6 +97,7 @@ void RenderThread::stop()
 RenderThread::~RenderThread()
 {
 	wait();
+	m_sys->removeJob(this);
 	LOG(LOG_INFO,"~RenderThread this=" << this);
 }
 

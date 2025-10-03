@@ -3199,6 +3199,7 @@ void DisplayObject::removeAVM1Listeners()
 		return;
 	getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 	getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
+	getSystemState()->stage->AVM1RemoveFocusListener(asAtomHandler::fromObjectNoPrimitive(this));
 	getSystemState()->stage->AVM1RemoveEventListener(this);
 	getSystemState()->unregisterFrameListener(this);
 	avm1mouselistenercount=0;

@@ -1744,6 +1744,8 @@ void Vector::setVariableByInteger(int index, asAtom &o, CONST_ALLOWED_FLAG allow
 	checkValue(v,true,&isNewObject);
 	if (isNewObject)
 		ASATOM_DECREF(o);
+	if (getInstanceWorker()->currentCallContext && getInstanceWorker()->currentCallContext->exceptionthrown)
+		return;
 	if(size_t(index) < vec.size())
 	{
 		if (vec[index].uintval != v.uintval)

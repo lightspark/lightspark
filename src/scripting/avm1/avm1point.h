@@ -37,7 +37,7 @@ public:
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
-	bool countCylicMemberReferences(garbagecollectorstate& gcstate);
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(AVM1_getX);

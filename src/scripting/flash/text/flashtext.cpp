@@ -267,6 +267,7 @@ void TextField::finalize()
 	ASATOM_REMOVESTOREDMEMBER(restrictChars);
 	restrictChars=asAtomHandler::nullAtom;
 	styleSheet.reset();
+	getSystemState()->removeJob(this);
 }
 
 void TextField::prepareShutdown()

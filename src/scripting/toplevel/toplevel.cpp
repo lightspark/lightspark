@@ -141,19 +141,19 @@ void dumpFunctionCallCount(bool builtinonly = false,uint32_t mincallcount=0, uin
 #endif
 FORCE_INLINE void resetLocals(call_context *cc, call_context* saved_cc, const asAtom& obj)
 {
-	for(asAtom* i=cc->locals+1;i< cc->lastlocal;++i)
+	for(asAtom* i=cc->lastlocal-1;i>cc->locals ;--i)
 	{
 		LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
 		ASObject* o = asAtomHandler::getObject(*i);
 		if (o)
-			o->decRefAndGCCheck();
+			o->decRef();
 	}
 	if (cc->locals[0].uintval != obj.uintval)
 	{
 		LOG_CALL("locals0:"<<asAtomHandler::toDebugString(cc->locals[0]));
 		ASObject* o = asAtomHandler::getObject(cc->locals[0]);
 		if (o)
-			o->decRefAndGCCheck();
+			o->decRef();
 	}
 	if (saved_cc)
 	{

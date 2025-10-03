@@ -401,7 +401,7 @@ DisplayObject* DisplayObjectContainer::getLastFrameChildAtDepth(int depth, uint3
 	if (it != mapFrameDepthToLegacyChildRemembered.end())
 	{
 		DisplayObject* o = it->second;
-		if (it->second->getTagID()==CharacterId)
+		if (o->getTagID()==CharacterId)
 		{
 			o->markedForLegacyDeletion=false;
 			o->incRef();
@@ -1149,7 +1149,11 @@ InteractiveObject::InteractiveObject(ASWorker* wrk, Class_base* c):DisplayObject
 void InteractiveObject::setOnStage(bool staged, bool force,bool inskipping)
 {
 	if (!staged)
+	{
 		getSystemState()->stage->checkResetFocusTarget(this);
+		if (getSystemState()->getInputThread())
+			getSystemState()->getInputThread()->CheckRemovedInteractiveObject(this);
+	}
 	DisplayObject::setOnStage(staged,force,inskipping);
 }
 InteractiveObject::~InteractiveObject()

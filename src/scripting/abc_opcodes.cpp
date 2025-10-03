@@ -886,6 +886,7 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 	{
 		ASATOM_DECREF(ret2);
 	}
+	asAtomHandler::as<IFunction>(f)->addOwnedObject(asAtomHandler::getObjectNoCheck(ret));
 }
 
 void ABCVm::construct(call_context* th, int m)

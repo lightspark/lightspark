@@ -39,7 +39,8 @@ enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	AVM1INITACTION_EVENT,SET_LOADER_CONTENT_EVENT,ROOTCONSTRUCTEDEVENT,
 	LOCALCONNECTIONEVENT,GETMOUSETARGET_EVENT, RENDER_FRAME,
 	BROADCAST_EVENT,
-	STARTJOB_EVENT};
+	STARTJOB_EVENT,
+	GARBAGECOLLECTION_EVENT};
 
 class ABCContext;
 class DictionaryTag;
@@ -581,9 +582,15 @@ class StartJobEvent: public Event
 {
 	IThreadJob* thread;
 public:
-	StartJobEvent(IThreadJob* t):Event(nullptr,nullptr, "LoadMovieEvent"),thread(t){}
+	StartJobEvent(IThreadJob* t):Event(nullptr,nullptr, "StartJobEvent"),thread(t){}
 	EVENT_TYPE getEventType() const override { return STARTJOB_EVENT; }
 	IThreadJob* getThread() const { return thread; }
+};
+class GarbageCollectionEvent: public Event
+{
+public:
+	GarbageCollectionEvent():Event(nullptr,nullptr, "GarbageCollectionEvent"){}
+	EVENT_TYPE getEventType() const override { return GARBAGECOLLECTION_EVENT; }
 };
 
 class ParseRPCMessageEvent: public Event

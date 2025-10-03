@@ -57,6 +57,8 @@ private:
 	unordered_map<uint32_t,IFunction*> avm1ClassConstructorsCaseSensitive;
 	unordered_map<uint32_t,IFunction*> avm1ClassConstructorsCaseInsensitive;
 	uint16_t builtinCallResultlocalnumber;
+	// this is used to keep track of ASObjects that were constructed inside a SyntheticFunction to make sure they are properly recounted
+	std::list<asAtom> explicitconstructedObjects;
 public:
 	Stage* stage; // every worker has its own stage. In case of the primordial worker this points to the stage of the SystemState.
 	asfreelist* freelist;
@@ -178,6 +180,8 @@ public:
 	{
 		builtinCallResultlocalnumber=UINT16_MAX;
 	}
+	void addExplicitConstructedObject(asAtom a);
+	void clearExplicitConstructedObjects();
 };
 
 }

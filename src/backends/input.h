@@ -135,6 +135,7 @@ public:
 	bool isKeyDown(AS3KeyCode key);
 	void setLastKeyDown(KeyboardEvent* e);
 	void setLastKeyUp(KeyboardEvent* e);
+	void CheckRemovedInteractiveObject(InteractiveObject* o);
 };
 
 InputThread* getInputThread();

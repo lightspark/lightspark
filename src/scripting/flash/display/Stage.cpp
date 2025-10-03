@@ -832,18 +832,24 @@ void Stage::prepareForRemoval(DisplayObject* d)
 
 void Stage::cleanupRemovedDisplayObjects()
 {
+	if (getVm(getSystemState()))
+		getVm(getSystemState())->clearDeletableObjects();
 	Locker l(DisplayObjectRemovedMutex);
 	auto it = removedDisplayObjects.begin();
 	while (it != removedDisplayObjects.end())
 	{
-		if ((*it)->hasBroadcastListeners()) // DisplayObjects with broadcast listeners are not destroyed, only hidden
+		DisplayObject* o = *it;
+		if (!getSystemState()->isShuttingDown())
 		{
-			if ((*it)->is<MovieClip>() && !(*it)->as<MovieClip>()->state.advancedByTick)
+			if (o->hasBroadcastListeners()) // DisplayObjects with broadcast listeners are not destroyed, only hidden
 			{
-				// ensure the hidden MovieClip is not advanced on the next tick
-				(*it)->as<MovieClip>()->state.next_FP = (*it)->as<MovieClip>()->state.FP;
+				if (o->is<MovieClip>() && !o->as<MovieClip>()->state.advancedByTick)
+				{
+					// ensure the hidden MovieClip is not advanced on the next tick
+					(*it)->as<MovieClip>()->state.next_FP = (*it)->as<MovieClip>()->state.FP;
+				}
+				addHiddenObject(o);
 			}
-			addHiddenObject(*it);
 		}
 		(*it)->removeStoredMember();
 		it = removedDisplayObjects.erase(it);

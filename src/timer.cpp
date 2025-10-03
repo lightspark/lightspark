@@ -243,10 +243,15 @@ void TimerThread::removeJob_noLock(ITickJob* job)
 void LSTimers::cleanup()
 {
 	Locker l(timerMutex);
+	std::set<ITickJob*> uniquejobs;
 	for (auto it = timers.begin(); it != timers.end(); it++)
 	{
 		if ((*it).job)
-			(*it).job->tickFence();
+			uniquejobs.insert((*it).job);
+	}
+	for (auto it = uniquejobs.begin(); it != uniquejobs.end(); it++)
+	{
+		(*it)->tickFence();
 	}
 	timers.clear();
 }

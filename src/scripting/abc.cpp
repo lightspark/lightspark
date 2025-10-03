@@ -1323,14 +1323,17 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				m_sys->handleBroadcastEvent(ev->eventname);
 				break;
 			}
-			case IDLE_EVENT:
-			{
-				m_sys->setFramePhase(FramePhase::IDLE);
-				m_sys->stage->cleanupRemovedDisplayObjects();
-				m_sys->worker->processGarbageCollection(false);
+			case GARBAGECOLLECTION_EVENT:
+				clearDeletableObjects();
 				// DisplayObjects that are removed from the display list keep their Parent set until all removedFromStage events are handled
 				// see http://www.senocular.com/flash/tutorials/orderofoperations/#ObjectDestruction
 				m_sys->resetParentList();
+				m_sys->stage->cleanupRemovedDisplayObjects();
+				m_sys->worker->processGarbageCollection(false);
+				break;
+			case IDLE_EVENT:
+			{
+				m_sys->setFramePhase(FramePhase::IDLE);
 				{
 					Locker l(event_queue_mutex);
 					while (!idleevents_queue.empty())
@@ -1338,6 +1341,9 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 						events_queue.push_back(idleevents_queue.front());
 						idleevents_queue.pop_front();
 					}
+					// ensure gc is done after _all_ events added during SystemState tick are handled
+					_R<GarbageCollectionEvent> gcevent = _MR(new (m_sys->unaccountedMemory) GarbageCollectionEvent());
+					events_queue.push_back(make_pair(NullRef,gcevent));
 					isIdle = true;
 #ifndef NDEBUG
 //					if (getEventQueueSize() == 0)

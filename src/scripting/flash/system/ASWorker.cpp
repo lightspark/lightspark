@@ -504,6 +504,22 @@ void ASWorker::handleInternalEvent(Event* e)
 	}
 }
 
+void ASWorker::addExplicitConstructedObject(asAtom a)
+{
+	ASATOM_ADDSTOREDMEMBER(a);
+	explicitconstructedObjects.push_back(a);
+}
+
+void ASWorker::clearExplicitConstructedObjects()
+{
+	while (!explicitconstructedObjects.empty())
+	{
+		asAtom a = explicitconstructedObjects.back();
+		ASATOM_REMOVESTOREDMEMBER(a);
+		explicitconstructedObjects.pop_back();
+	}
+}
+
 void ASWorker::jobFence()
 {
 	state ="terminated";
@@ -567,41 +583,25 @@ void ASWorker::addObjectToGarbageCollector(ASObject* o)
 	if (o->gcPrev || o->gcNext || this->gcNext == o)
 		return;
 	assert(o!=this);
-	if (this->gcNext==this)
-	{
-		this->gcNext=o;
-		o->gcPrev=this;
-		o->gcNext=this;
-	}
-	else
-	{
-		o->gcNext=this->gcNext;
-		o->gcPrev=this;
-		this->gcNext->gcPrev=o;
-		this->gcNext=o;
-	}
+	o->gcNext=this->gcNext;
+	o->gcPrev=this;
+	this->gcNext->gcPrev=o;
+	this->gcNext=o;
 }
 
 void ASWorker::removeObjectFromGarbageCollector(ASObject* o)
 {
 	if (!o->gcPrev || !o->gcNext || o==this)
 		return;
-	if (o->gcPrev !=this)
-		o->gcPrev->gcNext=o->gcNext;
-	else
-	{
-		this->gcNext=o->gcNext;
-		this->gcNext->gcPrev=this;
-	}
-	if (o->gcNext!=this)
-		o->gcNext->gcPrev=o->gcPrev;
-	else
-		o->gcPrev->gcNext=this;
+	o->gcPrev->gcNext = o->gcNext;
+	o->gcNext->gcPrev = o->gcPrev;
 	o->gcNext=nullptr;
 	o->gcPrev=nullptr;
 }
+
 void ASWorker::processGarbageCollection(bool force)
 {
+	clearExplicitConstructedObjects();
 	uint64_t currtime = compat_msectiming();
 	int64_t diff =  currtime-last_garbagecollection;
 	if (!force && !getSystemState()->use_testrunner_date && diff < 10000) // ony execute garbagecollection every 10 seconds
@@ -626,6 +626,7 @@ void ASWorker::processGarbageCollection(bool force)
 				ogc->markedforgarbagecollection = false;
 				if (ogc->handleGarbageCollection())
 				{
+					ogc->gccounter.ignore=true;
 					this->addObjectToGarbageCollector(ogc);
 					hasEntries=true;
 				}

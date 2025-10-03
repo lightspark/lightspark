@@ -34,6 +34,36 @@ using namespace lightspark;
 
 // Based on Ruffle's `avm1::runtime::Avm1`.
 
+void rootExceptionHandler(AVM1Activation& activation)
+{
+	try
+	{
+		std::rethrow_exception(std::current_exception());
+	}
+	catch (AVM1Value& value)
+	{
+		auto msg = value.tryToString(activation).valueOr("undefined");
+		activation.getSys()->trace(msg);
+
+		// Don't halt execution on script thrown exceptions.
+		return;
+	}
+	catch (ParseException& e)
+	{
+		LOG(LOG_ERROR, "AVM1: Failed to parse an SWF. Reason: " << e.cause);
+	}
+	catch (AVM1Exception& e)
+	{
+		LOG(LOG_ERROR, "AVM1: Non script exception thrown. Reason: " << e.getErrorMsg(activation));
+	}
+	catch (std::exception& e)
+	{
+		LOG(LOG_ERROR, "AVM1: std::exception thrown. Reason: " << e.what());
+	}
+
+	activation.getCtx()->halt();
+}
+
 AVM1Context::AVM1Context(SystemState* _sys, uint8_t _playerVersion) :
 sys(_sys),
 playerVersion(_playerVersion),
@@ -83,9 +113,9 @@ void AVM1Context::runStackFrameForAction
 	{
 		childActivation.runActions(code);
 	}
-	catch (std::exception& e)
+	catch (...)
 	{
-		rootExceptionHandler(childActivation, e);
+		rootExceptionHandler(childActivation);
 	}
 }
 
@@ -145,7 +175,7 @@ void AVM1Context::runStackFrameForInitAction
 	}
 	catch (std::exception& e)
 	{
-		rootExceptionHandler(childActivation, e);
+		rootExceptionHandler(childActivation);
 	}
 }
 

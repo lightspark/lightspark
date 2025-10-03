@@ -68,7 +68,6 @@ AVM1Context::AVM1Context(SystemState* _sys, uint8_t _playerVersion) :
 sys(_sys),
 playerVersion(_playerVersion),
 halted(false),
-maxRecursionDepth(255),
 hasMouseListener(false),
 useSpecialInvalidBounds(false)
 {

@@ -79,11 +79,6 @@ private:
 	// This completely prevents anymore actions from running.
 	bool halted;
 
-	// The maximum function call depth, before a `ScriptLimitException`
-	// is thrown. This has a default of 256, but it can be changed per
-	// movie.
-	uint16_t maxRecursionDepth;
-
 	// Whether a `Mouse` listener's been registered.
 	bool hasMouseListener;
 
@@ -220,8 +215,6 @@ public:
 	// that don't close over the pool they were defined with.
 	void setConstPool(const std::vector<uint32_t>& pool) { constPool = pool; }
 
-	uint16_t getMaxRecursionDepth() const { return maxRecursionDepth; }
-	void setMaxRecursionDepth(uint16_t depth) { maxRecursionDepth = depth; }
 	const ASBroadcasterFuncs& getBroadcasterFuncs() const
 	{
 		return broadcasterFuncs;

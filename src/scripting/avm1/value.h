@@ -20,8 +20,6 @@
 #ifndef SCRIPTING_AVM1_VALUE_H
 #define SCRIPTING_AVM1_VALUE_H 1
 
-#include <vector>
-
 #include "forwards/scripting/flash/display/DisplayObject.h"
 #include "forwards/swftypes.h"
 #include "smartrefs.h"
@@ -117,7 +115,7 @@ public:
 	// - In SWF 5, and earlier, hexadecimal isn't supported.
 	// - In SWF 4, and earlier, `0.0` is returned, instead of `NaN`, if
 	// a string can't be coverted to a number.
-	number_t toNumber(AVM1Activation& activation) const;
+	number_t toNumber(AVM1Activation& activation, bool primitiveHint = false) const;
 
 	// ECMA-262 2nd edition sec. 9.1. `ToPrimitive` (with `Number` hint).
 	//
@@ -154,11 +152,11 @@ public:
 
 	// ECMA-262 2nd edition sec. 11.8.5. The abstract relational
 	// comparison algorithm.
-	AVM1Value isLess(AVM1Activation& activation) const;
+	AVM1Value isLess(const AVM1Value& other, AVM1Activation& activation) const;
 
 	// ECMA-262 2nd edition sec. 11.9.3. The abstract equality comparison
 	// algorithm.
-	AVM1Value isEqual(AVM1Activation& activation) const;
+	AVM1Value isEqual(const AVM1Value& other, AVM1Activation& activation) const;
 
 	uint8_t toUInt8(AVM1Activation& activation) const;
 

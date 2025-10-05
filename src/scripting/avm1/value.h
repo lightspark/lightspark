@@ -93,6 +93,9 @@ public:
 	type(Type::MovieClip),
 	clip(_clip) {}
 
+	~AVM1Value();
+	AVM1Value& operator=(const AVM1Value& other);
+
 	bool operator==(const AVM1Value& other) const;
 
 	// Returns `true`, if the given value is a primitive value.

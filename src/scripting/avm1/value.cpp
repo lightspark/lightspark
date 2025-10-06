@@ -33,6 +33,8 @@ using namespace lightspark;
 
 // Based on Ruffle's `avm1::Value`.
 
+static constexpr auto NaN = std::numeric_limits<number_t>::quiet_NaN();
+
 tiny_string numToStr(number_t num);
 number_t strToNum(const tiny_string& str, uint8_t swfVersion);
 #ifdef USE_STRING_ID
@@ -118,7 +120,6 @@ bool AVM1Value::operator==(const AVM1Value& other) const
 
 number_t AVM1Value::toNumber(AVM1Activation& activation, bool primitiveHint) const
 {
-	constexpr auto NaN = std::numeric_limits<number_t>::quiet_NaN();
 	auto swfVersion = activation.getSwfVersion();
 
 	auto objToNumber = [&](const AVM1Value& value)
@@ -595,11 +596,38 @@ T bitCast(const U& val)
 	return __builtin_bit_cast(T, val);
 	#else
 	T ret;
-	std::memcpy(&ret, &val, std::min(sizeof(T)));
+	memcpy(&ret, &val, std::min(sizeof(T)));
 	return ret;
 	#endif
 }
 
+// Calculates `num * 10^exp` via repeated multiplication, or division.
+number_t decShift(number_t num, int32_t exp)
+{
+	number_t base = 10.0;
+	bool isMul = exp > 0;
+
+	// Avoid overflowing when `exp == INT32_MIN` for division.
+	exp = isMul ? exp : std::abs<uint32_t>(exp);
+
+	for (; exp > 0; exp >>= 1, base *= base)
+	{
+		if (!(exp & 1))
+			continue;
+		if (isMul)
+			num *= base;
+		else
+			num /= base;
+	}
+	return num;
+}
+
+// Converts a `number_t` to a string with (hopefully) the same output as
+// (Flash Player's) AVM1.
+// 15 digits are displayed (not including any leading 0s for values < 1).
+// Exponential notation is used for numbers <= `1e-15`, and >= `1e15`.
+// Rounding is done with half away from zero (ties to away) rounding.
+// `NaN` returns `"NaN"`, and `inf` returns `"Infinity"`.
 tiny_string numToStr(number_t num)
 {
 	if (std::isnan(num))
@@ -615,8 +643,8 @@ tiny_string numToStr(number_t num)
 		return (s << int(num)).str();
 	}
 
-	// AVM1: `Number` -> `String` (also tries to reproduce bugs).
-	// AVM1 (Flash Player's) does this in a straightforward way, by
+	// NOTE, AVM1: `Number` -> `String` (also tries to reproduce bugs).
+	// (Flash Player's) AVM1 does this in a straightforward way, by
 	// shifting the float into the range 0.0-10.0, multiplying by 10 to
 	// extract each digit, then finally rounding the result. However, the
 	// rounding step is buggy, when carrying 9.999 -> 10.
@@ -725,7 +753,7 @@ tiny_string numToStr(number_t num)
 	}
 
 	// Rounding: Look at the next generated digit, and round accordingly.
-	// Ties round away from 0.
+	// Round half away from 0 (ties to away).
 	if (getDigit() >= '5')
 	{
 		// Add 1 to the right most digit, carrying if a 9 is encountered.
@@ -799,8 +827,187 @@ tiny_string numToStr(number_t num)
 	return str.substr(start);
 }
 
+// Consumes an optional sign character.
+// Returns whether a `-` sign was consumed.
+bool parseSign(tiny_string& str)
+{
+	if (str.startsWith('-'))
+	{
+		str = str.substr(1, tiny_string::npos);
+		return true;
+	}
+
+	str = str.stripPrefix('+');
+	return false;
+}
+
+number_t parseFloatImpl(const tiny_string& str, bool isStrict)
+{
+	auto isASCIIDigit = [](uint32_t ch)
+	{
+		return ch >= '0' && ch <= '9';
+	};
+
+	// TODO: Move this into `tiny_string`.
+	auto trimStartMatches = []
+	(
+		const tiny_string& str,
+		std::function<bool(uint32_t)> func
+	)
+	{
+		size_t i;
+		for (i = 0; i < str.numChars() && func(str[i]); ++i);
+		return str.substr(i, tiny_string::npos);
+	};
+
+	// Allow leading whitespace.
+	auto _str = trimStartMatches(str, [](uint32_t ch)
+	{
+		return
+		(
+			ch == ' ' ||
+			ch == '\t' ||
+			ch == '\n' ||
+			ch == '\r'
+		);
+	});
+
+	// Parse the sign.
+	auto isNeg = parseSign(_str);
+	auto afterSign = _str;
+
+	// Validate the digits before the radix point.
+	_str = trimStartMatches(_str, isASCIIDigit);
+	auto exp = (afterSign.numChars() - _str.numChars()) + 1;
+
+	// Validate the digits after the radix point.
+	if (_str.startsWith('.'))
+	{
+		_str = trimStartMatches
+		(
+			_str.substr(1, tiny_string::npos),
+			isASCIIDigit
+		);
+	}
+
+	// Fail, if there aren't any digits.
+	if (_str.numChars() == afterSign.numChars())
+		return NaN;
+
+	// Handle the exponent.
+	if (_str.startsWith('e') || _str.startsWith('E'))
+	{
+		_str = _str.substr(1, tiny_string::npos);
+
+		// Parse the exponent's sign.
+		auto expIsNeg = parseSign(_str);
+		int32_t _exp = 0;
+
+		_str = trimStartMatches(_str, [&](uint32_t ch)
+		{
+			if (!isASCIIDigit(ch))
+				return false;
+			_exp *= 10;
+			_exp += ch - '0';
+			return true;
+		});
+
+		// Apply the exponent sign.
+		if (expIsNeg)
+			_exp = -_exp;
+		exp += _exp;
+	}
+
+	// Fail, if we got digits, but are in strict mode, and not at the end
+	// of the string.
+	if (isStrict && !_str.empty())
+		return NaN;
+
+	// Finally, calculate the result.
+	number_t ret = 0.0;
+
+	for (auto ch : afterSign)
+	{
+		if (isASCIIDigit(ch))
+			ret += decShift(ch - '0', exp--);
+		// Allow multiple `.`s.
+		else if (ch == '.')
+			continue;
+		else
+			break;
+	}
+
+	// Apply the sign.
+	if (isNeg)
+		ret = -ret;
+
+	// We shouldn't return `NaN` after a successful parse.
+	assert(!std::isnan(ret));
+	return ret;
+}
+
+// Guess the radix of a string.
+//
+// With an optional leading sign removed:
+// - Strings that start with `0x` (case insensitive) are treated as hex.
+// - Strings that start with `0`, and only contain the digits 0-7 are
+// treated as octal.
+// - All other strings are treated as decimal.
+uint32_t guessRadix(const tiny_string& str)
+{
+	// Optionally skip the sign.
+	auto it = std::next(str.begin(),
+	(
+		str.startsWith('+') ||
+		str.startsWith('-')
+	));
+
+	// Decimal.
+	if (*it++ != '0')
+		return 10;
+	// Hexadecimal.
+	if (*it == 'x' || *it == 'X')
+		return 16;
+
+	// Octal.
+	auto isOctal = [](uint32_t ch) { return ch >= '0' && ch <= '7' };
+	if (std::all_of(it, _str.end(), isOctal))
+		return 8;
+
+	// Decimal.
+	return 10;
+}
+
 number_t strToNum(const tiny_string& str, uint8_t swfVersion)
 {
+	auto radix = swfVersion > 5 ? guessRadix(str) : 10;
+	if (radix != 10)
+	{
+		auto _str = str;
+		// Parse hex, and octal numbers as integers.
+		if (radix == 16)
+		{
+			// NOTE, Bug compatibility: Flash Player fails to skip hex
+			// prefixes with a sign, causing them to be parsed as `NaN`.
+			_str = str.substr(2, tiny_string::npos);
+		}
+		try
+		{
+			return std::stoi(_str, nullptr, radix);
+		}
+		catch (std::exception&)
+		{
+			return NaN;
+		}
+	}
+
+	// SWF 4 isn't as strict as later versions.
+	bool isStrict = swfVersion > 4;
+	auto ret = parseFloatImpl(str, isStrict);
+
+	// NOTE: In non strict mode, return `0`, rather than `NaN`.
+	return !isStrict && std::isnan(ret) ? 0 : ret;
+
 }
 
 #ifdef USE_STRING_ID

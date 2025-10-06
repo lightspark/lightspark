@@ -244,5 +244,16 @@ public:
 	}
 };
 
+// Converts a `tiny_string` to a `number_t`
+//
+// This function might fail on some invalid inputs, in which case, `NaN`
+// is returned.
+//
+// `isStrict` usually indicates whether to act like `Number()`, or
+// `parseFloat()`.
+// - `isStrict == true` fails on trailing garbage (like `Number()`).
+// - `isStrict == false` ignores trailing garbage (like `parseFloat()`).
+number_t parseFloatImpl(const tiny_string& str, bool isStrict);
+
 }
 #endif /* SCRIPTING_AVM1_VALUE_H */

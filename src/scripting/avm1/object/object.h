@@ -33,6 +33,7 @@ namespace lightspark
 
 class tiny_string;
 class AVM1Activation;
+class AVM1Executable;
 class AVM1Prop;
 enum AVM1PropFlags;
 class AVM1Object;
@@ -47,12 +48,12 @@ class Optional;
 class AVM1Watcher
 {
 private:
-	GcPtr<AVM1Object> callback;
+	GcPtr<AVM1Executable> callback;
 	AVM1Value userData;
 public:
 	AVM1Watcher
 	(
-		const GcPtr<AVM1Object>& _callback,
+		const GcPtr<AVM1Executable>& _callback,
 		const AVM1Value& _userData
 	) : callback(_callback), userData(_userData) {}
 
@@ -70,11 +71,16 @@ class AVM1Object : public RefCountable
 {
 private:
 	using PropMapType = AVM1PropMap<AVM1Prop>::MapType;
+
 	AVM1PropMap<AVM1Prop> properties;
 	std::vector<GcPtr<AVM1Object>> interfaces;
 	AVM1PropMap<AVM1Watcher> watchers;
 public:
-	AVM1Object(const GcContext& ctx, const GcPtr<AVM1Object>& proto);
+	AVM1Object
+	(
+		const GcContext& ctx,
+		const NullableGcPtr<AVM1Object>& proto
+	);
 
 	// Gets the value of a data property on this object.
 	//
@@ -95,9 +101,21 @@ public:
 		AVM1Activation& activation,
 		const tiny_string& name,
 		const AVM1Value& value
-	) const;
+	);
 
-	std::vector<PropMapType::value_type> getOwnProps() const;
+	using GetOwnPropsType = std::vector<std::pair
+	<
+		PropMapType::key_type,
+		AVM1Value
+	>>;
+	GetOwnPropsType getOwnProps() const;
+
+	AVM1Value lookupProp
+	(
+		AVM1Activation& activation,
+		const tiny_string& name,
+		bool isSlashPath
+	) const;
 
 	// Get a named, non virtual property from this object, exclusively.
 	//
@@ -112,22 +130,28 @@ public:
 
 	// Get a non slash path named property from either this object, or
 	// it's prototype.
-	virtual AVM1Value getNonSlashPathProp
+	AVM1Value getNonSlashPathProp
 	(
 		AVM1Activation& activation,
 		const tiny_string& name
-	) const;
+	) const
+	{
+		return lookupProp(activation, name, false);
+	}
 
 	// Get a named property from either this object, or it's prototype.
 	virtual AVM1Value getProp
 	(
 		AVM1Activation& activation,
 		const tiny_string& name
-	) const;
-	
+	) const
+	{
+		return lookupProp(activation, name, true);
+	}
+
 	// Get a non virtual property from either this object, or it's
 	// prototype.
-	virtual AVM1Value getStoredProp
+	AVM1Value getStoredProp
 	(
 		AVM1Activation& activation,
 		const tiny_string& name
@@ -139,7 +163,7 @@ public:
 		const tiny_string& name,
 		const AVM1Value& value,
 		const GcPtr<AVM1Object>& _this
-	) const;
+	);
 
 	// Set a named property on either this object, or it's prototype.
 	virtual void setProp
@@ -147,7 +171,7 @@ public:
 		AVM1Activation& activation,
 		const tiny_string& name,
 		const AVM1Value& value
-	) const;
+	);
 
 	// Call the underlying object.
 	//
@@ -160,7 +184,10 @@ public:
 		const tiny_string& name,
 		const AVM1Value& _this,
 		const std::vector<AVM1Value>& args
-	) const;
+	) const
+	{
+		return AVM1Value::Type::Undefined;
+	}
 
 	// Construct the underlying object, if it's a valid constructor, and
 	// return the result.
@@ -224,7 +251,7 @@ public:
 	virtual GcPtr<AVM1Object> createBareObject
 	(
 		AVM1Activation& activation,
-		GcPtr<AVM1Object> _this
+		const GcPtr<AVM1Object>& _this
 	) const;
 
 	// Delete a named proprty from this object.
@@ -241,7 +268,10 @@ public:
 	// The prototype is another object used to resolve methods accross
 	// a class of multiple objects. It should also be accessable as
 	// `__proto__` from `getProp()`.
-	virtual AVM1Value getProto(AVM1Activation& activation) const;
+	virtual AVM1Value getProto(AVM1Activation& activation) const
+	{
+		return getData(activation, "__proto__");
+	}
 
 	// Define a value on an object.
 	//
@@ -256,11 +286,10 @@ public:
 	// `__proto__`.
 	virtual void defineValue
 	(
-		const GcContext& ctx,
 		const tiny_string& name,
 		const AVM1Value& value,
 		const AVM1PropFlags& flags
-	) const;
+	);
 
 	// Set the flags of a given property
 	//
@@ -270,11 +299,10 @@ public:
 	// of `{set,clear}Flags` arguments.
 	virtual void setPropFlags
 	(
-		const GcContext& ctx,
 		const Optional<tiny_string>& name,
 		const AVM1PropFlags& setFlags,
 		const AVM1PropFlags& clearFlags
-	) const;
+	);
 
 	// Define a virtual property onto a given object.
 	//
@@ -288,12 +316,11 @@ public:
 	// builtin, such as `__proto__`.
 	virtual void addProp
 	(
-		const GcContext& ctx,
 		const tiny_string& name,
 		const GcPtr<AVM1Object>& getter,
 		const NullableGcPtr<AVM1Object>& setter,
 		const AVM1PropFlags& flags
-	) const;
+	);
 
 	// Define a virtual property onto a given object.
 	//
@@ -307,11 +334,19 @@ public:
 	// builtin, such as `__proto__`.
 	virtual void addPropWithCase
 	(
-		const GcContext& ctx,
 		const tiny_string& name,
 		const GcPtr<AVM1Object>& getter,
 		const NullableGcPtr<AVM1Object>& setter,
 		const AVM1PropFlags& flags
+	);
+
+	// Calls the `watcher` of a given property, if it exists.
+	virtual void callWatcher
+	(
+		AVM1Activation& activation,
+		const tiny_string& name,
+		AVM1Value& value,
+		const GcPtr<AVM1Object>& _this,
 	) const;
 
 	// Set the `watcher` of a given property.
@@ -324,7 +359,7 @@ public:
 		const tiny_string& name,
 		const GcPtr<AVM1Object>& callback,
 		const AVM1Value& userData
-	) const;
+	);
 
 	// Remove any unassigned `watcher` from the given property.
 	//
@@ -334,7 +369,7 @@ public:
 	(
 		AVM1Activation& activation,
 		const tiny_string& name
-	) const;
+	);
 
 	// Checks if the object has a given named property.
 	virtual bool hasProp
@@ -375,7 +410,10 @@ public:
 	) const;
 
 	// Enumerates all interfaces implemented by this object.
-	virtual std::vector<GcPtr<AVM1Object>> getInterfaces() const;
+	virtual std::vector<GcPtr<AVM1Object>> getInterfaces() const
+	{
+		return interfaces;
+	}
 
 	// Sets the interface list for this object. (Only useful for
 	// prototypes).
@@ -383,7 +421,10 @@ public:
 	(
 		const GcContext& ctx,
 		const std::vector<GcPtr<AVM1Object>>& ifaces
-	) const;
+	)
+	{
+		interfaces = ifaces;
+	}
 
 
 	// Determine if this object is an instance of a class.

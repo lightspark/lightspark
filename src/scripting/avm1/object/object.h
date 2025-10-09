@@ -186,7 +186,7 @@ public:
 		const std::vector<AVM1Value>& args
 	) const
 	{
-		return AVM1Value::Type::Undefined;
+		return AVM1Value::undefinedVal;
 	}
 
 	// Construct the underlying object, if it's a valid constructor, and
@@ -199,7 +199,7 @@ public:
 		const std::vector<AVM1Value>& args
 	) const
 	{
-		return AVM1Value::Type::Undefined;
+		return AVM1Value::undefinedVal;
 	}
 
 	// Takes an already existing object, and performs construction on it

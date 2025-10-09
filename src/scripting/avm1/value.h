@@ -80,6 +80,8 @@ public:
 		assert(type == Type::Undefined || type == Type::Null);
 	}
 
+	AVM1Value(const UndefinedVal&) : type(Type::Undefined) {}
+	AVM1Value(const NullVal&) : type(Type::Null) {}
 	AVM1Value(bool boolVal) : type(Type::Bool), _bool(boolVal) {}
 	AVM1Value(number_t _num) : type(Type::Number), num(_num) {}
 	#ifdef USE_STRING_ID
@@ -242,6 +244,9 @@ public:
 		}
 		return decltype(visitor(UndefinedVal {}))();
 	}
+
+	static AVM1Value undefinedVal;
+	static AVM1Value nullVal;
 };
 
 // Converts a `tiny_string` to a `number_t`

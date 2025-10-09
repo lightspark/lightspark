@@ -34,6 +34,8 @@ using namespace lightspark;
 // Based on Ruffle's `avm1::Value`.
 
 static constexpr auto NaN = std::numeric_limits<number_t>::quiet_NaN();
+AVM1Value AVM1Value::undefinedVal(UndefinedVal {});
+AVM1Value AVM1Value::nullVal(NullVal {});
 
 tiny_string numToStr(number_t num);
 number_t strToNum(const tiny_string& str, uint8_t swfVersion);
@@ -242,7 +244,7 @@ AVM1Value AVM1Value::isLess(const AVM1Value& other, AVM1Activation& activation) 
 	auto a = primA.toNumber(activation, true);
 	auto b = primB.toNumber(activation, true);
 	if (std::isnan(a) || std::isnan(b))
-		return Type::Undefined;
+		return undefinedVal;
 	return a < b;
 }
 
@@ -541,7 +543,7 @@ _R<AVM1Object> AVM1Value::toObject(AVM1Activation& activation) const
 
 	if (!obj.isNull())
 		return obj;
-	return AVM1ValueObject::boxValue(activation, Type::Undefined);
+	return AVM1ValueObject::boxValue(activation, undefinedVal);
 }
 
 Optional<AS_BLENDMODE> AVM1Value::toBlendMode() const

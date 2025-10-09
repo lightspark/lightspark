@@ -402,8 +402,9 @@ public:
 		const tiny_string& name
 	) const;
 
+	using GetKeysType = std::vector<PropMapType::key_type>;
 	// Enumerate the object.
-	virtual std::vector<tiny_string> getKeys
+	virtual GetKeysType getKeys
 	(
 		AVM1Activation& activation,
 		bool includeHidden
@@ -417,15 +418,10 @@ public:
 
 	// Sets the interface list for this object. (Only useful for
 	// prototypes).
-	virtual void setInterfaces
-	(
-		const GcContext& ctx,
-		const std::vector<GcPtr<AVM1Object>>& ifaces
-	)
+	virtual void setInterfaces(const std::vector<GcPtr<AVM1Object>>& ifaces)
 	{
 		interfaces = ifaces;
 	}
-
 
 	// Determine if this object is an instance of a class.
 	//
@@ -438,7 +434,7 @@ public:
 	// interface represents a new, parallel prototype chain, which also
 	// needs to be checked. You can't implement nested interfaces
 	// (thankfully), but if you could, this'd support that too.
-	virtual bool isInstanceOf
+	bool isInstanceOf
 	(
 		AVM1Activation& activation,
 		const GcPtr<AVM1Object>& ctor,
@@ -456,34 +452,34 @@ public:
 
 	// Check if this object is in the prototype chain of the supplied
 	// object.
-	virtual bool isPrototypeOf
+	bool isPrototypeOf
 	(
 		AVM1Activation& activation,
 		const GcPtr<AVM1Object>& other
 	) const;
 
 	// Gets the length of this object, as if it were an array.
-	virtual size_t getLength(AVM1Activation& activation) const;
+	virtual ssize_t getLength(AVM1Activation& activation) const;
 
 	// Sets the length of this object, as if it were an array.
-	virtual void setLength(AVM1Activation& activation, size_t length) const;
+	virtual void setLength(AVM1Activation& activation, ssize_t length);
 
 	// Checks if this object as an element
-	virtual bool hasElement(AVM1Activation& activation, size_t idx) const;
+	virtual bool hasElement(AVM1Activation& activation, ssize_t idx) const;
 
 	// Gets a property of this object, as if it were an array.
-	virtual AVM1Value getElement(AVM1Activation& activation, size_t idx) const;
+	virtual AVM1Value getElement(AVM1Activation& activation, ssize_t idx) const;
 
 	// Sets a property of this object, as if it were an array.
 	virtual void setElement
 	(
 		AVM1Activation& activation,
-		size_t idx,
+		ssize_t idx,
 		const AVM1Value& value
-	) const;
+	);
 
 	// Deletes a property of this object, as if it were an array.
-	virtual bool deleteElement(AVM1Activation& activation, size_t idx) const;
+	virtual bool deleteElement(AVM1Activation& activation, ssize_t idx);
 };
 
 // Perform a prototype lookup of a given object.
@@ -505,7 +501,7 @@ Optional<std::pair<AVM1Value, uint8_t>> searchPrototype
 
 // Finds the appropriate `__resolve()` method for an object, while also
 // searching it's hierarchy too.
-Optional<AVM1Value> findResolveMethod
+NullableGcPtr<AVM1Object> findResolveMethod
 (
 	AVM1Activation& activation,
 	const AVM1Value& proto

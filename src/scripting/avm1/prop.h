@@ -96,7 +96,7 @@ public:
 		const _NR<AVM1Object>& _setter,
 		const AVM1PropFlags& _flags
 	) :
-	data(ValueType::Undefined),
+	data(AVM1Value::undefinedVal),
 	getter(_getter),
 	setter(_setter),
 	flags(_flags) {}

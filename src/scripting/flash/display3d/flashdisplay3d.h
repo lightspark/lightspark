@@ -118,6 +118,7 @@ struct renderaction
 	uint32_t udata2;
 	uint32_t udata3;
 	float fdata[CONTEXT3D_PROGRAM_REGISTERS*4];
+	std::vector<uint8_t> bufferdata;
 	_NR<ASObject> dataobject;
 	renderaction():udata1(0),udata2(0),udata3(0),fdata{0} {}
 };
@@ -164,6 +165,9 @@ private:
 	DEPTHSTENCIL_FUNCTION currentstencilfunction;
 	uint32_t currentstencilref;
 	uint32_t currentstencilmask;
+	uint32_t currentIndexBufferID;
+	uint32_t currentVertexBufferID;
+
 	void handleRenderAction(EngineData *engineData, renderaction &action);
 	void setRegisters(EngineData *engineData, std::vector<RegisterMapEntry> &registermap, constantregister *constants, bool isVertex);
 	void setAttribs(EngineData* engineData, std::vector<RegisterMapEntry> &attributes);
@@ -342,7 +346,7 @@ friend class Context3D;
 protected:
 	Context3D* context;
 	uint32_t bufferID;
-	vector<uint16_t> data;
+	uint32_t numVertices;
 	tiny_string bufferUsage;
 	bool disposed;
 public:
@@ -388,7 +392,6 @@ protected:
 	Context3D* context;
 	uint32_t numVertices;
 	int32_t data32PerVertex;
-	vector<float> data;
 	tiny_string bufferUsage;
 	bool disposed;
 	uint32_t bufferID;

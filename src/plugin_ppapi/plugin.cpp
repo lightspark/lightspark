@@ -2547,6 +2547,15 @@ void ppPluginEngineData::exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(int32
 	g_gles2_interface->BufferData(instance->m_graphics,GL_ARRAY_BUFFER,size, data,GL_DYNAMIC_DRAW);
 }
 
+void ppPluginEngineData::exec_glBufferSubData_GL_ELEMENT_ARRAY_BUFFER(int offset,int32_t size, const void *data)
+{
+	g_gles2_interface->BufferSubData(instance->m_graphics,GL_ELEMENT_ARRAY_BUFFER,offset,size, data);
+}
+void ppPluginEngineData::exec_glBufferSubData_GL_ARRAY_BUFFER(int offset,int32_t size, const void *data)
+{
+	g_gles2_interface->BufferSubData(instance->m_graphics,GL_ARRAY_BUFFER,offset,size, data);
+}
+
 void ppPluginEngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR()
 {
 	g_gles2_interface->TexParameteri(instance->m_graphics,GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

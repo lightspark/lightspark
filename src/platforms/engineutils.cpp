@@ -603,18 +603,19 @@ void EngineData::checkForNativeAIRExtensions(std::vector<tiny_string>& extension
 {
 	Path baseDir = Path(fileName).getDir();
 	Path path = baseDir / "META-INF" / "AIR" / "extensions";
-
-	for (auto entry : fs::DirIter(path))
+	if (fs::exists(path))
 	{
-		Path extPath = path / entry / "library.swf";
+		for (auto entry : fs::DirIter(path))
+		{
+			Path extPath = path / entry / "library.swf";
 
-		if (!extPath.exists())
-			continue;
+			if (!extPath.exists())
+				continue;
 
-		LOG(LOG_INFO, "native extension found:" << extPath.getStr());
-		extensions.push_back(extPath.getStr());
+			LOG(LOG_INFO, "native extension found:" << extPath.getStr());
+			extensions.push_back(extPath.getStr());
+		}
 	}
-
 	if (extensions.empty())
 		return;
 
@@ -1618,6 +1619,15 @@ void EngineData::exec_glBufferData_GL_ARRAY_BUFFER_GL_STATIC_DRAW(int32_t size,c
 void EngineData::exec_glBufferData_GL_ARRAY_BUFFER_GL_DYNAMIC_DRAW(int32_t size,const void* data)
 {
 	glBufferData(GL_ARRAY_BUFFER,size, data,GL_DYNAMIC_DRAW);
+}
+
+void EngineData::exec_glBufferSubData_GL_ELEMENT_ARRAY_BUFFER(int offset,int32_t size, const void *data)
+{
+	glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,offset,size, data);
+}
+void EngineData::exec_glBufferSubData_GL_ARRAY_BUFFER(int offset,int32_t size, const void *data)
+{
+	glBufferSubData(GL_ARRAY_BUFFER,offset,size, data);
 }
 
 void EngineData::exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR()

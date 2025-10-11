@@ -234,6 +234,7 @@ void ASWorker::prepareShutdown()
 	if (stage)
 		stage->prepareShutdown();
 	ASObject* ogc = this->gcNext;
+	assert(ogc);
 	while (ogc != this)
 	{
 		ogc->prepareShutdown();
@@ -595,8 +596,16 @@ void ASWorker::removeObjectFromGarbageCollector(ASObject* o)
 		return;
 	o->gcPrev->gcNext = o->gcNext;
 	o->gcNext->gcPrev = o->gcPrev;
-	o->gcNext=nullptr;
-	o->gcPrev=nullptr;
+	if (o->is<ASWorker>())
+	{
+		o->gcNext=o;
+		o->gcPrev=o;
+	}
+	else
+	{
+		o->gcNext=nullptr;
+		o->gcPrev=nullptr;
+	}
 }
 
 void ASWorker::processGarbageCollection(bool force)

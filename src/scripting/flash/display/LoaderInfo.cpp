@@ -317,7 +317,7 @@ void LoaderInfo::setComplete()
 	{
 		sendInit();
 	}
-	else if (loader && !loader->loadedFrom->usesActionScript3)
+	else if (loader && loader->loadedFrom && !loader->loadedFrom->usesActionScript3)
 	{
 		this->incRef();
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"avm1_init");

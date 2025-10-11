@@ -2376,10 +2376,10 @@ ASFUNCTIONBODY_ATOM(VertexBuffer3D,uploadFromVector)
 			uint32_t u;
 		} d;
 		d.f = asAtomHandler::toNumber(a);
-		action.bufferdata[i*4  ] = (d.u >>24)&0xff;
-		action.bufferdata[i*4+1] = (d.u >>16)&0xff;
-		action.bufferdata[i*4+2] = (d.u >> 8)&0xff;
-		action.bufferdata[i*4+3] = (d.u     )&0xff;
+		action.bufferdata[i*4  ] = (d.u     )&0xff;
+		action.bufferdata[i*4+1] = (d.u >> 8)&0xff;
+		action.bufferdata[i*4+2] = (d.u >>16)&0xff;
+		action.bufferdata[i*4+3] = (d.u >>24)&0xff;
 	}
 	th->context->addAction(action);
 	th->context->rendermutex.unlock();

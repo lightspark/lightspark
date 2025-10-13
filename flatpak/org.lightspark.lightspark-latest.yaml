@@ -39,7 +39,7 @@ modules:
     - make prefix='/' sbindir='/bin' mandir='/share/man' DESTDIR="${FLATPAK_DEST}" install
   sources:
     - type: git
-      url: https://git.ffmpeg.org/rtmpdump.git#commit=6f6bb1353fc84f4cc37138baa99f586750028a01
+      url: https://git.ffmpeg.org/rtmpdump.git
 - name: lightspark
   buildsystem: cmake
   sources:

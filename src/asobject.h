@@ -592,6 +592,8 @@ struct cyclicmembercount
 	bool hasmember:1; // indicates if the member object has any references to the main object in its members
 	bool ignore:1; // indicates if the member object doesn't have to be checked for cyclic member count and its count should be ignored
 	bool ischecked:1;
+	bool inchecking:1;
+	std::list<ASObject*> delayedcheck;
 	FORCE_INLINE void reset()
 	{
 		count=0;
@@ -599,8 +601,10 @@ struct cyclicmembercount
 		hasmember=false;
 		ignore=false;
 		ischecked=false;
+		inchecking=false;
+		delayedcheck.clear();
 	}
-	cyclicmembercount() : count(0),countlevel(0),hasmember(false),ignore(false),ischecked(false)
+	cyclicmembercount() : count(0),countlevel(0),hasmember(false),ignore(false),ischecked(false),inchecking(false)
 	{
 	}
 };

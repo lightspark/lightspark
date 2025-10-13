@@ -2527,12 +2527,16 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 					if (gcstate.stopped)
 						return false;
 					ret = o->gccounter.hasmember;
+					if (!ret && o->gccounter.inchecking)
+						o->gccounter.delayedcheck.push_back(parent);
 				}
 				else
 				{
 					gcstate.incCount(o,ret);
 					if (gcstate.stopped)
 						return false;
+					if (!ret && o->gccounter.inchecking)
+						o->gccounter.delayedcheck.push_back(parent);
 				}
 			}
 			else if (o != parent && ((uint32_t)o->getRefCount()==o->storedmembercount))
@@ -2542,6 +2546,8 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 					if (o->gccounter.countlevel <= 1)
 						gcstate.incCount(o,o->gccounter.hasmember);
 					ret = o->gccounter.hasmember || ret;
+					if (!ret && o->gccounter.inchecking)
+						o->gccounter.delayedcheck.push_back(parent);
 				}
 				else if (o->countAllCylicMemberReferences(gcstate))
 				{
@@ -2559,6 +2565,8 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 					ret = o->gccounter.hasmember || ret;
 					if (gcstate.stopped)
 						return false;
+					if (!ret && o->gccounter.inchecking)
+						o->gccounter.delayedcheck.push_back(parent);
 				}
 			}
 			else
@@ -2876,6 +2884,7 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 	{
 		if (!this->gccounter.ischecked)
 		{
+			this->gccounter.inchecking=true;
 			if (this->gccounter.countlevel > 1)
 				ret = gcstate.incCount(this,false);
 			else
@@ -2887,6 +2896,24 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 				else
 					ret=this->gccounter.hasmember;
 			}
+			this->gccounter.inchecking=false;
+			if (this->gccounter.hasmember)
+			{
+				while (!this->gccounter.delayedcheck.empty())
+				{
+					ASObject* o = this->gccounter.delayedcheck.back();
+					o->gccounter.hasmember=true;
+					if (this->gccounter.ignore)
+					{
+						gcstate.stopped=true;
+						this->gccounter.delayedcheck.clear();
+						break;
+					}
+					this->gccounter.delayedcheck.pop_back();
+				}
+			}
+			else
+				this->gccounter.delayedcheck.clear();
 		}
 		else
 			ret = gcstate.incCount(this,false);

@@ -86,8 +86,8 @@ struct AVM1SystemPrototypes
 AVM1Value parseIntImpl
 (
 	AVM1Activation& act,
-	const AVM1Value& str,
-	Optional<const AVM1Value&> radix
+	const tiny_string& str,
+	const Optional<int32_t>& radix
 );
 
 using CreateGlobalsType = std::tuple

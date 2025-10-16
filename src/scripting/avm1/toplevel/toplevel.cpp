@@ -17,8 +17,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <initializer_list>
 #include <sstream>
 
+#include "display_object/DisplayObject.h"
 #include "gc/context.h"
 #include "gc/ptr.h"
 #include "scripting/avm1/activation.h"
@@ -339,8 +341,8 @@ AVM1_FUNCTION_DECL(getInfinity)
 	return std::numeric_limits<number_t>::infinity();
 }
 
-static constexpr auto globalDecls = makeArray
-(
+static constexpr auto globalDecls =
+{
 	AVM1Decl("trace", trace, AVM1PropFlags::DontEnum),
 	AVM1Decl("isFinite", isFinite, AVM1PropFlags::DontEnum),
 	AVM1Decl("isNaN", isNaN, AVM1PropFlags::DontEnum),
@@ -356,4 +358,285 @@ static constexpr auto globalDecls = makeArray
 	AVM1Decl("unescape", unescape, AVM1PropFlags::DontEnum),
 	AVM1Decl("NaN", getNaN, nullptr, AVM1PropFlags::DontEnum),
 	AVM1Decl("Infinity", getInfinity, nullptr, AVM1PropFlags::DontEnum)
-);
+};
+
+CreateGlobalsType createGlobals(GcContext& ctx)
+{
+	AVM1DeclContext declCtx(ctx);
+
+	auto objClass = AVM1Object::createClass(declCtx);
+	auto funcClass = AVM1FunctionObject::createClass(declCtx);
+	auto bcastPair = AsBroadcaster::createClass(declCtx, objClass->proto);
+	auto bcastFuncs = bcastPair.funcs;
+	auto bcastClass = bcastPair._class;
+
+	auto flash = NEW_GC_PTR(ctx, AVM1Object(ctx, objClass->proto));
+	auto external = NEW_GC_PTR(ctx, AVM1Object(ctx, objClass->proto));
+	auto geom = NEW_GC_PTR(ctx, AVM1Object(ctx, objClass->proto));
+	auto filters = NEW_GC_PTR(ctx, AVM1Object(ctx, objClass->proto));
+	auto display = NEW_GC_PTR(ctx, AVM1Object(ctx, objClass->proto));
+	auto net = NEW_GC_PTR(ctx, AVM1Object(ctx, objClass->proto));
+
+	#define CREATE_CLASS(name, class, parent, ...) \
+		auto name#Class = class::createClass(declCtx, parent##Class->proto, ##__VA_ARGS__)
+
+	CREATE_CLASS(button, AVM1Button, obj);
+	CREATE_CLASS(movieClip, AVM1MovieClip, obj);
+	CREATE_CLASS(sound, AVM1Sound, obj);
+	CREATE_CLASS(styleSheet, AVM1StyleSheet, obj);
+	CREATE_CLASS(textField, AVM1TextField, obj);
+	CREATE_CLASS(textFormat, AVM1TextFormat, obj);
+	CREATE_CLASS(array, AVM1Array, obj);
+	auto arrayProto = arrayClass->proto;
+	CREATE_CLASS(color, AVM1Color, obj);
+	CREATE_CLASS(error, AVM1Error, obj);
+	CREATE_CLASS(xmlNode, AVM1XMLNode, obj);
+	CREATE_CLASS(string, AVM1String, obj);
+	CREATE_CLASS(number, AVM1Number, obj);
+	CREATE_CLASS(boolean, AVM1Boolean, obj);
+	CREATE_CLASS(loadVars, AVM1LoadVars, obj);
+	CREATE_CLASS(localConnection, AVM1LocalConnection, obj);
+	CREATE_CLASS(matrix, AVM1Matrix, obj);
+	CREATE_CLASS(point, AVM1Point, obj);
+	CREATE_CLASS(rectangle, AVM1Rectangle, obj);
+	CREATE_CLASS(colorTransform, AVM1ColorTransform, obj);
+	CREATE_CLASS(externalIface, AVM1ExternalInterface, obj);
+	CREATE_CLASS(movieClipLoader, AVM1MovieClipLoader, obj, bcastFuncs, arrayProto);
+	CREATE_CLASS(video, AVM1Video, obj);
+	CREATE_CLASS(netStream, AVM1NetStream, obj);
+	CREATE_CLASS(netConnection, AVM1NetConnection, obj);
+	CREATE_CLASS(xmlSocket, AVM1XMLSocket, obj);
+	CREATE_CLASS(contextMenu, AVM1ContextMenu, obj);
+	CREATE_CLASS(contextMenuItem, AVM1ContextMenuItem, obj);
+	CREATE_CLASS(xml, AVM1XML, xmlNode);
+	CREATE_CLASS(date, AVM1Date, obj);
+	CREATE_CLASS(transform, AVM1Transform, obj);
+	CREATE_CLASS(bitmapFilter, AVM1BitmapFilter, obj);
+	CREATE_CLASS(blurFilter, AVM1BlurFilter, bitmapFilter);
+	CREATE_CLASS(bevelFilter, AVM1BevelFilter, bitmapFilter);
+	CREATE_CLASS(glowFilter, AVM1GlowFilter, bitmapFilter);
+	CREATE_CLASS(dropShadowFilter, AVM1DropShadowFilter, bitmapFilter);
+	CREATE_CLASS(colorMatrixFilter, AVM1ColorMatrixFilter, bitmapFilter);
+	CREATE_CLASS(displacementMapFilter, AVM1DisplacementMapFilter, bitmapFilter);
+	CREATE_CLASS(convolutionFilter, AVM1ConvolutionFilter, bitmapFilter);
+	CREATE_CLASS(gradientBevelFilter, AVM1GradientBevelFilter, bitmapFilter);
+	CREATE_CLASS(gradientGlowFilter, AVM1GradientGlowFilter, bitmapFilter);
+	CREATE_CLASS(bitmapData, AVM1BitmapData, obj);
+	CREATE_CLASS(fileReference, AVM1FileReference, obj, bcastFuncs, arrayProto);
+	CREATE_CLASS(sharedObject, AVM1SharedObject, obj);
+
+	#undef CREATE_CLASS
+
+	auto sel = NEW_GC_PTR(ctx, AVM1Selection(declCtx, bcastFuncs, arrayProto));
+
+	auto system = NEW_GC_PTR(ctx, AVM1System(declCtx));
+	auto sysSec = NEW_GC_PTR(ctx, AVM1SystemSecurity(declCtx));
+	auto sysCaps = NEW_GC_PTR(ctx, AVM1SystemCapabilities(declCtx));
+	auto sysIME = NEW_GC_PTR(ctx, AVM1SystemIME(declCtx, bcastFuncs, arrayProto));
+
+	auto math = NEW_GC_PTR(ctx, AVM1Math(declCtx));
+	auto mouse = NEW_GC_PTR(ctx, AVM1Mouse(declCtx, bcastFuncs, arrayProto));
+	auto key = NEW_GC_PTR(ctx, AVM1Key(declCtx, bcastFuncs, arrayProto));
+	auto stage = NEW_GC_PTR(ctx, AVM1Stage(declCtx, bcastFuncs, arrayProto));
+	auto accessibility = NEW_GC_PTR(ctx, AVM1Accessibility
+	(
+		declCtx,
+		bcastFuncs,
+		arrayProto
+	));
+
+	auto globals = NEW_GC_PTR(ctx, AVM1Global(ctx));
+	declCtx.definePropsOn(globals, globalDecls);
+
+	struct GlobalDef
+	{
+		GcPtr<AVM1Object> obj;
+		const char* name;
+		GcPtr<AVM1Object> value;
+		AVM1PropFlags flags;
+	};
+
+	using GlobalDefList = std::initializer_list<GlobalDef>;
+	auto defineGlobals = [&](const GlobalDefList& defs)
+	{
+		for (const auto& def : defs)
+			def.obj->defineValue(def.name, def.value, def.flags);
+	};
+
+	using PropFlags = AVM1PropFlags;
+	constexpr auto dontEnum = PropFlags::DontEnum;
+
+	#define GLOBAL_DEF_FLAGS(obj, name, value, flags) \
+		{ obj, name, value, flags }
+
+	#define GLOBAL_DEF(obj, name, value) \
+		GLOBAL_DEF_FLAGS(obj, name, value, PropFlags(0))
+
+	#define GLOBAL_CLASS_FLAGS(obj, name, class, flags) \
+		GLOBAL_DEF_FLAGS(obj, name, class##Class->ctor, flags)
+
+	#define GLOBAL_CLASS(obj, name, class) \
+		GLOBAL_DEF(obj, name, class##Class->ctor)
+
+	#define GLOBAL_CLASS_DONT_ENUM(obj, name, class) \
+		GLOBAL_CLASS_FLAGS(obj, name, class, dontEnum)
+
+	auto textFieldCtor = textFieldClass->ctor;
+	defineGlobals(GlobalDefList
+	{
+		GLOBAL_CLASS_DONT_ENUM(globals, "Array", array),
+		GLOBAL_CLASS_DONT_ENUM(globals, "AsBroadcaster", bcast),
+		GLOBAL_CLASS_DONT_ENUM(globals, "Button", button),
+		GLOBAL_CLASS_DONT_ENUM(globals, "Color", color),
+		GLOBAL_CLASS_DONT_ENUM(globals, "Error", error),
+		GLOBAL_CLASS_DONT_ENUM(globals, "Object", obj),
+		GLOBAL_CLASS_DONT_ENUM(globals, "Function", func),
+		GLOBAL_CLASS_DONT_ENUM(globals, "LoadVars", loadVars),
+		GLOBAL_CLASS_DONT_ENUM(globals, "LocalConnection", localConnection),
+		GLOBAL_CLASS_DONT_ENUM(globals, "MovieClip", movieClip),
+		GLOBAL_CLASS_DONT_ENUM(globals, "MovieClipLoader", movieClipLoader),
+		GLOBAL_CLASS_DONT_ENUM(globals, "Sound", sound),
+		GLOBAL_CLASS_DONT_ENUM(globals, "TextField", textField),
+		GLOBAL_CLASS_DONT_ENUM(globals, "TextFormat", textFormat),
+		GLOBAL_CLASS_DONT_ENUM(globals, "XMLNode", xmlNode),
+		GLOBAL_CLASS_DONT_ENUM(globals, "XML", xml),
+		GLOBAL_CLASS_DONT_ENUM(globals, "String", string),
+		GLOBAL_CLASS_DONT_ENUM(globals, "Number", number),
+		GLOBAL_CLASS_DONT_ENUM(globals, "Boolean", boolean),
+		GLOBAL_CLASS_DONT_ENUM(globals, "Date", date),
+		GLOBAL_CLASS_DONT_ENUM(globals, "SharedObject", sharedObject),
+		GLOBAL_CLASS_DONT_ENUM(globals, "ContextMenu", contextMenu),
+		GLOBAL_DEF_FLAGS(globals, "Selection", sel, dontEnum),
+		GLOBAL_CLASS_DONT_ENUM(globals, "ContextMenuItem", contextMenuItem),
+		GLOBAL_DEF_FLAGS(globals, "System", system, dontEnum),
+		GLOBAL_DEF_FLAGS(globals, "Math", math, dontEnum),
+		GLOBAL_DEF_FLAGS(globals, "Mouse", mouse, dontEnum),
+		GLOBAL_DEF_FLAGS(globals, "Key", key, dontEnum),
+		GLOBAL_DEF_FLAGS(globals, "Stage", stage, dontEnum),
+		GLOBAL_DEF_FLAGS(globals, "Accessibility", accessibility, dontEnum),
+		GLOBAL_CLASS_DONT_ENUM(globals, "NetStream", netStream),
+		GLOBAL_CLASS_DONT_ENUM(globals, "NetConnection", netConnection),
+		GLOBAL_CLASS_DONT_ENUM(globals, "XMLSocket", xmlSocket),
+
+		GLOBAL_DEF_FLAGS(globals, "flash", flash, dontEnum),
+		GLOBAL_DEF(flash, "display", display),
+		GLOBAL_DEF(flash, "external", external),
+		GLOBAL_DEF(flash, "filters", filters),
+		GLOBAL_DEF(flash, "geom", geom),
+		GLOBAL_DEF(flash, "net", net),
+
+		GLOBAL_CLASS(display, "BitmapData", bitmapData),
+
+		GLOBAL_CLASS(external, "ExternalInterface", externalIface),
+
+		GLOBAL_CLASS(geom, "ColorTransform", colorTransform),
+		GLOBAL_CLASS(geom, "Matrix", matrix),
+		GLOBAL_CLASS(geom, "Point", point),
+		GLOBAL_CLASS(geom, "Rectangle", rectangle),
+		GLOBAL_CLASS(geom, "Transform", transform),
+
+		GLOBAL_CLASS(filters, "BevelFilter", bevelFilter),
+		GLOBAL_CLASS(filters, "BitmapFilter", bitmapFilter),
+		GLOBAL_CLASS(filters, "BlurFilter", blurFilter),
+		GLOBAL_CLASS(filters, "ColorMatrixFilter", colorMatrixFilter),
+		GLOBAL_CLASS(filters, "ConvolutionFilter", convolutionFilter),
+		GLOBAL_CLASS(filters, "DisplacementMapFilter", displacementMapFilter),
+		GLOBAL_CLASS(filters, "DropShadowFilter", dropShadowFilter),
+		GLOBAL_CLASS(filters, "GradientBevelFilter", gradientBevelFilter),
+		GLOBAL_CLASS(filters, "GradientGlowFilter", gradientGlowFilter),
+		GLOBAL_CLASS(filters, "GlowFilter", glowFilter),
+
+		GLOBAL_CLASS(net, "FileReference", fileReference),
+
+		GLOBAL_DEF(system, "IME", sysIME),
+		GLOBAL_DEF(system, "security", sysSec),
+		GLOBAL_DEF(system, "capabilities", sysCaps),
+
+		GLOBAL_CLASS_FLAGS
+		(
+			textFieldCtor,
+			"StyleSheet",
+			styleSheet,
+			dontEnum | PropFlags::Version7
+		),
+	});
+
+	#undef GLOBAL_DEF_FLAGS
+	#undef GLOBAL_DEF
+	#undef GLOBAL_CLASS_FLAGS
+	#undef GLOBAL_CLASS
+	#undef GLOBAL_CLASS_DONT_ENUM
+
+	return std::make_tuple
+	(
+		AVM1SystemPrototypes
+		{
+			buttonClass,
+			objClass,
+			funcClass,
+			movieClipClass,
+			soundClass,
+			textFieldClass,
+			textFormatClass,
+			arrayClass,
+			xmlNodeClass,
+			xmlClass,
+			stringClass,
+			numberClass,
+			booleanClass,
+			matrixClass,
+			pointClass,
+			rectangleClass,
+			transformClass,
+			sharedObjectClass,
+			colorTransformClass,
+			contextMenuClass,
+			contextMenuItemClass,
+			dateClass,
+			bitmapDataClass,
+			videoClass,
+			blurFilterClass,
+			bevelFilterClass,
+			glowFilterClass,
+			dropShadowFilterClass,
+			colorMatrixFilterClass,
+			displacementMapFilterClass,
+			convolutionFilterClass,
+			gradientBevelFilterClass,
+			gradientGlowFilterClass,
+		},
+		globals,
+		bcastFuncs
+	);
+}
+
+AVM1_FUNCTION_BODY(lightspark, getDepth)
+{
+	auto dispObj = _this->as<DisplayObject>();
+	if (dispObj == nullptr || act.getSwfVersion() < 6)
+		return AVM1Value::undefinedVal;
+	return number_t(dispObj->getSWFDepth() - AVM1depthOffset);
+}
+
+void removeDisplayObject
+(
+	AVM1Activation& activation,
+	const GcPtr<DisplayObject>& _this
+)
+{
+	auto depth = _this->getSWFDepth();
+
+	// NOTE: This can only remove positive depths (when offset by the AVM
+	// depth offset).
+	// This usually prevents removing non dynamic clips, but it can be
+	// bypassed with `swapDepths()`.
+	if (depth < AVM1depthOffset || depth >= AVM1maxRemoveDepth)
+		return;
+
+	// Requires a parent to remove from.
+	auto parent = _this->getAVM1Parent();
+	if (parent == nullptr || !parent->is<MovieClip>())
+		return;
+
+	parent->as<MovieClip>()->removeChild(activation.getCtx(), _this);
+}

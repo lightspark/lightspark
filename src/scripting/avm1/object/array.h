@@ -22,6 +22,7 @@
 
 #include <vector>
 
+#include "scripting/avm1/function.h"
 #include "scripting/avm1/object/object.h"
 
 // Based on Ruffle's `avm1::object::array_object::ArrayObject`.
@@ -31,6 +32,8 @@ namespace lightspark
 
 class tiny_string;
 class AVM1Activation;
+class AVM1DeclContext;
+class AVM1SystemClass;
 class AVM1Value;
 class GcContext;
 template<typename T>
@@ -39,7 +42,20 @@ class GcPtr;
 class AVM1Array : public AVM1Object
 {
 public:
-	AVM1Array(AVM1Activation& activation);
+	enum class SortOptions : int32_t
+	{
+		CaseInsensitive = 1 << 0,
+		Decending = 1 << 1,
+		UniqueSort = 1 << 2,
+		ReturnIndexedArray = 1 << 3,
+		Numeric = 1 << 4,
+	};
+
+	AVM1Array
+	(
+		AVM1Activation& activation,
+		const std::vector<AVM1Value>& elems = {}
+	);
 
 	AVM1Array
 	(
@@ -64,6 +80,31 @@ public:
 		ssize_t idx,
 		const AVM1Value& value
 	) override;
+
+	static GcPtr<AVM1SystemClass> createClass
+	(
+		AVM1DeclContext& ctx,
+		const GcPtr<AVM1Object>& superProto
+	);
+
+	// Implements the `Array` constructor.
+	AVM1_FUNCTION_DECL(ctor);
+
+	// Implements `Array()`.
+	AVM1_FUNCTION_DECL(array);
+
+	AVM1_FUNCTION_DECL(push);
+	AVM1_FUNCTION_DECL(unshift);
+	AVM1_FUNCTION_DECL(shift);
+	AVM1_FUNCTION_DECL(pop);
+	AVM1_FUNCTION_DECL(reverse);
+	AVM1_FUNCTION_DECL(join);
+	AVM1_FUNCTION_DECL(slice);
+	AVM1_FUNCTION_DECL(splice);
+	AVM1_FUNCTION_DECL(concat);
+	AVM1_FUNCTION_DECL(toString);
+	AVM1_FUNCTION_DECL(sort);
+	AVM1_FUNCTION_DECL(sortOn);
 };
 
 }

@@ -29,9 +29,11 @@
 namespace lightspark
 {
 
-class ASBroadcasterFuncs;
+class AsBroadcasterFuncs;
 class AVM1Activation;
+class AVM1Global;
 class AVM1Object;
+class AVM1SystemClass;
 class AVM1Value;
 class DisplayObject;
 class GcContext;
@@ -40,47 +42,39 @@ class Optional;
 
 struct AVM1SystemPrototypes
 {
-	GcPtr<AVM1Object> button;
-	GcPtr<AVM1Object> object;
-	GcPtr<AVM1Object> objectCtor;
-	GcPtr<AVM1Object> function;
-	GcPtr<AVM1Object> movieClip;
-	GcPtr<AVM1Object> sound;
-	GcPtr<AVM1Object> textField;
-	GcPtr<AVM1Object> textFormat;
-	GcPtr<AVM1Object> array;
-	GcPtr<AVM1Object> arrayCtor;
-	GcPtr<AVM1Object> xmlNodeCtor;
-	GcPtr<AVM1Object> xmlCtor;
-	GcPtr<AVM1Object> string;
-	GcPtr<AVM1Object> number;
-	GcPtr<AVM1Object> boolean;
-	GcPtr<AVM1Object> matrix;
-	GcPtr<AVM1Object> matrixCtor;
-	GcPtr<AVM1Object> point;
-	GcPtr<AVM1Object> pointCtor;
-	GcPtr<AVM1Object> rectangle;
-	GcPtr<AVM1Object> rectangleCtor;
-	GcPtr<AVM1Object> transformCtor;
-	GcPtr<AVM1Object> sharedObjectCtor;
-	GcPtr<AVM1Object> colorTransform;
-	GcPtr<AVM1Object> colorTransformCtor;
-	GcPtr<AVM1Object> contextMenu;
-	GcPtr<AVM1Object> contextMenuCtor;
-	GcPtr<AVM1Object> contextMenuItem;
-	GcPtr<AVM1Object> contextMenuItemCtor;
-	GcPtr<AVM1Object> dateCtor;
-	GcPtr<AVM1Object> bitmapData;
-	GcPtr<AVM1Object> video;
-	GcPtr<AVM1Object> blurFilter;
-	GcPtr<AVM1Object> bevelFilter;
-	GcPtr<AVM1Object> glowFilter;
-	GcPtr<AVM1Object> dropShadowFilter;
-	GcPtr<AVM1Object> colorMatrixFilter;
-	GcPtr<AVM1Object> displacementMapFilter;
-	GcPtr<AVM1Object> convolutionFilter;
-	GcPtr<AVM1Object> gradientBevelFilter;
-	GcPtr<AVM1Object> gradientGlowFilter;
+	GcPtr<AVM1SystemClass> button;
+	GcPtr<AVM1SystemClass> object;
+	GcPtr<AVM1SystemClass> function;
+	GcPtr<AVM1SystemClass> movieClip;
+	GcPtr<AVM1SystemClass> sound;
+	GcPtr<AVM1SystemClass> textField;
+	GcPtr<AVM1SystemClass> textFormat;
+	GcPtr<AVM1SystemClass> array;
+	GcPtr<AVM1SystemClass> xmlNode;
+	GcPtr<AVM1SystemClass> xml;
+	GcPtr<AVM1SystemClass> string;
+	GcPtr<AVM1SystemClass> number;
+	GcPtr<AVM1SystemClass> boolean;
+	GcPtr<AVM1SystemClass> matrix;
+	GcPtr<AVM1SystemClass> point;
+	GcPtr<AVM1SystemClass> rectangle;
+	GcPtr<AVM1SystemClass> transform;
+	GcPtr<AVM1SystemClass> sharedObject;
+	GcPtr<AVM1SystemClass> colorTransform;
+	GcPtr<AVM1SystemClass> contextMenu;
+	GcPtr<AVM1SystemClass> contextMenuItem;
+	GcPtr<AVM1SystemClass> date;
+	GcPtr<AVM1SystemClass> bitmapData;
+	GcPtr<AVM1SystemClass> video;
+	GcPtr<AVM1SystemClass> blurFilter;
+	GcPtr<AVM1SystemClass> bevelFilter;
+	GcPtr<AVM1SystemClass> glowFilter;
+	GcPtr<AVM1SystemClass> dropShadowFilter;
+	GcPtr<AVM1SystemClass> colorMatrixFilter;
+	GcPtr<AVM1SystemClass> displacementMapFilter;
+	GcPtr<AVM1SystemClass> convolutionFilter;
+	GcPtr<AVM1SystemClass> gradientBevelFilter;
+	GcPtr<AVM1SystemClass> gradientGlowFilter;
 };
 
 AVM1Value parseIntImpl
@@ -92,9 +86,9 @@ AVM1Value parseIntImpl
 
 using CreateGlobalsType = std::tuple
 <
-	GcPtr<AVM1SystemPrototypes>,
-	GcPtr<AVM1Object>,
-	GcPtr<ASBroadcasterFuncs>
+	AVM1SystemPrototypes,
+	GcPtr<AVM1Global>,
+	GcPtr<AsBroadcasterFuncs>
 >;
 
 // Initialize the default global scope, and builtins for an AVM1 instance.
@@ -113,6 +107,8 @@ constexpr size_t AVM1maxDepth = 2130706428;
 
 // The mximum depth that AVM1 allows when removing clips.
 constexpr size_t AVM1maxRemoveDepth = 2130706416;
+
+AVM1_PUBLIC_FUNCTION_DECL(getDepth);
 
 void removeDisplayObject
 (

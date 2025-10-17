@@ -21,10 +21,12 @@
 
 #include "gc/context.h"
 #include "gc/ptr.h"
+#include "gc/resource.h"
 #include "scripting/avm1/activation.h"
 #include "scripting/avm1/function.h"
 #include "scripting/avm1/object.h"
 #include "scripting/avm1/prop.h"
+#include "scripting/avm1/prop_decl.h"
 #include "scripting/avm1/runtime.h"
 #include "scripting/avm1/scope.h"
 #include "scripting/avm1/value.h"
@@ -43,7 +45,7 @@ void forEachProto
 	F&& func
 );
 
-AVM1Value call
+AVM1Value AVM1Watcher::call
 (
 	AVM1Activation& activation,
 	const tiny_string& name,
@@ -68,14 +70,13 @@ AVM1Object::AVM1Object
 (
 	const GcContext& ctx,
 	const NullableGcPtr<AVM1Object>& proto
-)
+) : GcResource(ctx)
 {
 	if (proto.isNull())
 		return;
 
 	defineValue
 	(
-		ctx,
 		"__proto__",
 		proto,
 		AVM1PropFlags::DontEnum | AVM1PropFlags::DontDelete
@@ -881,4 +882,179 @@ NullableGcPtr<AVM1Object> findResolveMethod
 	});
 
 	return ret;
+}
+
+constexpr auto declFlags =
+(
+	AVM1PropFlags::DontEnum |
+	AVM1PropFlags::DontDelete
+);
+
+constexpr auto declFlagsRO = declFlags | AVM1PropFlags::ReadOnly;
+constexpr auto declFlagsV6 = declFlags | AVM1PropFlags::Version6;
+
+
+static constexpr auto protoDecls =
+{
+	AVM1Decl("addProperty", AVM1Object::addProperty, declFlagsV6),
+	AVM1Decl("hasOwnProperty", AVM1Object::hasOwnProperty, declFlagsV6),
+	AVM1Decl("isPropertyEnumerable", AVM1Object::isPropertyEnumerable, declFlagsV6),
+	AVM1Decl("isPrototypeOf", AVM1Object::isPrototypeOf, declFlagsV6),
+	AVM1Decl("toString", AVM1Object::toString, declFlags),
+	AVM1Decl("valueOf", AVM1Object::valueOf, declFlags),
+	AVM1Decl("watch", AVM1Object::watch, declFlagsV6),
+	AVM1Decl("unwatch", AVM1Object::unwatch, declFlagsV6)
+};
+
+static constexpr auto objDecls =
+{
+	AVM1Decl("registerClass", AVM1Object::registerClass, declFlagsRO)
+};
+
+GcPtr<AVM1SystemClass> AVM1Object::createClass(AVM1DeclContext& ctx)
+{
+	auto _class = ctx.makeNativeClassWithProto
+	(
+		ctor,
+		AVM1FunctionObject::function,
+		ctx.getObjectProto()
+	);
+
+	ctx.definePropsOn(_class->proto, protoDecls);
+	ctx.definePropsOn(_class->ctor, objDecls);
+	return _class;
+}
+
+AVM1_FUNCTION_BODY(AVM1Object, ctor)
+{
+	if (args.empty() || args[0].isNullOrUndefined())
+		return _this;
+	return args[0].toObject(act);
+}
+
+AVM1_FUNCTION_BODY(AVM1Object, object)
+{
+	auto& gcCtx = act.getGcCtx();
+	if (args.empty() || args[0].isNullOrUndefined())
+		return NEW_GC_PTR(gcCtx, AVM1Object(gcCtx));
+	return args[0].toObject(act);
+}
+
+AVM1_FUNCTION_BODY(AVM1Object, addProperty)
+{
+	tiny_string name;
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	if (!unpacker(name).isValid())
+		return false;
+
+	NullableGcPtr<AVM1Object> getter;
+	NullableGcPtr<AVM1Object> setter;
+	bool isValid = false;
+	unpacker.withStrict()(getter)(setter);
+
+	if (getter.isNull() || name.empty())
+		return false;
+
+	if (setter.isNull() && !unpacker[1].is<NullVal>())
+		return false;
+
+	constexpr auto readOnly = AVM1PropFlags::ReadOnly;
+	_this->addPropWithCase
+	(
+		act,
+		name,
+		getter,
+		setter,
+		setter.isNull() ? readOnly : AVM1PropFlags(0)
+	);
+	return true;
+}
+
+AVM1_FUNCTION_BODY(AVM1Object, hasOwnProperty)
+{
+	tiny_string name;
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+	return unpacker(name).isValid() && _this->hasOwnProp(act, name);
+}
+
+AVM1_FUNCTION_BODY(AVM1Object, isPropertyEnumerable)
+{
+	tiny_string name;
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+	return
+	(
+		unpacker(name).isValid() &&
+		_this->hasPropEnumerable(act, name)
+	);
+}
+
+AVM1_FUNCTION_BODY(AVM1Object, isPrototypeOf)
+{
+	NullableGcPtr<AVM1Object> obj;
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+	return unpacker(obj).isValid() && _this->isPrototypeOf(act, obj);
+}
+
+AVM1_FUNCTION_BODY(AVM1Object, toString)
+{
+	return
+	(
+		_this->is<AVM1Executable>() ?
+		"[type Function]" :
+		"[object Object]"
+	);
+}
+
+AVM1_FUNCTION_BODY(AVM1Object, valueOf)
+{
+	return _this;
+}
+
+AVM1_FUNCTION_BODY(AVM1Object, registerClass)
+{
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	if (args.size() < 2)
+		return false;
+
+	tiny_string className;
+	NullableGcPtr<AVM1Executable> ctor;
+	unpacker(className).unpackStrict(ctor);
+
+	if (ctor.isNull() && !unpacker[1].isNullOrUndefined())
+		return false;
+
+	auto swfVersion = act.getBaseClip()->getSwfVersion();
+	act.getCtx().registerCtor(swfVersion, className, ctor);
+	return true;
+}
+
+AVM1_FUNCTION_BODY(AVM1Object, watch)
+{
+	tiny_string name;
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	if (!unpacker(name).isValid())
+		return false;
+
+	NullableGcPtr<AVM1Executable> callback;
+	AVM1Value userData;
+	unpacker(callback)(userData);
+
+	if (callback.isNull())
+		return false;
+
+	_this->watchProp(act, name, callback, userData);
+	return true;
+}
+
+AVM1_FUNCTION_BODY(AVM1Object, unwatch)
+{
+	tiny_string name;
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	if (!unpacker(name).isValid())
+		return false;
+	return _this->unwatchProp(act, name);
 }

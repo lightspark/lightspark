@@ -22,9 +22,11 @@
 
 #include <vector>
 
+#include "gc/ptr.h"
+#include "gc/resource.h"
+#include "scripting/avm1/function.h"
 #include "scripting/avm1/prop_map.h"
 #include "scripting/avm1/value.h"
-#include "smartrefs.h"
 
 // Based on Ruffle's `avm1::object::{,Script}Object`.
 
@@ -33,15 +35,13 @@ namespace lightspark
 
 class tiny_string;
 class AVM1Activation;
+class AVM1DeclContext;
 class AVM1Executable;
+class AVM1Object;
 class AVM1Prop;
 enum AVM1PropFlags;
-class AVM1Object;
+class AVM1SystemClass;
 class GcContext
-template<typename T>
-class GcPtr;
-template<typename T>
-class NullableGcPtr;
 template<typename T>
 class Optional;
 
@@ -67,7 +67,7 @@ public:
 	) const;
 }
 
-class AVM1Object : public RefCountable
+class AVM1Object : public GcResource
 {
 private:
 	using PropMapType = AVM1PropMap<AVM1Prop>::MapType;
@@ -480,6 +480,46 @@ public:
 
 	// Deletes a property of this object, as if it were an array.
 	virtual bool deleteElement(AVM1Activation& activation, ssize_t idx);
+
+	// Constructs the `Object` class.
+	//
+	// Since `AVM1{,Function}Object` are so tightly coupled, this function
+	// doesn't allocate an object to store either prototype. Instead,
+	// they must be provided through the `AVM1DeclContext`.
+	static GcPtr<AVM1SystemClass> createClass(AVM1DeclContext& ctx);
+
+	// Implements `Object`'s constructor.
+	AVM1_FUNCTION_DECL(ctor);
+
+	// Implements `Object()`.
+	AVM1_FUNCTION_DECL(object);
+
+	// Implements `Object.prototype.addProperty()`.
+	AVM1_FUNCTION_DECL(addProperty);
+
+	// Implements `Object.prototype.hasOwnProperty()`.
+	AVM1_FUNCTION_DECL(hasOwnProperty);
+
+	// Implements `Object.prototype.isPropertyEnumerable()`.
+	AVM1_FUNCTION_DECL(isPropertyEnumerable);
+
+	// Implements `Object.prototype.isPrototypeOf()`.
+	AVM1_FUNCTION_DECL(isPrototypeOf);
+
+	// Implements `Object.prototype.toString()`.
+	AVM1_FUNCTION_DECL(toString);
+
+	// Implements `Object.prototype.valueOf()`.
+	AVM1_FUNCTION_DECL(valueOf);
+
+	// Implements `Object.registerClass()`.
+	AVM1_FUNCTION_DECL(registerClass);
+
+	// Implements `Object.prototype.watch()`.
+	AVM1_FUNCTION_DECL(watch);
+
+	// Implements `Object.prototype.unwatch()`.
+	AVM1_FUNCTION_DECL(unwatch);
 };
 
 // Perform a prototype lookup of a given object.

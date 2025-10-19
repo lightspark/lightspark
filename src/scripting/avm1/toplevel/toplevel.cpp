@@ -609,34 +609,3 @@ CreateGlobalsType createGlobals(GcContext& ctx)
 		bcastFuncs
 	);
 }
-
-AVM1_FUNCTION_BODY(lightspark, getDepth)
-{
-	auto dispObj = _this->as<DisplayObject>();
-	if (dispObj == nullptr || act.getSwfVersion() < 6)
-		return AVM1Value::undefinedVal;
-	return number_t(dispObj->getSWFDepth() - AVM1depthOffset);
-}
-
-void removeDisplayObject
-(
-	AVM1Activation& activation,
-	const GcPtr<DisplayObject>& _this
-)
-{
-	auto depth = _this->getSWFDepth();
-
-	// NOTE: This can only remove positive depths (when offset by the AVM
-	// depth offset).
-	// This usually prevents removing non dynamic clips, but it can be
-	// bypassed with `swapDepths()`.
-	if (depth < AVM1depthOffset || depth >= AVM1maxRemoveDepth)
-		return;
-
-	// Requires a parent to remove from.
-	auto parent = _this->getAVM1Parent();
-	if (parent == nullptr || !parent->is<MovieClip>())
-		return;
-
-	parent->as<MovieClip>()->removeChild(activation.getCtx(), _this);
-}

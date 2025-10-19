@@ -94,27 +94,5 @@ using CreateGlobalsType = std::tuple
 // Initialize the default global scope, and builtins for an AVM1 instance.
 CreateGlobalsType createGlobals(GcContext& ctx);
 
-// Depths used/returned by ActionScript are offset by this amount from
-// depths used inside the SWF, or by the VM.
-// The depth of `DisplayObject`s placed on the timeline in Flash (the
-// authoring tool) starts at 0 in the SWF, but is negative when returned
-// by `MovieClip.getDepth()`.
-// Add this to convert from AVM1 depth, to SWF depth.
-constexpr size_t AVM1depthOffset = 16384;
-
-// The mximum depth that AVM1 allows when swapping, or attching clips.
-constexpr size_t AVM1maxDepth = 2130706428;
-
-// The mximum depth that AVM1 allows when removing clips.
-constexpr size_t AVM1maxRemoveDepth = 2130706416;
-
-AVM1_PUBLIC_FUNCTION_DECL(getDepth);
-
-void removeDisplayObject
-(
-	AVM1Activation& activation,
-	const GcPtr<DisplayObject>& _this
-);
-
 }
 #endif /* SCRIPTING_AVM1_TOPLEVEL_TOPLEVEL_H */

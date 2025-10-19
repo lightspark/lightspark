@@ -18,11 +18,14 @@
 **************************************************************************/
 
 #include "display_object/DisplayObject.h"
+#include "display_object/MovieClip.h"
 #include "gc/context.h"
 #include "gc/ptr.h"
 #include "scripting/avm1/activation.h"
 #include "scripting/avm1/object/display_object.h"
 #include "scripting/avm1/object/object.h"
+#include "scripting/avm1/prop.h"
+#include "scripting/avm1/prop_decl.h"
 #include "scripting/avm1/runtime.h"
 #include "scripting/avm1/scope.h"
 #include "scripting/avm1/value.h"
@@ -184,6 +187,54 @@ AVM1Object::GetKeysType AVM1DisplayObject::getKeys
 	}
 
 	return ret;
+}
+
+void AVM1DisplayObject::defineProto
+(
+	AVM1DeclContext& ctx,
+	const GcPtr<AVM1Object>& superProto
+)
+{
+	constexpr auto flags =
+	(
+		AVM1PropFlags::DontEnum |
+		AVM1PropFlags::DontDelete |
+		AVM1PropFlags::ReadOnly |
+		AVM1PropFlags::Version6
+	);
+
+	ctx.definePropsOn(superProto, AVM1Decl("getDepth", getDepth, flags));
+}
+
+AVM1_FUNCTION_BODY(AVM1DisplayObject, getDepth)
+{
+	auto dispObj = _this->as<DisplayObject>();
+	if (dispObj.isNull() || act.getSwfVersion() < 6)
+		return AVM1Value::undefinedVal;
+	return number_t(dispObj->getSWFDepth() - AVM1depthOffset);
+}
+
+void AVM1DisplayObject::removeDisplayObject
+(
+	AVM1Activation& activation,
+	const GcPtr<DisplayObject>& _this
+)
+{
+	auto depth = _this->getSWFDepth();
+
+	// NOTE: This can only remove positive depths (when offset by the AVM
+	// depth offset).
+	// This usually prevents removing non dynamic clips, but it can be
+	// bypassed with `swapDepths()`.
+	if (depth < AVM1depthOffset || depth >= AVM1maxRemoveDepth)
+		return;
+
+	// Requires a parent to remove from.
+	auto parent = _this->getAVM1Parent();
+	if (parent == nullptr || !parent->is<MovieClip>())
+		return;
+
+	parent->as<MovieClip>()->removeChild(activation.getCtx(), _this);
 }
 
 static int parseLevelId(const tiny_string& digits)

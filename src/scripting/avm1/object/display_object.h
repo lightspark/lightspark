@@ -20,6 +20,7 @@
 #ifndef SCRIPTING_AVM1_OBJECT_DISPLAY_OBJECT_H
 #define SCRIPTING_AVM1_OBJECT_DISPLAY_OBJECT_H 1
 
+#include "gc/ptr.h"
 #include "scripting/avm1/prop_map.h"
 #include "scripting/avm1/object/object.h"
 
@@ -30,13 +31,11 @@ namespace lightspark
 
 class tiny_string;
 class AVM1Activation;
+class AVM1DeclContext;
+class AVM1SystemClass;
 class AVM1Value;
 class DisplayObject;
 class GcContext
-template<typename T>
-class GcPtr;
-template<typename T>
-class NullableGcPtr;
 template<typename T>
 class Optional;
 
@@ -52,6 +51,20 @@ private:
 		const tiny_string& name
 	) const;
 public:
+	// Depths used/returned by ActionScript are offset by this amount from
+	// depths used inside the SWF, or by the VM.
+	// The depth of `DisplayObject`s placed on the timeline in Flash (the
+	// authoring tool) starts at 0 in the SWF, but is negative when returned
+	// by `MovieClip.getDepth()`.
+	// Add this to convert from AVM1 depth, to SWF depth.
+	static constexpr size_t AVM1depthOffset = 16384;
+
+	// The mximum depth that AVM1 allows when swapping, or attching clips.
+	static constexpr size_t AVM1maxDepth = 2130706428;
+
+	// The mximum depth that AVM1 allows when removing clips.
+	static constexpr size_t AVM1maxRemoveDepth = 2130706416;
+
 	// Create a display object for a given display node.
 	AVM1DisplayObject
 	(
@@ -87,8 +100,25 @@ public:
 		bool includeHidden
 	) const override;
 
-	operator const DisplayObject*() const;
-	operator DisplayObject*();
+	// Add common `DisplayObject` methods to the supplied prototype.
+	static void defineProto
+	(
+		AVM1DeclContext& ctx,
+		const GcPtr<AVM1Object>& superProto
+	);
+
+	AVM1_PUBLIC_FUNCTION_DECL(getDepth);
+
+	static void removeDisplayObject
+	(
+		AVM1Activation& activation,
+		const GcPtr<DisplayObject>& _this
+	);
+
+	operator const DisplayObject*() const { return dispObj; }
+	operator DisplayObject*() { return dispObj; }
+	operator const GcPtr<DisplayObject>&() const { return dispObj; }
+	operator GcPtr<DisplayObject>&() { return dispObj; }
 };
 
 #define AVM1_DISP_GETTER_ARGS \

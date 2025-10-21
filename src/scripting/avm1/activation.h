@@ -21,13 +21,13 @@
 #define SCRIPTING_AVM1_ACTIVATION_H 1
 
 #include <functional>
+#include <memory>
 #include <vector>
 
 #include <tsl/ordered_map.h>
 
 #include "gc/ptr.h"
 #include "scripting/avm1/value.h"
-#include "smartrefs.h"
 #include "tiny_string.h"
 
 // Based on Ruffle's `avm1::activation::Activation`.
@@ -138,9 +138,9 @@ private:
 	// Registers use 1-based indexing; `r0` doesn't exist. Therefore this
 	// vector, while nominally starting at 0, actually starts at 1.
 	//
-	// NOTE: The registers are stored in an `_NR` so that rescopes (e.g.
-	// `with`) can use the same register set.
-	_NR<std::vector<AVM1Value>> localRegs;
+	// NOTE: The registers are stored in a `std::shared_ptr` so that
+	// rescopes (e.g. `with`) can use the same register set.
+	std::shared_ptr<std::vector<AVM1Value>> localRegs;
 
 	// The base clip of this stack frame.
 	// This will be the `MovieClip` that contains the byte code.

@@ -51,6 +51,7 @@ class Request;
 enum RequestMethod;
 class Stage;
 enum SWFEncoding;
+class SystemState;
 
 // Represents a single activation, of a given AVM1 function, or keyframe.
 class AVM1Activation
@@ -64,7 +65,7 @@ public:
 			uint16_t depth { 0 };
 			uint16_t funcCount { 0 };
 			uint8_t specialCount { 0 };
-		public:
+
 			Identifier
 			(
 				const Identifier* _parent,
@@ -78,7 +79,7 @@ public:
 			depth(_depth),
 			funcCount(_funcCount),
 			specialCount(_specialCount) {}
-
+		public:
 			Identifier(const tiny_string& _name) : name(_name) {}
 			Identifier makeChildID(const tiny_string& name) const
 			{
@@ -165,7 +166,7 @@ private:
 	//
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
-	AVM1Value doAction(const std::vector<uint8_t>& code, size_t& idx);
+	Optional<AVM1Value> doAction(const std::vector<uint8_t>& code, size_t& idx);
 
 	void stackPush(const AVM1Value& value);
 
@@ -206,7 +207,6 @@ private:
 	void actionDelete2();
 	void actionDivide();
 
-	AVM1Value actionEnd();
 	void actionEndDrag();
 	void actionEnumerate();
 	void actionEnumerate2();
@@ -230,6 +230,7 @@ private:
 	// implementation.
 	void actionIf(const std::vector<uint8_t>& code, size_t& idx);
 	void actionIncrement();
+	void actionInitArray();
 	void actionInitObject();
 	void actionImplementsOp();
 	void actionInstanceOf();
@@ -251,13 +252,13 @@ private:
 
 	void actionNot();
 	void actionNextFrame();
-	void actionNewMethod();
-	void actionNewObject();
+	bool actionNewMethod();
+	bool actionNewObject();
 
 	void actionOr();
 
 	void actionPlay();
-	void actionPrevFrame();
+	void actionPreviousFrame();
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
 	void actionPush(const std::vector<uint8_t>& code, size_t& idx);
@@ -277,7 +278,9 @@ private:
 	void actionStartDrag();
 	void actionStop();
 	void actionStopSounds();
-	void actionStoreRegister();
+	// TODO: Replace `code` with a span, once we write our own span
+	// implementation.
+	void actionStoreRegister(const std::vector<uint8_t>& code, size_t& idx);
 	void actionStringAdd();
 	void actionStringEquals();
 	void actionStringExtract();
@@ -294,7 +297,7 @@ private:
 	void actionToString();
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
-	AVM1Value actionTry(const std::vector<uint8_t>& code, size_t& idx);
+	Optional<AVM1Value> actionTry(const std::vector<uint8_t>& code, size_t& idx);
 	void actionTypeOf();
 
 	// TODO: Replace `code` with a span, once we write our own span
@@ -303,7 +306,9 @@ private:
 	void actionWaitForFrame2(const std::vector<uint8_t>& code, size_t& idx);
 	Optional<AVM1Value> actionWith(const std::vector<uint8_t>& code, size_t& idx);
 
-	void actionUnknown();
+	// TODO: Replace `code` with a span, once we write our own span
+	// implementation.
+	void actionUnknown(const std::vector<uint8_t>& code, size_t& idx);
 
 	// Checks that the base clip (script executing clip) still exists.
 	// If the base clip is removed during execution, return from this
@@ -313,21 +318,48 @@ private:
 	bool baseClipExists() const;
 
 	void setTarget(const tiny_string& target);
-public:
+
 	AVM1Activation
 	(
 		AVM1Context& _ctx,
 		const Identifier& _id,
-		uint8_t swfVersion,
+		uint8_t _swfVersion,
 		const GcPtr<AVM1Scope>& _scope,
 		const std::vector<uint32_t>& _constPool,
 		const GcPtr<DisplayObject>& _baseClip,
+		const NullableGcPtr<DisplayObject>& _targetClip,
+		bool _baseClipUnloaded,
 		const AVM1Value& thisVal,
-		const NullableGcPtr<AVM1Object>& _callee
+		const NullableGcPtr<AVM1Object>& _callee,
+		const std::shared_ptr<std::vector<AVM1Value>>& _localRegs = nullptr
+	) :
+	ctx(_ctx),
+	id(_id),
+	swfVersion(_swfVersion),
+	scope(_scope),
+	constPool(_constPool),
+	baseClip(_baseClip),
+	targetClip(_targetClip),
+	baseClipUnloaded(_baseClipUnloaded),
+	_this(thisVal),
+	callee(_callee),
+	localRegs(_localRegs) {}
+public:
+
+	AVM1Activation
+	(
+		AVM1Context& ctx,
+		const Identifier& id,
+		uint8_t _swfVersion,
+		const GcPtr<AVM1Scope>& scope,
+		const std::vector<uint32_t>& constPool,
+		const GcPtr<DisplayObject>& baseClip,
+		const AVM1Value& _this,
+		const NullableGcPtr<AVM1Object>& callee
 	);
 
 	// Create a new activation, to run a block of code with a given scope.
-	Activation withNewScope
+	AVM1Activation withNewScope
 	(
 		const tiny_string& name,
 		const GcPtr<AVM1Scope>& _scope
@@ -344,14 +376,14 @@ public:
 	// logic error, and will corrupt the global scope.
 	AVM1Activation
 	(
-		AVM1Context& _ctx,
-		const Identifier& _id,
-		const GcPtr<DisplayObject>& _baseClip
+		AVM1Context& ctx,
+		const Identifier& id,
+		const GcPtr<DisplayObject>& baseClip
 	);
 
 	// Construct an empty stack frame, with no code, running on the
 	// root movie, in layer 0.
-	AVM1Activation(AVM1Context& _ctx, const Identifier& _id);
+	AVM1Activation(AVM1Context& ctx, const Identifier& id);
 
 	// Add a stack frame that executes code in a timeline scope.
 	//
@@ -369,12 +401,15 @@ public:
 	(
 		const tiny_string& name,
 		const GcPtr<DisplayObject>& activeClip,
+		uint8_t _swfVersion,
 		const std::function<Any(AVM1Activation&)>& func
 	);
 
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
 	AVM1Value runActions(const std::vector<uint8_t>& code);
+
+	SystemState* getSys() const;
 
 	const GcContext& getGcCtx() const;
 	GcContext& getGcCtx();

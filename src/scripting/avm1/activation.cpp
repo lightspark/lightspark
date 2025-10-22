@@ -31,7 +31,9 @@
 #include "scripting/avm1/scope.h"
 #include "swf.h"
 #include "utils/any.h"
+#include "utils/impl.h"
 #include "utils/optional.h"
+#include "utils/type_traits.h"
 
 using namespace lightspark;
 
@@ -249,6 +251,106 @@ GcContext& AVM1Activation::getGcCtx()
 	return ctx.getGcCtx();
 }
 
+using ReadVec = std::vector<uint8_t>;
+#ifdef USE_PAIR
+template<typename T>
+using ReadType = std::pair<T, size_t>;
+using ReadIdx = size_t;
+#else
+template<typename T>
+using ReadType = T;
+using ReadIdx = size_t&;
+#endif
+
+template<typename T, EnableIf<std::is_arithmetic<T>::value, bool> = false>
+static ReadType<const T&> readPrim(const ReadVec& code, ReadIdx idx)
+{
+	#ifdef USE_PAIR
+	return std::make_pair
+	(
+		static_cast<const T&>(code[idx]),
+		idx + sizeof(T)
+	);
+	#else
+	const T& ret = static_cast<const T&>(code[idx]);
+	idx += sizeof(T);
+	return ret;
+	#endif
+}
+
+template<typename T, EnableIf<std::is_integral<T>::value, bool> = false>
+static ReadType<const T&> readInt(const ReadVec& code, ReadIdx idx)
+{
+	return readPrim<T>(code, idx);
+}
+
+template<typename T, EnableIf<std::is_floating_point<T>::value, bool> = false>
+static ReadType<const T&> readFloat(const ReadVec& code, ReadIdx idx)
+{
+	return readPrim<T>(code, idx);
+}
+
+static ReadType<tiny_string> readStr(const ReadVec& code, ReadIdx idx)
+{
+	tiny_string ret(static_cast<const char*>(&code[idx]), true);
+	#ifdef USE_PAIR
+	return std::make_pair(ret, idx + ret.numBytes() + 1);
+	#else
+	idx += ret.numBytes() + 1;
+	return ret;
+	#endif
+}
+
+static ReadType<uint32_t> readStrID
+(
+	SystemState* sys,
+	const ReadVec& code,
+	ReadIdx idx,
+	bool caseSensitive = true
+)
+{
+	return sys->getUniqueStringId(readStr(code, idx), caseSensitive);
+}
+
+static ReadType<tiny_string> readSwfStr
+(
+	SystemState* sys,
+	const TextEncoding& encoding,
+	const ReadVec& code,
+	ReadIdx idx
+)
+{
+	auto ret = sys->getTextEncodingManager()->decode
+	(
+		static_cast<const char*>(&code[idx]),
+		encoding
+	);
+	#ifdef USE_PAIR
+	return std::make_pair(ret, idx + ret.numBytes() + 1);
+	#else
+	idx += ret.numBytes() + 1;
+	return ret;
+	#endif
+}
+
+static ReadType<uint32_t> readSwfStrID
+(
+	SystemState* sys,
+	const TextEncoding& encoding,
+	const ReadVec& code,
+	ReadIdx idx,
+	bool caseSensitive = true
+)
+{
+	return sys->getUniqueStringId(readSwfStr
+	(
+		sys,
+		encoding,
+		code,
+		idx
+	), caseSensitive);
+}
+
 Optional<AVM1Value> AVM1Activation::doAction
 (
 	const std::vector<uint8_t>& code,
@@ -273,10 +375,7 @@ Optional<AVM1Value> AVM1Activation::doAction
 	uint8_t opcode = code[idx++];
 	uint16_t length = 0;
 	if (opcode >= 0x80)
-	{
-		length = static_cast<uint16_t*>(code.data())[idx];
-		idx += 2;
-	}
+		length = readInt<uint16_t>(code, idx);
 
 	switch (opcode)
 	{
@@ -391,14 +490,14 @@ Optional<AVM1Value> AVM1Activation::doAction
 		case 0x8c: actionGotoLabel(code, idx); break;
 		case 0x8d: actionWaitForFrame2(code, idx); break;
 		// `ActionDefineFunction2`.
-		case 0x8e: actionDefineFunction(code, idx, true); break;
-		case 0x8f: return actionTry(code, idx); break;
+		case 0x8e: actionDefineFunction(code, idx, length, true); break;
+		case 0x8f: return actionTry(code, idx, length); break;
 
-		case 0x94: actionWith(code, idx); break;
-		case 0x96: actionPush(code, idx); break;
+		case 0x94: actionWith(code, idx, length); break;
+		case 0x96: actionPush(code, idx, length); break;
 		case 0x99: actionJump(code, idx); break;
 		case 0x9a: actionGetURL2(code, idx); break;
-		case 0x9b: actionDefineFunction(code, idx); break;
+		case 0x9b: actionDefineFunction(code, idx, length); break;
 		case 0x9d: actionIf(code, idx); break;
 		case 0x9e:
 			if (!actionCall())
@@ -406,7 +505,7 @@ Optional<AVM1Value> AVM1Activation::doAction
 			break;
 		case 0x9f: actionGotoFrame2(code, idx); break;
 
-		default: actionUnknown(code, idx); break;
+		default: actionUnknown(code, idx, length); break;
 	}
 
 	return {};
@@ -624,7 +723,7 @@ bool AVM1Activation::actionCall()
 			return makeOptional(std::make_pair(clip, frame));
 		}).orElse([&]
 		{
-			auto frameNum = clip->frameLabelToNum(frame, *this);
+			auto frameNum = clip->frameLabelToNum(*this, frame);
 			if (!frameNum.hasValue())
 				return {};
 			// Otherwise, it's a frame label.
@@ -654,17 +753,109 @@ bool AVM1Activation::actionCall()
 
 bool AVM1Activation::actionCallFunction()
 {
+	auto funcName = ctx.pop().toString(*this);
+	auto numArgs = std::min<size_t>
+	(
+		ctx.pop().toUint32(*this),
+		ctx.stackSize()
+	);
 
+	std::vector<AVM1Value> args;
+	args.reserve(numArgs);
+
+	for (size_t i = 0; i < numArgs; ++i)
+	{
+		auto arg = ctx.pop();
+		if (arg.is<AVM1MovieClip>())
+			args.push_back(arg.toObject(*this));
+		else
+			args.push_back(arg);
+	}
+
+	stackPush(getVariable(funcName)->callWithDefaultThis
+	(
+		*this,
+		getTargetOrRootClip()->toAVM1Object(*this),
+		funcName,
+		args
+	));
+
+	// After any function call, execution of this frame stops, if the
+	// base clip doesn't exist. For example, a `_root.gotoAndStop()` call
+	// that moves the timeline to a frame where the clip was removed.
+	return baseClipExists();
 }
 
 bool AVM1Activation::actionCallMethod()
 {
+	auto methodNameVal = ctx.pop();
+	auto objVal = ctx.pop();
+	auto numArgs = std::min<size_t>
+	(
+		ctx.pop().toUint32(*this),
+		ctx.stackSize()
+	);
 
+	std::vector<AVM1Value> args;
+	args.reserve(numArgs);
+
+	for (size_t i = 0; i < numArgs; ++i)
+	{
+		auto arg = ctx.pop();
+		if (arg.is<AVM1MovieClip>())
+			args.push_back(arg.toObject(*this));
+		else
+			args.push_back(arg);
+	}
+
+	// Can't call a method on a `null`/`undefined` `this`.
+	if (objVal.isNullOrUndefined())
+	{
+		stackPusn(AVM1Value::undefinedVal);
+		return false;
+	}
+
+	auto obj = objVal.toObject(*this);
+	tiny_string methodName;
+	if (!methodNameVal.is<UndefinedVal>())
+		methodName = methodNameVal.toString(*this);
+
+	using Reason = AVM1ExecutionReason;
+	const auto& undefVal = AVM1Value::undefinedVal;
+	stackPush
+	(
+		methodName.empty() ?
+		// `undefined`/empty method name; Call `this` as a function.
+		obj->call(*this, "[Anonymous]", undefVal, args) :
+		// Call `this[methodName]`.
+		obj->callMethod(*this, methodName, args, Reason::FunctionCall)
+	);
+
+	return baseClipExists();
 }
 
 void AVM1Activation::actionCastOp()
 {
+	auto objVal = ctx.pop();
+	auto ctor = ctx.pop().toObject(*this);
 
+	bool instanceOf = objVal.visit(makeVisitor
+	(
+		[&](const GcPtr<AVM1Object>& obj)
+		{
+			auto proto = ctor->getProp(*this, "prototype");
+			return obj->isInstanceOf(*this, ctor, proto);
+		},
+		[&](const GcPtr<AVM1MovieClipRef>& clip)
+		{
+			auto obj = clip->toObject(*this);
+			auto proto = ctor->getProp(*this, "prototype");
+			return obj->isInstanceOf(*this, ctor, proto);
+		},
+		[&](const auto&) { return false; }
+	));
+
+	ctx.push(instanceOf ? objVal : AVM1Value::nullVal);
 }
 
 void AVM1Activation::actionConstantPool
@@ -673,82 +864,314 @@ void AVM1Activation::actionConstantPool
 	size_t& idx
 )
 {
+	auto sys = ctx.getSys();
+	auto encoding = getEncoding();
+	auto poolSize = readInt<uint16_t>(code, idx);
 
+	constPool.clear();
+	constPool.reserve(poolSize);
+	for (size_t i = 0; i < poolSize; ++i)
+		constPool.push_back(readSwfStrID(sys, encoding, code, idx));
+
+	ctx.setConstPool(constPool);
 }
 
 void AVM1Activation::actionDecrement()
 {
-
+	ctx.push(ctx.pop().toNumber(*this) - 1.0);
 }
 
 void AVM1Activation::actionDefineFunction
 (
 	const std::vector<uint8_t>& code,
 	size_t& idx,
-	bool isVer2 = false
+	size_t actionLen,
+	bool isVer2
 )
 {
+	bool caseSensitive = isCaseSensitive();
+	auto name = readStr(code, idx);
+	auto numArgs = readInt<uint16_t>(code, idx);
+	auto regCount = isVer2 ? code[idx++] : 0;
+	AVM1FuncFlags flags = isVer2 ? readInt<AVM1FuncFlags>(code, idx) : 0;
 
+	std::vector<AVM1FuncArg> args;
+	args.reserve(numArgs);
+
+	auto sys = ctx.getSys();
+	for (size_t i = 0; i < numArgs; ++i)
+	{
+		args.emplace_back
+		(
+			// `reg`.
+			isVer2 ? code[idx++] : 0,
+			// `name`.
+			readStrID(sys, code, idx, caseSensitive)
+		);
+	}
+
+	// NOTE: `codeLength` isn't included in `ActionDefineFunction{,2}`'s
+	// action length.
+	auto codeLength = readInt<uint16_t>(code, idx);
+	actionLen += codeLength;
+
+	auto& gcCtx = ctx.getGcCtx();
+	auto funcCodeIt = std::next(code.begin(), idx);
+	auto func = NEW_GC_PTR(gcCtx, AVM1Function
+	(
+		gcCtx,
+		swfVersion,
+		// TODO: Replace this with a span, once we write our own span
+		// implementation.
+		std::vector<uint8_t>(funcCodeIt, funcCodeIt + codeLength),
+		sys->getUniqueStringId(name, caseSensitive),
+		regCount,
+		args,
+		scope,
+		constPool,
+		// NOTE: `baseClip` should always be a `MovieClip`, which means
+		// it can't throw.
+		NEW_GC_PTR(gcCtx, AVM1MovieClipRef
+		(
+			*this,
+			baseClip->toAVM1Object(*this)
+		)),
+		flags
+	));
+
+	auto funcObj = NEW_GC_PTR(gcCtx, AVM1FunctionObject
+	(
+		*this,
+		func,
+		ctx.getPrototypes().function->proto,
+		NEW_GC_PTR(gcCtx, AVM1Object
+		(
+			gcCtx,
+			ctx.getPrototypes().object->proto
+		))
+	));
+
+	if (!name.empty())
+		defineLocal(name, funcObj);
+	else
+		ctx.push(funcObj);
 }
 
 void AVM1Activation::actionDefineLocal()
 {
-
+	// NOTE: If the property doesn't exist on the local object's
+	// prototype chain, then it's created on the local object.
+	// Otherwise, the property is set (including calling virtual
+	// setters).
+	// Despite not being in the SWF 19 spec, `.` paths, and `/` paths
+	// are also supported, and affect the related object in the same way
+	// as `ActionSetVariable`.
+	auto val = ctx.pop();
+	auto name = ctx.pop().toString(*this);
+	defineLocal(name, val);
 }
 
 void AVM1Activation::actionDefineLocal2()
 {
+	// NOTE: If the property doesn't exist on the local object's
+	// prototype chain, then it's created on the local object.
+	// Otherwise, the property is left unchanged.
+	// Despite not being in the SWF 19 spec, `.` paths, and `/` paths
+	// are also supported, and affect the related object in the same way
+	// as `ActionSetVariable`, if the variable doesn't already exist on
+	// the mentioned object.
+	auto name = ctx.pop().toString(*this);
+	if (inLocalScope() || name.findFirst(":.") == tiny_string::npos)
+	{
+		scope->defineLocal(*this, name, AVM1Value::undefinedVal);
+		return;
+	}
 
+	auto var = getVariable(name);
+	if (!var->isCallable() && var->getValue().is<UndefinedVal>())
+		setVariable(name, AVM1Value::undefinedVal);
 }
 
 void AVM1Activation::actionDelete()
 {
-
+	auto name = ctx.pop().toString(*this);
+	ctx.push(ctx.pop().visit(makeVisitor
+	(
+		[&](const GcPtr<AVM1Object>& obj)
+		{
+			return obj->deleteProp(*this, name);
+		},
+		[&](const GcPtr<AVM1MovieClipRef>& clip)
+		{
+			auto obj = clip->toObject(*this);
+			return obj->deleteProp(*this, name);
+		},
+		[&](const auto& val)
+		{
+			LOG
+			(
+				LOG_ERROR,
+				"actionDelete: Can't delete property " <<
+				name << " from " << val
+			);
+			return false;
+		}
+	));
 }
 
 void AVM1Activation::actionDelete2()
 {
+	auto name = ctx.pop().toString(*this);
 
+	// NOTE: This isn't in the SWF 19 spec, but this returns a `bool`,
+	// based on whether the variable was actually deleted, or not.
+	ctx.push(scope->deleteVar(*this, name));
 }
 
 void AVM1Activation::actionDivide()
 {
+	// 1. Pops value A off the stack.
+	auto a = ctx.pop().toNumber(*this);
 
+	// 2. Pops value B off the stack.
+	// 3. Converts A, and B to floating-point; non-numeric values evaluate
+	// to 0.
+	auto b = ctx.pop().toNumber(*this);
+
+	// 6. If A is zero, the result NaN, Infinity, or -Infinity is pushed
+	// to the stack, in SWF 5 and later. In SWF 4, the result is the
+	// string #ERROR#.
+	if (a == 0.0 && swfVersion < 5)
+	{
+		ctx.push("#ERROR#");
+		return;
+	}
+
+	// 4. Divides B, by A.
+	// 5. Pushes the result, B/A, to the stack.
+	ctx.push(b / a);
 }
 
 void AVM1Activation::actionEndDrag()
 {
-
+	ctx.getSys()->getInputThread()->stopDrag();
 }
 
 void AVM1Activation::actionEnumerate()
 {
+	auto name = ctx.pop().toString(*this);
 
+	// A sentinel value that indicates the end of enumeration.
+	ctx.push(AVM1Value::undefinedVal);
+
+	ctx.pop().visit(makeVisitor
+	(
+		[&](const GcPtr<AVM1Object>& obj)
+		{
+			auto keys = obj->getKeys(*this, false);
+			for (auto it = keys.rbegin(); it != keys.rend(); ++it)
+				stackPush(*it);
+		},
+		[&](const GcPtr<AVM1MovieClipRef>& clip)
+		{
+			auto obj = clip->toObject(*this);
+			auto keys = obj->getKeys(*this, false);
+			for (auto it = keys.rbegin(); it != keys.rend(); ++it)
+				stackPush(*it);
+		},
+		[&](const auto&)
+		{
+			LOG(LOG_ERROR, "actionEnumerate: Can't enumerate properties of " << name);
+		}
+	));
 }
 
 void AVM1Activation::actionEnumerate2()
 {
+	// A sentinel value that indicates the end of enumeration.
+	ctx.push(AVM1Value::undefinedVal);
 
+	ctx.pop().visit(makeVisitor
+	(
+		[&](const GcPtr<AVM1Object>& obj)
+		{
+			auto keys = obj->getKeys(*this, false);
+			for (auto it = keys.rbegin(); it != keys.rend(); ++it)
+				stackPush(*it);
+		},
+		[&](const GcPtr<AVM1MovieClipRef>& clip)
+		{
+			auto obj = clip->toObject(*this);
+			auto keys = obj->getKeys(*this, false);
+			for (auto it = keys.rbegin(); it != keys.rend(); ++it)
+				stackPush(*it);
+		},
+		[&](const auto& val)
+		{
+			LOG(LOG_ERROR, "actionEnumerate2: Can't enumerate " << val);
+		}
+	));
 }
 
 void AVM1Activation::actionEquals()
 {
+	// ActionScript 1 equality.
+	// NOTE: If both values are converted to `NaN`, then it'll always
+	// return `false`. Which differs from `ActionEquals2`'s behaviour.
+	auto a = ctx.pop().toNumber(*this);
+	auto b = ctx.pop().toNumber(*this);
 
+	// NOTE: Flash Player diverges from the SWF spec, and *always* returns
+	// a `bool`, even in SWF 4.
+	ctx.push(b == a);
 }
 
 void AVM1Activation::actionEquals2()
 {
-
+	// SWF 5, and later equality.
+	auto a = ctx.pop();
+	auto b = ctx.pop();
+	ctx.push(b.isEqual(a, *this));
 }
 
 void AVM1Activation::actionExtends()
 {
+	auto superClass = ctx.pop().toObject(*this);
+	auto subClass = ctx.pop().toObject(*this);
 
+	// TODO: What happens if we try to extend an `Object` that has no
+	// `prototype`? e.g. `class Foo extends Object.prototype`, or
+	// `class Foo extends 5`.
+	auto superProto = superClass.getProp(*this "prototype").toObject(*this);
+	auto subProto = NEW_GC_PTR(ctx.getGcCtx(), AVM1Object
+	(
+		ctx.getGcCtx(),
+		superProto
+	));
+
+	subProto.defineValue
+	(
+		"constructor",
+		superClass,
+		AVM1PropFlags::DontEnum
+	);
+
+	subProto.defineValue
+	(
+		"__constructor__",
+		superClass,
+		AVM1PropFlags::DontEnum
+	);
+
+	subClass.setProp(*this, "prototype", subProto);
 }
 
 void AVM1Activation::actionGetMember()
 {
+	auto name = ctx.pop().toString(*this);
+	auto obj = ctx.pop().toObject(*this);
 
+	stackPush(obj->getNonSlashPathProp(*this, name));
 }
 
 void AVM1Activation::actionGetProperty()
@@ -921,7 +1344,12 @@ void AVM1Activation::actionPreviousFrame()
 
 }
 
-void AVM1Activation::actionPush(const std::vector<uint8_t>& code, size_t& idx)
+void AVM1Activation::actionPush
+(
+	const std::vector<uint8_t>& code,
+	size_t& idx,
+	size_t actionLen
+)
 {
 
 }
@@ -1073,7 +1501,8 @@ void AVM1Activation::actionToString()
 Optional<AVM1Value> AVM1Activation::actionTry
 (
 	const std::vector<uint8_t>& code,
-	size_t& idx
+	size_t& idx,
+	size_t actionLen
 )
 {
 
@@ -1105,7 +1534,8 @@ void AVM1Activation::actionWaitForFrame2
 Optional<AVM1Value> AVM1Activation::actionWith
 (
 	const std::vector<uint8_t>& code,
-	size_t& idx
+	size_t& idx,
+	size_t actionLen
 )
 {
 
@@ -1114,7 +1544,8 @@ Optional<AVM1Value> AVM1Activation::actionWith
 void AVM1Activation::actionUnknown
 (
 	const std::vector<uint8_t>& code,
-	size_t& idx
+	size_t& idx,
+	size_t actionLen
 )
 {
 

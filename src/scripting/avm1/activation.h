@@ -46,11 +46,13 @@ class DisplayObject;
 class DisplayObjectContainer;
 class GcContext;
 template<typename T>
+class Impl;
+template<typename T>
 class Optional;
 class Request;
 enum RequestMethod;
 class Stage;
-enum SWFEncoding;
+enum TextEncoding;
 class SystemState;
 
 // Represents a single activation, of a given AVM1 function, or keyframe.
@@ -199,6 +201,7 @@ private:
 	(
 		const std::vector<uint8_t>& code,
 		size_t& idx,
+		size_t actionLen,
 		bool isVer2 = false
 	);
 	void actionDefineLocal();
@@ -261,7 +264,12 @@ private:
 	void actionPreviousFrame();
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
-	void actionPush(const std::vector<uint8_t>& code, size_t& idx);
+	void actionPush
+	(
+		const std::vector<uint8_t>& code,
+		size_t& idx,
+		size_t actionLen
+	);
 	void actionPushDuplicate();
 
 	void actionRandomNumber();
@@ -297,18 +305,33 @@ private:
 	void actionToString();
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
-	Optional<AVM1Value> actionTry(const std::vector<uint8_t>& code, size_t& idx);
+	Optional<AVM1Value> actionTry
+	(
+		const std::vector<uint8_t>& code,
+		size_t& idx,
+		size_t actionLen
+	);
 	void actionTypeOf();
 
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
 	void actionWaitForFrame(const std::vector<uint8_t>& code, size_t& idx);
 	void actionWaitForFrame2(const std::vector<uint8_t>& code, size_t& idx);
-	Optional<AVM1Value> actionWith(const std::vector<uint8_t>& code, size_t& idx);
+	Optional<AVM1Value> actionWith
+	(
+		const std::vector<uint8_t>& code,
+		size_t& idx,
+		size_t actionLen
+	);
 
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
-	void actionUnknown(const std::vector<uint8_t>& code, size_t& idx);
+	void actionUnknown
+	(
+		const std::vector<uint8_t>& code,
+		size_t& idx,
+		size_t actionLen
+	);
 
 	// Checks that the base clip (script executing clip) still exists.
 	// If the base clip is removed during execution, return from this
@@ -552,7 +575,7 @@ public:
 	//
 	// And finally, if none of the above it's a normal variable name,
 	// resolved on the scope chain.
-	AVM1Value getVariable(const tiny_string& path);
+	Impl<AVM1CallableValue> getVariable(const tiny_string& path);
 
 	// Sets the value, referenced by a target path string.
 	//
@@ -617,13 +640,13 @@ public:
 	//
 	// NOTE: Because scopes are `Object` chains, the same rules for
 	// `AVM1Object::getProp()` still apply here.
-	AVM1CallableValue resolveVariable(const tiny_string& name);
+	Impl<AVM1CallableValue> resolveVariable(const tiny_string& name);
 
 	// Returns the suggested string encoding for actions/instructions.
 	// For SWF 6, and later, this is always UTF-8.
 	// For SWF 5, and earlier, this is locale dependent, and we default
 	// to using ANSI/Windows-1252.
-	SWFEncoding getEncoding() const;
+	TextEncoding getEncoding() const;
 
 	// Returns the SWF version of the action, or function being executed.
 	uint8_t getSwfVersion() const { return swfVersion; }

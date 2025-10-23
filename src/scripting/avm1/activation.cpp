@@ -1176,17 +1176,44 @@ void AVM1Activation::actionGetMember()
 
 void AVM1Activation::actionGetProperty()
 {
+	auto propIdx = ctx.pop().toNumber(*this);
+	auto path = ctx.pop();
+	auto clip = resolveTargetClip
+	(
+		getTargetOrBaseClip(),
+		path,
+		!targetClip.isNull()
+	);
 
+	if (clip.isNull())
+	{
+		LOG(LOG_ERROR, "actionGetProperty: Invalid target " << path);
+		ctx.push(AVM1Value::undefinedVal);
+		return;
+	}
+
+	if (!std::isfinite(propIdx) || propIdx <= -1.0)
+	{
+		LOG(LOG_ERROR, "actionGetProperty: Invalid property " << propIdx);
+		ctx.push(AVM1Value::undefinedVal);
+		return;
+	}
+
+	auto prop = *ctx.getDisplayProps().getByIndex(propIdx);
+	ctx.push(prop.get(*this, clip));
 }
 
 void AVM1Activation::actionGetTime()
 {
-
+	auto sys = ctx.getSys();
+	uint64_t now = sys->now().absDiff(ctx.startTime).toMs();
+	ctx.push(number_t(now));
 }
 
 void AVM1Activation::actionGetVariable()
 {
-
+	auto varPath = ctx.pop().toString(*this);
+	stackPush(getVariable(varPath));
 }
 
 void AVM1Activation::actionGetURL
@@ -1195,7 +1222,60 @@ void AVM1Activation::actionGetURL
 	size_t& idx
 )
 {
+	auto sys = ctx.getSys();
+	auto url = readSwfStr(sys, getEncoding(), code, idx);
+	auto target = readSwfStr(sys, getEncoding(), code, idx);
 
+	bool isLevelName =
+	(
+		target.startsWith("_level") &&
+		target.numChars() > 6
+	);
+
+	if (!isLevelName)
+	{
+		(void)parseFSCommand(url).andThen([&](const tiny_string& cmd)
+		{
+			sys->extIfaceManager->handleFSCommand(cmd, target);
+			return makeOptional(str);
+		}).orElse([&]
+		{
+			sys->openPageInBrowser(url, target);
+			return nullOpt;
+		});
+		return;
+	}
+
+	auto levelID = target.substr
+	(
+		6,
+		tiny_string::npos
+	).tryParseNumber<int32_t>();
+
+	if (!levelID.hasValue())
+	{
+		LOG(LOG_ERROR, "actionGetURL: Couldn't parse level ID " << target);
+		return;
+	}
+
+	if (!url.empty())
+	{
+		sys->loaderManager->loadMovieIntoClip
+		(
+			getOrCreateLevel(levelID),
+			Request(RequestMethod::Get, url),
+			{},
+			AVM1MovieLoaderData()
+		);
+		return;
+	}
+
+	auto level = getLevel(levelID);
+	if (level.isNull() || !level->is<MovieClip>())
+		return;
+
+	// NOTE: A blank URL on a level target is an unload.
+	level->as<MovieClip>()->AVM1unloadMovie(ctx);
 }
 
 void AVM1Activation::actionGetURL2

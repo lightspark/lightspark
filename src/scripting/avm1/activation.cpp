@@ -1278,13 +1278,168 @@ void AVM1Activation::actionGetURL
 	level->as<MovieClip>()->AVM1unloadMovie(ctx);
 }
 
+static Optional<RequestMethod> fromSendVars(const AVM1GetURLFlags& flags)
+{
+	using URLFlags = AVM1GetURLFlags;
+	switch (flags & URLFlags::MethodMask)
+	{
+		default:
+		case URLFlags::MethodNone: return {}; break;
+		case URLFlags::MethodGet: return RequestMethod::Get; break;
+		case URLFlags::MethodPost: return RequestMethod::Post; break;
+	}
+}
+
 void AVM1Activation::actionGetURL2
 (
 	const std::vector<uint8_t>& code,
 	size_t& idx
 )
 {
+	using URLFlags = AVM1GetURLFlags;
+	URLFlags flags = code[idx++];
+	// TODO: Support `LoadVariablesFlag`.
+	// TODO: What happens if there's only a single string?
+	auto sys = ctx.getSys();
+	auto targetVal = ctx.pop();
+	auto target = targetVal.toString(*this);
+	auto url = ctx.pop().toString(*this);
 
+	auto fsCmd = parseFSCommand(url);
+
+	if (fsCmd.hasValue())
+	{
+		// `target` is an fscommand.
+		sys->extIfaceManager->handleFSCommand(*fsCmd, target);
+		return;
+	}
+
+	auto levelID = [&] -> int32_t
+	{
+		bool isLevelName =
+		(
+			target.startsWith("_level") &&
+			target.numChars() >= 6
+		);
+
+		if (!isLevelName)
+			return -1;
+
+		return target.substr
+		(
+			6,
+			tiny_string::npos
+		).tryParseNumber<number_t>().valueOr
+		(
+			-(target.numChars() > 6)
+		);
+	}();
+
+	NullableGcPtr<DisplayObject> clipTarget = [&]
+	{
+		if (levelID < 0)
+			return nullptr;
+		if (!(flags & (URLFlags::LoadTarget | URLFlags::LoadVariables)))
+			return nullptr;
+
+		return targetVal.isPrimitive() ? resolveTargetClip
+		(
+			getTargetOrRootClip(),
+			targetVal,
+			true
+		) : targetVal.as<AVM1Object>()->as<DisplayObject>();
+	}();
+
+	auto getURL = [&]
+	{
+		// `getURL()` call.
+		auto vars = fromSendVars(flags).andThen([&](const auto& method)
+		{
+			return makeOptional(std::make_pair
+			(
+				method,
+				localsToFormVals()
+			));
+		});
+		sys->navigateToURL(url, target, vars);
+	};
+
+	bool isLoadVars = flags & URLFlags::LoadVariables;
+	bool isLoadTarget = flags & URLFlags::LoadTarget;
+
+	if (isLoadVars)
+	{
+		// `loadVariables{,Num}()` call.
+		// Depending on the situation, it'll open a link in the browser
+		// instead.
+		bool _isLoadVars = isLoadTarget || levelID >= 0 ||
+		(
+			!targetVal.isPrimitive() &&
+			clipTarget == baseClip->getAVM1Root()
+		);
+		if (!_loadVars)
+		{
+			getURL();
+			return;
+		}
+
+		if (clipTarget.isNull())
+			return;
+
+		sys->loaderManager->loadFormIntoAVM1Object
+		(
+			clipTarget->getAVM1Object().toObject(*this),
+			localsToRequest(url, fromSendVars(flags))
+		);
+		return;
+	}
+
+	if (!isLoadTarget && levelID < 0)
+	{
+		getURL();
+		return;
+	}
+
+	// `{,un}loadMovie{,Num}()` call.
+	if (!url.empty() && levelID < 0)
+		return;
+
+	auto request =
+	(
+		isLoadTarget ?
+		localsToRequest(url, fromSendVars(flags)) :
+		Request(RequestMethod::Get, url)
+	);
+
+	if (!url.empty() && clipTarget.isNull())
+	{
+		// NOTE: The level target is created while loading the movie.
+		sys->loaderManager->loadMovie
+		(
+			target,
+			request,
+			{},
+			AVM1MovieLoaderData()
+		);
+		return;
+	}
+	else if (!url.empty())
+	{
+		sys->loaderManager->loadMovieIntoClip
+		(
+			clipTarget,
+			request,
+			{},
+			AVM1MovieLoaderData()
+		);
+		return;
+	}
+
+	if (clipTarget.isNull() || !clipTarget->is<MovieClip>())
+		return;
+
+	// NOTE: A blank URL on a level target is an unload.
+	clipTarget->as<MovieClip>()->AVM1unloadMovie(ctx);
 }
 
 void AVM1Activation::actionGotoFrame
@@ -1293,7 +1448,22 @@ void AVM1Activation::actionGotoFrame
 	size_t& idx
 )
 {
+	auto frame = readInt<uint16_t>(code, idx);
 
+	if (targetClip.isNull())
+	{
+		LOG(LOG_ERROR, "ActionGotoFrame failed. Reason: Invalid target.");
+		return;
+	}
+
+	auto clip = targetClip->as<MovieClip>();
+	if (clip.isNull())
+	{
+		LOG(LOG_ERROR, "ActionGotoFrame failed. Reason: Target isn't a `MovieClip`.");
+		return;
+	}
+
+	clip->AVM1gotoFrame(frame, true, !clip->state.stop_FP, true);
 }
 
 void AVM1Activation::actionGotoFrame2
@@ -1302,7 +1472,28 @@ void AVM1Activation::actionGotoFrame2
 	size_t& idx
 )
 {
+	// SWF 4, and later `gotoAnd{Play,Stop}()`.
+	// The argument can be either a frame number, or a frame label.
+	auto flags = code[idx++];
 
+	auto clip = getTargetOrRootClip()->as<MovieClip>();
+	if (clip.isNull())
+	{
+		LOG(LOG_ERROR, "actionGotoFrame2: Target isn't a `MovieClip`.");
+		return;
+	}
+
+	bool isPlaying = flags & 1;
+	uint16_t sceneOffset = flags & 2 ? readInt<uint16_t>(code, idx) : 0;
+	auto frame = ctx.pop();
+	(void)AVM1MovieClip::gotoFrame
+	(
+		*this,
+		clip,
+		frame,
+		!isPlaying,
+		sceneOffset
+	);
 }
 
 void AVM1Activation::actionGotoLabel
@@ -1311,42 +1502,150 @@ void AVM1Activation::actionGotoLabel
 	size_t& idx
 )
 {
+	auto sys = ctx.getSys();
+	auto label = readSwfStr(sys, getEncoding(), code, idx);
 
+	if (targetClip.isNull())
+	{
+		LOG(LOG_ERROR, "actionGotoLabel: Invalid target.");
+		return;
+	}
+
+	auto clip = targetClip->as<MovieClip>();
+	if (clip.isNull())
+	{
+		LOG(LOG_ERROR, "actionGotoLabel: Target isn't a `MovieClip`.");
+		return;
+	}
+
+	clip->AVM1gotoFrameLabel(label, true, true);
 }
 
 void AVM1Activation::actionIf(const std::vector<uint8_t>& code, size_t& idx)
 {
-
+	auto offset = readInt<int16_t>(code, idx);
+	if (ctx.pop().toBool(swfVersion))
+		idx = clampTmpl<size_t>(idx + offset, 0, code.size());
 }
 
 void AVM1Activation::actionIncrement()
 {
-
+	ctx.push(ctx.pop().toNumber(*this) + 1.0);
 }
 
 void AVM1Activation::actionInitArray()
 {
+	auto numArgs = ctx.pop().toNumber(*this);
 
+	if (numArgs < 0 || numArgs > INT32_MAX)
+	{
+		// NOTE: `ActionInitArray` pops no args, and pushes `undefined`,
+		// if `numArgs` is out of range.
+		ctx.push(AVM1Value::undefinedVal);
+		return;
+	}
+
+	size_t _numArgs = numArgs;
+
+	std::vector<AVM1Value> args;
+	args.reserve(_numArgs);
+
+	for (size_t i = 0; i < _numArgs; ++i)
+		args.push_back(ctx.pop());
+
+	ctx.push(NEW_GC_PTR(ctx.getGcCtx(), AVM1Array(*this, args)));
 }
 
 void AVM1Activation::actionInitObject()
 {
+	auto numProps = ctx.pop().toNumber(*this);
 
+	if (numProps < 0 || numProps > INT32_MAX)
+	{
+		// NOTE: `ActionInitObject` pops no args, and pushes `undefined`,
+		// if `numProps` is out of range.
+		ctx.push(AVM1Value::undefinedVal);
+		return;
+	}
+
+	auto obj = NEW_GC_PTR(ctx.getGcCtx(), AVM1Object
+	(
+		ctx.getGcCtx(),
+		ctx.getPrototypes().object->proto
+	));
+
+	size_t _numProps = numProps;
+	for (size_t i = 0; i < _numProps; ++i)
+	{
+		auto value = ctx.pop();
+		auto name = ctx.pop().toString(*this);
+		obj->setProp(*this, name, value);
+	}
+
+	ctx.push(obj);
 }
 
 void AVM1Activation::actionImplementsOp()
 {
+	auto ctor = ctx.pop().toObject(*this);
+	// NOTE, PLAYER-SPECIFIC: In older versions of Flash Player (at least
+	// FP 9), `count` is *always* converted to a `Number`, even if it's
+	// an `Object`. But at some point, this was changed, and instead
+	// prints the following in the trace log: "Parameters of type Object
+	// are no longer coerced into the required primitive type - number.".
+	// Newer versions of Flash Player only convert primitives, and treat
+	// `Object`s as `0`.
+	size_t count = [&]
+	{
+		auto count = ctx.pop();
+		if (count.isPrimitive())
+			return count.toUInt32(*this);
+		LOG(LOG_ERROR, "actionImplementsOp: Can't convert non-primitives to `Number`. Returning 0 instead.");
+		return 0;
+	}();
 
+	count = std::min(count, ctx.stackSize());
+
+	// Bail, if there aren't any interfaces.
+	if (!count)
+		return;
+
+	std::vector<GcPtr<AVM1Object>> ifaces;
+	// TODO: If one of the interfaces isn't an `Object`, do we leave the
+	// entire stack dirty, or do we clean it up?
+	for (size_t i = 0; i < count; ++i)
+		ifaces.push_back(ctx.pop().toObject(*this));
+
+	auto proto = ctor.getProp(*this, "prototype").toObject(*this);
+	proto->setInterfaces(ifaces);
 }
 
 void AVM1Activation::actionInstanceOf()
 {
+	auto ctor = ctx.pop().toObject(*this);
+	auto obj = ctx.pop();
 
+	ctx.push(obj.visit(makeVisitor
+	(
+		[&](const GcPtr<AVM1Object>& obj)
+		{
+			auto proto = ctor->getProp(*this, "prototype");
+			return obj->isInstanceOf(*this, ctor, proto);
+		},
+		[&](const GcPtr<AVM1MovieClipRef>& clip)
+		{
+			auto obj = clip->toObject(*this);
+			auto proto = ctor->getProp(*this, "prototype");
+			return obj->isInstanceOf(*this, ctor, proto);
+		},
+		[&](const auto&) { return false; }
+	)));
 }
 
 void AVM1Activation::actionJump(const std::vector<uint8_t>& code, size_t& idx)
 {
-
+	auto offset = readInt<int16_t>(code, idx);
+	idx = clampTmpl<size_t>(idx + offset, 0, code.size());
 }
 
 void AVM1Activation::actionLess()

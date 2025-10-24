@@ -478,15 +478,27 @@ public:
 	bool issealed:1;
 	bool nameIsInteger:1;
 	bool varIsRefCounted:1;
+	bool isStatic:1; // indicates if this variable is a member of a static ASObject
 
 	uint8_t min_swfversion;
-	variable(TRAIT_KIND _k,const nsNameAndKind& _ns,bool _nameIsInteger,uint32_t nameID)
-		: var(asAtomHandler::invalidAtom),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom)
-		,nameStringID(nameID),ns(_ns),slotid(0),kind(_k)
-		,isResolved(false),isenumerable(true),issealed(false)
-		,nameIsInteger(_nameIsInteger),min_swfversion(0)
+	variable(TRAIT_KIND _k,const nsNameAndKind& _ns,bool _nameIsInteger,uint32_t nameID, bool _isStatic)
+		: var(asAtomHandler::invalidAtom)
+		,typeUnion(nullptr)
+		,setter(asAtomHandler::invalidAtom)
+		,getter(asAtomHandler::invalidAtom)
+		,nameStringID(nameID)
+		,ns(_ns)
+		,slotid(0)
+		,kind(_k)
+		,isResolved(false)
+		,isenumerable(true)
+		,issealed(false)
+		,nameIsInteger(_nameIsInteger)
+		,varIsRefCounted(false)
+		,isStatic(_isStatic)
+		,min_swfversion(0)
 	{}
-	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* type, const nsNameAndKind &_ns, bool _isenumerable, bool _nameIsInteger, uint32_t nameID);
+	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* type, const nsNameAndKind &_ns, bool _isenumerable, bool _nameIsInteger, uint32_t nameID, bool _isStatic);
 	void setVar(ASWorker* wrk, asAtom v, bool _isrefcounted = true);
 	/*
 	 * To be used only if the value is guaranteed to be of the right type
@@ -589,22 +601,23 @@ struct cyclicmembercount
 {
 	uint32_t count; // number of references counted
 	uint32_t countlevel; // indicates if we are counting recursively (>1)
+	uint32_t incheckingcount;
 	bool hasmember:1; // indicates if the member object has any references to the main object in its members
 	bool ignore:1; // indicates if the member object doesn't have to be checked for cyclic member count and its count should be ignored
 	bool ischecked:1;
-	bool inchecking:1;
 	std::list<ASObject*> delayedcheck;
 	FORCE_INLINE void reset()
 	{
 		count=0;
 		countlevel=0;
+		incheckingcount=0;
 		hasmember=false;
 		ignore=false;
 		ischecked=false;
-		inchecking=false;
 		delayedcheck.clear();
 	}
-	cyclicmembercount() : count(0),countlevel(0),hasmember(false),ignore(false),ischecked(false),inchecking(false)
+	cyclicmembercount() : count(0),countlevel(0),incheckingcount(0),
+		hasmember(false),ignore(false),ischecked(false)
 	{
 	}
 };
@@ -612,10 +625,12 @@ struct cyclicmembercount
 struct garbagecollectorstate
 {
 	std::vector<ASObject*> checkedobjects;
+	std::list<ASObject*> objectstack;
 	ASObject* startobj;
 	bool stopped; // indicates that an object has a member and should be ignored, so we can stop gc for the startobject immediately
 	bool incCount(ASObject* o, bool hasMember);
 	void ignoreCount(ASObject* o);
+	void checkDelayedCount(bool hasMember,ASObject* o);
 	bool isIgnored(ASObject* o);
 	bool hasMember(ASObject* o);
 	void reset();
@@ -660,8 +675,12 @@ public:
 	std::vector<variable*> dynamic_vars;
 	uint32_t slotcount;
 	// indicates if this map was initialized with no variables with non-primitive values
-	bool cloneable;
-	variables_map():slotcount(0),cloneable(true)
+	bool cloneable:1; // indicates if this map was initialized with no variables with non-primitive values
+	bool isStatic:1; // indicates if this map belongs to a static ASObject
+	variables_map(bool _isStatic)
+		:slotcount(0)
+		,cloneable(true)
+		,isStatic(_isStatic)
 	{
 	}
 	/**
@@ -932,6 +951,7 @@ protected:
 	virtual ~ASObject();
 	uint32_t stringId;
 	uint32_t storedmembercount; // count how often this object is stored as a member of another object (needed for cyclic reference detection)
+	uint32_t storedmembercountstatic; // count how often this object is stored as a member of another static object (needed for cyclic reference detection)
 	SWFOBJECT_TYPE type;
 	CLASS_SUBTYPE subtype;
 
@@ -1000,6 +1020,7 @@ protected:
 		bool keep = canHaveCyclicMemberReference() && removefromGarbageCollection();
 		implEnable = true;
 		storedmembercount=0;
+		storedmembercountstatic=0;
 		gccounter.reset();
 #ifndef NDEBUG
 		//Stuff only used in debugging
@@ -1058,6 +1079,7 @@ public:
 	bool removefromGarbageCollection();
 	bool addToGarbageCollection();
 	void removeStoredMember();
+	bool hasStoredMemberStatic() const { return storedmembercountstatic; }
 	FORCE_INLINE void decRefAndGCCheck()
 	{
 		if (storedmembercount
@@ -1475,12 +1497,16 @@ FORCE_INLINE void variables_map::setSlotFromVariable(unsigned int n, variable* v
 FORCE_INLINE void variables_map::setDynamicVarNoCheck(uint32_t nameID, asAtom& v, bool nameIsInteger, ASWorker* wrk, bool prepend)
 {
 	var_iterator inserted=Variables.insert(Variables.cbegin(),
-			make_pair(nameID,variable(DYNAMIC_TRAIT,nsNameAndKind(),nameIsInteger,nameID)));
+			make_pair(nameID,variable(DYNAMIC_TRAIT,nsNameAndKind(),nameIsInteger,nameID,this->isStatic)));
 	insertVar(&inserted->second,prepend);
 
 	ASObject* o = asAtomHandler::getObject(v);
 	if (o && !o->getConstant())
+	{
 		o->addStoredMember();
+		if (this->isStatic)
+			o->storedmembercountstatic++;
+	}
 	inserted->second.setVarNoCheck(v,wrk);
 }
 FORCE_INLINE void variable::setVarNoCoerce(asAtom &v, ASWorker* wrk)
@@ -1491,6 +1517,8 @@ FORCE_INLINE void variable::setVarNoCoerce(asAtom &v, ASWorker* wrk)
 	if(oldisrefcounted && asAtomHandler::isObject(oldvar))
 	{
 		LOG_CALL("remove old var no coerce:"<<asAtomHandler::toDebugString(oldvar));
+		if (this->isStatic)
+			asAtomHandler::getObjectNoCheck(oldvar)->storedmembercountstatic--;
 		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
 	}
 	varIsRefCounted = asAtomHandler::isObject(v);
@@ -1498,6 +1526,8 @@ FORCE_INLINE void variable::setVarNoCoerce(asAtom &v, ASWorker* wrk)
 	{
 		asAtomHandler::getObjectNoCheck(v)->incRef();
 		asAtomHandler::getObjectNoCheck(v)->addStoredMember();
+		if (this->isStatic)
+			asAtomHandler::getObjectNoCheck(v)->storedmembercountstatic++;
 	}
 }
 
@@ -1514,6 +1544,8 @@ FORCE_INLINE void variable::setVarFromVariable(variable* v, uint16_t localnumber
 	if(varIsRefCounted && asAtomHandler::isObject(oldvar))
 	{
 		LOG_CALL("remove old var no coerce:"<<asAtomHandler::toDebugString(oldvar));
+		if (this->isStatic)
+			asAtomHandler::getObjectNoCheck(oldvar)->storedmembercountstatic--;
 		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
 	}
 	varIsRefCounted = asAtomHandler::isObject(var.value);
@@ -1521,6 +1553,8 @@ FORCE_INLINE void variable::setVarFromVariable(variable* v, uint16_t localnumber
 	{
 		asAtomHandler::getObjectNoCheck(var.value)->incRef();
 		asAtomHandler::getObjectNoCheck(var.value)->addStoredMember();
+		if (this->isStatic)
+			asAtomHandler::getObjectNoCheck(var.value)->storedmembercountstatic++;
 	}
 }
 

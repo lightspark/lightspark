@@ -97,7 +97,7 @@ string ASObject::toDebugString() const
 	if (this->getConstant())
 		sprintf(buf,"(%p%s)",this,this->isConstructed()?"":" not constructed");
 	else
-		sprintf(buf,"(%p/%d/%d/%d%s%s)",this,this->getRefCount(),this->storedmembercount,this->getConstant(),this->isConstructed()?"":" not constructed",this->markedforgarbagecollection?" gc":"");
+		sprintf(buf,"(%p/%d/%d(%d)/%d%s%s)",this,this->getRefCount(),this->storedmembercount,this->storedmembercountstatic,this->getConstant(),this->isConstructed()?"":" not constructed",this->markedforgarbagecollection?" gc":"");
 	ret += buf;
 #endif
 	return ret;
@@ -799,7 +799,7 @@ variable* variables_map::findObjVar(uint32_t nameId, const nsNameAndKind& ns, TR
 	if(createKind==NO_CREATE_TRAIT)
 		return nullptr;
 
-	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(nameId, variable(createKind,ns,false,nameId)) );
+	var_iterator inserted=Variables.insert(Variables.cbegin(),make_pair(nameId, variable(createKind,ns,false,nameId,this->isStatic)) );
 	inserted->second.isenumerable = isEnumerable;
 	insertVar(&inserted->second);
 	return &inserted->second;
@@ -1156,7 +1156,7 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 
 			uint32_t nameID = name.normalizedNameId(getInstanceWorker());
 			variables_map::var_iterator inserted=Variables.Variables.insert(Variables.Variables.cbegin(),
-				make_pair(nameID,variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind(),name.isInteger,nameID)));
+				make_pair(nameID,variable(DYNAMIC_TRAIT,name.ns.size() == 1 ? name.ns[0] : nsNameAndKind(),name.isInteger,nameID,Variables.isStatic)));
 			inserted->second.isenumerable=true;
 			Variables.insertVar(&inserted->second);
 			obj = &inserted->second;
@@ -1255,10 +1255,21 @@ void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multina
 	Variables.initializeVar(name, o, typemname, context, traitKind,this,slot_id,isenumerable);
 }
 
-variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const nsNameAndKind& _ns, bool _isenumerable, bool _nameIsInteger, uint32_t nameID)
-		: var(_v),typeUnion(nullptr),setter(asAtomHandler::invalidAtom),getter(asAtomHandler::invalidAtom)
-		,nameStringID(nameID),ns(_ns),slotid(0),kind(_k)
-		,isResolved(false),isenumerable(_isenumerable),issealed(false),nameIsInteger(_nameIsInteger),min_swfversion(0)
+variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const nsNameAndKind& _ns, bool _isenumerable, bool _nameIsInteger, uint32_t nameID, bool _isStatic)
+	: var(_v)
+	,typeUnion(nullptr)
+	,setter(asAtomHandler::invalidAtom)
+	,getter(asAtomHandler::invalidAtom)
+	,nameStringID(nameID)
+	,ns(_ns)
+	,slotid(0)
+	,kind(_k)
+	,isResolved(false)
+	,isenumerable(_isenumerable)
+	,issealed(false)
+	,nameIsInteger(_nameIsInteger)
+	,isStatic(_isStatic)
+	,min_swfversion(0)
 {
 	if(_type)
 	{
@@ -1273,7 +1284,11 @@ variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const n
 	assert(!asAtomHandler::isLocalNumber(var.value));
 	ASObject* o = asAtomHandler::getObject(var.value);
 	if (o && !o->getConstant())
+	{
 		o->addStoredMember();
+		if (this->isStatic)
+			o->storedmembercountstatic++;
+	}
 }
 void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 {
@@ -1302,10 +1317,16 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 	if(varIsRefCounted && asAtomHandler::isObject(oldvar))
 	{
 		LOG_CALL("remove old var:"<<asAtomHandler::toDebugString(oldvar));
+		if (this->isStatic)
+			asAtomHandler::getObjectNoCheck(oldvar)->storedmembercountstatic--;
 		asAtomHandler::getObjectNoCheck(oldvar)->removeStoredMember();
 	}
 	if(asAtomHandler::isObject(v) && _isrefcounted)
+	{
 		asAtomHandler::getObjectNoCheck(v)->addStoredMember();
+		if (this->isStatic)
+			asAtomHandler::getObjectNoCheck(v)->storedmembercountstatic++;
+	}
 	varIsRefCounted = _isrefcounted;
 }
 
@@ -1444,13 +1465,13 @@ variable* variables_map::findObjVar(ASWorker* wrk,const multiname& mname, TRAIT_
 	if(createKind == DYNAMIC_TRAIT)
 	{
 		var_iterator inserted=Variables.insert(Variables.cbegin(),
-			make_pair(name,variable(createKind,nsNameAndKind(),mname.isInteger,name)));
+			make_pair(name,variable(createKind,nsNameAndKind(),mname.isInteger,name,this->isStatic)));
 		insertVar(&inserted->second);
 		return &inserted->second;
 	}
 	assert(mname.ns.size() == 1);
 	var_iterator inserted=Variables.insert(Variables.cbegin(),
-		make_pair(name,variable(createKind,mname.ns[0],mname.isInteger,name)));
+		make_pair(name,variable(createKind,mname.ns[0],mname.isInteger,name,this->isStatic)));
 	insertVar(&inserted->second);
 	return &inserted->second;
 }
@@ -1514,7 +1535,7 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 		cloneable = false;
 
 	uint32_t name=mname.normalizedNameId(mainObj->getInstanceWorker());
-	auto it = Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable,mname.isInteger,name)));
+	auto it = Variables.insert(Variables.cbegin(),make_pair(name, variable(traitKind, value, typemname, type,mname.ns[0],isenumerable,mname.isInteger,name,this->isStatic)));
 	insertVar(&it->second);
 	if (slot_id)
 		initSlot(slot_id,&(it->second));
@@ -2134,6 +2155,7 @@ void ASObject::prepareShutdown()
 	preparedforshutdown=true;
 	classdef=nullptr;
 	objfreelist=nullptr;
+	storedmembercountstatic=0;
 	Variables.prepareShutdown();
 	for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
 		(*it)->prepareShutdown();
@@ -2433,9 +2455,11 @@ void variables_map::destroyContents()
 }
 void variables_map::prepareShutdown()
 {
+	this->isStatic=false;
 	while(!Variables.empty())
 	{
 		var_iterator it=Variables.begin();
+		it->second.isStatic=false;
 		ASObject* var = it->second.isRefcountedVar() && it->second.isAccessibleObjectVar() ? it->second.getObjectVar() : nullptr;
 		ASObject* getter = asAtomHandler::getObject(it->second.getter);
 		ASObject* setter = asAtomHandler::getObject(it->second.setter);
@@ -2498,85 +2522,100 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 		parent->gccounter.ischecked=true;
 	}
 	bool ret = false;
-	auto it=Variables.cbegin();
-	while(it!=Variables.cend())
+	int step = 0;
+	// loop over members in two steps:
+	// first loop looks for variables that are also members of a static object so we can stop gc early
+	// second loop checks all "normal" variables
+	while (step != 2)
 	{
-		if (gcstate.stopped)
-			return false;
-		if (!it->second.isAccessibleObjectVar())
+		auto it=Variables.cbegin();
+		while(it!=Variables.cend())
 		{
-			it++;
-			continue;
-		}
-		ASObject* o = it->second.getObjectVar();
-		if (it->second.isRefcountedVar() && o && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
-		{
-			if (o==gcstate.startobj)
+			if (gcstate.stopped)
+				return false;
+			if (!it->second.isAccessibleObjectVar())
 			{
-				gcstate.incCount(o,false);
-				if (gcstate.stopped)
-					return false;
-				parent->gccounter.hasmember=true;
-				ret = true;
+				++it;
+				continue;
 			}
-			else if (o == parent)
+			ASObject* o = it->second.getObjectVar();
+			if (!o)
 			{
-				if (o->getConstant())
+				++it;
+				continue;
+			}
+			if ((step && !o->hasStoredMemberStatic())
+				|| (!step && o->hasStoredMemberStatic()))
+			{
+				it++;
+				continue;
+			}
+
+			if (it->second.isRefcountedVar() && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
+			{
+				if (o==gcstate.startobj)
 				{
-					gcstate.ignoreCount(o);
+					gcstate.incCount(o,false);
 					if (gcstate.stopped)
 						return false;
-					ret = o->gccounter.hasmember;
-					if (!ret && o->gccounter.inchecking)
-						o->gccounter.delayedcheck.push_back(parent);
-				}
-				else
-				{
-					gcstate.incCount(o,ret);
-					if (gcstate.stopped)
-						return false;
-					if (!ret && o->gccounter.inchecking)
-						o->gccounter.delayedcheck.push_back(parent);
-				}
-			}
-			else if (o != parent && ((uint32_t)o->getRefCount()==o->storedmembercount))
-			{
-				if(o->gccounter.ischecked)
-				{
-					if (o->gccounter.countlevel <= 1)
-						gcstate.incCount(o,o->gccounter.hasmember);
-					ret = o->gccounter.hasmember || ret;
-					if (!ret && o->gccounter.inchecking)
-						o->gccounter.delayedcheck.push_back(parent);
-				}
-				else if (o->countAllCylicMemberReferences(gcstate))
-				{
-					o->gccounter.hasmember=true;
-					if (!o->gccounter.ignore && gcstate.isIgnored(parent))
-					{
-						o->gccounter.ignore=true;
-						gcstate.stopped=true;
-						return false;
-					}
+					parent->gccounter.hasmember=true;
 					ret = true;
 				}
+				else if (o == parent)
+				{
+					if (o->getConstant())
+					{
+						gcstate.ignoreCount(o);
+						if (gcstate.stopped)
+							return false;
+						ret = o->gccounter.hasmember;
+					}
+					else
+					{
+						gcstate.incCount(o,ret);
+						if (gcstate.stopped)
+							return false;
+					}
+				}
+				else if (o != parent && ((uint32_t)o->getRefCount()==o->storedmembercount))
+				{
+					if(o->gccounter.ischecked)
+					{
+						if (o->gccounter.countlevel <= 1)
+							gcstate.incCount(o,o->gccounter.hasmember);
+						ret = o->gccounter.hasmember || ret;
+					}
+					else if (o->countAllCylicMemberReferences(gcstate))
+					{
+						o->gccounter.hasmember=true;
+						if (!o->gccounter.ignore && gcstate.isIgnored(parent))
+						{
+							o->gccounter.ignore=true;
+							gcstate.stopped=true;
+							return false;
+						}
+						ret = true;
+					}
+					else
+					{
+						ret = o->gccounter.hasmember || ret;
+						if (gcstate.stopped)
+							return false;
+					}
+				}
 				else
 				{
 					ret = o->gccounter.hasmember || ret;
 					if (gcstate.stopped)
 						return false;
-					if (!ret && o->gccounter.inchecking)
-						o->gccounter.delayedcheck.push_back(parent);
 				}
-			}
-			else
-			{
-				ret = o->gccounter.hasmember || ret;
+				gcstate.checkDelayedCount(ret,o);
 				if (gcstate.stopped)
 					return false;
 			}
+			++it;
 		}
-		it++;
+		++step;
 	}
 	return ret;
 }
@@ -2631,9 +2670,18 @@ void ASObject::dumpObjectCounters(uint32_t threshhold)
 }
 #endif
 ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE st):
-	objfreelist(c ? c->getFreeList(wrk) : nullptr),
-	classdef(c),proxyMultiName(nullptr),sys(c?c->sys: wrk && wrk != this ? wrk->getSystemState() :nullptr),worker(wrk),gcNext(nullptr),gcPrev(nullptr),
-	stringId(UINT32_MAX),storedmembercount(0),type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
+	objfreelist(c ? c->getFreeList(wrk) : nullptr)
+	,Variables(t==T_CLASS)
+	,classdef(c)
+	,proxyMultiName(nullptr)
+	,sys(c?c->sys: wrk && wrk != this ? wrk->getSystemState() :nullptr)
+	,worker(wrk)
+	,gcNext(nullptr)
+	,gcPrev(nullptr)
+	,stringId(UINT32_MAX)
+	,storedmembercount(0)
+	,storedmembercountstatic(0)
+	,type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
 	markedforgarbagecollection(false),
 	deletedingarbagecollection(false),
 	implEnable(true)
@@ -2652,8 +2700,19 @@ ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE
 	}
 #endif
 }
-ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),classdef(nullptr),proxyMultiName(nullptr),sys(o.classdef? o.classdef->sys : nullptr),worker(o.worker),gcNext(nullptr),gcPrev(nullptr),
-	stringId(o.stringId),storedmembercount(o.storedmembercount),type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
+ASObject::ASObject(const ASObject& o)
+	:objfreelist(o.objfreelist)
+	,Variables(o.Variables)
+	,classdef(nullptr)
+	,proxyMultiName(nullptr)
+	,sys(o.classdef? o.classdef->sys : nullptr)
+	,worker(o.worker)
+	,gcNext(nullptr)
+	,gcPrev(nullptr)
+	,stringId(o.stringId)
+	,storedmembercount(0)
+	,storedmembercountstatic(0)
+	,type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
 	markedforgarbagecollection(false),
 	deletedingarbagecollection(false),
 	implEnable(true)
@@ -2668,8 +2727,19 @@ ASObject::ASObject(const ASObject& o):objfreelist(o.objfreelist),classdef(nullpt
 	assert(o.Variables.size()==0);
 }
 
-ASObject::ASObject(MemoryAccount* m):objfreelist(nullptr),classdef(nullptr),proxyMultiName(nullptr),sys(nullptr),worker(nullptr),gcNext(nullptr),gcPrev(nullptr),
-	stringId(UINT32_MAX),storedmembercount(0),type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
+ASObject::ASObject(MemoryAccount* m)
+	:objfreelist(nullptr)
+	,Variables(false)
+	,classdef(nullptr)
+	,proxyMultiName(nullptr)
+	,sys(nullptr)
+	,worker(nullptr)
+	,gcNext(nullptr)
+	,gcPrev(nullptr)
+	,stringId(UINT32_MAX)
+	,storedmembercount(0)
+	,storedmembercountstatic(0)
+	,type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
 	markedforgarbagecollection(false),
 	deletedingarbagecollection(false),
 	implEnable(true)
@@ -2752,7 +2822,8 @@ void ASObject::removeStoredMember()
 	storedmembercount--;
 	if (storedmembercount
 		&& !markedforgarbagecollection
-		&& ((uint32_t)this->getRefCount() == storedmembercount+1))
+		&& ((uint32_t)this->getRefCount() == storedmembercount+1)
+		&& storedmembercountstatic==0)
 	{
 		getInstanceWorker()->addObjectToGarbageCollector(this);
 		this->markedforgarbagecollection=true;
@@ -2765,7 +2836,13 @@ bool ASObject::handleGarbageCollection()
 {
 	if (getConstant() || getCached() || this->getInDestruction())
 		return false;
-	LOG(LOG_CALLS,"handleGarbageCollection:"<<this<<" "<<this->getRefCount()<<"/"<<this->storedmembercount);
+	LOG(LOG_CALLS,"handleGarbageCollection:"<<this<<" "<<this->getRefCount()<<"/"<<this->storedmembercount<<"("<<this->storedmembercountstatic<<")");
+	if (storedmembercountstatic)
+	{
+		markedforgarbagecollection=false;
+		decRef();
+		return false;
+	}
 	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1))
 	{
 		garbagecollectorstate gcstate(this,max(16U,this->Variables.size()));
@@ -2778,6 +2855,7 @@ bool ASObject::handleGarbageCollection()
 			return false;
 		}
 		uint32_t c =0;
+		bool neednewcheck=false;
 		for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 		{
 			LOG(LOG_CALLS,"handleGarbageCollection checked:"<<(*it)<<" "<<(*it)->getRefCount()<<"/"<<(*it)->storedmembercount<<" count:"<<(*it)->gccounter.count<<" "<<((*it)->gccounter.hasmember ? "hasmember" : ""));
@@ -2790,14 +2868,16 @@ bool ASObject::handleGarbageCollection()
 			{
 				LOG(LOG_CALLS,"handleGarbageCollection stopped:"<<this<<" "<<this->getRefCount()<<"/"<<this->storedmembercount<<" "<<(*it)<<" "<<(*it)->gccounter.count<<"/"<<(*it)->getRefCount()<<" "<<(*it)->gccounter.hasmember);
 				c = UINT32_MAX;
-				if (!(*it)->gccounter.ignore && (*it)->markedforgarbagecollection && !deletedingarbagecollection)
-				{
-					getInstanceWorker()->addObjectToGarbageCollector(this);
-					gcstate.reset();
-					return false;
-				}
-				break;
+
+				if ((*it)->gccounter.hasmember && !(*it)->gccounter.ignore && (*it)->markedforgarbagecollection && !deletedingarbagecollection)
+					neednewcheck = true;
 			}
+		}
+		if (neednewcheck)
+		{
+			getInstanceWorker()->addObjectToGarbageCollector(this);
+			gcstate.reset();
+			return false;
 		}
 		assert(c == UINT32_MAX || c <= storedmembercount || this->preparedforshutdown);
 		if (c == storedmembercount)
@@ -2862,6 +2942,11 @@ bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 
 bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 {
+	if (!canHaveCyclicMemberReference())
+		return false;
+
+	if (this->hasStoredMemberStatic() && this->gccounter.hasmember)
+		gcstate.stopped=true;
 	if (gcstate.stopped)
 		return false;
 	bool ret = false;
@@ -2884,36 +2969,44 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 	{
 		if (!this->gccounter.ischecked)
 		{
-			this->gccounter.inchecking=true;
+			this->gccounter.incheckingcount++;
 			if (this->gccounter.countlevel > 1)
 				ret = gcstate.incCount(this,false);
 			else
 			{
+				gcstate.objectstack.push_back(this);
 				ret = countCylicMemberReferences(gcstate);
+				gcstate.objectstack.pop_back();
 				gcstate.incCount(this,false);
 				if (ret)
 					this->gccounter.hasmember=true;
 				else
 					ret=this->gccounter.hasmember;
 			}
-			this->gccounter.inchecking=false;
-			if (this->gccounter.hasmember)
+			this->gccounter.incheckingcount--;
+			if (this->gccounter.incheckingcount==0)
 			{
-				while (!this->gccounter.delayedcheck.empty())
+				if (!gcstate.stopped && this->gccounter.hasmember)
 				{
-					ASObject* o = this->gccounter.delayedcheck.back();
-					o->gccounter.hasmember=true;
-					if (this->gccounter.ignore)
-					{
+					if (hasStoredMemberStatic())
 						gcstate.stopped=true;
-						this->gccounter.delayedcheck.clear();
-						break;
+					else
+					{
+						while (!this->gccounter.delayedcheck.empty())
+						{
+							ASObject* o = this->gccounter.delayedcheck.back();
+							o->gccounter.hasmember=true;
+							if (this->gccounter.ignore || o->hasStoredMemberStatic())
+							{
+								gcstate.stopped=true;
+								break;
+							}
+							this->gccounter.delayedcheck.pop_back();
+						}
 					}
-					this->gccounter.delayedcheck.pop_back();
 				}
-			}
-			else
 				this->gccounter.delayedcheck.clear();
+			}
 		}
 		else
 			ret = gcstate.incCount(this,false);
@@ -6192,6 +6285,37 @@ void garbagecollectorstate::ignoreCount(ASObject* o)
 	}
 	if (o->gccounter.hasmember)
 		this->stopped=true;
+}
+
+void garbagecollectorstate::checkDelayedCount(bool hasMember, ASObject* o)
+{
+	if (hasMember)
+	{
+		for (auto it = objectstack.begin(); it != objectstack.end(); it++)
+		{
+			(*it)->gccounter.hasmember=true;
+			if ((*it)->hasStoredMemberStatic() || (*it)->getConstant())
+			{
+				(*it)->gccounter.ignore=true;
+				this->stopped=true;
+				o->gccounter.delayedcheck.clear();
+				return;
+			}
+		}
+	}
+	else if (!o->gccounter.ignore && !objectstack.empty())
+	{
+		auto it = objectstack.rbegin();
+		ASObject* parent = (*it);
+		++it;
+		while (it != objectstack.rend())
+		{
+			if ((*it) == parent || (*it)->gccounter.hasmember || (*it)->gccounter.ignore)
+				break;
+			o->gccounter.delayedcheck.push_back(*it);
+			++it;
+		}
+	}
 }
 void garbagecollectorstate::reset()
 {

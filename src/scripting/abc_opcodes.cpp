@@ -2917,8 +2917,6 @@ ASObject* ABCVm::newActivation(call_context* th, method_info* mi)
 #ifndef NDEBUG
 	act->initialized=true;
 #endif
-	if (caller)
-		caller->addOwnedObject(act);
 	LOG_CALL("newActivation:"<<act->toDebugString());
 	return act;
 }

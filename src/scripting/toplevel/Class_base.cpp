@@ -214,19 +214,47 @@ Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool opport
 	return typeObject ? typeObject->as<Type>() : nullptr;
 }
 
-Class_base::Class_base(const QName& name, uint32_t _classID, MemoryAccount* m):ASObject(getSys()->worker,Class_object::getClass(getSys()),T_CLASS),protected_ns(getSys(),"",NAMESPACE),constructor(nullptr),
-	qualifiedClassnameID(UINT32_MAX),global(nullptr),
-	context(nullptr),class_name(name),memoryAccount(m),length(1),class_index(-1),
-	isFinal(false),isSealed(false),isInterface(false),
-	isReusable(false),use_protected(false),classID(_classID)
+Class_base::Class_base(const QName& name, uint32_t _classID, MemoryAccount* m)
+	:ASObject(getSys()->worker,Class_object::getClass(getSys()),T_CLASS)
+	,protected_ns(getSys(),"",NAMESPACE)
+	,constructor(nullptr)
+	,qualifiedClassnameID(UINT32_MAX)
+	,global(nullptr)
+	,borrowedVariables(true)
+	,context(nullptr)
+	,class_name(name)
+	,memoryAccount(m)
+	,length(1)
+	,class_index(-1)
+	,isFinal(false)
+	,isSealed(false)
+	,isInterface(false)
+	,isReusable(false)
+	,use_protected(false)
+	,classID(_classID)
 {
 	setSystemState(getSys());
 	setRefConstant();
 }
 
-Class_base::Class_base(const Class_object* c):ASObject((MemoryAccount*)nullptr),protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE),constructor(nullptr),
-	qualifiedClassnameID(UINT32_MAX),global(nullptr),
-	context(nullptr),class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY),memoryAccount(nullptr),length(1),class_index(-1),isFinal(false),isSealed(false),isInterface(false),isReusable(false),use_protected(false),classID(UINT32_MAX)
+Class_base::Class_base(const Class_object* c)
+	:ASObject((MemoryAccount*)nullptr)
+	,protected_ns(getSys(),BUILTIN_STRINGS::EMPTY,NAMESPACE)
+	,constructor(nullptr)
+	,qualifiedClassnameID(UINT32_MAX)
+	,global(nullptr)
+	,borrowedVariables(true)
+	,context(nullptr)
+	,class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY)
+	,memoryAccount(nullptr)
+	,length(1)
+	,class_index(-1)
+	,isFinal(false)
+	,isSealed(false)
+	,isInterface(false)
+	,isReusable(false)
+	,use_protected(false)
+	,classID(UINT32_MAX)
 {
 	type=T_CLASS;
 	//We have tested that (Class is Class == true) so the classdef is 'this'
@@ -500,11 +528,7 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 		if (this->isBuiltin())
 			asAtomHandler::getObjectNoCheck(target)->constructionComplete(_explicit);
 		if(buildAndLink)
-		{
 			asAtomHandler::getObjectNoCheck(target)->afterConstruction(_explicit);
-			if (_explicit)
-				this->getInstanceWorker()->addExplicitConstructedObject(target);
-		}
 	}
 	else
 		t->decRef();

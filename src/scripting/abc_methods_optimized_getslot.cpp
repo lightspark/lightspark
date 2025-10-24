@@ -31,9 +31,10 @@ void lightspark::abc_getslot_constant(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos++;
 	uint32_t t = instrptr->arg2_uint;
 	asAtom* pval = instrptr->arg1_constant;
-	asAtom ret=asAtomHandler::getObject(*pval)->getSlotNoCheck(t);
+	asAtom ret=asAtomHandler::getObjectNoCheck(*pval)->getSlotNoCheck(t);
 	LOG_CALL("getSlot_c " << t << " " << asAtomHandler::toDebugString(ret));
-	ASATOM_INCREF(ret);
+	if (!asAtomHandler::getObjectNoCheck(*pval)->getSlotVar(t+1)->isLocalNumberVar())
+		ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 }
 void lightspark::abc_getslot_local(call_context* context)
@@ -48,7 +49,8 @@ void lightspark::abc_getslot_local(call_context* context)
 	}
 	asAtom res = obj->getSlotNoCheck(t);
 	LOG_CALL("getSlot_l " << t << " " << asAtomHandler::toDebugString(res));
-	ASATOM_INCREF(res);
+	if (!obj->getSlotVar(t+1)->isLocalNumberVar())
+		ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 }
 void lightspark::abc_getslot_constant_localresult(call_context* context)

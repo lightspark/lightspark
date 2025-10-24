@@ -39,11 +39,6 @@ XMLNode::XMLNode(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_X
 XMLNode::XMLNode(ASWorker* wrk, Class_base* c, pugi::xml_node _n, XMLNode* _p):
 	ASObject(wrk,c,T_OBJECT,SUBTYPE_XMLNODE),parent(_p),children(nullptr),childcount(0),nodetype(1),node(_n)
 {
-	if (parent)
-	{
-		parent->incRef();
-		parent->addStoredMember();
-	}
 	switch (node.type())
 	{
 		case pugi::node_null:
@@ -107,8 +102,6 @@ void XMLNode::finalize()
 	if (children)
 		children->removeStoredMember();
 	children = nullptr;
-	if (parent)
-		parent->removeStoredMember();
 	parent = nullptr;
 }
 
@@ -118,8 +111,6 @@ bool XMLNode::destruct()
 		children->removeStoredMember();
 	children = nullptr;
 	childcount=0;
-	if (parent)
-		parent->removeStoredMember();
 	parent = nullptr;
 	node = pugi::xml_node();
 	tmpdoc.reset();
@@ -137,20 +128,12 @@ void XMLNode::prepareShutdown()
 		children->removeStoredMember();
 		children=nullptr;
 	}
-	if (parent)
-	{
-		parent->prepareShutdown();
-		parent->removeStoredMember();
-		parent=nullptr;
-	}
 }
 bool XMLNode::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (children)
 		ret = children->countAllCylicMemberReferences(gcstate) || ret;
-	if (parent)
-		ret = parent->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
 }
 
@@ -407,10 +390,7 @@ void XMLNode::reloadChildren()
 			{
 				XMLNode* n = o->as<XMLNode>();
 				if (n->parent)
-				{
-					n->parent->removeStoredMember();
 					n->parent=nullptr;
-				}
 			}
 		}
 		children->resize(0);
@@ -511,7 +491,6 @@ ASFUNCTIONBODY_ATOM(XMLNode,parentNode)
 		{
 			XMLNode* grandparent = th->parent ? th->parent->parent : nullptr;
 			th->parent = wrk->needsActionScript3() ? Class<XMLNode>::getInstanceS(wrk, parent,grandparent) : Class<AVM1XMLNode>::getInstanceS(wrk, parent,grandparent);
-			th->parent->addStoredMember();
 		}
 	}
 	if (th->parent)
@@ -646,15 +625,12 @@ ASFUNCTIONBODY_ATOM(XMLNode,appendChild)
 	if (c->parent)
 	{
 		c->parent->removeChild(c->node);
-		c->parent->removeStoredMember();
 		c->parent=nullptr;
 	}
 	asAtom ch = asAtomHandler::fromObjectNoPrimitive(c.getPtr());
 	th->children->resize(th->childcount+1);
 	th->children->set(th->childcount,ch);
 	th->childcount++;
-	th->incRef();
-	th->addStoredMember();
 	c->parent = th;
 	c->node = newnode;
 }
@@ -698,7 +674,6 @@ ASFUNCTIONBODY_ATOM(XMLNode,removeNode)
 	if (th->parent)
 	{
 		th->parent->removeChild(th->node);
-		th->parent->removeStoredMember();
 		th->parent=nullptr;
 	}
 }
@@ -724,13 +699,10 @@ ASFUNCTIONBODY_ATOM(XMLNode,insertBefore)
 	if (newChild->parent)
 	{
 		newChild->parent->removeChild(newChild->node);
-		newChild->parent->removeStoredMember();
 		newChild->parent=nullptr;
 	}
 
 	// set new parent
-	th->incRef();
-	th->addStoredMember();
 	newChild->parent = th;
 
 	// update children array

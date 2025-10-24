@@ -204,7 +204,13 @@ ASFUNCTIONBODY_ATOM(Number,generator)
 			ret = wrk->getSystemState()->nanAtom;
 	}
 	else
-		wrk->setBuiltinCallResultLocalNumber(ret, asAtomHandler::toNumber(args[0]));
+	{
+		number_t n = asAtomHandler::toNumber(args[0]);
+		if (std::isnan(n))
+			ret = wrk->getSystemState()->nanAtom;
+		else
+			wrk->setBuiltinCallResultLocalNumber(ret, n);
+	}
 }
 
 tiny_string Number::toString() const

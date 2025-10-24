@@ -1878,10 +1878,10 @@ void ParseThread::parseSWF(UI8 ver)
 		root = parsedObject->as<RootMovieClip>();
 		if (backgroundWorkerFileLength)
 		{
-			root->incRef();
+			root->setRefConstant();
 			li->getInstanceWorker()->rootClip = _MR(root);
 			li->getInstanceWorker()->stage = Class<Stage>::getInstanceSNoArgs(li->getInstanceWorker());
-			root->incRef();
+			li->getInstanceWorker()->stage->setRefConstant();
 			li->getInstanceWorker()->stage->setRoot(_MR(root));
 		}
 		if(!url.empty())
@@ -2258,7 +2258,10 @@ void ParseThread::parseBitmap()
 		tmp->setNeedsTextureRecalculation();
 	}
 	if (li)
+	{
+		li->setBytesLoaded(li->getBytesTotal());
 		li->setComplete();
+	}
 	uncompressedsize = f.tellg();
 }
 

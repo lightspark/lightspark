@@ -160,8 +160,6 @@ void ASWorker::finalize()
 		{
 			delete contexts[i];
 		}
-		if (stage)
-			stage->decRef();
 	}
 	stage=nullptr;
 	destroyContents();
@@ -505,22 +503,6 @@ void ASWorker::handleInternalEvent(Event* e)
 	}
 }
 
-void ASWorker::addExplicitConstructedObject(asAtom a)
-{
-	ASATOM_ADDSTOREDMEMBER(a);
-	explicitconstructedObjects.push_back(a);
-}
-
-void ASWorker::clearExplicitConstructedObjects()
-{
-	while (!explicitconstructedObjects.empty())
-	{
-		asAtom a = explicitconstructedObjects.back();
-		ASATOM_REMOVESTOREDMEMBER(a);
-		explicitconstructedObjects.pop_back();
-	}
-}
-
 void ASWorker::jobFence()
 {
 	state ="terminated";
@@ -584,6 +566,8 @@ void ASWorker::addObjectToGarbageCollector(ASObject* o)
 	if (o->gcPrev || o->gcNext || this->gcNext == o)
 		return;
 	assert(o!=this);
+	assert (this->gcNext);
+	this->gcPrev=o;
 	o->gcNext=this->gcNext;
 	o->gcPrev=this;
 	this->gcNext->gcPrev=o;
@@ -610,7 +594,6 @@ void ASWorker::removeObjectFromGarbageCollector(ASObject* o)
 
 void ASWorker::processGarbageCollection(bool force)
 {
-	clearExplicitConstructedObjects();
 	uint64_t currtime = compat_msectiming();
 	int64_t diff =  currtime-last_garbagecollection;
 	if (!force && !getSystemState()->use_testrunner_date && diff < 10000) // ony execute garbagecollection every 10 seconds
@@ -635,8 +618,7 @@ void ASWorker::processGarbageCollection(bool force)
 				ogc->markedforgarbagecollection = false;
 				if (ogc->handleGarbageCollection())
 				{
-					ogc->gccounter.ignore=true;
-					this->addObjectToGarbageCollector(ogc);
+					assert(ogc->deletedingarbagecollection);
 					hasEntries=true;
 				}
 			}

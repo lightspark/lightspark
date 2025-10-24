@@ -447,8 +447,8 @@ template<class T> friend class Template;
 private:
 	mutable std::vector<multiname> interfaces;
 	mutable std::vector<Class_base*> interfaces_added;
-	std::unordered_set<uint32_t> overriddenmethods;
-	std::unordered_map<Class_base*,bool> subclasses_map;
+	std::set<uint32_t> overriddenmethods;
+	std::map<Class_base*,bool> subclasses_map;
 	std::map<QName,uint32_t> borrowedVariableNameSlotMap;
 	std::vector<variable*> borrowedVariableSlots;
 	nsNameAndKind protected_ns;

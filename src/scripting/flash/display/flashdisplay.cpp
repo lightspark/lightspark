@@ -106,7 +106,6 @@ void Sprite::prepareShutdown()
 {
 	if (preparedforshutdown)
 		return;
-	DisplayObjectContainer::prepareShutdown();
 	if (graphics)
 		graphics->prepareShutdown();
 	if (hitArea)
@@ -117,6 +116,7 @@ void Sprite::prepareShutdown()
 		sound->prepareShutdown();
 	if (soundtransform)
 		soundtransform->prepareShutdown();
+	DisplayObjectContainer::prepareShutdown();
 }
 
 void Sprite::sinit(Class_base* c)
@@ -855,6 +855,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 		if ((*inserted.first).second != obj)
 		{
 			(*inserted.first).second->removeStoredMember();
+			obj->incRef();
 			(*inserted.first).second = obj;
 		}
 	}
@@ -1005,6 +1006,7 @@ void DisplayObjectContainer::purgeLegacyChildren()
 			if ((*inserted.first).second != obj)
 			{
 				(*inserted.first).second->removeStoredMember();
+				obj->incRef();
 				(*inserted.first).second = obj;
 			}
 		}

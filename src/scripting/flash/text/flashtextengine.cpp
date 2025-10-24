@@ -1273,7 +1273,6 @@ void TextLine::prepareShutdown()
 {
 	if (preparedforshutdown)
 		return;
-	DisplayObjectContainer::prepareShutdown();
 	ASObject* o;
 	o = asAtomHandler::getObject(textBlock);
 	if (o)
@@ -1287,6 +1286,7 @@ void TextLine::prepareShutdown()
 	o = asAtomHandler::getObject(userData);
 	if (o)
 		o->prepareShutdown();
+	DisplayObjectContainer::prepareShutdown();
 }
 bool TextLine::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {

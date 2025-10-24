@@ -575,7 +575,6 @@ void SimpleButton::prepareShutdown()
 {
 	if (preparedforshutdown)
 		return;
-	DisplayObjectContainer::prepareShutdown();
 	if (lastParent)
 	{
 		DisplayObject* d = lastParent;
@@ -609,6 +608,7 @@ void SimpleButton::prepareShutdown()
 	if(soundchannel_OverDownToOverUp)
 		soundchannel_OverDownToOverUp->prepareShutdown();
 	buttontag=nullptr;
+	DisplayObjectContainer::prepareShutdown();
 }
 
 bool SimpleButton::countCylicMemberReferences(garbagecollectorstate& gcstate)

@@ -79,6 +79,7 @@ AVM1context::AVM1context(DisplayObject* target, SystemState* sys) :
 	callee(nullptr)
 {
 	globalScope->addStoredMember();
+	globalScope->incRef();
 	scope = new AVM1Scope(globalScope, target);
 	scope->addStoredMember();
 }

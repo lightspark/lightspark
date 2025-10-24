@@ -350,13 +350,13 @@ void Stage::prepareShutdown()
 		ASATOM_REMOVESTOREDMEMBER(a);
 		avm1FocusListeners.pop_back();
 	}
+	DisplayObjectContainer::prepareShutdown();
 	while (this->hiddenNextDisplayObject != this)
 	{
 		auto h = this->hiddenNextDisplayObject;
 		h->prepareShutdown();
 		removeHiddenObject(h);
 	}
-	DisplayObjectContainer::prepareShutdown();
 	if (fullScreenSourceRect)
 		fullScreenSourceRect->prepareShutdown();
 	if (stage3Ds)

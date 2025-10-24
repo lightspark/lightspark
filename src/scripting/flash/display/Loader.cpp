@@ -466,7 +466,6 @@ void Loader::prepareShutdown()
 {
 	if (preparedforshutdown)
 		return;
-	DisplayObjectContainer::prepareShutdown();
 	if (content)
 		content->prepareShutdown();
 	if (contentLoaderInfo)
@@ -477,6 +476,7 @@ void Loader::prepareShutdown()
 		avm1container->prepareShutdown();
 	if (uncaughtErrorEvents)
 		uncaughtErrorEvents->prepareShutdown();
+	DisplayObjectContainer::prepareShutdown();
 }
 Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),content(nullptr),contentLoaderInfo(nullptr),loaded(false),
 	allowCodeImport(true),avm1level(-1),avm1target(nullptr),avm1container(nullptr),uncaughtErrorEvents(NullRef)

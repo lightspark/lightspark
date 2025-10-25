@@ -262,32 +262,48 @@ using ReadType = T;
 using ReadIdx = size_t&;
 #endif
 
-template<typename T, EnableIf<std::is_arithmetic<T>::value, bool> = false>
-static ReadType<const T&> readPrim(const ReadVec& code, ReadIdx idx)
+template<typename T, EnableIf<std::is_integral<T>::value, bool> = false>
+static ReadType<T> readInt(const ReadVec& code, ReadIdx idx)
 {
+	T ret(0);
+	// NOTE: SWF values are stored in little endian.
+	// This method of reading a little endian value is both portable,
+	// and efficient.
+	for (size_t i = 0; i < sizeof(T); ++i)
+		ret |= T(code[idx++]) << (i * CHAR_BIT);
 	#ifdef USE_PAIR
-	return std::make_pair
-	(
-		static_cast<const T&>(code[idx]),
-		idx + sizeof(T)
-	);
+	return std::make_pair(ret, idx);
 	#else
-	const T& ret = static_cast<const T&>(code[idx]);
-	idx += sizeof(T);
 	return ret;
 	#endif
 }
 
-template<typename T, EnableIf<std::is_integral<T>::value, bool> = false>
-static ReadType<const T&> readInt(const ReadVec& code, ReadIdx idx)
+template<typename T, EnableIf<std::is_floating_point<T>::value, bool> = false>
+static ReadType<T> readFloat(const ReadVec& code, ReadIdx idx);
+
+template<>
+static ReadType<float> readFloat(const ReadVec& code, ReadIdx idx);
 {
-	return readPrim<T>(code, idx);
+	return *static_cast<float*>(&readInt<uint32_t>(code, idx));
 }
 
-template<typename T, EnableIf<std::is_floating_point<T>::value, bool> = false>
-static ReadType<const T&> readFloat(const ReadVec& code, ReadIdx idx)
+template<>
+static ReadType<double> readFloat(const ReadVec& code, ReadIdx idx);
 {
-	return readPrim<T>(code, idx);
+	// NOTE: For some reason, `Double`s are stored as a pair of 32 bit
+	// little endian values, with the first word being the high word,
+	// and the second word being the low word.
+	#if 1
+	auto ret = readInt<uint64_t>(code, idx);
+	ret = (ret << 32) | (ret >> 32);
+	#else
+	auto ret =
+	(
+		uint64_t(readInt<uint32_t>(code, idx) << 32) |
+		readInt<uint32_t>(code, idx)
+	);
+	#endif
+	return *static_cast<double*>(&ret);
 }
 
 static ReadType<tiny_string> readStr(const ReadVec& code, ReadIdx idx)
@@ -564,7 +580,7 @@ void AVM1Activation::actionAdd2()
 
 void AVM1Activation::actionAnd()
 {
-	// ActionScript 1 logical and.
+	// ActionScript 1 logical and operator.
 	auto a = ctx.pop();
 	auto b = ctx.pop();
 
@@ -587,7 +603,6 @@ void AVM1Activation::actionAsciiToChar()
 	// regardless of the locale encoding.
 	auto ch = ctx.pop().toUInt16(*this);
 
-
 	ch = swfVersion < 6 || isValidCodePoint(ch) ? ch : 0xfffd;
 
 	tiny_string str;
@@ -598,7 +613,7 @@ void AVM1Activation::actionAsciiToChar()
 
 void AVM1Activation::actionCharToAscii()
 {
-	// SWF4 `ord()` function.
+	// SWF 4 `ord()` function.
 	// NOTE: In SWF 6, and later, this operates on UTF-16 code units.
 	// NOTE: In SWF 5, and earlier, this *always* operates on bytes,
 	// regardless of the locale encoding.
@@ -811,7 +826,7 @@ bool AVM1Activation::actionCallMethod()
 	// Can't call a method on a `null`/`undefined` `this`.
 	if (objVal.isNullOrUndefined())
 	{
-		stackPusn(AVM1Value::undefinedVal);
+		stackPush(AVM1Value::undefinedVal);
 		return false;
 	}
 
@@ -825,7 +840,7 @@ bool AVM1Activation::actionCallMethod()
 	stackPush
 	(
 		methodName.empty() ?
-		// `undefined`/empty method name; Call `this` as a function.
+		// `undefined`/empty method name; call `this` as a function.
 		obj->call(*this, "[Anonymous]", undefVal, args) :
 		// Call `this[methodName]`.
 		obj->callMethod(*this, methodName, args, Reason::FunctionCall)
@@ -1115,7 +1130,7 @@ void AVM1Activation::actionEnumerate2()
 
 void AVM1Activation::actionEquals()
 {
-	// ActionScript 1 equality.
+	// ActionScript 1 equality operator.
 	// NOTE: If both values are converted to `NaN`, then it'll always
 	// return `false`. Which differs from `ActionEquals2`'s behaviour.
 	auto a = ctx.pop().toNumber(*this);
@@ -1128,7 +1143,7 @@ void AVM1Activation::actionEquals()
 
 void AVM1Activation::actionEquals2()
 {
-	// SWF 5, and later equality.
+	// SWF 5, and later equality operator.
 	auto a = ctx.pop();
 	auto b = ctx.pop();
 	ctx.push(b.isEqual(a, *this));
@@ -1388,7 +1403,7 @@ void AVM1Activation::actionGetURL2
 
 		sys->loaderManager->loadFormIntoAVM1Object
 		(
-			clipTarget->getAVM1Object().toObject(*this),
+			clipTarget->toAVM1Object(*this),
 			localsToRequest(url, fromSendVars(flags))
 		);
 		return;
@@ -1650,77 +1665,267 @@ void AVM1Activation::actionJump(const std::vector<uint8_t>& code, size_t& idx)
 
 void AVM1Activation::actionLess()
 {
+	// ActionScript 1 less than operator.
+	// NOTE: If both values are converted to `NaN`, then it'll always
+	// return `false`. Which differs from `ActionLess2`'s behaviour.
+	auto a = ctx.pop().toNumber(*this);
+	auto b = ctx.pop().toNumber(*this);
 
+	// NOTE: Flash Player diverges from the SWF spec, and *always* returns
+	// a `bool`, even in SWF 4.
+	ctx.push(b < a);
 }
 
 void AVM1Activation::actionLess2()
 {
+	// ECMA-262 2nd edition sec. 11.8.1.
+	auto a = ctx.pop();
+	auto b = ctx.pop();
 
+	ctx.push(b.isLess(a, *this));
 }
 
 void AVM1Activation::actionGreater()
 {
+	// ECMA-262 2nd edition sec. 11.8.2.
+	auto a = ctx.pop();
+	auto b = ctx.pop();
 
+	ctx.push(a.isLess(b, *this));
 }
 
 void AVM1Activation::actionMBAsciiToChar()
 {
+	// NOTE: In SWF 6, and later, this operates on UTF-16 code units.
+	// TODO: In SWF 5, and earlier, this operates on locale dependent
+	// characters.
+	uint32_t ch = ctx.pop().toUInt16(*this);
 
+	tiny_string str;
+	if (ch != '\0')
+	{
+		// NOTE: Unpaired surrogates get turned into a replacement
+		// character.
+		str = tiny_string::fromChar(isValidCodePoint(ch) ? ch : 0xfffd);
+	}
+	ctx.push(str);
+}
+
+void AVM1Activation::actionMBCharToAscii()
+{
+	// SWF 4 `mbord()` function.
+	// NOTE: In SWF 6, and later, this operates on UTF-16 code units.
+	// NOTE: In SWF 5, and earlier, this operates on locale dependent
+	// characters.
+	auto str = ctx.pop().toString(*this);
+
+	ctx.push(number_t(str.empty() ? '\0' : str[0]));
 }
 
 void AVM1Activation::actionMBStringExtract()
 {
+	// SWF 4 `mbsubstring()` function.
+	// NOTE: In SWF 6, and later, this operates on UTF-16 code units.
+	// NOTE: In SWF 5, and earlier, this operates on locale dependent
+	// characters.
+	size_t len = ctx.pop().toInt32(*this);
 
+	// NOTE: The start index is 1 based.
+	size_t start = std::max<int32_t>(ctx.pop().toInt32(*this) - 1, 0);
+	auto str = ctx.pop().toString(*this);
+
+	if (start <= str.numChars())
+		ctx.push(str.substr(start, len))
+	else
+		ctx.push("");
 }
 
 void AVM1Activation::actionMBStringLength()
 {
-
+	ctx.push(number_t(ctx.pop.toString(*this).numChars()));
 }
 
 void AVM1Activation::actionMultiply()
 {
-
+	ctx.push
+	(
+		ctx.pop().toNumber(*this) *
+		ctx.pop().toNumber(*this)
+	);
 }
 
 void AVM1Activation::actionModulo()
 {
-
+	ctx.push
+	(
+		ctx.pop().toNumber(*this) %
+		ctx.pop().toNumber(*this)
+	);
 }
 
 void AVM1Activation::actionNot()
 {
-
+	// NOTE: Flash Player diverges from the SWF spec, and *always* returns
+	// a `bool`, even in SWF 4.
+	ctx.push(!ctx.pop().toBool(swfVersion));
 }
 
 void AVM1Activation::actionNextFrame()
 {
+	if (targetClip.isNull())
+	{
+		LOG(LOG_ERROR, "actionNextFrame: Invalid target.");
+		return;
+	}
 
+	auto clip = targetClip->as<MovieClip>();
+	if (clip.isNull())
+	{
+		LOG(LOG_ERROR, "actionNextFrame: Target isn't a `MovieClip`.");
+		return;
+	}
+
+	clip->AVM1gotoFrame(clip->state.FP + 1, true, true);
 }
 
 bool AVM1Activation::actionNewMethod()
 {
+	auto methodNameVal = ctx.pop();
+	auto objVal = ctx.pop();
+	auto numArgs = std::min<size_t>
+	(
+		ctx.pop().toUInt32(*this),
+		ctx.stackSize()
+	);
 
+	std::vector<AVM1Value> args;
+	args.reserve(numArgs);
+
+	for (size_t i = 0; i < numArgs; ++i)
+	{
+		auto arg = ctx.pop();
+		if (arg.is<AVM1MovieClip>())
+			args.push_back(arg.toObject(*this));
+		else
+			args.push_back(arg);
+	}
+
+	// Can't call a method on a `null`/`undefined` `this`.
+	if (objVal.isNullOrUndefined())
+	{
+		ctx.push(AVM1Value::undefinedVal);
+		return false;
+	}
+
+	auto obj = objVal.toObject(*this);
+	tiny_string methodName;
+	if (!methodNameVal.is<UndefinedVal>())
+		methodName = methodNameVal.toString(*this);
+
+	stackPush
+	(
+		methodName.empty() ?
+		// `undefined`/empty method name; construct `this` as a function.
+		obj->construct(*this, args) :
+		obj->getProp(*this, methodName).visit(makeVisitor
+		(
+			[&](const GcPtr<AVM1Object>& ctor)
+			{
+				// Construct `this[methodName]`.
+				return ctor->construct(*this, args);
+			},
+			[&](const auto& ctor)
+			{
+				LOG
+				(
+					LOG_ERROR,
+					"actionNewMethod: Tried to construct "
+					"with a non `Object` constructor " << ctor
+				);
+				return AVM1Value::undefinedVal;
+			}
+		))
+	);
+
+	return baseClipExists();
 }
 
 bool AVM1Activation::actionNewObject()
 {
+	auto funcName = ctx.pop().toString(*this);
+	auto numArgs = std::min<size_t>
+	(
+		ctx.pop().toUInt32(*this),
+		ctx.stackSize()
+	);
 
+	std::vector<AVM1Value> args;
+	args.reserve(numArgs);
+
+	for (size_t i = 0; i < numArgs; ++i)
+	{
+		auto arg = ctx.pop();
+		if (arg.is<AVM1MovieClip>())
+			args.push_back(arg.toObject(*this));
+		else
+			args.push_back(arg);
+	}
+
+	auto ctor = resolveVariable(funcName)->getValue().toObject(*this);
+	stackPush(ctor->construct(*this, args));
+	return baseClipExists();
 }
 
 void AVM1Activation::actionOr()
 {
+	// ActionScript 1 logical or operator.
+	auto a = ctx.pop();
+	auto b = ctx.pop();
 
+	// NOTE: Flash Player diverges from the SWF spec, and *always* returns
+	// a `bool`, even in SWF 4.
+	ctx.push(b.toBool(swfVersion) || a.toBool(swfVersion));
 }
 
 void AVM1Activation::actionPlay()
 {
+	if (targetClip.isNull())
+	{
+		LOG(LOG_ERROR, "actionPlay: Invalid target.");
+		return;
+	}
 
+	auto clip = targetClip->as<MovieClip>();
+	if (clip.isNull())
+	{
+		LOG(LOG_ERROR, "actionPlay: Target isn't a `MovieClip`.");
+		return;
+	}
+
+	clip->setPlaying();
 }
 
 void AVM1Activation::actionPreviousFrame()
 {
+	if (targetClip.isNull())
+	{
+		LOG(LOG_ERROR, "actionPreviousFrame: Invalid target.");
+		return;
+	}
 
+	auto clip = targetClip->as<MovieClip>();
+	if (clip.isNull())
+	{
+		LOG(LOG_ERROR, "actionPreviousFrame: Target isn't a `MovieClip`.");
+		return;
+	}
+
+	clip->AVM1gotoFrame(clip->state.FP - 1, true, true);
+}
+
+void AVM1Activation::actionPop()
+{
+	(void)ctx.pop();
 }
 
 void AVM1Activation::actionPush
@@ -1730,62 +1935,323 @@ void AVM1Activation::actionPush
 	size_t actionLen
 )
 {
+	auto sys = ctx.getSys();
+	auto enc = getEncoding();
 
+	auto getConst = [&](uint16_t i) -> AVM1Value
+	{
+		if (i < constPool.size())
+		{
+			#ifdef USE_STRING_ID
+			return constPool[i];
+			#else
+			return sys->getStringFromUniqueId(constPool[i], true);
+			#endif
+		}
+
+		LOG
+		(
+			LOG_ERROR,
+			"actionPush: Constant pool index " << i << " is "
+			"out of range. Pool size: " << constPool.size()
+		);
+		return AVM1Value::undefinedVal;
+	};
+
+	size_t end = idx + actionLen;
+	while (idx < end)
+	{
+		auto type = code[idx++];
+		switch (type)
+		{
+			// `String`.
+			case 0: ctx.push(readSwfStr(sys, enc, code, idx)); break;
+			// `Float`.
+			case 1: ctx.push(readFloat<float>(code, idx)); break;
+			// `Null`.
+			case 2: ctx.push(AVM1Value::nullVal); break;
+			// `Undefined`.
+			case 3: ctx.push(AVM1Value::undefinedVal); break;
+			// `RegisterNumber`.
+			// NOTE: `stackPush()` is used here to handle `MovieClipRef`s.
+			case 4: stackPush(code[idx++]); break;
+			// `Boolean`.
+			case 5: ctx.push(bool(code[idx++])); break;
+			// `Double`.
+			case 6: ctx.push(readFloat<double>(code, idx)); break;
+			// `Integer`.
+			case 7: ctx.push(number_t(readInt<int32_t>(code, idx))); break;
+			// `Constant8`.
+			case 8: ctx.push(getConst(code[idx++])); break;
+			// `Constant16`.
+			case 9: ctx.push(getConst(readInt<uint16_t>(code, idx))); break;
+			default:
+			{
+				// NOTE, PLAYER-SPECIFIC: Modern versions of Flash Player
+				// exit on unknown value types. But in older versions of
+				// Flash Player (at least FP 9), unknown value types are
+				// ignored. We follow the lenient behaviour, due to some
+				// SWFs relying on this behaviour.
+				// TODO: Throw an exception, once support for mimicking
+				// different player versions is added.
+				LOG(LOG_ERROR, "actionPush: Invalid value type: " << type);
+				break;
+			}
+		}
+	}
 }
 
 void AVM1Activation::actionPushDuplicate()
 {
-
+	auto val = ctx.pop();
+	ctx.push(val);
+	ctx.push(val);
 }
 
 void AVM1Activation::actionRandomNumber()
 {
-
+	auto sys = ctx.getSys();
+	// NOTE: The max value is clamped to the range `0 - INT32_MAX`.
+	int32_t max = ctx.pop().toNumber(*this);
+	ctx.push(number_t(max > 0 ? sys->randomFlashCompatible(max) : 0));
 }
 
 void AVM1Activation::actionRemoveSprite()
 {
+	auto target = ctx.pop();
+	auto _targetClip = resolveTargetClip(getTargetOrRootClip(), target);
+	if (_targetClip.isNull())
+	{
+		LOG(LOG_ERROR, "actionRemoveSprite: Source isn't a `DisplayObject`.");
+		return;
+	}
 
+	AVM1DisplayObject::removeDisplayObject(*this, _targetClip);
+	if (targetClip.isNull() || !targetClip->isAVM1Removed())
+		return;
+
+	// Revert the target to either the base clip, or `NullGc`, if the
+	// base was also removed.
+	setTargetClip(baseClip);
+	scope->setTargetScope(getTargetOrRootClip()->toAVM1DisplayObject(*this));
 }
 
 AVM1Value AVM1Activation::actionReturn()
 {
-
+	return ctx.pop();
 }
 
 void AVM1Activation::actionSetMember()
 {
-
+	auto value = ctx.pop();
+	auto name = ctx.pop().toString(*this);
+	auto obj = ctx.pop().toObject(*this);
+	obj->setProp(*this, name, value);
 }
 
 void AVM1Activation::actionSetProperty()
 {
+	auto propVal = ctx.pop();
+	auto propIdx = ctx.pop().toNumber(*this);
+	auto path = ctx.pop();
+	auto clip = resolveTargetClip
+	(
+		getTargetOrBaseClip(),
+		path,
+		!targetClip.isNull()
+	);
 
+	const auto& dispProps = ctx.getDisplayProps();
+	bool isValidProp =
+	(
+		std::isfinite(propIdx) &&
+		propIdx >= 0.0 &&
+		dispProps.isValidIndex(propIdx)
+	);
+
+	if (!isValidProp)
+	{
+		LOG(LOG_ERROR, "actionSetProperty: Invalid property " << propIdx);
+		ctx.push(AVM1Value::undefinedVal);
+		return;
+	}
+
+	auto prop = *dispProps.getByIndex(propIdx);
+	if (clip.isNull() || prop.isReadOnly())
+	{
+		// NOTE: `propVal` needs to be converted even if the target isn't
+		// valid, or the property is read-only. This behaviour has been
+		// consistent since Flash Player 21. Earlier versions will usually
+		// only do conversions when the input is valid, but in Flash Player
+		// 19, and 20, conversions never happen, *at all*!!!
+		switch (propIdx)
+		{
+			// `x`.
+			case 0:
+			// `y`.
+			case 1:
+			// `xscale`.
+			case 2:
+			// `yscale`.
+			case 3:
+			// `currentframe`.
+			case 4:
+			// `totalframes`.
+			case 5:
+			// `alpha`.
+			case 6:
+			// `visible`.
+			case 7:
+			// `width`.
+			case 8:
+			// `height`.
+			case 9:
+			// `rotation`.
+			case 10:
+			// `framesloaded`.
+			case 12:
+			{
+				if (propVal.isNullOrUndefined())
+					break;
+				// Falls through.
+			}
+			/// `highquality`.
+			case 16:
+			/// `soundbuftime`.
+			case 18:
+			/// `xmouse`.
+			case 20:
+			/// `ymouse`.
+			case 21:
+			{
+				// Convert to a `Number`.
+				(void)propVal.toNumber(*this);
+				break;
+			}
+			// `name`.
+			case 13:
+			// `quality`.
+			case 19:
+			{
+				// Convert to a `String`.
+				(void)propVal.toString(*this);
+				break;
+			}
+			default:
+				// No conversion.
+				break;
+		}
+	}
+
+	if (clip.isNull())
+	{
+		LOG(LOG_ERROR, "actionSetProperty: Invalid target " << path);
+		ctx.push(AVM1Value::undefinedVal);
+		return;
+	}
+
+	prop.set(*this, clip, propVal);
 }
 
 void AVM1Activation::actionSetVariable()
 {
-
+	// SWF 4 style variable.
+	auto value = ctx.pop();
+	auto varPath = ctx.pop().toString(*this);
+	setVariable(varPath, value);
 }
 
 void AVM1Activation::actionStrictEquals()
 {
-
+	// This is the same as the normal equality operator, except the types
+	// must match.
+	ctx.push(ctx.pop() == ctx.pop());
 }
 
-void AVM1Activation::actionSetTarget()
+void AVM1Activation::actionSetTarget
+(
+	const std::vector<uint8_t>& code,
+	size_t& idx
+)
 {
-
+	auto sys = ctx.getSys();
+	auto target = readSwfStr(sys, getEncoding(), code, idx);
+	setTarget(target);
 }
 
 void AVM1Activation::actionSetTarget2()
 {
+	auto target = ctx.pop();
+	if (baseClip->isAVM1Removed())
+	{
+		setTargetClip(NullGc);
+		return;
+	}
 
+	bool done = target.visit(makeVisitor
+	(
+		#ifdef USE_STRING_ID
+		[&](uint32_t _target)
+		#else
+		[&](const tiny_string& _target)
+		#endif
+		{
+			setTarget(_target);
+			return true;
+		},
+		[&](const UndefinedVal&)
+		{
+			// NOTE: In SWF 6, and earlier, an `undefined` target will
+			// cause `ActionSetTarget2` to set the target back to the
+			// base clip.
+			setTargetClip(swfVersion > 6 ? NullGc : baseClip);
+			return false;
+		},
+		[&](const GcPtr<AVM1Object>& obj)
+		{
+			auto clip = obj->as<DisplayObject>();
+			if (!clip.isNull())
+			{
+				// `MovieClip`s are targeted directly.
+				setTargetClip(clip);
+				return false;
+			}
+			// Other `Object`s are converted to a `String`.
+			setTarget(target.toString(*this));
+			return true;
+		},
+		[&](const GcPtr<AVM1MovieClipRef>&)
+		{
+			auto clip = target.toObject(*this)->as<DisplayObject>();
+			if (!clip.isNull())
+			{
+				// `MovieClip`s can be targeted directly.
+				setTargetClip(clip);
+				return false;
+			}
+			// Other `Object`s are converted to a `String`.
+			setTarget(target.toString(*this));
+			return true;
+		},
+		[&](const auto&)
+		{
+			setTarget(target.toString(*this));
+			return true;
+		}
+	));
+
+	if (done)
+		return;
+
+	scope->setTargetScope(getTargetOrBaseClip()->toAVM1DisplayObject(*this));
 }
 
 void AVM1Activation::actionStackSwap()
 {
-
+	auto a = ctx.pop();
+	auto b = ctx.pop();
+	ctx.push(a);
+	ctx.push(b);
 }
 
 void AVM1Activation::actionStartDrag()

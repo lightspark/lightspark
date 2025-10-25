@@ -248,6 +248,7 @@ private:
 	void actionGreater();
 
 	void actionMBAsciiToChar();
+	void actionMBCharToAscii();
 	void actionMBStringExtract();
 	void actionMBStringLength();
 	void actionMultiply();
@@ -262,6 +263,7 @@ private:
 
 	void actionPlay();
 	void actionPreviousFrame();
+	void actionPop();
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
 	void actionPush
@@ -280,7 +282,9 @@ private:
 	void actionSetProperty();
 	void actionSetVariable();
 	void actionStrictEquals();
-	void actionSetTarget();
+	// TODO: Replace `code` with a span, once we write our own span
+	// implementation.
+	void actionSetTarget(const std::vector<uint8_t>& code, size_t& idx);
 	void actionSetTarget2();
 	void actionStackSwap();
 	void actionStartDrag();

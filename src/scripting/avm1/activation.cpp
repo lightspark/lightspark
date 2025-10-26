@@ -1742,7 +1742,8 @@ void AVM1Activation::actionMBStringExtract()
 
 void AVM1Activation::actionMBStringLength()
 {
-	ctx.push(number_t(ctx.pop.toString(*this).numChars()));
+	// SWF 4 `mblength()` function.
+	ctx.push(number_t(ctx.pop().toString(*this).numChars()));
 }
 
 void AVM1Activation::actionMultiply()
@@ -2256,17 +2257,51 @@ void AVM1Activation::actionStackSwap()
 
 void AVM1Activation::actionStartDrag()
 {
+	auto clip = resolveTargetClip(getTargetOrRootClip(), ctx.pop());
+	bool lockCenter = ctx.pop().toInt32(*this);
+	bool hasConstrain = ctx.pop().toInt32(*this);
+	Optional<RectF> constrain;
+	if (hasConstrain)
+	{
+		Vector2f max;
+		Vector2f min;
+		max.y = ctx.pop();
+		max.x = ctx.pop();
+		min.y = ctx.pop();
+		min.x = ctx.pop();
+		constrain = RectF { min, max };
+	}
 
+	if (targetClip.isNull())
+	{
+		LOG(LOG_ERROR, "actionStartDrag: Invalid target.");
+		return;
+	}
+
+	AVM1MovieClip::startDragImpl(*this, clip, lockCenter, constrain);
 }
 
 void AVM1Activation::actionStop()
 {
+	if (targetClip.isNull())
+	{
+		LOG(LOG_ERROR, "actionGotoLabel: Invalid target.");
+		return;
+	}
 
+	auto clip = targetClip->as<MovieClip>();
+	if (clip.isNull())
+	{
+		LOG(LOG_ERROR, "actionGotoLabel: Target isn't a `MovieClip`.");
+		return;
+	}
+
+	clip->setStopped();
 }
 
 void AVM1Activation::actionStopSounds()
 {
-
+	ctx.getSys()->audioManager->stopAllSounds();
 }
 
 void AVM1Activation::actionStoreRegister
@@ -2275,52 +2310,121 @@ void AVM1Activation::actionStoreRegister
 	size_t& idx
 )
 {
-
+	// NOTE: The value *must* remain on the stack.
+	auto value = ctx.pop();
+	ctx.push(value);
+	setCurrentReg(code[idx++], value);
 }
 
 void AVM1Activation::actionStringAdd()
 {
+	// SWF 4 `add` operator.
+	// TODO: What does this return, when given non `String` operands.
+	auto a = ctx.pop().toString(*this);
+	auto b = ctx.pop().toString(*this);
 
+	ctx.push(b + a);
 }
 
 void AVM1Activation::actionStringEquals()
 {
+	// SWF 4 `eq` operator.
+	auto a = ctx.pop().toString(*this);
+	auto b = ctx.pop().toString(*this);
 
+	// NOTE: Flash Player diverges from the SWF spec, and *always* returns
+	// a `bool`, even in SWF 4.
+	ctx.push(b == a);
 }
 
 void AVM1Activation::actionStringExtract()
 {
+	// SWF 4 `substring()` function.
+	size_t len = ctx.pop().toInt32(*this);
 
+	// NOTE: The start index is 1 based.
+	size_t start = std::max<int32_t>(ctx.pop().toInt32(*this) - 1, 0);
+	auto str = ctx.pop().toString(*this);
+
+	if (start <= str.numChars())
+		ctx.push(str.substr(start, len))
+	else
+		ctx.push("");
 }
 
 void AVM1Activation::actionStringGreater()
 {
+	// SWF 4 `gt` operator.
+	auto a = ctx.pop().toString(*this);
+	auto b = ctx.pop().toString(*this);
 
+	// NOTE: Flash Player diverges from the SWF spec, and *always* returns
+	// a `bool`, even in SWF 4.
+	ctx.push(b > a);
 }
 
 void AVM1Activation::actionStringLength()
 {
-
+	// SWF 4 `length()` function.
+	// NOTE: In SWF 6, and later, this is the same as `String.length`
+	// (which returns the number of UTF-16 code units).
+	// NOTE: In SWF 5, and earlier, this returns the byte length, even
+	// though the encoding is locale dependent.
+	auto str = ctx.pop().toString(*this);
+	ctx.push(number_t
+	(
+		swfVersion > 5 ?
+		str.numChars() :
+		str.numBytes()
+	));
 }
 
 void AVM1Activation::actionStringLess()
 {
+	// SWF 4 `lt` operator.
+	auto a = ctx.pop().toString(*this);
+	auto b = ctx.pop().toString(*this);
 
+	// NOTE: Flash Player diverges from the SWF spec, and *always* returns
+	// a `bool`, even in SWF 4.
+	ctx.push(b < a);
 }
 
 void AVM1Activation::actionSubtract()
 {
-
+	ctx.push
+	(
+		ctx.pop().toNumber(*this) -
+		ctx.pop().toNumber(*this)
+	);
 }
 
 void AVM1Activation::actionTargetPath()
 {
-
+	// Prints out the `.` path of the argument.
+	// NOTE: The argument must be a `DisplayObject` (not a string path).
+	auto clip = ctx.pop().toObject(*this)->as<DisplayObject>();
+	if (clip.isNull())
+	{
+		ctx.push(AVM1Value::undefinedVal);
+		return;
+	}
+	ctx.push(clip->AVM1GetPath());
 }
 
 void AVM1Activation::actionThrow()
 {
-
+	auto value = ctx.pop();
+	tiny_string str;
+	try
+	{
+		LOG_CALL("Thrown exception: " << value.toString(*this));
+	}
+	catch (...)
+	{
+		LOG_CALL("Thrown exception: undefined");
+	}
+	throw value;
 }
 
 void AVM1Activation::actionToggleQuality()

@@ -221,19 +221,24 @@ Any AVM1Activation::runChildFrameForClip
 	return func(act);
 }
 
-AVM1Value AVM1Activation::runActions(const std::vector<uint8_t>& code)
+Optional<AVM1Value> AVM1Activation::runActions
+(
+	const std::vector<uint8_t>& code,
+	size_t offset
+)
 {
 	if (!id.funcCount && !id.specialCount)
 		ctx.startTime = compat_now();
 
-	for (size_t i = 0; i < code.size();)
+	for (size_t i = offset; i < code.size();)
 	{
-		auto ret = doAction(code, i);
-		if (ret.hasValue())
-			return *ret;
+		bool isImplicit = false;
+		auto ret = doAction(code, i, isImplicit);
+		if (ret.hasValue() || isImplicit)
+			return ret;
 	}
 
-	return AVM1Value::undefinedVal;
+	return {};
 }
 
 SystemState* AVM1Activation::getSys() const
@@ -370,7 +375,8 @@ static ReadType<uint32_t> readSwfStrID
 Optional<AVM1Value> AVM1Activation::doAction
 (
 	const std::vector<uint8_t>& code,
-	size_t& idx
+	size_t& idx,
+	bool& isImplicit
 )
 {
 	using ExceptionType = AVM1Exception::Type;
@@ -386,7 +392,10 @@ Optional<AVM1Value> AVM1Activation::doAction
 	// NOTE: Executing beyond the end of a function acts as an implicit
 	// return.
 	if (idx >= code.size())
-		return AVM1Value::undefinedVal;
+	{
+		isImplicit = true;
+		return {};
+	}
 
 	uint8_t opcode = code[idx++];
 	uint16_t length = 0;
@@ -396,7 +405,7 @@ Optional<AVM1Value> AVM1Activation::doAction
 	switch (opcode)
 	{
 		// `ActionEnd`.
-		case 0x00: return AVM1Value::undefinedVal; break;
+		case 0x00: isImplicit = true; return {}; break;
 		case 0x04: actionNextFrame(); break;
 		case 0x05: actionPreviousFrame(); break;
 		case 0x06: actionPlay(); break;
@@ -2429,22 +2438,55 @@ void AVM1Activation::actionThrow()
 
 void AVM1Activation::actionToggleQuality()
 {
+	// Toggle between `Low`, and `High`/`Best` quality.
+	// NOTE: This action remembers whether the stage quality was `Best`,
+	// or higher, so we have to preserve the high quality downscaling
+	// flag, to make sure that we toggle back to the proper quality.
+	auto stage = ctx.getStage();
+	bool useDownScaling = stage->useHighQualityDownScaling();
+	bool isHigh =
+	(
+		stage->quality == Quality::High ||
+		stage->quality == Quality::Best
+	);
 
+	stage->setQuality
+	(
+		isHigh ? Quality::Low :
+		useDownScaling ?
+		Quality::Best :
+		Quality::High
+	);
+
+	stage->setHighQualityDownScaling(useDownScaling);
 }
 
 void AVM1Activation::actionToInteger()
 {
-
+	ctx.push(number_t(ctx.pop().toInt32(*this)));
 }
 
 void AVM1Activation::actionToNumber()
 {
-
+	ctx.push(ctx.pop().toNumber(*this));
 }
 
 void AVM1Activation::actionToString()
 {
+	ctx.push(ctx.pop().toString(*this));
+}
 
+void AVM1Activation::actionTrace()
+{
+	// NOTE: `trace()` *always* prints `undefined`, even in SWF 6, and
+	// earlier.
+	auto value = ctx.pop();
+	ctx.getSys()->trace
+	(
+		value.is<UndefinedVal>() ?
+		"undefined" :
+		value.toString(*this)
+	);
 }
 
 Optional<AVM1Value> AVM1Activation::actionTry
@@ -2454,12 +2496,81 @@ Optional<AVM1Value> AVM1Activation::actionTry
 	size_t actionLen
 )
 {
+	auto sys = ctx.getSys();
+	// NOTE: `ActionTry` must be at least 7 bytes long. If it's shorter,
+	// it's an invalid action; treat it like an empty try block, and bail
+	// earliy.
+	if (actionLen < 7)
+		return {};
 
+	TryFlags flags = code[idx++];
+	auto trySize = readInt<uint16_t>(code, idx);
+	auto catchSize = readInt<uint16_t>(code, idx);
+	auto finallySize = readInt<uint16_t>(code, idx);
+	actionLen += trySize + catchSize + finallySize;
+
+	struct CatchVar
+	{
+		bool isReg;
+		union
+		{
+			tiny_string name;
+			uint8_t reg;
+		};
+	} catchVar;
+
+	catchVar.isReg = flags & TryFlags::CatchInRegister;
+	if (catchVar.isReg)
+		catchVar.reg = code[idx++];
+	else
+		catchVar.name = readSwfStr(sys, getEncoding(), code, idx);
+
+	size_t tryStart = idx;
+	size_t catchStart = tryStart + trySize;
+	size_t finallyStart = catchStart + catchSize;
+	idx = finallyStart + finallySize;
+
+	Optional<AVM1Value> ret;
+	try
+	{
+		ret = runActions(code, tryStart);
+	}
+	catch (AVM1Value& value)
+	{
+		if (!(flags & TryFlags::CatchBlock))
+			return {};
+
+		AVM1Activation act
+		(
+			ctx,
+			id.makeChildID("[Catch]"),
+			swfVersion,
+			scope,
+			constPool,
+			baseClip,
+			_this,
+			callee
+		);
+
+		act.localRegs = localRegs;
+
+		if (catchVar.isReg)
+			act.setCurrentReg(catchVar.reg, value);
+		else
+			act.setVariable(catchVar.name, value);
+		ret = act.runActions(code, catchStart);
+	}
+
+	if (!(flags & TryFlags::FinallyBlock))
+		return ret;
+
+	auto finallyRet = runActions(code, finallyStart);
+	return finallyRet.hasValue() ? finallyRet : ret;
 }
 
 void AVM1Activation::actionTypeOf()
 {
-
+	ctx.push(ctx.pop().typeOf(*this));
 }
 
 void AVM1Activation::actionWaitForFrame

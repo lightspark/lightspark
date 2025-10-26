@@ -168,7 +168,12 @@ private:
 	//
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
-	Optional<AVM1Value> doAction(const std::vector<uint8_t>& code, size_t& idx);
+	Optional<AVM1Value> doAction
+	(
+		const std::vector<uint8_t>& code,
+		size_t& idx,
+		bool& isImplicit
+	);
 
 	void stackPush(const AVM1Value& value);
 
@@ -307,6 +312,7 @@ private:
 	void actionToInteger();
 	void actionToNumber();
 	void actionToString();
+	void actionTrace();
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
 	Optional<AVM1Value> actionTry
@@ -434,7 +440,11 @@ public:
 
 	// TODO: Replace `code` with a span, once we write our own span
 	// implementation.
-	AVM1Value runActions(const std::vector<uint8_t>& code);
+	Optional<AVM1Value> runActions
+	(
+		const std::vector<uint8_t>& code,
+		size_t offset = 0
+	);
 
 	SystemState* getSys() const;
 

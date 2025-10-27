@@ -298,16 +298,8 @@ static ReadType<double> readFloat(const ReadVec& code, ReadIdx idx);
 	// NOTE: For some reason, `Double`s are stored as a pair of 32 bit
 	// little endian values, with the first word being the high word,
 	// and the second word being the low word.
-	#if 1
 	auto ret = readInt<uint64_t>(code, idx);
 	ret = (ret << 32) | (ret >> 32);
-	#else
-	auto ret =
-	(
-		uint64_t(readInt<uint32_t>(code, idx) << 32) |
-		readInt<uint32_t>(code, idx)
-	);
-	#endif
 	return *static_cast<double*>(&ret);
 }
 
@@ -372,6 +364,27 @@ static ReadType<uint32_t> readSwfStrID
 	), caseSensitive);
 }
 
+// Skips a given number of actions.
+//
+// TODO: Replace this with a span, once we write our own span
+// implementation.
+static void skipActions
+(
+	const std::vector<uint8_t>& code,
+	size_t& idx,
+	size_t offset
+)
+{
+	for (size_t i = 0; i < offset; ++i)
+	{
+		uint8_t opcode = code[idx++];
+		// The top bit of the opcode indicates that the action has a
+		// length.
+		if (opcode & 0x80)
+			idx += readInt<uint16_t>(code, idx);
+	}
+}
+
 Optional<AVM1Value> AVM1Activation::doAction
 (
 	const std::vector<uint8_t>& code,
@@ -399,7 +412,8 @@ Optional<AVM1Value> AVM1Activation::doAction
 
 	uint8_t opcode = code[idx++];
 	uint16_t length = 0;
-	if (opcode >= 0x80)
+	// The top bit of the opcode indicates that the action has a length.
+	if (opcode & 0x80)
 		length = readInt<uint16_t>(code, idx);
 
 	switch (opcode)
@@ -2579,7 +2593,36 @@ void AVM1Activation::actionWaitForFrame
 	size_t& idx
 )
 {
+	auto frame = readInt<uint16_t>(code, idx);
+	auto skipCount = code[idx++];
 
+	// NOTE: The maximum number of frames that `ActionWaitForFrame`
+	// supports, is 16,000.
+	if (frame > 16000)
+	{
+		// NOTE: The offset is given in number of actions, *NOT* bytes.
+		skipActions(code, idx, skipCount);
+		return;
+	}
+
+	if (targetClip.isNull())
+		return;
+
+	auto clip = targetClip->as<MovieClip>();
+	if (clip.isNull())
+		return;
+
+	bool isLoaded =
+	(
+		clip->getFramesLoaded() >=
+		ssize_t(std::min(frame, clip->getTotalFrames()))
+	) || clip->hasFinishedLoading();
+
+	if (isLoaded)
+		return;
+
+	// NOTE: The offset is given in number of actions, *NOT* bytes.
+	skipActions(code, idx, skipCount);
 }
 
 void AVM1Activation::actionWaitForFrame2
@@ -2588,7 +2631,59 @@ void AVM1Activation::actionWaitForFrame2
 	size_t& idx
 )
 {
+	auto skipCount = code[idx++];
 
+	auto frameVal = ctx.pop();
+	size_t frame = *frameVal.strictAs<int32_t>(*this).orElse([&]
+	{
+		// NOTE: The SWF 19 spec says that the frame is evaluated in the
+		// same way as `ActionGotoFrame2`. While this is true, in practice,
+		// this doesn't work for things like label names, since it isn't
+		// possible to verify it's existence, if the related frame isn't
+		// loaded yet. In that case, it'll treat the frame as loaded.
+
+		// TODO: Use `AVM1Value`'s `number_t` to `int32_t` conversion,
+		// once thats moved out of `AVM1Value`.
+		return frameVal.toString(*this).tryParseNumber
+		<
+			number_t
+		>().filter([&](number_t num)
+		{
+			return int32_t(num) == num;
+		}).valueOr(0);
+	// NOTE: `ActionWaitForFrame2` has an off by one error.
+	// Subtract 1 to match Flash Player.
+	}) - 1;
+
+	// NOTE: The maximum number of frames that `ActionWaitForFrame2`
+	// supports, is 16,000 (16,001 due to an off by one error).
+	if (frame > 16000)
+	{
+		// NOTE: The offset is given in number of actions, *NOT* bytes.
+		skipActions(code, idx, skipCount);
+		return;
+	}
+
+	if (targetClip.isNull())
+		return;
+
+	auto clip = targetClip->as<MovieClip>();
+	if (clip.isNull())
+		return;
+
+	bool isLoaded =
+	(
+		// NOTE: `ifFrameLoaded(_framesloaded + 1)` *always* evaluates
+		// to `true`, due to an off by one error.
+		clip->getFramesLoaded() >=
+		std::min<ssize_t>(frame, clip->getTotalFrames())
+	) || clip->hasFinishedLoading();
+
+	if (isLoaded)
+		return;
+
+	// NOTE: The offset is given in number of actions, *NOT* bytes.
+	skipActions(code, idx, skipCount);
 }
 
 Optional<AVM1Value> AVM1Activation::actionWith
@@ -2598,7 +2693,28 @@ Optional<AVM1Value> AVM1Activation::actionWith
 	size_t actionLen
 )
 {
+	auto withSize = readInt<uint16_t>(code, idx);
+	auto value = ctx.pop();
+	auto withStart = idx;
+	idx += withSize;
+	actionLen += withSize;
+	if (value.isNullOrUndefined())
+	{
+		// Mimic Flash Player's error output.
+		ctx.getSys()->trace
+		(
+			"Error: A 'with' action failed because the "
+			"specified object did not exist.\n"
+		);
+		return {};
+	}
 
+	return withNewScope("[With]", NEW_GC_PTR(ctx.getGcCtx(), AVM1Scope
+	(
+		scope,
+		// NOTE: Primitives are converted into an `Object` at this point.
+		value.toObject(*this)
+	))).runActions(code, withStart);
 }
 
 void AVM1Activation::actionUnknown
@@ -2608,5 +2724,13 @@ void AVM1Activation::actionUnknown
 	size_t actionLen
 )
 {
-
+	uint8_t opcode = code[idx-1];
+	LOG
+	(
+		LOG_ERROR,
+		"Unknown AVM1 action: "
+		"opcode: 0x" << std::hex << int(opcode) << ", "
+		"length: " << std::dec << actionLen
+	);
+	idx += actionLen;
 }

@@ -133,17 +133,9 @@ private:
 
 	// Local registers, if any.
 	//
-	// `NullRef` indicates a function that uses the global register set.
-	// A non-null value indicates the presence of local registers, even
-	// if none exist. i.e. `makeOptional({})` means no registers should
-	// exist at all.
-	//
-	// Registers use 1-based indexing; `r0` doesn't exist. Therefore this
-	// vector, while nominally starting at 0, actually starts at 1.
-	//
-	// NOTE: The registers are stored in a `std::shared_ptr` so that
-	// rescopes (e.g. `with`) can use the same register set.
-	std::shared_ptr<std::vector<AVM1Value>> localRegs;
+	// An empty vector indicates a function that uses the global register
+	// set.
+	std::vector<AVM1Value> localRegs;
 
 	// The base clip of this stack frame.
 	// This will be the `MovieClip` that contains the byte code.
@@ -364,7 +356,7 @@ private:
 		bool _baseClipUnloaded,
 		const AVM1Value& thisVal,
 		const NullableGcPtr<AVM1Object>& _callee,
-		const std::shared_ptr<std::vector<AVM1Value>>& _localRegs = nullptr
+		const std::vector<AVM1Value>& _localRegs = {}
 	) :
 	ctx(_ctx),
 	id(_id),
@@ -470,6 +462,7 @@ public:
 	// If a given local register doesn't exist, it does nothing.
 	bool setLocalReg(uint8_t regID, const AVM1Value& value);
 
+	using FormValsMap = tsl::ordered_map<tiny_string, tiny_string>;
 	// Convert the enumerable properties of an `Object` into a set of
 	// form values.
 	//
@@ -478,10 +471,7 @@ public:
 	// `getURL()`.
 	//
 	// NOTE: This doesn't support user defined virtual properties.
-	tsl::ordered_map<uint32_t, uint32_t> objectToFormVals
-	(
-		const GcPtr<AVM1Object>& obj
-	);
+	FormValsMap objectToFormVals(const GcPtr<AVM1Object>& obj);
 
 	// Construct a request for a fetch operation, that may send `Object`
 	// properties as form data in the request body, or URL.
@@ -498,7 +488,7 @@ public:
 	// `getURL()`.
 	//
 	// NOTE: This doesn't support user defined virtual properties.
-	tsl::ordered_map<uint32_t, uint32_t> localsToFormVals();
+	FormValsMap localsToFormVals();
 
 	// Construct a request for a fetch operation, that may send local
 	// variables as form data in the request body, or URL.
@@ -715,8 +705,6 @@ public:
 
 	// Returns the value of `this`, as a reference.
 	const AVM1Value& getThis() const { return _this; }
-
-	void allocateLocalRegs(uint8_t regs);
 
 	const std::vector<uint32_t>& getConstPool() const { return constPool; }
 	void setConstPool(const std::vector<uint32_t>& pool)

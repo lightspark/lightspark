@@ -2734,3 +2734,316 @@ void AVM1Activation::actionUnknown
 	);
 	idx += actionLen;
 }
+
+AVM1Value AVM1Activation::getCurrentReg(uint8_t regID) const
+{
+	if (regID < localRegs.size())
+		return localRegs[regID];
+	if (!localRegs.empty() && ctx.getPlayerVersion() <= 10)
+	{
+		// NOTE, PLAYER-SPECIFIC: Flash Player 10, and earlier don't fall
+		// back to the global register set.
+		return AVM1Value::undefinedVal;
+	}
+
+	return ctx.getReg(regID).valueOr(AVM1Value::undefinedVal);
+}
+
+void AVM1Activation::setCurrentReg(uint8_t regID, const AVM1Value& value)
+{
+	if (setLocalReg(regID, value))
+		return;
+
+	#if 1
+	auto reg = ctx.getReg(regID);
+	if (!reg.hasValue())
+		return;
+	*reg = value;
+	#else
+	(void)ctx.getReg(regID).andThen([&](AVM1Value& reg) {
+		return makeOptionalRef(reg = value);
+	});
+	#endif
+}
+
+bool AVM1Activation::setLocalReg(uint8_t regID, const AVM1Value& value)
+{
+	if (regID < localRegs.size())
+	{
+		localRegs[regID] = value;
+		return true;
+	}
+
+	// NOTE, PLAYER-SPECIFIC: Flash Player 10, and earlier don't fall
+	// back to the global register set.
+	return !localRegs.empty() && ctx.getPlayerVersion() <= 10;
+}
+
+using FormValsMap = AVM1Activation::FormValsMap;
+
+FormValsMap AVM1Activation::objectToFormVals(const GcPtr<AVM1Object>& obj)
+{
+	FormValsMap ret;
+
+	auto keys = obj->getKeys(*this, false);
+	for (const auto& key : keys)
+	{
+		#ifdef USE_STRING_ID
+		auto sys = ctx.getSys();
+		const auto& _key = sys->getStringFromUniqueId(key);
+		#else
+		const auto& _key = key;
+		#endif
+
+		AVM1Value value;
+		FormValsMap::mapped_type valueStr;
+
+		try
+		{
+			value = obj->getProp(*this, _key);
+		}
+		catch (...)
+		{
+			value = AVM1Value::undefinedVal;
+		}
+
+		// TODO: What happens if an error occurs inside a virtual property?
+
+		try
+		{
+			valueStr = value.toString(*this);
+		}
+		catch (...)
+		{
+			valueStr = "undefined";
+		}
+
+		ret.emplace(_key, valueStr);
+	}
+
+	return ret;
+}
+
+static tiny_string encodeURLVars(const FormValsMap& vars)
+{
+	std::stringstream s;
+	bool first = true;
+	for (const auto& pair : vars)
+	{
+		if (!first)
+			s << '&';
+
+		// Encode the name.
+		s << URLInfo::encode(pair.first, URLInfo::ENCODE_FORM) <<
+		'=' <<
+		// Encode the value.
+		URLInfo::encode(pair.second, URLInfo::ENCODE_FORM);
+		first = false;
+	}
+	return s.str();
+}
+
+Request AVM1Activation::objectToRequest
+(
+	const GcPtr<AVM1Object>& obj,
+	const tiny_string& url,
+	const Optional<RequestMethod>& method
+)
+{
+	if (!method.hasValue())
+		return Request(url);
+
+	auto queryStr = encodeURLVars(objectToFormVals(obj));
+	if (*method == RequestMethod::Post)
+	{
+		return RequestMethod(url,
+		{
+			queryStr,
+			"application/x-www-form-urlencoded"
+		});
+	}
+
+	return Request(url + (url.contains('?') ? '&' : '?') + queryStr);
+}
+
+FormValsMap AVM1Activation::localsToFormVals()
+{
+	return objectToFormVals(scope->getLocals());
+}
+
+Request AVM1Activation::localsToRequest
+(
+	const tiny_string& url,
+	const Optional<RequestMethod>& method
+)
+{
+	return objectToRequest(scope->getLocals());
+}
+
+NullableGcPtr<DisplayObject> AVM1Activation::resolveTargetClip
+(
+	const GcPtr<DisplayObject>& start,
+	const AVM1Value& target,
+	bool allowEmpty
+)
+{
+	// If `target` is a `DisplayObject`, return that.
+	auto obj = target.strictAs<AVM1Object>();
+	if (obj->is<DisplayObject>())
+		return obj->as<DisplayObject>();
+
+	// Otherwise, convert it into a `String`, and try to resolve it as
+	// a path.
+	// This means that non string values (such as `undefined`) are
+	// resolved to a clip with an instance name of the stringified value.
+	auto path = target.toString(*this);
+	if (!allowEmpty && path.empty())
+		return NullGc;
+
+	obj = resolveTargetPath
+	(
+		start->getAVM1Root(),
+		// NOTE: If `start` has no `AVM1Object`, then it'll use an
+		// `undefined` `Object`.
+		start->toAVM1ObjectOrUndef(*this),
+		path,
+		false
+	);
+
+	if (obj.isNull())
+		return NullGc;
+
+	return obj->as<DisplayObject>();
+}
+
+NullableGcPtr<AVM1Object> AVM1Activation::resolveTargetPath
+(
+	const GcPtr<DisplayObject>& root,
+	const GcPtr<AVM1Object>& start,
+	const tiny_string& _path,
+	bool hasSlash,
+	bool first
+)
+{
+	auto path = _path;
+	// An empty path resolves to the starting clip.
+	if (path.empty())
+		return start;
+
+	auto obj = start;
+	bool isSlashPath;
+	// A starting `/` means we have an absolute path, starting from the
+	// root. e.g. `/foo` == `_root.foo`.
+	if ((isSlashPath = path.startsWith("/")))
+	{
+		path = path.substr(1, tiny_string::npos);
+		obj = root->toAVM1ObjectOrUndef(*this);
+	}
+
+	bool caseSensitive = isCaseSensitive();
+
+	auto getVal = [&] -> Optional<AVM1Value>
+	{
+		uint32_t ch = path.numChars() >= 3 ? path[2] : '\0';
+		// Check for an SWF 4 `_parent` path (`..[/:]`).
+		if (path.startsWith("..") && (ch == '\0' || ch == '/' || ch == ':'))
+		{
+			// SWF 4 style `_parent` path.
+			isSlashPath |= ch == '/';
+			path = path.stripPrefix("..", ch != '\0');
+
+			auto clip = obj->as<DisplayObject>();
+			if (clip.isNull() || clip->getParent().isNull())
+			{
+				// Tried to get the parent of a root clip, bail early.
+				return {};
+			}
+
+			return clip->getAVM1Parent()->toAVM1ObjectOrUndef(*this);
+		}
+
+		// Find the next delimiter.
+		// `:`, `.`, and `/` are all valid path delimiters, with the only
+		// restriction being that a `.` isn't considered a valid delimiter
+		// after a `/` appears.
+		size_t i;
+		bool done;
+		for (i = 0, done = false; i < path.numChars(); ++i)
+		{
+			switch (path[i])
+			{
+				case '/': isSlashPath = true;
+				// Falls through.
+				case ':': done = true; break;
+				case '.': done = !isSlashPath; break;
+				default: done = false; break;
+			}
+			if (done)
+				break;
+		}
+
+		auto name = path.substr(0, i);
+		path = path.substr(std::min<size_t>
+		(
+			i + 1,
+			path.numChars()
+		), tiny_string::npos);
+
+		if (first && name == "this")
+			return _this;
+		else if (first && name == "_root")
+			return getRootObject();
+
+		// Try to get the value from the object.
+		// NOTE: This resolves `DisplayObject`s first, and then locals,
+		// which is the opposite of what `ActionGetMember`'s property
+		// access does.
+		NullableGcPtr<DisplayObject> child;
+		if (obj->is<DisplayObjectContainer>())
+		{
+			auto container = obj->as<DisplayObjectContainer>();
+			child = container->getLegacyChildByName
+			(
+				name,
+				caseSensitive
+			);
+		}
+
+		if (child.isNull())
+			return obj->lookupProp(*this, name, isSlashPath);
+
+		if (hasSlash || !child->is<Shape>())
+			return child->toAVM1ValueOrUndef(*this);
+
+		// NOTE: If the object can't be represented as an `AVM1Object`,
+		// such as `Shape`, then any attempt to access it will return
+		// the parent instead.
+		auto parent = child->getParent();
+		return
+		(
+			!parent.isNull() ?
+			parent->toAVM1ValueOrUndef(*this) :
+			AVM1Value::undefinedVal
+		);
+	};
+
+	while (!path.empty())
+	{
+		// Skip over any leading `:`s.
+		// e.g. `:foo`, and `::foo` are the same as `foo`.
+		path = path.trimStartMatches(':');
+
+		auto val = getVal();
+		if (!val.hasValue() || val->isPrimitive())
+			return NullGc;
+
+		// NOTE: `this`, and `_root` are only allowed at the start of
+		// the path.
+		first = false;
+
+		// Convert the value into an `Object`, while we're traversing
+		// the path.
+		obj = val->toObject(*this);
+	}
+	return obj;
+}

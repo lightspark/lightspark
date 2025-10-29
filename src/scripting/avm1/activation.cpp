@@ -61,34 +61,6 @@ AVM1Activation::Identifier AVM1Activation::Identifier::makeFuncID
 	return Identifier(this, name, depth + 1, _funcCount, _specialCount);
 }
 
-AVM1Activation::AVM1Activation
-(
-	AVM1Context& ctx,
-	const Identifier& id,
-	uint8_t swfVersion,
-	const GcPtr<AVM1Scope>& _scope,
-	const std::vector<uint32_t>& _constPool,
-	const GcPtr<DisplayObject>& _baseClip,
-	const AVM1Value& _this,
-	const NullableGcPtr<AVM1Object>& callee
-) : AVM1Activation
-(
-	ctx,
-	id,
-	swfVersion,
-	scope,
-	constPool,
-	baseClip,
-	// `targetClip`.
-	baseClip,
-	// `baseClipUnloaded`.
-	baseClip->isAVM1Removed(),
-	_this,
-	callee
-)
-{
-}
-
 AVM1Activation AVM1Activation::withNewScope
 (
 	const tiny_string& name,
@@ -103,7 +75,6 @@ AVM1Activation AVM1Activation::withNewScope
 		_scope,
 		constPool,
 		baseClip,
-		baseClipUnloaded,
 		_this,
 		callee,
 		localRegs
@@ -124,7 +95,7 @@ AVM1Activation::AVM1Activation
 	ctx.getConstPool(),
 	baseClip,
 	ctx.getGlobal(),
-	nullptr
+	NullGc
 )
 {
 }
@@ -186,7 +157,7 @@ AVM1Value AVM1Activation::runChildFrame
 		parentAct.ctx.getConstPool(),
 		activeClip,
 		clipObj,
-		nullptr
+		NullGc
 	);
 
 	return childAct.runActions(code);
@@ -215,7 +186,7 @@ Any AVM1Activation::runChildFrameForClip
 		ctx.getConstPool(),
 		activeClip,
 		clipObj,
-		nullptr
+		NullGc
 	);
 
 	return func(act);
@@ -3046,4 +3017,365 @@ NullableGcPtr<AVM1Object> AVM1Activation::resolveTargetPath
 		obj = val->toObject(*this);
 	}
 	return obj;
+}
+
+using ResolveVarPathType = AVM1Activation::ResolveVarPathType;
+
+ResolveVarPathType AVM1Activation::resolveVariablePath
+(
+	const GcPtr<DisplayObject>& start,
+	const tiny_string& path
+)
+{
+	bool pathHasSlash = path.contains('/');
+
+	// Find the last `:`, or `.` in the path.
+	// If we've got one, then it must be resolved as a target path.
+	auto pos = path.findLast(":.");
+
+	if (pos == tiny_string::npos)
+	{
+		// It's a normal variable name.
+		// Return the starting clip, and path.
+		auto obj = start->toAVM1Object(*this);
+		if (obj.isNull())
+			return {};
+		return std::make_pair(obj, path);
+	}
+
+	// We've got a `:`, or `.`, meaning it's an object path, and a
+	// variable name. Which has to be resolved directly on the target
+	// object.
+	auto varPath = path.substr(0, pos);
+	auto varName = path.substr(pos + 1, tiny_string::npos);
+
+	NullableGcPtr<AVM1Object> obj;
+	scope->forEachScope([&](const AVM1Scope& scope)
+	{
+		obj = resolveTargetPath
+		(
+			start->getAVM1Root(),
+			scope.getLocals(),
+			varPath,
+			pathHasSlash
+		);
+
+		return obj.isNull();
+	});
+
+	if (obj.isNull())
+		return {};
+	return std::make_pair(obj, varName);
+}
+
+Impl<AVM1CallableValue> AVM1Activation::getVariable(const tiny_string& path)
+{
+	// Try to resolve a variable path for `ActionGetVariable`.
+	auto start = getTargetOrRootClip();
+
+	bool pathHasSlash = path.contains('/');
+
+	// Find the last `:`, or `.` in the path.
+	// If we've got one, then it must be resolved as a target path.
+	auto pos = path.findLast(":.");
+	if (pos != tiny_string::npos)
+	{
+		// We've got a `:`, or `.`, meaning it's an object path, and a
+		// variable name. Which has to be resolved directly on the target
+		// object.
+		auto varPath = path.substr(0, pos);
+		auto varName = path.substr(pos + 1, tiny_string::npos);
+
+		NullableGcPtr<AVM1Object> obj;
+		scope->forEachScope([&](const AVM1Scope& scope)
+		{
+			obj = resolveTargetPath
+			(
+				start->getAVM1Root(),
+				scope.getLocals(),
+				varPath,
+				pathHasSlash
+			);
+
+			return obj.isNull() || !obj->hasProp(*this, varName);
+		});
+		if (!obj.isNull())
+			return AVM1Callable(obj, obj->getProp(*this, varName));
+		return AVM1UnCallable(AVM1Value::undefinedVal);
+	}
+
+	// If the path doesn't have a trailing variable, it could still be a
+	// slash path.
+	if (pathHasSlash)
+	{
+		NullableGcPtr<AVM1Object> obj;
+		scope->forEachScope([&](const AVM1Scope& scope)
+		{
+			obj = resolveTargetPath
+			(
+				start->getAVM1Root(),
+				scope.getLocalsPtr(),
+				path,
+				pathHasSlash,
+				false
+			);
+
+			return obj.isNull();
+		});
+
+		if (!obj.isNull())
+			return AVM1UnCallable(obj);
+	}
+
+	// It's a normal variable name.
+	// Resolve it using the scope chain.
+	auto ret = resolveVariable(path);
+	if (ret->isCallable() || !ret->getValue().is<UndefinedVal>())
+		return ret;
+
+	// If variable resolution on the scope chain failed, then fallback
+	// to looking in either the target, or root clip.
+	auto obj = getTargetOrRootClip()->toAVM1ObjectOrUndef(*this);
+	if (obj->hasProp(*this, path))
+		return AVM1Callable(obj, obj->getProp(*this, path));
+	return AVM1UnCallable(AVM1Value::undefinedVal);
+}
+
+void AVM1Activation::setVariable
+(
+	const tiny_string& path,
+	const AVM1Value& value
+)
+{
+	// Try to resolve a variable path for `ActionSetVariable`.
+	auto start = getTargetOrRootClip();
+
+	// If the path is empty, default to using the root clip for the
+	// variable path.
+	if (path.empty())
+		return;
+
+	// Special case for mutating `this`.
+	if (path == "this")
+	{
+		_this = value;
+		return;
+	}
+
+	// Find the last `:`, or `.` in the path.
+	// If we've got one, then it must be resolved as a target path.
+	auto pos = path.findLast(":.");
+	if (pos == tiny_string::npos)
+	{
+		// It's a normal variable name. Set it using the scope chain.
+		// This will overwrite the value, if the property already exists
+		// in the scope chain, otherwise, it's created on the top level
+		// object.
+		scope->setVar(*this, path, value);
+		return;
+	}
+
+	// We've got a `:`, or `.`, meaning it's an object path, and a
+	// variable name. Which has to be resolved directly on the target
+	// object.
+	auto varPath = path.substr(0, pos);
+	auto varName = path.substr(pos + 1, tiny_string::npos);
+
+	scope->forEachScope([&](const AVM1Scope& scope)
+	{
+		return resolveTargetPath
+		(
+			start->getAVM1Root(),
+			scope.getLocals(),
+			varPath,
+			true
+		).transformOr(true, [&](const auto& obj)
+		{
+			obj.setProp(*this, varName, value);
+			return false;
+		});
+	});
+}
+
+
+GcPtr<DisplayObject> AVM1Activation::getOrCreateLevel(int32_t levelID)
+{
+	auto level = getLevel(levelID);
+	if (!level.isNull())
+		return level;
+	level = NEW_GC_PTR(ctx.getGcCtx(), MovieClip
+	(
+		ctx.getGcCtx(),
+		baseClip->getMovie()
+	));
+	level->setDepth(levelID);
+	level->setDefaultRootName();
+	auto stage = getStage();
+	if (!stage.isNull())
+		stage->replaceLegacyChildAt(levelID, level);
+	level->constructionComplete();
+	return level;
+}
+
+NullableGcPtr<DisplayObjectContainer> AVM1Activation::getStageContainer() const
+{
+	return getStage().cast<DisplayObjectContainer>();
+}
+
+NullableGcPtr<Stage> AVM1Activation::getStage() const
+{
+	return baseClip->getAVM1Stage();
+}
+
+NullableGcPtr<DisplayObject> AVM1Activation::getLevel(int32_t levelID)
+{
+	auto stage = getStage();
+	if (stage.isNull())
+		return NullGc;
+	return stage->getLegacyChildAt(levelID);
+}
+
+GcPtr<DisplayObject> AVM1Activation::getTargetOrRootClip() const
+{
+	return !targetClip.isNull() ? targetClip : baseClip->getAVM1Root();
+}
+
+GcPtr<DisplayObject> AVM1Activation::getTargetOrBaseClip() const
+{
+	return !targetClip.isNull() ? targetClip : baseClip;
+}
+
+NullableGcPtr<AVM1Object> AVM1Activation::getRootObject() const
+{
+	return baseClip->getAVM1Root()->toAVM1ObjectOrUndef(*this);
+}
+
+Impl<AVM1CallableValue> AVM1Activation::resolveVariable
+(
+	const tiny_string& name
+)
+{
+	if (name == "this")
+		return AVM1UnCallable(_this);
+	return scope->getVar(*this, name);
+}
+
+TextEncoding AVM1Activation::getEncoding() const
+{
+	return tiny_string::getSwfEncoding(swfVersion);
+}
+
+void AVM1Activation::setScopeToClip(const GcPtr<DisplayObject>& clip)
+{
+	scope = NEW_GC_PTR(ctx.getGcCtx(), AVM1Scope
+	(
+		*this,
+		scope,
+		clip
+	));
+}
+
+bool AVM1Activation::inLocalScope() const
+{
+	bool ret = false;
+	scope->forEachScope([&](const AVM1Scope& scope)
+	{
+		if (scope.isTargetScope())
+			return false;
+		if (ret = scope.isLocalScope())
+			return false;
+		return true;
+	});
+
+	return ret;
+}
+
+void AVM1Activation::setTargetClip
+(
+	const NullableGcPtr<DisplayObject>& clip
+)
+{
+	if (!clip.isNull() && clip->isAVM1Removed())
+		targetClip = NullGc;
+	targetClip = clip;
+}
+
+void AVM1Activation::defineLocal
+(
+	const tiny_string& name,
+	const AVM1Value& value
+)
+{
+	if (!inLocalScope() && name.findFirst(":.") != tiny_string::npos)
+		setVariable(name, value);
+	else
+		scope->defineLocal(*this, name, value);
+}
+
+void AVM1Activation::forceDefineLocal
+(
+	const tiny_string& name,
+	const AVM1Value& value
+)
+{
+	scope->forceDefineLocal(name, value);
+}
+
+bool AVM1Activation::baseClipExists() const
+{
+	return baseClip->isAVM1Removed();
+}
+
+void AVM1Activation::setTarget(const tiny_string& target)
+{
+	auto setTargetClip = [&](const NullableGcPtr<DisplayObject>& newTarget)
+	{
+		this->setTargetClip(newTarget);
+		scope->setTargetScope(*this, getTargetOrRootClip());
+	};
+
+	if (target.empty())
+	{
+		setTargetClip(baseClip)
+		return;
+	}
+
+	auto clip = resolveTargetPath
+	(
+		baseClip->getAVM1Root(),
+		baseClip->toAVM1ObjectOrUndef(*this),
+		target,
+		false
+	);
+
+	bool resolved =
+	(
+		!clip.isNull() &&
+		clip->is<DisplayObject>() &&
+		// NOTE: All properties are invalid, if the base clip is removed.
+		!clip->as<DisplayObject>()->isAVM1Removed()
+	);
+	if (resolved)
+	{
+		setTargetClip(clip->as<DisplayObject>());
+		return;
+	}
+
+	LOG(LOG_ERROR, "setTarget: clip " << target << " not found.");
+
+	// Mimic Flash Player's trace error message.
+	std::stringstream s;
+	s << "Target not found: Target=\"" << target << "\" Base=\"";
+	if (!baseClip->isAVM1Removed())
+		s << baseClip->AVM1GetPath();
+	else
+		s << '?';
+	s << '"';
+	ctx.getSys()->trace(s.str());
+
+	// NOTE: When `ActionSetTarget{,2}` have an invalid target, all
+	// subsequent `ActionGetVariable`s act like they're targeting the
+	// root clip, but all subsequent `MovieClip` related actions fail
+	// silently.
+	setTargetClip(NullGc);
 }

@@ -59,55 +59,55 @@ class SystemState;
 class AVM1Activation
 {
 public:
-		class Identifier
+	class Identifier
+	{
+	private:
+		Identifier* parent { nullptr };
+		tiny_string name;
+		uint16_t depth { 0 };
+		uint16_t funcCount { 0 };
+		uint8_t specialCount { 0 };
+
+		Identifier
+		(
+			const Identifier* _parent,
+			const tiny_string& _name
+			uint16_t _depth,
+			uint16_t _funcCount,
+			uint8_t _specialCount
+		) :
+		parent(_parent),
+		name(_name),
+		depth(_depth),
+		funcCount(_funcCount),
+		specialCount(_specialCount) {}
+	public:
+		Identifier(const tiny_string& _name) : name(_name) {}
+		Identifier makeChildID(const tiny_string& name) const
 		{
-		private:
-			Identifier* parent { nullptr };
-			tiny_string name;
-			uint16_t depth { 0 };
-			uint16_t funcCount { 0 };
-			uint8_t specialCount { 0 };
-
-			Identifier
+			return Identifier
 			(
-				const Identifier* _parent,
-				const tiny_string& _name
-				uint16_t _depth,
-				uint16_t _funcCount,
-				uint8_t _specialCount
-			) :
-			parent(_parent),
-			name(_name),
-			depth(_depth),
-			funcCount(_funcCount),
-			specialCount(_specialCount) {}
-		public:
-			Identifier(const tiny_string& _name) : name(_name) {}
-			Identifier makeChildID(const tiny_string& name) const
-			{
-				return Identifier
-				(
-					this,
-					name,
-					depth + 1,
-					funcCount,
-					specialCount
-				);
-			}
+				this,
+				name,
+				depth + 1,
+				funcCount,
+				specialCount
+			);
+		}
 
-			Identifier makeFuncID
-			(
-				const tiny_string& name
-				const AVM1ExecutionReason& reason,
-				uint16_t maxRecursionDepth
-			) const;
+		Identifier makeFuncID
+		(
+			const tiny_string& name
+			const AVM1ExecutionReason& reason,
+			uint16_t maxRecursionDepth
+		) const;
 
-			Identifier* getParent() const { return parent; }
-			const tiny_string& getName() const { return name; }
-			uint16_t getDepth() const { return depth; }
-			uint16_t getFuncCount() const { return funcCount; }
-			uint8_t getSpecialCount() const { return specialCount; }
-		};
+		Identifier* getParent() const { return parent; }
+		const tiny_string& getName() const { return name; }
+		uint16_t getDepth() const { return depth; }
+		uint16_t getFuncCount() const { return funcCount; }
+		uint8_t getSpecialCount() const { return specialCount; }
+	};
 private:
 	// The SWF version of a given function.
 	//
@@ -145,9 +145,6 @@ private:
 	// This can be changed with `tellTarget()` (done via
 	// `ActionSetTarget{,2}`).
 	NullableGcPtr<DisplayObject> targetClip;
-
-	// Whether the base clip was removed when we started this frame.
-	bool baseClipUnloaded;
 
 	AVM1Context& ctx;
 
@@ -353,7 +350,6 @@ private:
 		const std::vector<uint32_t>& _constPool,
 		const GcPtr<DisplayObject>& _baseClip,
 		const NullableGcPtr<DisplayObject>& _targetClip,
-		bool _baseClipUnloaded,
 		const AVM1Value& thisVal,
 		const NullableGcPtr<AVM1Object>& _callee,
 		const std::vector<AVM1Value>& _localRegs = {}
@@ -365,7 +361,6 @@ private:
 	constPool(_constPool),
 	baseClip(_baseClip),
 	targetClip(_targetClip),
-	baseClipUnloaded(_baseClipUnloaded),
 	_this(thisVal),
 	callee(_callee),
 	localRegs(_localRegs) {}
@@ -373,15 +368,24 @@ public:
 
 	AVM1Activation
 	(
-		AVM1Context& ctx,
-		const Identifier& id,
+		AVM1Context& _ctx,
+		const Identifier& _id,
 		uint8_t _swfVersion,
-		const GcPtr<AVM1Scope>& scope,
-		const std::vector<uint32_t>& constPool,
-		const GcPtr<DisplayObject>& baseClip,
-		const AVM1Value& _this,
-		const NullableGcPtr<AVM1Object>& callee
-	);
+		const GcPtr<AVM1Scope>& _scope,
+		const std::vector<uint32_t>& _constPool,
+		const GcPtr<DisplayObject>& _baseClip,
+		const AVM1Value& thisVal,
+		const NullableGcPtr<AVM1Object>& _callee
+	) :
+	ctx(_ctx),
+	id(_id),
+	swfVersion(_swfVersion),
+	scope(_scope),
+	constPool(_constPool),
+	baseClip(_baseClip),
+	targetClip(_baseClip),
+	_this(thisVal),
+	callee(_callee) {}
 
 	// Create a new activation, to run a block of code with a given scope.
 	AVM1Activation withNewScope
@@ -551,7 +555,7 @@ public:
 	// Returns `nullOpt`, if the path doesn't point to a valid object.
 	ResolveVarPathType resolveVariablePath
 	(
-		const GcPtr<DisplayObject>& clip,
+		const GcPtr<DisplayObject>& start,
 		const tiny_string& path
 	);
 
@@ -610,7 +614,7 @@ public:
 	//
 	// If the level doesn't exist, then it'll be created, and instantiated
 	// with a script object.
-	GcPtr<DisplayObject> getOrCreateLevel(int32_t level);
+	GcPtr<DisplayObject> getOrCreateLevel(int32_t levelID);
 
 	// Returns a reference to the `DisplayObject` that's the parent of
 	// the root.
@@ -619,7 +623,7 @@ public:
 
 	// Tries to resolve a level by ID. Returns `NullGc` if it doesn't
 	// exist.
-	NullableGcPtr<DisplayObject> getLevel(int32_t level);
+	NullableGcPtr<DisplayObject> getLevel(int32_t levelID);
 
 	// The current target clip of the executing code.
 	// Actions that affect `root` after an invalid `tellTarget()` will
@@ -680,10 +684,7 @@ public:
 	}
 
 	// Changes the target clip.
-	void getTargetClip(const NullableGcPtr<DisplayObject>& clip)
-	{
-		targetClip = clip;
-	}
+	void setTargetClip(const NullableGcPtr<DisplayObject>& clip);
 
 	// Define a local property on the activation.
 	//

@@ -388,6 +388,12 @@ public:
 		return storage.getSize();
 	}
 
+	template<typename U>
+	constexpr SizeType getSizeAs() const noexcept
+	{
+		return getByteSize() / sizeof(U);
+	}
+
 	constexpr SizeType getByteSize() const noexcept
 	{
 		return getSize() * sizeof(T);
@@ -400,6 +406,20 @@ public:
 		if (i >= getSize())
 			throw std::out_of_range("Span::at(): `i >= getSize()`");
 		return getData()[i];
+	}
+
+	// Returns a reference of type `U` to an element at the specified
+	// index.
+	//
+	// NOTE: The index read is in terms of `T`, not `U`, which means it
+	// might perform an unaligned `U` read.
+	template<typename U>
+	constexpr U& atAs(SizeType i) const
+	{
+		auto byteIdx = i * sizeof(T);
+		if ((byteIdx / sizeof(U)) >= getSizeAs<U>())
+			throw std::out_of_range("Span::atAs(): `i >= getSizeAs<U>()`");
+		return subSpan(i, 1).as<U>().front();
 	}
 
 	constexpr Ref operator[](SizeType i) const

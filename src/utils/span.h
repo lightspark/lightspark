@@ -395,6 +395,13 @@ public:
 
 	constexpr bool empty() const noexcept { return getSize() == 0; }
 
+	constexpr Ref at(SizeType i) const
+	{
+		if (i >= getSize())
+			throw std::out_of_range("Span::at(): `i >= getSize()`");
+		return getData()[i];
+	}
+
 	constexpr Ref operator[](SizeType i) const
 	{
 		EXPECT(std::out_of_range, i < getSize());

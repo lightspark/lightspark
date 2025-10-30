@@ -239,29 +239,29 @@ using ReadType = T;
 using ReadIdx = size_t&;
 #endif
 
-template<typename T, EnableIf<std::is_integral<T>::value, bool> = false>
-static ReadType<T> readInt(const ReadVec& code, ReadIdx idx)
+template<typename T, EnableIf<std::is_arithmetic<T>::value, bool> = false>
+static ReadType<T> readPrim(const ReadVec& code, ReadIdx idx)
 {
-	T ret(0);
 	// NOTE: SWF values are stored in little endian.
-	// This method of reading a little endian value is both portable,
-	// and efficient.
-	for (size_t i = 0; i < sizeof(T); ++i)
-		ret |= T(code[idx++]) << (i * CHAR_BIT);
+	auto ret = code.atLE<T>(idx);
 	#ifdef USE_PAIR
-	return std::make_pair(ret, idx);
+	return std::make_pair(ret, idx + sizeof(T));
 	#else
+	idx += sizeof(T);
 	return ret;
 	#endif
 }
 
-template<typename T, EnableIf<std::is_floating_point<T>::value, bool> = false>
-static ReadType<T> readFloat(const ReadVec& code, ReadIdx idx);
-
-template<>
-static ReadType<float> readFloat(const ReadVec& code, ReadIdx idx);
+template<typename T, EnableIf<std::is_integral<T>::value, bool> = false>
+static ReadType<T> readInt(const ReadVec& code, ReadIdx idx)
 {
-	return *static_cast<float*>(&readInt<uint32_t>(code, idx));
+	return readPrim<T>(code, idx);
+}
+
+template<typename T, EnableIf<std::is_floating_point<T>::value, bool> = false>
+static ReadType<T> readFloat(const ReadVec& code, ReadIdx idx)
+{
+	return readPrim<T>(code, idx);
 }
 
 template<>

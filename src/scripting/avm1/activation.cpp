@@ -33,6 +33,7 @@
 #include "utils/any.h"
 #include "utils/impl.h"
 #include "utils/optional.h"
+#include "utils/span.h"
 #include "utils/type_traits.h"
 
 using namespace lightspark;
@@ -132,7 +133,7 @@ AVM1Value AVM1Activation::runChildFrame
 (
 	const tiny_string& name,
 	const GcPtr<DisplayObject>& activeClip,
-	const std::vector<uint8_t>& code
+	const Span<uint8_t>& code
 )
 {
 	AVM1Activation parentAct
@@ -194,7 +195,7 @@ Any AVM1Activation::runChildFrameForClip
 
 Optional<AVM1Value> AVM1Activation::runActions
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t offset
 )
 {
@@ -227,7 +228,7 @@ GcContext& AVM1Activation::getGcCtx()
 	return ctx.getGcCtx();
 }
 
-using ReadVec = std::vector<uint8_t>;
+using ReadVec = Span<uint8_t>;
 #ifdef USE_PAIR
 template<typename T>
 using ReadType = std::pair<T, size_t>;
@@ -336,12 +337,9 @@ static ReadType<uint32_t> readSwfStrID
 }
 
 // Skips a given number of actions.
-//
-// TODO: Replace this with a span, once we write our own span
-// implementation.
 static void skipActions
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx,
 	size_t offset
 )
@@ -358,7 +356,7 @@ static void skipActions
 
 Optional<AVM1Value> AVM1Activation::doAction
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx,
 	bool& isImplicit
 )
@@ -869,7 +867,7 @@ void AVM1Activation::actionCastOp()
 
 void AVM1Activation::actionConstantPool
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx
 )
 {
@@ -892,7 +890,7 @@ void AVM1Activation::actionDecrement()
 
 void AVM1Activation::actionDefineFunction
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx,
 	size_t actionLen,
 	bool isVer2
@@ -922,17 +920,16 @@ void AVM1Activation::actionDefineFunction
 	// NOTE: `codeLength` isn't included in `ActionDefineFunction{,2}`'s
 	// action length.
 	auto codeLength = readInt<uint16_t>(code, idx);
+	auto codeStart = idx;
+	idx += codeLength;
 	actionLen += codeLength;
 
 	auto& gcCtx = ctx.getGcCtx();
-	auto funcCodeIt = std::next(code.begin(), idx);
 	auto func = NEW_GC_PTR(gcCtx, AVM1Function
 	(
 		gcCtx,
 		swfVersion,
-		// TODO: Replace this with a span, once we write our own span
-		// implementation.
-		std::vector<uint8_t>(funcCodeIt, funcCodeIt + codeLength),
+		code.subSpan(codeStart, codeLength),
 		sys->getUniqueStringId(name, caseSensitive),
 		regCount,
 		args,
@@ -1227,7 +1224,7 @@ void AVM1Activation::actionGetVariable()
 
 void AVM1Activation::actionGetURL
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx
 )
 {
@@ -1301,7 +1298,7 @@ static Optional<RequestMethod> fromSendVars(const AVM1GetURLFlags& flags)
 
 void AVM1Activation::actionGetURL2
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx
 )
 {
@@ -1453,7 +1450,7 @@ void AVM1Activation::actionGetURL2
 
 void AVM1Activation::actionGotoFrame
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx
 )
 {
@@ -1477,7 +1474,7 @@ void AVM1Activation::actionGotoFrame
 
 void AVM1Activation::actionGotoFrame2
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx
 )
 {
@@ -1507,7 +1504,7 @@ void AVM1Activation::actionGotoFrame2
 
 void AVM1Activation::actionGotoLabel
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx
 )
 {
@@ -1530,7 +1527,7 @@ void AVM1Activation::actionGotoLabel
 	clip->AVM1gotoFrameLabel(label, true, true);
 }
 
-void AVM1Activation::actionIf(const std::vector<uint8_t>& code, size_t& idx)
+void AVM1Activation::actionIf(const Span<uint8_t>& code, size_t& idx)
 {
 	auto offset = readInt<int16_t>(code, idx);
 	if (ctx.pop().toBool(swfVersion))
@@ -1651,7 +1648,7 @@ void AVM1Activation::actionInstanceOf()
 	)));
 }
 
-void AVM1Activation::actionJump(const std::vector<uint8_t>& code, size_t& idx)
+void AVM1Activation::actionJump(const Span<uint8_t>& code, size_t& idx)
 {
 	auto offset = readInt<int16_t>(code, idx);
 	idx = clampTmpl<size_t>(idx + offset, 0, code.size());
@@ -1925,7 +1922,7 @@ void AVM1Activation::actionPop()
 
 void AVM1Activation::actionPush
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx,
 	size_t actionLen
 )
@@ -2165,7 +2162,7 @@ void AVM1Activation::actionStrictEquals()
 
 void AVM1Activation::actionSetTarget
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx
 )
 {
@@ -2300,7 +2297,7 @@ void AVM1Activation::actionStopSounds()
 
 void AVM1Activation::actionStoreRegister
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx
 )
 {
@@ -2476,7 +2473,7 @@ void AVM1Activation::actionTrace()
 
 Optional<AVM1Value> AVM1Activation::actionTry
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx,
 	size_t actionLen
 )
@@ -2518,7 +2515,7 @@ Optional<AVM1Value> AVM1Activation::actionTry
 	Optional<AVM1Value> ret;
 	try
 	{
-		ret = runActions(code, tryStart);
+		ret = runActions(code.subSpan(tryStart, trySize));
 	}
 	catch (AVM1Value& value)
 	{
@@ -2543,13 +2540,13 @@ Optional<AVM1Value> AVM1Activation::actionTry
 			act.setCurrentReg(catchVar.reg, value);
 		else
 			act.setVariable(catchVar.name, value);
-		ret = act.runActions(code, catchStart);
+		ret = act.runActions(code.subSpan(catchStart, catchSize));
 	}
 
 	if (!(flags & TryFlags::FinallyBlock))
 		return ret;
 
-	auto finallyRet = runActions(code, finallyStart);
+	auto finallyRet = runActions(code.subSpan(finallyStart, finallySize));
 	return finallyRet.hasValue() ? finallyRet : ret;
 }
 
@@ -2560,7 +2557,7 @@ void AVM1Activation::actionTypeOf()
 
 void AVM1Activation::actionWaitForFrame
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx
 )
 {
@@ -2598,7 +2595,7 @@ void AVM1Activation::actionWaitForFrame
 
 void AVM1Activation::actionWaitForFrame2
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx
 )
 {
@@ -2659,7 +2656,7 @@ void AVM1Activation::actionWaitForFrame2
 
 Optional<AVM1Value> AVM1Activation::actionWith
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx,
 	size_t actionLen
 )
@@ -2685,12 +2682,12 @@ Optional<AVM1Value> AVM1Activation::actionWith
 		scope,
 		// NOTE: Primitives are converted into an `Object` at this point.
 		value.toObject(*this)
-	))).runActions(code, withStart);
+	))).runActions(code.subSpan(withStart, withSize));
 }
 
 void AVM1Activation::actionUnknown
 (
-	const std::vector<uint8_t>& code,
+	const Span<uint8_t>& code,
 	size_t& idx,
 	size_t actionLen
 )

@@ -51,6 +51,8 @@ template<typename T>
 class Optional;
 class Request;
 enum RequestMethod;
+template<typename T, size_t N = SIZE_MAX>
+class Span;
 class Stage;
 enum TextEncoding;
 class SystemState;
@@ -154,12 +156,9 @@ private:
 	Identifier id;
 
 	// Run a single action from a given index.
-	//
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
 	Optional<AVM1Value> doAction
 	(
-		const std::vector<uint8_t>& code,
+		const Span<uint8_t>& code,
 		size_t& idx,
 		bool& isImplicit
 	);
@@ -184,16 +183,12 @@ private:
 	bool actionCallFunction();
 	bool actionCallMethod();
 	void actionCastOp();
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
-	void actionConstantPool(const std::vector<uint8_t>& code, size_t& idx);
+	void actionConstantPool(const Span<uint8_t>& code, size_t& idx);
 
 	void actionDecrement();
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
 	void actionDefineFunction
 	(
-		const std::vector<uint8_t>& code,
+		const Span<uint8_t>& code,
 		size_t& idx,
 		size_t actionLen,
 		bool isVer2 = false
@@ -215,26 +210,20 @@ private:
 	void actionGetProperty();
 	void actionGetTime();
 	void actionGetVariable();
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
-	void actionGetURL(const std::vector<uint8_t>& code, size_t& idx);
-	void actionGetURL2(const std::vector<uint8_t>& code, size_t& idx);
-	void actionGotoFrame(const std::vector<uint8_t>& code, size_t& idx);
-	void actionGotoFrame2(const std::vector<uint8_t>& code, size_t& idx);
-	void actionGotoLabel(const std::vector<uint8_t>& code, size_t& idx);
+	void actionGetURL(const Span<uint8_t>& code, size_t& idx);
+	void actionGetURL2(const Span<uint8_t>& code, size_t& idx);
+	void actionGotoFrame(const Span<uint8_t>& code, size_t& idx);
+	void actionGotoFrame2(const Span<uint8_t>& code, size_t& idx);
+	void actionGotoLabel(const Span<uint8_t>& code, size_t& idx);
 
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
-	void actionIf(const std::vector<uint8_t>& code, size_t& idx);
+	void actionIf(const Span<uint8_t>& code, size_t& idx);
 	void actionIncrement();
 	void actionInitArray();
 	void actionInitObject();
 	void actionImplementsOp();
 	void actionInstanceOf();
 
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
-	void actionJump(const std::vector<uint8_t>& code, size_t& idx);
+	void actionJump(const Span<uint8_t>& code, size_t& idx);
 
 	void actionLess();
 	void actionLess2();
@@ -258,11 +247,9 @@ private:
 	void actionPlay();
 	void actionPreviousFrame();
 	void actionPop();
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
 	void actionPush
 	(
-		const std::vector<uint8_t>& code,
+		const Span<uint8_t>& code,
 		size_t& idx,
 		size_t actionLen
 	);
@@ -276,17 +263,13 @@ private:
 	void actionSetProperty();
 	void actionSetVariable();
 	void actionStrictEquals();
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
-	void actionSetTarget(const std::vector<uint8_t>& code, size_t& idx);
+	void actionSetTarget(const Span<uint8_t>& code, size_t& idx);
 	void actionSetTarget2();
 	void actionStackSwap();
 	void actionStartDrag();
 	void actionStop();
 	void actionStopSounds();
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
-	void actionStoreRegister(const std::vector<uint8_t>& code, size_t& idx);
+	void actionStoreRegister(const Span<uint8_t>& code, size_t& idx);
 	void actionStringAdd();
 	void actionStringEquals();
 	void actionStringExtract();
@@ -302,32 +285,26 @@ private:
 	void actionToNumber();
 	void actionToString();
 	void actionTrace();
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
 	Optional<AVM1Value> actionTry
 	(
-		const std::vector<uint8_t>& code,
+		const Span<uint8_t>& code,
 		size_t& idx,
 		size_t actionLen
 	);
 	void actionTypeOf();
 
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
-	void actionWaitForFrame(const std::vector<uint8_t>& code, size_t& idx);
-	void actionWaitForFrame2(const std::vector<uint8_t>& code, size_t& idx);
+	void actionWaitForFrame(const Span<uint8_t>& code, size_t& idx);
+	void actionWaitForFrame2(const Span<uint8_t>& code, size_t& idx);
 	Optional<AVM1Value> actionWith
 	(
-		const std::vector<uint8_t>& code,
+		const Span<uint8_t>& code,
 		size_t& idx,
 		size_t actionLen
 	);
 
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
 	void actionUnknown
 	(
-		const std::vector<uint8_t>& code,
+		const Span<uint8_t>& code,
 		size_t& idx,
 		size_t actionLen
 	);
@@ -415,14 +392,11 @@ public:
 	AVM1Activation(AVM1Context& ctx, const Identifier& id);
 
 	// Add a stack frame that executes code in a timeline scope.
-	//
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
 	AVM1Value runChildFrame
 	(
 		const tiny_string& name,
 		const GcPtr<DisplayObject>& activeClip,
-		const std::vector<uint8_t>& code
+		const Span<uint8_t>& code
 	);
 
 	// Add a stack frame that executes code in an initializer scope.
@@ -434,13 +408,7 @@ public:
 		const std::function<Any(AVM1Activation&)>& func
 	);
 
-	// TODO: Replace `code` with a span, once we write our own span
-	// implementation.
-	Optional<AVM1Value> runActions
-	(
-		const std::vector<uint8_t>& code,
-		size_t offset = 0
-	);
+	Optional<AVM1Value> runActions(const Span<uint8_t>& code);
 
 	SystemState* getSys() const;
 

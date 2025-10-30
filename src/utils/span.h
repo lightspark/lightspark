@@ -422,6 +422,92 @@ public:
 		return subSpan(i, 1).as<U>().front();
 	}
 
+	// Performs a little endian read of type `U` at the specified index.
+	//
+	// NOTE: The index read is in terms of `T`, not `U`, but shouldn't
+	// perform an unaligned read, due to reading it out as bytes.
+	template<typename U>
+	constexpr U atLE(SizeType idx) const
+	{
+		auto byteIdx = idx * sizeof(T);
+		if ((byteIdx / sizeof(U)) >= getSizeAs<U>())
+			throw std::out_of_range("Span::atLE<U>(): `idx >= getSizeAs<U>()`");
+		return subSpan(i, 1).as<U>().atLE(0);
+	}
+
+	template<>
+	constexpr float atLE(SizeType idx) const
+	{
+		auto ret = atLE<uint32_t>(idx);
+		return *static_cast<float*>(&ret);
+	}
+
+	template<>
+	constexpr double atLE(SizeType idx) const
+	{
+		auto ret = atLE<uint64_t>(idx);
+		return *static_cast<double*>(&ret);
+	}
+
+	// Performs a little endian read at the specified index.
+	constexpr ElemType atLE(SizeType idx) const
+	{
+		if (idx >= getSize())
+			throw std::out_of_range("Span::atLE(): `idx >= getSize()`");
+
+		ElemType ret(0);
+		// Perform the little endian read by shifting in bytes to the
+		// left, which is both portable, and efficient.
+		auto bytes = subSpan(idx, 1).asBytes();
+		auto it = bytes.begin();
+		for (size_t i = 0; i < bytes.getSize(); ++i)
+			ret |= ElemType(*it++) << (i * CHAR_BIT);
+		return ret;
+	}
+
+	// Performs a big endian read of type `U` at the specified index.
+	//
+	// NOTE: The index read is in terms of `T`, not `U`, but shouldn't
+	// perform an unaligned read, due to reading it out as bytes.
+	template<typename U>
+	constexpr U atBE(SizeType idx) const
+	{
+		auto byteIdx = idx * sizeof(T);
+		if ((byteIdx / sizeof(U)) >= getSizeAs<U>())
+			throw std::out_of_range("Span::atBE<U>(): `idx >= getSizeAs<U>()`");
+		return subSpan(idx, 1).as<U>().atBE(0);
+	}
+
+	template<>
+	constexpr float atBE(SizeType idx) const
+	{
+		auto ret = atBE<uint32_t>(idx);
+		return *static_cast<float*>(&ret);
+	}
+
+	template<>
+	constexpr double atBE(SizeType idx) const
+	{
+		auto ret = atBE<uint64_t>(idx);
+		return *static_cast<double*>(&ret);
+	}
+
+	// Performs a big endian read at the specified index.
+	constexpr ElemType atBE(SizeType idx) const
+	{
+		if (idx >= getSize())
+			throw std::out_of_range("Span::atBE(): `idx >= getSize()`");
+
+		ElemType ret(0);
+		// Perform the big endian read by shifting in bytes to the left,
+		// which is both portable, and efficient.
+		auto bytes = subSpan(idx, 1).asBytes();
+		auto it = bytes.rbegin();
+		for (size_t i = 0; i < bytes.getSize(); ++i)
+			ret |= ElemType(*it++) << (i * CHAR_BIT);
+		return ret;
+	}
+
 	constexpr Ref operator[](SizeType i) const
 	{
 		EXPECT(std::out_of_range, i < getSize());

@@ -23,7 +23,8 @@
 #include <list>
 #include <utility>
 
-#include "smartrefs.h"
+#include "gc/resource.h"
+#include "gc/ptr.h"
 #include "tiny_string.h"
 
 // Based on Ruffle's `avm1::object_reference::MovieClipReference`.
@@ -34,6 +35,8 @@ namespace lightspark
 class AVM1Activation;
 class AVM1DisplayObject;
 class AVM1Object;
+class DisplayObject;
+class GcContext;
 template<typename T>
 class Optional;
 
@@ -65,45 +68,46 @@ public:
 // This consists of a string path, which resolves to to a target value,
 // when used.
 // This also handles caching, in order to maintain performance.
-class AVM1MovieClipRef
+class AVM1MovieClipRef : public GcResource
 {
 private:
 	// The path to the target clip.
 	MovieClipPath path;
 
-	// A reference to the target `DisplayObject` that `path` points to.
+	// A weak reference to the target `DisplayObject` that `path` points
+	// to.
 	// This is used for fast path resolving when possible, as well as for
 	// regenerating `path` (in the case that the target object was
 	// renamed).
-	// If this is `NullRef`, then we've previously missed the cache, due
+	// If this is `NullGc`, then we've previously missed the cache, due
 	// to the target object being removed, and recreated, causing us to
 	// fallback to the slow path resolution.
-	_NR<AVM1DisplayObject> cachedDispObj;
+	WeakGcPtr<AVM1DisplayObject> cachedDispObj;
 public:
 	AVM1MovieClipRef
 	(
 		AVM1Activation& activation,
-		const _R<AVM1DisplayObject>& dispObj
+		const GcPtr<AVM1DisplayObject>& dispObj
 	);
 
 	// Handle the logic of SWF 5 `DisplayObject`s.
-	static _R<AVM1DisplayObject> handleSWF5Refs
+	static GcPtr<ADisplayObject> handleSWF5Refs
 	(
 		AVM1Activation& activation,
-		const _R<AVM1DisplayObject>& dispObj
+		const GcPtr<DisplayObject>& dispObj
 	);
 
-	using ResolveRefType = std::pair
+	using ResolveRefType = Optional<std::pair
 	<
 		bool,
-		_R<AVM1DisplayObject>
-	>;
+		GcPtr<DisplayObject>
+	>>;
 	// Resolve the clip reference.
 	// `pair.first` indicates if the path was cached, or not.
-	Optional<ResolveRefType> resolveRef(AVM1Activation& activation) const;
+	ResolveRefType resolveRef(AVM1Activation& activation) const;
 
 	// Convert this reference into an `Object`.
-	_NR<AVM1Object> toObject(AVM1Activation& activation) const;
+	NullableGcPtr<AVM1Object> toObject(AVM1Activation& activation) const;
 
 	// Convert this reference into a `String`.
 	tiny_string toString(AVM1Activation& activation) const;

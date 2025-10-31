@@ -1070,7 +1070,7 @@ void AVM1Activation::actionEnumerate()
 	// A sentinel value that indicates the end of enumeration.
 	ctx.push(AVM1Value::undefinedVal);
 
-	ctx.pop().visit(makeVisitor
+	getVariable(name)->getValue().visit(makeVisitor
 	(
 		[&](const GcPtr<AVM1Object>& obj)
 		{

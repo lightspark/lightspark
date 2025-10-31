@@ -51,7 +51,7 @@ AVM1Function::~AVM1Function()
 		clip->removeStoredMember();
 }
 
-asAtom AVM1Function::computeSuper()
+asAtom AVM1Function::computeSuper(asAtom obj)
 {
 	asAtom newsuper = superobj;
 	if (asAtomHandler::isValid(newsuper))
@@ -66,8 +66,10 @@ asAtom AVM1Function::computeSuper()
 		m.isAttribute = false;
 		m.name_s_id = BUILTIN_STRINGS::STRING_CONSTRUCTOR;
 		pr->getVariableByMultiname(newsuper,m,GET_VARIABLE_OPTION::NO_INCREF,clip->getInstanceWorker());
+		if (asAtomHandler::getObject(newsuper) == this)
+			newsuper = asAtomHandler::fromObject(asAtomHandler::getClass(obj,clip->getSystemState()));
 		if (asAtomHandler::isInvalid(newsuper))
-			LOG(LOG_ERROR,"no super found:"<<pr->toDebugString());
+			LOG(LOG_ERROR,"AVM1 no super found:"<<pr->toDebugString());
 	}
 	setSuper(newsuper);
 	return newsuper;

@@ -59,7 +59,7 @@ protected:
 		// no cloning needed in AVM1
 		return nullptr;
 	}
-	asAtom computeSuper();
+	asAtom computeSuper(asAtom obj);
 	void checkInternalException();
 	uint32_t getSWFVersion();
 public:
@@ -71,7 +71,7 @@ public:
 	{
 		if (needsSuper() || getSWFVersion() < 7)
 		{
-			asAtom newsuper = computeSuper();
+			asAtom newsuper = computeSuper(*obj);
 			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,&newsuper,isInternalCall);
 		}
 		else
@@ -84,7 +84,7 @@ public:
 		asAtom obj = target;
 		if (needsSuper() || getSWFVersion() < 7)
 		{
-			asAtom newsuper = computeSuper();
+			asAtom newsuper = computeSuper(target);
 			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,&newsuper,true);
 		}
 		else

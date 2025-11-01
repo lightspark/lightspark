@@ -48,13 +48,20 @@ private:
 	T* data;
 	static constexpr size_t size = N;
 public:
+	template<EnableIf<!std::is_const<T>::value, bool> = false>
+	constexpr SpanStorage
+	(
+		T* _data = nullptr,
+		size_t _size = 0
+	) noexcept : data(_data) {}
+
 	constexpr SpanStorage
 	(
 		const T* _data = nullptr,
 		size_t _size = 0
-	) noexcept : data(_data) {}
+	) noexcept : data(const_cast<T*>(_data)) {}
 
-	constexpr const T* getData() const { return data; }
+	constexpr T* getData() const { return data; }
 	constexpr T* getData() { return data; }
 	constexpr size_t getSize() const { return size; }
 };
@@ -68,11 +75,11 @@ private:
 public:
 	constexpr SpanStorage
 	(
-		const T* _data = nullptr,
+		T* _data = nullptr,
 		size_t _size = 0
 	) noexcept : data(_data), size(_size) {}
 
-	constexpr const T* getData() const { return data; }
+	constexpr T* getData() const { return data; }
 	constexpr T* getData() { return data; }
 	constexpr size_t getSize() const { return size; }
 };
@@ -103,12 +110,6 @@ constexpr auto data(T& cont) -> decltype(cont.data())
 }
 
 template<typename T, size_t N>
-constexpr const T* data(const T(&array)[N])
-{
-	return array;
-}
-
-template<typename T, size_t N>
 constexpr T* data(T(&array)[N])
 {
 	return array;
@@ -134,8 +135,8 @@ struct HasSizeAndData : std::false_type {};
 template<typename T>
 struct HasSizeAndData<T, Void
 <
-	decltype(size(std::declval<T>())),
-	decltype(data(std::declval<T>()))
+	decltype(Detail::size(std::declval<T>())),
+	decltype(Detail::data(std::declval<T>()))
 >> : std::true_type {};
 
 template<typename T, typename U = RemoveCVRef<T>>
@@ -152,11 +153,11 @@ struct IsValidElemType : Conj
 <
 	Neg<IsSame<RemoveCV
 	<
-		decltype(size(std::declval<T>()))
+		decltype(Detail::data(std::declval<T>()))
 	>, void>>,
 	std::is_convertible<RemovePtr
 	<
-		decltype(data(std::declval<T>()))
+		decltype(Detail::data(std::declval<T>()))
 	> (*)[], E (*)[]>
 > {};
 
@@ -229,8 +230,7 @@ public:
 	), bool> = false>
 	constexpr Span() noexcept {}
 
-	template<typename _Iter>
-	constexpr Span(_Iter data, SizeType size) : storage(data, size)
+	constexpr Span(Iter data, SizeType size) : storage(data, size)
 	{
 		EXPECT(std::length_error,
 		(
@@ -239,12 +239,7 @@ public:
 		));
 	}
 
-	template<typename _Iter>
-	constexpr Span
-	(
-		_Iter first,
-		_Iter last
-	) : storage(first, last - first)
+	constexpr Span(Iter first, Iter last) : storage(first, last - first)
 	{
 		EXPECT(std::length_error,
 		(
@@ -256,6 +251,7 @@ public:
 	template<size_t M, size_t E = N, EnableIf<
 	(
 		(E == dynExtent || M == E) &&
+		!std::is_const<T>::value &&
 		Detail::IsValidElemType<T (&)[M], T>::value
 	), bool> = false>
 	constexpr Span(T (&array)[M]) noexcept : storage(array, M) {}
@@ -263,7 +259,7 @@ public:
 	template<size_t M, size_t E = N, EnableIf<
 	(
 		(E == dynExtent || M == E) &&
-		Detail::IsValidElemType<const T (&)[M], T>::value
+		Detail::IsValidElemType<const T (&)[M], const T>::value
 	), bool> = false>
 	constexpr Span(const T (&array)[M]) noexcept : storage(array, M) {}
 
@@ -459,7 +455,7 @@ public:
 		if (idx >= getSize())
 			throw std::out_of_range("Span::atLE(): `idx >= getSize()`");
 
-		ElemType ret(0);
+		ValueType ret(0);
 		// Perform the little endian read by shifting in bytes to the
 		// left, which is both portable, and efficient.
 		auto bytes = subSpan(idx, 1).asBytes();
@@ -502,7 +498,7 @@ public:
 		if (idx >= getSize())
 			throw std::out_of_range("Span::atBE(): `idx >= getSize()`");
 
-		ElemType ret(0);
+		ValueType ret(0);
 		// Perform the big endian read by shifting in bytes to the left,
 		// which is both portable, and efficient.
 		auto bytes = subSpan(idx, 1).asBytes();

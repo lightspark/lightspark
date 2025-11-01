@@ -121,9 +121,13 @@ constexpr const T* data(const std::initializer_list<T>& list)
 }
 
 template<typename T>
-using IsSpan = IsSpecializationOf<T, Span>;
+struct IsSpan : std::false_type {};
+template<typename T, size_t N>
+struct IsSpan<Span<T, N>> : std::true_type {};
 template<typename T>
-using IsStdArray = IsSpecializationOf<T, std::array>;
+struct IsStdArray : std::false_type {};
+template<typename T, size_t N>
+struct IsStdArray<std::array<T, N>> : std::true_type {};
 
 template<typename, typename = void>
 struct HasSizeAndData : std::false_type {};
@@ -170,28 +174,28 @@ private:
 	static_assert
 	(
 		std::is_object<T>::value,
-		"A `Span`'s element type must be an object type "
+		"`Span`'s element type must be an object type "
 		"(not a reference, or `void`)."
 	);
 
 	static_assert
 	(
 		Detail::IsComplete<T>::value,
-		"A `Span`'s element type must be a complete type "
+		"`Span`'s element type must be a complete type "
 		"(not a forward declaration)."
 	);
 
 	static_assert
 	(
-		std::is_abstract<T>::value,
-		"A `Span`'s element type can't be an abstract class."
+		!std::is_abstract<T>::value,
+		"`Span`'s element type can't be an abstract class."
 	);
 
 	using StorageType = Detail::SpanStorage<T, N>;
 	StorageType storage;
 	#define EXPECT(exceptionType, expr) \
 		if (!(expr)) \
-			throw exceptionType("Expected: `" #cond "`.")
+			throw exceptionType("Expected: `" #expr "`.")
 public:
 	using ElemType = T;
 	using ValueType = RemoveCV<T>;
@@ -252,21 +256,21 @@ public:
 	template<size_t M, size_t E = N, EnableIf<
 	(
 		(E == dynExtent || M == E) &&
-		IsValidElemType<T (&)[M], T>::value
+		Detail::IsValidElemType<T (&)[M], T>::value
 	), bool> = false>
 	constexpr Span(T (&array)[M]) noexcept : storage(array, M) {}
 
 	template<size_t M, size_t E = N, EnableIf<
 	(
 		(E == dynExtent || M == E) &&
-		IsValidElemType<const T (&)[M], T>::value
+		Detail::IsValidElemType<const T (&)[M], T>::value
 	), bool> = false>
 	constexpr Span(const T (&array)[M]) noexcept : storage(array, M) {}
 
 	template<size_t M, size_t E = N, EnableIf<
 	(
 		(E == dynExtent || M == E) &&
-		IsValidElemType<std::array<T, M>, T>::value
+		Detail::IsValidElemType<std::array<T, M>, T>::value
 	), bool> = false>
 	constexpr Span
 	(
@@ -276,7 +280,7 @@ public:
 	template<size_t M, size_t E = N, EnableIf<
 	(
 		(E == dynExtent || M == E) &&
-		IsValidElemType<const std::array<T, M>, T>::value
+		Detail::IsValidElemType<const std::array<T, M>, T>::value
 	), bool> = false>
 	constexpr Span
 	(
@@ -286,8 +290,8 @@ public:
 	template<typename U, size_t E = N, EnableIf<
 	(
 		E == dynExtent &&
-		IsContainer<U>::value &&
-		IsValidElemType<U&, T>::value
+		Detail::IsContainer<U>::value &&
+		Detail::IsValidElemType<U&, T>::value
 	), bool> = false>
 	constexpr Span(U& cont) : storage
 	(
@@ -298,8 +302,8 @@ public:
 	template<typename U, size_t E = N, EnableIf<
 	(
 		E == dynExtent &&
-		IsContainer<U>::value &&
-		IsValidElemType<const U&, T>::value
+		Detail::IsContainer<U>::value &&
+		Detail::IsValidElemType<const U&, T>::value
 	), bool> = false>
 	constexpr Span(const U& cont) : storage
 	(
@@ -432,17 +436,17 @@ public:
 		auto byteIdx = idx * sizeof(T);
 		if ((byteIdx / sizeof(U)) >= getSizeAs<U>())
 			throw std::out_of_range("Span::atLE<U>(): `idx >= getSizeAs<U>()`");
-		return subSpan(i, 1).as<U>().atLE(0);
+		return subSpan(idx, 1).template as<U>().atLE(0);
 	}
 
-	template<>
+	template<typename U, EnableIf<IsSame<U, float>::value, bool> = false>
 	constexpr float atLE(SizeType idx) const
 	{
 		auto ret = atLE<uint32_t>(idx);
 		return *static_cast<float*>(&ret);
 	}
 
-	template<>
+	template<typename U, EnableIf<IsSame<U, double>::value, bool> = false>
 	constexpr double atLE(SizeType idx) const
 	{
 		auto ret = atLE<uint64_t>(idx);
@@ -475,17 +479,17 @@ public:
 		auto byteIdx = idx * sizeof(T);
 		if ((byteIdx / sizeof(U)) >= getSizeAs<U>())
 			throw std::out_of_range("Span::atBE<U>(): `idx >= getSizeAs<U>()`");
-		return subSpan(idx, 1).as<U>().atBE(0);
+		return subSpan(idx, 1).template as<U>().atBE(0);
 	}
 
-	template<>
+	template<typename U, EnableIf<IsSame<U, float>::value, bool> = false>
 	constexpr float atBE(SizeType idx) const
 	{
 		auto ret = atBE<uint32_t>(idx);
 		return *static_cast<float*>(&ret);
 	}
 
-	template<>
+	template<typename U, EnableIf<IsSame<U, double>::value, bool> = false>
 	constexpr double atBE(SizeType idx) const
 	{
 		auto ret = atBE<uint64_t>(idx);
@@ -625,12 +629,6 @@ constexpr Span<T, N> makeSpan(std::array<T, N>& array) noexcept
 
 template<typename T, size_t N>
 constexpr Span<T, N> makeSpan(const std::array<T, N>& array) noexcept
-{
-	return { array };
-}
-
-template<typename T, size_t N>
-constexpr Span<T, N> makeSpan(std::array<T, N>& array) noexcept
 {
 	return { array };
 }

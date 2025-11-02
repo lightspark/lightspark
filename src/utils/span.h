@@ -171,6 +171,17 @@ struct IsComplete<T, decltype(sizeof(T))> : std::true_type {};
 template<typename T, size_t N>
 class Span
 {
+public:
+	using ElemType = T;
+	using ValueType = RemoveCV<T>;
+	using SizeType = size_t;
+	using DiffType = ptrdiff_t;
+	using Ptr = T*;
+	using ConstPtr = const T*;
+	using Ref = T&;
+	using ConstRef = const T&;
+	using Iter = Ptr;
+	using RevIter = std::reverse_iterator<Iter>;
 private:
 	static_assert
 	(
@@ -197,18 +208,47 @@ private:
 	#define EXPECT(exceptionType, expr) \
 		if (!(expr)) \
 			throw exceptionType("Expected: `" #expr "`.")
-public:
-	using ElemType = T;
-	using ValueType = RemoveCV<T>;
-	using SizeType = size_t;
-	using DiffType = ptrdiff_t;
-	using Ptr = T*;
-	using ConstPtr = const T*;
-	using Ref = T&;
-	using ConstRef = const T&;
-	using Iter = Ptr;
-	using RevIter = std::reverse_iterator<Iter>;
 
+	template<size_t... Is>
+	constexpr ElemType atLEImpl(SizeType idx, std::index_sequence<Is...>) const
+	{
+		static_assert
+		(
+			sizeof...(Is) == sizeof(ElemType),
+			"Span::atLEImpl(): Index sequence size must be "
+			"the same size as `ElemType`."
+		);
+
+		ValueType ret(0);
+		auto bytes = subSpan(idx, 1).asBytes();
+		auto it = bytes.begin();
+
+		// Perform the little endian read by shifting in bytes to the
+		// left, which is both portable, and efficient.
+		(void)std::initializer_list<int> { (ret |= *it++ << (Is * CHAR_BIT), 0)... };
+		return ret;
+	}
+
+	template<size_t... Is>
+	constexpr ElemType atBEImpl(SizeType idx, std::index_sequence<Is...>) const
+	{
+		static_assert
+		(
+			sizeof...(Is) == sizeof(ElemType),
+			"Span::atBEImpl(): Index sequence size must be "
+			"the same size as `ElemType`."
+		);
+
+		ValueType ret(0);
+		auto bytes = subSpan(idx, 1).asBytes();
+		auto it = bytes.rbegin();
+
+		// Perform the big endian read by shifting in bytes to the left,
+		// which is both portable, and efficient.
+		(void)std::initializer_list<int> { (ret |= *it++ << (Is * CHAR_BIT), 0)... };
+		return ret;
+	}
+public:
 	// STL compatible type names.
 	using element_type = ElemType;
 	using value_type = ValueType;
@@ -455,14 +495,11 @@ public:
 		if (idx >= getSize())
 			throw std::out_of_range("Span::atLE(): `idx >= getSize()`");
 
-		ValueType ret(0);
-		// Perform the little endian read by shifting in bytes to the
-		// left, which is both portable, and efficient.
-		auto bytes = subSpan(idx, 1).asBytes();
-		auto it = bytes.begin();
-		for (size_t i = 0; i < bytes.getSize(); ++i)
-			ret |= ElemType(*it++) << (i * CHAR_BIT);
-		return ret;
+		return atLEImpl
+		(
+			idx,
+			std::make_index_sequence<sizeof(ElemType)> {}
+		);
 	}
 
 	// Performs a big endian read of type `U` at the specified index.
@@ -498,14 +535,11 @@ public:
 		if (idx >= getSize())
 			throw std::out_of_range("Span::atBE(): `idx >= getSize()`");
 
-		ValueType ret(0);
-		// Perform the big endian read by shifting in bytes to the left,
-		// which is both portable, and efficient.
-		auto bytes = subSpan(idx, 1).asBytes();
-		auto it = bytes.rbegin();
-		for (size_t i = 0; i < bytes.getSize(); ++i)
-			ret |= ElemType(*it++) << (i * CHAR_BIT);
-		return ret;
+		return atBEImpl
+		(
+			idx,
+			std::make_index_sequence<sizeof(ElemType)> {}
+		);
 	}
 
 	constexpr Ref operator[](SizeType i) const

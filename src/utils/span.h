@@ -453,26 +453,40 @@ public:
 	//
 	// NOTE: The index read is in terms of `T`, not `U`, which means it
 	// might perform an unaligned `U` read.
-	template<typename U>
+	template<typename U, EnableIf<std::is_convertible
+	<
+		U,
+		ValueType
+	>::value, bool> = false>
 	constexpr U& atAs(SizeType i) const
 	{
 		auto byteIdx = i * sizeof(T);
 		if ((byteIdx / sizeof(U)) >= getSizeAs<U>())
 			throw std::out_of_range("Span::atAs(): `i >= getSizeAs<U>()`");
-		return subSpan(i, 1).as<U>().front();
+		constexpr auto size = std::max<SizeType>
+		(
+			sizeof(U) / sizeof(T),
+			1
+		);
+		return subSpan(i, size).as<U>().front();
 	}
 
 	// Performs a little endian read of type `U` at the specified index.
 	//
 	// NOTE: The index read is in terms of `T`, not `U`, but shouldn't
 	// perform an unaligned read, due to reading it out as bytes.
-	template<typename U>
+	template<typename U, EnableIf<std::is_arithmetic<U>::value, bool> = false>
 	constexpr U atLE(SizeType idx) const
 	{
 		auto byteIdx = idx * sizeof(T);
 		if ((byteIdx / sizeof(U)) >= getSizeAs<U>())
 			throw std::out_of_range("Span::atLE<U>(): `idx >= getSizeAs<U>()`");
-		return subSpan(idx, 1).template as<U>().atLE(0);
+		constexpr auto size = std::max<SizeType>
+		(
+			sizeof(U) / sizeof(T),
+			1
+		);
+		return subSpan(idx, size).template as<U>().atLE(0);
 	}
 
 	template<typename U, EnableIf<IsSame<U, float>::value, bool> = false>
@@ -492,6 +506,12 @@ public:
 	// Performs a little endian read at the specified index.
 	constexpr ElemType atLE(SizeType idx) const
 	{
+		static_assert
+		(
+			std::is_arithmetic<ElemType>::value,
+			"Span::atLE(): `ElemType` must be an arithmetic type."
+		);
+
 		if (idx >= getSize())
 			throw std::out_of_range("Span::atLE(): `idx >= getSize()`");
 
@@ -506,13 +526,18 @@ public:
 	//
 	// NOTE: The index read is in terms of `T`, not `U`, but shouldn't
 	// perform an unaligned read, due to reading it out as bytes.
-	template<typename U>
+	template<typename U, EnableIf<std::is_arithmetic<U>::value, bool> = false>
 	constexpr U atBE(SizeType idx) const
 	{
 		auto byteIdx = idx * sizeof(T);
 		if ((byteIdx / sizeof(U)) >= getSizeAs<U>())
 			throw std::out_of_range("Span::atBE<U>(): `idx >= getSizeAs<U>()`");
-		return subSpan(idx, 1).template as<U>().atBE(0);
+		constexpr auto size = std::max<SizeType>
+		(
+			sizeof(U) / sizeof(T),
+			1
+		);
+		return subSpan(idx, size).template as<U>().atBE(0);
 	}
 
 	template<typename U, EnableIf<IsSame<U, float>::value, bool> = false>
@@ -532,6 +557,12 @@ public:
 	// Performs a big endian read at the specified index.
 	constexpr ElemType atBE(SizeType idx) const
 	{
+		static_assert
+		(
+			std::is_arithmetic<ElemType>::value,
+			"Span::atBE(): `ElemType` must be an arithmetic type."
+		);
+
 		if (idx >= getSize())
 			throw std::out_of_range("Span::atBE(): `idx >= getSize()`");
 
@@ -574,17 +605,25 @@ public:
 	RevIter rbegin() const noexcept { return RevIter(end()); }
 	RevIter rend() const noexcept { return RevIter(begin()); }
 
-	using ByteSpan = Span
+	template<typename U, EnableIf<std::is_convertible
 	<
-		uint8_t,
-		N == dynExtent ? dynExtent : N * sizeof(T)
-	>;
+		U,
+		ValueType
+	>::value, bool> = false>
+	using AsSpan = Span<U,
+	(
+		N != dynExtent ?
+		(N * sizeof(T)) / sizeof(U) :
+		dynExtent
+	)>;
+
+	using ByteSpan = AsSpan<uint8_t>;
 
 	constexpr ByteSpan asBytes() const noexcept
 	{
 		return
 		{
-			reinterpret_cast<const uint8_t*>(getData()),
+			reinterpret_cast<uint8_t*>(getData()),
 			getByteSize()
 		};
 	}
@@ -598,30 +637,26 @@ public:
 		};
 	}
 
-	template<typename U>
-	constexpr Span
+	template<typename U, EnableIf<std::is_convertible
 	<
 		U,
-		N != dynExtent ?
-		(N * sizeof(T)) / sizeof(U) :
-		dynExtent
-	> as() const noexcept
+		ValueType
+	>::value, bool> = false>
+	constexpr AsSpan<U> as() const noexcept
 	{
 		return
 		{
-			reinterpret_cast<const U*>(getData()),
+			reinterpret_cast<U*>(getData()),
 			getByteSize() / sizeof(U)
 		};
 	}
 
-	template<typename U>
-	constexpr Span
+	template<typename U, EnableIf<std::is_convertible
 	<
 		U,
-		N != dynExtent ?
-		(N * sizeof(T)) / sizeof(U) :
-		dynExtent
-	> as() noexcept
+		ValueType
+	>::value, bool> = false>
+	constexpr AsSpan<U> as() noexcept
 	{
 		return
 		{

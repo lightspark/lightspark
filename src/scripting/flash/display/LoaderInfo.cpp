@@ -268,28 +268,34 @@ void LoaderInfo::setOpened(bool fromBytes)
 	if (bytesData.isNull())
 		bytesData = _NR<ByteArray>(Class<ByteArray>::getInstanceS(getInstanceWorker()));
 	// it seems an additional ProgressEvent is always added at the start of loading (see ruffle test avm2/large_preload_from_*)
-	ProgressEvent* p = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),0,bytesTotal);
+	ProgressEvent* p = !loader || loader->needsActionScript3() ? Class<ProgressEvent>::getInstanceS(getInstanceWorker(),0,bytesTotal) : nullptr;
 	if (!fromByteArray)
 	{
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"open");
 		this->incRef();
 		if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
 			addLoaderEvent(ev);
-		this->incRef();
-		if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
-			addLoaderEvent(p);
-	}
-	else
-	{
-		if (isVmThread())
-		{
-			getVm(getSystemState())->publicHandleEvent(this,_MR(p));
-		}
-		else
+		if (p)
 		{
 			this->incRef();
 			if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
 				addLoaderEvent(p);
+		}
+	}
+	else
+	{
+		if (p)
+		{
+			if (isVmThread())
+			{
+				getVm(getSystemState())->publicHandleEvent(this,_MR(p));
+			}
+			else
+			{
+				this->incRef();
+				if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
+					addLoaderEvent(p);
+			}
 		}
 	}
 }
@@ -315,6 +321,19 @@ void LoaderInfo::setComplete()
 	Locker l(spinlock);
 	if (loadStatus< LOAD_INIT_SENT)
 	{
+		if (loader && !loader->needsActionScript3())
+		{
+			ProgressEvent* p = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesTotal,bytesTotal);
+			if (isVmThread())
+				getVm(getSystemState())->publicHandleEvent(this,_MR(p));
+			else
+			{
+				this->incRef();
+				if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
+					addLoaderEvent(p);
+			}
+		}
+
 		sendInit();
 	}
 	else if (loader && loader->loadedFrom && !loader->loadedFrom->usesActionScript3)

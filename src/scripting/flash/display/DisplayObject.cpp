@@ -755,8 +755,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_cacheAsBitmap)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getTransform)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-
-	ret = asAtomHandler::fromObject(Class<Transform>::getInstanceS(wrk,th));
+	Transform* tf = Class<Transform>::getInstanceS(wrk,th);
+	th->addOwnedObject(tf);
+	ret = asAtomHandler::fromObject(tf);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setTransform)

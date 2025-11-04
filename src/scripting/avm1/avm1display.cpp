@@ -491,14 +491,6 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 			}
 			it++;
 		}
-		if (e->type == "avm1_init" || e->type == "ioError")
-		{
-			// download is done, so we can remove the loader
-			loadermutex.lock();
-			loaderlist.erase(ldr);
-			ldr->removeStoredMember();
-			loadermutex.unlock();
-		}
 	}
 }
 
@@ -563,10 +555,10 @@ void AVM1MovieClipLoader::prepareShutdown()
 	auto itldr = loaderlist.begin();
 	while (itldr != loaderlist.end())
 	{
-		ASObject* o = (*itldr);
+		Loader* ldr = (*itldr);
 		itldr = loaderlist.erase(itldr);
-		o->prepareShutdown();
-		o->removeStoredMember();
+		ldr->prepareShutdown();
+		ldr->removeStoredMember();
 	}
 	loadermutex.unlock();
 }

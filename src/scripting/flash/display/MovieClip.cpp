@@ -162,9 +162,10 @@ void MovieClip::prepareShutdown()
 	avm1context.setGlobalScope(nullptr);
 	while (!avm1loaderlist.empty())
 	{
-		avm1loaderlist.front()->prepareShutdown();
-		avm1loaderlist.front()->removeStoredMember();
+		ASObject* o = avm1loaderlist.front();
 		avm1loaderlist.pop_front();
+		o->prepareShutdown();
+		o->removeStoredMember();
 	}
 }
 
@@ -1128,6 +1129,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 	ARG_CHECK(ARG_UNPACK(url,"")(method,"GET"));
 
 	auto l = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
+	wrk->getSystemState()->stage->AVM1AddEventListener(l);
 	l->addStoredMember();
 	th->avm1loaderlist.push_back(l);
 	l->load(url,method,th);
@@ -1149,6 +1151,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovieNum)
 	ARG_CHECK(ARG_UNPACK(url,"")(level,0)(method,"GET"));
 
 	auto l = Class<AVM1MovieClipLoader>::getInstanceSNoArgs(wrk);
+	wrk->getSystemState()->stage->AVM1AddEventListener(l);
 	l->addStoredMember();
 	th->avm1loaderlist.push_back(l);
 	l->load(url,method,th,level);

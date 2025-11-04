@@ -405,7 +405,8 @@ void Loader::unload()
 		content_copy->removeStoredMember();
 	}
 
-	contentLoaderInfo->resetState();
+	if (contentLoaderInfo)
+		contentLoaderInfo->resetState();
 }
 
 void Loader::finalize()
@@ -471,9 +472,20 @@ void Loader::prepareShutdown()
 	if (contentLoaderInfo)
 		contentLoaderInfo->prepareShutdown();
 	if (avm1target)
-		avm1target->prepareShutdown();
+	{
+		ASObject* o = avm1target;
+		avm1target=nullptr;
+		o->prepareShutdown();
+		o->removeStoredMember();
+	}
 	if (avm1container)
-		avm1container->prepareShutdown();
+	{
+		ASObject* o = avm1container;
+		avm1container=nullptr;
+		o->prepareShutdown();
+		o->removeStoredMember();
+	}
+
 	if (uncaughtErrorEvents)
 		uncaughtErrorEvents->prepareShutdown();
 	DisplayObjectContainer::prepareShutdown();

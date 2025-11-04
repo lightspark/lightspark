@@ -286,6 +286,8 @@ void TextField::prepareShutdown()
 }
 bool TextField::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
+	if (skipCountCylicMemberReferences(gcstate))
+		return gcstate.hasMember(this);
 	bool ret = InteractiveObject::countCylicMemberReferences(gcstate);
 	ASObject* restrict = asAtomHandler::getObject(restrictChars);
 	if(restrict)

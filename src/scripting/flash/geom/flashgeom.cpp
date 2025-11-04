@@ -303,14 +303,10 @@ Transform::Transform(ASWorker* wrk, Class_base* c):ASObject(wrk,c),owner(nullptr
 }
 Transform::Transform(ASWorker* wrk,Class_base* c, DisplayObject* o):ASObject(wrk,c),owner(o),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(wrk))
 {
-	owner->incRef();
-	owner->addStoredMember();
 }
 
 bool Transform::destruct()
 {
-	if (owner)
-		owner->removeStoredMember();
 	owner=nullptr;
 	perspectiveProjection.reset();
 	matrix3D.reset();
@@ -319,8 +315,6 @@ bool Transform::destruct()
 
 void Transform::finalize()
 {
-	if (owner)
-		owner->removeStoredMember();
 	owner=nullptr;
 	perspectiveProjection.reset();
 	matrix3D.reset();
@@ -342,8 +336,6 @@ void Transform::prepareShutdown()
 bool Transform::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
-	if (owner)
-		ret = owner->countAllCylicMemberReferences(gcstate) || ret;
 	if (perspectiveProjection)
 		ret = perspectiveProjection->countAllCylicMemberReferences(gcstate) || ret;
 	if (matrix3D)
@@ -382,8 +374,7 @@ ASFUNCTIONBODY_ATOM(Transform,_constructor)
 	if (argslen && asAtomHandler::is<DisplayObject>(args[0]))
 	{
 		th->owner = asAtomHandler::as<DisplayObject>(args[0]);
-		th->owner->incRef();
-		th->owner->addStoredMember();
+		th->owner->addOwnedObject(th);
 	}
 }
 

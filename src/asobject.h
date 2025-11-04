@@ -600,24 +600,25 @@ public:
 struct cyclicmembercount
 {
 	uint32_t count; // number of references counted
-	uint32_t countlevel; // indicates if we are counting recursively (>1)
-	uint32_t incheckingcount;
 	bool hasmember:1; // indicates if the member object has any references to the main object in its members
 	bool ignore:1; // indicates if the member object doesn't have to be checked for cyclic member count and its count should be ignored
 	bool ischecked:1;
-	std::list<ASObject*> delayedcheck;
+	bool inchecking:1;
+	std::vector<ASObject*> delayedcheck;
 	FORCE_INLINE void reset()
 	{
 		count=0;
-		countlevel=0;
-		incheckingcount=0;
 		hasmember=false;
 		ignore=false;
 		ischecked=false;
+		inchecking=false;
 		delayedcheck.clear();
 	}
-	cyclicmembercount() : count(0),countlevel(0),incheckingcount(0),
-		hasmember(false),ignore(false),ischecked(false)
+	cyclicmembercount() : count(0)
+		,hasmember(false)
+		,ignore(false)
+		,ischecked(false)
+		,inchecking(false)
 	{
 	}
 };
@@ -625,18 +626,17 @@ struct cyclicmembercount
 struct garbagecollectorstate
 {
 	std::vector<ASObject*> checkedobjects;
-	std::list<ASObject*> objectstack;
+	std::vector<ASObject*> objectstack;
 	ASObject* startobj;
 	bool stopped; // indicates that an object has a member and should be ignored, so we can stop gc for the startobject immediately
-	bool incCount(ASObject* o, bool hasMember);
 	void ignoreCount(ASObject* o);
-	void checkDelayedCount(bool hasMember,ASObject* o);
 	bool isIgnored(ASObject* o);
 	bool hasMember(ASObject* o);
 	void reset();
 	garbagecollectorstate(ASObject* _startobj, uint32_t capacity):startobj(_startobj),stopped(false)
 	{
 		checkedobjects.reserve(capacity);
+		objectstack.reserve(capacity);
 	}
 };
 

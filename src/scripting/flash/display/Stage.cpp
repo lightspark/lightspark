@@ -354,8 +354,14 @@ void Stage::prepareShutdown()
 	while (this->hiddenNextDisplayObject != this)
 	{
 		auto h = this->hiddenNextDisplayObject;
+		// trigger adding DisplayObject to gc if necessary
+		h->incRef();
+		h->addStoredMember();
+
 		h->prepareShutdown();
 		removeHiddenObject(h);
+
+		h->removeStoredMember();
 	}
 	if (fullScreenSourceRect)
 		fullScreenSourceRect->prepareShutdown();
@@ -839,6 +845,7 @@ void Stage::cleanupRemovedDisplayObjects()
 	while (it != removedDisplayObjects.end())
 	{
 		DisplayObject* o = *it;
+		it = removedDisplayObjects.erase(it);
 		if (!getSystemState()->isShuttingDown())
 		{
 			if (o->hasBroadcastListeners()) // DisplayObjects with broadcast listeners are not destroyed, only hidden
@@ -846,13 +853,12 @@ void Stage::cleanupRemovedDisplayObjects()
 				if (o->is<MovieClip>() && !o->as<MovieClip>()->state.advancedByTick)
 				{
 					// ensure the hidden MovieClip is not advanced on the next tick
-					(*it)->as<MovieClip>()->state.next_FP = (*it)->as<MovieClip>()->state.FP;
+					o->as<MovieClip>()->state.next_FP = o->as<MovieClip>()->state.FP;
 				}
 				addHiddenObject(o);
 			}
 		}
-		(*it)->removeStoredMember();
-		it = removedDisplayObjects.erase(it);
+		o->removeStoredMember();
 	}
 }
 

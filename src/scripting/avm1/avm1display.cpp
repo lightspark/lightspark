@@ -309,14 +309,32 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,_constructor)
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 {
 	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
-	tiny_string strurl;
+	asAtom url = asAtomHandler::invalidAtom;
 	asAtom target = asAtomHandler::invalidAtom;
-	ARG_CHECK(ARG_UNPACK(strurl)(target));
+	ARG_CHECK(ARG_UNPACK(url)(target));
+	ret = asAtomHandler::falseAtom;
+	if (!asAtomHandler::isString(url))
+	{
+		createError<ArgumentError>(wrk,kInvalidArgumentError,"url");
+		return;
+	}
+	tiny_string strurl= asAtomHandler::toString(url,wrk);
 	DisplayObject* t =nullptr;
 	if (asAtomHandler::isNumeric(target))
 	{
-		LOG(LOG_NOT_IMPLEMENTED,"AVM1MovieClipLoader,loadClip with number as target");
-		return;
+		uint32_t level = asAtomHandler::toUInt(target);
+		if (level > 0)
+		{
+			tiny_string strtarget = "_level";
+			strtarget += Number::toString(level);
+			t = wrk->rootClip->AVM1GetClipFromPath(strtarget);
+			ret = asAtomHandler::trueAtom;
+		}
+	}
+	else if (asAtomHandler::isString(target))
+	{
+		tiny_string strtarget = asAtomHandler::toString(target,wrk);
+		t = wrk->rootClip->AVM1GetClipFromPath(strtarget);
 	}
 	else if (asAtomHandler::is<DisplayObject>(target))
 	{
@@ -333,6 +351,7 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 		return;
 	}
 	URLRequest* r = Class<URLRequest>::getInstanceS(wrk,strurl,"GET",asAtomHandler::invalidAtom,t->loadedFrom);
+	ret = asAtomHandler::trueAtom;
 	th->addLoader(r,t,-1);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,addListener)

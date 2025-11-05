@@ -28,6 +28,7 @@ namespace lightspark
 {
 
 class AVM1Activation;
+class AVM1Context;
 class AVM1DeclContext;
 class AVM1SystemClass;
 class AVM1Value;
@@ -51,7 +52,7 @@ struct RectF;
 	( \
 		AVM1Activation& act, \
 		const GcPtr<MovieClip>& _this, \
-		const GcPtr<AVM1Value& value \
+		const AVM1Value& value \
 	)
 #define AVM1_MOVIECLIP_SETTER_DECL(name) \
 	static void set##name(AVM1_MOVIECLIP_SETTER_ARGS)
@@ -110,7 +111,14 @@ public:
 	AVM1_MOVIECLIP_FUNC_DECL(createEmptyMovieClip);
 	AVM1_MOVIECLIP_FUNC_DECL(createTextField);
 	AVM1_MOVIECLIP_FUNC_DECL(duplicateMovieClip);
-	AVM1_MOVIECLIP_FUNC_DECL(cloneSprite);
+	AVM1_MOVIECLIP_FUNC_DECL
+	(
+		cloneSprite,
+		const tiny_string& target,
+		uint16_t depth,
+		const NullableGcPtr<AVM1Object>& initObj
+	);
+
 	AVM1_MOVIECLIP_FUNC_DECL(getBytesLoaded);
 	AVM1_MOVIECLIP_FUNC_DECL(getBytesTotal);
 	AVM1_MOVIECLIP_FUNC_DECL(getInstanceAtDepth);
@@ -143,6 +151,7 @@ public:
 	AVM1_MOVIECLIP_FUNC_DECL(globalToLocal);
 	AVM1_MOVIECLIP_FUNC_DECL(loadMovie);
 	AVM1_MOVIECLIP_FUNC_DECL(loadVariables);
+	AVM1_MOVIECLIP_FUNC_DECL(unloadMovie);
 	AVM1_MOVIECLIP_GETTER_SETTER_DECL(Transform);
 	AVM1_MOVIECLIP_GETTER_SETTER_DECL(LockRoot);
 	AVM1_MOVIECLIP_GETTER_SETTER_DECL(BlendMode);

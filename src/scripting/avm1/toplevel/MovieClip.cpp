@@ -21,6 +21,7 @@
 #include <sstream>
 
 #include "backends/graphics.h"
+#include "display_object/Bitmap.h"
 #include "display_object/DisplayObject.h"
 #include "display_object/MovieClip.h"
 #include "gc/context.h"
@@ -291,4 +292,222 @@ AVM1_MOVIECLIP_SETTER_BODY(Scale9Grid)
 	}
 
 	_this->setScalingGrid(objToRect(act, value.toObject(*this)));
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(hitTest)
+{
+	if (args.empty())
+		return false;
+
+	if (args.size() == 1)
+	{
+		auto other = act.resolveTargetClip(_this, args[0], false);
+		return !other.isNull() && _this->hitTestObject(other);
+	}
+
+	// TODO: Use twips instead of float.
+	Vector2f point;
+	bool shapeFlag;
+	AVM1_ARG_CHECK_THROW(AVM1_ARG_UNPACK(point)(shapeFlag, false));
+
+	if (!std::isfinite(point.x) || !std::isfinite(point.y))
+		return false;
+
+	// NOTE: The AS1/2 docs say that the point is in "Stage coordinates",
+	// but is actually in root coordinates. The root can be moved with
+	// `_root._x`, etc. Meaning we have to transform from root space, to
+	// world space.
+	auto globalPoint = _this->getAVM1RootNoLock()->localToGlobal
+	(
+		point,
+		false
+	);
+
+	if (!shapeFlag)
+		return _this->hitTestBounds(point, globalPoint);
+
+	return _this->hitTestShape
+	(
+		point,
+		globalPoint,
+		HitTestOptions::SkipMasks
+	);
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(attachBitmap)
+{
+	NullableGcPtr<AVM1BitmapData> data;
+	int32_t depth;
+	bool pixelSnapping;
+	bool smoothing;
+
+	AVM1_ARG_CHECK(AVM1_ARG_UNPACK(data)(depth)
+	(
+		pixelSnapping,
+		false
+	)(smoothing, false));
+
+	depth += AVM1depthOffset;
+	auto bitmap = NEW_GC_PTR(act.getGcCtx(), Bitmap
+	(
+		act.getGcCtx(),
+		data,
+		pixelSnapping,
+		smoothing,
+		_this->getMovie()
+	));
+
+	_this->replaceLegacyChildAt(depth, data);
+	data->constructionComplete();
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(attachAudio)
+{
+	if (args.empty())
+		return AVM1Value::undefinedVal;
+
+	if (!args[0].tryAs<bool>().valueOr(true))
+	{
+		_this->attachAudio(NullGc);
+		return AVM1Value::undefinedVal;
+	}
+
+	auto stream = args[0].tryAs<AVM1NetStream>();
+	if (!stream.isNull())
+		_this->attachAudio(stream);
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(lineStyle)
+{
+	auto graphics = _this->getGraphics();
+	if (args.empty())
+	{
+		graphics->AddStrokeToken(CLEAR_STROKE);
+		return AVM1Value::undefinedVal;
+	}
+
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+	LINESTYLE2 style(0xff);
+	// TODO: Use twips instead of float.
+	number_t width;
+	style.Color = [&](AVM1ArgUnpacker& unpacker)
+	{
+		uint32_t color;
+		number_t alpha;
+		AVM1_ARG_CHECK_RET(unpacker(color)(alpha, 100.0), RGBA());
+		return RGBA(color, uint8_t
+		(
+			fclamp(alpha, 0, 100) /
+			100.0 *
+			255.0
+		));
+	}(unpacker(width));
+	style.Width = dclamp(width, 0, 255);
+
+	std::tie
+	(
+		style.NoHScaleFlag,
+		style.NoVScaleFlag
+	) = [&](AVM1ArgUnpacker& unpacker)
+	{
+		tiny_string scaleMode;
+		AVM1_ARG_CHECK_RET
+		(
+			unpacker(scaleMode),
+			std::make_pair(true, true)
+		);
+
+		if (scaleMode == "none")
+			return std::make_pair(false, false);
+		else if (scaleMode == "horizontal")
+			return std::make_pair(false, true);
+		else if (scaleMode == "vertical")
+			return std::make_pair(true, false);
+
+		return std::make_pair(true, true);
+	}(unpacker(style.PixelHintingFlag, false));
+
+	style.JointStyle = [&](AVM1ArgUnpacker& unpacker)
+	{
+		tiny_string joinStyle;
+		AVM1_ARG_CHECK_RET
+		(
+			unpacker(joinStyle),
+			LineJoinStyle::Round
+		);
+
+		if (joinStyle == "bevel")
+			return LineJoinStyle::Bevel;
+		else if (joinStyle == "miter")
+		{
+			number_t miterLimit;
+			unpacker(miterLimit, 3);
+			style.MiterLimitFactor = miterLimit * 256.0;
+			return LineJoinStyle::Miter;
+		}
+
+		return LineJoinStyle::Round;
+	}(unpacker.template unpack<LineCapStyle>
+	(
+		style.StartCapStyle,
+		LineCapStyle::Round
+	));
+
+	graphics->AddStrokeToken(SET_STROKE);
+	graphics->AddLineStyleToken(graphics->addLineStyle(style));
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(lineGradientStyle)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(beginFill)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(beginBitmapFill)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(beginGradientFill)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(moveTo)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(lineTo)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(curveTo)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(endFill)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(clear)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(attachMovie)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(createEmptyMovieClip)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(createTextField)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(duplicateMovieClip)
+{
 }

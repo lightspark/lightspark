@@ -52,7 +52,7 @@ ConstStrIter Path::Iter::decImpl(const ConstStrIter& it) const
 		separators.end()
 	).base();
 
-	if (std::distance(_it, first) > 0 && *_it == ':')
+	if (std::distance(first, _it) > 0 && *_it == ':')
 		++_it;
 	return _it;
 }

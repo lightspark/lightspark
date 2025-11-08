@@ -359,7 +359,7 @@ AVM1_MOVIECLIP_FUNC_BODY(attachBitmap)
 	));
 
 	_this->replaceLegacyChildAt(depth, data);
-	data->constructionComplete();
+	data->afterCreation(NullGc, ObjectCreator::AVM1, true);
 	return AVM1Value::undefinedVal;
 }
 
@@ -854,16 +854,198 @@ AVM1_MOVIECLIP_FUNC_BODY(clear)
 
 AVM1_MOVIECLIP_FUNC_BODY(attachMovie)
 {
+	if (args.size() < 3)
+	{
+		LOG(LOG_ERROR, "MovieClip.attachMovie(): Too few arguments.");
+		return AVM1Value::undefinedVal;
+	}
+
+	tiny_string exportName;
+	tiny_string newInstanceName;
+	int32_t depth;
+	AVM1Value initObjVal;
+	AVM1_ARG_UNPACK(exportName)(newInstanceName)(depth)(initObjVal);
+
+	depth += AVM1depthOffset;
+
+	// TODO: What's the derivation of this value? It shows up a few times
+	// in the AVM... `2^31 - 16777220`.
+	if (depth < 0 || depth > AVM1maxDepth)
+		return AVM1Value::undefinedVal;
+
+	auto newClip = _this->getMovie()->createClipByExportName
+	(
+		act.getGcCtx(),
+		exportName
+	);
+
+	if (newClip.isNull())
+	{
+		LOG
+		(
+			LOG_ERROR,
+			"MovieClip.attachMovie(): Failed to attach " << exportName
+		);
+		return AVM1Value::undefinedVal;
+	}
+
+	newClip->setPlacedByAVM1(true);
+
+	// Set the name, and attach the new clip to the parent.
+	newClip->setName(newInstanceName);
+	_this->replaceLegacyChildAt(depth, newClip);
+	newClip->afterCreation(initObjVal, ObjectCreator::AVM1, true);
+	return newClip->toAVM1ValueOrUndef();
 }
 
 AVM1_MOVIECLIP_FUNC_BODY(createEmptyMovieClip)
 {
+	if (args.size() < 2)
+	{
+		LOG(LOG_ERROR, "MovieClip.createEmptyMovieClip(): Too few arguments.");
+		return AVM1Value::undefinedVal;
+	}
+
+	tiny_string newInstanceName;
+	int32_t depth;
+	AVM1_ARG_UNPACK(newInstanceName)(depth);
+
+	depth += AVM1depthOffset;
+
+
+	// Create the empty `MovieClip`.
+	auto newClip = NEW_GC_PTR(act.getGcCtx(), MovieClip
+	(
+		act.getGcCtx(),
+		_this->getMovie()
+	));
+
+	newClip->setPlacedByAVM1(true);
+
+	// Set the name, and attach the new clip to the parent.
+	newClip->setName(newInstanceName);
+	_this->replaceLegacyChildAt(depth, newClip);
+	newClip->afterCreation(NullGc, ObjectCreator::AVM1, true);
+	return newClip->toAVM1ValueOrUndef();
 }
 
 AVM1_MOVIECLIP_FUNC_BODY(createTextField)
 {
+	AVM1Value instanceNameVal;
+	int32_t depth;
+	RECT rect;
+	AVM1_ARG_UNPACK(instanceNameVal)(depth)(rect);
+
+	depth += AVM1depthOffset;
+
+	auto textField = NEW_GC_PTR(act.getGcCtx(), TextField
+	(
+		act.getGcCtx(),
+		act.getBaseClip()->getMovie(),
+		rect
+	));
+
+	textField->setName(instanceNameVal.toString(act));
+	_this->replaceLegacyChildAt(depth, textField);
+	textField->afterCreation(NullGc, ObjectCreator::AVM1, true);
+
+	return
+	(
+		act.getSwfVersion() >= 8 ?
+		// NOTE: In SWF 8, and later, `createTextField()` returns the
+		// newly created `TextField`.
+		textField->toAVM1ValueOrUndef() :
+		AVM1Value::undefinedVal
+	);
+
 }
 
 AVM1_MOVIECLIP_FUNC_BODY(duplicateMovieClip)
 {
+	if (args.empty())
+	{
+		LOG(LOG_ERROR, "MovieClip.duplicateMovieClip(): Too few arguments.");
+		return AVM1Value::undefinedVal;
+	}
+
+	tiny_string name;
+	int32_t depth;
+	NullableGcPtr<AVM1Object> initObj;
+	// NOTE: Despite the AS1/2 docs stating that `initObject` is only
+	// supported in Flash Player 6, and later, it isn't version gated.
+	AVM1_ARG_UNPACK(name)(depth, 0)(initObj);
+
+
+	auto newClip = cloneSprite
+	(
+		act.getGcCtx(),
+		_this,
+		name,
+		// NOTE: `duplicateMovieClip()` uses an offset/biased depth,
+		// compared to `ActionCloneSprite`.
+		depth + AVM1depthOffset,
+		initObj
+	);
+
+	return
+	(
+		act.getSwfVersion() <= 5 ?
+		// NOTE: In SWF 5, and earlier, `undefined` is returned.
+		AVM1Value::undefinedVal :
+		newClip->toAVM1ValueOrUndef()
+	);
+}
+
+NullableGcPtr<MovieClip> AVM1MovieClip::cloneSprite
+(
+	const GcContext& ctx,
+	const GcPtr<MovieClip>& clip,
+	const tiny_string& target,
+	uint16_t depth,
+	const NullableGcPtr<AVM1Object>& initObj
+)
+{
+	auto parent = clip->getAVM1Parent()->as<MovieClip>();
+	if (parent.isNull())
+	{
+		// Can't clone the root clip!
+		return NullGc;
+	}
+
+	// TODO: What's the derivation of this value? It shows up a few times
+	// in the AVM... `2^31 - 16777220`.
+	if (depth < 0 || depth > AVM1maxDepth)
+		return NullGc;
+
+	auto movie = _this->getMovie();
+	auto newClip =
+	(
+		clip->getTagID() != UINT32_MAX ?
+		// A `MovieClip` from an SWF; create a new copy of it.
+		movie->createClipById(ctx, clip->getTagID()) :
+		// A dynamically created `MovieClip`; create a new, empty
+		// `MovieClip`.
+		NEW_GC_PTR(ctx, MovieClip(ctx, movie)
+	);
+
+	newClip->setPlacedByAVM1(true);
+
+	// Set the name, and attach the new clip to the parent.
+	newClip->setName(target);
+	parent->replaceLegacyChildAt(depth, newClip);
+
+	// Copy all display properties from the previous clip, into the new
+	// clip.
+	newClip->setMatrix(clip->getMatrix());
+	newClip->setColorTransform(clip->getColorTransform());
+	newClip->setupActions(clip->getClipActions())
+
+	if (clip->hasGraphics())
+		newClip->setGraphics(clip->getGraphics());
+
+	// TODO: Are there any other properties that should be copied?
+	// Certainly not `Object` properties.
+
+	newClip->afterCreation(initObj, ObjectCreator::AVM1, true);
+	return newClip;
 }

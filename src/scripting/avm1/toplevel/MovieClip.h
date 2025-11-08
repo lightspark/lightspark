@@ -33,6 +33,7 @@ class AVM1DeclContext;
 class AVM1SystemClass;
 class AVM1Value;
 class DisplayObject;
+class GcContext;
 class MovieClip;
 template<typename T>
 class Optional;
@@ -111,9 +112,10 @@ public:
 	AVM1_MOVIECLIP_FUNC_DECL(createEmptyMovieClip);
 	AVM1_MOVIECLIP_FUNC_DECL(createTextField);
 	AVM1_MOVIECLIP_FUNC_DECL(duplicateMovieClip);
-	AVM1_MOVIECLIP_FUNC_DECL
+	static NullableGcPtr<MovieClip> cloneSprite
 	(
-		cloneSprite,
+		const GcContext& ctx,
+		const GcPtr<MovieClip>& clip,
 		const tiny_string& target,
 		uint16_t depth,
 		const NullableGcPtr<AVM1Object>& initObj

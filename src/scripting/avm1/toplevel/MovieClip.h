@@ -131,7 +131,7 @@ public:
 	AVM1_MOVIECLIP_FUNC_DECL(nextFrame);
 	AVM1_MOVIECLIP_FUNC_DECL(play);
 	AVM1_MOVIECLIP_FUNC_DECL(prevFrame);
-	AVM1_MOVIECLIP_FUNC_DECL(removeMovieClip);
+	AVM1_FUNCTION_DECL(removeMovieClip);
 	AVM1_MOVIECLIP_FUNC_DECL(setMask);
 	AVM1_MOVIECLIP_FUNC_DECL(startDrag);
 	static void startDragImpl

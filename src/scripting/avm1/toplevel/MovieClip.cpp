@@ -160,7 +160,7 @@ static constexpr auto protoDecls =
 	MOVIECLIP_FUNC_PROTO(nextFrame),
 	MOVIECLIP_FUNC_PROTO(play),
 	MOVIECLIP_FUNC_PROTO(prevFrame),
-	MOVIECLIP_FUNC_PROTO(removeMovieClip),
+	AVM1Decl("removeMovieClip", removeMovieClip, protoFlags<>),
 	MOVIECLIP_FUNC_PROTO(setMask, 6),
 	MOVIECLIP_FUNC_PROTO(startDrag),
 	MOVIECLIP_FUNC_PROTO(stop),
@@ -895,7 +895,7 @@ AVM1_MOVIECLIP_FUNC_BODY(attachMovie)
 	newClip->setName(newInstanceName);
 	_this->replaceLegacyChildAt(depth, newClip);
 	newClip->afterCreation(initObjVal, ObjectCreator::AVM1, true);
-	return newClip->toAVM1ValueOrUndef();
+	return newClip->toAVM1ValueOrUndef(act);
 }
 
 AVM1_MOVIECLIP_FUNC_BODY(createEmptyMovieClip)
@@ -1048,4 +1048,429 @@ NullableGcPtr<MovieClip> AVM1MovieClip::cloneSprite
 
 	newClip->afterCreation(initObj, ObjectCreator::AVM1, true);
 	return newClip;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(getBytesLoaded)
+{
+	return number_t(_this->getBytesLoaded());
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(getBytesTotal)
+{
+	return number_t(_this->getBytesTotal());
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(getInstanceAtDepth)
+{
+	if (act.getSwfVersion() < 7)
+		return AVM1Value::undefinedVal;
+
+	if (args.empty())
+	{
+		LOG(LOG_ERROR, "MovieClip.getInstanceAtDepth(): Too few arguments.");
+		return AVM1Value::undefinedVal;
+	}
+
+	auto depth = args[0].toInt32(act) + AVM1depthOffset;
+
+	auto child = _this->tryGetLegacyChildAt(depth);
+	if (child.isNull())
+		return AVM1Value::undefinedVal;
+
+	// If the child doesn't have an AVM1 object, then return `_this`.
+	// NOTE: This behaviour was guessed by `adrian17` of the Ruffle team
+	// from observing the behaviour of `TextField`, and `Shape`'; He
+	// didn't test other `DisplayObject`s like `BitmapData`, `MorphShape`,
+	// or `Video`, nor `DisplayObject`s that weren't fully initialized
+	// yet.
+	auto obj = child->toAVM1Object();
+	return !obj.isNull() ? obj : _this->toAVM1ValueOrUndef(act);
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(getNextHighestDepth)
+{
+	if (act.getSwfVersion() < 7)
+		return AVM1Value::undefinedVal;
+
+	auto depth = _this->getHighestDepth() - AVM1depthOffset - 1;
+	return number_t(imax(depth, 0));
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(gotoAndPlay)
+{
+	return gotoFrame(act, _this, args, false, 0);
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(gotoAndStop)
+{
+	return gotoFrame(act, _this, args, true, 0);
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(gotoFrame, bool stop, uint16_t sceneOffset)
+{
+	using CallFrameType = Optional<std::pair
+	<
+		GcPtr<MovieClip>,
+		int32_t
+	>>>;
+
+	AVM1_ARG_UNPACKER_NAMED(unpacker);
+
+	CallFrameType callFrame = [&](const AVM1Value& arg)
+	{
+		// NOTE: A direct goto only runs, if `n` is an integer.
+		auto n = arg.tryAs<number_t>();
+		if (n.hasValue() && *n != int32_t(*n))
+		{
+			// Frame number.
+			// Going to frame 0, or lower has no effect.
+			// Going to frame `_totalframes + 1`, or higher will go to
+			// the last frame.
+			// NOTE: This wraps around as an `int32_t`.
+			// NOTE: The scene offset is only used by `ActionGotoFrame2`.
+			return std::make_pair(_this, arg.toInt32(act));
+		}
+
+		// Convert the value into a `String`, and search for a frame
+		// label.
+		// NOTE: This can direct other clips than then one that this
+		// method was called with!
+		auto pair = act.resolveVariablePath(_this, arg.toString(act));
+		if (!pair.hasValue() || !pair->first->is<MovieClip>())
+			return {};
+
+		auto clip = pair->first->as<MovieClip>();
+		const auto& frame = pair->second;
+		// TODO: Use `AVM1Value`'s `number_t` to `int32_t` conversion,
+		// once thats moved out of `AVM1Value`.
+		return frame.tryToNumber<number_t>().andThen([&](int32_t frame)
+		{
+			// First, try to parse it as a frame number.
+			return makeOptional(std::make_pair(clip, frame));
+		}).orElse([&]
+		{
+			auto frameNum = clip->frameLabelToNum(frame);
+			if (!frameNum.hasValue())
+				return {};
+			// Otherwise, it's a frame label.
+			return std::make_pair(clip, *frameNum);
+		});
+	}(unpacker[0].valueOr(AVM1Value::undefinedVal));
+
+	if (!callFrame.hasValue())
+		return AVM1Value::undefinedVal;
+
+	auto clip = callFrame->first;
+	auto frame = callFrame->second - 1 + sceneOffset;
+
+	if (frame > 0)
+		clip->gotoFrame(frame, stop);
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(nextFrame)
+{
+	_this->nextFrame();
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(play)
+{
+	_this-setPlaying();
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(prevFrame)
+{
+	_this->prevFrame();
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_FUNCTION_BODY(AVM1MovieClip, removeMovieClip)
+{
+	// NOTE: `removeMvovieClip()` can remove any type of `DisplayObject`,
+	// e.g. `MovieClip.prototype.removeMovieClip.apply(textField);`.
+	auto dispObj = _this->as<DisplayObject>();
+	if (!dispObj.isNull())
+		AVM1DisplayObject::removeDisplayObject(act, dispObj);
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(setMask)
+{
+	if (args.empty())
+		return AVM1Value::undefinedVal;
+
+	if (args[0].isNullOrUndefined())
+	{
+		_this->setMask(NullGc);
+		return true;
+	}
+
+	auto mask = act.resolveTargetClip
+	(
+		act.getTargetOrRootClip(),
+		args[0],
+		false
+	);
+
+	if (mask.isNull())
+		return false;
+
+	_this->setMask(mask);
+	return true;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(startDrag)
+{
+	bool lockCenter;
+	Optional<RectF> bounds;
+	AVM1_ARG_UNPACK(lockCenter, false)(bounds);
+
+	startDragImpl(act, _this, lockCenter, bounds);
+	return AVM1Value::undefinedVal;
+}
+
+void AVM1MovieClip::startDragImpl
+(
+	AVM1Activation& act,
+	const GcPtr<DisplayObject>& clip,
+	bool lockCenter,
+	const Optional<RectF>& _bounds
+)
+{
+	auto bounds = _bounds.andThen([&](const auto& bounds)
+	{
+		// NOTE: Invalid values return `0`.
+		Vector2Twips min;
+		if (std::isfinite(bounds.min.x))
+			min.x = bounds.min.x;
+		if (std::isfinite(bounds.min.y))
+			min.y = bounds.min.y;
+
+		Vector2Twips max;
+		if (std::isfinite(bounds.max.x))
+			max.x = bounds.max.x;
+		if (std::isfinite(bounds.max.y))
+			max.y = bounds.max.y;
+
+		// Normalize the bounds.
+		if (max.x < min.x)
+			std::swap(min.x, max.x);
+		if (max.y < min.y)
+			std::swap(min.y, max.y);
+		return makeOptional(ValidRectTwips { min, max });
+	});
+
+	auto sys = act.getSys();
+	sys->setDragObject(DragObject
+	(
+		clip,
+		sys->getInputThread()->getMousePos(),
+		lockCenter,
+		bounds
+	));
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(stop)
+{
+	_this->setStopped();
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(stopDrag)
+{
+	// NOTE: It doesn't matter which clip we call this on; it stops any
+	// active drag.
+	act.getSys()->setDragObject({});
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(swapDepths)
+{
+	if (_this->isAVM1Removed())
+		return AVM1Value::undefinedVal;
+
+	auto parent = _this->getAVM1Parent()->as<MovieClip>();
+	if (parent.isNull())
+		return AVM1Value::undefinedVal;
+
+	AVM1Value value;
+	AVM1_ARG_UNPACK(value);
+
+	auto depth = value.tryAs<number_t>().andThen([&](const auto&)
+	{
+		return makeOptional(value.toInt32(act) + AVM1depthOffset);
+	}).orElse([&]
+	{
+		auto target = act.resolveTargetClip(_this, value, false);
+		if (target.isNull())
+		{
+			LOG(LOG_ERROR, "MovieClip.swapDepths(): Invalid target.");
+			return {};
+		}
+
+		auto targetParent = target->getAVM1Parent();
+		if (targetParent.isNull())
+			return {};
+		if (targetParent == parent && !target->isAVM1Removed())
+			return target->getDepth();
+
+		LOG(LOG_ERROR, "MovieClip.swapDepths(): Objects don't have the same parent.");
+		return {};
+	});
+
+	if (!depth.hasValue())
+		return AVM1Value::undefinedVal;
+
+	if (*depth < 0 || *depth > AVM1maxDepth)
+	{
+		// The depth is out of range, do nothing.
+		return AVM1Value::undefinedVal;
+	}
+
+	if (depth == _this->getDepth())
+		return AVM1Value::undefinedVal;
+
+	parent->swapLegacyChildAt(depth, _this);
+	_this->setTransformedByActionScript(true);
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(localToGlobal)
+{
+	const auto& undefVal = AVM1Value::undefinedVal;
+	if (args.empty() || !args[0].is<AVM1Object>())
+	{
+		LOG(LOG_ERROR, "MovieClip.localToGlobal: Missing `point` argument.");
+		return undefVal;
+	}
+
+	auto point = args[0].toObject(act);
+	// NOTE: `localToGlobal()` does no conversions; it fails if the
+	// properties aren't numbers. It doesn't search the prototype chain,
+	// and ignores virtual properties.
+	auto x = point->getLocalProp
+	(
+		act,
+		"x",
+		false
+	).andThen([&](const auto& val)
+	{
+		return val.tryAs<number_t>();
+	});
+	auto y = point->getLocalProp
+	(
+		act,
+		"y",
+		false
+	).andThen([&](const auto& val)
+	{
+		return val.tryAs<number_t>();
+	});
+
+	if (!x.hasValue() && !y.hasValue())
+	{
+		LOG(LOG_ERROR, "MovieClip.localToGlobal: Invalid `x`, and `y` properties.");
+		return undefVal;
+	}
+
+	Vector2Twips localPoint(*x, *y);
+	auto globalPoint = _this->localToGlobal(localPoint);
+
+	point->setProp(act, "x", globalPoint.x.toPx());
+	point->setProp(act, "y", globalPoint.y.toPx());
+	return undefVal;
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(getBounds)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(getRect)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(getSWFVersion)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(getURL)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(globalToLocal)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(loadMovie)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(loadVariables)
+{
+}
+
+AVM1_MOVIECLIP_FUNC_BODY(unloadMovie)
+{
+}
+
+AVM1_MOVIECLIP_GETTER_BODY(Transform)
+{
+}
+
+AVM1_MOVIECLIP_SETTER_BODY(Transform)
+{
+}
+
+AVM1_MOVIECLIP_GETTER_BODY(LockRoot)
+{
+}
+
+AVM1_MOVIECLIP_SETTER_BODY(LockRoot)
+{
+}
+
+AVM1_MOVIECLIP_GETTER_BODY(BlendMode)
+{
+}
+
+AVM1_MOVIECLIP_SETTER_BODY(BlendMode)
+{
+}
+
+AVM1_MOVIECLIP_SETTER_BODY(TabIndex)
+{
+}
+
+AVM1_MOVIECLIP_SETTER_BODY(CacheAsBitmap)
+{
+}
+
+AVM1_MOVIECLIP_GETTER_BODY(CacheAsBitmap)
+{
+}
+
+AVM1_MOVIECLIP_GETTER_BODY(OpaqueBackground)
+{
+}
+
+AVM1_MOVIECLIP_SETTER_BODY(OpaqueBackground)
+{
+}
+
+AVM1_MOVIECLIP_GETTER_BODY(Filters)
+{
+}
+
+AVM1_MOVIECLIP_SETTER_BODY(Filters)
+{
+}
+
+AVM1_MOVIECLIP_GETTER_BODY(TabIndex)
+{
+}
+
+AVM1_MOVIECLIP_SETTER_BODY(TabIndex)
+{
 }

@@ -69,7 +69,7 @@ sys(_sys),
 playerVersion(_playerVersion),
 halted(false),
 hasMouseListener(false),
-useSpecialInvalidBounds(false)
+useNewInvalidBounds(false)
 {
 	AVM1Global* globals;
 	std::tie(prototypes, globals, broadcasterFuncs) = createGlobals();

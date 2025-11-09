@@ -111,7 +111,7 @@ private:
 	//
 	// There are more examples of this in Ruffle's
 	// `movieclip_invalid_get_bounds_*` tests.
-	bool useSpecialInvalidBounds;
+	bool useNewInvalidBounds;
 
 	const RegistryType& getCtorRegistry(uint8_t swfVersion) const
 	{
@@ -276,14 +276,14 @@ public:
 		const _NR<AVM1Function>& ctor
 	);
 
-	bool getUseSpecialInvalidBounds() const
+	bool getUseNewInvalidBounds() const
 	{
-		return useSpecialInvalidBounds;
+		return useNewInvalidBounds;
 	}
 
-	void activateUseSpecialInvalidBounds()
+	void activateUseNewInvalidBounds()
 	{
-		useSpecialInvalidBounds = true;
+		useNewInvalidBounds = true;
 	}
 };
 

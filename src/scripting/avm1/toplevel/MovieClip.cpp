@@ -50,7 +50,7 @@ AVM1MovieClip::AVM1MovieClip
 (
 	act,
 	clip,
-	act.getSystemPrototypes().movieClip->proto
+	act.getPrototypes().movieClip->proto
 ) {}
 
 template<size_t swfVersion, EnableIf
@@ -205,7 +205,7 @@ GcPtr<AVM1SystemClass> AVM1MovieClip::createClass
 
 AVM1Value AVM1MovieClip::makeRect(AVM1Activation& act, const RectF& rect)
 {
-	auto proto = act.getSystemPrototypes().rectangle->ctor;
+	auto proto = act.getPrototypes().rectangle->ctor;
 	return proto->construct(act,
 	{
 		// `x`.
@@ -1114,7 +1114,7 @@ AVM1_MOVIECLIP_FUNC_BODY(gotoFrame, bool stop, uint16_t sceneOffset)
 		int32_t
 	>>>;
 
-	AVM1_ARG_UNPACKER_NAMED(unpacker);
+	AVM1_ARG_UNPACK_NAMED(unpacker);
 
 	CallFrameType callFrame = [&](const AVM1Value& arg)
 	{
@@ -1342,7 +1342,7 @@ AVM1_MOVIECLIP_FUNC_BODY(localToGlobal)
 	const auto& undefVal = AVM1Value::undefinedVal;
 	if (args.empty() || !args[0].is<AVM1Object>())
 	{
-		LOG(LOG_ERROR, "MovieClip.localToGlobal: Missing `point` argument.");
+		LOG(LOG_ERROR, "MovieClip.localToGlobal(): Missing `point` argument.");
 		return undefVal;
 	}
 
@@ -1371,12 +1371,12 @@ AVM1_MOVIECLIP_FUNC_BODY(localToGlobal)
 
 	if (!x.hasValue() && !y.hasValue())
 	{
-		LOG(LOG_ERROR, "MovieClip.localToGlobal: Invalid `x`, and `y` properties.");
+		LOG(LOG_ERROR, "MovieClip.localToGlobal(): Invalid `x`, and `y` properties.");
 		return undefVal;
 	}
 
 	Vector2Twips localPoint(*x, *y);
-	auto globalPoint = _this->localToGlobal(localPoint);
+	auto globalPoint = _this->localToGlobal(localPoint, false);
 
 	point->setProp(act, "x", globalPoint.x.toPx());
 	point->setProp(act, "y", globalPoint.y.toPx());
@@ -1385,92 +1385,362 @@ AVM1_MOVIECLIP_FUNC_BODY(localToGlobal)
 
 AVM1_MOVIECLIP_FUNC_BODY(getBounds)
 {
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+	auto target = unpacker[0].andThen([&](const auto& val)
+	{
+		return act.resolveTargetClip(_this, val, false);
+	}).valueOr(_this);
+
+	if (target.isNull())
+		return AVM1Value::undefinedVal;
+
+	auto& ctx = act.getCtx();
+	bool needsNewInvalidBounds = !ctx.getUseNewInvalidBounds() &&
+	(
+		// NOTE: `useNewInvalidBounds` is set to `true`, if either the
+		// activation, or root movie's SWF version is 8, or higher.
+		act.getSwfVersion() >= 8 ||
+		act.getSys()->getRootMovie()->getSwfVersion() >= 8
+	);
+
+	if (needsNewInvalidBounds)
+	{
+		// NOTE, PLAYER-SPECIFIC: If just the activation's (not the root
+		// movie's) SWF version is 8, or higher, and the `MovieClip` is
+		// the same as the target, then `useNewInvalidBounds` sometimes
+		// isn't set in Flash Player 10.
+		ctx.activateUseNewInvalidBounds();
+	}
+
+	auto bounds = [&]
+	{
+		auto bounds = _this->getBounds();
+		// Getting the clip's bounds in it's own coordinate space; no
+		// AABB transform needed.
+		if (_this == target)
+			return bounds;
+
+		// Transform the AABB to the target's coordinate space.
+		// Compute the matrix to transform into the target's coordinate
+		// space, and transform the above AABB.
+		// NOTE: This doesn't produce as tight of an AABB as if we called
+		// `getBounds()` with the final transform matrix, but this
+		// matches Flash Player's behaviour.
+		auto globalMatrix = _this->localToGlobalMatrix();
+		auto targetMatrix = target->globalToLocalMatrix().valueOr(MATRIX());
+		auto targetBounds = bounds * targetMatrix.multiplyMatrix(globalMatrix);
+
+		bool isValid = bounds.isValid() || targetBounds.isValid();
+
+		if (!ctx.getUseNewInvalidBounds() || isValid)
+			return targetBounds;
+
+		// If both bounds are invalid, and `useNewInvalidBounds` is
+		// `true`, then the returned bounds use a specific invalid value.
+		return RectTwips
+		{
+			Vector2Twips(0x8000000, 0x8000000),
+			Vector2Twips(0x8000000, 0x8000000)
+		};
+	}();
+
+	auto ret = NEW_GC_PTR(act.getGcCtx(), AVM1Object
+	(
+		act.getGcCtx(),
+		ctx.getPrototypes().object->proto
+	));
+
+	ret.setProp(act, "xMin", bounds.min.x.toPx());
+	ret.setProp(act, "xMax", bounds.max.x.toPx());
+	ret.setProp(act, "yMin", bounds.min.y.toPx());
+	ret.setProp(act, "yMax", bounds.max.y.toPx());
+	return ret;
 }
 
 AVM1_MOVIECLIP_FUNC_BODY(getRect)
 {
+	// TODO: `getRect()` returns the bounds, ignoring strokes, which is
+	// always less than, or equal to what `getBounds()` returns.
+	// For now, just call `getBounds()`.
+	return getBounds(act, _this, args);
 }
 
 AVM1_MOVIECLIP_FUNC_BODY(getSWFVersion)
 {
+	auto swfVersion = _this->getMovie()->getSwfVersion();
+	return number_t(swfVersion != 0 ? swfVersion : -1);
 }
 
 AVM1_MOVIECLIP_FUNC_BODY(getURL)
 {
+	// TODO: Figure out the error behaviour, if no arguments were supplied.
+	if (args.empty())
+		return AVM1Value::undefinedVal;
+
+	auto sys = act.getSys();
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	tiny_string url;
+	unpacker(url);
+	auto command = parseFSCommand(url);
+
+	if (command.hasValue())
+	{
+		auto cmdArgs = unpacker.peek().toString(act);
+		sys->extIfaceManager->handleFSCommand(*command, cmdArgs);
+		return AVM1Value::undefinedVal;
+	}
+
+	tiny_string window;
+	auto vars = unpacker(window, "").tryUnpack
+	<
+		RequestMethod
+	>().andThen([&](const auto& method)
+	{
+		return makeOptional(std::make_pair
+		(
+			method,
+			act.localsToFormVals()
+		));
+	});
+
+	sys->navigateToURL(url, window, vars);
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_MOVIECLIP_FUNC_BODY(globalToLocal)
 {
+	const auto& undefVal = AVM1Value::undefinedVal;
+	if (args.empty() || !args[0].is<AVM1Object>())
+	{
+		LOG(LOG_ERROR, "MovieClip.globalToLocal(): Missing `point` argument.");
+		return undefVal;
+	}
+
+	auto point = args[0].toObject(act);
+	// NOTE: `globalToLocal()` does no conversions; it fails if the
+	// properties aren't numbers. It doesn't search the prototype chain,
+	// and ignores virtual properties.
+	auto x = point->getLocalProp
+	(
+		act,
+		"x",
+		false
+	).andThen([&](const auto& val)
+	{
+		return val.tryAs<number_t>();
+	});
+	auto y = point->getLocalProp
+	(
+		act,
+		"y",
+		false
+	).andThen([&](const auto& val)
+	{
+		return val.tryAs<number_t>();
+	});
+
+	if (!x.hasValue() && !y.hasValue())
+	{
+		LOG(LOG_ERROR, "MovieClip.globalToLocal(): Invalid `x`, and `y` properties.");
+		return undefVal;
+	}
+
+	Vector2Twips globalPoint(*x, *y);
+	auto localPoint = _this->globalToLocal(globalPoint, false);
+
+	point->setProp(act, "x", localPoint.x.toPx());
+	point->setProp(act, "y", localPoint.y.toPx());
+	return undefVal;
 }
 
 AVM1_MOVIECLIP_FUNC_BODY(loadMovie)
 {
+	tiny_string url;
+	Optional<RequestMethod> method;
+	AVM1_ARG_UNPACK(url)(method);
+
+	auto targetObj = _this->toAVM1ObjectOrUndef();
+		act.objectToRequest(targetObj, url, method),
+
+	act.getSys()->loaderManager->loadMovieIntoClip
+	(
+		act.objectToRequest(targetObj, url, method),
+		_this,
+		{},
+		AVM1MovieLoaderData()
+	);
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_MOVIECLIP_FUNC_BODY(loadVariables)
 {
+	tiny_string url;
+	Optional<RequestMethod> method;
+	AVM1_ARG_UNPACK(url)(method);
+
+	auto targetObj = _this->toAVM1ObjectOrUndef();
+	act.getSys()->loaderManager->loadFormIntoAVM1Object
+	(
+		targetObj,
+		act.objectToRequest(targetObj, url, method)
+	);
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_MOVIECLIP_FUNC_BODY(unloadMovie)
 {
+	_this->unloadAVM1Movie();
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_MOVIECLIP_GETTER_BODY(Transform)
 {
+	auto ctor = act.getPrototypes().transform->ctor;
+	return ctor->construct(act, { _this->toAVM1ValueOrUndef() });
 }
 
 AVM1_MOVIECLIP_SETTER_BODY(Transform)
 {
+	auto transform = value.as<AVM1Transform>();
+	if (transform.isNull())
+		return;
+
+	auto clip = transform->getClip(act);
+	if (clip.isNull())
+		return;
+
+	_this->setMatrix(clip->getMatrix());
+	_this->setColorTransform(clip->getColorTransform());
+	_this->hasChanged = true;
+	_this->setTransformedByActionScript(true);
 }
 
 AVM1_MOVIECLIP_GETTER_BODY(LockRoot)
 {
+	return _this->getLockRoot();
 }
 
 AVM1_MOVIECLIP_SETTER_BODY(LockRoot)
 {
+	_this->setLockRoot(value.toBool(act.getSwfVersion()));
 }
 
 AVM1_MOVIECLIP_GETTER_BODY(BlendMode)
 {
+	switch (_this->getBlendMode())
+	{
+		case BLENDMODE_LAYER: return "layer"; break;
+		case BLENDMODE_MULTIPLY: return "multiply"; break;
+		case BLENDMODE_SCREEN: return "screen"; break;
+		case BLENDMODE_LIGHTEN: return "lighten"; break;
+		case BLENDMODE_DARKEN: return "darken"; break;
+		case BLENDMODE_DIFFERENCE: return "difference"; break;
+		case BLENDMODE_ADD: return "add"; break;
+		case BLENDMODE_SUBTRACT: return "subtract"; break;
+		case BLENDMODE_INVERT: return "invert"; break;
+		case BLENDMODE_ALPHA: return "alpha"; break;
+		case BLENDMODE_ERASE: return "erase"; break;
+		case BLENDMODE_OVERLAY: return "overlay"; break;
+		case BLENDMODE_HARDLIGHT: return "hardlight"; break;
+		default: return "normal"; break;
+	}
 }
 
 AVM1_MOVIECLIP_SETTER_BODY(BlendMode)
 {
-}
-
-AVM1_MOVIECLIP_SETTER_BODY(TabIndex)
-{
+	(void)value.toBlendMode().andThen([&](const auto& blendMode)
+	{
+		_this->setBlendMode(blendMode);
+		return makeOptional(blendMode);
+	}).orElse([&]
+	{
+		// Don't do anything, if `value` isn't a valid blend mode.
+		LOG(LOG_ERROR, "setBlendMode(): Unknown blend mode " << value);
+		return {};
+	});
 }
 
 AVM1_MOVIECLIP_SETTER_BODY(CacheAsBitmap)
 {
+	return _this->getCacheAsBitmap();
 }
 
 AVM1_MOVIECLIP_GETTER_BODY(CacheAsBitmap)
 {
+	_this->setCacheAsBitmap(value.toBool(act.getSwfVersion()));
 }
 
 AVM1_MOVIECLIP_GETTER_BODY(OpaqueBackground)
 {
+	const auto& undefVal = AVM1Value::undefinedVal;
+	auto opaqueBkg = _this->getOpaqueBackground();
+	return opaqueBkg.transformOr(undefVal, [&](const auto& color)
+	{
+		return number_t(color.toUInt());
+	});
 }
 
 AVM1_MOVIECLIP_SETTER_BODY(OpaqueBackground)
 {
+	if (value.isNullOrUndefined())
+	{
+		_this->setOpaqueBackground(nullOpt);
+		return;
+	}
+
+	_this->setOpaqueBackground(RGB(value.toUInt32(act)));
 }
 
 AVM1_MOVIECLIP_GETTER_BODY(Filters)
 {
+	const auto& filters = _this->getFilters();
+	std::vector<AVM1Value> filterVals(filters.begin(), filters.end());
+
+	return NEW_GC_PTR(act.getGcCtx(), AVM1Array(act, filterVals));
 }
 
 AVM1_MOVIECLIP_SETTER_BODY(Filters)
 {
+	auto obj = value.as<AVM1Object>();
+	if (obj.isNull())
+	{
+		_this->setFilters({});
+		return;
+	}
+
+	auto keys = obj->getKeys(act, false);
+	std::vector<Filter> filters;
+
+	for (auto it = keys.rbegin(); it != keys.rend(); ++it)
+	{
+		auto filterObj = obj->getProp(act, *it).toObject(act);
+		if (!filterObj->is<AVM1BitmapFilter>())
+			continue;
+		filter.push_back(filterObj->as<AVM1BitmapFilter>());
+	}
+	_this->setFilters(filters);
 }
 
 AVM1_MOVIECLIP_GETTER_BODY(TabIndex)
 {
+	auto tabIndex = _this->getTabIndex();
+	if (tabIndex != -1)
+		return number_t(tabIndex);
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_MOVIECLIP_SETTER_BODY(TabIndex)
 {
+	if (value.isNullOrUndefined())
+		_this->setTabIndex(-1);
+	if (!value.is<bool>() && !value.is<number_t>())
+		_this->setTabIndex(INT32_MIN);
+
+	auto idx = value.toNumber(act);
+	// NOTE: Flash Player sets `tabIndex` to `INT32_MIN`, if the value
+	// is too big to fit in an `int32_t`.
+	if (idx < INT32_MIN && idx > INT32_MAX)
+		idx = INT32_MIN;
+	_this->setTabIndex(idx);
 }

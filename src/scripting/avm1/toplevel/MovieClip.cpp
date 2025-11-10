@@ -385,79 +385,64 @@ AVM1_MOVIECLIP_FUNC_BODY(lineStyle)
 	auto graphics = _this->getGraphics();
 	if (args.empty())
 	{
-		graphics->AddStrokeToken(CLEAR_STROKE);
+		graphics->setLineStyle({});
 		return AVM1Value::undefinedVal;
 	}
 
 	AVM1_ARG_UNPACK_NAMED(unpacker);
-	LINESTYLE2 style(0xff);
+
 	// TODO: Use twips instead of float.
 	number_t width;
-	style.Color = [&](AVM1ArgUnpacker& unpacker)
-	{
-		uint32_t color;
-		number_t alpha;
-		AVM1_ARG_CHECK_RET(unpacker(color)(alpha, 100.0), RGBA());
-		return RGBA(color, uint8_t
-		(
-			fclamp(alpha, 0, 100) /
-			100.0 *
-			255.0
-		));
-	}(unpacker(width));
-	style.Width = dclamp(width, 0, 255);
-
-	std::tie
+	RGBA color;
+	bool pixelHinting;
+	auto scaleMode = unpacker(width)(color)
 	(
-		style.NoHScaleFlag,
-		style.NoVScaleFlag
-	) = [&](AVM1ArgUnpacker& unpacker)
+		pixelHinting,
+		false
+	).tryUnpack
+	<
+		tiny_string
+	>().transformOr(std::make_pair(true, true), [&](const auto& str)
 	{
-		tiny_string scaleMode;
-		AVM1_ARG_CHECK_RET
-		(
-			unpacker(scaleMode),
-			std::make_pair(true, true)
-		);
-
-		if (scaleMode == "none")
+		if (str == "none")
 			return std::make_pair(false, false);
-		else if (scaleMode == "horizontal")
+		else if (str == "horizontal")
 			return std::make_pair(false, true);
-		else if (scaleMode == "vertical")
+		else if (str == "vertical")
 			return std::make_pair(true, false);
 
 		return std::make_pair(true, true);
-	}(unpacker(style.PixelHintingFlag, false));
+	}(unpacker(width)(color)(pixelHinting, false));
 
-	style.JointStyle = [&](AVM1ArgUnpacker& unpacker)
+	LineCapStyle capStyle;
+	FIXED8 miterLimit(0x300);
+	auto joinStyle = unpacker(capStyle, LineCapStyle::Round).tryUnpack
+	<
+		tiny_string
+	>().transformOr(LineJoinStyle::Round, [&](const auto& str)
 	{
-		tiny_string joinStyle;
-		AVM1_ARG_CHECK_RET
-		(
-			unpacker(joinStyle),
-			LineJoinStyle::Round
-		);
-
-		if (joinStyle == "bevel")
+		if (str == "bevel")
 			return LineJoinStyle::Bevel;
-		else if (joinStyle == "miter")
+		else if (str == "miter")
 		{
-			number_t miterLimit;
-			unpacker(miterLimit, 3);
-			style.MiterLimitFactor = miterLimit * 256.0;
+			number_t _miterLimit;
+			unpacker(_miterLimit, 3);
+			miterLimit = _miterLimit * 256.0;
 			return LineJoinStyle::Miter;
 		}
 
 		return LineJoinStyle::Round;
-	}(unpacker.template unpack<LineCapStyle>
-	(
-		style.StartCapStyle,
-		LineCapStyle::Round
-	));
+	});
 
-	graphics->AddStrokeToken(SET_STROKE);
-	graphics->AddLineStyleToken(graphics->addLineStyle(style));
+	LINESTYLE2 style(0xff);
+	style.Width = dclamp(width, 0, 255);
+	style.Color = color;
+	style.PixelHintingFlag = pixelHinting;
+	std::tie(style.NoHScaleFlag, style.NoVScaleFlag) = allowScale;
+	style.StartCapStyle = scaleMode;
+	style.JointStyle = joinStyle;
+
+	graphics->setLineStyle(style);
 	return AVM1Value::undefinedVal;
 }
 

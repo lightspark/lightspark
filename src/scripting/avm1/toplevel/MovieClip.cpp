@@ -89,37 +89,14 @@ constexpr auto protoFlags =
 	allowSWFVersion<swfVersion>()
 );
 
-#define MOVIECLIP_FUNC(func) [](AVM1_FUNCTION_ARGS) \
-{ \
-	if (!_this->is<MovieClip>()) \
-		return AVM1Value::undefinedVal; \
-	return func(act, _this->as<MovieClip>(), args); \
-}
-
-#define MOVIECLIP_GETTER(func) [](AVM1_FUNCTION_ARGS) \
-{ \
-	if (!_this->is<MovieClip>()) \
-		return AVM1Value::undefinedVal; \
-	return get##func(act, _this->as<MovieClip>()); \
-}
-
-#define MOVIECLIP_SETTER(func) [](AVM1_FUNCTION_ARGS) \
-{ \
-	if (!_this->is<MovieClip>()) \
-		return AVM1Value::undefinedVal; \
-	auto value = !args.empty() ? args[0] : AVM1Value::undefinedVal; \
-	set##func(act, _this->as<MovieClip>(), value); \
-	return AVM1Value::undefinedVal; \
-}
-
 #define MOVIECLIP_FUNC_PROTO(name, ...) \
-	AVM1Decl(#name, MOVIECLIP_FUNC(name), propFlags<__VA_ARGS__>)
+	AVM1_FUNCTION_TYPE_PROTO(MovieClip, name, propFlags<__VA_ARGS__>)
 
-#define MOVIECLIP_PROP_PROTO(name, funcName, ...) AVM1Decl \
+#define MOVIECLIP_PROP_PROTO(name, funcName, ...) AVM1_PROPERTY_TYPE_PROTO \
 ( \
-	#name, \
-	MOVIECLIP_GETTER(funcName), \
-	MOVIECLIP_SETTER(funcName), \
+	MovieClip, \
+	name, \
+	funcName, \
 	propFlags<__VA_ARGS__> \
 )
 
@@ -160,7 +137,7 @@ static constexpr auto protoDecls =
 	MOVIECLIP_FUNC_PROTO(nextFrame),
 	MOVIECLIP_FUNC_PROTO(play),
 	MOVIECLIP_FUNC_PROTO(prevFrame),
-	AVM1Decl("removeMovieClip", removeMovieClip, protoFlags<>),
+	AVM1_FUNCTION_PROTO(removeMovieClip, protoFlags<>),
 	MOVIECLIP_FUNC_PROTO(setMask, 6),
 	MOVIECLIP_FUNC_PROTO(startDrag),
 	MOVIECLIP_FUNC_PROTO(stop),
@@ -186,9 +163,6 @@ static constexpr auto protoDecls =
 	// NOTE: `tabChildren` isn't a builtin property of `MovieClip`.
 };
 
-#undef MOVIECLIP_FUNC
-#undef MOVIECLIP_GETTER
-#undef MOVIECLIP_SETTER
 #undef MOVIECLIP_FUNC_PROTO
 #undef MOVIECLIP_PROP_PROTO
 

@@ -39,41 +39,23 @@ template<typename T>
 class Optional;
 struct RectF;
 
-#define AVM1_MOVIECLIP_GETTER_ARGS \
-	( \
-		AVM1Activation& act, \
-		const GcPtr<MovieClip>& _this \
-	)
 #define AVM1_MOVIECLIP_GETTER_DECL(name) \
-	static AVM1Value get##name(AVM1_MOVIECLIP_GETTER_ARGS)
+	AVM1_GETTER_TYPE_DECL(MovieClip, name)
 #define AVM1_MOVIECLIP_GETTER_BODY(name) \
-	AVM1Value AVM1MovieClip::get##name(AVM1_MOVIECLIP_GETTER_ARGS)
+	AVM1_GETTER_TYPE_BODY(MovieClip, AVM1MovieClip, name)
 
-#define AVM1_MOVIECLIP_SETTER_ARGS \
-	( \
-		AVM1Activation& act, \
-		const GcPtr<MovieClip>& _this, \
-		const AVM1Value& value \
-	)
 #define AVM1_MOVIECLIP_SETTER_DECL(name) \
-	static void set##name(AVM1_MOVIECLIP_SETTER_ARGS)
+	AVM1_SETTER_TYPE_DECL(MovieClip, name)
 #define AVM1_MOVIECLIP_SETTER_BODY(name) \
-	void AVM1MovieClip::set##name(AVM1_MOVIECLIP_SETTER_ARGS)
+	AVM1_SETTER_TYPE_BODY(MovieClip, AVM1MovieClip, name)
 
-#define AVM1_MOVIECLIP_GETTER_SETTER_DECL(name) \
-	AVM1_MOVIECLIP_GETTER_DECL(name); \
-	AVM1_MOVIECLIP_SETTER_DECL(name)
+#define AVM1_MOVIECLIP_PROP_DECL(name) \
+	AVM1_PROPERTY_TYPE_DECL(MovieClip, name)
 
-#define AVM1_MOVIECLIP_FUNC_ARGS \
-	( \
-		AVM1Activation& act, \
-		const GcPtr<MovieClip>& _this, \
-		const std::vector<AVM1Value>& args \
-	)
 #define AVM1_MOVIECLIP_FUNC_DECL(name, ...) \
-	static AVM1Value name(AVM1_MOVIECLIP_FUNC_ARGS, ##__VA_ARGS__)
+	AVM1_FUNCTION_TYPE_DECL(MovieClip, name, ##__VA_ARGS__)
 #define AVM1_MOVIECLIP_FUNC_BODY(name) \
-	AVM1Value AVM1MovieClip::name(AVM1_MOVIECLIP_FUNC_ARGS, ##__VA_ARGS__)
+	AVM1_FUNCTION_TYPE_BODY(MovieClip, AVM1MovieClip, name, ##__VA_ARGS__)
 
 class AVM1MovieClip : public AVM1DisplayObject
 {
@@ -93,8 +75,8 @@ public:
 		const GcPtr<AVM1Object>& obj
 	);
 	
-	AVM1_MOVIECLIP_GETTER_SETTER_DECL(ScrollRect);
-	AVM1_MOVIECLIP_GETTER_SETTER_DECL(Scale9Grid);
+	AVM1_MOVIECLIP_PROP_DECL(ScrollRect);
+	AVM1_MOVIECLIP_PROP_DECL(Scale9Grid);
 	AVM1_MOVIECLIP_FUNC_DECL(hitTest);
 	AVM1_MOVIECLIP_FUNC_DECL(attachBitmap);
 	AVM1_MOVIECLIP_FUNC_DECL(attachAudio);
@@ -154,13 +136,13 @@ public:
 	AVM1_MOVIECLIP_FUNC_DECL(loadMovie);
 	AVM1_MOVIECLIP_FUNC_DECL(loadVariables);
 	AVM1_MOVIECLIP_FUNC_DECL(unloadMovie);
-	AVM1_MOVIECLIP_GETTER_SETTER_DECL(Transform);
-	AVM1_MOVIECLIP_GETTER_SETTER_DECL(LockRoot);
-	AVM1_MOVIECLIP_GETTER_SETTER_DECL(BlendMode);
-	AVM1_MOVIECLIP_GETTER_SETTER_DECL(CacheAsBitmap);
-	AVM1_MOVIECLIP_GETTER_SETTER_DECL(OpaqueBackground);
-	AVM1_MOVIECLIP_GETTER_SETTER_DECL(Filters);
-	AVM1_MOVIECLIP_GETTER_SETTER_DECL(TabIndex);
+	AVM1_MOVIECLIP_PROP_DECL(Transform);
+	AVM1_MOVIECLIP_PROP_DECL(LockRoot);
+	AVM1_MOVIECLIP_PROP_DECL(BlendMode);
+	AVM1_MOVIECLIP_PROP_DECL(CacheAsBitmap);
+	AVM1_MOVIECLIP_PROP_DECL(OpaqueBackground);
+	AVM1_MOVIECLIP_PROP_DECL(Filters);
+	AVM1_MOVIECLIP_PROP_DECL(TabIndex);
 };
 
 }

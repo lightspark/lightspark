@@ -189,21 +189,79 @@ AVM1Object::GetKeysType AVM1DisplayObject::getKeys
 	return ret;
 }
 
+
+using AVM1DisplayObject;
+
+template<bool dontDelete = true>
+constexpr auto protoFlags =
+(
+	AVM1PropFlags::DontEnum |
+	AVM1PropFlags::DontDelete
+);
+
+template<>
+constexpr auto protoFlags<false> = AVM1PropFlags::DontEnum
+
+static constexpr dispProtoDecls =
+{
+	AVM1_FUNCTION_PROTO(getDepth,
+	(
+		protoFlags |
+		AVM1PropFlags::ReadOnly |
+		AVM1PropFlags::Version6
+	)),
+	AVM1_PROPERTY_TYPE_PROTO
+	(
+		DisplayObject,
+		filters,
+		Filters,
+		protoFlags | AVM1PropFlags::Version8
+	)
+};
+
 void AVM1DisplayObject::defineProto
 (
 	AVM1DeclContext& ctx,
 	const GcPtr<AVM1Object>& superProto
 )
 {
-	constexpr auto flags =
-	(
-		AVM1PropFlags::DontEnum |
-		AVM1PropFlags::DontDelete |
-		AVM1PropFlags::ReadOnly |
-		AVM1PropFlags::Version6
-	);
+	ctx.definePropsOn(superProto, dispProtoDecls);
+}
 
-	ctx.definePropsOn(superProto, AVM1Decl("getDepth", getDepth, flags));
+template<bool isMovieClip>
+static constexpr interactiveProtoDecls =
+{
+	AVM1Decl("enabled", true),
+	// NOTE: `tabIndex` isn't enumerable in `MovieClip`, unlike `Button`,
+	// and `TextField`.
+	AVM1_PROPERTY_TYPE_PROTO
+	(
+		InteractiveObject,
+		tabIndex,
+		TabIndex,
+		(
+			isMovieClip ?
+			protoFlags<true> :
+			AVM1PropFlags(0)
+		) | AVM1PropFlags::Version6
+	)
+};
+
+void AVM1DisplayObject::defineInteractiveProto
+(
+	AVM1DeclContext& ctx,
+	const GcPtr<AVM1Object>& superProto,
+	bool isMovieClip
+)
+{
+	const auto& protoDecls =
+	(
+		isMovieClip ?
+		interactiveProtoDecls<true> :
+		interactiveProtoDecls<false>
+	);
+	defineProto(ctx, superProto);
+	ctx.definePropsOn(superProto, protoDecls);
 }
 
 AVM1_FUNCTION_BODY(AVM1DisplayObject, getDepth)
@@ -212,6 +270,59 @@ AVM1_FUNCTION_BODY(AVM1DisplayObject, getDepth)
 	if (dispObj.isNull() || act.getSwfVersion() < 6)
 		return AVM1Value::undefinedVal;
 	return number_t(dispObj->getSWFDepth() - AVM1depthOffset);
+}
+
+AVM1_GETTER_TYPE_BODY(DisplayObject, AVM1DisplayObject, Filters)
+{
+	const auto& filters = _this->getFilters();
+	std::vector<AVM1Value> filterVals(filters.begin(), filters.end());
+
+	return NEW_GC_PTR(act.getGcCtx(), AVM1Array(act, filterVals));
+}
+
+AVM1_SETTER_TYPE_BODY(DisplayObject, AVM1DisplayObject, Filters)
+{
+	auto obj = value.as<AVM1Object>();
+	if (obj.isNull())
+	{
+		_this->setFilters({});
+		return;
+	}
+
+	auto keys = obj->getKeys(act, false);
+	std::vector<Filter> filters;
+
+	for (auto it = keys.rbegin(); it != keys.rend(); ++it)
+	{
+		auto filterObj = obj->getProp(act, *it).toObject(act);
+		if (!filterObj->is<AVM1BitmapFilter>())
+			continue;
+		filter.push_back(filterObj->as<AVM1BitmapFilter>());
+	}
+	_this->setFilters(filters);
+}
+
+AVM1_GETTER_TYPE_BODY(InteractiveObject, AVM1DisplayObject, TabIndex)
+{
+	auto tabIndex = _this->getTabIndex();
+	if (tabIndex != -1)
+		return number_t(tabIndex);
+	return AVM1Value::undefinedVal;
+}
+
+AVM1_SETTER_TYPE_BODY(InteractiveObject, AVM1DisplayObject, TabIndex)
+{
+	if (value.isNullOrUndefined())
+		_this->setTabIndex(-1);
+	if (!value.is<bool>() && !value.is<number_t>())
+		_this->setTabIndex(INT32_MIN);
+
+	auto idx = value.toNumber(act);
+	// NOTE: Flash Player sets `tabIndex` to `INT32_MIN`, if the value
+	// is too big to fit in an `int32_t`.
+	if (idx < INT32_MIN && idx > INT32_MAX)
+		idx = INT32_MIN;
+	_this->setTabIndex(idx);
 }
 
 void AVM1DisplayObject::removeDisplayObject

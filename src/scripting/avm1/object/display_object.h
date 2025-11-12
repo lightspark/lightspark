@@ -107,7 +107,17 @@ public:
 		const GcPtr<AVM1Object>& superProto
 	);
 
-	AVM1_PUBLIC_FUNCTION_DECL(getDepth);
+	// Add common `InteractiveObject` methods to the supplied prototype.
+	static void defineInteractiveProto
+	(
+		AVM1DeclContext& ctx,
+		const GcPtr<AVM1Object>& superProto,
+		bool isMovieClip = false
+	);
+
+	AVM1_FUNCTION_DECL(getDepth);
+	AVM1_PROPERTY_TYPE_DECL(DisplayObject, Filters);
+	AVM1_PROPERTY_TYPE_DECL(InteractiveObject, tabIndex);
 
 	static void removeDisplayObject
 	(

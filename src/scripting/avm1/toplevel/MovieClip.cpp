@@ -146,10 +146,10 @@ static constexpr auto protoDecls =
 	MOVIECLIP_FUNC_PROTO(unloadMovie),
 
 	MOVIECLIP_PROP_PROTO(blendMode, BlendMode, 8),
+	// NOTE: `filters` is defined in `AVM1DisplayObject`.
 	MOVIECLIP_PROP_PROTO(cacheAsBitmap, CacheAsBitmap, 8),
-	MOVIECLIP_PROP_PROTO(filters, Filters, 8),
 	MOVIECLIP_PROP_PROTO(opaqueBackground, OpaqueBackground, 8),
-	AVM1Decl("enabled", true, protoFlags<false>),
+	// NOTE: `enabled` is defined in `AVM1DisplayObject`.
 	MOVIECLIP_PROP_PROTO(_lockroot, LockRoot),
 	MOVIECLIP_PROP_PROTO(scrollRect, ScrollRect, 8),
 	MOVIECLIP_PROP_PROTO(scale9Grid, Scale9Grid, 8),
@@ -157,9 +157,7 @@ static constexpr auto protoDecls =
 	AVM1Decl("useHandCursor", true, protoFlags<false>),
 	// NOTE: `focusEnabled` isn't a builtin property of `MovieClip`.
 	// NOTE: `tabEnabled` isn't a builtin property of `MovieClip`.
-	// NOTE: `tabIndex` isn't enumerable in `MovieClip`, unlike `Button`,
-	// and `TextField`.
-	MOVIECLIP_PROP_PROTO(tabIndex, TabIndex, 6, false)
+	// NOTE: `tabIndex` is defined in `AVM1DisplayObject`.
 	// NOTE: `tabChildren` isn't a builtin property of `MovieClip`.
 };
 
@@ -173,6 +171,8 @@ GcPtr<AVM1SystemClass> AVM1MovieClip::createClass
 )
 {
 	auto _class = ctx.makeEmptyClass(superProto);
+	AVM1DisplayObject::defineInteractiveProto(ctx, _class, true);
+
 	ctx.definePropsOn(_class->proto, protoDecls);
 	return _class;
 }
@@ -1620,12 +1620,12 @@ AVM1_MOVIECLIP_SETTER_BODY(BlendMode)
 	});
 }
 
-AVM1_MOVIECLIP_SETTER_BODY(CacheAsBitmap)
+AVM1_MOVIECLIP_GETTER_BODY(CacheAsBitmap)
 {
 	return _this->getCacheAsBitmap();
 }
 
-AVM1_MOVIECLIP_GETTER_BODY(CacheAsBitmap)
+AVM1_MOVIECLIP_SETTER_BODY(CacheAsBitmap)
 {
 	_this->setCacheAsBitmap(value.toBool(act.getSwfVersion()));
 }
@@ -1649,57 +1649,4 @@ AVM1_MOVIECLIP_SETTER_BODY(OpaqueBackground)
 	}
 
 	_this->setOpaqueBackground(RGB(value.toUInt32(act)));
-}
-
-AVM1_MOVIECLIP_GETTER_BODY(Filters)
-{
-	const auto& filters = _this->getFilters();
-	std::vector<AVM1Value> filterVals(filters.begin(), filters.end());
-
-	return NEW_GC_PTR(act.getGcCtx(), AVM1Array(act, filterVals));
-}
-
-AVM1_MOVIECLIP_SETTER_BODY(Filters)
-{
-	auto obj = value.as<AVM1Object>();
-	if (obj.isNull())
-	{
-		_this->setFilters({});
-		return;
-	}
-
-	auto keys = obj->getKeys(act, false);
-	std::vector<Filter> filters;
-
-	for (auto it = keys.rbegin(); it != keys.rend(); ++it)
-	{
-		auto filterObj = obj->getProp(act, *it).toObject(act);
-		if (!filterObj->is<AVM1BitmapFilter>())
-			continue;
-		filter.push_back(filterObj->as<AVM1BitmapFilter>());
-	}
-	_this->setFilters(filters);
-}
-
-AVM1_MOVIECLIP_GETTER_BODY(TabIndex)
-{
-	auto tabIndex = _this->getTabIndex();
-	if (tabIndex != -1)
-		return number_t(tabIndex);
-	return AVM1Value::undefinedVal;
-}
-
-AVM1_MOVIECLIP_SETTER_BODY(TabIndex)
-{
-	if (value.isNullOrUndefined())
-		_this->setTabIndex(-1);
-	if (!value.is<bool>() && !value.is<number_t>())
-		_this->setTabIndex(INT32_MIN);
-
-	auto idx = value.toNumber(act);
-	// NOTE: Flash Player sets `tabIndex` to `INT32_MIN`, if the value
-	// is too big to fit in an `int32_t`.
-	if (idx < INT32_MIN && idx > INT32_MAX)
-		idx = INT32_MIN;
-	_this->setTabIndex(idx);
 }

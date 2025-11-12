@@ -24,17 +24,80 @@
 
 #include "scripting/avm1/object/object.h"
 
+#define AVM1_GETTER_ARGS \
+	( \
+		AVM1Activation& act, \
+		const GcPtr<AVM1Object>& _this \
+	)
+#define AVM1_GETTER_DECL(name) \
+	static AVM1Value get##name(AVM1_GETTER_ARGS)
+#define AVM1_GETTER_BODY(class, name) \
+	AVM1Value class::get##name(AVM1_GETTER_ARGS)
+
+#define AVM1_SETTER_ARGS \
+	( \
+		AVM1Activation& act, \
+		const GcPtr<AVM1Object>& _this, \
+		const AVM1Value& value \
+	)
+#define AVM1_SETTER_DECL(name) \
+	static void set##name(AVM1_SETTER_ARGS)
+#define AVM1_SETTER_BODY(class, name) \
+	void class::set##name(AVM1_SETTER_ARGS)
+
+#define AVM1_PROPERTY_DECL(type, name) \
+	AVM1_GETTER_DECL(type, name); \
+	AVM1_SETTER_DECL(type, name)
+
 #define AVM1_FUNCTION_ARGS \
 	( \
 		AVM1Activation& act, \
 		const GcPtr<AVM1Object>& _this, \
 		const std::vector<AVM1Value>& args \
 	)
-#define AVM1_FUNCTION_DECL(name) \
-	static AVM1Value name(AVM1_FUNCTION_ARGS)
+#define AVM1_FUNCTION_ARGS(type) \
+	( \
+		AVM1Activation& act, \
+		const GcPtr<AVM1Object>& _this, \
+		const std::vector<AVM1Value>& args \
+	)
+#define AVM1_FUNCTION_DECL(type, name, ...) \
+	static AVM1Value name(AVM1_FUNCTION_ARGS, ##__VA_ARGS__)
 
-#define AVM1_FUNCTION_BODY(class, name) \
-	AVM1Value class::name(AVM1_FUNCTION_ARGS)
+#define AVM1_FUNCTION_BODY(class, name, ...) \
+	AVM1Value class::name(AVM1_FUNCTION_ARGS, ##__VA_ARGS__)
+
+
+#define AVM1_GETTER(func) [](AVM1_FUNCTION_ARGS) \
+{ \
+	return set##func(act, _this); \
+}
+
+#define AVM1_SETTER(func) [](AVM1_FUNCTION_ARGS) \
+{ \
+	auto value = !args.empty() ? args[0] : AVM1Value::undefinedVal; \
+	set##func(act, _this, value); \
+	return AVM1Value::undefinedVal; \
+}
+
+#define AVM1_FUNCTION_PROTO(name, ...) \
+	AVM1Decl(#name, name, ##__VA_ARGS__)
+
+#define AVM1_GETTER_PROTO(name, funcName, ...) AVM1Decl \
+( \
+	#name, \
+	AVM1_GETTER(funcName), \
+	nullptr, \
+	##__VA_ARGS__ \
+)
+
+#define AVM1_PROPERTY_PROTO(name, funcName, ...) AVM1Decl \
+( \
+	#name, \
+	AVM1_GETTER(funcName), \
+	AVM1_SETTER(funcName), \
+	##__VA_ARGS__ \
+)
 
 // Based on Ruffle's `avm1::function` crate.
 

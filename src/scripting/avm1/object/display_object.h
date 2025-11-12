@@ -131,22 +131,13 @@ public:
 	operator GcPtr<DisplayObject>&() { return dispObj; }
 };
 
-#define AVM1_DISP_GETTER_ARGS \
-	( \
-		AVM1Activation& act, \
-		const GcPtr<DisplayObject>& _this \
-	)
-#define AVM1_DISP_GETTER_DECL(name) \
-	AVM1Value name(AVM1_DISP_GETTER_ARGS)
+#define AVM1_DISP_GETTER_ARGS AVM1_GETTER_TYPE_ARGS(DisplayObject)
+#define AVM1_DISP_SETTER_ARGS AVM1_SETTER_TYPE_ARGS(DisplayObject)
 
-#define AVM1_DISP_SETTER_ARGS \
-	( \
-		AVM1Activation& act, \
-		const GcPtr<DisplayObject>& _this, \
-		const GcPtr<AVM1Value& value \
-	)
+#define AVM1_DISP_GETTER_DECL(name) \
+	static AVM1Value name(AVM1_DISP_GETTER_ARGS)
 #define AVM1_DISP_SETTER_DECL(name) \
-	void name(AVM1_DISP_SETTER_ARGS)
+	static void name(AVM1_DISP_SETTER_ARGS)
 
 using AVM1DisplayGetter = AVM1Value(*)(AVM1_DISP_GETTER_ARGS);
 using AVM1DisplaySetter = void(*)(AVM1_DISP_SETTER_ARGS);

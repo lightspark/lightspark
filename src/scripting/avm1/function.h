@@ -24,49 +24,85 @@
 
 #include "scripting/avm1/object/object.h"
 
-#define AVM1_GETTER_ARGS \
+#define AVM1_GETTER_TYPE_ARGS(type) \
 	( \
 		AVM1Activation& act, \
-		const GcPtr<AVM1Object>& _this \
+		const GcPtr<type>& _this \
 	)
-#define AVM1_GETTER_DECL(name) \
-	static AVM1Value get##name(AVM1_GETTER_ARGS)
-#define AVM1_GETTER_BODY(class, name) \
-	AVM1Value class::get##name(AVM1_GETTER_ARGS)
+#define AVM1_GETTER_TYPE_DECL(type, name) \
+	static AVM1Value get##name(AVM1_GETTER_TYPE_ARGS(type))
+#define AVM1_GETTER_TYPE_BODY(type, class, name) \
+	AVM1Value class::get##name(AVM1_GETTER_TYPE_ARGS(type))
 
-#define AVM1_SETTER_ARGS \
+#define AVM1_SETTER_TYPE_ARGS(type) \
 	( \
 		AVM1Activation& act, \
-		const GcPtr<AVM1Object>& _this, \
+		const GcPtr<type>& _this, \
 		const AVM1Value& value \
 	)
-#define AVM1_SETTER_DECL(name) \
-	static void set##name(AVM1_SETTER_ARGS)
+#define AVM1_SETTER_TYPE_DECL(type, name) \
+	static void set##name(AVM1_SETTER_TYPE_ARGS(type))
+
+#define AVM1_SETTER_TYPE_BODY(type, class, name) \
+	void class::set##name(AVM1_SETTER_TYPE_ARGS(type))
+
+#define AVM1_PROPERTY_TYPE_DECL(type, name) \
+	AVM1_GETTER_TYPE_DECL(type, name); \
+	AVM1_SETTER_TYPE_DECL(type, name)
+
+#define AVM1_FUNCTION_TYPE_ARGS(type) \
+	( \
+		AVM1Activation& act, \
+		const GcPtr<type>& _this, \
+		const std::vector<AVM1Value>& args \
+	)
+#define AVM1_FUNCTION_TYPE_DECL(type, name, ...) \
+	static AVM1Value name(AVM1_FUNCTION_ARGS(type), ##__VA_ARGS__)
+
+#define AVM1_FUNCTION_TYPE_BODY(type, class, name, ...) \
+	AVM1Value class::name(AVM1_FUNCTION_ARGS(type), ##__VA_ARGS__)
+
+#define AVM1_GETTER_ARGS AVM1_GETTER_TYPE_ARGS(AVM1Object)
+#define AVM1_GETTER_DECL(name) AVM1_GETTER_TYPE_DECL(AVM1Object, name)
+#define AVM1_GETTER_BODY(class, name) \
+	AVM1_GETTER_TYPE_BODY(AVM1Object, class, name)
+
+#define AVM1_SETTER_ARGS AVM1_SETTER_TYPE_ARGS(AVM1Object)
+#define AVM1_SETTER_DECL(name) AVM1_SETTER_TYPE_DECL(AVM1Object, name)
 #define AVM1_SETTER_BODY(class, name) \
-	void class::set##name(AVM1_SETTER_ARGS)
+	AVM1_SETTER_TYPE_BODY(AVM1Object, class, name)
 
-#define AVM1_PROPERTY_DECL(type, name) \
-	AVM1_GETTER_DECL(type, name); \
-	AVM1_SETTER_DECL(type, name)
+#define AVM1_PROPERTY_DECL(name) \
+	AVM1_PROPERTY_TYPE_DECL(AVM1Object, name)
 
-#define AVM1_FUNCTION_ARGS \
-	( \
-		AVM1Activation& act, \
-		const GcPtr<AVM1Object>& _this, \
-		const std::vector<AVM1Value>& args \
-	)
-#define AVM1_FUNCTION_ARGS(type) \
-	( \
-		AVM1Activation& act, \
-		const GcPtr<AVM1Object>& _this, \
-		const std::vector<AVM1Value>& args \
-	)
-#define AVM1_FUNCTION_DECL(type, name, ...) \
-	static AVM1Value name(AVM1_FUNCTION_ARGS, ##__VA_ARGS__)
-
+#define AVM1_FUNCTION_ARGS AVM1_FUNCTION_TYPE_ARGS(AVM1Object)
+#define AVM1_FUNCTION_DECL(name, ...) \
+	AVM1_FUNCTION_TYPE_DECL(AVM1Object, name, ##__VA_ARGS__)
 #define AVM1_FUNCTION_BODY(class, name, ...) \
-	AVM1Value class::name(AVM1_FUNCTION_ARGS, ##__VA_ARGS__)
+	AVM1_FUNCTION_TYPE_BODY(AVM1Object, class, name, ##__VA_ARGS__)
 
+#define AVM1_TYPE_GETTER(type, func) [](AVM1_FUNCTION_ARGS) \
+{ \
+	if (!_this->is<type>()) \
+		return AVM1Value::undefinedVal; \
+	return get##func(act, _this->as<type>()); \
+}
+
+#define AVM1_TYPE_SETTER(type, func) [](AVM1_FUNCTION_ARGS) \
+{ \
+	if (!_this->is<type>()) \
+		return AVM1Value::undefinedVal; \
+	auto value = !args.empty() ? args[0] : AVM1Value::undefinedVal; \
+	set##func(act, _this->as<type>(), value); \
+	return AVM1Value::undefinedVal; \
+}
+
+#define AVM1_TYPE_FUNC(type, func) [](AVM1_FUNCTION_ARGS) \
+{ \
+	if (!_this->is<type>()) \
+		return AVM1Value::undefinedVal; \
+	return func(act, _this->as<type>(), args); \
+}
 
 #define AVM1_GETTER(func) [](AVM1_FUNCTION_ARGS) \
 { \

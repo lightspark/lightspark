@@ -63,6 +63,7 @@ GcPtr<AVM1SystemClass> AVM1Color::createClass
 {
 	auto _class = ctx.makeClass(ctor, superProto);
 	ctx.definePropsOn(_class->proto, protoDecls);
+	return _class;
 }
 
 AVM1_FUNCTION_BODY(AVM1Color, ctor)

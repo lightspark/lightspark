@@ -424,10 +424,41 @@ BITMAP_DATA_FUNCTION_BODY(draw)
 
 BITMAP_DATA_FUNCTION_BODY(colorTransform)
 {
+	if (args.size() < 2)
+		return -1.0;
+
+	RectF rect;
+	CXFORMWITHALPHA cxform;
+	AVM1_ARG_CHECK_RET(AVM1_ARG_UNPACK.unpackOrThrow(rect)(cxform), -3.0);
+
+	_this->data->colorTransform(rect, cxform);
+	return -1.0;
 }
 
 BITMAP_DATA_FUNCTION_BODY(getColorBoundsRect)
 {
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	bool findColor;
+	uint32_t mask;
+	uint32_t color;
+	AVM1_ARG_CHECK_RET(AVM1_ARG_UNPACK.unpackAt
+	(
+		2,
+		findColor,
+		true
+	)(mask)(color), -1.0);
+
+	auto rect = _this->data->getColorBoundsRect(findColor, mask, color);
+
+	auto proto = act.getPrototypes().rectangle->ctor;
+	return proto->construct(act,
+	{
+		rect.min.x,
+		rect.min.y,
+		rect.max.x,
+		rect.max.y
+	});
 }
 
 BITMAP_DATA_FUNCTION_BODY(perlinNoise)

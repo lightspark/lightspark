@@ -385,7 +385,7 @@ BITMAP_DATA_FUNCTION_BODY(draw)
 		// (the `Bitmap` will be destroyed in the render thread).
 		source = NEW_GC_PTR(act.getGcCtx(), Bitmap());
 		source->as<Bitmap>()->setupTemporaryBitmap(bitmapData->data);
-		needscopy = bitmapData->getContainer() == _this->getContainer();
+		needsCopy = bitmapData->getContainer() == _this->getContainer();
 	}
 	else
 	{
@@ -393,7 +393,7 @@ BITMAP_DATA_FUNCTION_BODY(draw)
 		(
 			LOG_ERROR,
 			"BitmapData.draw(): Unexpected source: object: " <<
-			sourceObj->toDebugStr() << ", value; " << sourceVal
+			sourceObj->toDebugString() << ", value; " << sourceVal
 		);
 		_this->data->notifyUsers();
 		return AVM1Value::undefinedVal;
@@ -419,6 +419,50 @@ BITMAP_DATA_FUNCTION_BODY(draw)
 		);
 	}
 	_this->data->notifyUsers();
+	return AVM1Value::undefinedVal;
+}
+
+BITMAP_DATA_FUNCTION_BODY(applyFilter)
+{
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+	auto sourceObj = unpacker.unpack<GcPtr<AVM1Object>>();
+	auto source = sourceObj->as<AVM1BitmapData>();
+
+	if (source.isNull())
+	{
+		LOG
+		(
+			LOG_ERROR,
+			"BitmapData.applyFilter(): "
+			"Invalid `BitmapData` source: " << sourceObj->toDebugString()
+		);
+		return -1.0;
+	}
+
+	RectF sourceRect;
+	Vector2f destPoint;
+	Impl<Filter> filter;
+	unpacker(sourceRect)(destPoint)(filter);
+	if (!filter.hasValue())
+		return -1.0;
+
+	_this->data->applyFilter
+	(
+		source->data,
+		sourceRect,
+		destPoint,
+		filter
+	);
+	return 0.0;
+}
+
+BITMAP_DATA_FUNCTION_BODY(generateFilterRect)
+{
+	LOG
+	(
+		LOG_NOT_IMPLEMENTED,
+		"AVM1: `BitmapData.generateFilterRect()` is a stub."
+	);
 	return AVM1Value::undefinedVal;
 }
 
@@ -463,48 +507,452 @@ BITMAP_DATA_FUNCTION_BODY(getColorBoundsRect)
 
 BITMAP_DATA_FUNCTION_BODY(perlinNoise)
 {
-}
+	Vector2f base;
+	uint32_t numOctaves;
+	int32_t randomSeed;
+	bool stitch;
+	bool fractalNoise;
+	BitmapChannelOptions channelOpts;
+	bool grayScale;
+	auto offsetsObj = AVM1_ARG_UNPACK_MULTIPLE
+	(
+		base.x,
+		base.y,
+		numOctaves,
+		randomSeed,
+		stitch,
+		fractalNoise,
+		channelOpts,
+		grayScale
+	).unpack<GcPtr<AVM1Object>>();
 
-BITMAP_DATA_FUNCTION_BODY(applyFilter)
-{
+	std::vector<Vector2f> offsets;
+	offsets.reserve(numOctaves);
+
+	for (size_t i = 0; i < numOctaves; ++i)
+	{
+		auto elem = offsets->getElement(act, i).as<AVM1Object>();
+		if (elem.isNull())
+		{
+			offsets.emplace_back(0, 0);
+			continue;
+		}
+
+		offsets.emplace_back
+		(
+			elem->getProp(act, "x").toNumber(act),
+			elem->getProp(act, "y").toNumber(act)
+		);
+	}
+
+	_this->data->perlinNoise
+	(
+		base,
+		numOctaves,
+		randomSeed,
+		stitch,
+		fractalNoise,
+		channelOpts,
+		grayScale,
+		offsets
+	);
+	return -1.0;
 }
 
 BITMAP_DATA_FUNCTION_BODY(hitTest)
 {
-}
+	auto getPoint = [&]
+	(
+		const GcPtr<AVM1Object>& obj
+	) -> Optional<Vector2>
+	{
+		auto x = obj->getLocalProp(act, "x", false);
+		auto y = obj->getLocalProp(act, "y", false);
+		if (!x.hasValue() || !y.hasValue())
+			return {};
+		return Vector2(x->toInt32(act), y->toInt32(act));
+	}
 
-BITMAP_DATA_FUNCTION_BODY(generateFilterRect)
-{
+	using RectType = std::pair
+	<
+		Optional<Vector2>,
+		Optional<Vector2>
+	>;
+	auto getRect = [&](const GcPtr<AVM1Object>& obj) -> RectType
+	{
+		auto point = getPoint(obj);
+		auto width = obj->getLocalProp(act, "width", false);
+		auto height = obj->getLocalProp(act, "height", false);
+
+		if (!width.hasValue() || !height.hasValue())
+			return std::make_pair(pair, {});
+		return std::make_pair(pair, Vector2
+		(
+			width->toInt32(act),
+			height->toInt32(act)
+		));
+	}
+
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+	auto firstPoint = getPoint(unpacker.unpack<GcPtr<AVM1Object>>());
+
+	// NOTE: Despite the AS1/2 docs stating that `hitTest()` returns a
+	// `Boolean`, it actually returns a negative int on error conditions.
+	if (!firstPoint.hasValue())
+	{
+		// Invalid `firstPoint`.
+		return -2.0;
+	}
+
+	int32_t firstAlphaThreshold;
+	auto secondObject = unpacker(firstAlphaThreshold).unpack
+	<
+		GcPtr<AVM1Object>
+	>();
+	uint8_t firstThreshold = iclamp(firstAlphaThreshold, 0, 0xff);
+
+	// The overloads are based on what type of `Object` `secondObject` is.
+	if (secondObject->is<AVM1BitmapData>())
+	{
+		// `secondObject`'s a `BitmapData`.
+		auto bitmapData = secondObject->as<AVM1BitmapData>();
+		if (bitmapData->data->isDisposed())
+			return -3.0;
+		auto secondPoint = getPoint(unpacker.unpack
+		<
+			GcPtr<AVM1Object>
+		>());
+
+		if (!secondPoint.hasValue())
+		{
+			// Invalid `secondPoint`.
+			return -2.0;
+		}
+
+		int32_t secondAlphaThreshold;
+		unpacker(secondAlphaThreshold);
+
+		return _this->data->hitTestBitmap
+		(
+			*firstPoint,
+			firstThreshold,
+			bitmapData,
+			*secondPoint
+			iclamp(secondAlphaThreshold, 0, 0xff)
+		);
+	}
+
+	// Figure out what kind of `Object` `secondObject` is, either a
+	// `Point`, or `Rectangle`.
+	// NOTE: Duck typed "dumb" `Object`s are allowed here.
+	auto rect = getRect(secondObject);
+	if (!rect.first.hasValue())
+	{
+		// Invalid `secondObject`.
+		return -3.0;
+	}
+
+	auto testPoint = *rect.first - *firstPoint;
+
+	// `secondObject`'s a `Rectangle`.
+	return rect.second.hasValue() ? _this->data->hitTestRect
+	(
+		testPoint,
+		firstThreshold,
+		*rect.second
+	// `secondObject`'s a `Point`.
+	) : _this->data->hitTestPoint(testPoint, firstThreshold);
 }
 
 BITMAP_DATA_FUNCTION_BODY(copyPixels)
 {
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	NullableGcPtr<AVM1BitmapData> source
+	RectF sourceRect;
+	Vector2f destPoint;
+	unpacker(source)(sourceRect)(destPoint);
+
+	if (source.isNull() || source->data->isDisposed())
+		return AVM1Value::undefinedVal;
+
+	bool mergeAlpha;
+	NullableGcPtr<AVM1BitmapData> alphaBitmapData;
+
+	unpacker.unpackAt(5, mergeAlpha, false)(alphaBitmapData);
+	if (alphaBitmapData.isNull())
+	{
+		_this->data->copyPixels
+		(
+			source,
+			sourceRect,
+			destPoint,
+			mergeAlpha
+		);
+		return AVM1Value::undefinedVal;
+	}
+
+	if (source->data->isDisposed())
+		return AVM1Value::undefinedVal;
+
+	Vector2f alphaPoint;
+	unpacker(alphaPoint);
+
+	_this->data->copyPixels
+	(
+		source->data,
+		sourceRect,
+		destPoint,
+		alphaBitmapData->data,
+		alphaPoint,
+		mergeAlpha
+	);
+	return AVM1Value::undefinedVal;
 }
 
 BITMAP_DATA_FUNCTION_BODY(merge)
 {
+	NullableGcPtr<AVM1BitmapData> source
+	RectF sourceRect;
+	Vector2f destPoint;
+	int32_t redMult;
+	int32_t greenMult;
+	int32_t blueMult;
+	int32_t alphaMult;
+
+	AVM1_ARG_UNPACK_MULTIPLE
+	(
+		source,
+		sourceRect,
+		destPoint,
+		redMult,
+		greenMult,
+		blueMult,
+		alphaMult
+	);
+
+	if (source.isNull() || source->data->isDisposed())
+		return AVM1Value::undefinedVal;
+
+	_this->data->merge
+	(
+		source->data,
+		sourceRect,
+		destPoint,
+		iclamp(redMult, 0, 255),
+		iclamp(greenMult, 0, 255),
+		iclamp(blueMult, 0, 255),
+		iclamp(alphaMult, 0, 255)
+	);
+	return AVM1Value::undefinedVal;
 }
 
 BITMAP_DATA_FUNCTION_BODY(paletteMap)
 {
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	NullableGcPtr<AVM1BitmapData> source
+	RectF sourceRect;
+	Vector2f destPoint;
+
+	unpacker(source)(sourceRect)(destPoint);
+
+	auto getChannel = [&](size_t shift)
+	{
+		AVM1Value arg;
+		unpacker(arg, AVM1Value::nullVal);
+		auto obj = arg.as<AVM1Object>();
+
+		std::array<uint32_t, 256> ret = { 0 };
+		for (size_t i < 0; i < ret.size(); ++i)
+		{
+			ret[i] = !obj.isNull() ? obj->getElement
+			(
+				act,
+				i
+			// NOTE: `i << shift` is an "identity mapping", which is
+			// needed because the AS1/2 docs state that channels which
+			// don't have an associated array are simply copied over.
+			).toUInt32(act) : i << shift;
+		}
+		return ret;
+	};
+
+	if (source.isNull() || source->data->isDisposed())
+		return AVM1Value::undefinedVal;
+
+	_this->data->paletteMap
+	(
+		source->data,
+		sourceRect,
+		destPoint,
+		// `redArray`.
+		getChannel(16),
+		// `greenArray`.
+		getChannel(8),
+		// `blueArray`.
+		getChannel(0),
+		// `alphaArray`.
+		getChannel(24)
+	);
+	return AVM1Value::undefinedVal;
 }
 
 BITMAP_DATA_FUNCTION_BODY(pixelDissolve)
 {
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	NullableGcPtr<AVM1BitmapData> source
+	auto sourceRect = AVM1MovieClip::objToRect
+	(
+		act,
+		unpacker(source).unpack<GcPtr<AVM1Object>>()
+	);
+
+	if (!sourceRect.hasValue())
+	{
+		// Invalid `sourceRect`.
+		return -4.0;
+	}
+
+	if (source.isNull() || source->data->isDisposed())
+		return -1.0;
+
+	Vector2f destPoint;
+	int32_t randomSeed;
+	int32_t numPixels;
+	uint32_t fillColor;
+	unpack.unpackNoError(destPoint);
+	AVM1_ARG_CHECK_RET(unpack.unpackNoError(destPoint)
+	(
+		randomSeed,
+		0
+	// NOTE: Despite the AS1/2 docs stating that `numPixels` defaults to
+	// 1/30 of `source`'s area, Flash Player treats it as a no-op, and
+	// returns `0`.
+	)(numPixels)(fillColor, 0), 0.0);
+
+	return _this->data->pixelDissolve
+	(
+		source->data,
+		sourceRect,
+		destPoint,
+		randomSeed,
+		numPixels,
+		fillColor
+	);
 }
 
 BITMAP_DATA_FUNCTION_BODY(scroll)
 {
+	Vector2 pos;
+	AVM1_ARG_UNPACK(pos.x)(pos.y);
+
+	_this->data->scroll(pos);
+	return AVM1Value::undefinedVal;
 }
 
 BITMAP_DATA_FUNCTION_BODY(threshold)
 {
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	NullableGcPtr<AVM1BitmapData> source
+	RectF sourceRect;
+	Vector2f destPoint;
+	ThresholdOp operation;
+	AVM1_ARG_CHECK_RET(unpacker.unpackArgsNoError
+	(
+		source,
+		sourceRect,
+		destPoint
+	// Bail early, if `operation` isn't a valid string.
+	)(operation), 0.0);
+
+	uint32_t threshold;
+	uint32_t color;
+	uint32_t mask;
+	bool copySource;
+	unpacker(threshold)(color, 0)(mask, UINT32_MAX)(copySource, false);
+
+	if (source.isNull() || source->data->isDisposed())
+		return AVM1Value::undefinedVal;
+
+	return number_t(_this->data->getThreshold
+	(
+		source->data,
+		sourceRect,
+		destPoint,
+		operation,
+		threshold,
+		color,
+		mask,
+		copySource
+	));
 }
 
 AVM1_FUNCTION_BODY(AVM1BitmapData, compare)
 {
+	enum class CompareErrors : int32_t
+	{
+		Equivalent = 0,
+		NonBitmap = -1,
+		DisposedBitmap = -2,
+		DifferentWidths = -3,
+		DifferentHeights = -4,
+	};
+
+	auto bitmapData = _this->as<AVM1BitmapData>();
+	if (bitmapData.isNull())
+		return number_t(CompareErrors::NonBitmap);
+
+	if (bitmapData->data->isDisposed())
+	{
+		// NOTE: Despite the AS1/2 docs stating that `-2` should be
+		// returned here, Flash Player actually returns `-1` instead.
+		return number_t(CompareErrors::NonBitmap);
+	}
+
+	NullableGcPtr<AVM1BitmapData> source;
+	// NOTE: Despite the AS1/2 docs stating that `-1` should be returned
+	// here, Flash Player actually returns `-2` instead.
+	AVM1_ARG_CHECK_RET
+	(
+		AVM1_ARG_UNPACK(source),
+		number_t(CompareErrors::DisposedBitmap)
+	);
+
+	if (source->data->isDisposed())
+		return number_t(CompareErrors::DisposedBitmap);
+
+	if (bitmapData->data->getWidth() != source->data->getWidth())
+		return number_t(CompareErrors::DifferentWidths);
+
+	if (bitmapData->data->getHeight() != source->data->getHeight())
+		return number_t(CompareErrors::DifferentHeights);
+	auto ret = bitmapData->data->compare(source->data);
+
+	if (ret.isNull())
+		return number_t(CompareErrors::Equivalent);
+
+	return NEW_GC_PTR(act.getGcCtx(), AVM1BitmapData
+	(
+		_this->getLocalProp(act, "__proto__", false),
+		bitmapData->data
+	));
 }
 
 AVM1_FUNCTION_BODY(AVM1BitmapData, loadBitmap)
 {
+	tiny_string name;
+	AVM1_ARG_UNPACK(name);
+
+	auto movie = act.getTargetOrRootClip()->getMovie();
+	auto tag = dynamic_cast<BitmapTag*>
+	(
+		movie->dictionaryLookupByName(name)
+	);
+
+	if (tag == nullptr)
+		return AVM1Value::undefinedVal;
+	return tag->getAVM1Instance();
 }

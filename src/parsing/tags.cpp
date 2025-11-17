@@ -1683,6 +1683,7 @@ ASObject* DefineShapeTag::instance(Class_base *c, ASObject* prevInstance, bool t
 		// see ruffle test timeline/nav/shape
 		ret = prevInstance->as<Shape>();
 		ret->markAsChanged();
+		ret->geometryChanged();
 	}
 	else
 	{

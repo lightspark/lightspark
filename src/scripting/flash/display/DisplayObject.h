@@ -129,7 +129,6 @@ protected:
 	void extractValuesFromMatrix();
 	number_t computeWidth();
 	number_t computeHeight();
-	void geometryChanged();
 	bool skipRender() const;
 
 	bool defaultRender(RenderContext& ctxt);
@@ -145,6 +144,7 @@ protected:
 	virtual void afterSetLegacyMatrix() {}
 	bool skipCountCylicMemberReferences(garbagecollectorstate& gcstate);
 public:
+	void geometryChanged();
 	void handleConstruction();
 	bool boundsRectGlobal(RectF& rect, bool fromcurrentrendering=true);
 	virtual bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)

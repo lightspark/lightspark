@@ -1,4 +1,3 @@
-
 /**************************************************************************
     Lightspark, a free flash player implementation
 
@@ -72,7 +71,7 @@ FILTER AVM1DropShadowFilter::toFilterImpl() const
 AVM1DropShadowFilter::AVM1DropShadowFilter(AVM1Activationt& act) : AVM1BitmapFilter
 (
 	act.getGcCtx(),
-	act.getPrototypes().bevelFilter->proto
+	act.getPrototypes().dropShadowFilter->proto
 ),
 color(0, 255),
 blur(4, 4),

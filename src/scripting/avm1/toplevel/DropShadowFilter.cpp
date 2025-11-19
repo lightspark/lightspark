@@ -26,7 +26,7 @@
 #include "scripting/avm1/prop.h"
 #include "scripting/avm1/prop_decl.h"
 #include "scripting/avm1/runtime.h"
-#include "scripting/avm1/toplevel/BevelFilter.h"
+#include "scripting/avm1/toplevel/DropShadowFilter.h"
 #include "swftypes.h"
 #include "utils/span.h"
 
@@ -37,8 +37,7 @@ using namespace lightspark;
 GcPtr<AVM1BitmapFilter> AVM1DropShadowFilter::cloneImpl(AVM1Activation& act) const
 {
 	auto ret = NEW_GC_PTR(act.getGcCtx(), AVM1DropShadowFilter(act));
-	ret->shadow = shadow;
-	ret->highlight = highlight;
+	ret->color = color;
 	ret->blur = blur;
 	ret->angle = angle;
 	ret->distance = distance;
@@ -56,6 +55,7 @@ FILTER AVM1DropShadowFilter::toFilterImpl() const
 	filter.DropShadowColor = color;
 	filter.BlurX = blur.x * 65536;
 	filter.BlurY = blur.y * 65536;
+	filter.Angle = angle * (M_PI / 180.0) * 65536;
 	filter.Distance = distance * 65536;
 	filter.Strength = strength * 256;
 	filter.InnerShadow = inner;
@@ -74,7 +74,7 @@ AVM1DropShadowFilter::AVM1DropShadowFilter(AVM1Activationt& act) : AVM1BitmapFil
 	act.getGcCtx(),
 	act.getPrototypes().bevelFilter->proto
 ),
-shadow(0, 0),
+color(0, 255),
 blur(4, 4),
 angle(45),
 distance(4),
@@ -118,10 +118,8 @@ static constexpr auto protoDecls =
 {
 	AVM1_PROPERTY_TYPE_PROTO(AVM1DropShadowFilter, distance, Distance, protoFlags),
 	AVM1_PROPERTY_TYPE_PROTO(AVM1DropShadowFilter, angle, Angle, protoFlags),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1DropShadowFilter, highlightColor, HighlightColor, protoFlags),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1DropShadowFilter, highlightAlpha, HighlightAlpha, protoFlags),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1DropShadowFilter, shandowColor, ShandowColor, protoFlags),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1DropShadowFilter, shandowAlpha, ShandowAlpha, protoFlags),
+	AVM1_PROPERTY_TYPE_PROTO(AVM1DropShadowFilter, color, Color, protoFlags),
+	AVM1_PROPERTY_TYPE_PROTO(AVM1DropShadowFilter, alpha, Alpha, protoFlags),
 	AVM1_PROPERTY_TYPE_PROTO(AVM1DropShadowFilter, quality, Quality, protoFlags),
 	AVM1_PROPERTY_TYPE_PROTO(AVM1DropShadowFilter, strength, Strength, protoFlags),
 	AVM1_PROPERTY_TYPE_PROTO(AVM1DropShadowFilter, inner, Inner, protoFlags),

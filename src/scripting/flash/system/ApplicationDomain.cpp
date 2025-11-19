@@ -316,8 +316,9 @@ void ApplicationDomain::bindClass(const QName& classname, Class_inherit* cls)
 	auto it=classesToBeBound.find(classname);
 	if(it!=classesToBeBound.end())
 	{
-		cls->bindToTag(it->second);
+		DictionaryTag* tag = it->second;
 		classesToBeBound.erase(it);
+		cls->bindToTag(tag);
 	}
 }
 

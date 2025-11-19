@@ -25,7 +25,7 @@
 #include "scripting/avm1/prop.h"
 #include "scripting/avm1/prop_decl.h"
 #include "scripting/avm1/runtime.h"
-#include "scripting/avm1/toplevel/BevelFilter.h"
+#include "scripting/avm1/toplevel/ConvolutionFilter.h"
 #include "swftypes.h"
 #include "utils/span.h"
 

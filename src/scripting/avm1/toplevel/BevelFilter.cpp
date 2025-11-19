@@ -55,6 +55,7 @@ FILTER AVM1BevelFilter::toFilterImpl() const
 	filter.HighlightColor = highlight;
 	filter.BlurX = blur.x * 65536;
 	filter.BlurY = blur.y * 65536;
+	filter.Angle = angle * (M_PI / 180.0) * 65536;
 	filter.Distance = distance * 65536;
 	filter.Strength = strength * 256;
 	filter.InnerShadow = type == Type::Inner;
@@ -74,7 +75,7 @@ AVM1BevelFilter::AVM1BevelFilter(AVM1Activationt& act) : AVM1BitmapFilter
 	act.getGcCtx(),
 	act.getPrototypes().bevelFilter->proto
 ),
-shadow(0, 0),
+shadow(0, 255),
 highlight(0xffffff, 255),
 blur(4, 4),
 angle(45),
@@ -93,7 +94,7 @@ AVM1BevelFilter::AVM1BevelFilter
 ) : AVM1BevelFilter(act)
 {
 	constexpr auto white = RGBA(0xffffff, 255);
-	constexpr auto black = RGBA(0, 0);
+	constexpr auto black = RGBA(0, 255);
 	AVM1_ARG_UNPACK(distance, 4)(angle, 45)(highlight, white)
 	(
 		shadow,

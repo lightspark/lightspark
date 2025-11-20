@@ -257,7 +257,15 @@ ASFUNCTIONBODY_ATOM(BitmapData,dispose)
 	th->notifyUsers();
 }
 
-void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix, bool smoothing, AS_BLENDMODE blendMode, ColorTransformBase* ct, Rectangle* clipRect, bool needscopy, RGBA* fillcolor)
+void BitmapData::drawDisplayObject(DisplayObject* d
+								   ,const MATRIX& initialMatrix
+								   ,bool smoothing
+								   ,AS_BLENDMODE blendMode
+								   ,ColorTransformBase* ct
+								   ,Rectangle* clipRect
+								   ,bool needscopy
+								   ,RGBA* fillcolor
+								   ,uint8_t qualityfactor)
 {
 	RenderDisplayObjectToBitmapContainer r;
 	r.initialMatrix = initialMatrix;
@@ -266,6 +274,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		r.ct = *ct;
 	r.smoothing = smoothing;
 	r.hasClipRect = clipRect!=nullptr;
+	r.qualityfactor=qualityfactor;
 
 	if (fillcolor)
 	{
@@ -280,7 +289,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d, const MATRIX& initialMatrix
 		d->invalidateForRenderToBitmap(pixels->getRenderData(),smoothing);
 	if (d)
 		r.cachedsurface = d->getCachedSurface();
-	pixels->getRenderData()->needscopy=needscopy;
+	r.needscopy=needscopy;
 	pixels->addRenderCall(r);
 }
 
@@ -308,6 +317,14 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 								   "IBitmapDrawable");
 		return;
 	}
+	uint8_t qualityfactor=1;
+	tiny_string q = asAtomHandler::toString(quality,wrk);
+	if (q=="medium")
+		qualityfactor=2;
+	else if (q=="high")
+		qualityfactor=4;
+	else if (q=="best")
+		qualityfactor=4;
 	if (!asAtomHandler::isNull(quality) && asAtomHandler::toString(quality,wrk)!="high")
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.drawWithQuality parameter quality is ignored:"<<asAtomHandler::toDebugString(quality));
 
@@ -354,7 +371,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 			case BUILTIN_STRINGS::STRING_SCREEN: bl = BLENDMODE_SCREEN; break;
 			case BUILTIN_STRINGS::STRING_SUBTRACT: bl = BLENDMODE_SUBTRACT; break;
 		}
-		th->drawDisplayObject(d, initialMatrix,smoothing,bl,ctransform.getPtr(),clipRect.getPtr(),needscopy);
+		th->drawDisplayObject(d, initialMatrix,smoothing,bl,ctransform.getPtr(),clipRect.getPtr(),needscopy,nullptr,qualityfactor);
 		if (th->users.empty())
 			th->pixels->flushRenderCalls(th->getSystemState()->getRenderThread(),drawable->is<BitmapData>() ? d->as<Bitmap>() : nullptr);
 	}

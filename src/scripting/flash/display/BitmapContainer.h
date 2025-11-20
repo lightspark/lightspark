@@ -42,9 +42,11 @@ struct RenderDisplayObjectToBitmapContainer
 	RECT clipRect;
 	RGBA backgroundcolor;
 	AS_BLENDMODE blendMode;
+	uint8_t qualityfactor;
 	bool smoothing:1;
 	bool hasClipRect:1;
 	bool needsfill:1;
+	bool needscopy:1;
 };
 
 struct BitmapContainerRenderData
@@ -54,7 +56,6 @@ struct BitmapContainerRenderData
 	std::queue<RenderDisplayObjectToBitmapContainer> rendercalls;
 	std::list<Bitmap*> temporaryBitmaps;
 	bool readpixels:1;
-	bool needscopy:1;
 	bool needswait:1;
 };
 
@@ -153,6 +154,7 @@ public:
 	void setModifiedData(bool modified);
 	void setModifiedTexture(bool modified);
 	bool getModifiedData() const { return hasModifiedData; }
+	bool getModifiedTexture() const { return hasModifiedTexture; }
 	void setNeedsClear(bool clear) { needsclear=clear; }
 	bool getNeedsClear() const { return needsclear; }
 	void addRenderCall(RenderDisplayObjectToBitmapContainer& call);

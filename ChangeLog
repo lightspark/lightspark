@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* implement high quality drawing of DisplayObjects in BitmapData
 	* add (optional) fontconfig dependency for detection of system fonts
 	* use nanoVG for text rendering (removes pango dependency)
 	* implement support for playing ScaleForm (*.gfx) files

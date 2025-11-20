@@ -990,7 +990,17 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	if (cachedFilterTextureID != UINT32_MAX) // remove previously used texture
 		sys->getRenderThread()->addDeletedTexture(cachedFilterTextureID);
 	cachedFilterTextureID = UINT32_MAX;
-	
+
+	// create two textures for swapping
+	uint32_t filterTextureID1;
+	uint32_t filterTextureID2;
+	engineData->exec_glGenTextures(1, &filterTextureID1);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID1);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
+	engineData->exec_glGenTextures(1, &filterTextureID2);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID2);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
+
 	// render filter source to texture
 	uint32_t filterTextureIDoriginal;
 	engineData->exec_glGenTextures(1, &filterTextureIDoriginal);
@@ -1034,31 +1044,24 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureIDoriginal);
 	
 	// create filter output texture, and bind it to g_tex_filter2
-	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_FILTER_DST);
 	uint32_t filterDstTexture;
 	engineData->exec_glGenTextures(1, &filterDstTexture);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_FILTER_DST);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterDstTexture);
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
-	
+
 	// apply all filter steps
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
-	uint32_t filterTextureID1;
-	uint32_t filterTextureID2;
-	engineData->exec_glGenTextures(1, &filterTextureID1);
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID1);
-	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
-	engineData->exec_glGenTextures(1, &filterTextureID2);
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID2);
-	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
 	sys->getRenderThread()->setViewPort(w,h,true);
 	uint32_t texture1 = filterTextureIDoriginal;
 	uint32_t texture2 = filterTextureID2;
 	bool firstfilter = true;
 	for (auto it = state->filters.begin(); it != state->filters.end(); it++)
 	{
+		engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 		if ((*it).filterdata[0] == 0) // end of filter
 		{
 			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);

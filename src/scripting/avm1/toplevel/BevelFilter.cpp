@@ -60,7 +60,7 @@ FILTER AVM1BevelFilter::toFilterImpl() const
 	filter.Strength = strength * 256;
 	filter.InnerShadow = type == Type::Inner;
 	filter.Knockout = knockout;
-	filter.CompositeSource = false;
+	filter.CompositeSource = true;
 	filter.OnTop = type == Type::Full;
 	filter.passes = iclamp(quality, 0, 15);
 
@@ -122,8 +122,8 @@ static constexpr auto protoDecls =
 	AVM1_PROPERTY_TYPE_PROTO(AVM1BevelFilter, angle, Angle, protoFlags),
 	AVM1_PROPERTY_TYPE_PROTO(AVM1BevelFilter, highlightColor, HighlightColor, protoFlags),
 	AVM1_PROPERTY_TYPE_PROTO(AVM1BevelFilter, highlightAlpha, HighlightAlpha, protoFlags),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1BevelFilter, shandowColor, ShandowColor, protoFlags),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1BevelFilter, shandowAlpha, ShandowAlpha, protoFlags),
+	AVM1_PROPERTY_TYPE_PROTO(AVM1BevelFilter, shadowColor, ShadowColor, protoFlags),
+	AVM1_PROPERTY_TYPE_PROTO(AVM1BevelFilter, shadowAlpha, ShadowAlpha, protoFlags),
 	AVM1_PROPERTY_TYPE_PROTO(AVM1BevelFilter, quality, Quality, protoFlags),
 	AVM1_PROPERTY_TYPE_PROTO(AVM1BevelFilter, strength, Strength, protoFlags),
 	AVM1_PROPERTY_TYPE_PROTO(AVM1BevelFilter, knockout, Knockout, protoFlags),
@@ -193,12 +193,12 @@ AVM1_SETTER_TYPE_BODY(AVM1BevelFilter, AVM1BevelFilter, HighlightAlpha)
 	_this->highlight.Alpha = value.toNumber(act) * 255;
 }
 
-AVM1_GETTER_TYPE_BODY(AVM1BevelFilter, AVM1BevelFilter, ShandowColor)
+AVM1_GETTER_TYPE_BODY(AVM1BevelFilter, AVM1BevelFilter, ShadowColor)
 {
 	return number_t(_this->shadow.toRGB().toInt());
 }
 
-AVM1_SETTER_TYPE_BODY(AVM1BevelFilter, AVM1BevelFilter, ShandowColor)
+AVM1_SETTER_TYPE_BODY(AVM1BevelFilter, AVM1BevelFilter, ShadowColor)
 {
 	_this->shadow = RGBA
 	(
@@ -207,12 +207,12 @@ AVM1_SETTER_TYPE_BODY(AVM1BevelFilter, AVM1BevelFilter, ShandowColor)
 	);
 }
 
-AVM1_GETTER_TYPE_BODY(AVM1BevelFilter, AVM1BevelFilter, ShandowAlpha)
+AVM1_GETTER_TYPE_BODY(AVM1BevelFilter, AVM1BevelFilter, ShadowAlpha)
 {
 	return number_t(_this->shadow.Alpha) / 255;
 }
 
-AVM1_SETTER_TYPE_BODY(AVM1BevelFilter, AVM1BevelFilter, ShandowAlpha)
+AVM1_SETTER_TYPE_BODY(AVM1BevelFilter, AVM1BevelFilter, ShadowAlpha)
 {
 	_this->shadow.Alpha = value.toNumber(act) * 255;
 }

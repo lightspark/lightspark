@@ -21,6 +21,7 @@
 
 #include "gc/context.h"
 #include "scripting/avm1/activation.h"
+#include "scripting/avm1/clamp.h"
 #include "scripting/avm1/function.h"
 #include "scripting/avm1/prop.h"
 #include "scripting/avm1/prop_decl.h"
@@ -100,13 +101,12 @@ void AVM1ConvolutionFilter::setAlpha
 	if (!value.hasValue())
 		return;
 
-	auto num = value->toNumber(act);
 	// NOTE: `dclamp()` isn't used here because we want to always return
 	// the smallest value between `0`, and `1`, but if the value is `NaN`,
 	// then `dclamp()` will propagate the `NaN`, rather than returning
 	// either `0`, or `1`.
-	// So, clamp the value using `fm{in,ax}()` instead.
-	color.Alpha = std::fmin(std::fmax(num, 0.0), 1.0) * 255;
+	// So, clamp the value with `clampNaN()` instead.
+	color.Alpha = clampNaN(value->toNumber(act), 0.0, 1.0) * 255;
 }
 
 AVM1ConvolutionFilter::AVM1ConvolutionFilter

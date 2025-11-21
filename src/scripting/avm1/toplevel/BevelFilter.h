@@ -82,8 +82,8 @@ public:
 	AVM1_PROPERTY_TYPE_DECL(AVM1BevelFilter, Angle);
 	AVM1_PROPERTY_TYPE_DECL(AVM1BevelFilter, HighlightColor);
 	AVM1_PROPERTY_TYPE_DECL(AVM1BevelFilter, HighlightAlpha);
-	AVM1_PROPERTY_TYPE_DECL(AVM1BevelFilter, ShandowColor);
-	AVM1_PROPERTY_TYPE_DECL(AVM1BevelFilter, ShandowAlpha);
+	AVM1_PROPERTY_TYPE_DECL(AVM1BevelFilter, ShadowColor);
+	AVM1_PROPERTY_TYPE_DECL(AVM1BevelFilter, ShadowAlpha);
 	AVM1_PROPERTY_TYPE_DECL(AVM1BevelFilter, Quality);
 	AVM1_PROPERTY_TYPE_DECL(AVM1BevelFilter, Strength);
 	AVM1_PROPERTY_TYPE_DECL(AVM1BevelFilter, Knockout);

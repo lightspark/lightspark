@@ -102,15 +102,35 @@ class Program3D;
 class Stage3D;
 class EngineData;
 
-enum RENDER_ACTION { RENDER_CLEAR,RENDER_CONFIGUREBACKBUFFER,RENDER_RENDERTOBACKBUFFER,RENDER_TOTEXTURE,
-					 RENDER_SETPROGRAM,RENDER_UPLOADPROGRAM,RENDER_DELETEPROGRAM,
-					 RENDER_SETVERTEXBUFFER,RENDER_DRAWTRIANGLES,RENDER_DELETEBUFFER,
-					 RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX,RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR,RENDER_SETTEXTUREAT,
-					 RENDER_SETBLENDFACTORS,RENDER_SETDEPTHTEST,RENDER_SETCULLING,RENDER_GENERATETEXTURE,RENDER_LOADTEXTURE,RENDER_LOADCUBETEXTURE,
-					 RENDER_SETSCISSORRECTANGLE, RENDER_SETCOLORMASK, RENDER_SETSAMPLERSTATE, RENDER_DELETETEXTURE,
-					 RENDER_CREATEINDEXBUFFER,RENDER_UPLOADINDEXBUFFER,
-					 RENDER_CREATEVERTEXBUFFER,RENDER_UPLOADVERTEXBUFFER,
-				     RENDER_SETSTENCILREFERENCEVALUE,RENDER_SETSTENCILACTIONS};
+enum RENDER_ACTION { RENDER_CLEAR,
+					 RENDER_CONFIGUREBACKBUFFER,
+					 RENDER_RENDERTOBACKBUFFER,
+					 RENDER_TOTEXTURE,
+					 RENDER_SETPROGRAM,
+					 RENDER_UPLOADPROGRAM,
+					 RENDER_DELETEPROGRAM,
+					 RENDER_SETVERTEXBUFFER,
+					 RENDER_DRAWTRIANGLES,
+					 RENDER_DELETEBUFFER,
+					 RENDER_SETPROGRAMCONSTANTS_FROM_MATRIX,//10
+					 RENDER_SETPROGRAMCONSTANTS_FROM_VECTOR,
+					 RENDER_SETTEXTUREAT,
+					 RENDER_SETBLENDFACTORS,
+					 RENDER_SETDEPTHTEST,
+					 RENDER_SETCULLING,
+					 RENDER_GENERATETEXTURE,
+					 RENDER_LOADTEXTURE,
+					 RENDER_LOADCUBETEXTURE,
+					 RENDER_SETSCISSORRECTANGLE,
+					 RENDER_SETCOLORMASK,//20
+					 RENDER_SETSAMPLERSTATE,
+					 RENDER_DELETETEXTURE,
+					 RENDER_CREATEINDEXBUFFER,
+					 RENDER_UPLOADINDEXBUFFER,
+					 RENDER_CREATEVERTEXBUFFER,
+					 RENDER_UPLOADVERTEXBUFFER,
+					 RENDER_SETSTENCILREFERENCEVALUE,
+					 RENDER_SETSTENCILACTIONS};
 struct renderaction
 {
 	RENDER_ACTION action;
@@ -165,8 +185,8 @@ private:
 	DEPTHSTENCIL_FUNCTION currentstencilfunction;
 	uint32_t currentstencilref;
 	uint32_t currentstencilmask;
-	uint32_t currentIndexBufferID;
-	uint32_t currentVertexBufferID;
+	std::vector<uint32_t> bufferIDs;
+	std::list<uint32_t> bufferIDfreelist;
 
 	void handleRenderAction(EngineData *engineData, renderaction &action);
 	void setRegisters(EngineData *engineData, std::vector<RegisterMapEntry> &registermap, constantregister *constants, bool isVertex);
@@ -181,6 +201,8 @@ private:
 	Stage3D* stage3D;
 	void disposeintern();
 	void configureBackBufferIntern(bool enableDepthAndStencil, uint32_t width, uint32_t height, int index);
+	uint32_t addBuffer();
+	uint32_t getBufferID(uint32_t bufferIDindex) const;
 protected:
 	bool renderImpl(RenderContext &ctxt);
 	void loadTexture(TextureBase* tex, uint32_t level);
@@ -195,7 +217,7 @@ public:
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	void prepareShutdown() override;
 
-	void deleteBuffer(uint32_t bufferID);
+	void deleteBuffer(uint32_t bufferIDindex);
 	void addAction(RENDER_ACTION type, ASObject* dataobject);
 	void addAction(renderaction action);
 	void addTextureToUpload(TextureBase* tex)
@@ -345,12 +367,12 @@ class IndexBuffer3D: public ASObject
 friend class Context3D;
 protected:
 	Context3D* context;
-	uint32_t bufferID;
+	uint32_t bufferIDindex;
 	uint32_t numVertices;
 	tiny_string bufferUsage;
 	bool disposed;
 public:
-	IndexBuffer3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_INDEXBUFFER3D),bufferID(UINT32_MAX),disposed(false){}
+	IndexBuffer3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_INDEXBUFFER3D),bufferIDindex(UINT32_MAX),disposed(false){}
 	IndexBuffer3D(ASWorker* wrk,Class_base* c, Context3D* ctx,int _numVertices,tiny_string _bufferUsage);
 	bool destruct() override;
 	void finalize() override;
@@ -394,9 +416,9 @@ protected:
 	int32_t data32PerVertex;
 	tiny_string bufferUsage;
 	bool disposed;
-	uint32_t bufferID;
+	uint32_t bufferIDindex;
 public:
-	VertexBuffer3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_VERTEXBUFFER3D),context(nullptr),numVertices(0),data32PerVertex(0),disposed(false),bufferID(UINT32_MAX){}
+	VertexBuffer3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_VERTEXBUFFER3D),context(nullptr),numVertices(0),data32PerVertex(0),disposed(false),bufferIDindex(UINT32_MAX){}
 	VertexBuffer3D(ASWorker* wrk,Class_base* c, Context3D* ctx,int _numVertices,int32_t _data32PerVertex,tiny_string _bufferUsage);
 	bool destruct() override;
 	void finalize() override;

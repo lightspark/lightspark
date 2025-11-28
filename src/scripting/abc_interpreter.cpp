@@ -2361,15 +2361,17 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 								// check if we can replace getProperty by getSlot
 								resulttype = getSlotResultTypeFromClass(it->objtype, t, state);
 							}
-							if (resulttype
-								&& resulttype != Class_object::getRef(state.function->getSystemState()).getPtr())
-							{
-								it->removeArg(state);
-								state.operandlist.pop_back();
-								addCachedSlot(state,it->index,t,code,resulttype);
-								typestack.push_back(typestackentry(resulttype,false));
-								break;
-							}
+							// TODO the "unchanged" local may be changing it's slots during a call of one of it's methods,
+							// so we can't use the cached-slot optimization for now
+							// if (resulttype
+							// 	&& resulttype != Class_object::getRef(state.function->getSystemState()).getPtr())
+							// {
+							// 	it->removeArg(state);
+							// 	state.operandlist.pop_back();
+							// 	addCachedSlot(state,it->index,t,code,resulttype);
+							// 	typestack.push_back(typestackentry(resulttype,false));
+							// 	break;
+							// }
 						}
 					}
 					else if (it->type != OP_CACHED_SLOT && it->type != OP_LOCAL)

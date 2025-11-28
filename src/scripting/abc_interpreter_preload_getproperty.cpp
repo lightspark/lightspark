@@ -217,25 +217,27 @@ void preload_getproperty(preloadstate& state, std::vector<typestackentry>& types
 							if (v && v->slotid)
 							{
 								resulttype = v->isResolved && dynamic_cast<const Class_base*>(v->type) ? (Class_base*)v->type : nullptr;
-								if (state.operandlist.back().type == OP_LOCAL)
-								{
-									if (state.unchangedlocals.find(state.operandlist.back().index) != state.unchangedlocals.end())
-									{
-										if (resulttype
-											&& resulttype != Class_object::getRef(state.function->getSystemState()).getPtr())
-										{
-											uint32_t index = state.operandlist.back().index;
-											state.operandlist.back().removeArg(state);
-											state.operandlist.pop_back();
-											addname = false;
-											addCachedSlot(state,index,v->slotid,code,resulttype);
-											removetypestack(typestack,runtimeargs+1);
-											typestack.push_back(typestackentry(resulttype,false));
-											ASATOM_DECREF(otmp);
-											break;
-										}
-									}
-								}
+								// TODO the "unchanged" local may be changing it's slots during a call of one of it's methods,
+								// so we can't use the cached-slot optimization for now
+								// if (state.operandlist.back().type == OP_LOCAL)
+								// {
+								// 	if (state.unchangedlocals.find(state.operandlist.back().index) != state.unchangedlocals.end())
+								// 	{
+								// 		if (resulttype
+								// 			&& resulttype != Class_object::getRef(state.function->getSystemState()).getPtr())
+								// 		{
+								// 			uint32_t index = state.operandlist.back().index;
+								// 			state.operandlist.back().removeArg(state);
+								// 			state.operandlist.pop_back();
+								// 			addname = false;
+								// 			addCachedSlot(state,index,v->slotid,code,resulttype);
+								// 			removetypestack(typestack,runtimeargs+1);
+								// 			typestack.push_back(typestackentry(resulttype,false));
+								// 			ASATOM_DECREF(otmp);
+								// 			break;
+								// 		}
+								// 	}
+								// }
 
 								if (setupInstructionOneArgument(state,ABC_OP_OPTIMZED_GETSLOT,opcode,code,true,false,resulttype,p,true,false,false,true,ABC_OP_OPTIMZED_GETSLOT_SETSLOT))
 								{

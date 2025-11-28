@@ -228,7 +228,10 @@ void RootMovieClip::afterConstruction(bool _explicit)
 		getVm(getSystemState())->addEvent(_MR(this),e);
 	}
 	if (this==getSystemState()->mainClip)
+	{
+		getSystemState()->removeJob(getSystemState());
 		getSystemState()->addFrameTick(getSystemState());
+	}
 }
 
 bool RootMovieClip::needsActionScript3() const

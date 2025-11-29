@@ -2164,6 +2164,7 @@ void ASObject::prepareShutdown()
 void ASObject::setRefConstant()
 {
 	getInstanceWorker()->registerConstantRef(this);
+	this->Variables.isStatic=true;
 	setConstant();
 }
 

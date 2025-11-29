@@ -1501,7 +1501,7 @@ FORCE_INLINE void variables_map::setDynamicVarNoCheck(uint32_t nameID, asAtom& v
 	insertVar(&inserted->second,prepend);
 
 	ASObject* o = asAtomHandler::getObject(v);
-	if (o && !o->getConstant())
+	if (o)
 	{
 		o->addStoredMember();
 		if (this->isStatic)

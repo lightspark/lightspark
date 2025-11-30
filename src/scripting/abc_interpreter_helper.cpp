@@ -672,7 +672,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x66://getproperty
 			{
 				uint32_t t = code.peeku30FromPosition(pos);
-				if (argsneeded && !fromdup &&
+				if ((argsneeded  || fromdup) &&
 					(uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
 				{
 					// getproperty without runtimeargs following e.g. getlocal may produce local result
@@ -1036,7 +1036,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		{
 			uint32_t t = code.peeku30FromPosition(pos);
 			uint32_t argcount = argsneeded ? 1 : 0;
-			if (state.jumptargets.find(pos) == state.jumptargets.end() && (argsneeded<=1) && !fromdup &&
+			if (state.jumptargets.find(pos) == state.jumptargets.end() && (argsneeded<=1) &&
 					((uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == argcount
 					|| (!argsneeded && (state.operandlist.size() >= 1) && state.mi->context->constant_pool.multinames[t].runtimeargs == 1)
 					))

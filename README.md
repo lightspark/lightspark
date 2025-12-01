@@ -37,7 +37,7 @@ The following tools are also required:
 * c/c++ compiler with support for c++14 (gcc version >=5 or clang version >=3.4)
 
 To install these, run the following command(s):
-### Ubuntu (tested on 21.10):
+### Ubuntu (tested on 25.10):
 ```
 sudo apt install git gcc g++ nasm cmake libcurl4-gnutls-dev libsdl2-dev libfontconfig-dev libcairo2-dev libavcodec-dev libswresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
 ```

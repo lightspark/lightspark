@@ -1899,6 +1899,12 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChild)
 {
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
 	assert_and_throw(argslen==1);
+
+	if(asAtomHandler::isNullOrUndefined(args[0]))
+	{
+		createError<TypeError>(wrk,kNullPointerError,"child");
+		return;
+	}
 	if(!asAtomHandler::is<DisplayObject>(args[0]))
 	{
 		asAtomHandler::setNull(ret);
@@ -1968,17 +1974,20 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildren)
 		}
 		if (endindex > th->dynamicDisplayList.size())
 			endindex = (uint32_t)th->dynamicDisplayList.size();
+		else
+			endindex++;
 
 		if (beginindex > endindex)
 			return;
 
-		auto it = th->dynamicDisplayList.begin()+beginindex;
-		while (it != th->dynamicDisplayList.begin()+endindex)
+		vector<DisplayObject*> childrenToRemove(endindex-beginindex);
+		childrenToRemove.assign(th->dynamicDisplayList.begin()+beginindex,th->dynamicDisplayList.begin()+endindex);
+		auto it = childrenToRemove.begin();
+		while (it != childrenToRemove.end())
 		{
-			(*it)->removeStoredMember();
+			th->_removeChild(*it);
 			it++;
 		}
-		th->dynamicDisplayList.erase(th->dynamicDisplayList.begin()+beginindex,th->dynamicDisplayList.begin()+endindex);
 	}
 	th->requestInvalidation(th->getSystemState());
 }
@@ -2120,7 +2129,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getChildByName)
 		ret = asAtomHandler::fromObject(res);
 	}
 	else
-		asAtomHandler::setUndefined(ret);
+		asAtomHandler::setNull(ret);
 }
 
 //Only from VM context

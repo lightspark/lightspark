@@ -375,7 +375,23 @@ void Stage::prepareShutdown()
 		focus->prepareShutdown();
 	if (root)
 		root->prepareShutdown();
+	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
+	{
+		if (!asAtomHandler::is<DisplayObject>(*it))
+		{
+			ASATOM_PREPARESHUTDOWN(*it);
+			ASATOM_REMOVESTOREDMEMBER(*it);
+		}
+	}
 	avm1KeyboardListeners.clear();
+	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
+	{
+		if (!asAtomHandler::is<DisplayObject>(*it))
+		{
+			ASATOM_PREPARESHUTDOWN(*it);
+			ASATOM_REMOVESTOREDMEMBER(*it);
+		}
+	}
 	avm1MouseListeners.clear();
 	avm1EventListeners.clear();
 	avm1ResizeListeners.clear();
@@ -1193,7 +1209,7 @@ void Stage::AVM1GetKeyboardListeners(AVM1Array* res)
 	res->resize(avm1KeyboardListeners.size());
 	for (uint32_t i = 0; i < avm1KeyboardListeners.size();i++)
 	{
-		asAtom l = avm1MouseListeners.at(i);
+		asAtom l = avm1KeyboardListeners.at(i);
 		res->set(i,l,false);
 	}
 }

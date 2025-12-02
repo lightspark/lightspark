@@ -327,7 +327,7 @@ AVM1_FUNCTION_TYPE_BODY(AVM1SharedObject, AVM1SharedObject, getSize)
 		(
 			act,
 			name,
-			getProp(act, "data").toObject(act)
+			_this->getProp(act, "data").toObject(act)
 		), data, false);
 		return number_t(data.size());
 	}

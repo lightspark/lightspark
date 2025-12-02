@@ -20,6 +20,8 @@
 #ifndef SCRIPTING_AVM1_TOPLEVEL_SHAREDOBJECT_H
 #define SCRIPTING_AVM1_TOPLEVEL_SHAREDOBJECT_H 1
 
+#include <vector>
+
 #include "gc/ptr.h"
 #include "scripting/avm1/function.h"
 #include "scripting/avm1/object/object.h"
@@ -31,10 +33,12 @@ namespace lightspark
 {
 
 class Amf0Serializer;
+class AMFValue;
 class AVM1Activation;
 class AVM1Array;
 class AVM1DeclContext;
 class LocalSharedObject;
+class LSOReader;
 
 class AVM1SharedObject : public AVM1Object
 {
@@ -56,6 +60,24 @@ private:
 		AVM1Activation& act,
 		const GcPtr<AVM1Object>& obj,
 		Amf0Serializer& serializer
+	);
+
+	// Deserializes an `AMFValue` into a `Value`.
+	// properties.
+	static AVM1Value deserializeValue
+	(
+		AVM1Activation& act,
+		const LSOReader& reader,
+		const AMFValue& value,
+		std::vector<GcPtr<AVM1Object>>& refMap
+	);
+
+	// Deserializes an `LSO` into an `Object` containing the stored
+	// properties.
+	static GcPtr<AVM1Object> deserializeLSO
+	(
+		AVM1Activation& act,
+		const LSOReader& reader
 	);
 
 	static LocalSharedObject makeLSO

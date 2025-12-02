@@ -146,6 +146,147 @@ void AVM1SharedObject::serialize
 	}
 }
 
+AVM1Value AVM1SharedObject::deserializeValue
+(
+	AVM1Activation& act,
+	const LSOReader& reader,
+	const AMFValue& value,
+	std::vector<GcPtr<AVM1Object>>& refMap
+)
+{
+	auto addRef = [&](const GcPtr<AVM1Object>& obj)
+	{
+		// NOTE: This **SHOULD** always be valid, but check anyways, just
+		// to be sure.
+		if (!reader.hasRef(value))
+			return;
+		refMap.push_back(obj);
+	};
+
+	return value.visit(makeVisitor
+	(
+		[&](const AMFUndefinedVal&) { return AVM1Value::undefinedVal; },
+		[&](const AMFNullVal&) { return AVM1Value::nullVal; },
+		[&](const tiny_string& str) { return AVM1Value(str); }
+		[&](bool flag) { return AVM1Value(flag); },
+		[&](number_t num) { return AVM1Value(num); },
+		[&](const AMFECMAArray& amfArray)
+		{
+			auto array = NEW_GC_PTR(act.getGcCtx(), AVM1Array
+			(
+				act,
+				amfArray.getSize()
+			));
+
+			addRef(array);
+
+			for (const auto& elem : amfArray.getElems())
+			{
+				auto val = deserializeValue
+				(
+					act,
+					reader,
+					elem.getValue()
+				);
+
+				(void)elem.getKey().tryToNumber
+				<
+					int32_t
+				>().andThen([&](int32_t i)
+				{
+					array->setElement(act, i, val);
+					return makeOptional(i);
+				}).orElse([&]
+				{
+					array->defineValue(elem.getKey(), val);
+					return {};
+				});
+			}
+			return array;
+		},
+		[&](const AMFObject& amfObj)
+		{
+			auto obj = NEW_GC_PTR(act.getGcCtx(), AVM1Object
+			(
+				act.getGcCtx(),
+				act.getPrototypes()->object->proto
+			));
+
+			addRef(obj);
+
+			for (const auto& elem : amfObj.getElems())
+			{
+				obj->defineValue
+				(
+					elem.getKey(),
+					deserializeValue(act, reader, elem.getValue(), refMap)
+				);
+			}
+			return obj;
+		},
+		[&](const AMFDate& date)
+		{
+			return NEW_GC_PTR(act.getGcCtx(), AVM1Date
+			(
+				act,
+				date.getTime().toFloat()
+			));
+		},
+		[&](const AMFXML& xml)
+		{
+			return NEW_GC_PTR(act.getGcCtx(), AVM1XML
+			(
+				act,
+				xml.getContent()
+			));
+		},
+		[&](const AMFReference& ref)
+		{
+			// NOTE: This **SHOULD** always be a valid reference, but a
+			// "bad" file could lead to an invalid one being created. In
+			// that case, just treat it as `undefined`.
+			return
+			(
+				ref.getIndex() < refMap.size() ?
+				refMap[ref.getIndex()] :
+				AVM1Value::undefinedVal
+			);
+		}.
+		[&](const auto&) { return AVM1Value::undefinedVal; }
+	));
+}
+
+GcPtr<AVM1Object> AVM1SharedObject::deserializeLSO
+(
+	AVM1Activation& act,
+	const LSOReader& reader
+)
+{
+	auto obj = NEW_GC_PTR(act.getGcCtx(), AVM1Object
+	(
+		act.getGcCtx(),
+		act.getPrototypes()->object->proto
+	));
+
+	auto lso = reader.tryParse();
+
+	// Failed to parse the LSO, return an empty object.
+	if (!lso.hasValue())
+		return obj;
+
+	std::vector<GcPtr<AVM1Object>> refMap;
+	for (const auto& elem : lso->getBody())
+	{
+		obj->defineValue
+		(
+			elem.getKey(),
+			deserializeValue(act, reader, elem.getValue(), refMap)
+		);
+	}
+
+	return obj;
+}
+
 LocalSharedObject AVM1SharedObject::makeLSO
 (
 	AVM1Activation& act,

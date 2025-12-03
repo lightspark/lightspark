@@ -419,6 +419,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 #endif
 							wasmodifiedTexture=false;
 						}
+						bmc->setModifiedTexture(false);
 						nanoVGnewImage = nanoVGCreateImageFromData(w,h,bmc->getData(),engineData);
 						assert(nanoVGnewImage>=0);
 						bmTextureID = nanoVGGetTextureID(nanoVGnewImage,engineData);

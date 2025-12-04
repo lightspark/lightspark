@@ -228,9 +228,92 @@ AVM1_FUNCTION_BODY(AVM1LoadVars, onData)
 	return AVM1Value::undefinedVal;
 }
 
+// Based on Gnash's `loadableobject_addRequestHeader()`.
 AVM1_FUNCTION_BODY(AVM1LoadVars, addRequestHeader)
 {
-	LOG(LOG_NOT_IMPLEMENTED, "AVM1: `LoadVars.addRequestHeader()` is a stub.");
+	auto customHeadersVal = _this->tryGetProp(act, "_customHeaders");
+	if (customHeadersVal.hasValue() && customHeadersVal->isNullOrUndefined())
+	{
+		LOG
+		(
+			LOG_ERROR,
+			"`LoadVars.addRequestHeaders()`: `_customHeaders` isn't an "
+			"`Object`."
+		);
+		return AVM1Value::undefinedVal;
+	}
+
+	auto customHeaders = *customHeadersVal.andThen([&](const auto& val)
+	{
+		return val.toObject(act).asOpt();
+	}).orElse([&]
+	{
+		auto ret = NEW_GC_PTR(act.getGcCtx(), AVM1Array(act));
+
+		// NOTE: `_customHeaders` is always defined on the first call to
+		// `addRequestHeaders()`.
+		_this->setProp(act, "_customHeaders", ret);
+		return ret;
+	});
+
+	if (args.empty())
+	{
+		// Return after initializing `_customHeaders`.
+		LOG
+		(
+			LOG_ERROR,
+			"`LoadVars.addRequestHeaders()` requires at least an argument."
+		);
+		return AVM1Value::undefinedVal;
+	}
+
+	auto pushPair = [&](const AVM1Value& key, const AVM1Value& value)
+	{
+		// NOTE: `key`, and `value` **MUST** be `String`s, otherwise, we
+		// bail.
+		if (!key.is<tiny_string>() || !value.is<tiny_string>())
+			return;
+
+		(void)customHeaders->callMethod
+		(
+			act,
+			"push",
+			{ key, value },
+			AVM1ExecutionReason::FunctionCall
+		);
+	};
+
+	if (args.size() > 1)
+	{
+		// `header{,Value}`: Push both arguments to `_customHeaders`.
+		pushPair(args[0], args[1]);
+		return AVM1Value::undefinedVal;
+	}
+
+	// Just `header`.
+	//
+	// NOTE: `header` **MUST** be an `Array` (of some kind).
+	// Keys, and values are pushed in valid pairs to `_customHeaders`.
+	if (args[0].isNullOrUndefined())
+	{
+		LOG
+		(
+			LOG_ERROR,
+			"`LoadVars.addRequestHeaders()`: `header` isn't an `Array`."
+		);
+		return AVM1Value::undefinedVal;
+	}
+
+	auto header = args[0].toObject(act);
+	// Ensure `header`'s length is even, by masking off the bottom bit.
+	size_t size = header->getLength(act) & ~1;
+
+	for (size_t i = 0; i < size; i += 2)
+	{
+		auto key = header->getElement(act, i);
+		auto value = header->getElement(act, i + 1);
+		pushPair(key, value);
+	}
 	return AVM1Value::undefinedVal;
 }
 

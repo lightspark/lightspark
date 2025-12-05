@@ -54,7 +54,7 @@ static constexpr auto protoDecls =
 	AVM1_FUNCTION_PROTO(getBytesLoaded, protoFlags),
 	AVM1_FUNCTION_PROTO(getBytesTotal, protoFlags),
 	AVM1_FUNCTION_PROTO(toString, protoFlags),
-	AVM1Decl("contentType", "application/x-www-form-urlencoded"),
+	AVM1Decl("contentType", "application/x-www-form-urlencoded", protoFlags),
 	AVM1_FUNCTION_PROTO(onLoad, protoFlags),
 	AVM1_FUNCTION_PROTO(onData, protoFlags),
 	AVM1_FUNCTION_PROTO(addRequestHeader, protoFlags)
@@ -107,16 +107,12 @@ AVM1_FUNCTION_BODY(AVM1LoadVars, sendAndLoad)
 
 	tiny_string url;
 	GcPtr<AVM1Object> target;
-	RequestMethod method;
+	Optional<RequestMethod> method;
 
 	unpacker(url);
-	AVM1_ARG_CHECK_RET(unpacker(target)
-	(
-		method,
-		RequestMethod::Post
-	), false);
+	AVM1_ARG_CHECK_RET(unpacker(target)(method, {}), false);
 
-	loadImpl(act, target, url, std::make_pair(_this, method));
+	loadImpl(act, target, url, _this, method);
 	return true;
 }
 
@@ -228,11 +224,38 @@ AVM1_FUNCTION_BODY(AVM1LoadVars, onData)
 	return AVM1Value::undefinedVal;
 }
 
+static NullableGcPtr<AVM1Object> getCustomHeaders
+(
+	AVM1Activation& act,
+	const GcPtr<AVM1Object>& loaderObj,
+	bool& isValid
+)
+{
+	isValid = true;
+	if (!loaderObj->hasProp(act, "_customHeaders"))
+		return NullGc;
+
+	auto val = loaderObj->getProp(act, "_customHeaders");
+	isValid = !val.isNullOrUndefined();
+	return isValid ? val.toObject(act) : NullGc;
+}
+
+static NullableGcPtr<AVM1Object> getCustomHeaders
+(
+	AVM1Activation& act,
+	const GcPtr<AVM1Object>& loaderObj
+)
+{
+	bool dummy;
+	return getCustomHeaders(act, loaderObj, dummy);
+}
+
 // Based on Gnash's `loadableobject_addRequestHeader()`.
 AVM1_FUNCTION_BODY(AVM1LoadVars, addRequestHeader)
 {
-	auto customHeadersVal = _this->tryGetProp(act, "_customHeaders");
-	if (customHeadersVal.hasValue() && customHeadersVal->isNullOrUndefined())
+	bool isValid;
+	auto customHeaders = getCustomHeaders(act, _this, isValid);
+	if (!isValid)
 	{
 		LOG
 		(
@@ -242,19 +265,14 @@ AVM1_FUNCTION_BODY(AVM1LoadVars, addRequestHeader)
 		);
 		return AVM1Value::undefinedVal;
 	}
-
-	auto customHeaders = *customHeadersVal.andThen([&](const auto& val)
+	else if (customHeaders.isNull())
 	{
-		return val.toObject(act).asOpt();
-	}).orElse([&]
-	{
-		auto ret = NEW_GC_PTR(act.getGcCtx(), AVM1Array(act));
+		customHeaders = NEW_GC_PTR(act.getGcCtx(), AVM1Array(act));
 
 		// NOTE: `_customHeaders` is always defined on the first call to
 		// `addRequestHeaders()`.
-		_this->setProp(act, "_customHeaders", ret);
-		return ret;
-	});
+		_this->setProp(act, "_customHeaders", customHeaders);
+	}
 
 	if (args.empty())
 	{
@@ -322,7 +340,8 @@ void AVM1LoadVars::loadImpl
 	AVM1Activation& act,
 	const GcPtr<AVM1Object>& loaderObj,
 	const tiny_string& url,
-	const LoadImplPair& sendObj
+	const NullableGcPtr<AVM1Object>& sendObj,
+	const Optional<RequestMethod>& method
 )
 {
 	auto defineHiddenProp = [&]
@@ -337,18 +356,57 @@ void AVM1LoadVars::loadImpl
 			loaderObj->defineValue(name, value, protoFlags);
 	};
 
+	auto request = sendObj.asOpt().andThen([&](const auto& obj)
+	{
+		// Send `sendObj`'s properties.
+		auto contentType = _this->getProp
+		(
+			act,
+			"contentType"
+		).toString(act);
+		auto request = act.objectToRequest
+		(
+			obj,
+			url,
+			method.valueOr(RequestMethod::Post),
+			// NOTE: For some reason, Flash Player ignores `contentType`,
+			// if no `method` string was supplied, but will always do a
+			// string conversion on `contentType`.
+			makeOptional(contentType).filter(method.hasValue())
+		);
+
+		if (method.hasValue() && *method == RequestMethod::Get)
+			return makeOptional(request);
+
+		// Check if we have any custom headers.
+		auto customHeaders = getCustomHeaders(act, _this);
+		if (customHeaders.isNull())
+			return makeOptional(request);
+
+		// Add custom headers, that were added by `addRequestHeader()`.
+		//
+		// NOTE: `_customHeaders`' length **SHOULD** always be even, but
+		// mask off the bottom bit anyways, just in case.
+		size_t size = customHeaders->getLength(act) & ~1;
+		for (size_t i = 0; i < size; i += 2)
+		{
+			auto key = customHeaders->getElement(act, i);
+			auto value = customHeaders->getElement(act, i + 1);
+			// NOTE: Both elements **MUST** be `String`s, otherwise, we
+			// move on to the next pair.
+			if (!key.is<tiny_string>() || !value.is<tiny_string>())
+				continue;
+			request.addHeader(key, value);
+		}
+
+		return makeOptional(request);
+	// Not sending anything.
+	}).valueOr(Request(url));
+
 	act.getSys()->loaderManager->loadFormIntoAVM1Object
 	(
 		targetObj,
 		request
-		sendObj.andThen([&](const auto& pair) -> Optional<Request>
-		{
-			// Send `sendObj`'s properties.
-			auto obj = pair.first;
-			auto method = pair.second;
-			return act.objectToRequest(obj, url, method);
-		// Not sending anything.
-		}).valueOr(Request(url))
 	);
 
 	// Create the hidden properties.

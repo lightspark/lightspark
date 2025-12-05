@@ -1113,7 +1113,7 @@ MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot, bool fromcurrentre
 	if(!parent || (!includeRoot && parent == getSystemState()->mainClip))
 		return fromcurrentrendering ? currentrendermatrix : getMatrix();
 	else
-		return parent->getConcatenatedMatrix(includeRoot).multiplyMatrix(fromcurrentrendering ? currentrendermatrix : getMatrix());
+		return parent->getConcatenatedMatrix(includeRoot,fromcurrentrendering).multiplyMatrix(fromcurrentrendering ? currentrendermatrix : getMatrix());
 }
 
 /* Return alpha value between 0 and 1. (The stored alpha value is not

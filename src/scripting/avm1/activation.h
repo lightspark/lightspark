@@ -451,7 +451,8 @@ public:
 	(
 		const GcPtr<AVM1Object>& obj,
 		const tiny_string& url,
-		const Optional<RequestMethod>& method
+		const Optional<RequestMethod>& method = {},
+		const Optional<tiny_string>& contentType = {}
 	);
 
 	// Convert the current local variable scope into set of form values.

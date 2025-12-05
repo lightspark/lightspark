@@ -24,6 +24,7 @@
 
 #include "gc/ptr.h"
 #include "scripting/avm1/function.h"
+#include "utils/optional.h"
 
 // Based on Ruffle's `avm1::globals::load_vars` crate.
 
@@ -33,17 +34,10 @@ namespace lightspark
 class AVM1Activation;
 class AVM1DeclContext;
 class AVM1Object;
-template<typename T>
-class Optional;
 enum RequestMethod;
 
 class AVM1LoadVars
 {
-	using LoadImplPair = Optional<std::pair
-	<
-		GcPtr<AVM1Object>,
-		RequestMethod
-	>>;
 public:
 	static GcPtr<AVM1SystemClass> createClass
 	(
@@ -66,7 +60,8 @@ public:
 		AVM1Activation& act,
 		const GcPtr<AVM1Object>& loaderObj,
 		const tiny_string& url,
-		const LoadImplPair& sendObj = {}
+		const NullableGcPtr<AVM1Object>& sendObj = NullGc,
+		const Optional<RequestMethod>& method = {}
 	);
 };
 

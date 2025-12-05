@@ -2815,7 +2815,8 @@ Request AVM1Activation::objectToRequest
 (
 	const GcPtr<AVM1Object>& obj,
 	const tiny_string& url,
-	const Optional<RequestMethod>& method
+	const Optional<RequestMethod>& method,
+	const Optional<tiny_string>& contentType
 )
 {
 	if (!method.hasValue())
@@ -2827,7 +2828,7 @@ Request AVM1Activation::objectToRequest
 		return RequestMethod(url,
 		{
 			queryStr,
-			"application/x-www-form-urlencoded"
+			contentType.valueOr("application/x-www-form-urlencoded")
 		});
 	}
 

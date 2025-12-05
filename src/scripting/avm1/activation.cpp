@@ -2845,7 +2845,7 @@ Request AVM1Activation::localsToRequest
 	const Optional<RequestMethod>& method
 )
 {
-	return objectToRequest(scope->getLocals());
+	return objectToRequest(scope->getLocals(), url, method);
 }
 
 NullableGcPtr<DisplayObject> AVM1Activation::resolveTargetClip

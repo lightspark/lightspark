@@ -633,6 +633,7 @@ struct garbagecollectorstate
 	bool isIgnored(ASObject* o);
 	bool hasMember(ASObject* o);
 	void reset();
+	void setChecked(ASObject* o);
 	garbagecollectorstate(ASObject* _startobj, uint32_t capacity):startobj(_startobj),stopped(false)
 	{
 		checkedobjects.reserve(capacity);

@@ -1018,8 +1018,11 @@ bool ASObject::deleteVariableByMultiname_intern(const multiname& name, ASWorker*
 	Variables.killObjVar(getInstanceWorker(),name);
 	//Now dereference the value
 	if (o)
+	{
+		if (obj->isStatic)
+			--o->storedmembercountstatic;
 		o->removeStoredMember();
-
+	}
 	return true;
 }
 
@@ -2517,7 +2520,7 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 {
 	if (gcstate.stopped)
 		return false;
-	assert(!parent->gccounter.ischecked);
+	assert(!parent->gccounter.ischecked || parent->gccounter.inchecking);
 
 	bool ret = false;
 	int step = 0;
@@ -2555,6 +2558,7 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 				{
 					if (o->countAllCylicMemberReferences(gcstate))
 					{
+						gcstate.setChecked(o);
 						o->gccounter.hasmember=true;
 						if (!o->gccounter.ignore && gcstate.isIgnored(parent))
 						{
@@ -2857,7 +2861,7 @@ bool ASObject::handleGarbageCollection()
 			assert (!this->getCached());
 			for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 			{
-				if (!(*it)->gccounter.ignore && (*it)->gccounter.count==(uint32_t)(*it)->getRefCount() && (*it)->gccounter.hasmember)
+				if (!(*it)->gccounter.ignore && (*it)->gccounter.count==(uint32_t)(*it)->getRefCount() && (*it)->gccounter.hasmember && !(*it)->markedforgarbagecollection)
 				{
 					getInstanceWorker()->addObjectToGarbageCollector((*it));
 					(*it)->deletedingarbagecollection=true;
@@ -2949,10 +2953,9 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 				ret=this->gccounter.hasmember;
 			this->gccounter.inchecking=false;
 
-			if (this != gcstate.startobj &&!this->gccounter.ischecked && !this->gccounter.inchecking)
+			if (!this->gccounter.inchecking)
 			{
-				gcstate.checkedobjects.push_back(this);
-				gccounter.ischecked=true;
+				gcstate.setChecked(this);
 			}
 		}
 	}
@@ -2967,9 +2970,10 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 			if ((*it)->deletedingarbagecollection)
 				break;
 			(*it)->gccounter.hasmember=true;
+			gcstate.setChecked(*it);
 			if ((*it)->hasStoredMemberStatic() || (*it)->getConstant())
 			{
-				(*it)->gccounter.ignore=true;
+				gcstate.ignoreCount(this);
 				gcstate.stopped=true;
 				break;
 			}
@@ -6223,6 +6227,7 @@ ASObject *asAtomHandler::toObject(asAtom& a, ASWorker* wrk, bool isconstant)
 
 void garbagecollectorstate::ignoreCount(ASObject* o)
 {
+	setChecked(o);
 	o->gccounter.ignore=true;
 	if (o->gccounter.hasmember)
 		this->stopped=true;
@@ -6233,6 +6238,16 @@ void garbagecollectorstate::reset()
 	startobj->gccounter.reset();
 	for (auto it = checkedobjects.begin(); it != checkedobjects.end(); it++)
 		(*it)->gccounter.reset();
+}
+
+void garbagecollectorstate::setChecked(ASObject* o)
+{
+	if (o!=startobj && !o->gccounter.ischecked)
+	{
+		checkedobjects.push_back(o);
+		o->gccounter.ischecked=true;
+	}
+
 }
 bool garbagecollectorstate::isIgnored(ASObject* o)
 {

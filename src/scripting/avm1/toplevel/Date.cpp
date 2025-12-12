@@ -28,29 +28,11 @@
 #include "scripting/avm1/toplevel/Date.h"
 #include "swf.h"
 #include "tiny_string.h"
-#include "utils/array.h"
 #include "utils/timespec.h"
 
 using namespace lightspark;
 
 // Based on Ruffle's `avm1::globals::date` crate.
-
-constexpr size_t secPerMin = 60;
-constexpr size_t minPerHour = 60;
-constexpr size_t hoursPerDay = 24;
-constexpr size_t msPerSec = 1000;
-constexpr size_t msPerMin = msPerSec * secPerMin;
-constexpr size_t msPerHour = msPerMin * minPerHour;
-constexpr size_t msPerDay = msPerHour * minPerDay;
-
-constexpr uint16_t monthOffsets[] =
-{
-	0, 31, 59,
-	90, 120, 151,
-	181, 212, 243,
-	273, 304, 334,
-	365,
-};
 
 AVM1Date::AVM1Date(AVM1Activation& act) : AVM1Object
 (
@@ -60,16 +42,28 @@ AVM1Date::AVM1Date(AVM1Activation& act) : AVM1Object
 {
 }
 
-size_t AVM1DateImpl::getDay() const
+AVM1DateImpl AVM1DateImpl::now(AVM1Activation& act)
 {
-	return time.toMs() / msPerDay;
+	return AVM1DateImpl(act.getSys()->date->now());
+}
+
+constexpr uint16_t AVM1DateImpl::getMonthOffset
+(
+	ssize_t i,
+	bool _inLeapYear
+)
+{
+	if (i < 0)
+		return 0;
+	bool addLeapDay = _inLeapYear && i >= 1;
+	return monthOffsets[std::min(i, 11)] + addLeapDay;
 }
 
 TimeSpec AVM1DateImpl::getTimeWithinDay(uint8_t swfVersion) const
 {
-	auto _time = time.toFloat() * msPerSec;
+	auto _time = time.toFloatMs();
 
-	return TimeSpec::fromFloat
+	return TimeSpec::fromFloatMs
 	(
 		swfVersion > 7 ?
 		remEuclid(_time, msPerDay) :
@@ -77,7 +71,7 @@ TimeSpec AVM1DateImpl::getTimeWithinDay(uint8_t swfVersion) const
 	);
 }
 
-size_t AVM1DateImpl::dayFromYear(number_t year)
+number_t AVM1DateImpl::dayFromYear(number_t year)
 {
 	return
 	(
@@ -88,14 +82,9 @@ size_t AVM1DateImpl::dayFromYear(number_t year)
 	);
 }
 
-TimeSpec AVM1DateImpl::timeFromYear(ssize_t year)
-{
-	return TimeSpec::fromMs(dayFromYear(year) * msPerDay);
-}
-
 size_t AVM1DateImpl::getYear() const
 {
-	number_t day = getDay();
+	auto day = getDay();
 
 	bool isBeforeEpoch = time.toSFloat() < 0;
 	// Use binary search to find the biggest `year`, such that
@@ -111,14 +100,14 @@ size_t AVM1DateImpl::getYear() const
 			number_t(high) / 2
 		);
 
-		if (timeFromYear(pivot) > time)
+		if (timeFromYear(pivot) > *this)
 		{
 			high = pivot - 1;
 			continue;
 		}
 
-		assert(timeFromYear(pivot) <= time);
-		if (timeFromYear(pivot + 1) > time)
+		assert(timeFromYear(pivot) <= *this);
+		if (timeFromYear(pivot + 1) > *this)
 			return pivot;
 		low = pivot + 1;
 	}
@@ -128,50 +117,82 @@ size_t AVM1DateImpl::getYear() const
 
 size_t AVM1DateImpl::getMonth() const
 {
-}
+	auto day = getDayWithinYear();
+	bool _inLeapYear = inLeapYear();
 
-size_t AVM1DateImpl::getDayWithinYear() const
-{
+	size_t i;
+	for (i = 0; i < 11 && day < getMonthOffset(i + 1, _inLeapYear); ++i);
+	return i;
 }
 
 size_t AVM1DateImpl::getDate() const
 {
+	return dayWithinYear() - getMonthOffset(getMonth()) + 1;
 }
 
 size_t AVM1DateImpl::getWeekDay() const
 {
+	return remEuclidInt(getDay() + 4, 7);
 }
 
-TimeSpec AVM1DateImpl::getLocalTZA(bool isUTC) const
+TimeSpec AVM1DateImpl::getLocalTZA(AVM1Activation& act, bool isUTC) const
 {
+	return TimeSpec::fromSec(act.getSys()->date->getLocalTZA(isUTC));
 }
 
-TimeSpec AVM1DateImpl::getLocalTime() const
+TimeSpec AVM1DateImpl::getDSTAdjustment(AVM1Activation& act) const
 {
+	auto date = act.getSys()->date;
+	return TimeSpec::fromSec(date->getDSTAdjustment(time));
 }
 
-TimeSpec AVM1DateImpl::getUTC() const
+AVM1DateImpl AVM1DateImpl::getLocalTime(AVM1Activation& act) const
 {
+	return AVM1DateImpl
+	(
+		time +
+		getLocalTZA(act, true) +
+		getDSTAdjust(act)
+	);
 }
 
-number_t AVM1DateImpl::getTimezoneOffset() const
+AVM1DateImpl AVM1DateImpl::getUTC(AVM1Activation& act) const
 {
+	return AVM1DateImpl
+	(
+		time -
+		getLocalTZA(act, true) +
+		getDSTAdjust(act)
+	);
+}
+
+number_t AVM1DateImpl::getTimezoneOffset(AVM1Activation& act) const
+{
+	return (time - getLocalTime(act)).toFloatMs();
 }
 
 size_t AVM1DateImpl::getHours() const
 {
+	auto _time = time.toFloatMs() + 0.5;
+	return remEuclidInt(std::floor(_time / msPerHour), hoursPerDay);
 }
 
 size_t AVM1DateImpl::getMinutes() const
 {
+	auto _time = time.toFloatMs();
+	return remEuclidInt(std::floor(_time / msPerMin), minPerHour);
 }
 
 size_t AVM1DateImpl::getSeconds() const
 {
+	auto _time = time.toFloatMs();
+	return remEuclidInt(std::floor(_time / msPerSec), secPerMin);
 }
 
 size_t AVM1DateImpl::getMilliseconds() const
 {
+	auto _time = time.toFloatMs();
+	return remEuclidInt(time.toFloatMs(), msPerSec);
 }
 
 TimeSpec AVM1DateImpl::makeTime
@@ -182,26 +203,76 @@ TimeSpec AVM1DateImpl::makeTime
 	number_t milliseconds
 )
 {
+	auto oldRoundMode = std::fegetround();
+	// Round all time components towards zero.
+	std::fesetround(FE_TOWARDZERO);
+
+	hours = std::round(hours);
+	minutes = std::round(minutes);
+	seconds = std::round(seconds);
+	milliseconds = std::round(milliseconds);
+
+	std::fesetround(oldRoundMode);
+
+	return TimeSpec::fromFloatMs
+	(
+		hours * msPerHour +
+		minutes * msPerMin +
+		seconds * msPerSec +
+		milliseconds
+	);
 }
 
 number_t AVM1DateImpl::dayFromMonth(number_t year, number_t month)
 {
+	auto _year = clampToInt<int32_t>(year);
+	auto _month = clampToInt<int32_t>(std::floor(month));
+
+	if (_month < 0 || _month > 12)
+		return NAN;
+
+	return dayFromYear(_year) + getMonthOffset
+	(
+		_month,
+		isLeapYear(_year)
+	);
 }
 
-TimeSpec AVM1DateImpl::makeDay
+number_t AVM1DateImpl::makeDay
 (
 	number_t year,
 	number_t month,
 	number_t date
 )
 {
+	auto oldRoundMode = std::fegetround();
+	// Round all time components towards zero.
+	std::fesetround(FE_TOWARDZERO);
+
+	year = std::round(year);
+	month = std::round(month);
+	date = std::round(date);
+
+	std::fesetround(oldRoundMode);
+
+	return dayFromMonth
+	(
+		year + std::floor(month / 12),
+		remEuclid(month, 12)
+	) + date - 1;
 }
 
-TimeSpec AVM1DateImpl::makeDate(number_t day, number_t time)
+AVM1DateImpl AVM1DateImpl::clip() const
 {
+	constexpr number_t limit = 100000000.0 * msPerDay;
+	return
+	(
+		isValid() &&
+		std::fabs(time.toFloatMs()) <= limit
+	) ? time : AVM1DateImpl();
 }
 
-TimeSpec AVM1DateImpl::clip() const
+tiny_string AVM1DateImpl::toString() const
 {
 }
 
@@ -287,7 +358,7 @@ AVM1_FUNCTION_BODY(AVM1Date, ctor)
 // and time as a `String`, as defined in ECMA-262.
 AVM1_FUNCTION_BODY(AVM1Date, func)
 {
-	// TODO: Implement.
+	return AVM1DateImpl::now().toString();
 }
 
 AVM1_PROPERTY_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, FullYear)

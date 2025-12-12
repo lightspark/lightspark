@@ -60,12 +60,12 @@ AVM1Date::AVM1Date(AVM1Activation& act) : AVM1Object
 {
 }
 
-size_t AVM1Date::getDay() const
+size_t AVM1DateImpl::getDay() const
 {
 	return time.toMs() / msPerDay;
 }
 
-TimeSpec AVM1Date::getTimeWithinDay(uint8_t swfVersion) const
+TimeSpec AVM1DateImpl::getTimeWithinDay(uint8_t swfVersion) const
 {
 	auto _time = time.toFloat() * msPerSec;
 
@@ -77,7 +77,7 @@ TimeSpec AVM1Date::getTimeWithinDay(uint8_t swfVersion) const
 	);
 }
 
-size_t AVM1Date::dayFromYear(number_t year)
+size_t AVM1DateImpl::dayFromYear(number_t year)
 {
 	return
 	(
@@ -88,12 +88,12 @@ size_t AVM1Date::dayFromYear(number_t year)
 	);
 }
 
-TimeSpec AVM1Date::timeFromYear(ssize_t year)
+TimeSpec AVM1DateImpl::timeFromYear(ssize_t year)
 {
 	return TimeSpec::fromMs(dayFromYear(year) * msPerDay);
 }
 
-size_t AVM1Date::getYear() const
+size_t AVM1DateImpl::getYear() const
 {
 	number_t day = getDay();
 
@@ -126,55 +126,55 @@ size_t AVM1Date::getYear() const
 	return low;
 }
 
-size_t AVM1Date::getMonth() const
+size_t AVM1DateImpl::getMonth() const
 {
 }
 
-size_t AVM1Date::getDayWithinYear() const
+size_t AVM1DateImpl::getDayWithinYear() const
 {
 }
 
-size_t AVM1Date::getDate() const
+size_t AVM1DateImpl::getDate() const
 {
 }
 
-size_t AVM1Date::getWeekDay() const
+size_t AVM1DateImpl::getWeekDay() const
 {
 }
 
-TimeSpec AVM1Date::getLocalTZA(bool isUTC) const
+TimeSpec AVM1DateImpl::getLocalTZA(bool isUTC) const
 {
 }
 
-TimeSpec AVM1Date::getLocalTime() const
+TimeSpec AVM1DateImpl::getLocalTime() const
 {
 }
 
-TimeSpec AVM1Date::getUTC() const
+TimeSpec AVM1DateImpl::getUTC() const
 {
 }
 
-number_t AVM1Date::getTimezoneOffset() const
+number_t AVM1DateImpl::getTimezoneOffset() const
 {
 }
 
-size_t AVM1Date::getHours() const
+size_t AVM1DateImpl::getHours() const
 {
 }
 
-size_t AVM1Date::getMinutes() const
+size_t AVM1DateImpl::getMinutes() const
 {
 }
 
-size_t AVM1Date::getSeconds() const
+size_t AVM1DateImpl::getSeconds() const
 {
 }
 
-size_t AVM1Date::getMilliseconds() const
+size_t AVM1DateImpl::getMilliseconds() const
 {
 }
 
-TimeSpec AVM1Date::makeTime
+TimeSpec AVM1DateImpl::makeTime
 (
 	number_t hours,
 	number_t minutes,
@@ -184,11 +184,11 @@ TimeSpec AVM1Date::makeTime
 {
 }
 
-number_t AVM1Date::dayFromMonth(number_t year, number_t month)
+number_t AVM1DateImpl::dayFromMonth(number_t year, number_t month)
 {
 }
 
-TimeSpec AVM1Date::makeDay
+TimeSpec AVM1DateImpl::makeDay
 (
 	number_t year,
 	number_t month,
@@ -197,11 +197,11 @@ TimeSpec AVM1Date::makeDay
 {
 }
 
-TimeSpec AVM1Date::makeDate(number_t day, number_t time)
+TimeSpec AVM1DateImpl::makeDate(number_t day, number_t time)
 {
 }
 
-TimeSpec AVM1Date::clip() const
+TimeSpec AVM1DateImpl::clip() const
 {
 }
 

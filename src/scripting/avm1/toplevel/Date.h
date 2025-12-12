@@ -34,8 +34,9 @@ class AVM1Activation;
 class AVM1SystemClass;
 class AVM1DeclContext;
 
-class AVM1Date : public AVM1Object
+class AVM1DateImpl
 {
+	using Date = AVM1DateImpl;
 private:
 	static constexpr TimeSpec invalidTime
 	(
@@ -45,7 +46,27 @@ private:
 	);
 
 	TimeSpec time;
+public:
+	Date(const TimeSpec& _time = invalidTime) : time(_time) {}
+	Date(number_t ms) : Date(TimeSpec::fromMs(ms)) {}
 
+	Date
+	(
+		number_t year,
+		number_t month,
+		number_t date,
+		number_t hours,
+		number_t minutes,
+		number_t seconds,
+		number_t milliseconds
+	) : Date(makeDate
+	(
+		makeDay(year < 100 ? year + 1900 : year, month, date),
+		makeTime(hours, minutes, seconds, milliseconds)
+	)) {}
+
+	const TimeSpec& getTime() const { return time; }
+	bool isValid() const { return time != invalidTime; }
 	// ECMA-262 2nd edition sec. 15.9.1.2. `Day`.
 	// Gets the number of days since the epoch.
 	size_t getDay() const;
@@ -168,22 +189,30 @@ private:
 
 	// ECMA-262 2nd edition sec. 15.9.1.14. `TimeClip`.
 	TimeSpec clip() const;
+}
+
+class AVM1Date : public AVM1Object
+{
+private:
+	AVM1DateImpl date;
 public:
-	const TimeSpec& getTime() const { return time; }
-	bool isValid() const { return time != invalidTime; }
+	const AVM1DateImpl& getDate() const { return date; }
+	AVM1DateImpl& getDate() { return date; }
+	const TimeSpec& getTime() const { return date.getTime(); }
+	bool isValid() const { return date.isValid(); }
 
 	AVM1Date(AVM1Activation& act);
 	AVM1Date
 	(
 		AVM1Activation& act,
-		const TimeSpec& _time
-	) : AVM1Date(act), time(_time) {}
+		const TimeSpec& time
+	) : AVM1Date(act), date(time) {}
 
 	AVM1Date
 	(
 		AVM1Activation& act,
 		number_t ms
-	) : AVM1Date(act), time(TimeSpec::fromMs(ms)) {}
+	) : AVM1Date(act), date(ms) {}
 
 	AVM1Date
 	(
@@ -195,11 +224,16 @@ public:
 		number_t minutes,
 		number_t seconds,
 		number_t milliseconds
-	) : AVM1Date(act makeDate
+	) : AVM1Date(act), date
 	(
-		makeDay(year < 100 ? year + 1900 : year, month, date),
-		makeTime(hours, minutes, seconds, milliseconds)
-	)) {}
+		year,
+		month,
+		date,
+		hours,
+		minutes,
+		seconds,
+		milliseconds
+	) {}
 
 	static GcPtr<AVM1SystemClass> createClass
 	(

@@ -71,7 +71,7 @@ public:
 	{
 		if (needsSuper() || getSWFVersion() < 7)
 		{
-			asAtom newsuper = computeSuper(*obj);
+			asAtom newsuper = computeSuper(obj ? *obj : asAtomHandler::nullAtom );
 			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,&newsuper,isInternalCall);
 		}
 		else

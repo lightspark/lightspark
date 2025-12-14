@@ -714,8 +714,8 @@ SystemState::~SystemState()
 	mutexFrameListeners.unlock();
 
 	this->resetParentList();
+	stage->_removeAllChildren(false);
 	stage->prepareShutdown();
-	stage->_removeAllChildren();
 	// finalize main worker
 	worker->finalize();
 	workerDomain->finalize();

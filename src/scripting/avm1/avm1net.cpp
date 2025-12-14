@@ -437,6 +437,7 @@ ASFUNCTIONBODY_ATOM(AVM1FileReference,removeListener)
 	{
 		th->listeners.erase(o);
 		o->removeStoredMember();
+		wrk->getSystemState()->stage->AVM1RemoveEventListener(th);
 	}
 }
 void AVM1FileReferenceList::finalize()
@@ -518,5 +519,6 @@ ASFUNCTIONBODY_ATOM(AVM1FileReferenceList,removeListener)
 	{
 		th->listeners.erase(o);
 		o->removeStoredMember();
+		wrk->getSystemState()->stage->AVM1RemoveEventListener(th);
 	}
 }

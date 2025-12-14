@@ -103,11 +103,11 @@ private:
 	bool needsTextureRecalculation;
 	bool textureRecalculationSkippable;
 	std::map<uint32_t,asAtom> avm1variables;
+protected:
 	uint32_t avm1mouselistenercount;
 	uint32_t avm1framelistenercount;
 	uint32_t broadcastEventListenerCount;
 	void onSetScrollRect(asAtom oldValue);
-protected:
 	_NR<Rectangle> scalingGrid;
 	MATRIX currentrendermatrix;
 	std::multimap<uint32_t,_NR<DisplayObject>> variablebindings;

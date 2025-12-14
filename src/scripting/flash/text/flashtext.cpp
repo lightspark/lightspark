@@ -264,6 +264,9 @@ ASFUNCTIONBODY_GETTER_SETTER(TextField, useRichTextClipboard) // stub
 void TextField::finalize()
 {
 	InteractiveObject::finalize();
+	if (tagvartarget)
+		tagvartarget->removeStoredMember();
+	tagvartarget=nullptr;
 	ASATOM_REMOVESTOREDMEMBER(restrictChars);
 	restrictChars=asAtomHandler::nullAtom;
 	styleSheet.reset();

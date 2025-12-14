@@ -1076,11 +1076,14 @@ public:
 	inline Class_base* getClass() const { return classdef; }
 	void setClass(Class_base* c);
 	void addStoredMember();
+	void addStoredMemberStatic() { ++storedmembercountstatic; addStoredMember(); }
 	bool isMarkedForGarbageCollection() const { return markedforgarbagecollection; }
 	bool removefromGarbageCollection();
 	bool addToGarbageCollection();
 	void removeStoredMember();
+	void removeStoredMemberStatic() { --storedmembercountstatic; removeStoredMember(); }
 	bool hasStoredMemberStatic() const { return storedmembercountstatic; }
+	uint32_t getStoredMemberStatic() const { return storedmembercountstatic; }
 	FORCE_INLINE void decRefAndGCCheck()
 	{
 		if (storedmembercount

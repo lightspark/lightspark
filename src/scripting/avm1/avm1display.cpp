@@ -43,7 +43,6 @@ using namespace lightspark;
 void AVM1MovieClip::afterConstruction(bool _explicit)
 {
 	MovieClip::afterConstruction(_explicit);
-	getSystemState()->stage->AVM1AddEventListener(this);
 }
 
 void AVM1MovieClip::finalize()
@@ -53,7 +52,6 @@ void AVM1MovieClip::finalize()
 		droptarget->removeStoredMember();
 	droptarget=nullptr;
 	color.reset();
-	getSystemState()->stage->AVM1RemoveEventListener(this);
 }
 
 bool AVM1MovieClip::destruct()
@@ -63,7 +61,6 @@ bool AVM1MovieClip::destruct()
 	droptarget=nullptr;
 	color.reset();
 	focusEnabled=asAtomHandler::undefinedAtom;
-	getSystemState()->stage->AVM1RemoveEventListener(this);
 	return MovieClip::destruct();
 }
 
@@ -282,8 +279,11 @@ ASFUNCTIONBODY_ATOM(AVM1Stage,removeResizeListener)
 
 void AVM1MovieClipLoader::addLoader(URLRequest* r, DisplayObject* target,int level)
 {
+	getSystemState()->stage->AVM1AddEventListener(this);
 	loadermutex.lock();
 	Loader* ldr = Class<Loader>::getInstanceSNoArgs(getInstanceWorker());
+	ldr->constructionComplete();
+	ldr->afterConstruction();
 	ldr->addStoredMember();
 	ldr->loadedFrom=target->loadedFrom;
 	ldr->AVM1setup(level,this);
@@ -303,8 +303,6 @@ void AVM1MovieClipLoader::sinit(Class_base* c)
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,_constructor)
 {
-	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
-	th->getSystemState()->stage->AVM1AddEventListener(th);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 {
@@ -377,6 +375,7 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,removeListener)
 		th->listeners.erase(o);
 		o->removeStoredMember();
 	}
+	wrk->getSystemState()->stage->AVM1RemoveEventListener(th);
 }
 void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
@@ -446,6 +445,7 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 					f->call(&ret,&obj,args,1);
 				}
 				ASATOM_DECREF(func);
+				getSystemState()->stage->AVM1RemoveEventListener(this);
 			}
 			else if (e->type == "progress")
 			{

@@ -70,7 +70,10 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSprit
 	,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
 	,forAVM1InitAction(false)
 	,framecontainer(nullptr)
-	,actions(nullptr),totalFrames_unreliable(1),enabled(true)
+	,actions(nullptr)
+	,avm1clipeventlistenercount(0)
+	,totalFrames_unreliable(1)
+	,enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 }
@@ -79,7 +82,10 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c, FrameContainer* f, uint32_t d
 	,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
 	,forAVM1InitAction(false)
 	,framecontainer(f)
-	,actions(nullptr),totalFrames_unreliable(f->getFramesLoaded()),enabled(true)
+	,actions(nullptr)
+	,avm1clipeventlistenercount(0)
+	,totalFrames_unreliable(f->getFramesLoaded())
+	,enabled(true)
 {
 	subtype=SUBTYPE_MOVIECLIP;
 	//For sprites totalFrames_unreliable is the actual frame count
@@ -103,6 +109,7 @@ bool MovieClip::destruct()
 	lastFrameScriptExecuted = UINT32_MAX;
 	lastratio=0;
 	totalFrames_unreliable = 1;
+	avm1clipeventlistenercount=0;
 	inExecuteFramescript=false;
 
 	state.reset();
@@ -149,6 +156,30 @@ void MovieClip::prepareShutdown()
 {
 	if (preparedforshutdown)
 		return;
+	if (actions)
+	{
+		if (actions->AllEventFlags.ClipEventMouseDown ||
+			actions->AllEventFlags.ClipEventMouseMove ||
+			actions->AllEventFlags.ClipEventRollOver ||
+			actions->AllEventFlags.ClipEventRollOut ||
+			actions->AllEventFlags.ClipEventPress ||
+			actions->AllEventFlags.ClipEventMouseUp)
+		{
+			getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+		}
+		if (actions->AllEventFlags.ClipEventKeyDown ||
+			actions->AllEventFlags.ClipEventKeyUp ||
+			actions->AllEventFlags.ClipEventKeyPress)
+			getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
+		if (actions->AllEventFlags.ClipEventEnterFrame)
+			getSystemState()->unregisterFrameListener(this);
+
+		while (avm1clipeventlistenercount--)
+		{
+			getSystemState()->stage->AVM1RemoveEventListener(this);
+		}
+
+	}
 	Sprite::prepareShutdown();
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())
@@ -731,6 +762,7 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 	{
 		setMouseEnabled(true);
 		getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+		avm1mouselistenercount++;
 	}
 	if (clipactions.AllEventFlags.ClipEventKeyDown ||
 		clipactions.AllEventFlags.ClipEventKeyUp ||
@@ -926,6 +958,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	}
 	else
 		th->insertLegacyChildAt(Depth,toAdd,false,false);
+	toAdd->constructionComplete();
 	toAdd->afterConstruction();
 	toAdd->incRef();
 	ret=asAtomHandler::fromObject(toAdd);
@@ -978,10 +1011,7 @@ MovieClip* MovieClip::AVM1CloneSprite(asAtom target, uint32_t Depth,ASObject* in
 	AVM1MovieClip* toAdd=nullptr;
 	DefineSpriteTag* tag = getTagID() != UINT32_MAX ? (DefineSpriteTag*)loadedFrom->dictionaryLookup(getTagID()) : nullptr;
 	if (tag)
-	{
 		toAdd= tag->instance()->as<AVM1MovieClip>();
-		toAdd->legacy=true;
-	}
 	else
 		toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(getInstanceWorker());
 
@@ -1166,7 +1196,9 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 	uint32_t width;
 	uint32_t height;
 	ARG_CHECK(ARG_UNPACK(instanceName)(depth)(x)(y)(width)(height));
+
 	AVM1TextField* tf = Class<AVM1TextField>::getInstanceS(wrk);
+	tf->loadedFrom = th->loadedFrom;
 	tf->name = wrk->getSystemState()->getUniqueStringId(instanceName);
 	tf->setX(x);
 	tf->setY(y);
@@ -1175,17 +1207,6 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 	if (th->hasLegacyChildAt(depth))
 		th->deleteLegacyChildAt(depth, false);
 	th->insertLegacyChildAt(depth, tf, false, false);
-
-	if(tf->name != BUILTIN_STRINGS::EMPTY)
-	{
-		tf->incRef();
-		multiname objName(nullptr);
-		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=tf->name;
-		objName.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		asAtom v = asAtomHandler::fromObjectNoPrimitive(tf);
-		th->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,wrk);
-	}
 	if (wrk->getSystemState()->getSwfVersion() >= 8)
 	{
 		tf->incRef();
@@ -1214,7 +1235,8 @@ void MovieClip::AVM1HandleConstruction(bool forInitAction)
 		constr->call(&ret,&obj,nullptr,0);
 		AVM1registerPrototypeListeners();
 	}
-	afterConstruction();
+	if (this != getSystemState()->mainClip)
+		afterConstruction();
 }
 /* Go through the hierarchy and add all
  * legacy objects which are new in the current

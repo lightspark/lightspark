@@ -302,10 +302,24 @@ bool Stage::destruct()
 	fullScreenSourceRect.reset();
 	softKeyboardRect.reset();
 	
+	for (auto it = avm1FocusListeners.begin(); it != avm1FocusListeners.end(); it++)
+	{
+		ASATOM_REMOVESTOREDMEMBER(*it);
+	}
+	avm1FocusListeners.clear();
+	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
+	{
+		ASATOM_REMOVESTOREDMEMBER(*it);
+	}
 	avm1KeyboardListeners.clear();
+	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
+	{
+		ASATOM_REMOVESTOREDMEMBER(*it);
+	}
 	avm1MouseListeners.clear();
-	avm1EventListeners.clear();
+
 	avm1ResizeListeners.clear();
+	assert(avm1EventListeners.empty());
 
 	return DisplayObjectContainer::destruct();
 }
@@ -323,8 +337,8 @@ void Stage::finalize()
 	
 	avm1KeyboardListeners.clear();
 	avm1MouseListeners.clear();
-	avm1EventListeners.clear();
 	avm1ResizeListeners.clear();
+	assert(avm1EventListeners.empty());
 
 	DisplayObjectContainer::finalize();
 }
@@ -336,6 +350,25 @@ bool Stage::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
 	if (focus)
 		ret = focus->countAllCylicMemberReferences(gcstate) || ret;
+	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
+	{
+		ASObject* o = asAtomHandler::getObject(*it);
+		if (o)
+			ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	}
+	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
+	{
+		ASObject* o = asAtomHandler::getObject(*it);
+		if (o)
+			ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	}
+	for (auto it = avm1FocusListeners.begin(); it != avm1FocusListeners.end(); it++)
+	{
+		ASObject* o = asAtomHandler::getObject(*it);
+		if (o)
+			ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	}
+
 	return ret;
 }
 
@@ -343,13 +376,14 @@ void Stage::prepareShutdown()
 {
 	if (this->preparedforshutdown)
 		return;
-	while(!avm1FocusListeners.empty())
+	vector<pair<ASObject*,uint32_t>> tmpeventlisteners = avm1EventListeners;
+	for (auto it = tmpeventlisteners.begin(); it != tmpeventlisteners.end(); it++)
 	{
-		asAtom a = avm1FocusListeners.back();
-		ASATOM_PREPARESHUTDOWN(a);
-		ASATOM_REMOVESTOREDMEMBER(a);
-		avm1FocusListeners.pop_back();
+		while (it->second--)
+			it->first->removeStoredMemberStatic();
 	}
+	avm1EventListeners.clear();
+
 	DisplayObjectContainer::prepareShutdown();
 	while (this->hiddenNextDisplayObject != this)
 	{
@@ -373,28 +407,31 @@ void Stage::prepareShutdown()
 		nativeWindow->prepareShutdown();
 	if (focus)
 		focus->prepareShutdown();
+	if (focus)
+	{
+		focus->removeStoredMember();
+		focus=nullptr;
+	}
 	if (root)
 		root->prepareShutdown();
-	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
+	vector<asAtom> tmpfocuslisteners = avm1FocusListeners;
+	for (auto it = tmpfocuslisteners.begin(); it != tmpfocuslisteners.end(); it++)
 	{
-		if (!asAtomHandler::is<DisplayObject>(*it))
-		{
-			ASATOM_PREPARESHUTDOWN(*it);
-			ASATOM_REMOVESTOREDMEMBER(*it);
-		}
+		ASATOM_PREPARESHUTDOWN(*it);
 	}
-	avm1KeyboardListeners.clear();
-	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
+	vector<asAtom> tmpkeyboardlisteners = avm1KeyboardListeners;
+	for (auto it = tmpkeyboardlisteners.begin(); it != tmpkeyboardlisteners.end(); it++)
 	{
-		if (!asAtomHandler::is<DisplayObject>(*it))
-		{
-			ASATOM_PREPARESHUTDOWN(*it);
-			ASATOM_REMOVESTOREDMEMBER(*it);
-		}
+		ASATOM_PREPARESHUTDOWN(*it);
 	}
-	avm1MouseListeners.clear();
-	avm1EventListeners.clear();
+	vector<asAtom> tmpmouselisteners = avm1MouseListeners;
+	for (auto it = tmpmouselisteners.begin(); it != tmpmouselisteners.end(); it++)
+	{
+		ASATOM_PREPARESHUTDOWN(*it);
+	}
+
 	avm1ResizeListeners.clear();
+
 	avm1ScriptMutex.lock();
 	auto itscr = avm1scriptstoexecute.begin();
 	while (itscr != avm1scriptstoexecute.end())
@@ -1062,7 +1099,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 		avm1listenerMutex.lock();
 		vector<asAtom> tmplisteners = avm1KeyboardListeners;
 		for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
-			ASATOM_INCREF(*it);
+			ASATOM_ADDSTOREDMEMBER(*it);
 		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
 		bool handled = false;
@@ -1074,7 +1111,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 			{
 				if (!handled && o->AVM1HandleKeyboardEvent(e->as<KeyboardEvent>()))
 					handled=true;
-				o->decRef();
+				o->removeStoredMember();
 			}
 			it++;
 		}
@@ -1086,7 +1123,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 		vector<asAtom> tmplisteners = avm1MouseListeners;
 		for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
 		{
-			ASATOM_INCREF(*it);
+			ASATOM_ADDSTOREDMEMBER(*it);
 		}
 		avm1listenerMutex.unlock();
 		if (e->type=="mouseDown")
@@ -1113,7 +1150,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 				if (o)
 				{
 					o->AVM1HandlePressedEvent(dispatcher);
-					o->decRef();
+					o->removeStoredMember();
 				}
 			}
 		}
@@ -1126,7 +1163,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 				if (o)
 				{
 					o->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
-					o->decRef();
+					o->removeStoredMember();
 				}
 				it++;
 			}
@@ -1135,23 +1172,29 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 	else
 	{
 		avm1listenerMutex.lock();
-		vector<ASObject*> tmplisteners = avm1EventListeners;
+		vector<pair<ASObject*,uint32_t>> tmplisteners = avm1EventListeners;
+		for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
+		{
+			it->first->incRef();
+		}
 		avm1listenerMutex.unlock();
 		// eventhandlers may change the listener list, so we work on a copy
 		auto it = tmplisteners.rbegin();
 		while (it != tmplisteners.rend())
 		{
-			(*it)->incRef();
-			(*it)->AVM1HandleEvent(dispatcher, e);
-			(*it)->decRef();
-			it++;
+			ASObject* o = it->first;
+			o->AVM1HandleEvent(dispatcher, e);
+			o->decRef();
+			++it;
 		}
 		if (!avm1ResizeListeners.empty() && dispatcher==this && e->type=="resize")
 		{
 			avm1listenerMutex.lock();
 			vector<ASObject*> tmplisteners = avm1ResizeListeners;
 			for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
+			{
 				(*it)->incRef();
+			}
 			avm1listenerMutex.unlock();
 			// eventhandlers may change the listener list, so we work on a copy
 			auto it = tmplisteners.rbegin();
@@ -1185,6 +1228,7 @@ bool Stage::AVM1AddKeyboardListener(asAtom listener)
 		if ((*it).uintval == listener.uintval)
 			return false;
 	}
+	ASATOM_ADDSTOREDMEMBER(listener);
 	avm1KeyboardListeners.push_back(listener);
 	return true;
 }
@@ -1197,6 +1241,7 @@ bool Stage::AVM1RemoveKeyboardListener(asAtom listener)
 		if ((*it).uintval == listener.uintval)
 		{
 			avm1KeyboardListeners.erase(it);
+			ASATOM_REMOVESTOREDMEMBER(listener);
 			return true;
 		}
 	}
@@ -1248,6 +1293,7 @@ bool Stage::AVM1AddMouseListener(asAtom listener)
 		avm1MouseListeners.insert(it, listener);
 	else
 		avm1MouseListeners.push_back(listener);
+	ASATOM_ADDSTOREDMEMBER(listener);
 	return true;
 }
 
@@ -1258,6 +1304,7 @@ bool Stage::AVM1RemoveMouseListener(asAtom listener)
 	{
 		if ((*it).uintval == listener.uintval)
 		{
+			ASATOM_REMOVESTOREDMEMBER(listener);
 			avm1MouseListeners.erase(it);
 			return true;
 		}
@@ -1275,24 +1322,34 @@ void Stage::AVM1GetMouseListeners(AVM1Array* res)
 		res->set(i,listener,false);
 	}
 }
+
 void Stage::AVM1AddEventListener(ASObject *o)
 {
 	Locker l(avm1listenerMutex);
+	o->incRef();
+	o->addStoredMemberStatic();
 	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
 	{
-		if ((*it) == o)
+		if ((*it).first == o)
+		{
+			++(*it).second;
 			return;
+		}
 	}
-	avm1EventListeners.push_back(o);
+	avm1EventListeners.push_back(make_pair(o,1));
 }
 void Stage::AVM1RemoveEventListener(ASObject *o)
 {
 	Locker l(avm1listenerMutex);
 	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
 	{
-		if ((*it) == o)
+		if ((*it).first == o)
 		{
-			avm1EventListeners.erase(it);
+			assert ((*it).second);
+			--(*it).second;
+			o->removeStoredMemberStatic();
+			if ((*it).second==0)
+				avm1EventListeners.erase(it);
 			break;
 		}
 	}

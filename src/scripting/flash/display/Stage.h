@@ -46,7 +46,7 @@ private:
 	_NR<RootMovieClip> root;
 	vector<asAtom> avm1KeyboardListeners;
 	vector<asAtom> avm1MouseListeners;
-	vector<ASObject*> avm1EventListeners;
+	vector<pair<ASObject*,uint32_t>> avm1EventListeners;
 	vector<ASObject*> avm1ResizeListeners;
 	vector<asAtom> avm1FocusListeners;
 	// double linked list of AVM1 MovieClips currently on Stage that have scripts to execute

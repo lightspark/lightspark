@@ -856,6 +856,7 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 		{
 			(*inserted.first).second->removeStoredMember();
 			obj->incRef();
+			obj->addStoredMember();
 			(*inserted.first).second = obj;
 		}
 	}
@@ -869,7 +870,7 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 {
 	if(hasLegacyChildAt(depth))
 	{
-		LOG(LOG_ERROR,"insertLegacyChildAt: there is already one child at that depth");
+		LOG(LOG_ERROR,"insertLegacyChildAt: there is already one child at that depth "<<this->toDebugString()<<" "<<obj->toDebugString()<<" "<<depth);
 		return;
 	}
 	
@@ -1007,6 +1008,7 @@ void DisplayObjectContainer::purgeLegacyChildren()
 			{
 				(*inserted.first).second->removeStoredMember();
 				obj->incRef();
+				obj->addStoredMember();
 				(*inserted.first).second = obj;
 			}
 		}
@@ -1103,9 +1105,7 @@ void DisplayObjectContainer::prepareShutdown()
 	for (int i = dynamicDisplayList.size()-1; i >= 0; i--)
 	{
 		DisplayObject* d = dynamicDisplayList[i];
-		dynamicDisplayList.pop_back();
 		d->prepareShutdown();
-		d->removeStoredMember();
 	}
 }
 
@@ -1709,21 +1709,24 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		this->requestInvalidation(getSystemState());
 }
 
-void DisplayObjectContainer::handleRemovedEvent(DisplayObject* child, bool keepOnStage, bool inskipping)
+void DisplayObjectContainer::handleRemovedEvent(DisplayObject* child, bool keepOnStage, bool inskipping, bool sendevents)
 {
-	_R<Event> e=_MR(Class<Event>::getInstanceS(child->getInstanceWorker(),"removed",true));
-	if (isVmThread())
-		ABCVm::publicHandleEvent(child, e);
-	else
+	if (sendevents)
 	{
-		child->incRef();
-		getVm(getSystemState())->addEvent(_MR(child), e);
+		_R<Event> e=_MR(Class<Event>::getInstanceS(child->getInstanceWorker(),"removed",true));
+		if (isVmThread())
+			ABCVm::publicHandleEvent(child, e);
+		else
+		{
+			child->incRef();
+			getVm(getSystemState())->addEvent(_MR(child), e);
+		}
 	}
 	if (!keepOnStage && (child->isOnStage() || !child->getStage().isNull()))
 		child->setOnStage(false, true, inskipping);
 }
 
-bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool inskipping, bool keeponstage)
+bool DisplayObjectContainer::_removeChild(DisplayObject* child, bool direct, bool inskipping, bool keeponstage, bool sendevents)
 {
 	if(!child->getParent() || child->getParent()!=this)
 		return false;
@@ -1738,7 +1741,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child,bool direct,bool 
 	}
 	child->setMask(NullRef);
 	_removeFromDisplayList(child);
-	handleRemovedEvent(child, keeponstage, inskipping);
+	handleRemovedEvent(child, keeponstage, inskipping, sendevents);
 	if (!direct && !inskipping && !isVmThread())
 		getSystemState()->addDisplayObjectToResetParentList(child);
 	else
@@ -1759,25 +1762,18 @@ void DisplayObjectContainer::_removeFromDisplayList(DisplayObject* child)
 	dynamicDisplayList.erase(it);
 }
 
-void DisplayObjectContainer::_removeAllChildren()
+void DisplayObjectContainer::_removeAllChildren(bool sendevents)
 {
-	Locker l(mutexDisplayList);
+	mutexDisplayList.lock();
+	vector<DisplayObject*> childrenToRemove = dynamicDisplayList;
+	mutexDisplayList.unlock();
 	if (dynamicDisplayList.empty())
 		return; // no need to request invalidation if this container is already empty
-	auto it=dynamicDisplayList.begin();
-	while (it!=dynamicDisplayList.end())
+	auto it = childrenToRemove.begin();
+	while (it != childrenToRemove.end())
 	{
-		DisplayObject* child = *it;
-		child->setOnStage(false,false);
-		getSystemState()->addDisplayObjectToResetParentList(child);
-		child->setMask(NullRef);
-		if (!needsActionScript3())
-			child->removeAVM1Listeners();
-
-		//Erase this from the legacy child map (if it is in there)
-		umarkLegacyChild(child);
-		it = dynamicDisplayList.erase(it);
-		getSystemState()->stage->prepareForRemoval(child);
+		_removeChild(*it,false,false,false,sendevents);
+		it++;
 	}
 	this->requestInvalidation(getSystemState());
 }
@@ -2188,11 +2184,13 @@ int DisplayObjectContainer::getChildIndex(DisplayObject* child)
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getChildIndex)
 {
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
-	assert_and_throw(argslen==1);
-	//Validate object type
-	assert_and_throw(asAtomHandler::is<DisplayObject>(args[0]));
-
-	//Cast to object
+	asAtom dobj = asAtomHandler::invalidAtom;
+	ARG_CHECK(ARG_UNPACK(dobj));
+	if (!asAtomHandler::is<DisplayObject>(dobj))
+	{
+		createError<ArgumentError>(wrk,2025,"getChildIndex: child not in list");
+		return;
+	}
 	DisplayObject* d= asAtomHandler::as<DisplayObject>(args[0]);
 
 	int index = th->getChildIndex(d);
@@ -2254,11 +2252,11 @@ void DisplayObjectContainer::clearDisplayList()
 	while (it != dynamicDisplayList.rend())
 	{
 		DisplayObject* c = (*it);
+		dynamicDisplayList.pop_back();
 		c->setParent(nullptr);
 		getSystemState()->removeFromResetParentList(c);
-		dynamicDisplayList.pop_back();
-		it = dynamicDisplayList.rbegin();
 		c->removeStoredMember();
+		it = dynamicDisplayList.rbegin();
 	}
 }
 

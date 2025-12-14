@@ -67,7 +67,6 @@ ASFUNCTIONBODY_ATOM(AVM1Key,addListener)
 {
 	asAtom listener = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(listener));
-	ASATOM_ADDSTOREDMEMBER(listener);
 	ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1AddKeyboardListener(listener));
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,removeListener)
@@ -75,7 +74,6 @@ ASFUNCTIONBODY_ATOM(AVM1Key,removeListener)
 	asAtom listener = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(listener));
 	ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1RemoveKeyboardListener(listener));
-	ASATOM_REMOVESTOREDMEMBER(listener);
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,getCode)
 {
@@ -126,7 +124,6 @@ ASFUNCTIONBODY_ATOM(AVM1Mouse,addListener)
 {
 	asAtom listener=asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(listener));
-	ASATOM_ADDSTOREDMEMBER(listener);
 	ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1AddMouseListener(listener));
 }
 ASFUNCTIONBODY_ATOM(AVM1Mouse,removeListener)
@@ -134,7 +131,6 @@ ASFUNCTIONBODY_ATOM(AVM1Mouse,removeListener)
 	asAtom listener=asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(listener));
 	ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1RemoveMouseListener(listener));
-	ASATOM_REMOVESTOREDMEMBER(listener);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Mouse,get_listeners)

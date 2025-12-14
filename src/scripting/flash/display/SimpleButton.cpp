@@ -57,6 +57,7 @@ void SimpleButton::afterLegacyInsert()
 	{
 		getSystemState()->stage->AVM1AddKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
 		getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+		avm1mouselistenercount++;
 	}
 	if (lastParent)
 		lastParent->removeStoredMember();

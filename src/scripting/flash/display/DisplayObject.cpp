@@ -318,14 +318,15 @@ void DisplayObject::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	EventDispatcher::prepareShutdown();
+	removeAVM1Listeners();
 	broadcastEventListenerCount=0;
 
 	if (clipMask)
 		clipMask->prepareShutdown();
 	if (matrix)
-		matrix->prepareShutdown();;
+		matrix->prepareShutdown();
 	if (loaderInfo)
-		loaderInfo->prepareShutdown();;
+		loaderInfo->prepareShutdown();
 	if (invalidateQueueNext)
 		invalidateQueueNext->prepareShutdown();
 	if (accessibilityProperties)
@@ -351,8 +352,8 @@ void DisplayObject::prepareShutdown()
 		avm1variables.erase(avm1variables.begin());
 		if (o)
 		{
-			o->removeStoredMember();
 			o->prepareShutdown();
+			o->removeStoredMember();
 		}
 	}
 	while (!avm1locals.empty())
@@ -361,15 +362,15 @@ void DisplayObject::prepareShutdown()
 		avm1locals.erase(avm1locals.begin());
 		if (o)
 		{
-			o->removeStoredMember();
 			o->prepareShutdown();
+			o->removeStoredMember();
 		}
 	}
 	setMask(NullRef);
 	setClipMask(NullRef);
-	setParent(nullptr);
-	getSystemState()->removeFromResetParentList(this);
-	onStage=false;
+	// setParent(nullptr);
+	// getSystemState()->removeFromResetParentList(this);
+	// onStage=false;
 }
 
 bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -1429,7 +1430,7 @@ void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
 				this->incRef();
 				getVm(getSystemState())->addEvent(_MR(this),e);
 			}
-			if (this->is<InteractiveObject>())
+			if (this->is<InteractiveObject>() && getSystemState()->getEngineData())
 				getSystemState()->getEngineData()->InteractiveObjectRemovedFromStage();
 			getSystemState()->stage->AVM1RemoveDisplayObject(this);
 		}
@@ -2496,7 +2497,6 @@ bool DisplayObject::skipCountCylicMemberReferences(garbagecollectorstate& gcstat
 		{
 			// no need to count as we have at least one reference left if this object is still on stage or hidden
 			gcstate.ignoreCount(this);
-			return true;
 		}
 		if(gcstate.isIgnored(this))
 			return true;
@@ -3179,6 +3179,7 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* w
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
 		{
 			avm1framelistenercount--;
+			getSystemState()->stage->AVM1RemoveEventListener(this);
 			if (avm1framelistenercount==0)
 				getSystemState()->unregisterFrameListener(this);
 		}
@@ -3201,7 +3202,6 @@ void DisplayObject::removeAVM1Listeners()
 	getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 	getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
 	getSystemState()->stage->AVM1RemoveFocusListener(asAtomHandler::fromObjectNoPrimitive(this));
-	getSystemState()->stage->AVM1RemoveEventListener(this);
 	getSystemState()->unregisterFrameListener(this);
 	avm1mouselistenercount=0;
 	avm1framelistenercount=0;
@@ -3706,9 +3706,7 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 			avm1variables.erase(nameID);
 		else
 		{
-			ASObject* o = asAtomHandler::getObject(v);
-			if (o)
-				o->addStoredMember();
+			ASATOM_ADDSTOREDMEMBER(v);
 			avm1variables[nameID] = v;
 		}
 		if (setMember)
@@ -3748,9 +3746,7 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 			avm1variables.erase(nameId);
 		else
 		{
-			ASObject* o = asAtomHandler::getObject(v);
-			if (o)
-				o->addStoredMember();
+			ASATOM_ADDSTOREDMEMBER(v);
 			avm1variables[nameId] = v;
 		}
 	}
@@ -3772,9 +3768,7 @@ void DisplayObject::AVM1SetVariableDirect(uint32_t nameId, asAtom v)
 	auto itl = avm1locals.find(nameId);
 	if (itl != avm1locals.end())
 	{
-		ASObject* o = asAtomHandler::getObject(v);
-		if (o)
-			o->addStoredMember();
+		ASATOM_ADDSTOREDMEMBER(v);
 		ASATOM_REMOVESTOREDMEMBER(itl->second);
 		itl->second = v;
 		return;
@@ -3792,9 +3786,7 @@ void DisplayObject::AVM1SetVariableDirect(uint32_t nameId, asAtom v)
 	}
 	else
 	{
-		ASObject* o = asAtomHandler::getObject(v);
-		if (o)
-			o->addStoredMember();
+		ASATOM_ADDSTOREDMEMBER(v);
 		avm1variables[nameId] = v;
 	}
 }

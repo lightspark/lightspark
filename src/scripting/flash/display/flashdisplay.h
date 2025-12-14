@@ -174,10 +174,10 @@ public:
 	bool fillTabStopsAutomatic(std::map<int32_t, DisplayObject*>& distancemap, bool& hasTabIndices);
 	void fillTabStopsByTabIndex(std::map<int32_t,DisplayObject*>& indexmap);
 	void dumpDisplayList(unsigned int level=0);
-	void handleRemovedEvent(DisplayObject* child, bool keepOnStage = false, bool inskipping = false);
-	bool _removeChild(DisplayObject* child, bool direct=false, bool inskipping=false, bool keeponstage=false);
+	void handleRemovedEvent(DisplayObject* child, bool keepOnStage, bool inskipping, bool sendevents);
+	bool _removeChild(DisplayObject* child, bool direct=false, bool inskipping=false, bool keeponstage=false, bool sendevents=true);
 	void _removeFromDisplayList(DisplayObject* child);
-	void _removeAllChildren();
+	void _removeAllChildren(bool sendevents=true);
 	void removeAVM1Listeners() override;
 	int getChildIndex(DisplayObject* child);
 	DisplayObjectContainer(ASWorker* wrk,Class_base* c);

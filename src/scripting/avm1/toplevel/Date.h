@@ -269,7 +269,7 @@ public:
 	Date clip() const;
 
 	// ECMA-262 2nd edition sec. 15.9.5.2. `toString`.
-	tiny_string toString() const;
+	tiny_string toString(AVM1Activation& act) const;
 };
 
 class AVM1Date : public AVM1Object

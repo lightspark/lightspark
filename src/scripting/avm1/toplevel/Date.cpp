@@ -272,8 +272,11 @@ AVM1DateImpl AVM1DateImpl::clip() const
 	) ? time : AVM1DateImpl();
 }
 
-tiny_string AVM1DateImpl::toString() const
+tiny_string AVM1DateImpl::toString(AVM1Activation& act) const
 {
+	if (!isValid())
+		return "Invalid Date";
+	return act.getSys()->date->toFormatStr(time, "%a %b %-e %T GMT%z");
 }
 
 constexpr auto protoFlags =
@@ -358,7 +361,7 @@ AVM1_FUNCTION_BODY(AVM1Date, ctor)
 // and time as a `String`, as defined in ECMA-262.
 AVM1_FUNCTION_BODY(AVM1Date, func)
 {
-	return AVM1DateImpl::now().toString();
+	return AVM1DateImpl::now(act).getLocalTime(act).toString(act);
 }
 
 AVM1_PROPERTY_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, FullYear)

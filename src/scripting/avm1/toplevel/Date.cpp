@@ -34,6 +34,8 @@ using namespace lightspark;
 
 // Based on Ruffle's `avm1::globals::date` crate.
 
+static constexpr auto NaN = std::numeric_limits<number_t>::quiet_NaN();
+
 AVM1Date::AVM1Date(AVM1Activation& act) : AVM1Object
 (
 	act,
@@ -229,7 +231,7 @@ number_t AVM1DateImpl::dayFromMonth(number_t year, number_t month)
 	auto _month = clampToInt<int32_t>(std::floor(month));
 
 	if (_month < 0 || _month > 12)
-		return NAN;
+		return NaN;
 
 	return dayFromYear(_year) + getMonthOffset
 	(
@@ -285,14 +287,44 @@ constexpr auto protoFlags =
 	AVM1PropFlags::DontDelete
 );
 
+constexpr auto objFlags = protoFlags | AVM1PropFlags::ReadOnly;
+
 using AVM1Date;
 
 static constexpr auto protoDecls =
 {
+	AVM1_PROPERTY_FUNCTION_TYPE_PROTO(AVM1Date, FullYear, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, Year, protoFlags),
+	AVM1_PROPERTY_FUNCTION_TYPE_PROTO(AVM1Date, Month, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, Date, protoFlags),
+	AVM1_GETTER_LIKE_TYPE_PROTO(AVM1Date, Day, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, Hours, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, Minutes, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, Seconds, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, Milliseconds, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, Time, protoFlags),
+	AVM1_GETTER_LIKE_TYPE_PROTO(AVM1Date, TimezoneOffset, protoFlags),
+	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, toString, protoFlags),
+
+	AVM1_PROPERTY_FUNCTION_TYPE_PROTO(AVM1Date, UTCFullYear, protoFlags),
+	AVM1_GETTER_LIKE_TYPE_PROTO(AVM1Date, UTCYear, protoFlags),
+	AVM1_PROPERTY_FUNCTION_TYPE_PROTO(AVM1Date, UTCMonth, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, UTCDate, protoFlags),
+	AVM1_GETTER_LIKE_TYPE_PROTO(AVM1Date, UTCDay, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, UTCHours, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, UTCMinutes, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, UTCSeconds, protoFlags),
+	AVM1_PROPERTY_LIKE_TYPE_PROTO(AVM1Date, UTCMilliseconds, protoFlags),
+
 	AVM1_FUNCTION_PROTO(domain, protoFlags),
 	AVM1_FUNCTION_PROTO(connect, protoFlags),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, close, protoFlags),
 	AVM1_FUNCTION_PROTO(send, protoFlags)
+};
+
+static constexpr auto objDecls =
+{
+	AVM1_FUNCTION_PROTO(UTC, objFlags)
 };
 
 GcPtr<AVM1SystemClass> AVM1Date::createClass
@@ -301,9 +333,20 @@ GcPtr<AVM1SystemClass> AVM1Date::createClass
 	const GcPtr<AVM1Object>& superProto
 )
 {
-	auto _class = ctx.makeNativeClass(ctor, nullptr, superProto);
+	auto _class = ctx.makeNativeClass(ctor, func, superProto);
 
 	ctx.definePropsOn(_class->proto, protoDecls);
+
+	// NOTE: `Date.prototype.valueOf()` uses the same function object as
+	// `Date.prototype.getTime()`.
+	auto getTimeVal = _class->proto->getLocalProp(act, "getTime");
+	_class->proto->defineValue
+	(
+		"valueOf",
+		getTimeVal.valueOr(AVM1Value::undefinedVal),
+		protoFlags
+	);
+	ctx.definePropsOn(_class->ctor, objDecls);
 	return _class;
 }
 
@@ -357,6 +400,21 @@ AVM1_FUNCTION_BODY(AVM1Date, ctor)
 	));
 }
 
+static number_t setDate
+(
+	AVM1Activation& act,
+	AVM1DateImpl& date,
+	number_t day,
+	number_t time,
+	bool isUTC = false
+)
+{
+	date = AVM1DateImpl::makeDate(day, time);
+	if (!isUTC)
+		date = date.getUTC(act);
+	return date.getTime().toFloatMs();
+}
+
 // NOTE: `Date()`, when invoked without `new` returns the current date,
 // and time as a `String`, as defined in ECMA-262.
 AVM1_FUNCTION_BODY(AVM1Date, func)
@@ -364,55 +422,311 @@ AVM1_FUNCTION_BODY(AVM1Date, func)
 	return AVM1DateImpl::now(act).getLocalTime(act).toString(act);
 }
 
-AVM1_PROPERTY_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, FullYear)
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, FullYear)
 {
+	if (!th->date.isValid())
+		return NaN;
+	return number_t(th->date.getLocalTime(act).getYear());
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, Year)
+AVM1_SETTER_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, FullYear)
 {
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	auto date = th->date.getLocalTime(act);
+	auto year = *unpacker.tryUnpack<number_t>().orElse([&]
+	{
+		return date.getYear();
+	});
+
+	auto month = *unpacker.tryUnpack<number_t>().orElse([&]
+	{
+		return date.getMonth();
+	});
+
+	auto _date = *unpacker.tryUnpack<number_t>().orElse([&]
+	{
+		return date.getDate();
+	});
+
+	return setDate
+	(
+		act,
+		th->date,
+		AVM1DateImpl::makeDay(year, month, _date),
+		date.getTimeWithinDay(act.getSwfVersion())
+	);
 }
 
-AVM1_PROPERTY_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, Month)
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, Year)
 {
+	if (!th->date.isValid())
+		return NaN;
+	return number_t(th->date.getLocalTime(act).getYear() - 1900);
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, Date)
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, Year)
 {
+	auto date = th->date.getLocal(act);
+	auto year = [&]
+	{
+		if (value.is<UndefinedVal>())
+			return date.getYear();
+		auto year = value.toNumber(act);
+		return year >= 0 && year <= 99 ? year + 1900 : year;
+	}();
+
+	return setDate
+	(
+		act,
+		th->date,
+		AVM1DateImpl::makeDay(year, date.getMonth(), date.getDate()),
+		date.getTimeWithinDay(act.getSwfVersion())
+	);
+}
+
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, Month)
+{
+	if (!th->date.isValid())
+		return NaN;
+	return number_t(th->date.getLocalTime(act).getMonth());
+}
+
+AVM1_SETTER_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, Month)
+{
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+
+	auto date = th->date.getLocal(act);
+	auto month = *unpacker.tryUnpack<number_t>().orElse([&]
+	{
+		return date.getMonth();
+	});
+
+	// NOTE: `setMonth()` has a special case where a non finite `month`
+	// argument is treated as January.
+	month = !std::isfinite(month) ? 0 : month;
+
+	auto _date = unpacker.tryUnpack
+	<
+		number_t
+	>().orElseIf(act.getSwfVersion() <= 6, [&]
+	{
+		return date.getDate();
+	});
+
+	// NOTE: `setMonth()` has a special case where in SWF 7, and later,
+	// if `date` is invalid, or is empty, the `Date` becomes invalid,
+	// and returns `NaN`.
+	if (!_date.hasValue())
+	{
+		th->date = AVM1DateImpl();
+		return NaN;
+	}
+
+	return setDate
+	(
+		act,
+		th->date,
+		AVM1DateImpl::makeDay(date.getYear(), month, *_date),
+		date.getTimeWithinDay(act.getSwfVersion())
+	);
+}
+
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, Date)
+{
+	if (!th->date.isValid())
+		return NaN;
+	return number_t(th->date.getLocal(act).getDate());
+}
+
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, Date)
+{
+	auto date = th->date.getLocal(act);
+	auto _date = [&]
+	{
+		if (value.is<UndefinedVal>())
+			return date.getDate();
+		return value.toNumber(act);
+	}();
+
+	return setDate
+	(
+		act,
+		th->date,
+		AVM1DateImpl::makeDay(date.getYear(), date.getMonth(), _date),
+		date.getTimeWithinDay(act.getSwfVersion())
+	);
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, Day)
 {
+	if (!th->date.isValid())
+		return NaN;
+	return number_t(th->date.getLocal(act).getDay());
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, Hours)
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, Hours)
 {
+	if (!th->date.isValid())
+		return NaN;
+	return number_t(th->date.getLocal(act).getHours());
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, Minutes)
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, Hours)
 {
+	auto date = th->date.getLocal(act);
+	auto hours = [&]
+	{
+		if (value.is<UndefinedVal>())
+			return date.getHours();
+		return value.toNumber(act);
+	}();
+
+	return setDate(act, th->date, date.getDay(), AVM1DateImpl::makeDate
+	(
+		hours,
+		date.getMinutes(),
+		date.getSeconds(),
+		date.getMilliseconds()
+	));
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, Seconds)
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, Minutes)
 {
+	if (!th->date.isValid())
+		return NaN;
+	return number_t(th->date.getLocal(act).getMinutes());
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, Milliseconds)
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, Minutes)
 {
+	auto date = th->date.getLocal(act);
+	auto mins = [&]
+	{
+		if (value.is<UndefinedVal>())
+			return date.getMinutes();
+		return value.toNumber(act);
+	}();
+
+	return setDate(act, th->date, date.getDay(), AVM1DateImpl::makeDate
+	(
+		date.getHours(),
+		mins,
+		date.getSeconds(),
+		date.getMilliseconds()
+	));
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, Time)
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, Seconds)
 {
+	if (!th->date.isValid())
+		return NaN;
+	return number_t(th->date.getLocal(act).getSeconds());
+}
+
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, Seconds)
+{
+	auto date = th->date.getLocal(act);
+	auto secs = [&]
+	{
+		if (value.is<UndefinedVal>())
+			return date.getMinutes();
+		return value.toNumber(act);
+	}();
+
+	return setDate(act, th->date, date.getDay(), AVM1DateImpl::makeDate
+	(
+		date.getHours(),
+		date.getMinutes(),
+		secs,
+		date.getMilliseconds()
+	));
+}
+
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, Milliseconds)
+{
+	if (!th->date.isValid())
+		return NaN;
+	return number_t(th->date.getLocal(act).getMilliseconds());
+}
+
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, Milliseconds)
+{
+	auto date = th->date.getLocal(act);
+	auto ms = [&]
+	{
+		if (value.is<UndefinedVal>())
+			return date.getMinutes();
+		return value.toNumber(act);
+	}();
+
+	return setDate(act, th->date, date.getDay(), AVM1DateImpl::makeDate
+	(
+		date.getHours(),
+		date.getMinutes(),
+		date.getSeconds(),
+		ms
+	));
+}
+
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, Time)
+{
+	return th->date.getTime().toFloatMs();
+}
+
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, Time)
+{
+	number_t timestamp;
+	AVM1_ARG_UNPACK(timestamp, NaN);
+	th->date = AVM1DateImpl(timestamp).clip();
+	return th->date.getTime().toFloatMs();
+}
+
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, TimezoneOffset)
+{
+	return th->date.getTimezoneOffset(act);
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, toString)
 {
+	return th->date.getLocal(act).toString(act);
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, UTC)
+AVM1_FUNCTION_BODY(AVM1Date, UTC)
+{
+	if (args.empty() || args.size() == 1)
+		return AVM1Value::undefinedVal;
+
+	number_t year;
+	number_t month;
+	number_t date;
+	number_t hours;
+	number_t minutes;
+	number_t seconds;
+	number_t milliseconds;
+	AVM1_ARG_UNPACK(year)(month)(date, 1)(hours, 0)(minutes, 0)
+	(
+		seconds,
+		0
+	)(milliseconds, 0);
+
+	return AVM1DateImpl
+	(
+		year,
+		month,
+		date,
+		hours,
+		minutes,
+		seconds,
+		milliseconds
+	).getTime().toFloatMs();
+}
+
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCFullYear)
 {
 }
 
-AVM1_PROPERTY_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, UTCFullYear)
+AVM1_SETTER_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, UTCFullYear)
 {
 }
 
@@ -420,11 +734,19 @@ AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCYear)
 {
 }
 
-AVM1_PROPERTY_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, UTCMonth)
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCMonth)
 {
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, UTCDate)
+AVM1_SETTER_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, UTCMonth)
+{
+}
+
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCDate)
+{
+}
+
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCDate)
 {
 }
 
@@ -432,18 +754,34 @@ AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCDay)
 {
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, UTCHours)
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCHours)
 {
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, UTCMinutes)
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCHours)
 {
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, UTCSeconds)
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCMinutes)
 {
 }
 
-AVM1_PROPERTY_TYPE_BODY(AVM1Date, AVM1Date, UTCMilliseconds)
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCMinutes)
+{
+}
+
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCSeconds)
+{
+}
+
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCSeconds)
+{
+}
+
+AVM1_GETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCMilliseconds)
+{
+}
+
+AVM1_SETTER_TYPE_BODY(AVM1Date, AVM1Date, UTCMilliseconds)
 {
 }

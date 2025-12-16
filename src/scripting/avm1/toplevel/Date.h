@@ -338,9 +338,10 @@ public:
 	AVM1_PROPERTY_TYPE_DECL(AVM1Date, Seconds);
 	AVM1_PROPERTY_TYPE_DECL(AVM1Date, Milliseconds);
 	AVM1_PROPERTY_TYPE_DECL(AVM1Date, Time);
+	AVM1_GETTER_TYPE_DECL(AVM1Date, TimezoneOffset);
 	AVM1_FUNCTION_TYPE_DECL(AVM1Date, toString);
 
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, UTC);
+	AVM1_FUNCTION_DECL(UTC);
 	// NOTE: `PROPERTY_FUNCTION_TYPE_DECL` is used for
 	// `{g,s}etUTCFullYear()` because `setUTCFullYear()` can take more
 	// than one argument.

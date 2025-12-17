@@ -281,6 +281,21 @@ tiny_string AVM1DateImpl::toString(AVM1Activation& act) const
 	return act.getSys()->date->toFormatStr(time, "%a %b %-e %T GMT%z");
 }
 
+template<bool isUTC = false>
+static number_t setDate
+(
+	AVM1Activation& act,
+	AVM1DateImpl& date,
+	number_t day,
+	number_t time
+)
+{
+	date = AVM1DateImpl::makeDate(day, time);
+	if (!isUTC)
+		date = date.getUTC(act);
+	return date.getTime().toFloatMs();
+}
+
 constexpr auto protoFlags =
 (
 	AVM1PropFlags::DontEnum |
@@ -291,49 +306,74 @@ constexpr auto objFlags = protoFlags | AVM1PropFlags::ReadOnly;
 
 using AVM1Date;
 
+#define AVM1_DATE_GETTER(func, isUTC) AVM1_TYPE_FUNC(AVM1Date, \
+[&](AVM1_FUNCTION_TYPE_ARGS(AVM1Date)) \
+{ \
+	if (!_this->date.isValid()) \
+		return NaN; \
+	auto date = isUTC ? _this->date : _this->date.getLocalTime(act); \
+	return number_t(date.get##func()); \
+})
+
+#define AVM1_DATE_SETTER(func, isUTC) AVM1_TYPE_FUNC(AVM1Date, \
+[&](AVM1_FUNCTION_TYPE_ARGS(AVM1Date)) \
+{ \
+	auto pair = set##func \
+	( \
+		act, \
+		_this, \
+		args, \
+		isUTC ? _this->date : _this->date.getLocalTime(act) \
+	); \
+	return setDate<isUTC>(act, _this->date, pair.first, pair.second); \
+})
+
+#define AVM1_DATE_GETTER_PROTO(name, isUTC) \
+	AVM1Decl("get" #name, AVM1_DATE_GETTER(name, isUTC), protoFlags)
+
+#define AVM1_DATE_SETTER_PROTO(name, func, isUTC) \
+	AVM1Decl("set" #name, AVM1_DATE_SETTER(func, isUTC), protoFlags)
+
+#define AVM1_DATE_LOCAL_UTC_GETTER_PROTO(name) \
+	AVM1_DATE_GETTER_PROTO(name, false), \
+	AVM1_DATE_GETTER_PROTO(UTC##name, true)
+
+#define AVM1_DATE_LOCAL_UTC_SETTER_PROTO(name) \
+	AVM1_DATE_SETTER_PROTO(name, name, false), \
+	AVM1_DATE_SETTER_PROTO(UTC##name, name, true)
+
 static constexpr auto protoDecls =
 {
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getFullYear, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getYear, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getMonth, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getDate, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getDay, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getHours, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getMinutes, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getSeconds, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getMilliseconds, protoFlags),
+	AVM1_DATE_LOCAL_UTC_GETTER_PROTO(FullYear),
+	AVM1_DATE_LOCAL_UTC_GETTER_PROTO(Year),
+	AVM1_DATE_LOCAL_UTC_GETTER_PROTO(Month),
+	AVM1_DATE_LOCAL_UTC_GETTER_PROTO(Date),
+	AVM1_DATE_LOCAL_UTC_GETTER_PROTO(Day),
+	AVM1_DATE_LOCAL_UTC_GETTER_PROTO(Hours),
+	AVM1_DATE_LOCAL_UTC_GETTER_PROTO(Minutes),
+	AVM1_DATE_LOCAL_UTC_GETTER_PROTO(Seconds),
+	AVM1_DATE_LOCAL_UTC_GETTER_PROTO(Milliseconds),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getTime, protoFlags),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getTimezoneOffset, protoFlags),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, toString, protoFlags),
 
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setFullYear, protoFlags),
+	AVM1_DATE_LOCAL_UTC_SETTER_PROTO(FullYear),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setYear, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setMonth, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setDate, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setHours, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setMinutes, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setSeconds, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setMilliseconds, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setTime, protoFlags),
-
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getUTCFullYear, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getUTCYear, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getUTCMonth, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getUTCDate, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getUTCDay, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getUTCHours, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getUTCMinutes, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getUTCSeconds, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, getUTCMilliseconds, protoFlags),
-
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setUTCFullYear, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setUTCMonth, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setUTCDate, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setUTCHours, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setUTCMinutes, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setUTCSeconds, protoFlags),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setUTCMilliseconds, protoFlags)
+	AVM1_DATE_LOCAL_UTC_SETTER_PROTO(Month),
+	AVM1_DATE_LOCAL_UTC_SETTER_PROTO(Date),
+	AVM1_DATE_LOCAL_UTC_SETTER_PROTO(Hours),
+	AVM1_DATE_LOCAL_UTC_SETTER_PROTO(Minutes),
+	AVM1_DATE_LOCAL_UTC_SETTER_PROTO(Seconds),
+	AVM1_DATE_LOCAL_UTC_SETTER_PROTO(Milliseconds),
+	AVM1_FUNCTION_TYPE_PROTO(AVM1Date, setTime, protoFlags)
 };
+
+#undef AVM1_DATE_GETTER
+#undef AVM1_DATE_SETTER
+#undef AVM1_DATE_GETTER_PROTO
+#undef AVM1_DATE_SETTER_PROTO
+#undef AVM1_DATE_LOCAL_UTC_GETTER_PROTO
+#undef AVM1_DATE_LOCAL_UTC_SETTER_PROTO
 
 static constexpr auto objDecls =
 {
@@ -413,21 +453,6 @@ AVM1_FUNCTION_BODY(AVM1Date, ctor)
 	));
 }
 
-static number_t setDate
-(
-	AVM1Activation& act,
-	AVM1DateImpl& date,
-	number_t day,
-	number_t time,
-	bool isUTC = false
-)
-{
-	date = AVM1DateImpl::makeDate(day, time);
-	if (!isUTC)
-		date = date.getUTC(act);
-	return date.getTime().toFloatMs();
-}
-
 // NOTE: `Date()`, when invoked without `new` returns the current date,
 // and time as a `String`, as defined in ECMA-262.
 AVM1_FUNCTION_BODY(AVM1Date, func)
@@ -435,89 +460,25 @@ AVM1_FUNCTION_BODY(AVM1Date, func)
 	return AVM1DateImpl::now(act).getLocalTime(act).toString(act);
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getFullYear)
-{
-	if (!th->date.isValid())
-		return NaN;
-	return number_t(th->date.getLocalTime(act).getYear());
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getYear)
-{
-	if (!th->date.isValid())
-		return NaN;
-	return number_t(th->date.getLocalTime(act).getYear() - 1900);
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getMonth)
-{
-	if (!th->date.isValid())
-		return NaN;
-	return number_t(th->date.getLocalTime(act).getMonth());
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getDate)
-{
-	if (!th->date.isValid())
-		return NaN;
-	return number_t(th->date.getLocal(act).getDate());
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getDay)
-{
-	if (!th->date.isValid())
-		return NaN;
-	return number_t(th->date.getLocal(act).getDay());
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getHours)
-{
-	if (!th->date.isValid())
-		return NaN;
-	return number_t(th->date.getLocal(act).getHours());
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getMinutes)
-{
-	if (!th->date.isValid())
-		return NaN;
-	return number_t(th->date.getLocal(act).getMinutes());
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getSeconds)
-{
-	if (!th->date.isValid())
-		return NaN;
-	return number_t(th->date.getLocal(act).getSeconds());
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getMilliseconds)
-{
-	if (!th->date.isValid())
-		return NaN;
-	return number_t(th->date.getLocal(act).getMilliseconds());
-}
-
 AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getTime)
 {
-	return th->date.getTime().toFloatMs();
+	return _this->date.getTime().toFloatMs();
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getTimezoneOffset)
 {
-	return th->date.getTimezoneOffset(act);
+	return _this->date.getTimezoneOffset(act);
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, toString)
 {
-	return th->date.getLocal(act).toString(act);
+	return _this->date.getLocal(act).toString(act);
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setFullYear)
+AVM1_DATE_SETTER_BODY(FullYear)
 {
 	AVM1_ARG_UNPACK_NAMED(unpacker);
 
-	auto date = th->date.getLocalTime(act);
 	auto year = unpacker.unpackIfDefined<number_t>([&]
 	{
 		return date.getYear();
@@ -533,10 +494,8 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setFullYear)
 		return date.getDate();
 	});
 
-	return setDate
+	return std::make_pair
 	(
-		act,
-		th->date,
 		AVM1DateImpl::makeDay(year, month, _date),
 		date.getTimeWithinDay(act.getSwfVersion())
 	);
@@ -544,7 +503,7 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setFullYear)
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setYear)
 {
-	auto date = th->date.getLocal(act);
+	auto date = _this->date.getLocal(act);
 	auto year = AVM1_ARG_UNPACK.tryUnpackIfDefined
 	<
 		number_t
@@ -559,31 +518,31 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setYear)
 	return setDate
 	(
 		act,
-		th->date,
+		_this->date,
 		AVM1DateImpl::makeDay(year, date.getMonth(), date.getDate()),
 		date.getTimeWithinDay(act.getSwfVersion())
 	);
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setMonth)
+AVM1_DATE_SETTER_BODY(Month)
 {
 	AVM1_ARG_UNPACK_NAMED(unpacker);
 
-	auto date = th->date.getLocal(act);
 	auto month = unpacker.unpackIfDefined<number_t>([&]
 	{
 		return date.getMonth();
 	});
 
-	// NOTE: `setMonth()` has a special case where a non finite `month`
-	// argument is treated as January.
+	// NOTE: `set{,UTC}Month()` has a special case where a non finite
+	// `month` argument is treated as January.
 	month = !std::isfinite(month) ? 0 : month;
 
-	// NOTE: `setMonth()` has a special case where in SWF 7, and later,
-	// if `date` is invalid, or empty, the `Date`'s time becomes `NaN`.
+	// NOTE: `set{,UTC}Month()` has a special case where in SWF 7, and
+	// later, if `date` is invalid, or empty, the `Date`'s time becomes
+	// `NaN`.
 	if (unpacker.peek().is<UndefinedVal>() && act.getSwfVersion() > 6)
 	{
-		th->date = AVM1DateImpl();
+		_this->date = AVM1DateImpl();
 		return NaN;
 	}
 
@@ -592,41 +551,35 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setMonth)
 		return date.getDate();
 	});
 
-	return setDate
+	return std::make_pair
 	(
-		act,
-		th->date,
 		AVM1DateImpl::makeDay(date.getYear(), month, _date),
 		date.getTimeWithinDay(act.getSwfVersion())
 	);
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setDate)
+AVM1_DATE_SETTER_BODY(Date)
 {
-	auto date = th->date.getLocal(act);
 	auto _date = AVM1_ARG_UNPACK.unpackIfDefined<number_t>([&]
 	{
 		return date.getDate();
 	});
 
-	return setDate
+	return std::make_pair
 	(
-		act,
-		th->date,
 		AVM1DateImpl::makeDay(date.getYear(), date.getMonth(), _date),
 		date.getTimeWithinDay(act.getSwfVersion())
 	);
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setHours)
+AVM1_DATE_SETTER_BODY(Hours)
 {
-	auto date = th->date.getLocal(act);
 	auto hours = AVM1_ARG_UNPACK.unpackIfDefined<number_t>([&]
 	{
 		return date.getHours();
 	});
 
-	return setDate(act, th->date, date.getDay(), AVM1DateImpl::makeDate
+	return std::make_pair(date.getDay(), AVM1DateImpl::makeDate
 	(
 		hours,
 		date.getMinutes(),
@@ -635,15 +588,14 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setHours)
 	));
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setMinutes)
+AVM1_DATE_SETTER_BODY(Minutes)
 {
-	auto date = th->date.getLocal(act);
 	auto mins = AVM1_ARG_UNPACK.unpackIfDefined<number_t>([&]
 	{
 		return date.getMinutes();
 	});
 
-	return setDate(act, th->date, date.getDay(), AVM1DateImpl::makeDate
+	return std::make_pair(date.getDay(), AVM1DateImpl::makeDate
 	(
 		date.getHours(),
 		mins,
@@ -652,15 +604,14 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setMinutes)
 	));
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setSeconds)
+AVM1_DATE_SETTER_BODY(Seconds)
 {
-	auto date = th->date.getLocal(act);
 	auto secs = AVM1_ARG_UNPACK.unpackIfDefined<number_t>([&]
 	{
 		return date.getSeconds();
 	});
 
-	return setDate(act, th->date, date.getDay(), AVM1DateImpl::makeDate
+	return std::make_pair(date.getDay(), AVM1DateImpl::makeDate
 	(
 		date.getHours(),
 		date.getMinutes(),
@@ -669,15 +620,14 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setSeconds)
 	));
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setMilliseconds)
+AVM1_DATE_SETTER_BODY(Milliseconds)
 {
-	auto date = th->date.getLocal(act);
 	auto ms = AVM1_ARG_UNPACK.unpackIfDefined<number_t>([&]
 	{
 		return date.getMillieconds();
 	});
 
-	return setDate(act, th->date, date.getDay(), AVM1DateImpl::makeDate
+	return std::make_pair(date.getDay(), AVM1DateImpl::makeDate
 	(
 		date.getHours(),
 		date.getMinutes(),
@@ -690,8 +640,8 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setTime)
 {
 	number_t timestamp;
 	AVM1_ARG_UNPACK(timestamp, NaN);
-	th->date = AVM1DateImpl(timestamp).clip();
-	return th->date.getTime().toFloatMs();
+	_this->date = AVM1DateImpl(timestamp).clip();
+	return _this->date.getTime().toFloatMs();
 }
 
 AVM1_FUNCTION_BODY(AVM1Date, UTC)
@@ -722,68 +672,4 @@ AVM1_FUNCTION_BODY(AVM1Date, UTC)
 		seconds,
 		milliseconds
 	).getTime().toFloatMs();
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getUTCFullYear)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getUTCYear)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getUTCMonth)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getUTCDate)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getUTCDay)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getUTCHours)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getUTCMinutes)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getUTCSeconds)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, getUTCMilliseconds)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setUTCFullYear)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setUTCMonth)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setUTCDate)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setUTCHours)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setUTCMinutes)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setUTCSeconds)
-{
-}
-
-AVM1_FUNCTION_TYPE_BODY(AVM1Date, AVM1Date, setUTCMilliseconds)
-{
 }

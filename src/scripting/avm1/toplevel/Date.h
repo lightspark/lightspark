@@ -20,6 +20,8 @@
 #ifndef SCRIPTING_AVM1_TOPLEVEL_DATE_H
 #define SCRIPTING_AVM1_TOPLEVEL_DATE_H 1
 
+#include <utility>
+
 #include "gc/ptr.h"
 #include "scripting/avm1/clamp.h"
 #include "scripting/avm1/function.h"
@@ -272,6 +274,18 @@ public:
 	tiny_string toString(AVM1Activation& act) const;
 };
 
+using DateSetterPair = std::pair<number_t, number_t>;
+
+#define AVM1_DATE_SETTER_ARGS \
+	AVM1_FUNCTION_TYPE_ARGS(AVM1Date), \
+	const AVM1DateImpl& date
+
+#define AVM1_DATE_SETTER_DECL(name) \
+	static DateSetterPair set##name(AVM1_DATE_SETTER_ARGS)
+
+#define AVM1_DATE_SETTER_BODY(name) \
+	DateSetterPair AVM1Date::set##name(AVM1_DATE_SETTER_ARGS)
+
 class AVM1Date : public AVM1Object
 {
 private:
@@ -324,47 +338,21 @@ public:
 
 	AVM1_FUNCTION_DECL(ctor);
 	AVM1_FUNCTION_DECL(func);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getFullYear);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getYear);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getMonth);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getDate);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getDay);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getHours);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getMinutes);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getSeconds);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getMilliseconds);
 	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getTime);
 	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getTimezoneOffset);
 	AVM1_FUNCTION_TYPE_DECL(AVM1Date, toString);
 
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setFullYear);
+	AVM1_DATE_SETTER_DECL(FullYear);
 	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setYear);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setMonth);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setDate);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setHours);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setMinutes);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setSeconds);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setMilliseconds);
+	AVM1_DATE_SETTER_DECL(Month);
+	AVM1_DATE_SETTER_DECL(Date);
+	AVM1_DATE_SETTER_DECL(Hours);
+	AVM1_DATE_SETTER_DECL(Minutes);
+	AVM1_DATE_SETTER_DECL(Seconds);
+	AVM1_DATE_SETTER_DECL(Milliseconds);
 	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setTime);
 
 	AVM1_FUNCTION_DECL(UTC);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getUTCFullYear);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getUTCYear);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getUTCMonth);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getUTCDate);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getUTCDay);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getUTCHours);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getUTCMinutes);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getUTCSeconds);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, getUTCMilliseconds);
-
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setUTCFullYear);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setUTCMonth);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setUTCDate);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setUTCHours);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setUTCMinutes);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setUTCSeconds);
-	AVM1_FUNCTION_TYPE_DECL(AVM1Date, setUTCMilliseconds);
 };
 
 }

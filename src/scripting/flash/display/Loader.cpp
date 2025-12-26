@@ -570,14 +570,14 @@ void Loader::setContent(DisplayObject* o)
 		DisplayObjectContainer* p = avm1target->getParent();
 		if (p)
 		{
-			int depth=0;
-			if (p->is<Stage>())
+			int depth=avm1level < 0 ? p->findLegacyChildDepth(avm1target): avm1level;
+			if (p->is<Stage>() && avm1level < 0)
 			{
 				p->_removeChild(avm1target);
 			}
 			else
 			{
-				depth =p->findLegacyChildDepth(avm1target);
+
 				p->deleteLegacyChildAt(depth,false);
 			}
 			o->incRef();

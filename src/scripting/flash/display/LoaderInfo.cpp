@@ -118,6 +118,9 @@ ASFUNCTIONBODY_GETTER(LoaderInfo,frameRate)
 bool LoaderInfo::destruct()
 {
 	Locker l(spinlock);
+	if(local_pt)
+		delete local_pt;
+	local_pt=nullptr;
 	if (sbuf)
 		delete sbuf;
 	sbuf = nullptr;
@@ -146,21 +149,18 @@ bool LoaderInfo::destruct()
 	assert(!progressEvent);
 	progressEvent=nullptr;
 	loaderevents.clear();
-	if(local_pt)
-		delete local_pt;
-	local_pt=nullptr;
 	return EventDispatcher::destruct();
 }
 
 void LoaderInfo::finalize()
 {
 	Locker l(spinlock);
-	if (sbuf)
-		delete sbuf;
-	sbuf = nullptr;
 	if(local_pt)
 		delete local_pt;
 	local_pt=nullptr;
+	if (sbuf)
+		delete sbuf;
+	sbuf = nullptr;
 	sharedEvents.reset();
 	loader=nullptr;
 	if (content)

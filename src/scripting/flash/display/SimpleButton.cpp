@@ -494,12 +494,22 @@ void SimpleButton::addDisplayObject(BUTTONOBJECTTYPE state, uint32_t depth, Disp
 {
 	o->addStoredMember();
 	states[state].push_back(make_pair(depth,o));
+	if (state == BUTTONOBJECTTYPE_UP && o->is<MovieClip>())
+		upStateHasMovieClip=true;
 }
 
 SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DefineButtonTag *tag)
-	: DisplayObjectContainer(wrk,c), lastParent(nullptr),parentSprite{nullptr,nullptr,nullptr,nullptr},
-	buttontag(tag),statesdirty(true),
-	currentState(STATE_OUT),oldstate(STATE_OUT),enabled(true),useHandCursor(true),hasMouse(false)
+	: DisplayObjectContainer(wrk,c)
+	,lastParent(nullptr)
+	,parentSprite{nullptr,nullptr,nullptr,nullptr}
+	,buttontag(tag)
+	,statesdirty(true)
+	,currentState(STATE_OUT)
+	,oldstate(STATE_OUT)
+	,enabled(true)
+	,useHandCursor(true)
+	,hasMouse(false)
+	,upStateHasMovieClip(false)
 {
 	subtype = SUBTYPE_SIMPLEBUTTON;
 	if (tag)
@@ -567,6 +577,7 @@ bool SimpleButton::destruct()
 	enabled=true;
 	useHandCursor=true;
 	hasMouse=false;
+	upStateHasMovieClip=false;
 	buttontag=nullptr;
 	statesdirty=true;
 	return DisplayObjectContainer::destruct();
@@ -644,50 +655,34 @@ uint32_t SimpleButton::getTagID() const
 
 void SimpleButton::beforeConstruction(bool _explicit)
 {
-	if (needsActionScript3()
-			&& this->buttontag
-			&& this->buttontag->bindedTo)
-	{
-		// for some reason adobe seems to execute some kind of "inner goto" handling _before_ calling the builtin constructor of the button
-		// if the button is binded to a class
-		// see ruffle test avm2/button_nested_frame
-		// FramePhase oldPhase = getSystemState()->getFramePhase();
-		// getSystemState()->setFramePhase(FramePhase::INIT_FRAME);
-		getSystemState()->stage->initFrame();
-		// getSystemState()->setFramePhase(FramePhase::FRAME_CONSTRUCTED);
-		getSystemState()->handleBroadcastEvent("frameConstructed");
-		setNameOnParent();
-		// getSystemState()->setFramePhase(FramePhase::EXECUTE_FRAMESCRIPT);
-		getSystemState()->stage->executeFrameScript();
-		// getSystemState()->setFramePhase(FramePhase::EXIT_FRAME);
-		getSystemState()->handleBroadcastEvent("exitFrame");
-		// getSystemState()->setFramePhase(oldPhase);
-	}
 	DisplayObjectContainer::beforeConstruction(_explicit);
+	if (needsActionScript3()
+		&& this->buttontag
+		&& this->upStateHasMovieClip
+		)
+	{
+		// for some reason adobe seems to execute some kind of "inner goto" handling before and after calling the builtin constructor of the button
+		// if the button has a MovieClip in its "up" state
+		// see ruffle test avm2/button_nested_frame
+
+		setNameOnParent();
+		getSystemState()->handleBroadcastEvent("frameConstructed");
+		getSystemState()->stage->executeFrameScript();
+		getSystemState()->handleBroadcastEvent("exitFrame");
+	}
 }
 
-void SimpleButton::constructionComplete(bool _explicit, bool forInitAction)
+void SimpleButton::afterConstruction(bool _explicit)
 {
-	DisplayObjectContainer::constructionComplete(_explicit,forInitAction);
-
 	if (needsActionScript3()
-			&& this->buttontag
-			&& !this->buttontag->bindedTo
-			&& this->states[STATE_UP].size()>1)
+		&& this->buttontag
+		&& this->upStateHasMovieClip
+		)
 	{
-		// for some reason adobe seems to execute some kind of "inner goto" handling _after_ calling the builtin constructor of the button
-		// if the button is _not_ binded to a class and the up state consist of more than one sprite
+		// for some reason adobe seems to execute some kind of "inner goto" handling before and after calling the builtin constructor of the button
+		// if the button has a MovieClip in its "up" state
 		// see ruffle test avm2/button_nested_frame
-		// FramePhase oldPhase = getSystemState()->getFramePhase();
-		// getSystemState()->setFramePhase(FramePhase::INIT_FRAME);
 		getSystemState()->stage->initFrame();
-		// getSystemState()->setFramePhase(FramePhase::FRAME_CONSTRUCTED);
-		getSystemState()->handleBroadcastEvent("frameConstructed");
-		// getSystemState()->setFramePhase(FramePhase::EXECUTE_FRAMESCRIPT);
-		getSystemState()->stage->executeFrameScript();
-		// getSystemState()->setFramePhase(FramePhase::EXIT_FRAME);
-		getSystemState()->handleBroadcastEvent("exitFrame");
-		// getSystemState()->setFramePhase(oldPhase);
 	}
 }
 

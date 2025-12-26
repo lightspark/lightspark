@@ -2282,6 +2282,8 @@ bool DisplayObject::needsActionScript3() const
 void DisplayObject::constructionComplete(bool _explicit, bool forInitAction)
 {
 	RELEASE_WRITE(constructed,true);
+	if (getParent())
+		setNameOnParent();
 	if (!placedByActionScript && needsActionScript3() && getParent() != nullptr)
 	{
 		_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"added",true));
@@ -2292,22 +2294,31 @@ void DisplayObject::constructionComplete(bool _explicit, bool forInitAction)
 			incRef();
 			getVm(getSystemState())->addEvent(_MR(this), e);
 		}
-		setNameOnParent();
 		if (isOnStage())
 			setOnStage(true, true);
 	}
 }
 void DisplayObject::setNameOnParent()
 {
-	if( this->name != BUILTIN_STRINGS::EMPTY && !this->hasDefaultName && this->name != UINT32_MAX)
+	if( this->name != BUILTIN_STRINGS::EMPTY
+		&& !this->hasDefaultName
+		&& this->name != UINT32_MAX
+	)
 	{
 		multiname objName(nullptr);
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=this->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		this->incRef();
-		asAtom v = asAtomHandler::fromObject(this);
-		getParent()->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+		asAtom obj = asAtomHandler::invalidAtom;
+		getParent()->getVariableByMultiname(obj,objName,GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
+		if (!asAtomHandler::is<DisplayObject>(obj)
+			|| asAtomHandler::as<DisplayObject>(obj)->getDepth() >= this->getDepth())
+		{
+			this->incRef();
+			asAtom v = asAtomHandler::fromObject(this);
+			getParent()->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+		}
+		ASATOM_DECREF(obj);
 	}
 }
 void DisplayObject::beforeConstruction(bool _explicit)
@@ -2568,7 +2579,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		return;
 	}
 
-	bool insideBoundingBox = (xmin < x) && (x < xmax) && (ymin < y) && (y < ymax);
+	bool insideBoundingBox = (xmin <= x) && (x <= xmax) && (ymin <= y) && (y <= ymax);
 
 	if (!shapeFlag)
 	{
@@ -2577,7 +2588,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	}
 	else
 	{
-		if (!insideBoundingBox)
+		if (!insideBoundingBox || !th->isOnStage())
 		{
 			asAtomHandler::setBool(ret,false);
 			return;
@@ -2586,12 +2597,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		number_t localX;
 		number_t localY;
 		th->globalToLocal(x, y, localX, localY,false);
-		if (!th->isOnStage())
-		{
-			// if the DisplayObject is not on stage the local bounds have to be added for hittesting
-			localX += xmin;
-			localY += ymin;
-		}
 
 		// Hmm, hitTest will also check the mask, is this the
 		// right thing to do?

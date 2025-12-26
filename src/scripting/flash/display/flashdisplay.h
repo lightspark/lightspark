@@ -198,6 +198,7 @@ public:
 	void setupClipActionsAt(int32_t depth, const CLIPACTIONS& actions);
 	void checkRatioForLegacyChildAt(int32_t depth, uint32_t ratio, bool inskipping);
 	void checkColorTransformForLegacyChildAt(int32_t depth, const CXFORMWITHALPHA& colortransform);
+	void removeChildName(DisplayObject* obj);
 	void deleteLegacyChildAt(int32_t depth, bool inskipping);
 	void insertLegacyChildAt(int32_t depth, DisplayObject* obj, bool inskipping=false, bool fromtag=true);
 	DisplayObject* findLegacyChildByTagID(uint32_t tagid);

@@ -134,20 +134,11 @@ void RootMovieClip::commitFrame(bool another)
 
 	if(getFramesLoaded()==1 && applicationDomain->getFrameRate()!=0)
 	{
-		SystemState* sys = getSys();
-		if(this==sys->mainClip || !hasMainClass)
-		{
-			/* now the frameRate is available and all SymbolClass tags have created their classes */
-			// in AS3 this is added to the stage after the construction of the main object is completed (if a main object exists)
-			if (!needsActionScript3() || !hasMainClass)
-			{
-				while (!getVm(sys)->hasEverStarted()) // ensure that all builtin classes are defined
-					sys->sleep_ms(10);
-				setConstructIndicator();
-				constructionComplete();
-				afterConstruction();
-			}
-		}
+		/* now the frameRate is available and all SymbolClass tags have created their classes */
+
+		// ensure construction is completed in vm thread
+		_R<FirstFrameAvailableEvent> ev = _MR(new (sys->unaccountedMemory) FirstFrameAvailableEvent(this));
+		getVm(sys)->addEvent(NullRef,ev);
 	}
 }
 
@@ -190,18 +181,6 @@ void RootMovieClip::constructionComplete(bool _explicit, bool forInitAction)
 		}
 		return;
 	}
-	if (!getParent())
-	{
-		// add to stage before continuing construction to make sure stage is available from AS code
-		incRef();
-		getSystemState()->stage->insertLegacyChildAt(-16384, this, false, false);
-		if (needsActionScript3() && !this->hasMainClass)
-		{
-			if (!framecontainer)
-				framecontainer=new FrameContainer();
-			advanceFrame(true);
-		}
-	}
 	if (needsActionScript3())
 	{
 		this->name = getSystemState()->getUniqueStringId("root1");
@@ -214,23 +193,17 @@ void RootMovieClip::constructionComplete(bool _explicit, bool forInitAction)
 }
 void RootMovieClip::afterConstruction(bool _explicit)
 {
-	DisplayObject::afterConstruction(_explicit);
+	MovieClip::afterConstruction(_explicit);
 	// ensure addedToStage event is executed after construction of root is complete
 	_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
 	if(isVmThread())
 	{
 		ABCVm::publicHandleEvent(this,e);
-		getSystemState()->runInnerGotoFrame(this);
 	}
 	else
 	{
 		this->incRef();
 		getVm(getSystemState())->addEvent(_MR(this),e);
-	}
-	if (this==getSystemState()->mainClip)
-	{
-		getSystemState()->removeJob(getSystemState());
-		getSystemState()->addFrameTick(getSystemState());
 	}
 }
 

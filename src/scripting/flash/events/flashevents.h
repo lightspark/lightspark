@@ -40,7 +40,8 @@ enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	LOCALCONNECTIONEVENT,GETMOUSETARGET_EVENT, RENDER_FRAME,
 	BROADCAST_EVENT,
 	STARTJOB_EVENT,
-	GARBAGECOLLECTION_EVENT};
+	GARBAGECOLLECTION_EVENT,
+	FIRST_FRAME_AVAILABLE_EVENT};
 
 class ABCContext;
 class DictionaryTag;
@@ -591,6 +592,13 @@ class GarbageCollectionEvent: public Event
 public:
 	GarbageCollectionEvent():Event(nullptr,nullptr, "GarbageCollectionEvent"){}
 	EVENT_TYPE getEventType() const override { return GARBAGECOLLECTION_EVENT; }
+};
+class FirstFrameAvailableEvent: public Event
+{
+public:
+	RootMovieClip* root;
+	FirstFrameAvailableEvent(RootMovieClip* _root):Event(nullptr,nullptr, "FirstFrameAvailableEvent"),root(_root) {}
+	EVENT_TYPE getEventType() const override { return FIRST_FRAME_AVAILABLE_EVENT; }
 };
 
 class ParseRPCMessageEvent: public Event

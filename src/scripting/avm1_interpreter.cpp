@@ -649,8 +649,10 @@ bool ACTIONRECORD::implementsInterface(asAtom type, ASObject* value, ASWorker* w
 			   && (asAtomHandler::getObject(type) == Class<AVM1Array>::getRef(wrk->getSystemState()).getPtr()
 				   || asAtomHandler::getObject(type) == Class<Array>::getRef(wrk->getSystemState()).getPtr()))
 		implementsinterface = true; // special case comparing AVM1Array to Array
-	else
+	else if(asAtomHandler::is<Class_base>(type))
 		implementsinterface = ABCVm::instanceOf(asAtomHandler::fromObject(value),type);
+	else
+		LOG(LOG_ERROR,"implementsinterface invalid type:"<<asAtomHandler::toDebugString(type)<<" "<<value->toDebugString());
 	return implementsinterface;
 }
 Mutex executeactionmutex;
@@ -1367,7 +1369,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				else
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetProperty target clip not found:"<<asAtomHandler::toDebugString(target)<<" "<<asAtomHandler::toDebugString(index)<<" "<<asAtomHandler::toDebugString(value));
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetProperty done:"<<asAtomHandler::toDebugString(target)<<" "<<asAtomHandler::toDebugString(index)<<" "<<asAtomHandler::toDebugString(value));
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetProperty done:"<<asAtomHandler::toDebugString(target)<<" "<<asAtomHandler::toDebugString(index));
 				ASATOM_DECREF(index);
 				ASATOM_DECREF(target);
 				break;
@@ -1683,7 +1685,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (a)
 						a->addStoredMember();
 				}
-				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(thisObj));
+				asAtom obj = curdepth && asAtomHandler::is<MovieClip>(context->getScope()->getLocals()) ? context->getScope()->getLocals() : thisObj;
+				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(obj));
 
 				asAtom ret = asAtomHandler::undefinedAtom;
 				auto s = asAtomHandler::AVM1toString(name, wrk);
@@ -1699,12 +1702,12 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (asAtomHandler::is<AVM1Function>(func))
 				{
 					auto f = asAtomHandler::as<AVM1Function>(func);
-					f->call(&ret,&thisObj,args,numargs,caller);
+					f->call(&ret,&obj,args,numargs,caller);
 					f->decRef();
 				}
 				else if (asAtomHandler::is<Function>(func))
 				{
-					asAtomHandler::as<Function>(func)->call(ret,wrk,thisObj,args,numargs);
+					asAtomHandler::as<Function>(func)->call(ret,wrk,obj,args,numargs);
 					asAtomHandler::as<Function>(func)->decRef();
 				}
 				else if (asAtomHandler::is<Class_base>(func))

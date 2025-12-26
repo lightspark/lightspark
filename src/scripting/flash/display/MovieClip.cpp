@@ -413,7 +413,7 @@ void MovieClip::AVM1gotoFrameLabel(const tiny_string& label,bool stop, bool swit
 	uint32_t dest=framecontainer->getFrameIdByLabel(label, "");
 	if(dest==FRAME_NOT_FOUND)
 	{
-		LOG(LOG_ERROR, "gotoFrameLabel: label not found:" <<label);
+		LOG(LOG_ERROR, "gotoFrameLabel: label not found:" <<label<<" "<<this->toDebugString());
 		return;
 	}
 	AVM1gotoFrame(dest, stop, switchplaystate,true);
@@ -696,9 +696,12 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 }
 void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
-	if (dispatcher == this)
+	if (this->actions)
 	{
-		if (this->actions)
+		DisplayObject* p = this;
+		while (p && p != dispatcher)
+			p = p->getParent();
+		if (p == dispatcher)
 		{
 			for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
 			{
@@ -943,11 +946,21 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	}
 	int Depth = asAtomHandler::toInt(args[1]);
 	uint32_t nameId = asAtomHandler::toStringId(args[0],wrk);
+	multiname m(nullptr);
+	m.name_type=multiname::NAME_STRING;
+	m.name_s_id=nameId;
+	if (th->hasPropertyByMultiname(m,true,false,wrk))
+	{
+		asAtom oldclip = asAtomHandler::invalidAtom;
+		th->getVariableByMultiname(oldclip,m,GET_VARIABLE_OPTION::NONE,wrk);
+		if (asAtomHandler::is<DisplayObject>(oldclip))
+			th->_removeChild(asAtomHandler::as<DisplayObject>(oldclip));
+		ASATOM_DECREF(oldclip);
+	}
 	AVM1MovieClip* toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(wrk);
 	toAdd->loadedFrom = th->loadedFrom;
 	toAdd->name = nameId;
 	toAdd->setMouseEnabled(true);
-	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=BUILTIN_STRINGS::STRING_LOCKROOT;
 	toAdd->setVariableByMultiname(m,asAtomHandler::falseAtom,CONST_ALLOWED,nullptr,wrk);
@@ -958,8 +971,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	}
 	else
 		th->insertLegacyChildAt(Depth,toAdd,false,false);
+	toAdd->setNameOnParent();
 	toAdd->constructionComplete();
 	toAdd->afterConstruction();
+	toAdd->isAVM1Loaded=true;
 	toAdd->incRef();
 	ret=asAtomHandler::fromObject(toAdd);
 }
@@ -1151,6 +1166,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1getSWFVersion)
 {
 	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->getSwfVersion());
 }
+
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)
 {
 	AVM1MovieClip* th=asAtomHandler::as<AVM1MovieClip>(obj);
@@ -1307,7 +1323,7 @@ void MovieClip::AVM1AddScriptEvents()
 		}
 	}
 	AVM1scriptToExecute script;
-	script.actions = nullptr;;
+	script.actions = nullptr;
 	script.startactionpos = 0;
 	script.avm1context = nullptr;
 	this->incRef(); // will be decreffed after script handler was executed
@@ -1333,40 +1349,7 @@ void MovieClip::initFrame()
 	state.last_FP=state.FP;
 
 	/* call our own constructor, if necassary */
-	if (!getConstructionComplete())
-	{
-		// contrary to http://www.senocular.com/flash/tutorials/orderofoperations/
-		// the constructors of the children are _not_ really called bottom-up but in a "mixed" fashion:
-		// - the constructor of the parent is called first. that leads to calling the constructors of all super classes of the parent
-		// - after the builtin super constructor of the parent was called, the constructors of the children are called
-		// - after that, the remaining code of the the parents constructor is executed
-		// this ensures that code from the constructor that is placed _before_ the super() call is executed before the children are constructed
-		// example:
-		// class testsprite : MovieClip
-		// {
-		//   public var childclip:MovieClip;
-		//   public function testsprite()
-		//   {
-		//      // code here will be executed _before_ childclip is constructed
-		//      super();
-		//      // code here will be executed _after_ childclip was constructed
-		//  }
-		Sprite::initFrame();
-	}
-	else if (!placedByActionScript || isConstructed())
-	{
-		// work on a copy because initframe may alter the displaylist
-		std::vector<_R<DisplayObject>> tmplist;
-		cloneDisplayList(tmplist);
-		// DisplayObjectContainer's ActionScript constructor is responsible
-		// for calling `initFrame()` on the first frame.
-		for (auto child : tmplist)
-		{
-			if (initializingFrame && !child->isConstructed())
-				continue;
-			child->initFrame();
-		}
-	}
+	Sprite::initFrame();
 	state.creatingframe=false;
 }
 
@@ -1471,6 +1454,8 @@ void MovieClip::advanceFrame(bool implicit)
 {
 	if (implicit && !getSystemState()->mainClip->needsActionScript3() && state.frameadvanced && state.last_FP==-1)
 		return; // frame was already advanced after construction
+	if (!framecontainer)
+		framecontainer=new FrameContainer();
 	if (state.last_FP!=-1)
 		state.advancedByTick=true;
 	checkSound(state.next_FP);
@@ -1544,6 +1529,8 @@ void MovieClip::constructionComplete(bool _explicit, bool forInitAction)
 	/* If this object was 'new'ed from AS code, the first
 	 * frame has not been initalized yet, so init the frame
 	 * now */
+	if (!framecontainer)
+		framecontainer=new FrameContainer();
 	if(state.last_FP == -1
 		&& !needsActionScript3()
 		&& !forInitAction)

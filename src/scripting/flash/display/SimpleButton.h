@@ -64,6 +64,7 @@ private:
 	bool enabled;
 	bool useHandCursor;
 	bool hasMouse;
+	bool upStateHasMovieClip;
 	void reflectState(BUTTONSTATE oldstate);
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 	/* This is called by the VM when an event is dispatched */
@@ -83,7 +84,7 @@ public:
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	uint32_t getTagID() const override;
 	void beforeConstruction(bool _explicit = false) override;
-	void constructionComplete(bool _explicit = false, bool forInitAction = false) override;
+	void afterConstruction(bool _explicit = false) override;
 	void addDisplayObject(BUTTONOBJECTTYPE state, uint32_t depth, DisplayObject* o);
 
 	static void sinit(Class_base* c);

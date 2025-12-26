@@ -443,7 +443,9 @@ void Stage::prepareShutdown()
 }
 
 Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
-	,focus(nullptr),avm1DisplayObjectFirst(nullptr),avm1DisplayObjectLast(nullptr),hasAVM1Clips(false),invalidated(true)
+	,focus(nullptr),avm1DisplayObjectFirst(nullptr),avm1DisplayObjectLast(nullptr)
+	,hasAVM1Clips(false)
+	,invalidated(true)
 	,align(c->getSystemState()->getUniqueStringId("TL")), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high")
 	,stageFocusRect(false),allowsFullScreen(false),contentsScaleFactor(1.0)
 {
@@ -996,14 +998,16 @@ void Stage::enterFrame(bool implicit)
 
 void Stage::advanceFrame(bool implicit)
 {
-	if (getSystemState()->mainClip->needsActionScript3())
+	if (!getSystemState()->mainClip->getParent())
 	{
-		forEachHiddenObject([&](DisplayObject* obj)
-		{
-			obj->advanceFrame(implicit);
-		});
-		DisplayObjectContainer::advanceFrame(implicit);
+		getSystemState()->mainClip->incRef();
+		insertLegacyChildAt(-16384, getSystemState()->mainClip, false, false);
 	}
+	forEachHiddenObject([&](DisplayObject* obj)
+	{
+		obj->advanceFrame(implicit);
+	});
+	DisplayObjectContainer::advanceFrame(implicit);
 	executeAVM1Scripts(implicit);
 }
 void Stage::executeAVM1Scripts(bool implicit)
@@ -1070,7 +1074,8 @@ void Stage::initFrame()
 {
 	forEachHiddenObject([&](DisplayObject* obj)
 	{
-		obj->initFrame();
+		if (obj->isConstructed())
+			obj->initFrame();
 	});
 	DisplayObjectContainer::initFrame();
 }

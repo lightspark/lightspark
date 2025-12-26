@@ -1333,7 +1333,7 @@ tokensVector* DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_st
 				}
 			}
 			if (!found)
-				LOG(LOG_INFO,"DefineFont3Tag:Character not found:"<<(int)*it<<" "<<text<<" "<<this->getFontname()<<" "<<CodeTable.size());
+				LOG(LOG_INFO,"DefineFont3Tag:Character not found:"<<(int)*it<<" "<<text<<" "<<this->getFontname()<<" | "<<this->getId()<<" "<<CodeTable.size());
 		}
 	}
 	return tk;
@@ -2013,6 +2013,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	}
 	bool newInstance = false;
 	bool reused = false;
+	bool needsSetName = false;
 	if(PlaceFlagHasCharacter && (!exists || (currchar->getTagID() != CharacterId)))
 	{
 		//A new character must be placed
@@ -2042,6 +2043,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		{
 			// check if we can reuse the DisplayObject from the last declared frame (only relevant if we are moving backwards in the timeline)
 			toAdd = parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth,CharacterId);
+			needsSetName = toAdd;
 		}
 		if (!toAdd)
 		{
@@ -2131,6 +2133,8 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			/* parent becomes the owner of toAdd */
 			parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd,inskipping);
 			currchar=toAdd;
+			if (needsSetName)
+				currchar->setNameOnParent();
 		}
 	}
 	else
@@ -2177,12 +2181,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		}
 		else
 		{
-			currchar->incRef();
-			multiname objName(nullptr);
-			objName.name_type=multiname::NAME_STRING;
-			objName.name_s_id=currchar->name;
-			objName.ns.emplace_back(parent->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-			parent->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,parent->getInstanceWorker());
+			currchar->setNameOnParent();
 		}
 	}
 	if (exists && PlaceFlagHasClipAction)

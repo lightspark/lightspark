@@ -1331,6 +1331,27 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				m_sys->stage->cleanupRemovedDisplayObjects();
 				m_sys->worker->processGarbageCollection(false);
 				break;
+			case FIRST_FRAME_AVAILABLE_EVENT:
+			{
+				FirstFrameAvailableEvent* ev=static_cast<FirstFrameAvailableEvent*>(e.second.getPtr());
+
+				if (ev->root == m_sys->mainClip)
+				{
+					m_sys->removeJob(m_sys);
+					m_sys->addFrameTick(m_sys);
+				}
+				else
+				{
+					if (ev->root->needsActionScript3())
+					{
+						ev->root->as<MovieClip>()->declareFrame(false);
+						ev->root->as<MovieClip>()->initFrame();
+					}
+					else
+						ev->root->as<MovieClip>()->advanceFrame(true);
+				}
+				break;
+			}
 			case IDLE_EVENT:
 			{
 				m_sys->setFramePhase(FramePhase::IDLE);

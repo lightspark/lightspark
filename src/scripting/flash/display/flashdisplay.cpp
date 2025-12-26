@@ -653,23 +653,7 @@ void Sprite::handleMouseCursor(bool rollover)
 
 void Sprite::initFrame()
 {
-	if (!constructorCallComplete)
-	{
-		if (!initializingFrame)
-		{
-			DisplayObjectContainer::initFrame();
-		}
-		else
-		{
-			for(auto it= dynamicDisplayList.begin();it!=dynamicDisplayList.end();it++)
-			{
-				if (!(*it)->isConstructed())
-					(*it)->setNameOnParent();
-			}
-		}
-	}
-	else
-		DisplayObjectContainer::initFrame();
+	DisplayObjectContainer::initFrame();
 }
 
 string Sprite::toDebugString() const
@@ -747,6 +731,7 @@ bool DisplayObjectContainer::hasLegacyChildAt(int32_t depth)
 	auto i = mapDepthToLegacyChild.find(depth);
 	return i != mapDepthToLegacyChild.end();
 }
+
 DisplayObject* DisplayObjectContainer::getLegacyChildAt(int32_t depth)
 {
 	return mapDepthToLegacyChild.at(depth);
@@ -822,12 +807,8 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,c
 		o->colorTransform->setProperties(colortransform);
 	markAsChanged();
 }
-
-void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
+void DisplayObjectContainer::removeChildName(DisplayObject* obj)
 {
-	if(!hasLegacyChildAt(depth))
-		return;
-	DisplayObject* obj = mapDepthToLegacyChild.at(depth);
 	if(obj->name != BUILTIN_STRINGS::EMPTY
 		&& obj->name != UINT32_MAX
 		&& !obj->markedForLegacyDeletion) // member variable was already reset in purgeLegacyChildren
@@ -838,11 +819,31 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-
 		variable* v = this->findVariableByMultiname(objName,this->getClass(),nullptr,nullptr,true,loadedFrom->getInstanceWorker());
 		if (v && v->getObjectVar() == obj) //only reset if the stored variable is the same as the DisplayObject to delete
-			setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom, CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+		{
+			asAtom newobj = needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom;
+			for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); ++it)
+			{
+				if ((*it) != obj && (*it)->name==obj->name)
+				{
+					// set to DisplayObject with same name and lowest depth
+					(*it)->incRef();
+					newobj=asAtomHandler::fromObjectNoPrimitive(*it);
+					break;
+				}
+			}
+			setVariableByMultiname(objName,newobj, CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+		}
 	}
+}
+
+void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
+{
+	if(!hasLegacyChildAt(depth))
+		return;
+	DisplayObject* obj = mapDepthToLegacyChild.at(depth);
+	removeChildName(obj);
 	if (!inskipping && obj->is<SimpleButton>())
 	{
 		auto inserted = mapFrameDepthToLegacyChildRemembered.insert(make_pair(depth,obj));
@@ -910,38 +911,6 @@ void DisplayObjectContainer::insertLegacyChildAt(int32_t depth, DisplayObject* o
 				it++; // skip all children previously added through actionscript
 				insertpos++;
 			}
-		}
-
-	}
-	if((!loadedFrom->usesActionScript3 || obj->isConstructed())
-		&& obj->name != BUILTIN_STRINGS::EMPTY
-		&& obj->name != UINT32_MAX
-		&& !obj->hasDefaultName)
-	{
-		multiname objName(nullptr);
-		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=obj->name;
-		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		bool set=true;
-		if (!loadedFrom->usesActionScript3)
-		{
-			variable* v = this->findVariableByMultiname(objName,this->getClass(),nullptr,nullptr,true,loadedFrom->getInstanceWorker());
-			if (v && v->getObjectVar() && v->getObjectVar()->is<DisplayObject>())
-			{
-				// it seems that in AVM1 the variable for a named child is not set if
-				// - a variable with the same name already exists and
-				// - that variable is a DisplayObject and
-				// - the depth of the existing DisplayObject is lower than that of the new DisplayObject
-				auto it = this->mapLegacyChildToDepth.find(v->getObjectVar()->as<DisplayObject>());
-				if (it != this->mapLegacyChildToDepth.end() && it->second < depth)
-					set = false;
-			}
-		}
-		if (set)
-		{
-			obj->incRef();
-			asAtom v = asAtomHandler::fromObject(obj);
-			setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 		}
 	}
 	_addChildAt(obj,insertpos,inskipping);

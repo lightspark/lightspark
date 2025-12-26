@@ -1804,9 +1804,9 @@ void ParseThread::execute()
 			}
 			else
 			{
+				parseSWF(Signature[3]);
 				if (loader && !loader->needsActionScript3())
 					loader->setContent(parsedObject);
-				parseSWF(Signature[3]);
 			}
 		}
 	}
@@ -2471,31 +2471,30 @@ void SystemState::tick()
 
 	currentVm->setIdle(false);
 
-	if (mainClip && mainClip->isConstructed() && mainClip->applicationDomain->getFrameRate() > 0)
-	{
-		/* Step 0: Set current frame number to the next frame
+	assert (mainClip);
+	assert (mainClip->applicationDomain->getFrameRate() > 0);
+	/* Step 0: Set current frame number to the next frame
 		 * Step 1: declare new objects */
-		_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
-		currentVm->addEvent(NullRef, advFrame);
+	_R<AdvanceFrameEvent> advFrame = _MR(new (unaccountedMemory) AdvanceFrameEvent());
+	currentVm->addEvent(NullRef, advFrame);
 
-		/* Step 2: Send enterFrame events, if needed */
-		addBroadcastEvent("enterFrame");
+	/* Step 2: Send enterFrame events, if needed */
+	addBroadcastEvent("enterFrame");
 
-		/* Step 3: create legacy objects, which are new in this frame (top-down),
+	/* Step 3: create legacy objects, which are new in this frame (top-down),
 		 * run their constructors (bottom-up) */
-		stage->incRef();
-		currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent(_MR(stage))));
+	stage->incRef();
+	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) InitFrameEvent(_MR(stage))));
 
-		/* Step 4: dispatch frameConstructed events */
-		addBroadcastEvent("frameConstructed");
+	/* Step 4: dispatch frameConstructed events */
+	addBroadcastEvent("frameConstructed");
 
-		/* Step 5: run all frameScripts (bottom-up) */
-		stage->incRef();
-		currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) ExecuteFrameScriptEvent(_MR(stage))));
+	/* Step 5: run all frameScripts (bottom-up) */
+	stage->incRef();
+	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) ExecuteFrameScriptEvent(_MR(stage))));
 
-		/* Step 6: dispatch exitFrame event */
-		addBroadcastEvent("exitFrame");
-	}
+	/* Step 6: dispatch exitFrame event */
+	addBroadcastEvent("exitFrame");
 	/* Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
 	if (stage->invalidated)
 	{
@@ -2992,6 +2991,8 @@ void SystemState::resetParentList()
 	auto it = listResetParent.begin();
 	while (it != listResetParent.end())
 	{
+		if ((*it)->getParent())
+			(*it)->getParent()->removeChildName(*it);
 		(*it)->setParent(nullptr);
 		(*it)->removeStoredMember();
 		it = listResetParent.erase(it);

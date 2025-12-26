@@ -412,10 +412,6 @@ void ApplicationDomain::buildClassAndInjectBase(const string& s, _R<RootMovieCli
 	// ensure that traits are initialized for movies loaded from actionscript
 	base->setIsInitialized(false);
 	derived_class_tmp->bindToRoot();
-	// the root movie clip may have it's own constructor, so we make sure it is called
-	asAtom r = asAtomHandler::fromObject(base.getPtr());
-	derived_class_tmp->handleConstruction(r,nullptr,0,true);
-	base->setConstructorCallComplete();
 }
 
 Class_inherit* ApplicationDomain::findClassInherit(const string& s)

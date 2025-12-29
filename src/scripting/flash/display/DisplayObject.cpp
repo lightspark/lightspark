@@ -2597,6 +2597,11 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		number_t localX;
 		number_t localY;
 		th->globalToLocal(x, y, localX, localY,false);
+		if (std::isnan(localX) || std::isnan(localY))
+		{
+			asAtomHandler::setBool(ret,false);
+			return;
+		}
 
 		// Hmm, hitTest will also check the mask, is this the
 		// right thing to do?

@@ -418,6 +418,9 @@ void FrameContainer::AVM1ExecuteFrameActions(uint32_t frame, MovieClip* clip)
 
 void FrameContainer::declareFrame(MovieClip* clip)
 {
+	bool wasAVM1loaded = clip->isAVM1Loaded;
+	if (!clip->state.frameadvanced && !clip->isAVM1Loaded)
+		clip->AVM1AddScriptEvents();
 	if(getFramesLoaded())
 	{
 		auto iter=frames.begin();
@@ -433,6 +436,8 @@ void FrameContainer::declareFrame(MovieClip* clip)
 		}
 		clip->state.FP = frame;
 	}
+	if (!clip->state.frameadvanced && wasAVM1loaded)
+		clip->AVM1AddScriptEvents();
 }
 
 void FrameContainer::pop_frame()

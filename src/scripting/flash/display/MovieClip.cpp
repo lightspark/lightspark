@@ -67,7 +67,7 @@ void MovieClip::sinit(Class_base* c)
 ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
-	,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
+	,inAVM1Attachment(false),isAVM1Loaded(false)
 	,forAVM1InitAction(false)
 	,framecontainer(nullptr)
 	,actions(nullptr)
@@ -79,7 +79,7 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSprit
 }
 
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c, FrameContainer* f, uint32_t defineSpriteTagID):Sprite(wrk,c),fromDefineSpriteTag(defineSpriteTagID),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
-	,inAVM1Attachment(false),isAVM1Loaded(false),AVM1EventScriptsAdded(false)
+	,inAVM1Attachment(false),isAVM1Loaded(false)
 	,forAVM1InitAction(false)
 	,framecontainer(f)
 	,actions(nullptr)
@@ -1285,8 +1285,6 @@ void MovieClip::declareFrame(bool implicit)
 		getClass()->setupDeclaredTraits(this);
 
 	bool newFrame = (int)state.FP != state.last_FP;
-	if (!needsActionScript3() && implicit && !state.frameadvanced)
-		AVM1AddScriptEvents();
 	if (newFrame ||!state.frameadvanced)
 	{
 		framecontainer->declareFrame(this);
@@ -1300,9 +1298,6 @@ void MovieClip::declareFrame(bool implicit)
 }
 void MovieClip::AVM1AddScriptEvents()
 {
-	if (this->AVM1EventScriptsAdded) // ensure that event scripts are only executed once per frame
-		return;
-	this->AVM1EventScriptsAdded=true;
 	if (actions)
 	{
 		for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
@@ -1352,8 +1347,7 @@ void MovieClip::initFrame()
 	Sprite::initFrame();
 	state.creatingframe=false;
 }
-
-void MovieClip::executeFrameScript()
+void MovieClip::updateVariableBindings()
 {
 	auto itbind = variablebindings.begin();
 	while (itbind != variablebindings.end())
@@ -1363,6 +1357,9 @@ void MovieClip::executeFrameScript()
 		ASATOM_DECREF(v);
 		itbind++;
 	}
+}
+void MovieClip::executeFrameScript()
+{
 	if (!needsActionScript3())
 		return;
 	state.explicit_FP=false;
@@ -1480,6 +1477,7 @@ void MovieClip::advanceFrame(bool implicit)
 		if (int(state.FP) >= state.last_FP && !state.inEnterFrame && implicit) // no need to advance frame if we are moving backwards in the timline, as the timeline will be rebuild anyway
 			DisplayObjectContainer::advanceFrame(true);
 		declareFrame(implicit);
+		updateVariableBindings();
 		return;
 	}
 
@@ -1520,6 +1518,7 @@ void MovieClip::advanceFrame(bool implicit)
 	// if it was set by an actionscript command.
 	state.frameadvanced = true;
 	markedForLegacyDeletion=false;
+	updateVariableBindings();
 }
 
 void MovieClip::constructionComplete(bool _explicit, bool forInitAction)

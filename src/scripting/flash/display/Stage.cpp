@@ -998,6 +998,8 @@ void Stage::enterFrame(bool implicit)
 
 void Stage::advanceFrame(bool implicit)
 {
+	if (getSystemState()->mainClip->getFramesLoaded()==0)
+		return;
 	if (!getSystemState()->mainClip->getParent())
 	{
 		getSystemState()->mainClip->incRef();
@@ -1048,8 +1050,6 @@ void Stage::executeAVM1Scripts(bool implicit)
 		auto itscr = avm1scriptstoexecute.begin();
 		while (itscr != avm1scriptstoexecute.end())
 		{
-			if ((*itscr).isEventScript)
-				(*itscr).clip->AVM1EventScriptsAdded=false;
 			if (!(*itscr).clip->markedForLegacyDeletion)
 				(*itscr).execute();
 			else

@@ -40,7 +40,6 @@ private:
 	bool inExecuteFramescript;
 	bool inAVM1Attachment;
 	bool isAVM1Loaded;
-	bool AVM1EventScriptsAdded;
 	bool forAVM1InitAction;
 	void runGoto(bool newFrame);
 	AVM1context avm1context;
@@ -112,6 +111,7 @@ public:
 
 	uint32_t getTagID() const override { return fromDefineSpriteTag; }
 	void setupActions(const CLIPACTIONS& clipactions);
+	void updateVariableBindings();
 
 	bool AVM1HandleKeyboardEvent(KeyboardEvent *e) override;
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;

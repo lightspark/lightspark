@@ -1106,7 +1106,9 @@ bool DisplayObject::isShaderBlendMode(AS_BLENDMODE bl)
 {
 	// TODO add shader for other extended blendmodes
 	return bl == AS_BLENDMODE::BLENDMODE_OVERLAY
-			|| bl == BLENDMODE_HARDLIGHT;
+		   || bl == BLENDMODE_HARDLIGHT
+		   || bl == BLENDMODE_DARKEN
+		   || bl == BLENDMODE_LIGHTEN;
 }
 
 MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot, bool fromcurrentrendering) const

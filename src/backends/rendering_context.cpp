@@ -207,6 +207,8 @@ void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase&
 		case BLENDMODE_INVERT:
 		case BLENDMODE_OVERLAY: // handled through blendMode uniform
 		case BLENDMODE_HARDLIGHT: // handled through blendMode uniform
+		case BLENDMODE_DARKEN: // handled through blendMode uniform
+		case BLENDMODE_LIGHTEN: // handled through blendMode uniform
 			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 			break;
 		default:

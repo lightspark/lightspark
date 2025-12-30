@@ -405,6 +405,12 @@ void main()
 	} else if (blendMode==14.0) {//BLENDMODE_HARDLIGHT
 		vec4 vblenddst = texture2D(g_tex_blend,ls_TexCoords[1].xy);
 		vbase = applyBlendMode(vbase,vblenddst,blendOverlay(vbase.rgb,vblenddst.rgb));
+	} else if (blendMode==6.0) {//BLENDMODE_DARKEN
+		vec4 vblenddst = texture2D(g_tex_blend,ls_TexCoords[1].xy);
+		vbase = min(vbase,vblenddst);
+	} else if (blendMode==6.0) {//BLENDMODE_LIGHTEN
+		vec4 vblenddst = texture2D(g_tex_blend,ls_TexCoords[1].xy);
+		vbase = max(vbase,vblenddst);
 	}
 	// discard everything that doesn't fit the mask so it isn't set in stencil buffer
 	if (mask != 0.0 && vbase.a == 0.0)

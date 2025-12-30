@@ -578,6 +578,12 @@ AS3KeyCode x11GetAS3KeyCode(unsigned x11Keyval)
 #endif
 SDL_Window* PluginEngineData::createWidget(uint32_t w,uint32_t h)
 {
+	SDL_DisplayMode screen;
+	if (SDL_GetDesktopDisplayMode(0, &screen) == 0) {
+		// HACK: make the offscreen window as big as the screen to fix issues when resizing the plugin
+		w = screen.w;
+		h = screen.h;
+	}
 	return SDL_CreateWindow("Lightspark",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,w,h,SDL_WINDOW_BORDERLESS|SDL_WINDOW_HIDDEN| SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
 }
 
@@ -649,11 +655,14 @@ NPError nsPluginInstance::SetWindow(NPWindow* aWindow)
 		if (e->mPixels)
 		{
 			delete[] e->mPixels;
-			e->mPixels = NULL;
+			e->mPixels = new unsigned char[aWindow->width*aWindow->height*4]; // 4 bytes for BGRA
 		}
+		LOG(LOG_ERROR,"plugin resize:"<<e->width<<"x"<<e->height<<" "<<aWindow->width<<"x"<<aWindow->height<<" "<<m_sys->getRenderThread());
 		e->width=aWindow->width;
 		e->height=aWindow->height;
 		SDL_SetWindowSize(e->widget,e->width,e->height);
+		if (m_sys->getRenderThread())
+			m_sys->getRenderThread()->requestResize(aWindow->width,aWindow->height,false);
 	}
 	return NPERR_NO_ERROR;
 }
@@ -1198,7 +1207,6 @@ void PluginEngineData::InitOpenGL()
 	if (!mSDLContext)
 		LOG(LOG_ERROR,"failed to create openGL context:"<<SDL_GetError());
 	initGLEW();
-	return;
 }
 
 void PluginEngineData::DeinitOpenGL()

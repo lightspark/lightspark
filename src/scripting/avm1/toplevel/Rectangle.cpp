@@ -121,6 +121,19 @@ Vector2f AVM1Rectangle::getMax
 	);
 }
 
+bool AVM1Rectangle::isEmptyImpl
+(
+	AVM1Activation& act,
+	const GcPtr<AVM1Object>& obj
+)
+{
+	return
+	(
+		obj->getProp(act, "width").isLessEq(0.0, act) ||
+		obj->getProp(act, "height").isLessEq(0.0, act)
+	);
+}
+
 using AVM1Rectangle;
 
 static constexpr auto protoDecls =
@@ -201,12 +214,7 @@ AVM1_FUNCTION_BODY(AVM1Rectangle, setEmpty)
 
 AVM1_FUNCTION_BODY(AVM1Rectangle, isEmpty)
 {
-	auto max = getMax(act, _this);
-	return max <= Vector2f() ||
-	(
-		std::isnan(max.x) ||
-		std::isnan(max.y)
-	);
+	return isEmptyImpl(act, _this);
 }
 
 AVM1_GETTER_BODY(AVM1Rectangle, Left)
@@ -501,24 +509,201 @@ AVM1_FUNCTION_BODY(AVM1Rectangle, containsPoint)
 
 AVM1_FUNCTION_BODY(AVM1Rectangle, containsRectangle)
 {
+	if (args.empty())
+		return AVM1Value::undefinedVal;
+
+	// NOTE: The reason this looks odd is because in Flash Player,
+	// `Rectangle.containsRectangle()` is implemented in ActionScript
+	// (i.e. it's defined in AVM1's `playerglobals`).
+	auto getX = [&](const GcPtr<AVM1Object>& obj) { return obj->getProp(act, "x"); };
+	auto getY = [&](const GcPtr<AVM1Object>& obj) { return obj->getProp(act, "y"); };
+	auto getWidth = [&](const GcPtr<AVM1Object>& obj) { return obj->getProp(act, "width"); };
+	auto getHeight = [&](const GcPtr<AVM1Object>& obj) { return obj->getProp(act, "height"); };
+
+	auto getRect = [&] { return args[0].toObject(act); };
+
+	auto rectRight = getX(getRect()) + getWidth(getRect());
+	auto rectBottom = getY(getRect()) + getHeight(getRect());
+	auto thisRight = getX(_this) + getWidth(_this);
+	auto thisBottom = getY(_this) + getHeight(_this);
+
+	// NOTE: Because Flash Player's version is done in ActionScript, the
+	// order of these checks matters.
+	//
+	// `rect.x >= this.x`.
+	auto ret = getX(getRect()).isLess(getX(_this), act);
+	if (ret.is<UndefinedVal>())
+		return AVM1Value::undefinedVal;
+	else if (ret.toBool(act, act.getSwfVersion()))
+		return false;
+
+	// `rect.x < thisRight`.
+	ret = getX(getRect()).isLess(thisRight, act);
+	if (ret.is<UndefinedVal>())
+		return AVM1Value::undefinedVal;
+	else if (!ret.toBool(act, act.getSwfVersion()))
+		return false;
+
+	// `rect.y >= this.y`.
+	auto ret = getY(getRect()).isLess(getY(_this), act);
+	if (ret.is<UndefinedVal>())
+		return AVM1Value::undefinedVal;
+	else if (ret.toBool(act, act.getSwfVersion()))
+		return false;
+
+	// `rect.y < thisBottom`.
+	ret = getY(getRect()).isLess(thisBottom, act);
+	if (ret.is<UndefinedVal>())
+		return AVM1Value::undefinedVal;
+	else if (!ret.toBool(act, act.getSwfVersion()))
+		return false;
+
+	// `rectRight > this.x`.
+	ret = getX(_this).isLess(rectRight, act);
+	if (ret.is<UndefinedVal>())
+		return AVM1Value::undefinedVal;
+	else if (!ret.toBool(act, act.getSwfVersion()))
+		return false;
+
+	// `rectRight <= thisRight`.
+	ret = thisRight.isLess(rectRight, act);
+	if (ret.is<UndefinedVal>())
+		return AVM1Value::undefinedVal;
+	else if (ret.toBool(act, act.getSwfVersion()))
+		return false;
+
+	// `rectBottom > this.y`.
+	ret = getY(_this).isLess(rectBottom, act);
+	if (ret.is<UndefinedVal>())
+		return AVM1Value::undefinedVal;
+	else if (!ret.toBool(act, act.getSwfVersion()))
+		return false;
+
+	// `rectBottom <= thisBottom`.
+	ret = thisBottom.isLess(rectBottom, act);
+	if (ret.is<UndefinedVal>())
+		return AVM1Value::undefinedVal;
+	else if (ret.toBool(act, act.getSwfVersion()))
+		return false;
+
+	return true;
 }
 
 AVM1_FUNCTION_BODY(AVM1Rectangle, intersection)
 {
+	using GcObj = GcPtr<AVM1Object>;
+	auto getX = [&](const GcObj& obj) { return obj->getProp(act, "x"); };
+	auto getY = [&](const GcObj& obj) { return obj->getProp(act, "y"); };
+	auto getWidth = [&](const GcObj& obj) { return obj->getProp(act, "width"); };
+	auto getHeight = [&](const GcObj& obj) { return obj->getProp(act, "height"); };
+
+	auto val = args.empty() ? AVM1Value::undefinedVal : args[0];
+	auto getRect = [&] { return val.toObject(act); };
+
+	if (isEmptyImpl(act, _this) || isEmptyImpl(act, getRect()))
+		return makeRect(act, {});
+
+	Vector2f min
+	(
+		AVM1Math::maxImpl(act, getX(_this), getX(getRect())),
+		AVM1Math::maxImpl(act, getY(_this), getY(getRect()))
+	);
+
+	auto max = Vector2f
+	(
+		AVM1Math::minImpl
+		(
+			act,
+			getX(_this) + getWidth(_this),
+			getX(getRect()) + getWidth(getRect())
+		),
+		AVM1Math::minImpl
+		(
+			act,
+			getY(_this) + getHeight(_this),
+			getY(getRect()) + getHeight(getRect())
+		)
+	) - min;
+
+	auto span = makeSpan(makeArray<AVM1Value>(min.x, min.y, max.x, max.y));
+	if (max <= Vector2f())
+		span.getFirst(0);
+	return makeRect(act, span);
 }
 
 AVM1_FUNCTION_BODY(AVM1Rectangle, intersects)
 {
+	return !isEmptyImpl(act, intersection(act, _this, args));
 }
 
 AVM1_FUNCTION_BODY(AVM1Rectangle, _union)
 {
+	using GcObj = GcPtr<AVM1Object>;
+	auto getX = [&](const GcObj& obj) { return obj->getProp(act, "x"); };
+	auto getY = [&](const GcObj& obj) { return obj->getProp(act, "y"); };
+	auto getWidth = [&](const GcObj& obj) { return obj->getProp(act, "width"); };
+	auto getHeight = [&](const GcObj& obj) { return obj->getProp(act, "height"); };
+
+	auto val = args.empty() ? AVM1Value::undefinedVal : args[0];
+	auto getRect = [&] { return val.toObject(act); };
+
+	if (isEmptyImpl(act, _this))
+		return clone(act, getRect(), {});
+	if (isEmptyImpl(act, getRect()))
+		return clone(act, _this, {});
+
+	Vector2f min
+	(
+		AVM1Math::minImpl(act, getX(_this), getX(getRect())),
+		AVM1Math::minImpl(act, getY(_this), getY(getRect()))
+	);
+
+	auto max = Vector2f
+	(
+		AVM1Math::maxImpl
+		(
+			act,
+			getX(_this) + getWidth(_this),
+			getX(getRect()) + getWidth(getRect())
+		),
+		AVM1Math::maxImpl
+		(
+			act,
+			getY(_this) + getHeight(_this),
+			getY(getRect()) + getHeight(getRect())
+		)
+	) - min;
+
+	return makeRect(act, makeArray<AVM1Value>(min.x, min.y, max.x, max.y));
 }
 
 AVM1_FUNCTION_BODY(AVM1Rectangle, equals)
 {
+	if (args.empty() || !args[0].is<AVM1Object>())
+		return false;
+
+	auto getRect = [&] { return args[0].toObject(act); };
+	auto _class = act.getPrototypes().rectangle;
+	auto ctor = _class->ctor;
+	auto proto = _class->proto;
+	return
+	(
+		getRect()->isInstanceOf(act, ctor, proto) &&
+		getRect()->getProp(act, "x") == _this->getProp(act, "x") &&
+		getRect()->getProp(act, "y") == _this->getProp(act, "y") &&
+		getRect()->getProp(act, "width") == _this->getProp(act, "width") &&
+		getRect()->getProp(act, "height") == _this->getProp(act, "height")
+	);
 }
 
 AVM1_FUNCTION_BODY(AVM1Rectangle, toString)
 {
+	return
+	(
+		std::stringstream("(x=") <<
+		_this->getProp(act, "x").toString(act) << ", y=" <<
+		_this->getProp(act, "y").toString(act) << ", w=" <<
+		_this->getProp(act, "width").toString(act) << ", h=" <<
+		_this->getProp(act, "height").toString(act) << ')'
+	).str();
 }

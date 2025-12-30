@@ -86,6 +86,12 @@ public:
 		const GcPtr<AVM1Object>& obj
 	);
 
+	static bool isEmptyImpl
+	(
+		AVM1Activation& act,
+		const GcPtr<AVM1Object>& obj
+	);
+
 	static GcPtr<AVM1SystemClass> createClass
 	(
 		AVM1DeclContext& ctx,

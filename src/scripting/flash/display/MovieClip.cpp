@@ -1277,7 +1277,7 @@ void MovieClip::declareFrame(bool implicit)
 	 */
 	if((int)state.FP < state.last_FP)
 	{
-		purgeLegacyChildren();
+		purgeLegacyChildren(implicit);
 		resetToStart();
 	}
 	//Declared traits must exists before legacy objects are added

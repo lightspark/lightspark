@@ -205,7 +205,7 @@ public:
 	int findLegacyChildDepth(DisplayObject* obj);
 	void transformLegacyChildAt(int32_t depth, const MATRIX& mat);
 	uint32_t getMaxLegacyChildDepth();
-	void purgeLegacyChildren();
+	void purgeLegacyChildren(bool implicit);
 	void checkClipDepth();
 	void enterFrame(bool implicit) override;
 	void advanceFrame(bool implicit) override;

@@ -1962,15 +1962,19 @@ void PlaceObjectTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd,inskipping);
 }
 
-void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const
+void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* parent, bool newObject) const
 {
 	assert_and_throw(obj);
+	if (newObject)
+	{
+		obj->setBlendMode(AS_BLENDMODE::BLENDMODE_NORMAL);
+		obj->cacheAsBitmap=false;
+	}
 
 	//TODO: move these three attributes in PlaceInfo
-	if(PlaceFlagHasColorTransform)
-	{
+	if(PlaceFlagHasColorTransform || newObject)
 		obj->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(obj->getInstanceWorker(),this->ColorTransformWithAlpha));
-	}
+
 
 	if(PlaceFlagHasRatio)
 		obj->Ratio=Ratio;
@@ -1989,6 +1993,8 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 		else
 			LOG(LOG_ERROR, "Moving of registered objects not really supported");
 	}
+	if (newObject)
+		obj->setFilters(FILTERLIST());
 }
 
 void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
@@ -2005,7 +2011,8 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	{
 		currchar = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth);
 		nameID = currchar->name;
-		if (parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth))
+		if (parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth)
+			||(PlaceFlagHasCharacter && currchar->getTagID()==CharacterId &&  currchar->Ratio != this->Ratio))
 		{
 			parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
 			exists = false;
@@ -2101,7 +2108,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		if (toAdd->placeFrame == UINT32_MAX && parent->is<MovieClip>())
 			toAdd->placeFrame = parent->as<MovieClip>()->state.FP;
 
-		setProperties(toAdd, parent);
+		setProperties(toAdd, parent,true);
 		if (reused)
 		{
 			// ensure DisplayObject is properly setup in parent for reuse
@@ -2140,7 +2147,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	else
 	{
 		if (currchar)
-			setProperties(currchar, parent);
+			setProperties(currchar, parent,PlaceFlagHasCharacter);
 		if (PlaceFlagHasMatrix)
 		{
 			if(placedTag==nullptr && currchar)
@@ -2150,6 +2157,9 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			}
 			parent->transformLegacyChildAt(LEGACY_DEPTH_START+Depth,Matrix);
 		}
+		else if (PlaceFlagHasCharacter)
+			currchar->setLegacyMatrix(Matrix);
+
 	}
 	if (exists
 		&& (currchar->getTagID() == CharacterId)
@@ -2363,17 +2373,19 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 
 }
 
-void PlaceObject3Tag::setProperties(DisplayObject *obj, DisplayObjectContainer *parent) const
+void PlaceObject3Tag::setProperties(DisplayObject *obj, DisplayObjectContainer *parent, bool newObject) const
 {
-	PlaceObject2Tag::setProperties(obj,parent);
-	if (PlaceFlagHasBlendMode)
+	PlaceObject2Tag::setProperties(obj,parent,newObject);
+	if (PlaceFlagHasBlendMode || newObject)
 		obj->setBlendMode(BlendMode);
 	if (PlaceFlagHasVisible)
 		obj->setVisible(Visible);
 	if (PlaceFlagOpaqueBackground) // it seems that adobe ignores the alpha value
 		obj->opaqueBackground=asAtomHandler::fromUInt((BackgroundColor.Red<<16)|(BackgroundColor.Green<<8)|(BackgroundColor.Blue));
-	obj->cacheAsBitmap=this->BitmapCache;
-	obj->setFilters(this->SurfaceFilterList);
+	if (this->BitmapCache)
+		obj->cacheAsBitmap=this->BitmapCache;
+	if (this->SurfaceFilterList.NumberOfFilters || newObject)
+		obj->setFilters(this->SurfaceFilterList);
 }
 
 void SetBackgroundColorTag::execute(RootMovieClip* root) const

@@ -383,7 +383,7 @@ protected:
 	UI16_SWF ClipDepth;
 	CLIPACTIONS ClipActions;
 	PlaceObject2Tag(RECORDHEADER h,uint32_t v):DisplayListTag(h),ClipActions(v,nullptr),placedTag(nullptr),NameID(BUILTIN_STRINGS::EMPTY){}
-	virtual void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const;
+	virtual void setProperties(DisplayObject* obj, DisplayObjectContainer* parent, bool newObject) const;
 	DictionaryTag* placedTag;
 public:
 	uint32_t NameID;
@@ -406,7 +406,7 @@ private:
 
 public:
 	PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
-	void setProperties(DisplayObject* obj, DisplayObjectContainer* parent) const override;
+	void setProperties(DisplayObject* obj, DisplayObjectContainer* parent, bool newObject) const override;
 };
 
 class FrameLabelTag: public Tag

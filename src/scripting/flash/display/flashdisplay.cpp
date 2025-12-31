@@ -945,7 +945,7 @@ void DisplayObjectContainer::transformLegacyChildAt(int32_t depth, const MATRIX&
 	mapDepthToLegacyChild.at(depth)->setLegacyMatrix(mat);
 }
 
-void DisplayObjectContainer::purgeLegacyChildren()
+void DisplayObjectContainer::purgeLegacyChildren(bool implicit)
 {
 	auto i = mapDepthToLegacyChild.begin();
 	while( i != mapDepthToLegacyChild.end() )
@@ -953,7 +953,8 @@ void DisplayObjectContainer::purgeLegacyChildren()
 		DisplayObject* obj = i->second;
 		if (i->first < 0 && is<MovieClip>() && obj->placeFrame > as<MovieClip>()->state.FP)
 		{
-			legacyChildrenMarkedForDeletion.insert(i->first);
+			if (implicit || !needsActionScript3())
+				legacyChildrenMarkedForDeletion.insert(i->first);
 			obj->markedForLegacyDeletion=true;
 			if(obj->name != BUILTIN_STRINGS::EMPTY && obj->name != UINT32_MAX)
 			{
@@ -965,7 +966,7 @@ void DisplayObjectContainer::purgeLegacyChildren()
 					setVariableByMultiname(objName,needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom,CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 			}
 		}
-		if (i->first < 0 && is<MovieClip>() && obj->placeFrame <= as<MovieClip>()->state.FP)
+		if (i->first < 0 && is<MovieClip>() && obj->placeFrame <= as<MovieClip>()->state.FP && !obj->is<MorphShape>())
 		{
 			auto inserted = mapFrameDepthToLegacyChildRemembered.insert(make_pair(i->first,obj));
 			if (inserted.second)
@@ -2182,24 +2183,37 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getObjectsUnderPoint)
 
 void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 {
-	number_t xmin,xmax,ymin,ymax;
-	MATRIX m;
+	Locker l(mutexDisplayList);
+	number_t localX;
+	number_t localY;
+	this->globalToLocal(point->getX(), point->getY(), localX, localY,false);
+	if (getClipDepth())
+		return;
+	auto obj = this->hitTest(Vector2f(point->getX(), point->getY()),Vector2f(localX,localY),HIT_TYPE::GENERIC_HIT,false);
+	if (obj)
 	{
-		Locker l(mutexDisplayList);
+		obj->incRef();
+		ar->push(asAtomHandler::fromObject(obj.getPtr()));
+	}
+	else
+	{
 		auto it = dynamicDisplayList.begin();
 		while (it != dynamicDisplayList.end())
 		{
-			if ((*it)->getBounds(xmin,xmax,ymin,ymax,m))
+			if ((*it)->getClipDepth())
 			{
-				if (xmin <= point->getX() && xmax >= point->getX()
-						&& ymin <= point->getY() && ymax >= point->getY())
-				{
-					(*it)->incRef();
-					ar->push(asAtomHandler::fromObject(*it));
-				}
+				it++;
+				continue;
 			}
-			if ((*it)->is<DisplayObjectContainer>())
-				(*it)->as<DisplayObjectContainer>()->getObjectsFromPoint(point,ar);
+			(*it)->globalToLocal(point->getX(), point->getY(), localX, localY,false);
+			auto obj = (*it)->hitTest(Vector2f(point->getX(), point->getY()),Vector2f(localX,localY),HIT_TYPE::GENERIC_HIT,false);
+			if (obj)
+			{
+				obj->incRef();
+				ar->push(asAtomHandler::fromObject(obj.getPtr()));
+				if ((*it)->is<DisplayObjectContainer>())
+					(*it)->as<DisplayObjectContainer>()->getObjectsFromPoint(point,ar);
+			}
 			it++;
 		}
 	}

@@ -266,6 +266,7 @@ public:
 	virtual uint32_t getTagID() const { return UINT32_MAX;}
 	
 	bool getBounds(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, const MATRIX& m, bool visibleOnly=false);
+	bool hitTestMask(const Vector2f& globalPoint, HIT_TYPE type);
 	_NR<DisplayObject> hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly);
 	virtual void setOnStage(bool staged, bool force, bool inskipping=false);
 	bool isOnStage() const { return onStage; }

@@ -26,7 +26,7 @@
 #include <map>
 
 typedef std::vector<uint64_t> TokenList;
-
+struct NVGcontext;
 namespace lightspark
 {
 
@@ -172,15 +172,18 @@ struct tokensVector
 {
 	_NR<tokenListRef> filltokens;
 	_NR<tokenListRef> stroketokens;
+	NVGcontext* nvgctxt;
 	tokensVector* next;
 	MATRIX startMatrix;
 	RECT boundsRect;
 	RGBA color;
 	bool isGlyph;
 	bool isFilled; // indicates if this tokensVector was filled with tokens, even if no tokens were generated (e.g. glyph for "space" character)
-	tokensVector():	next(nullptr), boundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN), isGlyph(false), isFilled(false)
+	tokensVector():	nvgctxt(nullptr), next(nullptr), boundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN), isGlyph(false), isFilled(false)
 	{
 	}
+	~tokensVector();
+
 	void clear();
 	void destruct();
 	bool empty() const
@@ -191,6 +194,7 @@ struct tokensVector
 	{
 		return (filltokens ? filltokens->tokens.size() : 0) + (stroketokens ? stroketokens->tokens.size() : 0) + (next ? next->size() : 0);
 	}
+	bool hitTest(SystemState* sys, const Vector2f& point, float scaling);
 };
 
 class ShapePathSegment {

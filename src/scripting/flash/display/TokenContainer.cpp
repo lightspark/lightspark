@@ -33,7 +33,6 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "backends/cachedsurface.h"
 
-
 using namespace lightspark;
 using namespace std;
 
@@ -339,23 +338,10 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics, 
 
 bool TokenContainer::hitTestImpl(const Vector2f& point, tokensVector* tk) const
 {
-	if (!tk || tk->empty())
+	if (!tk)
 		return false;
-	//Masks have been already checked along the way
-	bool ret = false;
-	tokensVector* tktmp = tk;
-	while (tktmp && !ret)
-	{
-		ret = CairoTokenRenderer::hitTest(tktmp->filltokens, scaling, point);
-		tktmp = tktmp->next;
-	}
-	tktmp = tk;
-	while (tktmp && !ret)
-	{
-		ret = CairoTokenRenderer::hitTest(tktmp->stroketokens, scaling, point);
-		tktmp = tktmp->next;
-	}
-	return ret;
+
+	return tk->hitTest(owner->getSystemState(),point,scaling);
 }
 
 bool TokenContainer::boundsRectFromTokens(const tokensVector& tokens, float scaling, number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax)

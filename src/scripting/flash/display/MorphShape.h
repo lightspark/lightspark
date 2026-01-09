@@ -39,6 +39,7 @@ public:
 	MorphShape(ASWorker* wrk,Class_base* c);
 	MorphShape(ASWorker* wrk, Class_base* c, DefineMorphShapeTag* _morphshapetag);
 	static void sinit(Class_base* c);
+	void afterLegacyInsert() override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(bool smoothing) override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;

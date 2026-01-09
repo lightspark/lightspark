@@ -443,6 +443,8 @@ bool DisplayObjectContainer::LegacyChildRemoveDeletionMark(int32_t depth)
 _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret = NullRef;
+	if (type == GENERIC_HIT_EXCLUDE_CHILDREN)
+		return ret;
 	bool hit_this=false;
 	//Test objects added at runtime, in reverse order
 	Locker l(mutexDisplayList);
@@ -453,10 +455,11 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(const Vector2f& globalPoi
 		if((*j)->isMask() || (*j)->getClipDepth() > 0)
 			continue;
 
-		if(!(*j)->getMatrix().isInvertible())
+		MATRIX m = (*j)->getMatrix();
+		if(!m.isInvertible())
 			continue; /* The object is shrunk to zero size */
 
-		const auto childPoint = (*j)->getMatrix().getInverted().multiply2D(localPoint);
+		const auto childPoint = m.getInverted().multiply2D(localPoint);
 		ret=(*j)->hitTest(globalPoint, childPoint,type,interactiveObjectsOnly);
 		
 		if (!ret.isNull())
@@ -699,12 +702,21 @@ void DisplayObjectContainer::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER(DisplayObjectContainer, tabChildren)
 
-DisplayObjectContainer::DisplayObjectContainer(ASWorker* wrk, Class_base* c):InteractiveObject(wrk,c),mouseChildren(true),
-	boundsrectXmin(0),boundsrectYmin(0),boundsrectXmax(0),boundsrectYmax(0),boundsRectDirty(true),
-	boundsrectVisibleXmin(0),boundsrectVisibleYmin(0),boundsrectVisibleXmax(0),boundsrectVisibleYmax(0),
-	boundsRectVisibleDirty(true),
-	initializingFrame(false),
-	tabChildren(true)
+DisplayObjectContainer::DisplayObjectContainer(ASWorker* wrk, Class_base* c):InteractiveObject(wrk,c)
+	,mouseChildren(true)
+	,boundsrectXmin(0)
+	,boundsrectYmin(0)
+	,boundsrectXmax(0)
+	,boundsrectYmax(0)
+	,boundsRectDirty(true)
+	,boundsrectVisibleXmin(0)
+	,boundsrectVisibleYmin(0)
+	,boundsrectVisibleXmax(0)
+	,boundsrectVisibleYmax(0)
+	,boundsRectVisibleDirty(true)
+	,initializingFrame(false)
+	,tabChildren(true)
+	,isInaccessibleParent(false)
 {
 	subtype=SUBTYPE_DISPLAYOBJECTCONTAINER;
 }
@@ -1040,6 +1052,7 @@ bool DisplayObjectContainer::destruct()
 	boundsRectVisibleDirty = true;
 	initializingFrame=false;
 	tabChildren = true;
+	isInaccessibleParent = false;
 	legacyChildrenMarkedForDeletion.clear();
 	mapDepthToLegacyChild.clear();
 	mapLegacyChildToDepth.clear();
@@ -2184,12 +2197,17 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getObjectsUnderPoint)
 void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 {
 	Locker l(mutexDisplayList);
+	if (getClipDepth())
+		return;
+	Vector2f globalPoint(point->getX(), point->getY());
+	if (!hitTestMask(globalPoint,HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN))
+		return;
+	if  (!isVisible())
+		return;
 	number_t localX;
 	number_t localY;
 	this->globalToLocal(point->getX(), point->getY(), localX, localY,false);
-	if (getClipDepth())
-		return;
-	auto obj = this->hitTest(Vector2f(point->getX(), point->getY()),Vector2f(localX,localY),HIT_TYPE::GENERIC_HIT,false);
+	auto obj = this->hitTest(globalPoint,Vector2f(localX,localY),HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN,false);
 	if (obj)
 	{
 		obj->incRef();
@@ -2206,14 +2224,14 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 				continue;
 			}
 			(*it)->globalToLocal(point->getX(), point->getY(), localX, localY,false);
-			auto obj = (*it)->hitTest(Vector2f(point->getX(), point->getY()),Vector2f(localX,localY),HIT_TYPE::GENERIC_HIT,false);
+			auto obj = (*it)->hitTest(Vector2f(point->getX(), point->getY()),Vector2f(localX,localY),HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN,false);
 			if (obj)
 			{
 				obj->incRef();
 				ar->push(asAtomHandler::fromObject(obj.getPtr()));
-				if ((*it)->is<DisplayObjectContainer>())
-					(*it)->as<DisplayObjectContainer>()->getObjectsFromPoint(point,ar);
 			}
+			if ((*it)->is<DisplayObjectContainer>())
+				(*it)->as<DisplayObjectContainer>()->getObjectsFromPoint(point,ar);
 			it++;
 		}
 	}

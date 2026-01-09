@@ -323,9 +323,9 @@ protected:
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
 	StaticText(ASWorker* wrk,Class_base* c):DisplayObject(wrk,c),TokenContainer(this),tagID(UINT32_MAX) {}
-	StaticText(ASWorker* wrk,Class_base* c, tokensVector* tokens,const RECT& b,uint32_t _tagID):
-		DisplayObject(wrk,c),TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f),bounds(b),tagID(_tagID) {}
+	StaticText(ASWorker* wrk,Class_base* c, tokensVector* tokens,const RECT& b,uint32_t _tagID);
 	static void sinit(Class_base* c);
+	void afterLegacyInsert() override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(bool smoothing) override;
 	uint32_t getTagID() const override { return tagID; }

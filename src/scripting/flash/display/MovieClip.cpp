@@ -829,6 +829,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->prototype->setDeclaredMethodByQName("clear","",c->getSystemState()->getBuiltinFunction(AVM1Clear),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("moveTo","",c->getSystemState()->getBuiltinFunction(AVM1MoveTo),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("lineTo","",c->getSystemState()->getBuiltinFunction(AVM1LineTo),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("curveTo","",c->getSystemState()->getBuiltinFunction(AVM1CurveTo),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("lineStyle","",c->getSystemState()->getBuiltinFunction(AVM1LineStyle),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("beginFill","",c->getSystemState()->getBuiltinFunction(AVM1BeginFill),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("beginGradientFill","",c->getSystemState()->getBuiltinFunction(AVM1BeginGradientFill),NORMAL_METHOD,false);
@@ -1082,6 +1083,14 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1LineTo)
 	asAtom o = asAtomHandler::fromObject(g);
 	Graphics::lineTo(ret,wrk,o,args,argslen);
 }
+ASFUNCTIONBODY_ATOM(MovieClip,AVM1CurveTo)
+{
+	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
+	Graphics* g = th->getGraphics();
+	asAtom o = asAtomHandler::fromObject(g);
+	Graphics::curveTo(ret,wrk,o,args,argslen);
+}
+
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1LineStyle)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);

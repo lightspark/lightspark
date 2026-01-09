@@ -1348,24 +1348,12 @@ void DisplayObject::updateCachedSurface(IDrawable *d)
 //this way they have less pb with precision.
 Vector2f DisplayObject::localToGlobal(const Vector2f& point, bool fromcurrentrendering) const
 {
-	if (this == getSystemState()->mainClip)
-	{
-		// don't compute current scaling of the main clip into coordinates
-		return point + Vector2f(tx, ty);
-	}
-	else
-	{
-		auto matrix = fromcurrentrendering && EngineData::enablerendering ? currentrendermatrix : getMatrix();
-		Vector2f newPoint = matrix.multiply2D(point);
-		if (parent != nullptr)
-			return parent->localToGlobal(newPoint, fromcurrentrendering);
-		return newPoint;
-	}
+	return getConcatenatedMatrix(true, fromcurrentrendering).multiply2D(point);
 }
 //TODO: Fix precision issues
 Vector2f DisplayObject::globalToLocal(const Vector2f& point, bool fromcurrentrendering) const
 {
-	return getConcatenatedMatrix(false, fromcurrentrendering).getInverted().multiply2D(point);
+	return getConcatenatedMatrix(true, fromcurrentrendering).getInverted().multiply2D(point);
 }
 void DisplayObject::localToGlobal(number_t xin, number_t yin, number_t& xout, number_t& yout, bool fromcurrentrendering) const
 {
@@ -1990,7 +1978,7 @@ void DisplayObject::setScalingGrid()
 ASFUNCTIONBODY_ATOM(DisplayObject,_getParent)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	if(!th->parent)
+	if(!th->parent || th->parent->isInaccessibleParent)
 	{
 		asAtomHandler::setNull(ret);
 		return;
@@ -2218,28 +2206,35 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 	wrk->setBuiltinCallResultLocalNumber(ret, th->getLocalMousePos().y);
 }
 
+bool DisplayObject::hitTestMask(const Vector2f& globalPoint, HIT_TYPE type)
+{
+	const auto& mask = this->mask ? this->mask : this->clipMask;
+	if(mask)
+	{
+		//Compute the coordinates local to the mask
+		const MATRIX& maskMatrix = mask->getConcatenatedMatrix(false,false);
+		if(!maskMatrix.isInvertible())
+		{
+			//If the matrix is not invertible the mask as collapsed to zero size
+			//If the mask is zero sized then the object is not visible
+			return false;
+		}
+		const auto maskPoint = maskMatrix.getInverted().multiply2D(globalPoint);
+		if(mask->hitTest(globalPoint, maskPoint, GENERIC_HIT_INVISIBLE,false).isNull())
+			return false;
+	}
+	return true;
+}
+
 _NR<DisplayObject> DisplayObject::hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	if((!((visible && this->clippedAlpha()>0.0) || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && (!isMask() || !getClipDepth()))
 		return NullRef;
 
-	const auto& mask = this->mask ? this->mask : this->clipMask;
 	//First check if there is any mask on this object, if so the point must be inside the mask to go on
-	if(mask)
-	{
-		//Compute the coordinates local to the mask
-		const MATRIX& maskMatrix = mask->getConcatenatedMatrix();
-		if(!maskMatrix.isInvertible())
-		{
-			//If the matrix is not invertible the mask as collapsed to zero size
-			//If the mask is zero sized then the object is not visible
-			return NullRef;
-		}
-		const auto maskPoint = maskMatrix.getInverted().multiply2D(globalPoint);
-		if(mask->hitTest(globalPoint, maskPoint, type,false).isNull())
-			return NullRef;
-	}
-
+	if (type != GENERIC_HIT_EXCLUDE_CHILDREN
+		&& !hitTestMask(globalPoint,type))
+		return NullRef;
 	return hitTestImpl(globalPoint, localPoint, type,interactiveObjectsOnly);
 }
 
@@ -2474,29 +2469,33 @@ DisplayObjectContainer* DisplayObject::findCommonAncestor(DisplayObject* d, int&
 // coordinates
 bool DisplayObject::boundsRectGlobal(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool fromcurrentrendering)
 {
-	number_t x1, x2, y1, y2;
+	number_t x1, x2, y1, y2, tmpx,tmpy;
 	if (!boundsRect(x1, x2, y1, y2,false))
 		return false;
 
-	localToGlobal(x1, y1, x1, y1, fromcurrentrendering);
-	localToGlobal(x2, y2, x2, y2, fromcurrentrendering);
+	MATRIX m = getConcatenatedMatrix(true, fromcurrentrendering);
 
-	if (!loadedFrom->usesActionScript3 && getRoot())
-	{
-		// it seems that in AVM1 adobe doesn't use the stage coordinates as reference point, instead it's the root object
-		Vector2f rxy =getRoot()->getXY();
-		x1-=rxy.x;
-		x2-=rxy.x;
-		y1-=rxy.y;
-		y2-=rxy.y;
-	}
-	// Mapping to global may swap min and max values (for example,
-	// rotation by 180 degrees)
-	xmin = dmin(x1, x2);
-	xmax = dmax(x1, x2);
-	ymin = dmin(y1, y2);
-	ymax = dmax(y1, y2);
-
+	// check all four corners to get the bounding box taking rotation into account
+	m.multiply2D(x1, y1, tmpx,tmpy);
+	xmin = tmpx;
+	xmax = tmpx;
+	ymin = tmpy;
+	ymax = tmpy;
+	m.multiply2D(x2, y1, tmpx,tmpy);
+	xmin = dmin(xmin, tmpx);
+	xmax = dmax(xmax, tmpx);
+	ymin = dmin(ymin, tmpy);
+	ymax = dmax(ymax, tmpy);
+	m.multiply2D(x1, y2, tmpx,tmpy);
+	xmin = dmin(xmin, tmpx);
+	xmax = dmax(xmax, tmpx);
+	ymin = dmin(ymin, tmpy);
+	ymax = dmax(ymax, tmpy);
+	m.multiply2D(x2, y2, tmpx,tmpy);
+	xmin = dmin(xmin, tmpx);
+	xmax = dmax(xmax, tmpx);
+	ymin = dmin(ymin, tmpy);
+	ymax = dmax(ymax, tmpy);
 	return true;
 }
 
@@ -2580,6 +2579,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 		asAtomHandler::setBool(ret,false);
 		return;
 	}
+	if (!th->needsActionScript3())
+		th->getSystemState()->mainClip->localToGlobal(x,y,x,y,false);
 
 	bool insideBoundingBox = (xmin <= x) && (x <= xmax) && (ymin <= y) && (y <= ymax);
 
@@ -2605,8 +2606,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 			return;
 		}
 
-		// Hmm, hitTest will also check the mask, is this the
-		// right thing to do?
 		_NR<DisplayObject> hit = th->hitTest(Vector2f(x, y), Vector2f(localX, localY),
 						     HIT_TYPE::GENERIC_HIT_INVISIBLE,false);
 
@@ -3291,7 +3290,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_hitTest)
 				else
 				{
 					tiny_string s = asAtomHandler::toString(args[0],wrk);
-					DisplayObject* path = asAtomHandler::as<DisplayObject>(obj)->AVM1GetClipFromPath(s);
+					DisplayObject* path = s.empty() ? nullptr : asAtomHandler::as<DisplayObject>(obj)->AVM1GetClipFromPath(s);
 					if (path)
 					{
 						asAtom pathobj = asAtomHandler::fromObject(path);

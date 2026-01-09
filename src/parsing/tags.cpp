@@ -2601,7 +2601,7 @@ ASObject* DefineButtonTag::instance(Class_base* c, ASObject* prevInstance, bool 
 					state->setFilters(i->FilterList);
 				if (!i->ColorTransform.isIdentity())
 					state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(loadedFrom->getInstanceWorker(),i->ColorTransform));
-				if (loadedFrom->usesActionScript3)
+				if (loadedFrom->usesActionScript3 && !state->is<StaticText>())
 				{
 					state->handleConstruction();
 				}

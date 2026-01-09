@@ -29,7 +29,7 @@
 #include <queue>
 #include "backends/graphics.h"
 #include "threading.h"
-#include "3rdparty/nanovg/src/nanovg.h"
+
 
 namespace lightspark
 {

@@ -157,6 +157,7 @@ protected:
 	void LegacyChildEraseDeletionMarked();
 	void stopAllMovieClipsIntern();
 public:
+	bool isInaccessibleParent; 	// this is set to true for SimpleButtons and it's internal state sprites
 	bool boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override
 	{
 		return false;

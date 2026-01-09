@@ -47,6 +47,10 @@ private:
 				       double c[3]);
 	int movex;
 	int movey;
+	int fillstartx;
+	int fillstarty;
+	bool fillstartset;
+	bool movedInStroke;
 	bool inFilling;
 	bool hasLineStyle;
 	bool hasChanged;
@@ -63,15 +67,43 @@ private:
 	void AddFillStyleToken(const GeomToken& token);
 	void AddStrokeToken(const GeomToken& token);
 	void AddLineStyleToken(const GeomToken& token);
+	void setFillStart();
+	void setupFill(FILLSTYLE& style);
 public:
-	Graphics(ASWorker* wrk, Class_base* c):ASObject(wrk,c),owner(nullptr),movex(0),movey(0),
-		inFilling(false),hasLineStyle(false),hasChanged(false),needsRefresh(true),tokensHaveChanged(false),currentLineWidth(0),
-		tokenBoundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN),renderBoundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN)
+	Graphics(ASWorker* wrk, Class_base* c):ASObject(wrk,c)
+	,owner(nullptr)
+	,movex(0)
+	,movey(0)
+	,fillstartx(0)
+	,fillstarty(0)
+	,fillstartset(false)
+	,movedInStroke(false)
+	,inFilling(false)
+	,hasLineStyle(false)
+	,hasChanged(false)
+	,needsRefresh(true)
+	,tokensHaveChanged(false)
+	,currentLineWidth(0)
+	,tokenBoundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN)
+	,renderBoundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN)
 	{
 	}
-	Graphics(ASWorker* wrk, Class_base* c, TokenContainer* _o):ASObject(wrk,c),owner(_o),movex(0),movey(0),
-		inFilling(false),hasLineStyle(false),hasChanged(false),needsRefresh(true),tokensHaveChanged(false),currentLineWidth(0),
-		tokenBoundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN),renderBoundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN)
+	Graphics(ASWorker* wrk, Class_base* c, TokenContainer* _o):ASObject(wrk,c)
+		,owner(_o)
+		,movex(0)
+		,movey(0)
+		,fillstartx(0)
+		,fillstarty(0)
+		,fillstartset(false)
+		,movedInStroke(false)
+		,inFilling(false)
+		,hasLineStyle(false)
+		,hasChanged(false)
+		,needsRefresh(true)
+		,tokensHaveChanged(false)
+		,currentLineWidth(0)
+		,tokenBoundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN)
+		,renderBoundsRect(INT32_MAX,INT32_MIN,INT32_MAX,INT32_MIN)
 	{
 	}
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax);

@@ -284,6 +284,7 @@ enum SMOOTH_MODE { SMOOTH_NONE=0, SMOOTH_SUBPIXEL=1, SMOOTH_ANTIALIAS=2 };
 
 enum HIT_TYPE { GENERIC_HIT, // point is over the object
 				GENERIC_HIT_INVISIBLE, // ...even if the object is invisible
+				GENERIC_HIT_EXCLUDE_CHILDREN, // don't hittest children
 				MOUSE_CLICK_HIT, // point over the object and mouseEnabled
 				DOUBLE_CLICK_HIT // point over the object and doubleClickEnabled
 };

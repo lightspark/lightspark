@@ -1904,7 +1904,7 @@ ASFUNCTIONBODY_ATOM(ASObject,_constructor)
 
 ASFUNCTIONBODY_ATOM(ASObject,_constructorNotInstantiatable)
 {
-	createError<ArgumentError>(wrk,kCantInstantiateError, asAtomHandler::toObject(obj,wrk)->getClassName());
+	createError<ArgumentError>(wrk,kCantInstantiateError, asAtomHandler::toObject(obj,wrk)->getClassName()+"$");
 }
 
 void ASObject::initSlot(unsigned int n, variable* v)

@@ -375,7 +375,9 @@ bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 _NR<DisplayObject> SimpleButton::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
 	_NR<DisplayObject> ret = NullRef;
-	DisplayObject* hitTestState = parentSprite[BUTTONOBJECTTYPE_HIT];
+
+	BUTTONOBJECTTYPE checkstate = type==MOUSE_CLICK_HIT || type==DOUBLE_CLICK_HIT ? BUTTONOBJECTTYPE_HIT : BUTTONOBJECTTYPE_UP;
+	DisplayObject* hitTestState = parentSprite[checkstate];
 	if(hitTestState)
 	{
 		if(!hitTestState->getMatrix().isInvertible())
@@ -386,7 +388,7 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(const Vector2f& globalPoint, const 
 	}
 	else
 	{
-		for (auto it = states[BUTTONOBJECTTYPE_HIT].begin(); it != states[BUTTONOBJECTTYPE_HIT].end(); it++)
+		for (auto it = states[checkstate].begin(); it != states[checkstate].end(); it++)
 		{
 			hitTestState = (*it).second;
 			if(!hitTestState->getMatrix().isInvertible())
@@ -403,7 +405,7 @@ _NR<DisplayObject> SimpleButton::hitTestImpl(const Vector2f& globalPoint, const 
 	 * tested with the official flash player. It cannot work otherwise, as
 	 * hitTestState->parent == nullptr. (This has also been verified)
 	 */
-	if(ret)
+	if(ret && (type==MOUSE_CLICK_HIT || type==DOUBLE_CLICK_HIT))
 	{
 		if(interactiveObjectsOnly && !isHittable(type))
 			return NullRef;
@@ -448,6 +450,8 @@ bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, nu
 	number_t txmin,txmax,tymin,tymax;
 	for (uint32_t i=0; i<4; i++)
 	{
+		if (i==BUTTONOBJECTTYPE_HIT)
+			continue;
 		if (parentSprite[i] && parentSprite[i]->getBounds(txmin,txmax,tymin,tymax,parentSprite[i]->getMatrix()))
 		{
 			if(ret==true)
@@ -466,7 +470,7 @@ bool SimpleButton::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, nu
 				ret=true;
 			}
 		}
-		for (auto it = states[type].begin(); it != states[type].end(); it++)
+		for (auto it = states[i].begin(); it != states[i].end(); it++)
 		{
 			if ((*it).second->getBounds(txmin,txmax,tymin,tymax,(*it).second->getMatrix()))
 			{
@@ -512,6 +516,7 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DefineButtonTag *tag)
 	,upStateHasMovieClip(false)
 {
 	subtype = SUBTYPE_SIMPLEBUTTON;
+	isInaccessibleParent=true;
 	if (tag)
 		this->loadedFrom = tag->loadedFrom;
 	if (!needsActionScript3())
@@ -756,6 +761,7 @@ void SimpleButton::resetStateToStart(BUTTONOBJECTTYPE type)
 			 * all DisplayObjects as children.
 			 */
 			parentSprite[type] = Class<Sprite>::getInstanceSNoArgs(loadedFrom->getInstanceWorker());
+			parentSprite[type]->as<Sprite>()->isInaccessibleParent=true;
 			parentSprite[type]->addStoredMember();
 			parentSprite[type]->loadedFrom=this->loadedFrom;
 			parentSprite[type]->constructionComplete(true);

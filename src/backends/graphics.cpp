@@ -345,14 +345,14 @@ void CairoTokenRenderer::executefill(cairo_t* cr, const FILLSTYLE* style, cairo_
 	cairo_set_matrix(cr,&origmat);
 }
 
-void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask, CairoTokenRenderer* th)
+void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask, CairoTokenRenderer* th, bool skippaint)
 {
 	if (!style)
 		return;
 	MATRIX origmat;
 	cairo_get_matrix(cr,&origmat);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-	if (style->HasFillFlag)
+	if (style->HasFillFlag && !skippaint)
 	{
 		assert(pattern);
 		adjustFillStyle(cr, &style->FillType, origmat, scaleCorrection);
@@ -406,10 +406,11 @@ void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cai
 		cairo_device_to_user_distance(cr,&linewidth,&linewidth);
 		cairo_set_line_width(cr, linewidth);
 	}
-	cairo_stroke(cr);
+	if (!skippaint)
+		cairo_stroke(cr);
 	cairo_set_matrix(cr,&origmat);
 }
-bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, _NR<tokenListRef> tokens, double scaleCorrection, bool skipPaint, bool isMask, number_t xstart, number_t ystart, CairoTokenRenderer* th, int* starttoken)
+bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, _NR<tokenListRef> tokens, double scaleCorrection, bool skipPaint, bool isMask, number_t xstart, number_t ystart, CairoTokenRenderer* th, int* starttoken,bool* hasFillTokens)
 {
 	if (skipPaint && starttoken && (!tokens || tokens->tokens.empty()))
 	{
@@ -446,16 +447,12 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, _NR<tokenListRef> toke
 			case MOVE:
 			{
 				GeomToken p1(*(++it),false);
-				if(skipPaint && !infill)
-					break;
 				cairo_move_to(cr,(p1.vec.x), (p1.vec.y));
 				break;
 			}
 			case STRAIGHT:
 			{
 				GeomToken p1(*(++it),false);
-				if(skipPaint && !infill)
-					break;
 				cairo_line_to(cr, (p1.vec.x), (p1.vec.y));
 				empty = false;
 				break;
@@ -464,8 +461,6 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, _NR<tokenListRef> toke
 			{
 				GeomToken p1(*(++it),false);
 				GeomToken p2(*(++it),false);
-				if(skipPaint && !infill)
-					break;
 				quadraticBezier(cr,
 								(p1.vec.x), (p1.vec.y),
 								(p2.vec.x), (p2.vec.y));
@@ -477,8 +472,6 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, _NR<tokenListRef> toke
 				GeomToken p1(*(++it),false);
 				GeomToken p2(*(++it),false);
 				GeomToken p3(*(++it),false);
-				if(skipPaint && !infill)
-					break;
 				cairo_curve_to(cr,
 							   (p1.vec.x), (p1.vec.y),
 							   (p2.vec.x), (p2.vec.y),
@@ -489,14 +482,20 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, _NR<tokenListRef> toke
 			case SET_FILL:
 			{
 				GeomToken p1(*(++it),false);
+				if (hasFillTokens)
+					*hasFillTokens=true;
 				if(skipPaint)
 				{
 					if (starttoken && !empty)
 					{
-						cairo_close_path(cr);
-						*starttoken=it-itbegin + 1;
+						if (infill)
+							cairo_close_path(cr);
+						*starttoken=it-itbegin-1;
 						pathdone = true;
 					}
+					if (instroke)
+						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th,true);
+					instroke=false;
 					infill=true;
 					break;
 				}
@@ -521,10 +520,15 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, _NR<tokenListRef> toke
 				{
 					if (starttoken && !empty)
 					{
-						cairo_close_path(cr);
-						*starttoken=it-itbegin + 1;
+						if (infill)
+							cairo_close_path(cr);
+						*starttoken=it-itbegin-1;
 						pathdone = true;
 					}
+					if (instroke)
+						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th,true);
+					currentstrokestyle = p1.lineStyle;
+					instroke=true;
 					break;
 				}
 				if (instroke)
@@ -570,16 +574,18 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, _NR<tokenListRef> toke
 				}
 				break;
 			case CLEAR_STROKE:
-				instroke = false;
 				if(skipPaint)
 				{
 					if (starttoken)
-					{
-						cairo_close_path(cr);
 						*starttoken=it-itbegin + 1;
-					}
+					if (instroke)
+						executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th,true);
+					pathdone = true;
+					currentstrokestyle=nullptr;
+					instroke = false;
 					break;
 				}
+				instroke = false;
 				executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
 				if (currentstrokepattern)
 					cairo_pattern_destroy(currentstrokepattern);
@@ -614,10 +620,10 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, _NR<tokenListRef> toke
 		it++;
 	}
 
+	if (instroke)
+		executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th,skipPaint);
 	if(!skipPaint)
 	{
-		if (instroke)
-			executestroke(cr,currentstrokestyle,currentstrokepattern,scaleCorrection,isMask,th);
 		if (infill)
 			executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
 	}
@@ -702,28 +708,30 @@ bool CairoTokenRenderer::hitTest(_NR<tokenListRef> tokens, float scaleFactor, co
 	int starttoken=0;
 	bool ret=false;
 	bool empty=true;
+	cairo_t *cr=cairo_create(cairoSurface);
+	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+	cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
+
 	while (starttoken >=0)
 	{
 		// loop over all paths of the tokenvector separately
-		cairo_t *cr=cairo_create(cairoSurface);
-		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-		cairo_set_fill_rule(cr, CAIRO_FILL_RULE_EVEN_ODD);
-		empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,true,0,0,nullptr,&starttoken);
+		bool hasfilltokens=false;
+		empty=cairoPathFromTokens(cr, tokens, scaleFactor, true,true,0,0,nullptr,&starttoken,&hasfilltokens);
 		if(!empty)
 		{
 			/* reset the matrix so x and y are not scaled
 			 * by the current cairo transformation
 			 */
 			cairo_identity_matrix(cr);
-			ret=cairo_in_fill(cr, point.x, point.y);
+			ret=hasfilltokens ? cairo_in_fill(cr, point.x, point.y) : cairo_in_stroke(cr,point.x,point.y);
 			if (ret)
-			{
-				cairo_destroy(cr);
 				break;
-			}
 		}
-		cairo_destroy(cr);
 	}
+	// char buf[100];
+	// sprintf(buf,"/tmp/bitmap%02i",cairocount++);
+	// cairo_surface_write_to_png(cairoSurface,buf);
+	cairo_destroy(cr);
 	cairo_surface_destroy(cairoSurface);
 	return ret;
 }

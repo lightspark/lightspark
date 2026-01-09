@@ -75,6 +75,8 @@ ASFUNCTIONBODY_ATOM(Graphics,clear)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
 	th->inFilling = false;
+	th->fillstartset=false;
+	th->movedInStroke=false;
 	th->hasLineStyle = false;
 	th->hasChanged = false;
 	th->needsRefresh=false;
@@ -103,6 +105,8 @@ ASFUNCTIONBODY_ATOM(Graphics,moveTo)
 		th->AddFillToken(GeomToken(MOVE));
 		th->AddFillToken(GeomToken(Vector2(x, y)));
 	}
+	else
+		th->movedInStroke=true;
 	if (th->hasLineStyle)
 	{
 		th->AddStrokeToken(GeomToken(MOVE));
@@ -117,6 +121,7 @@ ASFUNCTIONBODY_ATOM(Graphics,lineTo)
 	int x=asAtomHandler::toNumber(args[0])*TWIPS_FACTOR;
 	int y=asAtomHandler::toNumber(args[1])*TWIPS_FACTOR;
 	th->updateTokenBounds(x,y);
+	th->setFillStart();
 
 	if (th->inFilling)
 	{
@@ -144,6 +149,7 @@ ASFUNCTIONBODY_ATOM(Graphics,curveTo)
 	int anchorY=asAtomHandler::toNumber(args[3])*TWIPS_FACTOR;
 	th->updateTokenBounds(controlX,controlY);
 	th->updateTokenBounds(anchorX,anchorY);
+	th->setFillStart();
 
 	if (th->inFilling)
 	{
@@ -178,6 +184,7 @@ ASFUNCTIONBODY_ATOM(Graphics,cubicCurveTo)
 	th->updateTokenBounds(control1X,control1Y);
 	th->updateTokenBounds(control2X,control2Y);
 	th->updateTokenBounds(anchorX,anchorY);
+	th->setFillStart();
 
 	if (th->inFilling)
 	{
@@ -220,6 +227,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRect)
 	double ellipseHeight=numeric_limits<double>::quiet_NaN();
 	th->updateTokenBounds(x,y);
 	th->updateTokenBounds(x+width,y+height);
+	th->setFillStart();
 	if (argslen == 6)
 		ellipseHeight=asAtomHandler::toNumber(args[5])*TWIPS_FACTOR;
 
@@ -352,6 +360,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 	int height=asAtomHandler::toNumber(args[3])*TWIPS_FACTOR;
 	th->updateTokenBounds(x,y);
 	th->updateTokenBounds(x+width,y+height);
+	th->setFillStart();
 
 	const Vector2 a(x,y);
 	const Vector2 b(x+width,y);
@@ -398,6 +407,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
 	double radius=asAtomHandler::toNumber(args[2])*TWIPS_FACTOR;
 	th->updateTokenBounds(x+radius,y+radius);
 	th->updateTokenBounds(x-radius,y-radius);
+	th->setFillStart();
 
 	double kappa = KAPPA*radius;
 
@@ -476,6 +486,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawEllipse)
 	double height=asAtomHandler::toNumber(args[3])*TWIPS_FACTOR;
 	th->updateTokenBounds(left,top);
 	th->updateTokenBounds(left+width,top+height);
+	th->setFillStart();
 
 	double xkappa = KAPPA*width/2.0;
 	double ykappa = KAPPA*height/2.0;
@@ -555,6 +566,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 	int height=asAtomHandler::toNumber(args[3])*TWIPS_FACTOR;
 	th->updateTokenBounds(x,y);
 	th->updateTokenBounds(x+width,y+height);
+	th->setFillStart();
 
 	const Vector2 a(x,y);
 	const Vector2 b(x+width,y);
@@ -767,6 +779,33 @@ void Graphics::solveVertexMapping(double x1, double y1,
 		c[0] = u1 - x1*c[1] - y1*c[2];
 	}
 }
+void Graphics::setFillStart()
+{
+	if (!fillstartset)
+	{
+
+		fillstartset=true;
+		fillstartx=movex;
+		fillstarty=movey;
+	}
+}
+
+void Graphics::setupFill(FILLSTYLE& style)
+{
+	inFilling=true;
+	fillstartset=false;
+	fillstartx=movex;
+	fillstarty=movey;
+	AddFillToken(GeomToken(SET_FILL));
+	AddFillStyleToken(GeomToken(addFillStyle(style)));
+	if (movedInStroke)
+	{
+		AddFillToken(GeomToken(MOVE));
+		AddFillToken(GeomToken(Vector2(movex, movey)));
+		movedInStroke=false;
+	}
+}
+
 
 void Graphics::updateTokenBounds(int x, int y)
 {
@@ -790,7 +829,12 @@ void Graphics::dorender(bool closepath)
 			if (closepath)
 			{
 				AddFillToken(GeomToken(STRAIGHT));
-				AddFillToken(GeomToken(Vector2(movex, movey)));
+				AddFillToken(GeomToken(Vector2(fillstartx, fillstarty)));
+				if (hasLineStyle)
+				{
+					AddStrokeToken(GeomToken(STRAIGHT));
+					AddStrokeToken(GeomToken(Vector2(fillstartx, fillstarty)));
+				}
 			}
 			AddFillToken(GeomToken(CLEAR_FILL));
 		}
@@ -817,17 +861,8 @@ bool Graphics::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number
 }
 bool Graphics::hitTest(const Vector2f& point)
 {
-	bool ret = false;
 	tokensVector* tk = needsRefresh ? &tokens : &rendertokens;
-	while (tk && !ret)
-	{
-		if (tk->filltokens)
-			ret = CairoTokenRenderer::hitTest(tk->filltokens, 1.0/TWIPS_FACTOR, point);
-		if (!ret && tk->stroketokens)
-			ret = CairoTokenRenderer::hitTest(tk->stroketokens, 1.0/TWIPS_FACTOR, point);
-		tk = tk->next;
-	}
-	return ret;
+	return tk->hitTest(getSystemState(),point,1.0/TWIPS_FACTOR);
 }
 
 bool Graphics::destruct()
@@ -837,6 +872,10 @@ bool Graphics::destruct()
 	owner=nullptr;
 	movex=0;
 	movey=0;
+	fillstartx=0;
+	fillstarty=0;
+	fillstartset=false;
+	movedInStroke=false;
 	inFilling=false;
 	hasLineStyle=false;
 	hasChanged=false;
@@ -862,7 +901,11 @@ IDrawable* Graphics::invalidate(SMOOTH_MODE smoothing)
 	IDrawable* res = nullptr;
 	if (needsRefresh)
 	{
-		//owner->owner->setNeedsTextureRecalculation(true);
+		if (hasChanged && inFilling && hasLineStyle)
+		{
+			AddStrokeToken(GeomToken(STRAIGHT));
+			AddStrokeToken(GeomToken(Vector2(fillstartx, fillstarty)));
+		}
 		tokensHaveChanged=false;
 		needsRefresh = false;
 		if (rendertokens.empty())
@@ -905,7 +948,11 @@ bool Graphics::hasBounds() const
 void Graphics::AddFillToken(const GeomToken& token)
 {
 	if (!tokens.filltokens)
+	{
 		tokens.filltokens = _MR(new tokenListRef());
+		tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2(0, 0)).uval);
+	}
 	if (!tokensHaveChanged && (
 		rendertokens.empty()
 		|| !rendertokens.filltokens
@@ -931,7 +978,10 @@ void Graphics::AddFillStyleToken(const GeomToken& token)
 void Graphics::AddStrokeToken(const GeomToken& token)
 {
 	if (!tokens.stroketokens)
+	{
 		tokens.stroketokens = _MR(new tokenListRef());
+		tokens.stroketokens->tokens.push_back(GeomToken(CLEAR_FILL).uval);
+	}
 	if (!tokensHaveChanged && (
 		rendertokens.empty()
 		|| !rendertokens.stroketokens
@@ -1312,9 +1362,7 @@ ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 	FILLSTYLE style=createGradientFill(type, colors, alphas, ratios, matrix,
 					     spreadMethod, interpolationMethod,
 					     focalPointRatio);
-	th->inFilling=true;
-	th->AddFillToken(GeomToken(SET_FILL));
-	th->AddFillStyleToken(GeomToken(th->addFillStyle(style)));
+	th->setupFill(style);
 }
 
 FILLSTYLE Graphics::createGradientFill(const tiny_string& type,
@@ -1432,10 +1480,8 @@ ASFUNCTIONBODY_ATOM(Graphics,beginBitmapFill)
 		return;
 
 	th->dorender(true);
-	th->inFilling=true;
 	FILLSTYLE style=createBitmapFill(bitmap, matrix, repeat, smooth);
-	th->AddFillToken(GeomToken(SET_FILL));
-	th->AddFillStyleToken(GeomToken(th->addFillStyle(style)));
+	th->setupFill(style);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,beginFill)
@@ -1448,10 +1494,8 @@ ASFUNCTIONBODY_ATOM(Graphics,beginFill)
 		color=asAtomHandler::toUInt(args[0]);
 	if(argslen>=2)
 		alpha=(uint8_t(asAtomHandler::toNumber(args[1])*0xff));
-	th->inFilling=true;
 	FILLSTYLE style = Graphics::createSolidFill(color, alpha);
-	th->AddFillToken(GeomToken(SET_FILL));
-	th->AddFillStyleToken(GeomToken(th->addFillStyle(style)));
+	th->setupFill(style);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,endFill)
@@ -1462,6 +1506,10 @@ ASFUNCTIONBODY_ATOM(Graphics,endFill)
 	th->inFilling=false;
 	th->movex = 0;
 	th->movey = 0;
+	th->fillstartset=false;
+	th->movedInStroke=false;
+	th->fillstartx=0;
+	th->fillstarty=0;
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,copyFrom)

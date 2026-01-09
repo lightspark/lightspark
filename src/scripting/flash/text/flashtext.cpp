@@ -2122,7 +2122,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode());
 	if (res != nullptr)
 		return res;
-	res = new RefreshableDrawable(matrix.getTranslateX(),matrix.getTranslateY(), ceil(width), ceil(height)
+	res = new RefreshableDrawable(x,y+height/2.0, ceil(width), ceil(height)
 								   , matrix.getScaleX(), matrix.getScaleY()
 								   , isMask, cacheAsBitmap
 								   , 1.0, getConcatenatedAlpha()
@@ -2748,10 +2748,7 @@ ASFUNCTIONBODY_ATOM(StyleSheet,transform)
 
 void StaticText::sinit(Class_base* c)
 {
-	// FIXME: the constructor should be
-	// _constructorNotInstantiatable but that breaks when
-	// DisplayObjectContainer::initFrame calls the constructor
-	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_FINAL | CLASS_SEALED);
+	CLASS_SETUP(c, DisplayObject, _constructorNotInstantiatable,CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("text","",c->getSystemState()->getBuiltinFunction(_getText),GETTER_METHOD,true);
 }
 
@@ -2776,13 +2773,29 @@ _NR<DisplayObject> StaticText::hitTestImpl(const Vector2f&, const Vector2f& loca
 	// TODO: Add an overload for RECT.
 	boundsRect(xmin,xmax,ymin,ymax,false);
 	//TODO: Add a point intersect function to RECT, and use that instead.
-	if( xmin <= localPoint.x && localPoint.x <= xmax && ymin <= localPoint.y && localPoint.y <= ymax)
+	if( xmin > localPoint.x || localPoint.x > xmax || ymin > localPoint.y || localPoint.y > ymax)
+	{
+		return NullRef;
+	}
+	else if (this->tokens->hitTest(getSystemState(),localPoint,scaling))
 	{
 		incRef();
 		return _MNR(this);
 	}
-	else
-		return NullRef;
+	return NullRef;
+}
+
+StaticText::StaticText(ASWorker* wrk, Class_base* c, tokensVector* tokens, const RECT& b, uint32_t _tagID):DisplayObject(wrk,c)
+	,TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f)
+	,bounds(b)
+	,tagID(_tagID)
+{
+}
+void StaticText::afterLegacyInsert()
+{
+	constructionComplete(true);
+	setConstructIndicator();
+	afterConstruction(true);
 }
 ASFUNCTIONBODY_ATOM(StaticText,_getText)
 {
@@ -2861,9 +2874,9 @@ ASFUNCTIONBODY_ATOM(TextLineMetrics,_constructor)
 	ARG_CHECK(ARG_UNPACK (th->x) (th->width) (th->height) (th->ascent) (th->descent) (th->leading));
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, ascent);
-ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, descent);
-ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, height);
-ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, leading);
-ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, width);
-ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, x);
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, ascent)
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, descent)
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, height)
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, leading)
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, width)
+ASFUNCTIONBODY_GETTER_SETTER(TextLineMetrics, x)

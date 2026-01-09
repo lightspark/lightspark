@@ -45,6 +45,13 @@ void MorphShape::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObject, CLASS_SEALED | CLASS_FINAL);
 }
 
+void MorphShape::afterLegacyInsert()
+{
+	constructionComplete(true);
+	setConstructIndicator();
+	afterConstruction(true);
+}
+
 IDrawable* MorphShape::invalidate(bool smoothing)
 {
 	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);

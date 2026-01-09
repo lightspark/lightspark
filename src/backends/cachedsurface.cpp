@@ -682,6 +682,13 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 						case MOVE:
 						{
 							GeomToken p1(*(++it),false);
+							if (renderneeded && instroke && !infill)
+							{
+								nvgStroke(nvgctxt);
+								renderneeded=false;
+								nvgClosePath(nvgctxt);
+								nvgBeginPath(nvgctxt);
+							}
 							nvgMoveTo(nvgctxt, (p1.vec.x)*strokescalex, (p1.vec.y)*strokescaley);
 							break;
 						}

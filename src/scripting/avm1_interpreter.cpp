@@ -353,8 +353,9 @@ asAtom AVM1context::getVariable
 	const asAtom& thisObj,
 	DisplayObject* baseClip,
 	DisplayObject* clip,
-	const tiny_string& path
-) const
+	const tiny_string& path,
+	uint32_t pathID,
+	const asAtom& nameAtom) const
 {
 	// Try to resolve a variable path for `ActionGetVariable`.
 	if (clip == nullptr)
@@ -460,11 +461,7 @@ asAtom AVM1context::getVariable
 	multiname m(nullptr);
 	m.name_type = multiname::NAME_STRING;
 	m.isAttribute = false;
-	m.name_s_id = sys->getUniqueStringId
-	(
-		path,
-		isCaseSensitive()
-	);
+	m.name_s_id = pathID;
 
 	// It's a normal variable name.
 	// Resolve it using the scope chain.
@@ -485,10 +482,10 @@ asAtom AVM1context::getVariable
 	// to looking in either the target, or root clip.
 	if (!clip->hasPropertyByMultiname(m, true, true, wrk))
 	{
-		if (!isCaseSensitive() && clip->getSystemState()->avm1global)
+		if (!isCaseSensitive() && clip->getSystemState()->avm1global && asAtomHandler::isValid(nameAtom))
 		{
 			// variable not found for swf <= 6, try to find builtin class with case sensitive name
-			m.name_s_id = sys->getUniqueStringId(path, true);
+			m.name_s_id = asAtomHandler::AVM1toStringId(nameAtom,wrk, true);
 			asAtom ret = asAtomHandler::invalidAtom;
 			clip->getSystemState()->avm1global->getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::isValid(ret))
@@ -516,7 +513,7 @@ void AVM1context::setVariable
 	asAtom& thisObj,
 	DisplayObject* baseClip,
 	DisplayObject* clip,
-	const tiny_string& path,
+	asAtom& pathAtom,
 	const asAtom& value
 )
 {
@@ -527,6 +524,7 @@ void AVM1context::setVariable
 	auto sys = clip->getSystemState();
 	auto wrk = clip->getInstanceWorker();
 
+	tiny_string path = asAtomHandler::AVM1toString(pathAtom,clip->getInstanceWorker());
 	bool pathHasSlash = path.contains('/');
 
 	// If the path is empty, default to using the root clip for the
@@ -602,7 +600,7 @@ void AVM1context::setVariable
 	multiname m(nullptr);
 	m.name_type = multiname::NAME_STRING;
 	m.isAttribute = false;
-	m.name_s_id = sys->getUniqueStringId(path, isCaseSensitive());
+	m.name_s_id = asAtomHandler::AVM1toStringId(pathAtom,clip->getInstanceWorker(),this->isCaseSensitive());
 
 	// It's a normal variable name. Set it using the scope chain.
 	// This will overwrite the value, if the property already exists in
@@ -1240,12 +1238,15 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			{
 				asAtom name = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetVariable "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(thisObj));
-				auto s = asAtomHandler::AVM1toString(name, wrk);
+				uint32_t pathID = asAtomHandler::AVM1toStringId(name, wrk, context->isCaseSensitive());
 				asAtom res = asAtomHandler::invalidAtom;
-				if (s == "super")
+				if (pathID == BUILTIN_STRINGS::STRING_SUPER)
 					res = new_AVM1SuperObject(thisObj,callee->getAVM1Class(),wrk);
 				else
-					res = context->getVariable(thisObj, originalclip, clip, s);
+				{
+					auto s = wrk->getSystemState()->getStringFromUniqueId(pathID);
+					res = context->getVariable(thisObj, originalclip, clip, s,pathID,name);
+				}
 
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetVariable done "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(res));
 				ASATOM_DECREF(name);
@@ -1257,9 +1258,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom value = PopStack(stack);
 				asAtom name = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetVariable "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(value));
-				auto s = asAtomHandler::AVM1toString(name, wrk);
 				ASATOM_DECREF(name);
-				context->setVariable(thisObj, originalclip, clip, s, value);
+				context->setVariable(thisObj, originalclip, clip, name, value);
 				break;
 			}
 			case 0x20: // ActionSetTarget2
@@ -1607,11 +1607,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					ASObject* o = asAtomHandler::getObject(scriptobject);
 					multiname m(nullptr);
 					m.name_type=multiname::NAME_STRING;
-					m.name_s_id = sys->getUniqueStringId
-					(
-						asAtomHandler::AVM1toString(name, wrk),
-						context->isCaseSensitive()
-					);
+					m.name_s_id = asAtomHandler::AVM1toStringId(name,wrk,context->isCaseSensitive());
 					m.ns.emplace_back(clip->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 					m.isAttribute = false;
 					if (o->deleteVariableByMultiname(m,wrk))
@@ -1630,11 +1626,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDelete2 "<<asAtomHandler::toDebugString(name));
 				multiname m(nullptr);
 				m.name_type = multiname::NAME_STRING;
-				m.name_s_id = sys->getUniqueStringId
-				(
-					asAtomHandler::AVM1toString(name, wrk),
-					context->isCaseSensitive()
-				);
+				m.name_s_id = asAtomHandler::AVM1toStringId(name,wrk,context->isCaseSensitive());
 				m.ns.emplace_back(clip->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 
 				bool ret = context->getScope()->deleteVariableByMultiname(m, wrk);
@@ -1689,15 +1681,18 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallFunction "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(obj));
 
 				asAtom ret = asAtomHandler::undefinedAtom;
-				auto s = asAtomHandler::AVM1toString(name, wrk);
+				uint32_t pathID = asAtomHandler::AVM1toStringId(name, wrk, context->isCaseSensitive());
 				asAtom func = asAtomHandler::invalidAtom;
-				if (callee && s== "super")
+				if (callee && pathID==BUILTIN_STRINGS::STRING_SUPER)
 				{
 					func = callee->getSuper();
 					ASATOM_INCREF(func);
 				}
 				else
-					func = context->getVariable(thisObj, originalclip, clip, s);
+				{
+					auto s = wrk->getSystemState()->getStringFromUniqueId(pathID);
+					func = context->getVariable(thisObj, originalclip, clip, s,pathID,name);
+				}
 
 				if (asAtomHandler::is<AVM1Function>(func))
 				{
@@ -1753,10 +1748,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				for (size_t i = 0; i < numargs; i++)
 					args[i] = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
-				auto s = asAtomHandler::AVM1toString(name, wrk);
-				auto nameID = sys->getUniqueStringId(s, context->isCaseSensitive());
+				auto nameID = asAtomHandler::AVM1toStringId(name,wrk,context->isCaseSensitive());
 				asAtom ret=asAtomHandler::invalidAtom;
-				if (asAtomHandler::isUndefined(name) || s.empty())
+				if (asAtomHandler::isUndefined(name) || nameID == BUILTIN_STRINGS::EMPTY)
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewObject without name "<<asAtomHandler::toDebugString(name)<<" "<<numargs);
 				else
 				{
@@ -1889,8 +1883,9 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x46: // ActionEnumerate
 			{
 				asAtom path = PopStack(stack);
-				tiny_string s = asAtomHandler::AVM1toString(path, wrk);
-				asAtom obj = context->getVariable(thisObj, originalclip, clip, s);
+				uint32_t pathID = asAtomHandler::AVM1toStringId(path, wrk, context->isCaseSensitive());
+				auto s = wrk->getSystemState()->getStringFromUniqueId(pathID);
+				asAtom obj = context->getVariable(thisObj, originalclip, clip, s, pathID,path);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEnumerate "<<s<<" "<<asAtomHandler::toDebugString(obj));
 				if (asAtomHandler::isObject(obj) && !asAtomHandler::isNumeric(obj))
 				{
@@ -1983,8 +1978,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				else
 				{
-					auto s = asAtomHandler::AVM1toString(name, wrk);
-					auto nameID = sys->getUniqueStringId(s, context->isCaseSensitive());
+					bool isprototypename = false;
 					ASObject* o = asAtomHandler::toObject(scriptobject,wrk);
 					multiname m(nullptr);
 					m.isAttribute = false;
@@ -2004,7 +1998,17 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							break;
 						default:
 							m.name_type=multiname::NAME_STRING;
-							m.name_s_id=nameID;
+							if (context->isCaseSensitive())
+							{
+								m.name_s_id = asAtomHandler::AVM1toStringId(name,wrk,context->isCaseSensitive());
+							}
+							else
+							{
+								auto s = asAtomHandler::AVM1toString(name, wrk);
+								m.name_s_id = sys->getUniqueStringId(s, context->isCaseSensitive());
+							}
+							if (m.name_s_id == BUILTIN_STRINGS::PROTOTYPE)
+								isprototypename=true;
 							break;
 					}
 					if (o != nullptr)
@@ -2018,7 +2022,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						switch (asAtomHandler::getObjectType(scriptobject))
 						{
 							case T_FUNCTION:
-								if (nameID == BUILTIN_STRINGS::PROTOTYPE)
+								if (isprototypename)
 								{
 									ret = o->as<IFunction>()->prototype;
 									ASATOM_INCREF(ret);
@@ -2027,23 +2031,19 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							case T_OBJECT:
 							case T_ARRAY:
 							case T_CLASS:
-								switch (nameID)
+								if (isprototypename)
 								{
-									case BUILTIN_STRINGS::PROTOTYPE:
+									ASObject* p = o->AVM1getClassPrototypeObject();
+									if (p)
 									{
-										ASObject* p = o->AVM1getClassPrototypeObject();
-										if (p)
-										{
-											p->incRef();
-											ret = asAtomHandler::fromObject(p);
-										}
-										break;
+										p->incRef();
+										ret = asAtomHandler::fromObject(p);
 									}
-									default:
-									{
-										o->AVM1getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk,false);
-										break;
-									}
+								}
+								else
+								{
+									o->AVM1getVariableByMultiname(ret,m,GET_VARIABLE_OPTION::NONE,wrk,false);
+									break;
 								}
 								break;
 							default:
@@ -2073,8 +2073,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetMember "<<asAtomHandler::toDebugString(scriptobject)<<" " <<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(value));
 				if (asAtomHandler::isObject(scriptobject) || asAtomHandler::isFunction(scriptobject) || asAtomHandler::isArray(scriptobject))
 				{
-					auto s = asAtomHandler::AVM1toString(name, wrk);
-					auto nameID = sys->getUniqueStringId(s, context->isCaseSensitive());
 					ASObject* o = asAtomHandler::getObject(scriptobject);
 					multiname m(nullptr);
 					switch (asAtomHandler::getObjectType(name))
@@ -2093,7 +2091,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							break;
 						default:
 							m.name_type=multiname::NAME_STRING;
-							m.name_s_id=nameID;
+							m.name_s_id=asAtomHandler::AVM1toStringId(name,wrk,context->isCaseSensitive());
 							break;
 					}
 					m.isAttribute = false;
@@ -2177,11 +2175,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 				asAtom ret=asAtomHandler::invalidAtom;
 				bool done=false;
-				tiny_string s;
+				uint32_t nameID = BUILTIN_STRINGS::EMPTY;
 				if (asAtomHandler::isValid(name) && !asAtomHandler::isUndefined(name))
-					s = asAtomHandler::AVM1toString(name, wrk);
-				auto nameID = sys->getUniqueStringId(s, context->isCaseSensitive());
-				if (s.empty())
+					nameID = asAtomHandler::AVM1toStringId(name,wrk,context->isCaseSensitive());
+				if (nameID == BUILTIN_STRINGS::EMPTY)
 				{
 					if (asAtomHandler::is<Function>(scriptobject))
 					{
@@ -2231,10 +2228,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							}
 						}
 						else
-							LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod without name and srciptobject has no constructor:"<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
+							LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod without name and scriptobject has no constructor:"<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 					}
 					else
-						LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod without name and srciptobject is not a function:"<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
+						LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod without name and scriptobject is not a function:"<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 					done=true;
 				}
 				if (!done)
@@ -2600,7 +2597,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					}
 					else
 					{
-						asAtom obj = context->getVariable(thisObj, originalclip, clip, s2);
+						uint32_t pathID = wrk->getSystemState()->getUniqueStringId(s2,context->isCaseSensitive());
+						asAtom obj = context->getVariable(thisObj, originalclip, clip, s2,pathID,asAtomHandler::invalidAtom);
 						asAtom ret = asAtomHandler::invalidAtom;
 						if (asAtomHandler::is<MovieClip>(obj))
 						{

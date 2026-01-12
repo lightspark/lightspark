@@ -358,6 +358,7 @@ public:
 	static tiny_string toString(const asAtom &a, ASWorker* wrk, bool fromAVM1add2=false);
 	static tiny_string toErrorString(const asAtom& a, ASWorker* wrk); // returns string in format needed as argument in error messages
 	static tiny_string AVM1toString(const asAtom &a, ASWorker* wrk, bool fortrace=false);
+	static uint32_t AVM1toStringId(const asAtom &a, ASWorker* wrk, bool casesensitive);
 	static tiny_string toLocaleString(const asAtom &a, ASWorker* wrk);
 	static uint32_t toStringId(asAtom &a, ASWorker* wrk);
 	static FORCE_INLINE asAtom typeOf(asAtom& a);

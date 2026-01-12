@@ -4740,6 +4740,53 @@ tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk, bool for
 		}
 	}
 }
+uint32_t asAtomHandler::AVM1toStringId(const asAtom& a, ASWorker* wrk, bool casesensitive)
+{
+	auto swfVersion = wrk->AVM1getSwfVersion();
+	switch (a.uintval & 0x7)
+	{
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		{
+			switch (a.uintval & ATOMTYPE_BIT_FLAGS)
+			{
+				case ATOMTYPE_NULL_BIT:
+					return BUILTIN_STRINGS::STRING_NULL;
+				case ATOMTYPE_UNDEFINED_BIT:
+					return swfVersion < 7 ? BUILTIN_STRINGS::EMPTY : BUILTIN_STRINGS::STRING_UNDEFINED;
+				case ATOMTYPE_BOOL_BIT:
+					// NOTE: In SWF 4, bool to string conversions return
+					// 1, or 0, rather than true, or false.
+					if (swfVersion < 5)
+						return a.uintval & 0x80 ? '1' : '0';
+					return a.uintval & 0x80 ? BUILTIN_STRINGS::STRING_TRUE : BUILTIN_STRINGS::STRING_FALSE;
+				case ATOMTYPE_LOCALNUMBER_BIT:
+					return wrk->getSystemState()->getUniqueStringId(Number::toString(getLocalNumber(getCallContext(wrk),a)),casesensitive);
+				default:
+					return BUILTIN_STRINGS::EMPTY;
+			}
+		}
+		case ATOM_NUMBERPTR:
+			return wrk->getSystemState()->getUniqueStringId(as<Number>(a)->toString(),casesensitive);
+		case ATOM_INTEGER:
+			return wrk->getSystemState()->getUniqueStringId(Integer::toString(a.intval >> 3));
+		case ATOM_UINTEGER:
+			return wrk->getSystemState()->getUniqueStringId(UInteger::toString(a.uintval >> 3));
+		case ATOM_STRINGID:
+			if (casesensitive)
+				return a.uintval >> 3;
+			else
+			{
+				auto s = asAtomHandler::AVM1toString(a, wrk);
+				return wrk->getSystemState()->getUniqueStringId(s,casesensitive);
+			}
+		default:
+		{
+			assert(getObject(a) != nullptr);
+			auto s = asAtomHandler::AVM1toString(a, wrk);
+			return wrk->getSystemState()->getUniqueStringId(s,casesensitive);
+		}
+	}
+}
 
 bool asAtomHandler::Boolean_concrete_string(asAtom &a)
 {

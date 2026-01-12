@@ -57,9 +57,7 @@ void ABCVm::registerClassesAVM1()
 
 	registerClassesToplevel(builtinavm1);
 
-	Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("addProperty","",m_sys->getBuiltinFunction(ASObject::addProperty),NORMAL_METHOD,true);
 	Class<ASObject>::getRef(m_sys)->prototype->setVariableByQName("addProperty","",m_sys->getBuiltinFunction(ASObject::addProperty),DYNAMIC_TRAIT);
-	Class<ASObject>::getRef(m_sys)->setDeclaredMethodByQName("registerClass","",m_sys->getBuiltinFunction(ASObject::registerClass),NORMAL_METHOD,false);
 	Class<ASObject>::getRef(m_sys)->prototype->setVariableByQName("registerClass","",m_sys->getBuiltinFunction(ASObject::registerClass),DYNAMIC_TRAIT);
 	Class<ASObject>::getRef(m_sys)->prototype->setVariableByQName("watch","",m_sys->getBuiltinFunction(ASObject::AVM1_watch),DYNAMIC_TRAIT);
 	Class<ASObject>::getRef(m_sys)->prototype->setVariableByQName("unwatch","",m_sys->getBuiltinFunction(ASObject::AVM1_unwatch),DYNAMIC_TRAIT);

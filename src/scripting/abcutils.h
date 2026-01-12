@@ -196,8 +196,9 @@ public:
 		const asAtom& thisObj,
 		DisplayObject* baseClip,
 		DisplayObject* clip,
-		const tiny_string& path
-	) const;
+		const tiny_string& path,
+		uint32_t pathID,
+		const asAtom& nameAtom) const;
 
 	// Sets the value, referenced by a target path string.
 	//
@@ -227,9 +228,9 @@ public:
 		asAtom& thisObj,
 		DisplayObject* baseClip,
 		DisplayObject* clip,
-		const tiny_string& path,
+		asAtom& pathAtom,
 		const asAtom& value
-	);
+		);
 
 	// Returns whether property keys are case sensitive, based on the
 	// current SWF version.

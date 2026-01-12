@@ -250,6 +250,7 @@ public:
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	virtual void removeAVM1Listeners();
 	void AVM1registerPrototypeListeners();
+	void AVM1unregisterPrototypeListeners();
 
 	// used by MorphShapes and embedded video
 	virtual void checkRatio(uint32_t ratio, bool inskipping) {}

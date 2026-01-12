@@ -2321,7 +2321,7 @@ void DisplayObject::setNameOnParent()
 void DisplayObject::beforeConstruction(bool _explicit)
 {
 	skipFrame |= needsActionScript3() && _explicit;
-	placedByActionScript |= needsActionScript3() && _explicit;
+	placedByActionScript |= _explicit;
 	if (needsActionScript3() && getParent() == nullptr && this != getSystemState()->mainClip)
 		getSystemState()->stage->addHiddenObject(this);
 }
@@ -2983,7 +2983,8 @@ bool DisplayObject::AVM1setLocalByMultiname
 
 	// Property search order for `DisplayObject`s.
 	// 1. Expandos (user defined properties on the underlying object).
-	if (ASObject::hasPropertyByMultiname(name, true, false, wrk))
+	bool hasprop = ASObject::hasPropertyByMultiname(name, true, false, wrk);
+	if (hasprop)
 	{
 		EventDispatcher::setVariableByMultiname
 		(
@@ -3032,17 +3033,34 @@ bool DisplayObject::AVM1setLocalByMultiname
 		}
 		else // value is not a function, we remove the FrameListener
 		{
-			avm1framelistenercount--;
-			if (avm1framelistenercount==0)
-				sys->unregisterFrameListener(this);
+			if(hasprop)
+			{
+				avm1framelistenercount--;
+				sys->stage->AVM1RemoveEventListener(this);
+				if (avm1framelistenercount==0)
+					sys->unregisterFrameListener(this);
+			}
 		}
 	}
 	else if (isMouseEvent(name.name_s_id))
 	{
-		as<InteractiveObject>()->setMouseEnabled(true);
-		sys->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-		avm1mouselistenercount++;
-		setIsEnumerable(name, false);
+		if (asAtomHandler::isFunction(value))
+		{
+			as<InteractiveObject>()->setMouseEnabled(true);
+			sys->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+			avm1mouselistenercount++;
+			setIsEnumerable(name, false);
+		}
+		else // value is not a function, we remove the MouseListener
+		{
+			if(hasprop)
+			{
+				avm1mouselistenercount--;
+				if (avm1mouselistenercount==0)
+					sys->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+				setIsEnumerable(name, false);
+			}
+		}
 	}
 	return alreadySet;
 }
@@ -3181,6 +3199,61 @@ void DisplayObject::AVM1registerPrototypeListeners()
 		pr = pr->getprop_prototype();
 	}
 }
+void DisplayObject::AVM1unregisterPrototypeListeners()
+{
+	assert(!needsActionScript3());
+	ASObject* pr = this->getprop_prototype();
+	while (pr)
+	{
+		multiname name(nullptr);
+		name.name_type = multiname::NAME_STRING;
+		name.name_s_id = BUILTIN_STRINGS::STRING_ONENTERFRAME;
+		if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+		{
+			getSystemState()->stage->AVM1RemoveEventListener(this);
+			avm1framelistenercount--;
+		}
+		name.name_s_id = BUILTIN_STRINGS::STRING_ONLOAD;
+		if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+		{
+			getSystemState()->stage->AVM1RemoveEventListener(this);
+			avm1framelistenercount--;
+		}
+		if (this->is<InteractiveObject>())
+		{
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+				avm1mouselistenercount--;
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+				avm1mouselistenercount--;
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEUP;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+				avm1mouselistenercount--;
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONPRESS;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+				avm1mouselistenercount--;
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEWHEEL;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+				avm1mouselistenercount--;
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONROLLOVER;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+				avm1mouselistenercount--;
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONROLLOUT;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+				avm1mouselistenercount--;
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+				avm1mouselistenercount--;
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASE;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+				avm1mouselistenercount--;
+			if (avm1mouselistenercount==0)
+				getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+		}
+		pr = pr->getprop_prototype();
+	}
+}
 bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
 	bool res = EventDispatcher::deleteVariableByMultiname(name,wrk);
@@ -3214,6 +3287,7 @@ void DisplayObject::removeAVM1Listeners()
 	getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
 	getSystemState()->stage->AVM1RemoveFocusListener(asAtomHandler::fromObjectNoPrimitive(this));
 	getSystemState()->unregisterFrameListener(this);
+	AVM1unregisterPrototypeListeners();
 	avm1mouselistenercount=0;
 	avm1framelistenercount=0;
 }

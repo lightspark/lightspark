@@ -41,6 +41,7 @@ private:
 	bool inAVM1Attachment;
 	bool isAVM1Loaded;
 	bool forAVM1InitAction;
+	bool hasAVM1LoadEvent;
 	void runGoto(bool newFrame);
 	AVM1context avm1context;
 	std::map<uint32_t,AVM1context> AVM1FrameContexts;

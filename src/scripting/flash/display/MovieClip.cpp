@@ -69,6 +69,7 @@ ASFUNCTIONBODY_GETTER_SETTER(MovieClip, enabled)
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSpriteTag(UINT32_MAX),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
 	,inAVM1Attachment(false),isAVM1Loaded(false)
 	,forAVM1InitAction(false)
+	,hasAVM1LoadEvent(false)
 	,framecontainer(nullptr)
 	,actions(nullptr)
 	,avm1clipeventlistenercount(0)
@@ -81,6 +82,7 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSprit
 MovieClip::MovieClip(ASWorker* wrk, Class_base* c, FrameContainer* f, uint32_t defineSpriteTagID):Sprite(wrk,c),fromDefineSpriteTag(defineSpriteTagID),lastFrameScriptExecuted(UINT32_MAX),lastratio(0),inExecuteFramescript(false)
 	,inAVM1Attachment(false),isAVM1Loaded(false)
 	,forAVM1InitAction(false)
+	,hasAVM1LoadEvent(false)
 	,framecontainer(f)
 	,actions(nullptr)
 	,avm1clipeventlistenercount(0)
@@ -696,7 +698,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 }
 void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
-	if (this->actions)
+	if (this->actions && hasAVM1LoadEvent)
 	{
 		DisplayObject* p = this;
 		while (p && p != dispatcher)
@@ -705,9 +707,10 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 		{
 			for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
 			{
-				if (e->type == "complete" && it->EventFlags.ClipEventLoad)
+				if (it->EventFlags.ClipEventLoad && e->type == "complete")
 				{
 					ACTIONRECORD::executeActions(this,this->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
+					getSystemState()->stage->AVM1RemoveEventListener(this);
 				}
 			}
 		}
@@ -718,7 +721,7 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 		{
 			for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
 			{
-				if (e->type == "unload" && it->EventFlags.ClipEventUnload)
+				if (it->EventFlags.ClipEventUnload && e->type == "unload")
 				{
 					ACTIONRECORD::executeActions(this,this->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
 				}
@@ -774,7 +777,10 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 
 	if (clipactions.AllEventFlags.ClipEventLoad ||
 			clipactions.AllEventFlags.ClipEventUnload)
+	{
+		hasAVM1LoadEvent=true;
 		getSystemState()->stage->AVM1AddEventListener(this);
+	}
 	if (clipactions.AllEventFlags.ClipEventEnterFrame)
 	{
 		getSystemState()->registerFrameListener(this);
@@ -973,12 +979,14 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 	else
 		th->insertLegacyChildAt(Depth,toAdd,false,false);
 	toAdd->setNameOnParent();
+	toAdd->beforeConstruction(true);
 	toAdd->constructionComplete();
 	toAdd->afterConstruction();
 	toAdd->isAVM1Loaded=true;
 	toAdd->incRef();
 	ret=asAtomHandler::fromObject(toAdd);
 }
+
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1RemoveMovieClip)
 {
 	if (!asAtomHandler::is<MovieClip>(obj))
@@ -1046,6 +1054,7 @@ MovieClip* MovieClip::AVM1CloneSprite(asAtom target, uint32_t Depth,ASObject* in
 	}
 	else
 		getParent()->insertLegacyChildAt(Depth,toAdd,false,false);
+	toAdd->beforeConstruction(true);
 	toAdd->constructionComplete();
 	toAdd->afterConstruction();
 	if (state.creatingframe)

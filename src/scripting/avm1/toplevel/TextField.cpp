@@ -261,240 +261,384 @@ AVM1_FUNCTION_TYPE_BODY(AVM1TextField, AVM1TextField, replaceText)
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, GridFitType)
 {
+	switch (_this->getGridFitType())
+	{
+		default:
+		case GridFitType::None: return "none"; break;
+		case GridFitType::Pixel: return "pixel"; break;
+		case GridFitType::SubPixel: return "subpixel"; break;
+	}
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, GridFitType)
 {
+	auto newType = value.toString(act);
+	if (newType == "none")
+		_this->setGridFitType(GridFitType::None);
+	else if (newType == "pixel")
+		_this->setGridFitType(GridFitType::Pixel);
+	else if (newType == "subpixel")
+		_this->setGridFitType(GridFitType::SubPixel);
+	// NOTE: In Flash Player, setting `gridFitType` to an invalid value
+	// does nothing.
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, AntiAliasType)
 {
+	return _this->isAdvancedAA() ? "advanced" : "normal";
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, AntiAliasType)
 {
+	auto newType = value.toString(act);
+	if (newType == "advanced")
+		_this->setAdvancedAA(true);
+	else if (newType == "normal")
+		_this->setAdvancedAA(false);
+
+	// NOTE: In Flash Player, setting `antiAliasType` to an invalid value
+	// does nothing.
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Thickness)
 {
+	return _this->getThickness();
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Thickness)
 {
+	_this->setThickness(value.toNumber(act));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Sharpness)
 {
+	return _this->getSharpness();
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Sharpness)
 {
+	_this->setSharpness(value.toNumber(act));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Scroll)
 {
+	return number_t(_this->getScrollV());
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Scroll)
 {
+	_this->setScrollV(value.toNumber(act));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, MaxScroll)
 {
+	return _this->getMaxScrollV();
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, BorderColor)
 {
+	return number_t(_this->getBorderColor().toUInt());
 }
+	return _this->getThickness();
+	_this->setThickness(value.toNumber(act));
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, BorderColor)
 {
+	_this->setBorderColor(value.toUInt32(act));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, BackgroundColor)
 {
+	return number_t(_this->getBackgroundColor().toUInt());
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, BackgroundColor)
 {
+	_this->setBackgroundColor(value.toUInt32(act));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, TextColor)
 {
+	return number_t(_this->getTextColor().toUInt());
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, TextColor)
 {
+	_this->setTextColor(value.toUInt32(act));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, AutoSize)
 {
+	switch (_this->autoSize)
+	{
+		case AS_NONE: return "none"; break;
+		case AS_LEFT: return "left"; break;
+		case AS_RIGHT: return "right"; break;
+		case AS_CENTER: return "center"; break;
+	}
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, AutoSize)
 {
+	if (value.is<bool>())
+	{
+		bool val = value.toBool(act, act.getSwfVersion());
+		_this->setAutoSize(val ? AS_LEFT : AS_NONE);
+		return;
+	}
+
+	auto mode = value.toString(act);
+	if (mode.caselessEquals("left"))
+		_this->setAutoSize(AS_LEFT);
+	if (mode.caselessEquals("right"))
+		_this->setAutoSize(AS_RIGHT);
+	if (mode.caselessEquals("center"))
+		_this->setAutoSize(AS_CENTER);
+	else
+		_this->setAutoSize(AS_NONE);
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Text)
 {
+	Locker l(*_this->linemutex);
+	return _this->getText();
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Text)
 {
+	_this->updateText(value.toString(act));
+	_this->legacy = false;
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Type)
 {
+	return _this->isReadOnly() ? "dynamic" : "input";
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Type)
 {
+	auto type = value.toString(act);
+	if (type.caselessEquas("dynamic"))
+		_this->setReadOnly(true);
+	else if(type.caselessEquals("input"))
+		_this->setReadOnly(false);
+	else
+		LOG(LOG_ERROR, "`TextField.type` setter: invalid type: " << type);
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, HtmlText)
 {
+	return _this->getHtmlText();
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, HtmlText)
 {
+	_this->setHtmlText(value.toString(act));
+	_this->legacy = false;
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Variable)
 {
+	// NOTE: An empty `variable` name returns `null`, rather than
+	// `undefined`.
+	if (_this->getVarName().empty())
+		return AVM1Value::nullVal;
+	return _this->getVarName();
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Variable)
 {
+	if (value.isNullOrUndefined())
+		_this->setVarName("");
+	else
+		_this->setVarName(value.toString(act));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, HScroll)
 {
+	return number_t(_this->getScrollH());
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, HScroll)
 {
+	// NOTE: In SWF 8, and earlier, the clamping behaviour of `hscroll`
+	// is the one done below. In SWF 9, and later, the clamping behaviour
+	// is way more complicated. See Ruffle's #4634.
+	_this->setScrollH(iclamp
+	(
+		value.toInt32(act),
+		0,
+		_this->getMaxScrollH()
+	));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, MaxHScroll)
 {
+	return number_t(_this->getMaxScrollH());
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, MaxChars)
 {
+	if (!_this->getMaxChars())
+		return AVM1Value::nullVal;
+	return number_t(_this->getMaxChars());
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, MaxChars)
 {
+	_this->setMaxChars(value.toInt32(act));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, EmbedFonts)
 {
+	return _this->getUseOutlines();
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, EmbedFonts)
 {
+	_this->setUseOutlines(value.toBool(act, act.getSwfVersion()));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Html)
 {
+	return _this->isHTML();
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Html)
 {
+	_this->setHTML(value.toBool(act, act.getSwfVersion()));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Border)
 {
+	return _this->border;
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Border)
 {
+	_this->setBorder(value.toBool(act, act.getSwfVersion()));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Background)
 {
+	return _this->background;
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Background)
 {
+	_this->setBackground(value.toBool(act, act.getSwfVersion()));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, WordWrap)
 {
+	return _this->wordWrap;
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, WordWrap)
 {
+	_this->setWordWrap(value.toBool(act, act.getSwfVersion()));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Password)
 {
+	return _this->password;
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Password)
 {
+	_this->setPassword(value.toBool(act, act.getSwfVersion()));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Multiline)
 {
+	return _this->multiline;
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Multiline)
 {
+	_this->setMultiline(value.toBool(act, act.getSwfVersion()));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Selectable)
 {
+	return _this->isSelectable();
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Selectable)
 {
+	_this->setSelectable(value.toBool(act, act.getSwfVersion()));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Length)
 {
+	return number_t(_this->getTextLength());
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, BottomScroll)
 {
+	return number_t(_this->getBottomScrollV());
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, TextWidth)
 {
+	return number_t(_this->textWidth);
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, TextHeight)
 {
+	return number_t(_this->textHeight);
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Restrict)
 {
+	if (_this->getRestirct().empty())
+		return AVM1Value::nullVal;
+	return _this->getRestrict();
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, Restrict)
 {
+	if (value.isNullOrUndefined())
+	{
+		_this->setRestrict("");
+		return;
+	}
+
+	// NOTE: The AS1/2 docs state that an empty string means you can't
+	// enter any characters. This isn't true, it just means that
+	// `restrict` returns `null`.
+	_this->setRestrict(value.toString(act));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, CondenseWhite)
 {
+	return _this->getCondenseWhite();
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, CondenseWhite)
 {
+	_this->setCondenseWhite(value.toBool(act, act.getSwfVersion()));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, MouseWheelEnabled)
 {
+	return _this->isMouseWheelEnabled();
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, MouseWheelEnabled)
 {
+	_this->setMouseWheelEnabled(value.toBool(act, act.getSwfVersion()));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextField, AVM1TextField, StyleSheet)
 {
+	auto styleSheet = _this->getStyleSheet();
+	if (styleSheet.isNull())
+		return AVM1Value::undefinedVal;
+	return styleSheet->toAVM1Object(act);
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextField, AVM1TextField, StyleSheet)
 {
+	_this->setStyleSheet(value.as<AVM1StyleSheet>());
 }

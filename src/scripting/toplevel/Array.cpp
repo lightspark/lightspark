@@ -2184,7 +2184,7 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 		createError<ReferenceError>(getInstanceWorker(),kReadSealedError,name.normalizedNameUnresolved(getSystemState()),getClass()->getQualifiedClassName());
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	}
-	if (!getInstanceWorker()->needsActionScript3()) // AVM1 allows to add a property (via addProperty) with an int as name, so we have to check for that
+	if (hasAddedProperty) // AVM1 allows to add a property (via addProperty) with an int as name, so we have to check for that
 	{
 		ret = asAtomHandler::invalidAtom;
 		GET_VARIABLE_RESULT r = getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
@@ -2211,7 +2211,7 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 			ASATOM_INCREF(ret);
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	}
-	if (name.hasEmptyNS)
+	if (name.hasEmptyNS && index>=size())
 	{
 		//Check prototype chain
 		Prototype* proto = this->getClass()->prototype.getPtr();
@@ -2245,10 +2245,13 @@ asAtomWithNumber Array::getAtomWithNumberByMultiname(const multiname& name, ASWo
 		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
 	}
 
-	if (!getInstanceWorker()->needsActionScript3() && ASObject::hasPropertyByMultiname(name,true,false,wrk)) // AVM1 allows to add a property (via addProperty) with an int as name, so we have to check for that
-		return  ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-
 	asAtomWithNumber ret;
+	if (hasAddedProperty) // AVM1 allows to add a property (via addProperty) with an int as name, so we have to check for that
+	{
+		ret = ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
+		if (asAtomHandler::isValid(ret.value))
+			return ret;
+	}
 	if (index < ARRAY_SIZE_THRESHOLD)
 	{
 		if (data_first.size() > index)
@@ -2265,7 +2268,7 @@ asAtomWithNumber Array::getAtomWithNumberByMultiname(const multiname& name, ASWo
 		if (asAtomHandler::isValid(ret.value))
 			return ret;
 	}
-	if (name.hasEmptyNS)
+	if (name.hasEmptyNS && index>=size())
 	{
 		//Check prototype chain
 		Prototype* proto = this->getClass()->prototype.getPtr();

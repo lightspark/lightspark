@@ -558,7 +558,7 @@ bool ASObject::AVM1toPrimitive(asAtom& ret, bool& isrefcounted, bool& fromValueO
 	return true;
 }
 
-asAtom ASObject::callResolveMethod(const tiny_string& name, ASWorker* wrk)
+asAtom ASObject::callResolveMethod(const multiname& name, ASWorker* wrk)
 {
 	auto pr = getprop_prototype();
 	asAtom ret = asAtomHandler::invalidAtom;
@@ -595,7 +595,8 @@ asAtom ASObject::callResolveMethod(const tiny_string& name, ASWorker* wrk)
 			continue;
 
 		auto thisObj = asAtomHandler::fromObject(this);
-		auto strAtom = asAtomHandler::fromString(sys, name);
+
+		auto strAtom = asAtomHandler::fromStringID(name.normalizedNameId(wrk));
 		asAtomHandler::callFunction
 		(
 			func,
@@ -1770,6 +1771,7 @@ ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 	{
 		if (!getter->is<IFunction>())
 			return;
+		o->hasAddedProperty=true;
 		ret = asAtomHandler::trueAtom;
 		getter->incRef();
 		getter->addStoredMember();
@@ -2248,7 +2250,7 @@ std::pair<asAtom, GET_VARIABLE_RESULT> ASObject::AVM1searchPrototypeByMultiname
 			return std::make_pair(ret, res);
 	}
 
-	return std::make_pair(callResolveMethod(name.normalizedName(wrk), wrk), GETVAR_NORMAL);
+	return std::make_pair(callResolveMethod(name, wrk), GETVAR_NORMAL);
 }
 
 GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath)
@@ -2295,9 +2297,7 @@ bool ASObject::AVM1setLocalByMultiname(multiname& name, asAtom& value, CONST_ALL
 
 bool ASObject::AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk)
 {
-	auto s = name.normalizedName(wrk);
-
-	if (s.empty())
+	if (name.name_type == multiname::NAME_STRING && name.name_s_id==BUILTIN_STRINGS::EMPTY)
 		return false;
 	if (!hasPropertyByMultiname(name, true, false, wrk))
 	{
@@ -2652,10 +2652,16 @@ ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE
 	,stringId(UINT32_MAX)
 	,storedmembercount(0)
 	,storedmembercountstatic(0)
-	,type(t),subtype(st),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
-	markedforgarbagecollection(false),
-	deletedingarbagecollection(false),
-	implEnable(true)
+	,type(t)
+	,subtype(st)
+	,traitsInitialized(false)
+	,constructIndicator(false)
+	,constructorCallComplete(false)
+	,preparedforshutdown(false)
+	,markedforgarbagecollection(false)
+	,deletedingarbagecollection(false)
+	,hasAddedProperty(false)
+	,implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -2683,10 +2689,16 @@ ASObject::ASObject(const ASObject& o)
 	,stringId(o.stringId)
 	,storedmembercount(0)
 	,storedmembercountstatic(0)
-	,type(o.type),subtype(o.subtype),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
-	markedforgarbagecollection(false),
-	deletedingarbagecollection(false),
-	implEnable(true)
+	,type(o.type)
+	,subtype(o.subtype)
+	,traitsInitialized(false)
+	,constructIndicator(false)
+	,constructorCallComplete(false)
+	,preparedforshutdown(false)
+	,markedforgarbagecollection(false)
+	,deletedingarbagecollection(false)
+	,hasAddedProperty(false)
+	,implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging
@@ -2710,10 +2722,16 @@ ASObject::ASObject(MemoryAccount* m)
 	,stringId(UINT32_MAX)
 	,storedmembercount(0)
 	,storedmembercountstatic(0)
-	,type(T_OBJECT),subtype(SUBTYPE_NOT_SET),traitsInitialized(false),constructIndicator(false),constructorCallComplete(false),preparedforshutdown(false),
-	markedforgarbagecollection(false),
-	deletedingarbagecollection(false),
-	implEnable(true)
+	,type(T_OBJECT)
+	,subtype(SUBTYPE_NOT_SET)
+	,traitsInitialized(false)
+	,constructIndicator(false)
+	,constructorCallComplete(false)
+	,preparedforshutdown(false)
+	,markedforgarbagecollection(false)
+	,deletedingarbagecollection(false)
+	,hasAddedProperty(false)
+	,implEnable(true)
 {
 #ifndef NDEBUG
 	//Stuff only used in debugging

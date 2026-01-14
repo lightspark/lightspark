@@ -2896,8 +2896,6 @@ GET_VARIABLE_RESULT DisplayObject::AVM1getVariableByMultiname
 	bool isSlashPath
 )
 {
-	auto s = name.normalizedName(wrk);
-	bool caseSensitive = wrk->AVM1isCaseSensitive();
 	// Property search order for `DisplayObject`s.
 	// 1. Expandos (user defined properties on the underlying object).
 	auto result = ASObject::AVM1getVariableByMultiname
@@ -2914,6 +2912,8 @@ GET_VARIABLE_RESULT DisplayObject::AVM1getVariableByMultiname
 
 	result = GETVAR_NORMAL;
 
+	auto s = name.normalizedName(wrk);
+	bool caseSensitive = wrk->AVM1isCaseSensitive();
 	bool isInternalProp = s.startsWith("_") && !s.startsWith("__");
 	// 2. Path properties. i.e. `_root`, `_parent`, `_level<depth>`
 	// (honours case sensitivity).
@@ -3077,10 +3077,6 @@ bool DisplayObject::hasPropertyByMultiname(const multiname& name, bool considerD
 			wrk
 		);
 	}
-
-	auto s = name.normalizedName(wrk);
-	bool caseSensitive = wrk->AVM1isCaseSensitive();
-
 	if (ASObject::hasPropertyByMultiname
 	(
 		name,
@@ -3090,6 +3086,8 @@ bool DisplayObject::hasPropertyByMultiname(const multiname& name, bool considerD
 	))
 		return true;
 
+	auto s = name.normalizedName(wrk);
+	bool caseSensitive = wrk->AVM1isCaseSensitive();
 	bool isInternalProp = s.startsWith("_");
 	if (isInternalProp && hasPropertyName(s))
 		return true;

@@ -963,6 +963,7 @@ protected:
 	bool preparedforshutdown:1;
 	bool markedforgarbagecollection:1;
 	bool deletedingarbagecollection:1;
+	bool hasAddedProperty:1;
 	static variable* findSettableImpl(ASWorker* wrk, variables_map& map, const multiname& name, bool* has_getter);
 	static FORCE_INLINE const variable* findGettableImplConst(ASWorker* wrk, const variables_map& map, const multiname& name, uint32_t* nsRealId = nullptr)
 	{
@@ -1019,6 +1020,7 @@ protected:
 		traitsInitialized =false;
 		constructIndicator = false;
 		constructorCallComplete = false;
+		hasAddedProperty=false;
 		bool keep = canHaveCyclicMemberReference() && removefromGarbageCollection();
 		implEnable = true;
 		storedmembercount=0;
@@ -1354,7 +1356,7 @@ public:
 	bool isInitialized() const {return traitsInitialized;}
 	virtual bool isConstructed() const;
 
-	asAtom callResolveMethod(const tiny_string& name, ASWorker* wrk);
+	asAtom callResolveMethod(const multiname& name, ASWorker* wrk);
 	/* helper functions for calling the "valueOf" and
 	 * "toString" AS-functions which may be members of this
 	 *  object */

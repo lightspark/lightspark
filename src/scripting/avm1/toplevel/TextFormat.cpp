@@ -132,7 +132,11 @@ AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Font)
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Size)
 {
-	return _this->size.transformOr(AVM1Value::nullVal);
+	const auto& nullVal = AVM1Value::nullVal;
+	return _this->size.transformOr(nullVal, [&](const auto& size)
+	{
+		return size.toPx();
+	});
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Size)
@@ -145,7 +149,7 @@ AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Size)
 		(
 			act.getSwfVersion() < 8 ?
 			value.toInt32(act) :
-			roundToEven(value.toNumber())
+			roundToEven(value.toNumber(act))
 		);
 	}
 }
@@ -265,50 +269,151 @@ AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Align)
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, LeftMargin)
 {
+	const auto& nullVal = AVM1Value::nullVal;
+	return _this->leftMargin.transformOr(nullVal, [&](const auto& leftMargin)
+	{
+		return leftMargin.toPx();
+	});
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, LeftMargin)
 {
+	if (value.isNullOrUndefined())
+		_this->leftMargin.reset();
+	else
+	{
+		_this->leftMargin = Twips::fromPx
+		(
+			act.getSwfVersion() < 8 ?
+			imax(value.toInt32(act), 0) :
+			roundToEven(dmax(value.toNumber(act), 0))
+		);
+	}
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, RightMargin)
 {
+	const auto& nullVal = AVM1Value::nullVal;
+	return _this->rightMargin.transformOr(nullVal, [&](const auto& rightMargin)
+	{
+		return rightMargin.toPx();
+	});
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, RightMargin)
 {
+	if (value.isNullOrUndefined())
+		_this->rightMargin.reset();
+	else
+	{
+		_this->rightMargin = Twips::fromPx
+		(
+			act.getSwfVersion() < 8 ?
+			imax(value.toInt32(act), 0) :
+			roundToEven(dmax(value.toNumber(act), 0))
+		);
+	}
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Indent)
 {
+	const auto& nullVal = AVM1Value::nullVal;
+	return _this->indent.transformOr(nullVal, [&](const auto& indent)
+	{
+		return indent.toPx();
+	});
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Indent)
 {
+	if (value.isNullOrUndefined())
+		_this->indent.reset();
+	else
+	{
+		_this->indent = Twips::fromPx
+		(
+			act.getSwfVersion() < 8 ?
+			imax(value.toInt32(act), 0) :
+			roundToEven(value.toNumber(act))
+		);
+	}
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Leading)
 {
+	const auto& nullVal = AVM1Value::nullVal;
+	return _this->leading.transformOr(nullVal, [&](const auto& leading)
+	{
+		return leading.toPx();
+	});
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Leading)
 {
+	if (value.isNullOrUndefined())
+		_this->leading.reset();
+	else
+	{
+		_this->leading = Twips::fromPx
+		(
+			act.getSwfVersion() < 8 ?
+			imax(value.toInt32(act), 0) :
+			roundToEven(value.toNumber(act))
+		);
+	}
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, BlockIndent)
 {
+	const auto& nullVal = AVM1Value::nullVal;
+	return _this->blockIndent.transformOr(nullVal, [&](const auto& blockIndent)
+	{
+		return blockIndent.toPx();
+	});
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, BlockIndent)
 {
+	if (value.isNullOrUndefined())
+		_this->blockIndent.reset();
+	else
+	{
+		_this->blockIndent = Twips::fromPx
+		(
+			act.getSwfVersion() < 8 ?
+			imax(value.toInt32(act), 0) :
+			roundToEven(value.toNumber(act))
+		);
+	}
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, TabStops)
 {
+	const auto& nullVal = AVM1Value::nullVal;
+	return _this->tabStops.transformOr(nullVal, [&](const auto& tabStops)
+	{
+		return NEW_GC_PTR(act.getGcCtx AVM1Array(act, tabStops));
+	});
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, TabStops)
 {
+	if (!value.is<AVM1Object>())
+	{
+		_this->tabStops.reset();
+		return;
+	}
+
+	std::vector<Twips> tabStops;
+	auto obj = value.toObject(act);
+	auto size = obj->getLength(act);
+	tabStops.reserve(size);
+
+	for (size_t i = 0; i < size; ++i)
+	{
+		auto elem = obj->getElement(act, i);
+		tabStops.emplace_back(roundToEven(elem.toNumber(act)));
+	}
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Bullet)
@@ -326,10 +431,33 @@ AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Bullet)
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Display)
 {
+	const auto& nullVal = AVM1Value::nullVal;
+	return _this->display.transformOr(nullVal, [&](const auto& display)
+	{
+		switch (display)
+		{
+			case TextDisplay::Block: return "block"; break;
+			case TextDisplay::Inline: return "inline"; break;
+			case TextDisplay::None: return "none"; break;
+		}
+	});
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Display)
 {
+	if (value.isNullOrUndefined())
+	{
+		_this->display = TextDisplay::Block;
+		return;
+	}
+
+	auto display = value.toString(act);
+	if (display == "none")
+		_this->display = TextDisplay::None;
+	else if (display == "inline")
+		_this->display = TextDisplay::Inline;
+	else
+		_this->display = TextDisplay::Block;
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Kerning)
@@ -347,8 +475,17 @@ AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Kerning)
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, LetterSpacing)
 {
+	const auto& nullVal = AVM1Value::nullVal;
+	return _this->letterSpacing.transformOr(nullVal, [&](const auto& letterSpacing)
+	{
+		return letterSpacing.toPx();
+	});
 }
 
 AVM1_SETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, LetterSpacing)
 {
+	if (value.isNullOrUndefined())
+		_this->letterSpacing.reset();
+	else
+		_this->letterSpacing = roundToEven(value.toNumber(act));
 }

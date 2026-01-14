@@ -148,10 +148,15 @@ void SystemState::handleBroadcastEvent(const tiny_string& event)
 		Locker l(mutexFrameListeners);
 		for (auto it : frameListeners)
 		{
+			// TODO maybe it's better to use separate frameListener lists for every broadcast event type
+			if (!it->needsActionScript3() && event!="enterFrame")
+				continue; // no need to walk through AVM1 listeners on other events
 			it->incRef();
 			tmplisteners.push_back(it);
 		}
 	}
+	if (tmplisteners.empty())
+		return;
 	_R<Event> e(Class<Event>::getInstanceS(worker, event));
 	for (auto it : tmplisteners)
 		ABCVm::publicHandleEvent(it, e);

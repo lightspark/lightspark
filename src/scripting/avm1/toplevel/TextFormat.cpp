@@ -115,6 +115,37 @@ AVM1_FUNCTION_BODY(AVM1TextFormat, ctor)
 
 AVM1_FUNCTION_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, getTextExtent)
 {
+	tiny_string text;
+	Optional<number_t> width;
+	AVM1_ARG_UNPACK(text)(width);
+
+	TextField textField
+	(
+		act.getSys(),
+		act.getBaseClip()->getMovie(),
+		Vector2Twips(),
+		Vector2Twips(width.valueOr(0), 0)
+	);
+
+	textField.setAutoSize(AS_LEFT);
+	textField.setWordWrap(width.hasValue());
+	textField.setNewTextFormat(_this);
+	textField.setText(text);
+
+	auto metrics = textField.tryGetMetrics().valueOrThrow
+	(
+		"TextFormat.getTextExtent(): "
+		"All text boxes must have at least 1 line."
+	);
+
+	auto ret = NEW_GC_PTR(act.getGcCtx(), AVM1Object(act));
+	ret->setData(act, "ascent", metrics.ascent.toPx());
+	ret->setData(act, "descent", metrics.descent.toPx());
+	ret->setData(act, "width", metrics.size.x.toPx());
+	ret->setData(act, "height", metrics.size.y.toPx());
+	ret->setData(act, "textFieldHeight", textField.getHeight());
+	ret->setData(act, "textFieldWidth", textField.getWidth());
+	return ret;
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1TextFormat, AVM1TextFormat, Font)

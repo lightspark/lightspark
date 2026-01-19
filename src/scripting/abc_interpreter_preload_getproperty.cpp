@@ -83,7 +83,7 @@ void preload_getproperty(preloadstate& state, std::vector<typestackentry>& types
 						{
 							state.operandlist.back().removeArg(state);
 							state.operandlist.pop_back();
-							asAtom a = v->getVar(state.worker,UINT16_MAX);
+							asAtom a = v->getVar();
 							addCachedConstant(state,state.mi, a,code);
 							addname = false;
 							removetypestack(typestack,runtimeargs+1);
@@ -206,7 +206,7 @@ void preload_getproperty(preloadstate& state, std::vector<typestackentry>& types
 							{
 								state.operandlist.back().removeArg(state);
 								state.operandlist.pop_back();
-								asAtom a = v->getVar(state.worker,UINT16_MAX);
+								asAtom a = v->getVar();
 								addCachedConstant(state,state.mi, a,code);
 								addname = false;
 								removetypestack(typestack,runtimeargs+1);

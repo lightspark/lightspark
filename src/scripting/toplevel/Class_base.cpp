@@ -100,17 +100,17 @@ bool Type::coerceForTemplate(ASWorker* wrk, asAtom& o, bool allowconversion)
 	}
 	if(this == Class<UInteger>::getRef(wrk->getSystemState()).getPtr())
 	{
-		asAtomHandler::setUInt(o,wrk,asAtomHandler::toUInt(o));
+		asAtomHandler::setUInt(o,asAtomHandler::toUInt(o));
 		return true;
 	}
 	if(this == Class<Integer>::getRef(wrk->getSystemState()).getPtr())
 	{
-		asAtomHandler::setInt(o,wrk,asAtomHandler::toInt(o));
+		asAtomHandler::setInt(o,asAtomHandler::toInt(o));
 		return true;
 	}
 	if(this == Class<Number>::getRef(wrk->getSystemState()).getPtr())
 	{
-		asAtomHandler::setNumber(o,wrk,asAtomHandler::toNumber(o));
+		asAtomHandler::setNumber(o,asAtomHandler::toNumber(o));
 		return true;
 	}
 	if(allowconversion && this == Class<ASString>::getRef(wrk->getSystemState()).getPtr())
@@ -1304,7 +1304,7 @@ bool Class_base::checkExistingFunction(const multiname &name)
 	return false;
 }
 
-multiname* Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name, ASWorker* wrk, asAtom& closure, uint16_t resultlocalnumberpos)
+multiname* Class_base::getClassVariableByMultiname(asAtom& ret, const multiname &name, ASWorker* wrk, asAtom& closure)
 {
 	uint32_t nsRealId;
 	variable* obj = ASObject::findGettableImpl(getInstanceWorker(), borrowedVariables,name,&nsRealId);
@@ -1346,7 +1346,7 @@ multiname* Class_base::getClassVariableByMultiname(asAtom& ret, const multiname 
 		LOG_CALL("Calling the getter for " << name << " on " << asAtomHandler::toDebugString(obj->getter));
 		assert(asAtomHandler::isFunction(obj->getter));
 		asAtom closureAtom = asAtomHandler::getClosureAtom(obj->getter,asAtomHandler::isValid(closure) ? closure : asAtomHandler::fromObject(this));
-		multiname* simplegetter = asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closureAtom,wrk,resultlocalnumberpos);
+		multiname* simplegetter = asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closureAtom,wrk);
 		LOG_CALL("End of getter"<< ' ' << asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
 		return simplegetter;
 	}
@@ -1370,7 +1370,7 @@ multiname* Class_base::getClassVariableByMultiname(asAtom& ret, const multiname 
 			}
 		}
 		else
-			ret = obj->getVar(getInstanceWorker());
+			ret = obj->getVar();
 	}
 	return nullptr;
 }

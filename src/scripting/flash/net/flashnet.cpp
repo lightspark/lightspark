@@ -47,7 +47,6 @@ URLRequest::URLRequest(ASWorker* wrk, Class_base* c, const tiny_string u, const 
 	method(m),url(u),data(d),requestHeaders(nullptr),contentType("application/x-www-form-urlencoded"),
 	appDomain(_appDomain)
 {
-	asAtomHandler::localNumberToGlobalNumber(wrk,data);
 	ASATOM_ADDSTOREDMEMBER(data);
 	if (_appDomain==nullptr)
 		appDomain = c->getSystemState()->mainClip->applicationDomain.getPtr();
@@ -584,7 +583,6 @@ void URLLoader::setData(asAtom newData)
 {
 	Locker l(spinlock);
 	ASATOM_REMOVESTOREDMEMBER(data);
-	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),newData);
 	ASATOM_ADDSTOREDMEMBER(newData);
 	data=newData;
 }
@@ -946,11 +944,11 @@ ASFUNCTIONBODY_ATOM(SharedObject,_getSize)
 	{
 		ByteArray* b = Class<ByteArray>::getInstanceS(wrk);
 		b->writeObject(th->data.getPtr(),wrk);
-		asAtomHandler::setInt(ret,wrk,b->getLength());
+		asAtomHandler::setInt(ret,b->getLength());
 		b->decRef();
 	}
 	else
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 }
 
 void IDynamicPropertyWriter::linkTraits(Class_base* c)
@@ -2356,27 +2354,27 @@ ASFUNCTIONBODY_ATOM(NetStream,_getBytesLoaded)
 {
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	if(th->isReady())
-		asAtomHandler::setUInt(ret,wrk,th->getReceivedLength());
+		asAtomHandler::setUInt(ret,th->getReceivedLength());
 	else
-		asAtomHandler::setUInt(ret,wrk,0);
+		asAtomHandler::setUInt(ret,0);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getBytesTotal)
 {
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	if(th->isReady())
-		asAtomHandler::setUInt(ret,wrk,th->getTotalLength());
+		asAtomHandler::setUInt(ret,th->getTotalLength());
 	else
-		asAtomHandler::setUInt(ret,wrk,0);
+		asAtomHandler::setUInt(ret,0);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getTime)
 {
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	if(th->isReady())
-		wrk->setBuiltinCallResultLocalNumber(ret, th->getStreamTime()/1000.);
+		asAtomHandler::setNumber(ret, th->getStreamTime()/1000.);
 	else
-		asAtomHandler::setUInt(ret,wrk,0);
+		asAtomHandler::setUInt(ret,0);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getCurrentFPS)
@@ -2384,9 +2382,9 @@ ASFUNCTIONBODY_ATOM(NetStream,_getCurrentFPS)
 	//TODO: provide real FPS (what really is displayed)
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 	if(th->isReady() && !th->paused)
-		wrk->setBuiltinCallResultLocalNumber(ret, th->getFrameRate());
+		asAtomHandler::setNumber(ret, th->getFrameRate());
 	else
-		asAtomHandler::setUInt(ret,wrk,0);
+		asAtomHandler::setUInt(ret,0);
 }
 
 uint32_t NetStream::getVideoWidth() const
@@ -2657,8 +2655,7 @@ ASFUNCTIONBODY_ATOM(Responder,_constructor)
 	Responder* th=Class<Responder>::cast(asAtomHandler::getObject(obj));
 	assert_and_throw(argslen==1 || argslen==2);
 	assert_and_throw(asAtomHandler::isFunction(args[0]));
-	if (!asAtomHandler::localNumberToGlobalNumber(wrk,args[0]))
-		ASATOM_INCREF(args[0]);
+	ASATOM_INCREF(args[0]);
 	th->result = args[0];
 	if(argslen==2 && asAtomHandler::isFunction(args[1]))
 	{

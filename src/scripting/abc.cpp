@@ -342,6 +342,7 @@ multiname* ABCContext::getMultinameImpl(asAtom& n, ASObject* n2, unsigned int mi
 		ret->hasBuiltinNS=false;
 		ret->hasGlobalNS=false;
 		ret->isInteger=false;
+		ret->name_o = asAtomHandler::invalidAtom;
 		switch(m->kind)
 		{
 			case 0x07: //QName
@@ -601,12 +602,7 @@ ABCContext::ABCContext(ApplicationDomain* appDomain,SecurityDomain* secDomain, i
 	{
 		number_t n = constant_pool.doubles[i];
 		if (Number::isInteger(n) && (n!= 0 || !std::signbit(n)) &&
-#ifdef LIGHTSPARK_64
-			n >= INT32_MIN && n <= INT32_MAX
-#else
-			n > INT32_MIN>>3 && n < INT32_MAX>>3
-#endif
-			)
+			n >= INT32_MIN && n <= INT32_MAX)
 			constantAtoms_doubles[i] = asAtomHandler::fromInt(n);
 		else
 		{
@@ -1145,7 +1141,6 @@ void ABCVm::tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e)
 void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 {
 	//LOG(LOG_INFO,"handleEvent:"<<e.second->type<<" "<<e.first.getPtr());
-	e.second->check();
 	if(!e.first.isNull())
 		publicHandleEvent(e.first.getPtr(), e.second);
 	else
@@ -2174,7 +2169,7 @@ void ABCContext::linkTrait(Class_base* c, const traits_info* t)
 			{
 				assert_and_throw(var->isFunctionVar());
 
-				asAtom a = var->getVar(c->getInstanceWorker(),UINT16_MAX);
+				asAtom a = var->getVar();
 				ASATOM_INCREF(a);
 				c->setDeclaredMethodAtomByQName(nameId,mname.ns[0],a,NORMAL_METHOD,true);
 			}
@@ -2338,12 +2333,7 @@ uint32_t ABCContext::addCachedConstantAtom(asAtom a)
 	{
 		number_t n = asAtomHandler::getNumber(this->applicationDomain->getInstanceWorker(),a);
 		if (Number::isInteger(n)  &&
-#ifdef LIGHTSPARK_64
-			n >= INT32_MIN && n <= INT32_MAX
-#else
-			n > INT32_MIN>>3 && n < INT32_MAX>>3
-#endif
-			)
+			n >= INT32_MIN && n <= INT32_MAX)
 		{
 			ASATOM_DECREF(a);
 			a = asAtomHandler::fromInt(n);

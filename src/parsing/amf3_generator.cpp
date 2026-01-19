@@ -122,7 +122,7 @@ asAtom Amf3Deserializer::parseDouble()
 	}
 	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
 	
-	return asAtomHandler::fromNumber(input->getInstanceWorker(),tmp.val,false);
+	return asAtomHandler::fromNumber(tmp.val);
 }
 
 asAtom Amf3Deserializer::parseDate()

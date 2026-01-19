@@ -1517,7 +1517,7 @@ void DisplayObjectContainer::constructionComplete(bool _explicit, bool forInitAc
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getNumChildren)
 {
 	DisplayObjectContainer* th=asAtomHandler::as<DisplayObjectContainer>(obj);
-	asAtomHandler::setInt(ret,wrk,(int32_t)th->dynamicDisplayList.size());
+	asAtomHandler::setInt(ret,(int32_t)th->dynamicDisplayList.size());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getMouseChildren)
@@ -2180,7 +2180,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,_getChildIndex)
 	if (index == -1)
 		createError<ArgumentError>(wrk,2025,"getChildIndex: child not in list");
 	else
-		asAtomHandler::setInt(ret,wrk,index);
+		asAtomHandler::setInt(ret,index);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getObjectsUnderPoint)

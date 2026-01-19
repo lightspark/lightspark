@@ -74,16 +74,16 @@ ASFUNCTIONBODY_ATOM(ASString,_getLength)
 	// fast path if obj is ASString
 	if (asAtomHandler::isStringID(obj))
 	{
-		asAtomHandler::setInt(ret,wrk,int32_t(wrk->getSystemState()->getStringFromUniqueId(asAtomHandler::toStringId(obj,wrk)).numChars()));
+		asAtomHandler::setInt(ret,int32_t(wrk->getSystemState()->getStringFromUniqueId(asAtomHandler::toStringId(obj,wrk)).numChars()));
 	}
 	else if (asAtomHandler::isString(obj))
 	{
 		ASString* th = asAtomHandler::getObjectNoCheck(obj)->as<ASString>();
-		asAtomHandler::setInt(ret,wrk,int32_t(th->getData().numChars()));
+		asAtomHandler::setInt(ret,int32_t(th->getData().numChars()));
 	}
 	else
 	{
-		asAtomHandler::setInt(ret,wrk,int32_t(tiny_string(asAtomHandler::toString(obj,wrk)).numChars()));
+		asAtomHandler::setInt(ret,int32_t(tiny_string(asAtomHandler::toString(obj,wrk)).numChars()));
 	}
 }
 
@@ -144,7 +144,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	int res = -1;
 	if(argslen == 0 || asAtomHandler::isUndefined(args[0]))
 	{
-		asAtomHandler::setInt(ret,wrk,res);
+		asAtomHandler::setInt(ret,res);
 		return;
 	}
 
@@ -174,7 +174,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	if(error)
 	{
 		pcre_free(pcreRE);
-		asAtomHandler::setInt(ret,wrk,res);
+		asAtomHandler::setInt(ret,res);
 		return;
 	}
 	int capturingGroups;
@@ -182,7 +182,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	if(infoOk!=0)
 	{
 		pcre_free(pcreRE);
-		asAtomHandler::setInt(ret,wrk,res);
+		asAtomHandler::setInt(ret,res);
 		return;
 	}
 	pcre_extra extra;
@@ -196,7 +196,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	{
 		//No matches or error
 		pcre_free(pcreRE);
-		asAtomHandler::setInt(ret,wrk,res);
+		asAtomHandler::setInt(ret,res);
 		return;
 	}
 	pcre_free(pcreRE);
@@ -204,7 +204,7 @@ ASFUNCTIONBODY_ATOM(ASString,search)
 	// pcre_exec returns byte position, so we have to convert it to character position 
 	tiny_string tmp = data.substr_bytes(0, res);
 	res = tmp.numChars();
-	asAtomHandler::setInt(ret,wrk,res);
+	asAtomHandler::setInt(ret,res);
 }
 
 ASFUNCTIONBODY_ATOM(ASString,match)
@@ -853,30 +853,30 @@ ASFUNCTIONBODY_ATOM(ASString,charCodeAt)
 	{
 		tiny_string s = wrk->getSystemState()->getStringFromUniqueId(asAtomHandler::getStringId(obj));
 		if(index<0 || index>=(int64_t)s.numChars())
-			wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+			asAtomHandler::setNumber(ret, Number::NaN);
 		else
-			asAtomHandler::setInt(ret,wrk,(int32_t)s.charAt(index));
+			asAtomHandler::setInt(ret,(int32_t)s.charAt(index));
 	}
 	else if (asAtomHandler::isString(obj) && asAtomHandler::getObject(obj))
 	{
 		ASString* th = asAtomHandler::as<ASString>(obj);
 		if(index<0 || index>=(int64_t)th->getData().numChars())
-			wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+			asAtomHandler::setNumber(ret, Number::NaN);
 		else
 		{
 			uint32_t c = *(CharIterator((char*)(th->getData().raw_buf()+th->getBytePosition(index))));
-			asAtomHandler::setInt(ret,wrk,(int32_t)c);
+			asAtomHandler::setInt(ret,(int32_t)c);
 		}
 	}
 	else
 	{
 		tiny_string data = asAtomHandler::toString(obj,wrk);
 		if(index<0 || index>=(int64_t)data.numChars())
-			wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+			asAtomHandler::setNumber(ret, Number::NaN);
 		else
 		{
 			//Character codes are expected to be positive
-			asAtomHandler::setInt(ret,wrk,(int32_t)data.charAt(index));
+			asAtomHandler::setInt(ret,(int32_t)data.charAt(index));
 		}
 	}
 }
@@ -885,7 +885,7 @@ ASFUNCTIONBODY_ATOM(ASString,indexOf)
 {
 	if (argslen == 0)
 	{
-		asAtomHandler::setInt(ret,wrk,-1);
+		asAtomHandler::setInt(ret,-1);
 		return;
 	}
 	tiny_string data;
@@ -899,9 +899,9 @@ ASFUNCTIONBODY_ATOM(ASString,indexOf)
 
 	size_t pos = data.find(arg0, startIndex);
 	if(pos == data.npos)
-		asAtomHandler::setInt(ret,wrk,-1);
+		asAtomHandler::setInt(ret,-1);
 	else
-		asAtomHandler::setInt(ret,wrk,(int32_t)pos);
+		asAtomHandler::setInt(ret,(int32_t)pos);
 }
 
 ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
@@ -909,7 +909,7 @@ ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 	if (argslen < 1)
 	{
 		LOG(LOG_ERROR,"not enough arguments in String.lastIndexOf");
-		asAtomHandler::setInt(ret,wrk,-1);
+		asAtomHandler::setInt(ret,-1);
 		return;
 	}
 	tiny_string data;
@@ -921,7 +921,7 @@ ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 		int32_t i = asAtomHandler::toInt(args[1]);
 		if(i<0)
 		{
-			asAtomHandler::setInt(ret,wrk,-1);
+			asAtomHandler::setInt(ret,-1);
 			return;
 		}
 		startIndex = i;
@@ -931,9 +931,9 @@ ASFUNCTIONBODY_ATOM(ASString,lastIndexOf)
 
 	size_t pos=data.rfind(val.raw_buf(), startIndex);
 	if(pos==data.npos)
-		asAtomHandler::setInt(ret,wrk,-1);
+		asAtomHandler::setInt(ret,-1);
 	else
-		asAtomHandler::setInt(ret,wrk,(int32_t)pos);
+		asAtomHandler::setInt(ret,(int32_t)pos);
 }
 
 ASFUNCTIONBODY_ATOM(ASString,toLowerCase)
@@ -966,12 +966,12 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare)
 	{
 		if (asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
 		{
-			asAtomHandler::setInt(ret,wrk,data == "" ? 1 : 0);
+			asAtomHandler::setInt(ret,data == "" ? 1 : 0);
 			return;
 		}
 	}
 	int res = data.compare(other);
-	asAtomHandler::setInt(ret,wrk,res);
+	asAtomHandler::setInt(ret,res);
 }
 ASFUNCTIONBODY_ATOM(ASString,localeCompare_prototype)
 {
@@ -988,12 +988,12 @@ ASFUNCTIONBODY_ATOM(ASString,localeCompare_prototype)
 	{
 		if (asAtomHandler::is<Null>(args[0]) || asAtomHandler::is<Undefined>(args[0]))
 		{
-			asAtomHandler::setInt(ret,wrk,data == "" ? 1 : 0);
+			asAtomHandler::setInt(ret,data == "" ? 1 : 0);
 			return;
 		}
 	}
 	int res = data.compare(other);
-	asAtomHandler::setInt(ret,wrk,res);
+	asAtomHandler::setInt(ret,res);
 }
 
 ASFUNCTIONBODY_ATOM(ASString,fromCharCode)

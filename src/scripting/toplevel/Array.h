@@ -43,7 +43,7 @@ struct sorton_field
 };
 struct sort_value
 {
-	std::vector<asAtomWithNumber> sortvalues;
+	std::vector<asAtom> sortvalues;
 	asAtom dataAtom;
 	int originalindex;
 	bool fromprototype;
@@ -179,7 +179,6 @@ public:
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	
 	int32_t getVariableByMultiname_i(const multiname& name, ASWorker* wrk) override;
-	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt) override;
 
 	multiname* setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, ASWorker* wrk) override;
 	void setVariableByInteger(int index, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk) override;

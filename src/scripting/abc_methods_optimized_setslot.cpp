@@ -70,7 +70,7 @@ void lightspark::abc_setslotNoCoerce_constant_constant(call_context* context)
 	asAtom v2 = *context->exec_pos->arg2_constant;
 	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlotNoCoerce_cc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	asAtomHandler::getObjectNoCheck(v1)->setSlotNoCoerce(t,v2,context->worker);
+	asAtomHandler::getObjectNoCheck(v1)->setSlotNoCoerce(t,v2);
 	++(context->exec_pos);
 }
 void lightspark::abc_setslotNoCoerce_local_constant(call_context* context)
@@ -79,7 +79,7 @@ void lightspark::abc_setslotNoCoerce_local_constant(call_context* context)
 	asAtom v2 = *context->exec_pos->arg2_constant;
 	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlotNoCoerce_lc " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	asAtomHandler::getObjectNoCheck(v1)->setSlotNoCoerce(t,v2,context->worker);
+	asAtomHandler::getObjectNoCheck(v1)->setSlotNoCoerce(t,v2);
 	++(context->exec_pos);
 }
 void lightspark::abc_setslotNoCoerce_constant_local(call_context* context)
@@ -88,7 +88,7 @@ void lightspark::abc_setslotNoCoerce_constant_local(call_context* context)
 	asAtom v2 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2);
 	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlotNoCoerce_cl " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	asAtomHandler::getObjectNoCheck(v1)->setSlotNoCoerce(t,v2,context->worker);
+	asAtomHandler::getObjectNoCheck(v1)->setSlotNoCoerce(t,v2);
 	++(context->exec_pos);
 }
 void lightspark::abc_setslotNoCoerce_local_local(call_context* context)
@@ -97,6 +97,6 @@ void lightspark::abc_setslotNoCoerce_local_local(call_context* context)
 	asAtom v2 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2);
 	uint32_t t = context->exec_pos->arg3_uint;
 	LOG_CALL("setSlotNoCoerce_ll " << t << " "<< asAtomHandler::toDebugString(v2) << " "<< asAtomHandler::toDebugString(v1));
-	asAtomHandler::getObjectNoCheck(v1)->setSlotNoCoerce(t,v2,context->worker);
+	asAtomHandler::getObjectNoCheck(v1)->setSlotNoCoerce(t,v2);
 	++(context->exec_pos);
 }

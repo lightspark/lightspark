@@ -37,7 +37,7 @@ ColorMatrixFilter::ColorMatrixFilter(ASWorker* wrk, Class_base* c, const COLORMA
 	for (uint32_t i = 0; i < 20 ; i++)
 	{
 		FLOAT f = filter.Matrix[i];
-		matrix->push(asAtomHandler::fromNumber(wrk,f,false));
+		matrix->push(asAtomHandler::fromNumber(f));
 	}
 }
 

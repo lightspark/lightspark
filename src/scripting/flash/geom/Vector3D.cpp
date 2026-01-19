@@ -115,7 +115,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_length)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
+	asAtomHandler::setNumber(ret, sqrt(th->x * th->x + th->y * th->y + th->z * th->z));
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,_get_lengthSquared)
@@ -123,7 +123,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,_get_lengthSquared)
 	assert_and_throw(argslen==0);
 
 	Vector3D* th=asAtomHandler::as<Vector3D>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->x * th->x + th->y * th->y + th->z * th->z);
+	asAtomHandler::setNumber(ret, th->x * th->x + th->y * th->y + th->z * th->z);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,clone)
@@ -171,7 +171,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,angleBetween)
 	angle /= sqrt(vc2->x * vc2->x + vc2->y * vc2->y + vc2->z * vc2->z);
 	angle = acos(angle);
 
-	wrk->setBuiltinCallResultLocalNumber(ret, angle);
+	asAtomHandler::setNumber(ret, angle);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,crossProduct)
@@ -212,7 +212,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,distance)
 	dz = vc1->z - vc2->z;
 	dist = sqrt(dx * dx + dy * dy + dz * dz);
 
-	wrk->setBuiltinCallResultLocalNumber(ret, dist);
+	asAtomHandler::setNumber(ret, dist);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,dotProduct)
@@ -221,7 +221,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,dotProduct)
 	_NR<Vector3D> vc;
 	ARG_CHECK(ARG_UNPACK(vc));
 
-	wrk->setBuiltinCallResultLocalNumber(ret, th->x * vc->x + th->y * vc->y + th->z * vc->z);
+	asAtomHandler::setNumber(ret, th->x * vc->x + th->y * vc->y + th->z * vc->z);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,equals)
@@ -293,7 +293,7 @@ ASFUNCTIONBODY_ATOM(Vector3D,normalize)
 		th->y = 0;
 		th->z = 0;
 	}
-	ret = asAtomHandler::fromNumber(wrk,len,false);
+	ret = asAtomHandler::fromNumber(len);
 }
 
 ASFUNCTIONBODY_ATOM(Vector3D,project)

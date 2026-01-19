@@ -49,10 +49,8 @@ void lightspark::abc_increment_constant_localresult(call_context* context)
 	if (context->exec_pos->local_pos1 != context->exec_pos->local3.pos)
 	{
 		ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
-		if (asAtomHandler::isLocalNumber(res))
-			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,asAtomHandler::getNumber(context->worker,res),context->exec_pos->local3.pos);
-		else if (asAtomHandler::isNumber(res))
-			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,asAtomHandler::getObjectNoCheck(res)->toNumber(),context->exec_pos->local3.pos);
+		if (asAtomHandler::isNumber(res))
+			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),asAtomHandler::toNumber(res));
 		else
 			asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
 	}
@@ -69,10 +67,8 @@ void lightspark::abc_increment_local_localresult(call_context* context)
 	if (context->exec_pos->local_pos1 != context->exec_pos->local3.pos)
 	{
 		ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
-		if (asAtomHandler::isLocalNumber(res))
-			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,asAtomHandler::getNumber(context->worker,res),context->exec_pos->local3.pos);
-		else if (asAtomHandler::isNumber(res))
-			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,asAtomHandler::getObjectNoCheck(res)->toNumber(),context->exec_pos->local3.pos);
+		if (asAtomHandler::isNumber(res))
+			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),asAtomHandler::toNumber(res));
 		else
 			asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
 	}
@@ -106,10 +102,8 @@ void lightspark::abc_decrement_constant_localresult(call_context* context)
 	if (context->exec_pos->local_pos1 != context->exec_pos->local3.pos)
 	{
 		ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
-		if (asAtomHandler::isLocalNumber(res))
-			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,asAtomHandler::getNumber(context->worker,res),context->exec_pos->local3.pos);
-		else if (asAtomHandler::isNumber(res))
-			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,asAtomHandler::getObjectNoCheck(res)->toNumber(),context->exec_pos->local3.pos);
+		if (asAtomHandler::isNumber(res))
+			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),asAtomHandler::toNumber(res));
 		else
 			asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
 	}
@@ -125,10 +119,8 @@ void lightspark::abc_decrement_local_localresult(call_context* context)
 	if (context->exec_pos->local_pos1 != context->exec_pos->local3.pos)
 	{
 		ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
-		if (asAtomHandler::isLocalNumber(res))
-			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,asAtomHandler::getNumber(context->worker,res),context->exec_pos->local3.pos);
-		else if (asAtomHandler::isNumber(res))
-			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,asAtomHandler::getObjectNoCheck(res)->toNumber(),context->exec_pos->local3.pos);
+		if (asAtomHandler::isNumber(res))
+			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),asAtomHandler::toNumber(res));
 		else
 			asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
 	}
@@ -141,7 +133,7 @@ void lightspark::abc_increment_i_local(call_context* context)
 {
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	LOG_CALL("increment_i_l "<<context->exec_pos->local_pos1<<" "<<asAtomHandler::toDebugString(res));
-	asAtomHandler::increment_i(res,context->worker);
+	asAtomHandler::increment_i(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -151,7 +143,7 @@ void lightspark::abc_increment_i_local_localresult(call_context* context)
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-	asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker);
+	asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
 	ASATOM_DECREF(oldres);
 	++(context->exec_pos);
 }
@@ -159,18 +151,18 @@ void lightspark::abc_increment_i_local_setslotnocoerce(call_context* context)
 {
 	LOG_CALL("increment_i_ls "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local3.pos<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::increment_i(res,context->worker);
+	asAtomHandler::increment_i(res);
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res);
 	++(context->exec_pos);
 }
 void lightspark::abc_decrement_i_local(call_context* context)
 {
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	LOG_CALL("decrement_i_l "<<context->exec_pos->local_pos1<<" "<<asAtomHandler::toDebugString(res));
-	asAtomHandler::decrement_i(res,context->worker);
+	asAtomHandler::decrement_i(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -180,7 +172,7 @@ void lightspark::abc_decrement_i_local_localresult(call_context* context)
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker);
+	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
 	ASATOM_DECREF(oldres);
 	++(context->exec_pos);
 }
@@ -188,25 +180,25 @@ void lightspark::abc_decrement_i_local_setslotnocoerce(call_context* context)
 {
 	LOG_CALL("decrement_i_ls "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local3.pos<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::decrement_i(res,context->worker);
+	asAtomHandler::decrement_i(res);
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res);
 	++(context->exec_pos);
 }
 void lightspark::abc_inclocal_i_optimized(call_context* context)
 {
 	int32_t t = context->exec_pos->arg1_uint;
 	LOG_CALL( "incLocal_i_o " << t << " "<< context->exec_pos->arg2_int);
-	asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,t),context->worker,context->exec_pos->arg2_int);
+	asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,t),context->exec_pos->arg2_int);
 	++context->exec_pos;
 }
 void lightspark::abc_declocal_i_optimized(call_context* context)
 {
 	int32_t t = context->exec_pos->arg1_uint;
 	LOG_CALL( "decLocal_i_o " << t << " "<< context->exec_pos->arg2_int);
-	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,t),context->worker,context->exec_pos->arg2_int);
+	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,t),context->exec_pos->arg2_int);
 	++context->exec_pos;
 }
 void lightspark::abc_inclocal_i_postfix(call_context* context)
@@ -215,23 +207,19 @@ void lightspark::abc_inclocal_i_postfix(call_context* context)
 	asAtom& res = CONTEXT_GETLOCAL(context,t);
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	if (USUALLY_TRUE(
-#ifdef LIGHTSPARK_64
-			((res.uintval & 0xc000000000000007) ==ATOM_INTEGER)
-#else
-			((res.uintval & 0xc0000007) ==ATOM_INTEGER )
-#endif
+			asAtomHandler::isInteger(res)
 			&& !asAtomHandler::isObject(oldres)))
 	{
-		// fast path for common case that argument is ints and the result doesn't overflow
+		// fast path for common case that argument is int and the result doesn't overflow
 		LOG_CALL( "incLocal_i_postfix_fast " << t <<" "<<context->exec_pos->local3.pos);
 		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-		res.intval += 8;
+		asAtomHandler::setInt(res,asAtomHandler::getInt(res)+1);
 	}
 	else
 	{
 		LOG_CALL( "incLocal_i_postfix " << t <<" "<<context->exec_pos->local3.pos);
 		REPLACELOCALRESULT(context,context->exec_pos->local3.pos,res);
-		asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,t),context->worker);
+		asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,t));
 	}
 	++context->exec_pos;
 }
@@ -241,23 +229,19 @@ void lightspark::abc_declocal_i_postfix(call_context* context)
 	asAtom& res = CONTEXT_GETLOCAL(context,t);
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	if (USUALLY_TRUE(
-#ifdef LIGHTSPARK_64
-			((res.uintval & 0xc000000000000007) ==ATOM_INTEGER)
-#else
-			((res.uintval & 0xc0000007) ==ATOM_INTEGER )
-#endif
+			asAtomHandler::isInteger(res)
 			&& !asAtomHandler::isObject(oldres)))
 	{
 		// fast path for common case that argument is ints and the result doesn't overflow
 		LOG_CALL( "decLocal_i_postfix_fast " << t <<" "<<context->exec_pos->local3.pos);
 		asAtomHandler::set(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),res);
-		res.intval -= 8;
+		asAtomHandler::setInt(res,asAtomHandler::getInt(res)-1);
 	}
 	else
 	{
 		LOG_CALL( "decLocal_i_postfix " << t <<" "<<context->exec_pos->local3.pos);
 		REPLACELOCALRESULT(context,context->exec_pos->local3.pos,res);
-		asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,t),context->worker);
+		asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,t));
 	}
 	++context->exec_pos;
 }

@@ -86,10 +86,7 @@ public:
 									  "?"); // TODO
 			return asAtomHandler::invalidAtom;
 		}
-		if (asAtomHandler::localNumberToGlobalNumber(wrk,obj))
-			asAtomHandler::getObjectNoCheck(obj)->addStoredMember();
-		else
-			ASATOM_ADDSTOREDMEMBER(obj);
+		ASATOM_ADDSTOREDMEMBER(obj);
 		return obj;
 	}
 	static void toAbstract(asAtom& ret, ASWorker* wrk,asAtom val)
@@ -328,19 +325,19 @@ inline void lightspark::ArgumentConversionAtom<Vector2f>::cleanupOldValue(Vector
 template<>
 inline void lightspark::ArgumentConversionAtom<int32_t>::toAbstract(asAtom& ret, ASWorker* wrk,const int32_t& val)
 {
-	asAtomHandler::setInt(ret,wrk,val);
+	asAtomHandler::setInt(ret,val);
 }
 
 template<>
 inline void lightspark::ArgumentConversionAtom<uint32_t>::toAbstract(asAtom& ret, ASWorker* wrk,const uint32_t& val)
 {
-	asAtomHandler::setUInt(ret,wrk,val);
+	asAtomHandler::setUInt(ret,val);
 }
 
 template<>
 inline void lightspark::ArgumentConversionAtom<number_t>::toAbstract(asAtom& ret, ASWorker* wrk,const number_t& val)
 {
-	wrk->setBuiltinCallResultLocalNumber(ret, val);
+	asAtomHandler::setNumber(ret,val);
 }
 
 template<>
@@ -358,13 +355,13 @@ inline void lightspark::ArgumentConversionAtom<tiny_string>::toAbstract(asAtom& 
 template<>
 inline void lightspark::ArgumentConversionAtom<RGB>::toAbstract(asAtom& ret, ASWorker* wrk,const RGB& val)
 {
-	asAtomHandler::setUInt(ret,wrk,val.toUInt());
+	asAtomHandler::setUInt(ret,val.toUInt());
 }
 
 template<>
 inline void lightspark::ArgumentConversionAtom<AS3KeyCode>::toAbstract(asAtom& ret, ASWorker* wrk,const AS3KeyCode& val)
 {
-	asAtomHandler::setUInt(ret,wrk,val);
+	asAtomHandler::setUInt(ret,val);
 }
 
 template<>

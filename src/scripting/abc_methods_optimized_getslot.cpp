@@ -33,8 +33,7 @@ void lightspark::abc_getslot_constant(call_context* context)
 	asAtom* pval = instrptr->arg1_constant;
 	asAtom ret=asAtomHandler::getObjectNoCheck(*pval)->getSlotNoCheck(t);
 	LOG_CALL("getSlot_c " << t << " " << asAtomHandler::toDebugString(ret));
-	if (!asAtomHandler::getObjectNoCheck(*pval)->getSlotVar(t+1)->isLocalNumberVar())
-		ASATOM_INCREF(ret);
+	ASATOM_INCREF(ret);
 	RUNTIME_STACK_PUSH(context,ret);
 }
 void lightspark::abc_getslot_local(call_context* context)
@@ -49,22 +48,21 @@ void lightspark::abc_getslot_local(call_context* context)
 	}
 	asAtom res = obj->getSlotNoCheck(t);
 	LOG_CALL("getSlot_l " << t << " " << asAtomHandler::toDebugString(res));
-	if (!obj->getSlotVar(t+1)->isLocalNumberVar())
-		ASATOM_INCREF(res);
+	ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 }
 void lightspark::abc_getslot_constant_localresult(call_context* context)
 {
 	preloadedcodedata* instrptr = context->exec_pos++;
 	uint32_t t = instrptr->arg2_uint;
-	asAtom res = asAtomHandler::getObject(*instrptr->arg1_constant)->getSlotNoCheck(t,instrptr->local3.pos);
+	asAtom res = asAtomHandler::getObject(*instrptr->arg1_constant)->getSlotNoCheck(t);
 	asAtom o = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	if (o.uintval != res.uintval)
 	{
 		if (asAtomHandler::isNumber(res))
 		{
 			ASATOM_DECREF(o);
-			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker,asAtomHandler::getNumber(context->worker,res),instrptr->local3.pos);
+			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,instrptr->local3.pos),asAtomHandler::getNumber(context->worker,res));
 		}
 		else
 		{
@@ -84,14 +82,14 @@ void lightspark::abc_getslot_local_localresult(call_context* context)
 		return;
 	}
 	ASObject* obj = asAtomHandler::getObjectNoCheck(CONTEXT_GETLOCAL(context,instrptr->local_pos1));
-	asAtom res = obj->getSlotNoCheck(t,instrptr->local3.pos);
+	asAtom res = obj->getSlotNoCheck(t);
 	asAtom o = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 	if (o.uintval != res.uintval)
 	{
 		if (asAtomHandler::isNumberPtr(res))
 		{
 			ASATOM_DECREF(o);
-			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker,asAtomHandler::getNumber(context->worker,res),instrptr->local3.pos);
+			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,instrptr->local3.pos),asAtomHandler::getNumber(context->worker,res));
 		}
 		else
 		{
@@ -109,7 +107,7 @@ void lightspark::abc_getslot_constant_setslotnocoerce(call_context* context)
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotFromVariable(t,var,context->exec_pos->local3.pos);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotFromVariable(t,var);
 	++(context->exec_pos);
 }
 void lightspark::abc_getslot_local_setslotnocoerce(call_context* context)
@@ -125,7 +123,7 @@ void lightspark::abc_getslot_local_setslotnocoerce(call_context* context)
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotFromVariable(t,var,context->exec_pos->local3.pos);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotFromVariable(t,var);
 	++(context->exec_pos);
 }
 void lightspark::abc_getSlotFromScopeObject(call_context* context)
@@ -135,11 +133,9 @@ void lightspark::abc_getSlotFromScopeObject(call_context* context)
 	uint32_t tslot = instrptr->arg2_uint;
 	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
 	ASObject* obj = asAtomHandler::getObjectNoCheck(context->scope_stack[t]);
-	variable* var = obj->getSlotVar(tslot+1);
 	asAtom res = obj->getSlotNoCheck(tslot);
 	LOG_CALL("getSlotFromScopeObject " << t << " " << tslot<<" "<< asAtomHandler::toDebugString(res) << " "<< obj->toDebugString());
-	if (!var->isLocalNumberVar())
-		ASATOM_INCREF(res);
+	ASATOM_INCREF(res);
 	RUNTIME_STACK_PUSH(context,res);
 }
 void lightspark::abc_getSlotFromScopeObject_localresult(call_context* context)
@@ -149,7 +145,7 @@ void lightspark::abc_getSlotFromScopeObject_localresult(call_context* context)
 	uint32_t tslot = instrptr->arg2_uint;
 	assert_and_throw(context->curr_scope_stack > (uint32_t)t);
 	ASObject* obj = asAtomHandler::getObjectNoCheck(context->scope_stack[t]);
-	asAtom res = obj->getSlotNoCheck(tslot,instrptr->local3.pos);
+	asAtom res = obj->getSlotNoCheck(tslot);
 	LOG_CALL("getSlotFromScopeObject_l " << t << " " << tslot<<" "<< asAtomHandler::toDebugString(res) << " "<< obj->toDebugString()<<" "<<instrptr->local3.pos);
 	if (res.uintval != CONTEXT_GETLOCAL(context,instrptr->local3.pos).uintval)
 	{

@@ -308,7 +308,7 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 	LOG_CALL("End of calling " << *name<<" "<<asAtomHandler::toDebugString(ret));
 }
 
-FORCE_INLINE void callprop_intern_slotvar(call_context* context,asAtom& ret,asAtom& obj,asAtom* args, uint32_t argsnum,uint32_t slot_id, bool needreturn, bool coercearguments, uint16_t resultlocalnumberpos=UINT16_MAX)
+FORCE_INLINE void callprop_intern_slotvar(call_context* context,asAtom& ret,asAtom& obj,asAtom* args, uint32_t argsnum,uint32_t slot_id, bool needreturn, bool coercearguments)
 {
 	assert(context->worker==getWorker());
 	if(asAtomHandler::is<Null>(obj))
@@ -325,7 +325,7 @@ FORCE_INLINE void callprop_intern_slotvar(call_context* context,asAtom& ret,asAt
 	}
 	assert(asAtomHandler::isObject(obj));
 	asAtom o=asAtomHandler::invalidAtom;
-	o = asAtomHandler::getObject(obj)->getSlotNoCheck(slot_id,resultlocalnumberpos);
+	o = asAtomHandler::getObject(obj)->getSlotNoCheck(slot_id);
 	ASATOM_INCREF(o);
 
 	if(asAtomHandler::is<IFunction>(o))
@@ -371,7 +371,7 @@ FORCE_INLINE void callprop_intern_borrowedslot(call_context* context,asAtom& ret
 	assert(asAtomHandler::isObject(obj));
 	variable* v = asAtomHandler::getObject(obj)->getClass()->getVariableByBorrowedSlot(slot_id);
 	assert(v);
-	asAtom o=v->getVar(context->worker,UINT16_MAX);
+	asAtom o=v->getVar();
 	ASATOM_INCREF(o);
 
 	if(asAtomHandler::is<IFunction>(o))
@@ -446,7 +446,7 @@ void lightspark::abc_callpropertyStaticNameCached(call_context* context)
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,*obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
@@ -476,7 +476,7 @@ void lightspark::abc_callpropertyStaticNameCached_localResult(call_context* cont
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,*obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
@@ -506,7 +506,7 @@ void lightspark::abc_callpropertyStaticNameCached_constant(call_context* context
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
@@ -535,7 +535,7 @@ void lightspark::abc_callpropertyStaticNameCached_local(call_context* context)
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
@@ -564,7 +564,7 @@ void lightspark::abc_callpropertyStaticNameCached_constant_localResult(call_cont
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
@@ -593,7 +593,7 @@ void lightspark::abc_callpropertyStaticNameCached_local_localResult(call_context
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
@@ -753,7 +753,7 @@ void lightspark::abc_callpropertyStaticName_local(call_context* context)
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
@@ -776,7 +776,7 @@ void lightspark::abc_callpropertyStaticName_constant_localresult(call_context* c
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && context->exec_pos->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = context->exec_pos->cachedvar3->getVar(context->worker);
+		asAtom func = context->exec_pos->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
 	}
@@ -797,7 +797,7 @@ void lightspark::abc_callpropertyStaticName_local_localresult(call_context* cont
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && context->exec_pos->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = context->exec_pos->cachedvar3->getVar(context->worker);
+		asAtom func = context->exec_pos->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
 	}
@@ -1184,7 +1184,7 @@ void lightspark::abc_callpropertySlotVar_constant_constant_localresult(call_cont
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callPropertySlotVar_ccl " << slot_id);
 	asAtom res=asAtomHandler::invalidAtom;
-	callprop_intern_slotvar(context,res,obj,&args,1,slot_id,true,coerce,instrptr->local3.pos);
+	callprop_intern_slotvar(context,res,obj,&args,1,slot_id,true,coerce);
 	REPLACELOCALRESULT(context,instrptr->local3.pos,res);
 	++(context->exec_pos);
 }
@@ -1199,7 +1199,7 @@ void lightspark::abc_callpropertySlotVar_local_constant_localresult(call_context
 	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	LOG_CALL( "callPropertySlotVar_lcl " << slot_id);
 	asAtom res=asAtomHandler::invalidAtom;
-	callprop_intern_slotvar(context,res,obj,&args,1,slot_id,true,coerce,instrptr->local3.pos);
+	callprop_intern_slotvar(context,res,obj,&args,1,slot_id,true,coerce);
 	REPLACELOCALRESULT(context,instrptr->local3.pos,res);
 	++(context->exec_pos);
 }
@@ -1214,7 +1214,7 @@ void lightspark::abc_callpropertySlotVar_constant_local_localresult(call_context
 	asAtom obj= *instrptr->arg1_constant;
 	LOG_CALL( "callPropertySlotVar_cll " << slot_id);
 	asAtom res=asAtomHandler::invalidAtom;
-	callprop_intern_slotvar(context,res,obj,&args,1,slot_id,true,coerce,instrptr->local3.pos);
+	callprop_intern_slotvar(context,res,obj,&args,1,slot_id,true,coerce);
 	REPLACELOCALRESULT(context,instrptr->local3.pos,res);
 	++(context->exec_pos);
 }
@@ -1229,7 +1229,7 @@ void lightspark::abc_callpropertySlotVar_local_local_localresult(call_context* c
 	asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 	LOG_CALL( "callPropertySlotVar_lll " << slot_id);
 	asAtom res=asAtomHandler::invalidAtom;
-	callprop_intern_slotvar(context,res,obj,&args,1,slot_id,true,coerce,instrptr->local3.pos);
+	callprop_intern_slotvar(context,res,obj,&args,1,slot_id,true,coerce);
 	REPLACELOCALRESULT(context,instrptr->local3.pos,res);
 	++(context->exec_pos);
 }
@@ -1260,7 +1260,7 @@ void lightspark::abc_callpropertySlotVar_local(call_context* context)
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && context->exec_pos->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = context->exec_pos->cachedvar3->getVar(context->worker);
+		asAtom func = context->exec_pos->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
@@ -1283,13 +1283,13 @@ void lightspark::abc_callpropertySlotVar_constant_localresult(call_context* cont
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && context->exec_pos->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = context->exec_pos->cachedvar3->getVar(context->worker);
+		asAtom func = context->exec_pos->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
 	}
 	else
-		callprop_intern_slotvar(context,ret,obj,nullptr,0,slot_id,true,false,instrptr->local3.pos);
+		callprop_intern_slotvar(context,ret,obj,nullptr,0,slot_id,true,false);
 	REPLACELOCALRESULT(context,instrptr->local3.pos,ret);
 
 	++(context->exec_pos);
@@ -1305,13 +1305,13 @@ void lightspark::abc_callpropertySlotVar_local_localresult(call_context* context
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && context->exec_pos->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = context->exec_pos->cachedvar3->getVar(context->worker);
+		asAtom func = context->exec_pos->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
 	}
 	else
-		callprop_intern_slotvar(context,ret,obj,nullptr,0,slot_id,true,false,instrptr->local3.pos);
+		callprop_intern_slotvar(context,ret,obj,nullptr,0,slot_id,true,false);
 	REPLACELOCALRESULT(context,instrptr->local3.pos,ret);
 
 	++(context->exec_pos);
@@ -1335,7 +1335,7 @@ void lightspark::abc_callpropertySlotVarCached_constant(call_context* context)
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
@@ -1364,7 +1364,7 @@ void lightspark::abc_callpropertySlotVarCached_local(call_context* context)
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
@@ -1393,13 +1393,13 @@ void lightspark::abc_callpropertySlotVarCached_constant_localResult(call_context
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
-		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0,false,context->exec_pos->local3.pos);
+		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0,false);
 	}
 	else
-		callprop_intern_slotvar(context,ret,obj,args,argcount,slot_id,true,(instrptr->local2.flags&ABC_OP_COERCED)==0,context->exec_pos->local3.pos);
+		callprop_intern_slotvar(context,ret,obj,args,argcount,slot_id,true,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	REPLACELOCALRESULT(context,context->exec_pos->local3.pos,ret);
 	++(context->exec_pos);
 }
@@ -1422,13 +1422,13 @@ void lightspark::abc_callpropertySlotVarCached_local_localResult(call_context* c
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
-		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0,false,context->exec_pos->local3.pos);
+		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0,false);
 	}
 	else
-		callprop_intern_slotvar(context,ret,obj,args,argcount,slot_id,true,(instrptr->local2.flags&ABC_OP_COERCED)==0,context->exec_pos->local3.pos);
+		callprop_intern_slotvar(context,ret,obj,args,argcount,slot_id,true,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	REPLACELOCALRESULT(context,context->exec_pos->local3.pos,ret);
 	++(context->exec_pos);
 }
@@ -1584,7 +1584,7 @@ void lightspark::abc_callpropertyBorrowedSlot_local(call_context* context)
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && context->exec_pos->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = context->exec_pos->cachedvar3->getVar(context->worker);
+		asAtom func = context->exec_pos->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
@@ -1607,7 +1607,7 @@ void lightspark::abc_callpropertyBorrowedSlot_constant_localresult(call_context*
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && context->exec_pos->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = context->exec_pos->cachedvar3->getVar(context->worker);
+		asAtom func = context->exec_pos->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
@@ -1629,7 +1629,7 @@ void lightspark::abc_callpropertyBorrowedSlot_local_localresult(call_context* co
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (context->exec_pos->local2.flags&ABC_OP_FROMGLOBAL && context->exec_pos->cachedvar3 && context->exec_pos->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = context->exec_pos->cachedvar3->getVar(context->worker);
+		asAtom func = context->exec_pos->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,nullptr,0,false,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0,(context->exec_pos->local2.flags&ABC_OP_COERCED)==0);
@@ -1788,7 +1788,7 @@ void lightspark::abc_callpropertyBorrowedSlotCached_constant(call_context* conte
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
@@ -1817,7 +1817,7 @@ void lightspark::abc_callpropertyBorrowedSlotCached_local(call_context* context)
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
@@ -1846,7 +1846,7 @@ void lightspark::abc_callpropertyBorrowedSlotCached_constant_localResult(call_co
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);
@@ -1875,7 +1875,7 @@ void lightspark::abc_callpropertyBorrowedSlotCached_local_localResult(call_conte
 	asAtom ret=asAtomHandler::invalidAtom;
 	if (instrptr->local2.flags&ABC_OP_FROMGLOBAL && instrptr->cachedvar3 && instrptr->cachedvar3->isSyntheticFunctionVar())
 	{
-		asAtom func = instrptr->cachedvar3->getVar(context->worker);
+		asAtom func = instrptr->cachedvar3->getVar();
 		asAtom closure = asAtomHandler::getClosureAtom(func,obj);
 		ASATOM_INCREF(closure);
 		asAtomHandler::callFunction(func,context->worker,ret,closure,args,argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0,(instrptr->local2.flags&ABC_OP_COERCED)==0);

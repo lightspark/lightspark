@@ -1323,7 +1323,7 @@ ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, textBlockBeginIndex)
 ASFUNCTIONBODY_ATOM(TextLine, getBaselinePosition)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"TextLine.getBaselinePosition");
-	asAtomHandler::setInt(ret,wrk,0);
+	asAtomHandler::setInt(ret,0);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, flushAtomData)
@@ -1360,11 +1360,11 @@ ASFUNCTIONBODY_ATOM(TextLine, getDescent)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
 	if (th->embeddedFont)
-		asAtomHandler::setInt(ret,wrk,th->embeddedFont->getAscent());
+		asAtomHandler::setInt(ret,th->embeddedFont->getAscent());
 	else
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"TextLine.descent without embedded font");
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 	}
 }
 
@@ -1372,30 +1372,30 @@ ASFUNCTIONBODY_ATOM(TextLine, getAscent)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
 	if (th->embeddedFont)
-		asAtomHandler::setInt(ret,wrk,th->embeddedFont->getAscent());
+		asAtomHandler::setInt(ret,th->embeddedFont->getAscent());
 	else
 	{
 		LOG(LOG_NOT_IMPLEMENTED,"TextLine.ascent without embedded font");
-		asAtomHandler::setInt(ret,wrk,th->textHeight);
+		asAtomHandler::setInt(ret,th->textHeight);
 	}
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getTextWidth)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
-	asAtomHandler::setInt(ret,wrk,th->textWidth);
+	asAtomHandler::setInt(ret,th->textWidth);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getTextHeight)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
-	asAtomHandler::setInt(ret,wrk,th->textHeight);
+	asAtomHandler::setInt(ret,th->textHeight);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getUnjustifiedTextWidth)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
-	asAtomHandler::setInt(ret,wrk,th->width);
+	asAtomHandler::setInt(ret,th->width);
 }
 
 void TextLine::updateSizes()

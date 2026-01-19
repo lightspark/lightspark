@@ -152,62 +152,30 @@ void AVM1Rectangle::setX(number_t val, ASWorker* wrk)
 {
 	x = val;
 	asAtom oldX=atomX;
-	if (asAtomHandler::replaceNumber(atomX,wrk,x))
-	{
-		ASATOM_REMOVESTOREDMEMBER(oldX);
-	}
-	else
-	{
-		ASObject* o = asAtomHandler::getObject(atomX);
-		if (o)
-			o->addStoredMember();
-	}
+	asAtomHandler::setNumber(atomX,x);
+	ASATOM_REMOVESTOREDMEMBER(oldX);
 }
 void AVM1Rectangle::setY(number_t val, ASWorker* wrk)
 {
 	y = val;
 	asAtom oldY=atomY;
-	if (asAtomHandler::replaceNumber(atomY,wrk,y))
-	{
-		ASATOM_REMOVESTOREDMEMBER(oldY);
-	}
-	else
-	{
-		ASObject* o = asAtomHandler::getObject(atomY);
-		if (o)
-			o->addStoredMember();
-	}
+	asAtomHandler::setNumber(atomY,y);
+	ASATOM_REMOVESTOREDMEMBER(oldY);
 }
 
 void AVM1Rectangle::setWidth(number_t val, ASWorker* wrk)
 {
 	width = val;
 	asAtom oldWidth=atomWidth;
-	if (asAtomHandler::replaceNumber(atomWidth,wrk,width))
-	{
-		ASATOM_REMOVESTOREDMEMBER(oldWidth);
-	}
-	else
-	{
-		ASObject* o = asAtomHandler::getObject(atomWidth);
-		if (o)
-			o->addStoredMember();
-	}
+	asAtomHandler::setNumber(atomWidth,width);
+	ASATOM_REMOVESTOREDMEMBER(oldWidth);
 }
 void AVM1Rectangle::setHeight(number_t val, ASWorker* wrk)
 {
 	height = val;
 	asAtom oldHeight=atomHeight;
-	if (asAtomHandler::replaceNumber(atomHeight,wrk,height))
-	{
-		ASATOM_REMOVESTOREDMEMBER(oldHeight);
-	}
-	else
-	{
-		ASObject* o = asAtomHandler::getObject(atomHeight);
-		if (o)
-			o->addStoredMember();
-	}
+	asAtomHandler::setNumber(atomHeight,height);
+	ASATOM_REMOVESTOREDMEMBER(oldHeight);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Rectangle,_constructor)
@@ -413,11 +381,9 @@ ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_setTopLeft)
 		{
 			th->setWidth(th->width+th->x-point->getX(),wrk);
 			th->setHeight(th->height+th->y-point->getY(),wrk);
-			th->atomX=asAtomHandler::fromNumber(wrk,point->getX(),false);
-			asAtomHandler::getObjectNoCheck(th->atomX)->addStoredMember();
+			th->atomX=asAtomHandler::fromNumber(point->getX());
 			th->x = point->getX();
-			th->atomY=asAtomHandler::fromNumber(wrk,point->getY(),false);
-			asAtomHandler::getObjectNoCheck(th->atomY)->addStoredMember();
+			th->atomY=asAtomHandler::fromNumber(point->getY());
 			th->y = point->getY();
 			th->notifyUsers();
 		}
@@ -471,9 +437,9 @@ ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_getBottomRight)
 	assert_and_throw(argslen==0);
 	AVM1Rectangle* th=asAtomHandler::as<AVM1Rectangle>(obj);
 	AVM1Point* res = Class<AVM1Point>::getInstanceSNoArgs(wrk);
-	asAtom right= asAtomHandler::fromNumber(wrk,th->x + th->width,false);
+	asAtom right= asAtomHandler::fromNumber(th->x + th->width);
 	res->setX(right,wrk,false);
-	asAtom bottom= asAtomHandler::fromNumber(wrk,th->y + th->height,false);
+	asAtom bottom= asAtomHandler::fromNumber(th->y + th->height);
 	res->setY(bottom,wrk,false);
 	ret = asAtomHandler::fromObject(res);
 }
@@ -559,7 +525,7 @@ ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_setSize)
 ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_getBottom)
 {
 	AVM1Rectangle* th=asAtomHandler::as<AVM1Rectangle>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->y + th->height);
+	asAtomHandler::setNumber(ret, th->y + th->height);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_setBottom)
@@ -576,7 +542,7 @@ ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_setBottom)
 ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_getRight)
 {
 	AVM1Rectangle* th=asAtomHandler::as<AVM1Rectangle>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->x + th->width);
+	asAtomHandler::setNumber(ret, th->x + th->width);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_setRight)

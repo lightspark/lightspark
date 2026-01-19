@@ -998,7 +998,6 @@ void EventDispatcher::handleEvent(_R<Event> e)
 		ASATOM_DECREF(tmpListener[i].f);
 		afterExecution(e);
 	}
-	e->check();
 }
 
 bool EventDispatcher::hasEventListener(const tiny_string& eventName)

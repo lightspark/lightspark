@@ -202,10 +202,6 @@ void Array::constructorImpl(asAtom* args, const unsigned int argslen)
 			static_cast<AVM1Array*>(this)->setCurrentSize(asAtomHandler::toNumber(args[0]));
 		LOG_CALL("Creating array of length " << size);
 		Array::resize(size);
-		for (uint32_t i=0; i <size && i < ARRAY_SIZE_THRESHOLD; i++)
-		{
-			set(i,asAtomHandler::invalidAtom,false);
-		}
 	}
 	else
 	{
@@ -235,7 +231,7 @@ ASFUNCTIONBODY_ATOM(Array,_concat)
 	Array* res=th->createInstance();
 	
 	// copy values into new array
-	res->resize(th->size());
+	res->currentsize = th->size();
 	auto it1=th->data_first.begin();
 	for(;it1 != th->data_first.end();++it1)
 	{
@@ -503,7 +499,7 @@ ASFUNCTIONBODY_ATOM(Array, every)
 ASFUNCTIONBODY_ATOM(Array,_getLength)
 {
 	Array* th=asAtomHandler::as<Array>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->currentsize);
+	asAtomHandler::setUInt(ret,th->currentsize);
 }
 
 ASFUNCTIONBODY_ATOM(Array,_setLength)
@@ -622,7 +618,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 
 	if(argslen == 1 && th->currentsize == 0)
 	{
-		asAtomHandler::setInt(ret,wrk,(int32_t)-1);
+		asAtomHandler::setInt(ret,(int32_t)-1);
 		return;
 	}
 
@@ -630,7 +626,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 
 	if(std::isnan(index))
 	{
-		asAtomHandler::setInt(ret,wrk,(int32_t)0);
+		asAtomHandler::setInt(ret,(int32_t)0);
 		return;
 	}
 
@@ -639,7 +635,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 	{
 		if((size_t)-j > th->size())
 		{
-			asAtomHandler::setInt(ret,wrk,(int32_t)-1);
+			asAtomHandler::setInt(ret,(int32_t)-1);
 			return;
 		}
 		else
@@ -676,7 +672,7 @@ ASFUNCTIONBODY_ATOM(Array,lastIndexOf)
 	}
 	while(i--);
 
-	asAtomHandler::setInt(ret,wrk,res);
+	asAtomHandler::setInt(ret,res);
 }
 
 ASFUNCTIONBODY_ATOM(Array,shift)
@@ -977,7 +973,7 @@ ASFUNCTIONBODY_ATOM(Array,indexOf)
 			}
 		}
 	}
-	asAtomHandler::setInt(ret,wrk,res);
+	asAtomHandler::setInt(ret,res);
 }
 
 ASFUNCTIONBODY_ATOM(Array,_pop)
@@ -1393,10 +1389,16 @@ void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_f
 		sort_value v(b,currindex,fromprototype);
 		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
 		{
-			asAtomWithNumber tmpval;
-			tmpval = asAtomHandler::getObject(a)->getAtomWithNumberByMultiname(itsf->fieldname,getInstanceWorker(), GET_VARIABLE_OPTION::NONE);
-			if (asAtomHandler::isInvalid(tmpval.value))
-				tmpval.value=b;
+			asAtom tmpval = asAtomHandler::invalidAtom;
+			asAtomHandler::getObject(a)->getVariableByMultiname(tmpval,itsf->fieldname,GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
+			if (asAtomHandler::is<Function>(tmpval)) // only call builtin getters(?)
+			{
+				IFunction* f = asAtomHandler::as<IFunction>(tmpval);
+				tmpval = asAtomHandler::invalidAtom;
+				f->callGetter(tmpval,a,getInstanceWorker());
+			}
+			if (asAtomHandler::isInvalid(tmpval))
+				tmpval=b;
 			v.sortvalues.push_back(tmpval);
 		}
 		tmp.push_back(v);
@@ -1434,10 +1436,16 @@ void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_f
 		sort_value v(b,currindex,hole);
 		for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
 		{
-			asAtomWithNumber tmpval;
-			tmpval = asAtomHandler::getObject(a)->getAtomWithNumberByMultiname(itsf->fieldname,getInstanceWorker(), GET_VARIABLE_OPTION::DONT_CALL_GETTER);
-			if (asAtomHandler::isInvalid(tmpval.value))
-				tmpval.value=b;
+			asAtom tmpval = asAtomHandler::invalidAtom;
+			asAtomHandler::getObject(a)->getVariableByMultiname(tmpval,itsf->fieldname,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
+			if (asAtomHandler::is<Function>(tmpval)) // only call builtin getters(?)
+			{
+				IFunction* f = asAtomHandler::as<IFunction>(tmpval);
+				tmpval = asAtomHandler::invalidAtom;
+				f->callGetter(tmpval,a,getInstanceWorker());
+			}
+			if (asAtomHandler::isInvalid(tmpval))
+				tmpval=b;
 			v.sortvalues.push_back(tmpval);
 		}
 		tmp.push_back(v);
@@ -1469,10 +1477,10 @@ void Array::fillUnsortedArray(std::vector<sort_value>& tmp, std::vector<sorton_f
 				sort_value v(b,i,true);
 				for (auto itsf=sortfields.begin();itsf != sortfields.end(); itsf++)
 				{
-					asAtomWithNumber tmpval;
-					tmpval = asAtomHandler::getObject(a)->getAtomWithNumberByMultiname(itsf->fieldname,getInstanceWorker(), GET_VARIABLE_OPTION::DONT_CALL_GETTER);
-					if (asAtomHandler::isInvalid(tmpval.value))
-						tmpval.value=b;
+					asAtom tmpval;
+					asAtomHandler::getObject(a)->getVariableByMultiname(tmpval,itsf->fieldname,GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
+					if (asAtomHandler::isInvalid(tmpval))
+						tmpval=b;
 					v.sortvalues.push_back(tmpval);
 				}
 				tmp.push_back(v);
@@ -1608,15 +1616,15 @@ number_t Array::sortOnComparator::compare(const sort_value& d1, const sort_value
 	uint32_t i = 0;
 	for(;it != fields.end();++it)
 	{
-		asAtomWithNumber obj1 = d1.sortvalues.at(i);
-		asAtomWithNumber obj2 = d2.sortvalues.at(i);
+		asAtom obj1 = d1.sortvalues.at(i);
+		asAtom obj2 = d2.sortvalues.at(i);
 		i++;
-		if (it->isNumeric && asAtomHandler::isNumeric(obj1.value) && asAtomHandler::isNumeric(obj2.value))
+		if (it->isNumeric && asAtomHandler::isNumeric(obj1) && asAtomHandler::isNumeric(obj2))
 		{
 			number_t a=numeric_limits<double>::quiet_NaN();
 			number_t b=numeric_limits<double>::quiet_NaN();
-			a=obj1.toNumber(wrk);
-			b=obj2.toNumber(wrk);
+			a=asAtomHandler::toNumber(obj1);
+			b=asAtomHandler::toNumber(obj2);
 			if (a != b)
 				return it->isDescending ? b-a : a-b;
 		}
@@ -1625,8 +1633,8 @@ number_t Array::sortOnComparator::compare(const sort_value& d1, const sort_value
 			//Comparison is always in lexicographic order
 			tiny_string s1;
 			tiny_string s2;
-			s1=obj1.toString(wrk);
-			s2=obj2.toString(wrk);
+			s1=asAtomHandler::toString(obj1,wrk);
+			s2=asAtomHandler::toString(obj2,wrk);
 			if(it->isCaseInsensitive)
 			{
 				int n = s1.strcasecmp(s2);
@@ -1821,7 +1829,7 @@ ASFUNCTIONBODY_ATOM(Array,unshift)
 			th->set(it->first,it->second,false,false,false);
 		}
 	}
-	asAtomHandler::setUInt(ret,wrk,(int32_t)th->size());
+	asAtomHandler::setUInt(ret,(int32_t)th->size());
 }
 
 ASFUNCTIONBODY_ATOM(Array,_push)
@@ -1864,7 +1872,7 @@ ASFUNCTIONBODY_ATOM(Array,_push)
 	}
 	// currentsize is set even if push fails
 	th->currentsize = s+argslen;
-	asAtomHandler::setInt(ret,wrk,(int32_t)th->size());
+	asAtomHandler::setInt(ret,(int32_t)th->size());
 }
 // AS3 handles push on uint.MAX_VALUE differently than ECMA, so we need to push methods
 ASFUNCTIONBODY_ATOM(Array,_push_as3)
@@ -1905,7 +1913,7 @@ ASFUNCTIONBODY_ATOM(Array,_push_as3)
 		ASATOM_INCREF(args[i]);
 		th->push(args[i]);
 	}
-	asAtomHandler::setInt(ret,wrk,(int32_t)th->size());
+	asAtomHandler::setInt(ret,(int32_t)th->size());
 }
 
 ASFUNCTIONBODY_ATOM(Array,_map)
@@ -2227,64 +2235,6 @@ GET_VARIABLE_RESULT Array::getVariableByMultiname(asAtom& ret, const multiname& 
 		asAtomHandler::setUndefined(ret);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
-asAtomWithNumber Array::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	if(!implEnable)
-	{
-		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-	}
-
-	if(!name.hasEmptyNS)
-	{
-		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-	}
-
-	uint32_t index=0;
-	if(!isValidMultiname(getInstanceWorker(),name,index))
-	{
-		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-	}
-
-	asAtomWithNumber ret;
-	if (hasAddedProperty) // AVM1 allows to add a property (via addProperty) with an int as name, so we have to check for that
-	{
-		ret = ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-		if (asAtomHandler::isValid(ret.value))
-			return ret;
-	}
-	if (index < ARRAY_SIZE_THRESHOLD)
-	{
-		if (data_first.size() > index)
-		{
-			ret.value = data_first.at(index);
-			if (asAtomHandler::isValid(ret.value))
-				return ret;
-		}
-	}
-	auto it = data_second.find(index);
-	if(it != data_second.end())
-	{
-		ret.value = it->second;
-		if (asAtomHandler::isValid(ret.value))
-			return ret;
-	}
-	if (name.hasEmptyNS && index>=size())
-	{
-		//Check prototype chain
-		Prototype* proto = this->getClass()->prototype.getPtr();
-		while(proto && proto->getObj() != this)
-		{
-			ret = proto->getObj()->getAtomWithNumberByMultiname(name,wrk,opt);
-			if(asAtomHandler::isValid(ret.value))
-				return ret;
-			proto = proto->prevPrototype.getPtr();
-		}
-	}
-	if(index<size())
-		asAtomHandler::setUndefined(ret.value);
-	return ret;
-}
-
 
 GET_VARIABLE_RESULT Array::getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
@@ -2620,7 +2570,7 @@ void Array::nextName(asAtom& ret, uint32_t index)
 {
 	assert_and_throw(implEnable);
 	if(index<=size())
-		asAtomHandler::setUInt(ret,this->getInstanceWorker(),index-1);
+		asAtomHandler::setUInt(ret,index-1);
 	else
 	{
 		//Fall back on object properties
@@ -2722,6 +2672,16 @@ void Array::resize(uint64_t n,bool removemember)
 			}
 			else
 				++it2;
+		}
+	}
+	else
+	{
+		uint32_t i=data_first.size();
+		currentsize = n;
+		while ( i <n && i < ARRAY_SIZE_THRESHOLD)
+		{
+			set(i,asAtomHandler::invalidAtom,false);
+			i++;
 		}
 	}
 	currentsize = n;
@@ -2953,7 +2913,6 @@ Array::~Array()
 bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref, bool addmember)
 {
 	bool ret = true;
-	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	if(index<currentsize)
 	{
 		if (index < ARRAY_SIZE_THRESHOLD)

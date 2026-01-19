@@ -174,16 +174,6 @@ public:
 			delete[] cc.localslots;
 			cc.localslots=nullptr;
 		}
-		if (cc.localNumbers)
-		{
-			delete[] cc.localNumbers;
-			cc.localNumbers=nullptr;
-		}
-		if (cc.localNumbersIncludingSlots)
-		{
-			delete[] cc.localNumbersIncludingSlots;
-			cc.localNumbersIncludingSlots=nullptr;
-		}
 	}
 };
 

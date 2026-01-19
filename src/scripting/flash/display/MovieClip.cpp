@@ -497,15 +497,15 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getFramesLoaded)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	if (th->framecontainer->getFramesLoaded())
-		asAtomHandler::setUInt(ret,wrk,th->framecontainer->getFramesLoaded());
+		asAtomHandler::setUInt(ret,th->framecontainer->getFramesLoaded());
 	else
-		asAtomHandler::setUInt(ret,wrk,1); // no frames available yet, report 1 frame anyway
+		asAtomHandler::setUInt(ret,1); // no frames available yet, report 1 frame anyway
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getTotalFrames)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->totalFrames_unreliable);
+	asAtomHandler::setUInt(ret,th->totalFrames_unreliable);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getScenes)
@@ -526,10 +526,10 @@ ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrame)
 	if (th->framecontainer->getFramesLoaded())
 	{
 		//currentFrame is 1-based and relative to current scene
-		asAtomHandler::setInt(ret,wrk,th->state.FP+1 - th->framecontainer->getCurrentSceneStartFrame(th->state.FP));
+		asAtomHandler::setInt(ret,th->state.FP+1 - th->framecontainer->getCurrentSceneStartFrame(th->state.FP));
 	}
 	else
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,_getCurrentFrameLabel)
@@ -1113,7 +1113,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1BeginFill)
 	Graphics* g = th->getGraphics();
 	asAtom o = asAtomHandler::fromObject(g);
 	if(argslen>=2)
-		args[1]=asAtomHandler::fromNumber(wrk,asAtomHandler::toNumber(args[1])/100.0,false);
+		args[1]=asAtomHandler::fromNumber(asAtomHandler::toNumber(args[1])/100.0);
 
 	Graphics::beginFill(ret,wrk,o,args,argslen);
 }
@@ -1135,7 +1135,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1GetNextHighestDepth)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
 	uint32_t n = th->getMaxLegacyChildDepth();
-	asAtomHandler::setUInt(ret,wrk,n == UINT32_MAX ? 0 : n+1);
+	asAtomHandler::setUInt(ret,n == UINT32_MAX ? 0 : n+1);
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachBitmap)
 {
@@ -1182,7 +1182,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1getInstanceAtDepth)
 }
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1getSWFVersion)
 {
-	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->getSwfVersion());
+	asAtomHandler::setUInt(ret,wrk->getSystemState()->getSwfVersion());
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1LoadMovie)

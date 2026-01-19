@@ -290,7 +290,7 @@ ASFUNCTIONBODY_ATOM(ASSocket, _close)
 ASFUNCTIONBODY_ATOM(ASSocket,_getObjectEncoding)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->objectEncoding);
+	asAtomHandler::setUInt(ret,th->objectEncoding);
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,_setObjectEncoding)
@@ -379,7 +379,7 @@ ASFUNCTIONBODY_ATOM(ASSocket, bytesAvailable)
 {
 	ASSocket* th=asAtomHandler::as<ASSocket>(obj);
 	Locker l(th->joblock);
-	asAtomHandler::setUInt(ret,wrk, th->job != nullptr ? th->_bytesAvailable : 0);
+	asAtomHandler::setUInt(ret, th->job != nullptr ? th->_bytesAvailable : 0);
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,_getEndian)
@@ -454,7 +454,7 @@ ASFUNCTIONBODY_ATOM(ASSocket,readByte)
 		createError<IOError>(wrk,kInvalidSocket);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,int32_t(res));
+	asAtomHandler::setInt(ret,int32_t(res));
 }
 
 ASFUNCTIONBODY_ATOM(ASSocket,readBytes)

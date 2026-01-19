@@ -155,7 +155,6 @@ public:
 	void getElementNodes(uint32_t nameID, XMLVector& foundElements);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom &ret, int index, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
-	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt) override;
 	bool hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk) override;
 	bool hasProperty(const multiname& name, bool checkXMLPropsOnly, bool considerDynamic, bool considerPrototype, ASWorker* wrk);
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool *alreadyset, lightspark::ASWorker* wrk) override;

@@ -470,7 +470,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 			case 0x28:
 			{
 				//pushnan
-				RUNTIME_STACK_PUSH(context,asAtomHandler::fromNumber(context->worker, Number::NaN,false));
+				RUNTIME_STACK_PUSH(context,asAtomHandler::fromNumber(Number::NaN));
 				break;
 			}
 			case 0x29:
@@ -1083,7 +1083,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				{
 					int32_t v= asAtomHandler::toIntStrict(context->worker,*pval);
 					ASATOM_DECREF_POINTER(pval);
-					asAtomHandler::setInt(*pval,context->worker,v);
+					asAtomHandler::setInt(*pval,v);
 				}
 				break;
 			}
@@ -1095,7 +1095,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				{
 					uint32_t v= asAtomHandler::toUInt(*pval);
 					ASATOM_DECREF_POINTER(pval);
-					asAtomHandler::setUInt(*pval,context->worker,v);
+					asAtomHandler::setUInt(*pval,v);
 				}
 				break;
 			}
@@ -1107,7 +1107,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				{
 					number_t v= asAtomHandler::toNumber(*pval);
 					ASATOM_DECREF_POINTER(pval);
-					asAtomHandler::setNumber(*pval,context->worker,v);
+					asAtomHandler::setNumber(*pval,v);
 				}
 				break;
 			}
@@ -1663,7 +1663,7 @@ ASObject* ABCVm::executeFunctionFast(const SyntheticFunction* function, call_con
 				RUNTIME_STACK_POP_CREATE_ASOBJECT(context,obj);
 
 				LOG_CALL("setSlotNoCoerce " << t);
-				obj->setSlotNoCoerce(t-1,*value,obj->getInstanceWorker());
+				obj->setSlotNoCoerce(t-1,*value);
 				obj->decRef();
 				break;
 			}

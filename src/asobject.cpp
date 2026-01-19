@@ -158,7 +158,6 @@ uint32_t ASObject::toStringId()
 }
 tiny_string ASObject::toString()
 {
-	check();
 	switch(this->getObjectType())
 	{
 	case T_UNDEFINED:
@@ -256,7 +255,7 @@ void ASObject::nextName(asAtom& ret, uint32_t index)
 	{
 		const tiny_string& name = getSystemState()->getStringFromUniqueId(n);
 		// not mentioned in the specs, but Adobe seems to convert names to Integers, if the key multiname is of type Integer
-		asAtomHandler::setInt(ret,getInstanceWorker(),Integer::stringToASInteger(name.raw_buf(), 0));
+		asAtomHandler::setInt(ret,Integer::stringToASInteger(name.raw_buf(), 0));
 	}
 	else
 		ret = asAtomHandler::fromStringID(n);
@@ -847,7 +846,6 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAnd
 
 void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable,uint8_t min_swfversion)
 {
-	check();
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
@@ -898,7 +896,7 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 		case NORMAL_METHOD:
 		{
 			asAtom v = asAtomHandler::fromObject(o);
-			obj->setVarNoCoerce(v,getInstanceWorker());
+			obj->setVarNoCoerce(v);
 			break;
 		}
 		case GETTER_METHOD:
@@ -932,7 +930,6 @@ void ASObject::setDeclaredMethodAtomByQName(const tiny_string& name, const nsNam
 }
 void ASObject::setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom f, METHOD_TYPE type, bool isBorrowed, bool isEnumerable)
 {
-	check();
 #ifndef NDEBUG
 	assert(!initialized);
 #endif
@@ -1014,7 +1011,7 @@ bool ASObject::deleteVariableByMultiname_intern(const multiname& name, ASWorker*
 
 	assert(asAtomHandler::isInvalid(obj->getter) && asAtomHandler::isInvalid(obj->setter) && obj->isValidVar());
 
-	ASObject* o = obj->isLocalNumberVar() ? nullptr : asAtomHandler::getObject(obj->getVar(getInstanceWorker(),UINT16_MAX));
+	ASObject* o = asAtomHandler::getObject(obj->getVar());
 	//Now kill the variable
 	Variables.killObjVar(getInstanceWorker(),name);
 	//Now dereference the value
@@ -1030,7 +1027,6 @@ bool ASObject::deleteVariableByMultiname_intern(const multiname& name, ASWorker*
 //In all setter we first pass the value to the interface to see if special handling is possible
 void ASObject::setVariableByMultiname_i(multiname& name, int32_t value, ASWorker* wrk)
 {
-	check();
 	asAtom v = asAtomHandler::fromInt(value);
 	setVariableByMultiname(name,v,CONST_NOT_ALLOWED,nullptr,wrk);
 }
@@ -1060,7 +1056,6 @@ variable* ASObject::findSettable(const multiname& name, bool* has_getter)
 multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, Class_base* cls, bool *alreadyset, ASWorker* wrk)
 {
 	multiname *retval = nullptr;
-	check();
 	assert(!cls || classdef->isSubClass(cls));
 	bool isAS3 = is<DisplayObject>() ? as<DisplayObject>()->needsActionScript3() :
 	(
@@ -1254,8 +1249,6 @@ variable *ASObject::setVariableAtomByQName(uint32_t nameId, const nsNameAndKind&
 void ASObject::initializeVariableByMultiname(multiname& name, asAtom &o, multiname* typemname,
 		ABCContext* context, TRAIT_KIND traitKind, uint32_t slot_id, bool isenumerable)
 {
-	check();
-	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	Variables.initializeVar(name, o, typemname, context, traitKind,this,slot_id,isenumerable);
 }
 
@@ -1285,8 +1278,7 @@ variable::variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* _type, const n
 	{
 		traitTypemname=_t;
 	}
-	assert(!asAtomHandler::isLocalNumber(var.value));
-	ASObject* o = asAtomHandler::getObject(var.value);
+	ASObject* o = asAtomHandler::getObject(var);
 	if (o && !o->getConstant())
 	{
 		o->addStoredMember();
@@ -1311,13 +1303,8 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 		if (wrk->currentCallContext && wrk->currentCallContext->exceptionthrown)
 			return;
 	}
-	asAtom oldvar = var.value;
-	if (asAtomHandler::isLocalNumber(v))
-	{
-		var.numbervalue = asAtomHandler::getLocalNumber(wrk->currentCallContext,v);
-		_isrefcounted=false;
-	}
-	var.value=v;
+	asAtom oldvar = var;
+	var=v;
 	if(varIsRefCounted && asAtomHandler::isObject(oldvar))
 	{
 		LOG_CALL("remove old var:"<<asAtomHandler::toDebugString(oldvar));
@@ -1334,53 +1321,6 @@ void variable::setVar(ASWorker* wrk, asAtom v, bool _isrefcounted)
 	varIsRefCounted = _isrefcounted;
 }
 
-bool variable::isClassBaseVar() const
-{
-	return asAtomHandler::is<Class_base>(var.value);
-}
-
-bool variable::isSyntheticFunctionVar() const
-{
-	return asAtomHandler::is<SyntheticFunction>(var.value);
-}
-bool variable::isBuiltinFunctionVar() const
-{
-	return asAtomHandler::is<Function>(var.value);
-}
-bool variable::isFunctionVar() const
-{
-	return asAtomHandler::isFunction(var.value);
-}
-
-bool variable::isDisplayObjectVar() const
-{
-	return asAtomHandler::is<DisplayObject>(var.value);
-}
-
-SyntheticFunction *variable::getSyntheticFunctionVar() const
-{
-	return asAtomHandler::as<SyntheticFunction>(var.value);
-}
-
-IFunction *variable::getFunctionVar() const
-{
-	return asAtomHandler::as<IFunction>(var.value);
-}
-
-void variable::setVarNoCheck(asAtom &v, ASWorker *wrk)
-{
-	if (asAtomHandler::isLocalNumber(v))
-	{
-		var.numbervalue = asAtomHandler::getLocalNumber(wrk->currentCallContext,v);
-		var.value=v;
-		varIsRefCounted=false;
-	}
-	else
-	{
-		var.value=v;
-		varIsRefCounted=asAtomHandler::isObject(v);
-	}
-}
 
 void variables_map::killObjVar(ASWorker* wrk,const multiname& mname)
 {
@@ -1759,7 +1699,7 @@ ASFUNCTIONBODY_ATOM(ASObject,addProperty)
 	{
 		if (!setter.isNull())
 		{
-			oldvar = v->getVar(wrk);
+			oldvar = v->getVar();
 			ASATOM_INCREF(oldvar);
 		}
 		v->setVar(wrk,asAtomHandler::invalidAtom);
@@ -1928,8 +1868,6 @@ void ASObject::initAdditionalSlots(std::vector<multiname*>& additionalslots)
 
 int32_t ASObject::getVariableByMultiname_i(const multiname& name, ASWorker* wrk)
 {
-	check();
-
 	asAtom ret=asAtomHandler::invalidAtom;
 	getVariableByMultinameIntern(ret,name,this->getClass(),GET_VARIABLE_OPTION::NONE,wrk);
 	assert_and_throw(asAtomHandler::isValid(ret));
@@ -1984,7 +1922,6 @@ variable* ASObject::findVariableByMultiname(const multiname& name, Class_base* c
 
 GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const multiname& name, Class_base* cls, GET_VARIABLE_OPTION opt,ASWorker* wrk)
 {
-	check();
 	assert(!cls || classdef->isSubClass(cls) || this->is<Class_base>());
 	assert(wrk==getWorker());
 	uint32_t nsRealId;
@@ -2063,7 +2000,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		LOG_CALL("Calling the getter intern for " << name << " on " << this->toDebugString());
 		assert(asAtomHandler::isFunction(obj->getter));
 		asAtom closure = asAtomHandler::getClosureAtom(obj->getter,asAtomHandler::fromObject(this));
-		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closure,wrk,UINT16_MAX);
+		asAtomHandler::as<IFunction>(obj->getter)->callGetter(ret,closure,wrk);
 		LOG_CALL("End of getter"<< ' ' << asAtomHandler::toDebugString(obj->getter)<<" result:"<<asAtomHandler::toDebugString(ret));
 		// result of getter always adds a new ref
 		res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISINCREFFED);
@@ -2073,7 +2010,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		assert_and_throw(asAtomHandler::isInvalid(obj->setter));
 		if(obj->isFunctionVar() && obj->getFunctionVar()->isMethod())
 		{
-			asAtom func = obj->getVar(wrk,UINT16_MAX);
+			asAtom func = obj->getVar();
 			asAtom closure = asAtomHandler::getClosureAtom(func,asAtomHandler::invalidAtom);
 			if (asAtomHandler::isValid(closure))
 			{
@@ -2092,10 +2029,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		}
 		else
 		{
-			asAtom a = obj->getVar(wrk,asAtomHandler::getLocalNumberPos(ret));
-			if (obj->isLocalNumberVar() && asAtomHandler::getLocalNumberPos(ret)==UINT16_MAX) // local number is converted into a new Number object
-				res = (GET_VARIABLE_RESULT)(res | GET_VARIABLE_RESULT::GETVAR_ISINCREFFED);
-			if (!(opt & NO_INCREF) && !obj->isLocalNumberVar())
+			asAtom a = obj->getVar();
+			if (!(opt & NO_INCREF))
 				ASATOM_INCREF(a);
 
 			asAtomHandler::set(ret,a);
@@ -2145,14 +2080,6 @@ void ASObject::executeASMethod(asAtom& ret,const tiny_string& methodName,
 	ASATOM_DECREF(o);
 }
 
-void ASObject::check() const
-{
-	//Put here a bunch of safety check on the object
-#ifndef NDEBUG
-	assert(getConstant() || (getRefCount()>0));
-#endif
-	//	Variables.check();
-}
 void ASObject::prepareShutdown()
 {
 	if (preparedforshutdown)
@@ -2171,33 +2098,6 @@ void ASObject::setRefConstant()
 	getInstanceWorker()->registerConstantRef(this);
 	this->Variables.isStatic=true;
 	setConstant();
-}
-
-asAtomWithNumber ASObject::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	asAtomWithNumber res;
-	variable* v = findVariableByMultiname(name,classdef,nullptr,nullptr,true,wrk);
-	if (v)
-	{
-		if (asAtomHandler::is<Function>(v->getter)) // only call builtin getters(?)
-		{
-			if (!(opt & DONT_CALL_GETTER))
-			{
-				IFunction* f = asAtomHandler::as<IFunction>(v->getter);
-				asAtom closure = asAtomHandler::fromObject(this);
-				// TODO: avoid creation of Number object for getter result
-				f->callGetter(res.value,closure,wrk,UINT16_MAX);
-			}
-		}
-		else if (v->isLocalNumberVar())
-		{
-			res.numbervalue=v->getLocalNumber();
-			res.value = *v->getVarValuePtr();
-		}
-		else
-			res.value = v->getVar(wrk);
-	}
-	return res;
 }
 
 std::pair<asAtom, GET_VARIABLE_RESULT> ASObject::AVM1searchPrototypeByMultiname
@@ -2242,7 +2142,7 @@ std::pair<asAtom, GET_VARIABLE_RESULT> ASObject::AVM1searchPrototypeByMultiname
 			IFunction* f = asAtomHandler::as<IFunction>(ret);
 			auto thisObj = asAtomHandler::fromObject(this);
 			ret = asAtomHandler::invalidAtom;
-			f->callGetter(ret, thisObj, wrk,UINT16_MAX);
+			f->callGetter(ret, thisObj, wrk);
 			// result of getter always adds a new ref
 			return std::make_pair(ret, GETVAR_ISINCREFFED);
 		}
@@ -2359,7 +2259,7 @@ bool ASObject::AVM1checkWatcher(multiname& name, asAtom& value, ASWorker* wrk)
 				}
 			}
 			if (v)
-				oldval = v->getVar(wrk);
+				oldval = v->getVar();
 			else
 				oldval = asAtomHandler::invalidAtom;
 		}
@@ -2417,7 +2317,7 @@ void variables_map::dumpVariables()
 		}
 		LOG(LOG_INFO, kind <<  '[' << it->second.ns << "] "<< hex<<it->first<<dec<<" "<<
 			getSys()->getStringFromUniqueId(it->first) << ' ' <<
-			it->second.getVarPtr()->toDebugString() << ' ' <<
+			asAtomHandler::toDebugString(it->second.getVar()) << ' ' <<
 			asAtomHandler::toDebugString(it->second.setter) << ' ' <<
 			asAtomHandler::toDebugString(it->second.getter) << ' ' <<
 			it->second.slotid << ' ');//<<dynamic_cast<const Class_base*>(it->second.type));
@@ -3205,7 +3105,7 @@ void ASObject::AVM1UpdateAllBindings(DisplayObject* target, ASWorker* wrk)
 	{
 		if (it->second.kind == DYNAMIC_TRAIT || it->second.kind == CONSTANT_TRAIT)
 		{
-			asAtom v=it->second.getVar(wrk,UINT16_MAX);
+			asAtom v=it->second.getVar();
 			target->AVM1UpdateVariableBindings(it->first,v);
 		}
 		it++;
@@ -3230,7 +3130,7 @@ void ASObject::copyValues(ASObject *target,ASWorker* wrk)
 		multiname m(nullptr);
 		m.name_type = multiname::NAME_STRING;
 		m.name_s_id = (*it)->nameStringID;
-		asAtom v=(*it)->getVar(wrk,UINT16_MAX);
+		asAtom v=(*it)->getVar();
 		if (wrk)
 		{
 			// prepare value for use in another worker
@@ -3266,7 +3166,7 @@ void ASObject::copyValuesForPrototype(ASObject *target,ASWorker* wrk)
 			multiname m(nullptr);
 			m.name_type = multiname::NAME_STRING;
 			m.name_s_id = it->first;
-			asAtom v=it->second.getVar(wrk,UINT16_MAX);
+			asAtom v=it->second.getVar();
 			if (wrk)
 			{
 				// prepare value for use in another worker
@@ -3331,7 +3231,7 @@ void ASObject::getValueAt(asAtom &ret,int index)
 	}
 	else
 	{
-		ret = obj->getVar(getInstanceWorker(),asAtomHandler::isLocalNumber(ret) ? asAtomHandler::getLocalNumberPos(ret) : UINT16_MAX);
+		ret = obj->getVar();
 		ASATOM_INCREF(ret);
 	}
 }
@@ -3416,7 +3316,7 @@ void variables_map::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 			out->writeStringAMF0(out->getSystemState()->getStringFromUniqueId(it->first));
 		else
 			out->writeStringVR(stringMap,out->getSystemState()->getStringFromUniqueId(it->first));
-		asAtom var = it->second.getVar(out->getInstanceWorker(),UINT16_MAX);
+		asAtom var = it->second.getVar();
 		asAtomHandler::serialize(out,stringMap,objMap,traitsMap,wrk,var);
 		if (forsharedobject)
 		{
@@ -3521,7 +3421,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 						continue;
 					}
 					out->writeStringAMF0(getSystemState()->getStringFromUniqueId(varIt->first));
-					asAtom var = varIt->second.getVar(out->getInstanceWorker(),UINT16_MAX);
+					asAtom var = varIt->second.getVar();
 					asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,var);
 				}
 			}
@@ -3610,7 +3510,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 			continue;
 		asAtom closure = asAtomHandler::getClosureAtom(itbor->second.getter,asAtomHandler::fromObject(this));
 		asAtom ret = asAtomHandler::invalidAtom;
-		asAtomHandler::as<IFunction>(itbor->second.getter)->callGetter(ret,closure,wrk,UINT16_MAX);
+		asAtomHandler::as<IFunction>(itbor->second.getter)->callGetter(ret,closure,wrk);
 		if (!asAtomHandler::isValid(ret))
 			continue;
 		asAtomHandler::serialize(out,stringMap,objMap,traitsMap,wrk,ret);
@@ -3626,7 +3526,7 @@ void ASObject::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& string
 				//Skip variable with a namespace, like protected ones
 				continue;
 			}
-			asAtom var = varIt->second.getVar(out->getInstanceWorker(),UINT16_MAX);
+			asAtom var = varIt->second.getVar();
 			asAtomHandler::serialize(out, stringMap, objMap, traitsMap,wrk,var);
 		}
 	}
@@ -3752,7 +3652,7 @@ tiny_string ASObject::toJSON(std::vector<ASObject *> &path, asAtom replacer, con
 				bool newobj = false;
 				if (varIt->second.isValidVar())
 				{
-					asAtom tmp = varIt->second.getVar(getInstanceWorker(),UINT16_MAX);
+					asAtom tmp = varIt->second.getVar();
 					newobj = !asAtomHandler::isObject(tmp); // variable is not a pointer to an ASObject, so toObject() will create a temporary ASObject that has to be decreffed after usage
 					v = asAtomHandler::toObject(tmp,getInstanceWorker());
 				}
@@ -3869,12 +3769,12 @@ asAtom ASObject::getprop_prototypeAtom()
 	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if (var)
-		return var->getVar(getInstanceWorker(),UINT16_MAX);
+		return var->getVar();
 	if (!getSystemState()->mainClip->needsActionScript3())
 		var=Variables.findObjVar(BUILTIN_STRINGS::STRING_PROTO,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if (var != nullptr)
-		return var->getVar(getInstanceWorker(),UINT16_MAX);
+		return var->getVar();
 	return asAtomHandler::invalidAtom;
 }
 
@@ -3956,11 +3856,11 @@ asAtom asAtomHandler::getClosureAtom(asAtom& a, asAtom defaultAtom)
 asAtom asAtomHandler::fromString(SystemState* sys, const tiny_string& s)
 {
 	asAtom a=asAtomHandler::invalidAtom;
-	a.uintval = (sys->getUniqueStringId(s)<<3) | ATOM_STRINGID;
+	a.uintval = sys->getUniqueStringId(s) | ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID | ATOMTYPE_STRINGID_BIT;
 	return a;
 }
 
-void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult, bool coercearguments, bool isAVM1InternalCall, uint16_t resultlocalnumberpos)
+void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom &obj, asAtom *args, uint32_t num_args, bool args_refcounted, bool coerceresult, bool coercearguments, bool isAVM1InternalCall)
 {
 	if (USUALLY_FALSE(!asAtomHandler::isFunction(caller)))
 	{
@@ -3983,7 +3883,7 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 				ASATOM_INCREF(args[i]);
 			ASATOM_INCREF(obj); // ensure we have a reference to the calling object as it may be decreffed during the call
 		}
-		getObjectNoCheck(caller)->as<SyntheticFunction>()->call(wrk,ret,c, args, num_args,coerceresult,coercearguments,resultlocalnumberpos);
+		getObjectNoCheck(caller)->as<SyntheticFunction>()->call(wrk,ret,c, args, num_args,coerceresult,coercearguments);
 		ASATOM_DECREF(c);
 		return;
 	}
@@ -3997,7 +3897,7 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 	{
 		// when calling builtin functions, normally no refcounting is needed
 		// if it is, it has to be done inside the called function
-		getObjectNoCheck(caller)->as<Function>()->call(ret,wrk, c, args, num_args,resultlocalnumberpos);
+		getObjectNoCheck(caller)->as<Function>()->call(ret,wrk, c, args, num_args);
 	}
 	if (args_refcounted)
 	{
@@ -4007,30 +3907,30 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 	}
 }
 
-multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const multiname &name, ASWorker* wrk, bool& canCache,GET_VARIABLE_OPTION opt, uint16_t resultlocalnumberpos)
+multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const multiname &name, ASWorker* wrk, bool& canCache, GET_VARIABLE_OPTION opt)
 {
 	// classes for primitives are final and sealed, so we only have to check the class for the variable
 	// no need to create ASObjects for the primitives
 	multiname* simplegetter = nullptr;
-	switch(a.uintval&0x7)
+	switch(a.uintval & ATOMTYPE_TYPE_BITS)
 	{
 		case ATOM_INTEGER:
 		case ATOM_UINTEGER:
 		case ATOM_U_INTEGERPTR:
 		case ATOM_NUMBERPTR:
-			simplegetter = Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a,resultlocalnumberpos);
+			simplegetter = Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
 			canCache = asAtomHandler::isValid(ret);
 			break;
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_BOOL_BIT:
-					simplegetter = Class<Boolean>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a,resultlocalnumberpos);
+					simplegetter = Class<Boolean>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
 					canCache = asAtomHandler::isValid(ret);
 					break;
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					simplegetter = Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a,resultlocalnumberpos);
+				case ATOMTYPE_STRINGID_BIT:
+					simplegetter =  Class<ASString>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
 					canCache = asAtomHandler::isValid(ret);
 					break;
 				default:
@@ -4039,11 +3939,8 @@ multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const m
 			}
 			break;
 		}
-		case ATOM_STRINGID:
-			simplegetter =  Class<ASString>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a,resultlocalnumberpos);
-			canCache = asAtomHandler::isValid(ret);
-			break;
-		default:
+		case ATOM_STRINGPTR:
+		case ATOM_OBJECTPTR:
 		{
 			GET_VARIABLE_RESULT varres = asAtomHandler::getObjectNoCheck(a)->getVariableByMultiname(ret,name, GET_VARIABLE_OPTION(opt|DONT_CALL_GETTER),wrk);
 			canCache = varres & GET_VARIABLE_RESULT::GETVAR_CACHEABLE;
@@ -4055,11 +3952,15 @@ multiname* asAtomHandler::getVariableByMultiname(asAtom& a, asAtom& ret, const m
 				IFunction* f = asAtomHandler::as<IFunction>(ret);
 				asAtom closure = asAtomHandler::getClosureAtom(ret,a);
 				ret = asAtom();
-				simplegetter = f->callGetter(ret,closure,wrk,resultlocalnumberpos);
+				simplegetter = f->callGetter(ret,closure,wrk);
 				LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(ret)<<" "<<(simplegetter ? " simplegetter":""));
 			}
 			break;
 		}
+		default: //double
+			simplegetter = Class<Number>::getClass(wrk->getSystemState())->getClassVariableByMultiname(ret,name,wrk,a);
+			canCache = asAtomHandler::isValid(ret);
+			break;
 	}
 	return simplegetter;
 }
@@ -4108,7 +4009,7 @@ Class_base *asAtomHandler::getClass(const asAtom& a,SystemState* sys,bool follow
 {
 	// classes for primitives are final and sealed, so we only have to check the class for the variable
 	// no need to create ASObjects for the primitives
-	switch(a.uintval&0x7)
+	switch(a.uintval & ATOMTYPE_TYPE_BITS)
 	{
 		case ATOM_INTEGER:
 			return Class<Integer>::getRef(sys).getPtr()->as<Class_base>();
@@ -4117,22 +4018,23 @@ Class_base *asAtomHandler::getClass(const asAtom& a,SystemState* sys,bool follow
 		case ATOM_U_INTEGERPTR:
 		case ATOM_NUMBERPTR:
 			return Class<Number>::getRef(sys).getPtr()->as<Class_base>();
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_BOOL_BIT:
 					return Class<Boolean>::getRef(sys).getPtr()->as<Class_base>();
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					return Class<Number>::getRef(sys).getPtr()->as<Class_base>();
+				case ATOMTYPE_STRINGID_BIT:
+					return Class<ASString>::getRef(sys).getPtr()->as<Class_base>();
 				default:
 					return nullptr;
 			}
 		}
-		case ATOM_STRINGID:
-			return Class<ASString>::getRef(sys).getPtr()->as<Class_base>();
-		default:
+		case ATOM_STRINGPTR:
+		case ATOM_OBJECTPTR:
 			return getObject(a) ? (followclass && getObject(a)->is<Class_base>() ? getObject(a)->as<Class_base>() : getObject(a)->getClass()) : nullptr;
+		default: //double
+			return Class<Number>::getRef(sys).getPtr()->as<Class_base>();
 	}
 	return nullptr;
 }
@@ -4145,8 +4047,7 @@ bool asAtomHandler::canCacheMethod(asAtom& a,const multiname* name)
 		case ATOM_INTEGER:
 		case ATOM_UINTEGER:
 		case ATOM_NUMBERPTR:
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
-		case ATOM_STRINGID:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 			return true;
 		case ATOM_OBJECTPTR:
 		{
@@ -4165,44 +4066,43 @@ bool asAtomHandler::canCacheMethod(asAtom& a,const multiname* name)
 					return getObject(a)->getClass()->isSealed;
 			}
 		}
-		default:
-			break;
+		default: //double
+			return true;
 	}
 	return false;
 }
 
 void asAtomHandler::fillMultiname(asAtom& a, ASWorker* wrk, multiname &name)
 {
-	switch(a.uintval&0x7)
+	switch(a.uintval & ATOMTYPE_TYPE_BITS)
 	{
 		case ATOM_INTEGER:
 			name.name_type = multiname::NAME_INT;
-			name.name_i = a.intval>>3;
+			name.name_i = asAtomHandler::getInt(a);
 			break;
 		case ATOM_UINTEGER:
 			name.name_type = multiname::NAME_UINT;
-			name.name_ui = a.uintval>>3;
+			name.name_ui = asAtomHandler::getUInt(a);
 			break;
 		case ATOM_NUMBERPTR:
 			name.name_type = multiname::NAME_NUMBER;
 			name.name_d = toNumber(a);
 			break;
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
-			if (asAtomHandler::isLocalNumber(a))
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
+		{
+			switch (a.uintval & ATOMTYPE_BIT_FLAGS)
 			{
-				name.name_type = multiname::NAME_NUMBER;
-				name.name_d = getNumber(wrk,a);
-			}
-			else
-			{
-				name.name_type=multiname::NAME_OBJECT;
-				name.name_o=a;
+				case ATOMTYPE_STRINGID_BIT:
+					name.name_type = multiname::NAME_STRING;
+					name.name_s_id = asAtomHandler::getStringId(a);
+					break;
+				default:
+					name.name_type=multiname::NAME_OBJECT;
+					name.name_o=a;
+					break;
 			}
 			break;
-		case ATOM_STRINGID:
-			name.name_type = multiname::NAME_STRING;
-			name.name_s_id = a.uintval>>3;
-			break;
+		}
 		case ATOM_STRINGPTR:
 			name.name_type = multiname::NAME_STRING;
 			name.name_s_id = asAtomHandler::toStringId(a,wrk);
@@ -4219,9 +4119,13 @@ void asAtomHandler::fillMultiname(asAtom& a, ASWorker* wrk, multiname &name)
 				name.name_ui = asAtomHandler::toUInt(a);
 			}
 			break;
-		default:
+		case ATOM_OBJECTPTR:
 			name.name_type=multiname::NAME_OBJECT;
 			name.name_o=a;
+			break;
+		default:
+			name.name_type = multiname::NAME_NUMBER;
+			name.name_d = toNumber(a);
 			break;
 	}
 }
@@ -4233,12 +4137,12 @@ void asAtomHandler::replaceBool(asAtom& a, ASObject *obj)
 
 std::string asAtomHandler::toDebugString(const asAtom a)
 {
-	switch(a.uintval&0x7)
+	switch(a.uintval & ATOMTYPE_TYPE_BITS)
 	{
 		case ATOM_INTEGER:
-			return Integer::toString(a.intval>>3)+"i";
+			return Integer::toString(asAtomHandler::getInt(a))+"i";
 		case ATOM_UINTEGER:
-			return UInteger::toString(a.uintval>>3)+"ui";
+			return UInteger::toString(asAtomHandler::getUInt(a))+"ui";
 		case ATOM_NUMBERPTR:
 		{
 			std::string ret = Number::toString(toNumber(a))+"d";
@@ -4250,7 +4154,7 @@ std::string asAtomHandler::toDebugString(const asAtom a)
 #endif
 			return ret;
 		}
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
@@ -4259,18 +4163,19 @@ std::string asAtomHandler::toDebugString(const asAtom a)
 				case ATOMTYPE_UNDEFINED_BIT:
 					return "Undefined";
 				case ATOMTYPE_BOOL_BIT:
-					return Integer::toString((a.uintval&0x80)>>7)+"b";
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					return Number::toString(getLocalNumber(getCallContext(getWorker()),a))+":ln("+UInteger::toString(a.uintval>>8)+")";
+					return Integer::toString((a.uintval&ATOMTYPE_BOOL_VALUE_BIT)? 1 : 0)+"b";
+				case ATOMTYPE_STRINGID_BIT:
+					return getSys()->getStringFromUniqueId(a.uintval & ATOMTYPE_32BIT_BITS);
 				default:
 					return "Invalid";
 			}
 		}
-		case ATOM_STRINGID:
-			return getSys()->getStringFromUniqueId(a.uintval>>3);
-		default:
+		case ATOM_STRINGPTR:
+		case ATOM_OBJECTPTR:
 			assert(getObject(a));
 			return getObject(a)->toDebugString();
+		default:
+			return Number::toString(toNumber(a))+"d";
 	}
 }
 
@@ -4452,23 +4357,11 @@ bool asAtomHandler::isTypelate(asAtom& a,asAtom& t)
 	return real_ret;
 }
 
-number_t asAtomHandler::getLocalNumber(call_context* cc,const asAtom& a)
-{
-	assert((a.uintval&0xf) == (ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER|ATOMTYPE_LOCALNUMBER_BIT));
-	uint32_t index = a.uintval>>8;
-	assert(index < cc->mi->body->getMaxLocalNumbers());
-	return *cc->localNumbersIncludingSlots[index];
-}
-int32_t asAtomHandler::localNumbertoInt(ASWorker* wrk, const asAtom& a)
-{
-	return Number::toInt(getLocalNumber(getCallContext(wrk),a));
-}
-
 void asAtomHandler::getStringView(tiny_string& res, const asAtom& a, ASWorker* wrk)
 {
-	switch(a.uintval&0x7)
+	switch(a.uintval & ATOMTYPE_TYPE_BITS)
 	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
@@ -4479,10 +4372,15 @@ void asAtomHandler::getStringView(tiny_string& res, const asAtom& a, ASWorker* w
 					res = wrk->getSystemState()->getSwfVersion() > 6 ? "undefined" : "";
 					return;
 				case ATOMTYPE_BOOL_BIT:
-					res = a.uintval&0x80 ? "true" : "false";
+					res = a.uintval&ATOMTYPE_BOOL_VALUE_BIT ? "true" : "false";
 					return;
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					res = Number::toString(getLocalNumber(getCallContext(wrk),a));
+				case ATOMTYPE_STRINGID_BIT:
+					if ((a.uintval & ATOMTYPE_32BIT_BITS) == 0)
+						res= "";
+					else if ((a.uintval & ATOMTYPE_32BIT_BITS) < BUILTIN_STRINGS_CHAR_MAX)
+						res.setChar(a.uintval & ATOMTYPE_32BIT_BITS);
+					else
+						res = wrk->getSystemState()->getStringFromUniqueId(a.uintval & ATOMTYPE_32BIT_BITS);
 					return;
 				default:
 					res = "";
@@ -4493,18 +4391,10 @@ void asAtomHandler::getStringView(tiny_string& res, const asAtom& a, ASWorker* w
 			res = Number::toString(toNumber(a));
 			return;
 		case ATOM_INTEGER:
-			res = Integer::toString(a.intval>>3);
+			res = Integer::toString(asAtomHandler::getInt(a));
 			return;
 		case ATOM_UINTEGER:
-			res = UInteger::toString(a.uintval>>3);
-			return;
-		case ATOM_STRINGID:
-			if ((a.uintval>>3) == 0)
-				res= "";
-			else if ((a.uintval>>3) < BUILTIN_STRINGS_CHAR_MAX)
-				res.setChar(a.uintval>>3);
-			else
-				res = wrk->getSystemState()->getStringFromUniqueId(a.uintval>>3);
+			res = UInteger::toString(asAtomHandler::getUInt(a));
 			return;
 		case ATOM_STRINGPTR:
 		{
@@ -4513,18 +4403,21 @@ void asAtomHandler::getStringView(tiny_string& res, const asAtom& a, ASWorker* w
 			res.setValue(s.raw_buf(),s.numBytes(),s.numChars(),s.isSinglebyte(),s.hasNullEntries(),s.isIntegerValue(),false);
 			return;
 		}
-		default:
+		case ATOM_OBJECTPTR:
 			assert(getObject(a));
 			res = getObject(a)->toString();
+			return;
+		default:
+			res = Number::toString(toNumber(a));
 			return;
 	}
 }
 
 tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk, bool fromAVM1add2)
 {
-	switch(a.uintval&0x7)
+	switch(a.uintval & ATOMTYPE_TYPE_BITS)
 	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
@@ -4536,10 +4429,14 @@ tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk, bool fromAVM
 					// NOTE: In SWF 4, bool to string conversions return
 					// 1, or 0, rather than true, or false.
 					if (wrk->AVM1getSwfVersion() < 5)
-						return a.uintval&0x80 ? "1" : "0";
-					return a.uintval&0x80 ? "true" : "false";
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					return Number::toString(getLocalNumber(getCallContext(wrk),a));
+						return a.uintval&ATOMTYPE_BOOL_VALUE_BIT ? "1" : "0";
+					return a.uintval&ATOMTYPE_BOOL_VALUE_BIT ? "true" : "false";
+				case ATOMTYPE_STRINGID_BIT:
+					if ((a.uintval & ATOMTYPE_32BIT_BITS) == 0)
+						return "";
+					if ((a.uintval & ATOMTYPE_32BIT_BITS) < BUILTIN_STRINGS_CHAR_MAX)
+						return tiny_string::fromChar(a.uintval & ATOMTYPE_32BIT_BITS);
+					return wrk->getSystemState()->getStringFromUniqueId(a.uintval & ATOMTYPE_32BIT_BITS);
 				default:
 					return "";
 			}
@@ -4552,18 +4449,15 @@ tiny_string asAtomHandler::toString(const asAtom& a, ASWorker* wrk, bool fromAVM
 				return as<Number>(a)->toString();
 		}
 		case ATOM_INTEGER:
-			return Integer::toString(a.intval>>3);
+			return Integer::toString(asAtomHandler::getInt(a));
 		case ATOM_UINTEGER:
-			return UInteger::toString(a.uintval>>3);
-		case ATOM_STRINGID:
-			if ((a.uintval>>3) == 0)
-				return "";
-			if ((a.uintval>>3) < BUILTIN_STRINGS_CHAR_MAX)
-				return tiny_string::fromChar(a.uintval>>3);
-			return wrk->getSystemState()->getStringFromUniqueId(a.uintval>>3);
-		default:
+			return UInteger::toString(asAtomHandler::getUInt(a));
+		case ATOM_STRINGPTR:
+		case ATOM_OBJECTPTR:
 			assert(getObject(a));
 			return getObject(a)->toString();
+		default:
+			return Number::toString(toNumber(a));
 	}
 }
 
@@ -4588,9 +4482,9 @@ tiny_string asAtomHandler::toErrorString(const asAtom& a, ASWorker* wrk)
 
 tiny_string asAtomHandler::toLocaleString(const asAtom& a, ASWorker* wrk)
 {
-	switch(a.uintval&0x7)
+	switch(a.uintval & ATOMTYPE_TYPE_BITS)
 	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
@@ -4600,8 +4494,13 @@ tiny_string asAtomHandler::toLocaleString(const asAtom& a, ASWorker* wrk)
 					return "undefined";
 				case ATOMTYPE_BOOL_BIT:
 					return "[object Boolean]";
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					return Number::toString(getLocalNumber(getCallContext(wrk),a));
+				case ATOMTYPE_STRINGID_BIT:
+				{
+					ASString* s = (ASString*)abstract_s(wrk,a.uintval & ATOMTYPE_32BIT_BITS);
+					tiny_string res = s->toLocaleString();
+					delete s;
+					return res;
+				}
 				default:
 					return "";
 			}
@@ -4609,26 +4508,23 @@ tiny_string asAtomHandler::toLocaleString(const asAtom& a, ASWorker* wrk)
 		case ATOM_NUMBERPTR:
 			return Number::toString(toNumber(a));
 		case ATOM_INTEGER:
-			return Integer::toString(a.intval>>3);
+			return Integer::toString(asAtomHandler::getInt(a));
 		case ATOM_UINTEGER:
-			return UInteger::toString(a.uintval>>3);
-		case ATOM_STRINGID:
-		{
-			ASString* s = (ASString*)abstract_s(wrk,a.uintval>>3);
-			tiny_string res = s->toLocaleString();
-			delete s;
-			return res;
-		}
-		default:
+			return UInteger::toString(asAtomHandler::getUInt(a));
+		case ATOM_STRINGPTR:
+		case ATOM_U_INTEGERPTR:
+		case ATOM_OBJECTPTR:
 			assert(getObject(a));
 			return getObject(a)->toLocaleString();
+		default:
+			return Number::toString(toNumber(a));
 	}
 }
 
 uint32_t asAtomHandler::toStringId(asAtom& a, ASWorker* wrk)
 {
 	if (isStringID(a))
-		return a.uintval>>3;
+		return a.uintval & ATOMTYPE_32BIT_BITS;
 	if (isObject(a))
 	{
 		assert(getObjectNoCheck(a) && getObjectNoCheck(a)->getRefCount() >= 1);
@@ -4689,9 +4585,9 @@ bool asAtomHandler::AVM1toPrimitive(asAtom& ret, ASWorker* wrk, bool& isRefCount
 tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk, bool fortrace)
 {
 	auto swfVersion = wrk->AVM1getSwfVersion();
-	switch (a.uintval & 0x7)
+	switch (a.uintval & ATOMTYPE_TYPE_BITS)
 	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval & ATOMTYPE_BIT_FLAGS)
 			{
@@ -4706,30 +4602,30 @@ tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk, bool for
 					// NOTE: In SWF 4, bool to string conversions return
 					// 1, or 0, rather than true, or false.
 					if (swfVersion < 5)
-						return a.uintval & 0x80 ? "1" : "0";
-					return a.uintval & 0x80 ? "true" : "false";
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					return Number::toString(getLocalNumber(getCallContext(wrk),a));
+						return a.uintval & ATOMTYPE_BOOL_VALUE_BIT ? "1" : "0";
+					return a.uintval & ATOMTYPE_BOOL_VALUE_BIT ? "true" : "false";
+				case ATOMTYPE_STRINGID_BIT:
+				{
+					auto stringId = a.uintval & ATOMTYPE_32BIT_BITS;
+					if (!stringId)
+						return "";
+					if (stringId < BUILTIN_STRINGS_CHAR_MAX)
+						return tiny_string::fromChar(stringId);
+					return wrk->getSystemState()->getStringFromUniqueId(stringId);
+				}
 				default:
 					return "";
 			}
 		}
 		case ATOM_NUMBERPTR:
-			return as<Number>(a)->toString();
+			return Number::AVM1toString(as<Number>(a)->toNumber(),10);
 		case ATOM_INTEGER:
-			return Integer::toString(a.intval >> 3);
+			return Integer::toString(asAtomHandler::getInt(a));
 		case ATOM_UINTEGER:
-			return UInteger::toString(a.uintval >> 3);
-		case ATOM_STRINGID:
-		{
-			auto stringId = a.uintval >> 3;
-			if (!stringId)
-				return "";
-			if (stringId < BUILTIN_STRINGS_CHAR_MAX)
-				return tiny_string::fromChar(stringId);
-			return wrk->getSystemState()->getStringFromUniqueId(stringId);
-		}
-		default:
+			return UInteger::toString(asAtomHandler::getUInt(a));
+		case ATOM_STRINGPTR:
+		case ATOM_U_INTEGERPTR:
+		case ATOM_OBJECTPTR:
 		{
 			assert(getObject(a) != nullptr);
 			auto obj = getObject(a);
@@ -4756,14 +4652,16 @@ tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk, bool for
 			ASATOM_DECREF(atom);
 			return ret;
 		}
+		default:
+			return Number::AVM1toString(a.dval,10);
 	}
 }
 uint32_t asAtomHandler::AVM1toStringId(const asAtom& a, ASWorker* wrk, bool casesensitive)
 {
 	auto swfVersion = wrk->AVM1getSwfVersion();
-	switch (a.uintval & 0x7)
+	switch (a.uintval & ATOMTYPE_TYPE_BITS)
 	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval & ATOMTYPE_BIT_FLAGS)
 			{
@@ -4775,10 +4673,16 @@ uint32_t asAtomHandler::AVM1toStringId(const asAtom& a, ASWorker* wrk, bool case
 					// NOTE: In SWF 4, bool to string conversions return
 					// 1, or 0, rather than true, or false.
 					if (swfVersion < 5)
-						return a.uintval & 0x80 ? '1' : '0';
-					return a.uintval & 0x80 ? BUILTIN_STRINGS::STRING_TRUE : BUILTIN_STRINGS::STRING_FALSE;
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					return wrk->getSystemState()->getUniqueStringId(Number::toString(getLocalNumber(getCallContext(wrk),a)),casesensitive);
+						return a.uintval & ATOMTYPE_BOOL_VALUE_BIT ? '1' : '0';
+					return a.uintval & ATOMTYPE_BOOL_VALUE_BIT ? BUILTIN_STRINGS::STRING_TRUE : BUILTIN_STRINGS::STRING_FALSE;
+				case ATOMTYPE_STRINGID_BIT:
+					if (casesensitive)
+						return a.uintval & ATOMTYPE_32BIT_BITS;
+					else
+					{
+						auto s = asAtomHandler::AVM1toString(a, wrk);
+						return wrk->getSystemState()->getUniqueStringId(s,casesensitive);
+					}
 				default:
 					return BUILTIN_STRINGS::EMPTY;
 			}
@@ -4786,23 +4690,19 @@ uint32_t asAtomHandler::AVM1toStringId(const asAtom& a, ASWorker* wrk, bool case
 		case ATOM_NUMBERPTR:
 			return wrk->getSystemState()->getUniqueStringId(as<Number>(a)->toString(),casesensitive);
 		case ATOM_INTEGER:
-			return wrk->getSystemState()->getUniqueStringId(Integer::toString(a.intval >> 3));
+			return wrk->getSystemState()->getUniqueStringId(Integer::toString(asAtomHandler::getInt(a)));
 		case ATOM_UINTEGER:
-			return wrk->getSystemState()->getUniqueStringId(UInteger::toString(a.uintval >> 3));
-		case ATOM_STRINGID:
-			if (casesensitive)
-				return a.uintval >> 3;
-			else
-			{
-				auto s = asAtomHandler::AVM1toString(a, wrk);
-				return wrk->getSystemState()->getUniqueStringId(s,casesensitive);
-			}
-		default:
+			return wrk->getSystemState()->getUniqueStringId(UInteger::toString(asAtomHandler::getUInt(a)));
+		case ATOM_STRINGPTR:
+		case ATOM_U_INTEGERPTR:
+		case ATOM_OBJECTPTR:
 		{
 			assert(getObject(a) != nullptr);
 			auto s = asAtomHandler::AVM1toString(a, wrk);
 			return wrk->getSystemState()->getUniqueStringId(s,casesensitive);
 		}
+		default: // double
+			return wrk->getSystemState()->getUniqueStringId(Number::toString(a.dval));
 	}
 }
 
@@ -4814,9 +4714,9 @@ bool asAtomHandler::Boolean_concrete_string(asAtom &a)
 void asAtomHandler::convert_b(asAtom& a, bool refcounted)
 {
 	bool v = false;
-	switch(a.uintval&0x7)
+	switch(a.uintval & ATOMTYPE_TYPE_BITS)
 	{
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
@@ -4826,28 +4726,28 @@ void asAtomHandler::convert_b(asAtom& a, bool refcounted)
 					break;
 				case ATOMTYPE_BOOL_BIT:
 					return;
-				case ATOMTYPE_LOCALNUMBER_BIT:
-				{
-					number_t r = getLocalNumber(getCallContext(getWorker()),a) ;
-					v= !std::isnan(r) && r!= 0.0 ;
+				case ATOMTYPE_STRINGID_BIT:
+					v = (a.uintval & ATOMTYPE_32BIT_BITS) != BUILTIN_STRINGS::EMPTY;
 					break;
-				}
 				default:
 					return;
 			}
 			break;
 		}
 		case ATOM_INTEGER:
-			v= a.intval>>3 != 0;
+			v= asAtomHandler::getInt(a) != 0;
 			break;
 		case ATOM_UINTEGER:
-			v= a.uintval>>3 != 0;
+			v= asAtomHandler::getUInt(a) != 0;
 			break;
-		case ATOM_STRINGID:
-			v = a.uintval>>3 != BUILTIN_STRINGS::EMPTY;
+		case ATOM_STRINGPTR:
+		case ATOM_U_INTEGERPTR:
+		case ATOM_NUMBERPTR:
+		case ATOM_OBJECTPTR:
+			v= lightspark::Boolean_concrete(getObject(a));
 			break;
 		default:
-			v= lightspark::Boolean_concrete(getObject(a));
+			v = a.dval != 0.0 && !std::isnan(a.dval);
 			break;
 	}
 	if (refcounted)
@@ -4868,11 +4768,11 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 		int64_t res = num1+num2;
 		LOG_CALL("addI " << num1 << '+' << num2 <<"="<<res);
 		if (forceint || (res >= -(1<<28) && res < (1<<28)))
-			setInt(a,wrk,int32_t(res));
+			setInt(a,int32_t(res));
 		else if (res >= 0 && res < (1<<29))
-			setUInt(a,wrk,res);
+			setUInt(a,res);
 		else
-			return replaceNumber(a,wrk,res);
+			setNumber(a,res);
 	}
 	else if((isInteger(a) || isUInteger(a) || isNumber(a)) &&
 			(isNumber(v2) || isInteger(v2) || isUInteger(v2)))
@@ -4881,9 +4781,9 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 		double num2=getNumber(wrk,v2);
 		LOG_CALL("addN " << num1 << '+' << num2<<" "<<toDebugString(a)<<" "<<toDebugString(v2));
 		if (forceint)
-			setInt(a,wrk,num1+num2);
+			setInt(a,num1+num2);
 		else
-			return replaceNumber(a,wrk,num1+num2);
+			setNumber(a,num1+num2);
 	}
 	else if(isString(a) || isString(v2))
 	{
@@ -4891,7 +4791,7 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 		sa += toString(v2,wrk);
 		LOG_CALL("add " << toDebugString(a) << '+' << toDebugString(v2));
 		if (forceint)
-			setInt(a,wrk,Integer::stringToASInteger(sa.raw_buf(),0));
+			setInt(a,Integer::stringToASInteger(sa.raw_buf(),0));
 		else
 			a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(wrk,sa))|ATOM_STRINGPTR;
 	}
@@ -4923,7 +4823,7 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 
 			if (forceint)
 			{
-				setInt(a,wrk,newList->toInt());
+				setInt(a,newList->toInt());
 				newList->decRef();
 			}
 			else
@@ -4954,7 +4854,7 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 				if (forceint)
 				{
 					tiny_string s = as+bs;
-					setInt(a,wrk,Integer::stringToASInteger(s.raw_buf(),0));
+					setInt(a,Integer::stringToASInteger(s.raw_buf(),0));
 				}
 				else
 					a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(wrk,as+bs))|ATOM_STRINGPTR;
@@ -4971,9 +4871,9 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 				LOG_CALL("addN " << num1 << '+' << num2);
 				number_t result = num1 + num2;
 				if (forceint)
-					setInt(a,wrk,result);
+					setInt(a,result);
 				else
-					ret = replaceNumber(a,wrk,result);
+					setNumber(a,result);
 			}
 		}
 		// cleanup new objects created in toObject() calls
@@ -4985,7 +4885,7 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 	}
 	return true;
 }
-void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v2, bool forceint, uint16_t resultlocalnumberpos)
+void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v2, bool forceint)
 {
 	//Implement ECMA add algorithm, for XML and default (see avm2overview)
 
@@ -4999,11 +4899,11 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 		ASATOM_DECREF(ret);
 		LOG_CALL("addI replace " << num1 << '+' << num2 <<"="<<res);
 		if (forceint || (res >= -(1<<28) && res < (1<<28)))
-			setInt(ret,wrk,int32_t(res));
+			setInt(ret,int32_t(res));
 		else if (res >= 0 && res < (1<<29))
-			setUInt(ret,wrk,res);
+			setUInt(ret,res);
 		else
-			setNumber(ret,wrk,res,resultlocalnumberpos);
+			setNumber(ret,res);
 	}
 	else if((isInteger(v1) || isUInteger(v1) || isNumber(v1)) &&
 			(isNumber(v2) || isInteger(v2) || isUInteger(v2)))
@@ -5013,18 +4913,10 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 		LOG_CALL("addN replace " << num1 << '+' << num2<<" "<<toDebugString(v1)<<" "<<toDebugString(v2)<<" "<<forceint);
 		ASObject* o = getObject(ret);
 		if (forceint)
-		{
-			setInt(ret,wrk,num1+num2);
-			if (o)
-				o->decRef();
-		}
-		else if (resultlocalnumberpos != UINT16_MAX)
-		{
-			setNumber(ret,wrk,num1+num2,resultlocalnumberpos);
-			if (o)
-				o->decRef();
-		}
-		else if (replaceNumber(ret,wrk,num1+num2) && o)
+			setInt(ret,num1+num2);
+		else
+			setNumber(ret,num1+num2);
+		if (o)
 			o->decRef();
 	}
 	else if(isString(v1) || isString(v2))
@@ -5034,7 +4926,7 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 		LOG_CALL("add replace " << toString(v1,wrk) << '+' << toString(v2,wrk));
 		ASATOM_DECREF(ret);
 		if (forceint)
-			setInt(ret,wrk,Integer::stringToASInteger(sa.raw_buf(),0));
+			setInt(ret,Integer::stringToASInteger(sa.raw_buf(),0));
 		else
 			ret.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(wrk,sa))|ATOM_STRINGPTR;
 	}
@@ -5065,7 +4957,7 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 			ASATOM_DECREF(ret);
 			if (forceint)
 			{
-				setInt(ret,wrk,newList->toInt());
+				setInt(ret,newList->toInt());
 				newList->decRef();
 			}
 			else
@@ -5096,7 +4988,7 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 				if (forceint)
 				{
 					tiny_string s = as+bs;
-					setInt(ret,wrk,Integer::stringToASInteger(s.raw_buf(),0));
+					setInt(ret,Integer::stringToASInteger(s.raw_buf(),0));
 				}
 				else
 					ret.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_s(wrk,as+bs))|ATOM_STRINGPTR;
@@ -5113,18 +5005,10 @@ void asAtomHandler::addreplace(asAtom& ret, ASWorker* wrk, asAtom& v1, asAtom &v
 				LOG_CALL("addN replace primitive " << num1 << '+' << num2);
 				ASObject* o = getObject(ret);
 				if (forceint)
-				{
-					setInt(ret,wrk,num1+num2);
-					if (o)
-						o->decRef();
-				}
-				else if (resultlocalnumberpos != UINT16_MAX)
-				{
-					setNumber(ret,wrk,num1+num2,resultlocalnumberpos);
-					if (o)
-						o->decRef();
-				}
-				else if (replaceNumber(ret,wrk,num1+num2) && o)
+					setInt(ret,num1+num2);
+				else
+					setNumber(ret,num1+num2);
+				if (o)
 					o->decRef();
 			}
 		}
@@ -5160,7 +5044,7 @@ bool asAtomHandler::AVM1add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 		auto str = str1 + str2;
 		LOG_CALL("add " << toDebugString(val1) << '+' << toDebugString(val2));
 		if (forceint)
-			setInt(a, wrk, Integer::stringToASInteger(str.raw_buf(), 0));
+			setInt(a, Integer::stringToASInteger(str.raw_buf(), 0));
 		else
 			replace(a, abstract_s(wrk, str));
 	}
@@ -5175,11 +5059,11 @@ bool asAtomHandler::AVM1add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 
 		// NOTE: Returning an integer here is an optimization.
 		if (forceint || (isInt && val >= -(1 << 28) && val < (1 << 28)))
-			setInt(a, wrk, val);
+			setInt(a, val);
 		else if (isInt && val >= 0 && val < (1 << 29))
-			setUInt(a, wrk, val);
+			setUInt(a, val);
 		else
-			ret = replaceNumber(a, wrk, val);
+			setNumber(a, val);
 	}
 
 	if (isRefCounted1)
@@ -5192,7 +5076,7 @@ bool asAtomHandler::AVM1add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 
 void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap, std::map<const ASObject*, uint32_t>& objMap, std::map<const Class_base*, uint32_t>& traitsMap, ASWorker* wrk, asAtom& a)
 {
-	switch (a.uintval&0x7)
+	switch (a.uintval & ATOMTYPE_TYPE_BITS)
 	{
 		case ATOM_INTEGER:
 			Integer::serializeValue(out,asAtomHandler::getInt(a));
@@ -5200,7 +5084,7 @@ void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 		case ATOM_UINTEGER:
 			UInteger::serializeValue(out,asAtomHandler::getUInt(a));
 			break;
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_UNDEFINED_BIT: // UNDEFINED
@@ -5215,10 +5099,7 @@ void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 					else
 						out->writeByte(null_marker);
 					break;
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					Number::serializeValue(out,getLocalNumber(getCallContext(wrk),a));
-					break;
-				default: // BOOL
+				case ATOMTYPE_BOOL_BIT:
 					if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
 					{
 						out->writeByte(amf0_boolean_marker);
@@ -5227,22 +5108,30 @@ void asAtomHandler::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& s
 					else
 						out->writeByte(a.uintval == asAtomHandler::trueAtom.uintval ? true_marker : false_marker);
 					break;
+				case ATOMTYPE_STRINGID_BIT:
+					if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
+					{
+						out->writeByte(amf0_string_marker);
+						out->writeStringAMF0(out->getSystemState()->getStringFromUniqueId(asAtomHandler::getStringId(a)));
+					}
+					else
+					{
+						out->writeByte(string_marker);
+						out->writeStringVR(stringMap, out->getSystemState()->getStringFromUniqueId(asAtomHandler::getStringId(a)));
+					}
+					break;
+				default:
+					break;
 			}
 			break;
-		case ATOM_STRINGID:
-			if (out->getObjectEncoding() == OBJECT_ENCODING::AMF0)
-			{
-				out->writeByte(amf0_string_marker);
-				out->writeStringAMF0(out->getSystemState()->getStringFromUniqueId(asAtomHandler::getStringId(a)));
-			}
-			else
-			{
-				out->writeByte(string_marker);
-				out->writeStringVR(stringMap, out->getSystemState()->getStringFromUniqueId(asAtomHandler::getStringId(a)));
-			}
+		case ATOM_STRINGPTR:
+		case ATOM_U_INTEGERPTR:
+		case ATOM_NUMBERPTR:
+		case ATOM_OBJECTPTR:
+			asAtomHandler::getObjectNoCheck(a)->serialize(out, stringMap, objMap, traitsMap, wrk);
 			break;
 		default:
-			asAtomHandler::getObjectNoCheck(a)->serialize(out, stringMap, objMap, traitsMap, wrk);
+			Number::serializeValue(out,a.dval);
 			break;
 	}
 }
@@ -5264,152 +5153,122 @@ bool asAtomHandler::Boolean_concrete_object(asAtom& a)
 	return lightspark::Boolean_concrete(getObject(a));
 }
 
-void asAtomHandler::setNumber(asAtom& a, ASWorker* wrk, number_t val, uint16_t localnumberpos)
-{
-	if (localnumberpos == UINT16_MAX && asAtomHandler::isLocalNumber(a))
-		localnumberpos = a.uintval>>8;
-	if (localnumberpos != UINT16_MAX)
-	{
-		assert(wrk->currentCallContext);
-		assert(localnumberpos < wrk->currentCallContext->mi->body->getMaxLocalNumbers());
-		*wrk->currentCallContext->localNumbersIncludingSlots[localnumberpos]=val;
-		a.uintval=localnumberpos<<8 | ATOMTYPE_LOCALNUMBER_BIT;
-		return;
-	}
-	if (std::isnan(val))
-		a.uintval = wrk->getSystemState()->nanAtom.uintval;
-	else
-		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(wrk,val))|ATOM_NUMBERPTR;
-}
-bool asAtomHandler::replaceNumber(asAtom& a, ASWorker* w, number_t val)
-{
-	if ((a.uintval&0x7)==ATOM_NUMBERPTR && getObject(a)->isLastRef())
-	{
-		as<Number>(a)->setNumber(val);
-		return false;
-	}
-	if (std::isnan(val))
-		a.uintval = w->getSystemState()->nanAtom.uintval;
-	else
-		a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(w,val))|ATOM_NUMBERPTR;
-	return true;
-}
-
 void asAtomHandler::replace(asAtom& a, ASObject *obj)
 {
-	assert(((LIGHTSPARK_ATOM_VALTYPE)obj) % 8 == 0);
 	switch(obj->getObjectType())
 	{
 		case T_INVALID:
-			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER;
+			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID;
 			break;
 		case T_UNDEFINED:
-			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER | ATOMTYPE_UNDEFINED_BIT;
+			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID | ATOMTYPE_UNDEFINED_BIT;
 			break;
 		case T_NULL:
-			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER | ATOMTYPE_NULL_BIT;
+			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID | ATOMTYPE_NULL_BIT;
 			break;
 		case T_BOOLEAN:
-			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER | ATOMTYPE_BOOL_BIT | (obj->toInt() ? 0x80: 0);
+			a.uintval=ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID | ATOMTYPE_BOOL_BIT | (obj->toInt() ? ATOMTYPE_BOOL_VALUE_BIT: 0);
 			break;
 		case T_NUMBER:
-			a.uintval=ATOM_NUMBERPTR | (LIGHTSPARK_ATOM_VALTYPE)obj;
+			a.uintval=ATOM_NUMBERPTR | ((LIGHTSPARK_ATOM_VALTYPE)obj);
 			break;
 		case T_UINTEGER:
 		case T_INTEGER:
-			a.uintval=ATOM_U_INTEGERPTR | (LIGHTSPARK_ATOM_VALTYPE)obj;
+			a.uintval=ATOM_U_INTEGERPTR | ((LIGHTSPARK_ATOM_VALTYPE)obj);
 			break;
 		case T_STRING:
-			a.uintval=ATOM_STRINGPTR | (LIGHTSPARK_ATOM_VALTYPE)obj;
+			a.uintval=ATOM_STRINGPTR | ((LIGHTSPARK_ATOM_VALTYPE)obj);
 			break;
 		default:
-			a.uintval=ATOM_OBJECTPTR | (LIGHTSPARK_ATOM_VALTYPE)obj;
+			a.uintval=ATOM_OBJECTPTR | ((LIGHTSPARK_ATOM_VALTYPE)obj);
 			break;
 	}
 }
 
 TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 {
-	switch(a.uintval&0x7)
+	switch(a.uintval & ATOMTYPE_TYPE_BITS)
 	{
 		case ATOM_INTEGER:
 		{
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
 				case ATOM_INTEGER:
-					return (a.intval < v2.intval)?TTRUE:TFALSE;
+					return asAtomHandler::getInt(a) < asAtomHandler::getInt(v2)?TTRUE:TFALSE;
 				case ATOM_UINTEGER:
-					return ((a.intval>>3) < 0 || ((uint32_t)(a.intval>>3)) < (v2.uintval>>3))?TTRUE:TFALSE;
+					return (asAtomHandler::getInt(a) < 0 || asAtomHandler::getUInt(a) < asAtomHandler::getUInt(v2))?TTRUE:TFALSE;
 				case ATOM_NUMBERPTR:
 					if(std::isnan(toNumber(v2)))
 						return TUNDEFINED;
-					return ((a.intval>>3) < toNumber(v2))?TTRUE:TFALSE;
-				case ATOM_STRINGID:
-					if(std::isnan(toNumber(v2)))
-						return TUNDEFINED;
-					return ((a.intval>>3) < toNumber(v2))?TTRUE:TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+					return asAtomHandler::getInt(a) < toNumber(v2)?TTRUE:TFALSE;
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 				{
-					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
+					switch (v2.uintval & ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
-							return ((a.intval>>3) < 0)?TTRUE:TFALSE;
+							return asAtomHandler::getInt(a) < 0?TTRUE:TFALSE;
 						case ATOMTYPE_UNDEFINED_BIT:
 							return TUNDEFINED;
 						case ATOMTYPE_BOOL_BIT:
-							return ((a.intval>>3) < (int32_t)((v2.uintval&0x80)>>7))?TTRUE:TFALSE;
-						case ATOMTYPE_LOCALNUMBER_BIT:
-						{
-							number_t n = getLocalNumber(getCallContext(w),v2);
-							if(std::isnan(n))
+							return asAtomHandler::getInt(a) < (int32_t)((v2.uintval & ATOMTYPE_BOOL_VALUE_BIT)? 1: 0)?TTRUE:TFALSE;
+						case ATOMTYPE_STRINGID_BIT:
+							if(std::isnan(toNumber(v2)))
 								return TUNDEFINED;
-							return ((a.intval>>3) < n)?TTRUE:TFALSE;
-						}
+							return asAtomHandler::getInt(a) < toNumber(v2)?TTRUE:TFALSE;
 						default: // INVALID
 							return TUNDEFINED;
 					}
 				}
-				default:
-					return ((a.intval>>3) < getObjectNoCheck(v2)->toNumberForComparison())?TTRUE:TFALSE;
+				case ATOM_STRINGPTR:
+				case ATOM_U_INTEGERPTR:
+				case ATOM_OBJECTPTR:
+					return asAtomHandler::getInt(a) < getObjectNoCheck(v2)->toNumberForComparison()?TTRUE:TFALSE;
+				default: // double
+				{
+					number_t n = v2.dval;
+					if(std::isnan(n))
+						return TUNDEFINED;
+					return asAtomHandler::getInt(a) < n?TTRUE:TFALSE;
+				}
 			}
 			break;
 		}
 		case ATOM_UINTEGER:
 		{
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
 				case ATOM_INTEGER:
-					return ((v2.intval>>3) > 0 && ((a.uintval>>3) < (uint32_t)(v2.intval>>3)))?TTRUE:TFALSE;
+					return asAtomHandler::getInt(v2) > 0 && (asAtomHandler::getUInt(a) < (uint32_t)asAtomHandler::getInt(v2))?TTRUE:TFALSE;
 				case ATOM_UINTEGER:
-					return ((a.uintval>>3) < (v2.uintval>>3))?TTRUE:TFALSE;
+					return asAtomHandler::getUInt(a) < asAtomHandler::getUInt(v2)?TTRUE:TFALSE;
 				case ATOM_NUMBERPTR:
 					if(std::isnan(toNumber(v2)))
 						return TUNDEFINED;
-					return ((a.uintval>>3) < toNumber(v2))?TTRUE:TFALSE;
-				case ATOM_STRINGID:
-					if(std::isnan(toNumber(v2)))
-						return TUNDEFINED;
-					return ((a.uintval>>3) < toNumber(v2))?TTRUE:TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+					return asAtomHandler::getUInt(a) < toNumber(v2)?TTRUE:TFALSE;
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 				{
-					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
+					switch (v2.uintval & ATOMTYPE_BIT_FLAGS)
 					{
 						case ATOMTYPE_NULL_BIT:
 							return TFALSE;
 						case ATOMTYPE_UNDEFINED_BIT:
 							return TUNDEFINED;
 						case ATOMTYPE_BOOL_BIT:
-							return ((a.uintval>>3) < ((v2.uintval&0x80)>>7))?TTRUE:TFALSE;
-						case ATOMTYPE_LOCALNUMBER_BIT:
-							if(std::isnan(getLocalNumber(getCallContext(w),v2)))
+							return (asAtomHandler::getUInt(a) < ((v2.uintval & ATOMTYPE_BOOL_VALUE_BIT) ? 1 : 0))?TTRUE:TFALSE;
+						case ATOMTYPE_STRINGID_BIT:
+							if(std::isnan(toNumber(v2)))
 								return TUNDEFINED;
-							return ((a.uintval>>3) < getLocalNumber(getCallContext(w),v2))?TTRUE:TFALSE;
+							return (asAtomHandler::getUInt(a) < toNumber(v2))?TTRUE:TFALSE;
 						default: // INVALID
 							return TUNDEFINED;
 					}
 				}
-				default:
-					return ((a.uintval>>3) < getObjectNoCheck(v2)->toNumberForComparison())?TTRUE:TFALSE;
+				case ATOM_STRINGPTR:
+				case ATOM_U_INTEGERPTR:
+				case ATOM_OBJECTPTR:
+					return (asAtomHandler::getUInt(a) < getObjectNoCheck(v2)->toNumberForComparison())?TTRUE:TFALSE;
+				default: // double
+					return (asAtomHandler::getUInt(a) < v2.dval)?TTRUE:TFALSE;
 			}
 			break;
 		}
@@ -5417,21 +5276,17 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 		{
 			if(std::isnan(toNumber(a)))
 				return TUNDEFINED;
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
 				case ATOM_INTEGER:
-					return (toNumber(a) < (v2.intval>>3))?TTRUE:TFALSE;
+					return (toNumber(a) < asAtomHandler::getInt(v2))?TTRUE:TFALSE;
 				case ATOM_UINTEGER:
-					return (toNumber(a) < (v2.uintval>>3))?TTRUE:TFALSE;
+					return (toNumber(a) < asAtomHandler::getUInt(v2))?TTRUE:TFALSE;
 				case ATOM_NUMBERPTR:
 					if(std::isnan(toNumber(v2)))
 						return TUNDEFINED;
 					return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
-				case ATOM_STRINGID:
-					if(std::isnan(toNumber(v2)))
-						return TUNDEFINED;
-					return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 				{
 					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
@@ -5441,37 +5296,42 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return TUNDEFINED;
 						case ATOMTYPE_BOOL_BIT:
 							return (toNumber(a) < toInt(v2))?TTRUE:TFALSE;
-						case ATOMTYPE_LOCALNUMBER_BIT:
-							if(std::isnan(getLocalNumber(getCallContext(w),v2)))
+						case ATOMTYPE_STRINGID_BIT:
+							if(std::isnan(toNumber(v2)))
 								return TUNDEFINED;
-							return (toNumber(a) < getLocalNumber(getCallContext(w),v2))?TTRUE:TFALSE;
+							return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
 						default: // INVALID
 							return TUNDEFINED;
 					}
 				}
-				default:
+				case ATOM_STRINGPTR:
+				case ATOM_U_INTEGERPTR:
+				case ATOM_OBJECTPTR:
 					break;
+				default: // double
+					if(std::isnan(v2.dval))
+						return TUNDEFINED;
+					return toNumber(a) < v2.dval ? TTRUE:TFALSE;
 			}
 			break;
 		}
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_NULL_BIT:
 				{
-					switch (v2.uintval&0x7)
+					switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 					{
 						case ATOM_INTEGER:
-							return (0 < (v2.intval>>3))?TTRUE:TFALSE;
+							return (0 < asAtomHandler::getInt(v2))?TTRUE:TFALSE;
 						case ATOM_UINTEGER:
-							return (0 < (v2.uintval>>3))?TTRUE:TFALSE;
-						case ATOM_STRINGID:
+							return (0 < asAtomHandler::getUInt(v2))?TTRUE:TFALSE;
 						case ATOM_NUMBERPTR:
 							if(std::isnan(toNumber(v2)))
 								return TUNDEFINED;
 							return (0 < toNumber(v2))?TTRUE:TFALSE;
-						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 						{
 							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 							{
@@ -5480,17 +5340,23 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 								case ATOMTYPE_UNDEFINED_BIT:
 									return TUNDEFINED;
 								case ATOMTYPE_BOOL_BIT:
-									return (0 < (v2.uintval&0x80)>>7)?TTRUE:TFALSE;
-								case ATOMTYPE_LOCALNUMBER_BIT:
-									if(std::isnan(getLocalNumber(getCallContext(w),v2)))
+									return (0 < (v2.uintval & ATOMTYPE_BOOL_VALUE_BIT))?TTRUE:TFALSE;
+								case ATOMTYPE_STRINGID_BIT:
+									if(std::isnan(toNumber(v2)))
 										return TUNDEFINED;
-									return (0 < getLocalNumber(getCallContext(w),v2))?TTRUE:TFALSE;
+									return (0 < toNumber(v2))?TTRUE:TFALSE;
 								default: // INVALID
 									return TUNDEFINED;
 							}
 						}
-						default:
+						case ATOM_STRINGPTR:
+						case ATOM_U_INTEGERPTR:
+						case ATOM_OBJECTPTR:
 							return toObject(a,w)->isLess(getObject(v2));
+						default: // double
+							if(std::isnan(v2.dval))
+								return TUNDEFINED;
+							return 0 < v2.dval ?TTRUE:TFALSE;
 					}
 					break;
 				}
@@ -5498,21 +5364,17 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 					return TUNDEFINED;
 				case ATOMTYPE_BOOL_BIT:
 				{
-					switch (v2.uintval&0x7)
+					switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 					{
-						case ATOM_STRINGID:
-							if(std::isnan(toNumber(v2)))
-								return TUNDEFINED;
-							return (toInt(a) < toNumber(v2))?TTRUE:TFALSE;
 						case ATOM_INTEGER:
-							return ((int32_t)(a.uintval&0x80)>>7 < (v2.intval>>3))?TTRUE:TFALSE;
+							return (((a.uintval & ATOMTYPE_BOOL_VALUE_BIT) ? 1 : 0) < asAtomHandler::getInt(v2))?TTRUE:TFALSE;
 						case ATOM_UINTEGER:
-							return ((a.uintval&0x80)>>7 < (v2.uintval>>3))?TTRUE:TFALSE;
+							return (((a.uintval & ATOMTYPE_BOOL_VALUE_BIT) ? 1 : 0) < asAtomHandler::getUInt(v2))?TTRUE:TFALSE;
 						case ATOM_NUMBERPTR:
 							if(std::isnan(toNumber(v2)))
 								return TUNDEFINED;
-							return ((a.uintval&0x80)>>7 < toNumber(v2))?TTRUE:TFALSE;
-						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+							return (((a.uintval & ATOMTYPE_BOOL_VALUE_BIT) ? 1 : 0) < toNumber(v2))?TTRUE:TFALSE;
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 						{
 							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 							{
@@ -5521,57 +5383,80 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 								case ATOMTYPE_UNDEFINED_BIT:
 									return TUNDEFINED;
 								case ATOMTYPE_BOOL_BIT:
-									return ((a.uintval&0x80)>>7 < (v2.uintval&0x80)>>7)?TTRUE:TFALSE;
-								case ATOMTYPE_LOCALNUMBER_BIT:
-									if(std::isnan(getLocalNumber(getCallContext(w),v2)))
+									return ((a.uintval & ATOMTYPE_BOOL_VALUE_BIT) < (v2.uintval & ATOMTYPE_BOOL_VALUE_BIT))?TTRUE:TFALSE;
+								case ATOMTYPE_STRINGID_BIT:
+									if(std::isnan(toNumber(v2)))
 										return TUNDEFINED;
-									return ((a.uintval&0x80)>>7 < getLocalNumber(getCallContext(w),v2))?TTRUE:TFALSE;
+									return (toInt(a) < toNumber(v2))?TTRUE:TFALSE;
 								default: // INVALID
 									return TUNDEFINED;
 							}
 						}
-						default:
+						case ATOM_STRINGPTR:
+						case ATOM_U_INTEGERPTR:
+						case ATOM_OBJECTPTR:
 							return toObject(a,w)->isLess(getObject(v2));
+						default: // double
+							if(std::isnan(v2.dval))
+								return TUNDEFINED;
+							return (((a.uintval & ATOMTYPE_BOOL_VALUE_BIT) ? 1 : 0) < v2.dval)?TTRUE:TFALSE;
 					}
 					break;
 				}
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					if(std::isnan(getLocalNumber(getCallContext(w),a)))
-						return TUNDEFINED;
-					switch (v2.uintval&0x7)
+				case ATOMTYPE_STRINGID_BIT:
+					switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 					{
 						case ATOM_INTEGER:
-							return (getLocalNumber(getCallContext(w),a) < (v2.intval>>3))?TTRUE:TFALSE;
+							if(std::isnan(toNumber(a)))
+								return TUNDEFINED;
+							return (toNumber(a) < asAtomHandler::getInt(v2))?TTRUE:TFALSE;
 						case ATOM_UINTEGER:
-							return (getLocalNumber(getCallContext(w),a) < (v2.uintval>>3))?TTRUE:TFALSE;
-						case ATOM_NUMBERPTR:
-							if(std::isnan(toNumber(v2)))
+							if(std::isnan(toNumber(a)))
 								return TUNDEFINED;
-							return (getLocalNumber(getCallContext(w),a) < toNumber(v2))?TTRUE:TFALSE;
-						case ATOM_STRINGID:
-							if(std::isnan(toNumber(v2)))
-								return TUNDEFINED;
-							return (getLocalNumber(getCallContext(w),a) < toNumber(v2))?TTRUE:TFALSE;
-						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+							return (toNumber(a) < asAtomHandler::getUInt(v2))?TTRUE:TFALSE;
+						case ATOM_STRINGPTR:
+							return toString(a,w) < toString(v2,w) ? TTRUE : TFALSE;
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 						{
 							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 							{
 								case ATOMTYPE_NULL_BIT:
-									return (getLocalNumber(getCallContext(w),a) < 0)?TTRUE:TFALSE;
+									if(std::isnan(toNumber(a)))
+										return TUNDEFINED;
+									return (toNumber(a) < 0)?TTRUE:TFALSE;
 								case ATOMTYPE_UNDEFINED_BIT:
 									return TUNDEFINED;
 								case ATOMTYPE_BOOL_BIT:
-									return (getLocalNumber(getCallContext(w),a) < toInt(v2))?TTRUE:TFALSE;
-								case ATOMTYPE_LOCALNUMBER_BIT:
-									if(std::isnan(getLocalNumber(getCallContext(w),v2)))
+									if(std::isnan(toNumber(a)))
 										return TUNDEFINED;
-									return (getLocalNumber(getCallContext(w),a) < getLocalNumber(getCallContext(w),v2))?TTRUE:TFALSE;
+									return (toNumber(a) < toInt(v2))?TTRUE:TFALSE;
+								case ATOMTYPE_STRINGID_BIT:
+									if (((a.uintval & ATOMTYPE_32BIT_BITS) < BUILTIN_STRINGS_CHAR_MAX) && ((v2.uintval & ATOMTYPE_32BIT_BITS) < BUILTIN_STRINGS_CHAR_MAX))
+										return ((a.uintval & ATOMTYPE_32BIT_BITS) < (v2.uintval & ATOMTYPE_32BIT_BITS))?TTRUE:TFALSE;
+									return toString(a,w) < toString(v2,w) ? TTRUE : TFALSE;
 								default: // INVALID
 									return TUNDEFINED;
 							}
 						}
-						default:
-							break;
+						case ATOM_NUMBERPTR:
+						case ATOM_U_INTEGERPTR:
+						case ATOM_OBJECTPTR:
+						{
+							TRISTATE ret = getObject(v2)->isLessAtom(a);
+							switch (ret)
+							{
+								case TTRUE:
+									return TFALSE;
+								case TFALSE:
+									return isEqual(a,w,v2) ? TFALSE : TTRUE;
+								default:
+									return TUNDEFINED;
+							}
+						}
+						default: // double
+							if(std::isnan(a.dval))
+								return TUNDEFINED;
+							return (a.dval < (v2.uintval & ATOMTYPE_32BIT_BITS))?TTRUE:TFALSE;
 					}
 					break;
 				default: // INVALID
@@ -5579,90 +5464,39 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 			}
 			break;
 		}
-		case ATOM_STRINGID:
-		{
-			switch (v2.uintval&0x7)
-			{
-				case ATOM_STRINGID:
-					if (((a.uintval>>3) < BUILTIN_STRINGS_CHAR_MAX) && ((v2.uintval>>3) < BUILTIN_STRINGS_CHAR_MAX))
-						return ((a.uintval>>3) < (v2.uintval>>3))?TTRUE:TFALSE;
-					return toString(a,w) < toString(v2,w) ? TTRUE : TFALSE;
-				case ATOM_INTEGER:
-					if(std::isnan(toNumber(a)))
-						return TUNDEFINED;
-					return (toNumber(a) < (v2.intval>>3))?TTRUE:TFALSE;
-				case ATOM_UINTEGER:
-					if(std::isnan(toNumber(a)))
-						return TUNDEFINED;
-					return (toNumber(a) < (v2.uintval>>3))?TTRUE:TFALSE;
-				case ATOM_STRINGPTR:
-					return toString(a,w) < toString(v2,w) ? TTRUE : TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
-				{
-					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
-					{
-						case ATOMTYPE_NULL_BIT:
-							if(std::isnan(toNumber(a)))
-								return TUNDEFINED;
-							return (toNumber(a) < 0)?TTRUE:TFALSE;
-						case ATOMTYPE_UNDEFINED_BIT:
-							return TUNDEFINED;
-						case ATOMTYPE_BOOL_BIT:
-							if(std::isnan(toNumber(a)))
-								return TUNDEFINED;
-							return (toNumber(a) < toInt(v2))?TTRUE:TFALSE;
-						case ATOMTYPE_LOCALNUMBER_BIT:
-							if(std::isnan(getNumber(w,v2)))
-								return TUNDEFINED;
-							return (getNumber(w,a) < getNumber(w,v2))?TTRUE:TFALSE;
-						default: // INVALID
-							return TUNDEFINED;
-					}
-				}
-				default:
-				{
-					TRISTATE ret = getObject(v2)->isLessAtom(a);
-					switch (ret)
-					{
-						case TTRUE:
-							return TFALSE;
-						case TFALSE:
-							return isEqual(a,w,v2) ? TFALSE : TTRUE;
-						default:
-							return TUNDEFINED;
-					}
-				}
-			}
-			break;
-		}
 		case ATOM_STRINGPTR:
 		{
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
 				case ATOM_INTEGER:
 				case ATOM_UINTEGER:
-				case ATOM_STRINGID:
 					return toString(a,w) < toString(v2,w) ? TTRUE : TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 					return getObject(a)->isLessAtom(v2);
-				default:
+				case ATOM_STRINGPTR:
+				case ATOM_NUMBERPTR:
+				case ATOM_U_INTEGERPTR:
+				case ATOM_OBJECTPTR:
+					break;
+				default: // double
+					return toString(a,w) < toString(v2,w) ? TTRUE : TFALSE;
 					break;
 			}
 			break;
 		}
 		case ATOM_U_INTEGERPTR:
 		{
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
 				case ATOM_INTEGER:
-					return (toInt(a) < (v2.intval>>3))?TTRUE:TFALSE;
+					return (toInt(a) < asAtomHandler::getInt(v2))?TTRUE:TFALSE;
 				case ATOM_UINTEGER:
-					return (toUInt(a) < (v2.uintval>>3))?TTRUE:TFALSE;
+					return (toUInt(a) < asAtomHandler::getUInt(v2))?TTRUE:TFALSE;
 				case ATOM_NUMBERPTR:
 					if(std::isnan(toNumber(v2)))
 						return TUNDEFINED;
 					return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 				{
 					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
@@ -5671,28 +5505,32 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 						case ATOMTYPE_UNDEFINED_BIT:
 							return TUNDEFINED;
 						case ATOMTYPE_BOOL_BIT:
-							return (toNumber(a) < (int32_t)((v2.uintval&0x80)>>7))?TTRUE:TFALSE;
-						case ATOMTYPE_LOCALNUMBER_BIT:
-							if(std::isnan(getNumber(w,v2)))
-								return TUNDEFINED;
-							return (getNumber(w,a) < getNumber(w,v2))?TTRUE:TFALSE;
+							return (toNumber(a) < (int32_t)((v2.uintval & ATOMTYPE_BOOL_VALUE_BIT)?1:0))?TTRUE:TFALSE;
 						default: // INVALID
 							return TUNDEFINED;
 					}
 				}
-				default:
+				case ATOM_STRINGPTR:
+				case ATOM_U_INTEGERPTR:
+				case ATOM_OBJECTPTR:
 					break;
+				default: // double
+					if(std::isnan(v2.dval))
+						return TUNDEFINED;
+					return (toNumber(a) < v2.dval)?TTRUE:TFALSE;
 			}
 			break;
 		}
 		case ATOM_OBJECTPTR:
 		{
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
-				case ATOM_STRINGID:
-				case ATOM_INTEGER:
-				case ATOM_UINTEGER:
+				case ATOM_STRINGPTR:
+				case ATOM_NUMBERPTR:
+				case ATOM_U_INTEGERPTR:
+				case ATOM_OBJECTPTR:
+					break;
+				default:
 				{
 					TRISTATE tmp = asAtomHandler::isLessIntern(v2,w,a);
 					switch (tmp)
@@ -5705,13 +5543,15 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return tmp;
 					}
 				}
-				default:
-					break;
 			}
 			break;
 		}
-		default:
-			break;
+		default: // double
+			if(std::isnan(toNumber(a)))
+				return TUNDEFINED;
+			if(std::isnan(toNumber(v2)))
+				return TUNDEFINED;
+			return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
 	}
 	assert(getObject(a));
 	assert(getObject(v2));
@@ -5720,20 +5560,20 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 
 bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 {
-	switch (a.uintval&0x7)
+	switch (a.uintval & ATOMTYPE_TYPE_BITS)
 	{
 		case ATOM_INTEGER:
 		{
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
 				case ATOM_INTEGER:
 					return false;
 				case ATOM_UINTEGER:
-					return (a.intval>>3) >= 0 && (a.intval>>3)==toInt(v2);
+					return asAtomHandler::getInt(a) >= 0 && asAtomHandler::getInt(a)==toInt(v2);
 				case ATOM_U_INTEGERPTR:
 				case ATOM_NUMBERPTR:
-					return (a.intval>>3)==toNumber(v2);
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+					return asAtomHandler::getInt(a)==toNumber(v2);
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 				{
 					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
@@ -5742,33 +5582,34 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 						case ATOMTYPE_UNDEFINED_BIT:
 							return false;
 						case ATOMTYPE_BOOL_BIT:
-							return (a.intval>>3)==toInt(v2);
-						case ATOMTYPE_LOCALNUMBER_BIT:
-							return (a.intval>>3)==getLocalNumber(getCallContext(w),v2);
+							return asAtomHandler::getInt(a)==toInt(v2);
+						case ATOMTYPE_STRINGID_BIT:
+							return asAtomHandler::getInt(a)==toNumber(v2);
 						default: // INVALID
 							return false;
 					}
 				}
-				case ATOM_STRINGID:
 				case ATOM_STRINGPTR:
-					return (a.intval>>3)==toNumber(v2);
-				default:
-					return (a.intval>>3)==getObjectNoCheck(v2)->toNumberForComparison();
+					return asAtomHandler::getInt(a)==toNumber(v2);
+				case ATOM_OBJECTPTR:
+					return asAtomHandler::getInt(a)==getObjectNoCheck(v2)->toNumberForComparison();
+				default: // double
+					return asAtomHandler::getInt(a)==v2.dval;
 			}
 			break;
 		}
 		case ATOM_UINTEGER:
 		{
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
 				case ATOM_INTEGER:
-					return (v2.intval>>3) >= 0 && (a.uintval>>3)==toUInt(v2);
+					return asAtomHandler::getInt(v2) >= 0 && asAtomHandler::getUInt(a)==toUInt(v2);
 				case ATOM_UINTEGER:
 					return false;
 				case ATOM_NUMBERPTR:
 				case ATOM_U_INTEGERPTR:
-					return (a.uintval>>3)==toUInt(v2);
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+					return asAtomHandler::getUInt(a)==toUInt(v2);
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 				{
 					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
@@ -5777,34 +5618,34 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 						case ATOMTYPE_UNDEFINED_BIT:
 							return false;
 						case ATOMTYPE_BOOL_BIT:
-							return (a.uintval>>3)==toUInt(v2);
-						case ATOMTYPE_LOCALNUMBER_BIT:
-							return (a.uintval>>3)==getUInt(w,v2);
+							return asAtomHandler::getUInt(a)==toUInt(v2);
+						case ATOMTYPE_STRINGID_BIT:
+							return asAtomHandler::getUInt(a)==toNumber(v2);
 						default: // INVALID
 							return false;
 					}
 				}
-				case ATOM_STRINGID:
 				case ATOM_STRINGPTR:
-					return (a.uintval>>3)==toNumber(v2);
-				default:
-					return (a.uintval>>3)==getObjectNoCheck(v2)->toNumberForComparison();
+					return asAtomHandler::getUInt(a)==toNumber(v2);
+				case ATOM_OBJECTPTR:
+					return asAtomHandler::getUInt(a)==getObjectNoCheck(v2)->toNumberForComparison();
+				default: // double
+					return asAtomHandler::getUInt(a)==v2.dval;
 			}
 			break;
 		}
 		case ATOM_NUMBERPTR:
 		{
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
 				case ATOM_INTEGER:
 				case ATOM_UINTEGER:
 					return toNumber(a)==toNumber(v2);
 				case ATOM_NUMBERPTR:
 					return toNumber(a) == toNumber(v2);
-				case ATOM_STRINGID:
 				case ATOM_STRINGPTR:
 					return toNumber(a)==toNumber(v2);
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 				{
 					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
@@ -5814,20 +5655,23 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return false;
 						case ATOMTYPE_BOOL_BIT:
 							return toNumber(a)==toNumber(v2);
-						case ATOMTYPE_LOCALNUMBER_BIT:
-							return toNumber(a) == getLocalNumber(getCallContext(w),v2);
+						case ATOMTYPE_STRINGID_BIT:
+							return toNumber(a)==toNumber(v2);
 						default: // INVALID
 							return false;
 					}
 				}
-				default:
+				case ATOM_U_INTEGERPTR:
+				case ATOM_OBJECTPTR:
 					return toObject(v2,w)->isEqual(toObject(a,w));
+				default:
+					return toNumber(a)==v2.dval;
 			}
 			break;
 		}
 		case ATOM_U_INTEGERPTR:
 		{
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
 				case ATOM_INTEGER:
 				case ATOM_UINTEGER:
@@ -5835,7 +5679,7 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 					return getObject(a)->toInt64()==toInt64(v2);
 				case ATOM_NUMBERPTR:
 					return getObject(a)->toInt64()==toNumber(v2);
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 				{
 					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
@@ -5845,37 +5689,38 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							return false;
 						case ATOMTYPE_BOOL_BIT:
 							return getObject(a)->toInt64()==toInt64(v2);
-						case ATOMTYPE_LOCALNUMBER_BIT:
-							return toInt64(a) == getLocalNumber(getCallContext(w),v2);
+						case ATOMTYPE_STRINGID_BIT:
+							return getObject(a)->toInt64()==toNumber(v2);
 						default: // INVALID
 							return false;
 					}
 				}
-				case ATOM_STRINGID:
 				case ATOM_STRINGPTR:
 					return getObject(a)->toInt64()==toNumber(v2);
-				default:
+				case ATOM_OBJECTPTR:
 					return getObjectNoCheck(a)->toInt64()==getObjectNoCheck(v2)->toNumberForComparison();
+				default:
+					return getObject(a)->toInt64()==v2.dval;
 			}
 			break;
 		}
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
 				case ATOMTYPE_NULL_BIT:
 				case ATOMTYPE_UNDEFINED_BIT:
 				{
-					switch (v2.uintval&0x7)
+					switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 					{
-						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 						{
 							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 							{
 								case ATOMTYPE_NULL_BIT:
 								case ATOMTYPE_UNDEFINED_BIT:
 									return true;
-								default: // BOOL/localnum
+								default: // BOOL / STRINGID
 									return false;
 							}
 						}
@@ -5883,22 +5728,22 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 						case ATOM_UINTEGER:
 						case ATOM_NUMBERPTR:
 							return false;
-						case ATOM_STRINGID:
-							return false;
-						default:
+						case ATOM_STRINGPTR:
+						case ATOM_U_INTEGERPTR:
+						case ATOM_OBJECTPTR:
 							return toObject(v2,w)->isEqual(toObject(a,w));
+						default: // double
+							return false;
 					}
 				}
 				case ATOMTYPE_BOOL_BIT:
-					switch (v2.uintval&0x7)
+					switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 					{
-						case ATOM_STRINGID:
-							return (bool)((a.uintval&0x80)>>7)==toNumber(v2);
 						case ATOM_INTEGER:
 						case ATOM_UINTEGER:
 						case ATOM_NUMBERPTR:
-							return (bool)((a.uintval&0x80)>>7)==toNumber(v2);
-						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+							return (bool)((a.uintval & ATOMTYPE_BOOL_VALUE_BIT)?1:0)==toNumber(v2);
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 						{
 							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 							{
@@ -5906,25 +5751,24 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 								case ATOMTYPE_UNDEFINED_BIT:
 									return false;
 								case ATOMTYPE_BOOL_BIT:
-									return (a.uintval&0x80)>>7==(v2.uintval&0x80)>>7;
-								case ATOMTYPE_LOCALNUMBER_BIT:
-									return (bool)((a.uintval&0x80)>>7)==getLocalNumber(getCallContext(w),v2);
+									return (a.uintval & ATOMTYPE_BOOL_VALUE_BIT)==(v2.uintval & ATOMTYPE_BOOL_VALUE_BIT);
+								case ATOMTYPE_STRINGID_BIT:
+									return (bool)((a.uintval & ATOMTYPE_BOOL_VALUE_BIT)?1:0)==toNumber(v2);
 								default: // INVALID
 									return false;
 							}
 						}
-						default:
+						case ATOM_STRINGPTR:
+						case ATOM_U_INTEGERPTR:
+						case ATOM_OBJECTPTR:
 							return toObject(v2,w)->isEqual(toObject(a,w));
+						default: // double
+							return (bool)((a.uintval & ATOMTYPE_BOOL_VALUE_BIT)?1:0)==v2.dval;
 					}
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					switch (v2.uintval&0x7)
+				case ATOMTYPE_STRINGID_BIT:
+					switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 					{
-						case ATOM_STRINGID:
-						case ATOM_INTEGER:
-						case ATOM_UINTEGER:
-						case ATOM_NUMBERPTR:
-							return getLocalNumber(getCallContext(w),a)==toNumber(v2);
-						case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+						case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 						{
 							switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 							{
@@ -5932,55 +5776,25 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 								case ATOMTYPE_UNDEFINED_BIT:
 									return false;
 								case ATOMTYPE_BOOL_BIT:
-									return getLocalNumber(getCallContext(w),a)==(v2.uintval&0x80)>>7;
-								case ATOMTYPE_LOCALNUMBER_BIT:
-									return getLocalNumber(getCallContext(w),a) == getLocalNumber(getCallContext(w),v2);
+									return (bool)((v2.uintval & ATOMTYPE_BOOL_VALUE_BIT)?1:0)==toNumber(a);
+								case ATOMTYPE_STRINGID_BIT:
+									return (v2.uintval & ATOMTYPE_32BIT_BITS) == (a.uintval & ATOMTYPE_32BIT_BITS);
 								default: // INVALID
 									return false;
 							}
 						}
 						default:
-							return toObject(v2,w)->isEqual(toObject(a,w));
+							return isEqual(v2,w,a);
 					}
 				default: // INVALID
 					return false;
 			}
 		}
-		case ATOM_STRINGID:
-		{
-			switch (v2.uintval&0x7)
-			{
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
-				{
-					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
-					{
-						case ATOMTYPE_NULL_BIT:
-						case ATOMTYPE_UNDEFINED_BIT:
-							return false;
-						case ATOMTYPE_BOOL_BIT:
-							return (bool)((v2.uintval&0x80)>>7)==toNumber(a);
-						case ATOMTYPE_LOCALNUMBER_BIT:
-							return toNumber(a) == getLocalNumber(getCallContext(w),v2);
-						default: // INVALID
-							return false;
-					}
-					break;
-				}
-				case ATOM_STRINGID:
-					return (v2.uintval>>3) == (a.uintval>>3);
-				case ATOM_INTEGER:
-				case ATOM_UINTEGER:
-					return isEqual(v2,w,a);
-				default:
-					return isEqual(v2,w,a);
-			}
-			break;
-		}
 		case ATOM_STRINGPTR:
 		{
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 				{
 					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
@@ -5988,16 +5802,14 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 						case ATOMTYPE_UNDEFINED_BIT:
 							return false;
 						case ATOMTYPE_BOOL_BIT:
-							return (bool)((v2.uintval&0x80)>>7)==toNumber(a);
-						case ATOMTYPE_LOCALNUMBER_BIT:
-							return toNumber(a) == getLocalNumber(getCallContext(w),v2);
+							return (bool)((v2.uintval & ATOMTYPE_BOOL_VALUE_BIT)?1:0)==toNumber(a);
+						case ATOMTYPE_STRINGID_BIT:
+							return toString(a,w) == toString(v2,w);
 						default: // INVALID
 							return false;
 					}
 					break;
 				}
-				case ATOM_STRINGID:
-					return toString(a,w) == toString(v2,w);
 				case ATOM_INTEGER:
 				case ATOM_UINTEGER:
 					return isEqual(v2,w,a);
@@ -6015,40 +5827,75 @@ bool asAtomHandler::isEqualIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				else
 					return false;
 			}
-			switch (v2.uintval&0x7)
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
 			{
-				case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 				{
 					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
 					{
-						case ATOMTYPE_LOCALNUMBER_BIT:
-							return toNumber(a) == getLocalNumber(getCallContext(w),v2);
+						case ATOMTYPE_STRINGID_BIT:
+						{
+							asAtom primitive=asAtomHandler::invalidAtom;
+							bool res = false;
+							bool isrefcounted;
+							if (getObject(a)->toPrimitive(primitive,isrefcounted))
+								res = toString(primitive,w) == toString(v2,w);
+							if (isrefcounted)
+								ASATOM_DECREF(primitive);
+							return res;
+						}
 						default:
 							return getObject(a)->isEqual(toObject(v2,w));
 					}
-					break;
-				}
-				case ATOM_STRINGID:
-				{
-					asAtom primitive=asAtomHandler::invalidAtom;
-					bool res = false;
-					bool isrefcounted;
-					if (getObject(a)->toPrimitive(primitive,isrefcounted))
-						res = toString(primitive,w) == toString(v2,w);
-					if (isrefcounted)
-						ASATOM_DECREF(primitive);
-					return res;
 				}
 				case ATOM_INTEGER:
 				case ATOM_UINTEGER:
 					return isEqual(v2,w,a);
-				default:
+				case ATOM_STRINGPTR:
+				case ATOM_NUMBERPTR:
+				case ATOM_U_INTEGERPTR:
+				case ATOM_OBJECTPTR:
 					break;
+				default: // double
+					return isEqual(v2,w,a);
 			}
 			break;
 		}
 		default:
+		{
+			switch (v2.uintval & ATOMTYPE_TYPE_BITS)
+			{
+				case ATOM_INTEGER:
+				case ATOM_UINTEGER:
+					return a.dval==toNumber(v2);
+				case ATOM_NUMBERPTR:
+					return a.dval == toNumber(v2);
+				case ATOM_STRINGPTR:
+					return a.dval==toNumber(v2);
+				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
+				{
+					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
+					{
+						case ATOMTYPE_NULL_BIT:
+							return false;
+						case ATOMTYPE_UNDEFINED_BIT:
+							return false;
+						case ATOMTYPE_BOOL_BIT:
+							return a.dval==toNumber(v2);
+						case ATOMTYPE_STRINGID_BIT:
+							return a.dval==toNumber(v2);
+						default: // INVALID
+							return false;
+					}
+				}
+				case ATOM_U_INTEGERPTR:
+				case ATOM_OBJECTPTR:
+					return a.dval==toNumber(v2);
+				default:
+					return a.dval==v2.dval;
+			}
 			break;
+		}
 	}
 	assert(getObject(a));
 	assert(getObject(v2));
@@ -6062,34 +5909,18 @@ bool asAtomHandler::AVM1isEqualStrict(asAtom& a, asAtom& b, ASWorker* wrk)
 
 	switch (getType(a))
 	{
-		case ATOMTYPE_BOOL_BIT:
-			return (a.uintval & 0x80) == (b.uintval & 0x80);
-			break;
-		case ATOM_INTEGER:
-		case ATOM_UINTEGER:
-		case ATOM_NUMBERPTR:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
-			auto swfVersion = wrk->AVM1getSwfVersion();
-			auto num1 = AVM1toNumber(a, swfVersion, true);
-			auto num2 = AVM1toNumber(b, swfVersion, true);
-			// NOTE, PLAYER-SPECIFIC: In Flash Player 7, and later,
-			// `NaN == NaN` returns true, while in Flash Player 6, and
-			// earlier, `NaN == NaN` returns false. Let's do what Flash
-			// Player 7, and later does, and return true.
-			//
-			// TODO: Allow for using either, once support for
-			// mimicking different player versions is added.
-			return
-			(
-				num1 == num2 ||
-				(std::isnan(num1) && std::isnan(num2))
-			);
-			break;
+			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
+			{
+				case ATOMTYPE_STRINGID_BIT:
+					return AVM1toString(a, wrk) == AVM1toString(b, wrk);
+				default:
+					return (a.uintval & (ATOMTYPE_BIT_FLAGS | ATOMTYPE_BOOL_VALUE_BIT)) == (b.uintval & (ATOMTYPE_BIT_FLAGS | ATOMTYPE_BOOL_VALUE_BIT));
+			}
 		}
-		case ATOM_STRINGID:
 		case ATOM_STRINGPTR:
 			return AVM1toString(a, wrk) == AVM1toString(b, wrk);
-			break;
 		case ATOM_OBJECTPTR:
 		{
 			if (is<DisplayObject>(a) && is<DisplayObject>(b))
@@ -6112,45 +5943,34 @@ bool asAtomHandler::AVM1isEqualStrict(asAtom& a, asAtom& b, ASWorker* wrk)
 			return getObject(a) == getObject(b);
 			break;
 		}
-		// `undefined`, `null`, and invalid.
-		default:
-			return true;
+		case ATOM_INTEGER:
+		case ATOM_UINTEGER:
+		case ATOM_NUMBERPTR:
+		default: // value
+		{
+			auto swfVersion = wrk->AVM1getSwfVersion();
+			auto num1 = AVM1toNumber(a, swfVersion, true);
+			auto num2 = AVM1toNumber(b, swfVersion, true);
+			// NOTE, PLAYER-SPECIFIC: In Flash Player 7, and later,
+			// `NaN == NaN` returns true, while in Flash Player 6, and
+			// earlier, `NaN == NaN` returns false. Let's do what Flash
+			// Player 7, and later does, and return true.
+			//
+			// TODO: Allow for using either, once support for
+			// mimicking different player versions is added.
+			return
+				(
+					num1 == num2 ||
+					(std::isnan(num1) && std::isnan(num2))
+					);
 			break;
+		}
 	}
 }
 
 call_context *asAtomHandler::getCallContext(ASWorker* wrk)
 {
 	return wrk->currentCallContext;
-}
-
-bool asAtomHandler::localNumberToGlobalNumber(ASWorker* wrk, asAtom &a)
-{
-	if (isLocalNumber(a))
-	{
-		number_t val = getLocalNumber(getCallContext(wrk),a);
-		if (std::isnan(val))
-			a.uintval = wrk->getSystemState()->nanAtom.uintval;
-		else if (Number::isInteger(val))
-		{
-			if (val == 0.0 && std::signbit(val))
-				a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(wrk,val))|ATOM_NUMBERPTR;
-			else
-#ifdef LIGHTSPARK_64
-			if (val >= INT32_MIN && val <= INT32_MAX)
-				a.intval = ((int64_t)val<<3)|ATOM_INTEGER;
-#else
-			if (val >=-(1<<28)  && val <=(1<<28))
-				a.intval = ((int32_t)val<<3)|ATOM_INTEGER;
-#endif
-			else
-				a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(wrk,val))|ATOM_NUMBERPTR;
-		}
-		else
-			a.uintval = (LIGHTSPARK_ATOM_VALTYPE)(abstract_d(wrk,val))|ATOM_NUMBERPTR;
-		return true;
-	}
-	return false;
 }
 
 TRISTATE asAtomHandler::AVM1isLess(asAtom& a, ASWorker* wrk, asAtom& v2)
@@ -6212,8 +6032,8 @@ bool asAtomHandler::AVM1isEqual(asAtom& v1, asAtom &v2, ASWorker* wrk)
 	// compare.
 	else if (isBool(a) || isBool(b))
 	{
-		bool flag = (isBool(a) ? a : b).uintval & 0x80;
-		auto flagVal = fromNumber(wrk, flag, false);
+		bool flag = (isBool(a) ? a : b).uintval & ATOMTYPE_BOOL_VALUE_BIT;
+		auto flagVal = fromNumber(flag);
 		auto val = isBool(a) ? b : a;
 		ret = AVM1isEqual(flagVal, val, wrk);
 		ASATOM_DECREF(flagVal);
@@ -6253,17 +6073,17 @@ ASObject *asAtomHandler::toObject(asAtom& a, ASWorker* wrk, bool isconstant)
 		assert(getObjectNoCheck(a) && getObjectNoCheck(a)->getRefCount() >= 1);
 		return getObjectNoCheck(a);
 	}
-	switch(a.uintval&0x7)
+	switch(a.uintval & ATOMTYPE_TYPE_BITS)
 	{
 		case ATOM_INTEGER:
 			// ints are internally treated as numbers, so create a Number instance
-			a.uintval = ((LIGHTSPARK_ATOM_VALTYPE)abstract_di(wrk,(a.intval>>3)))|ATOM_NUMBERPTR;
+			a.uintval = ((LIGHTSPARK_ATOM_VALTYPE)abstract_di(wrk,asAtomHandler::getInt(a)))|ATOM_NUMBERPTR;
 			break;
 		case ATOM_UINTEGER:
 			// uints are internally treated as numbers, so create a Number instance
-			a.uintval = ((LIGHTSPARK_ATOM_VALTYPE)abstract_di(wrk,(a.uintval>>3)))|ATOM_NUMBERPTR;
+			a.uintval = ((LIGHTSPARK_ATOM_VALTYPE)abstract_di(wrk,asAtomHandler::getUInt(a)))|ATOM_NUMBERPTR;
 			break;
-		case ATOM_INVALID_UNDEFINED_NULL_BOOL_LOCALNUMBER:
+		case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 		{
 			switch (a.uintval&ATOMTYPE_BIT_FLAGS)
 			{
@@ -6272,19 +6092,18 @@ ASObject *asAtomHandler::toObject(asAtom& a, ASWorker* wrk, bool isconstant)
 				case ATOMTYPE_UNDEFINED_BIT:
 					return abstract_undefined(wrk->getSystemState());
 				case ATOMTYPE_BOOL_BIT:
-					return abstract_b(wrk->getSystemState(),(a.uintval & 0x80)>>7);
-				case ATOMTYPE_LOCALNUMBER_BIT:
-					return abstract_d(wrk,getNumber(wrk,a));
+					return abstract_b(wrk->getSystemState(),(a.uintval & ATOMTYPE_BOOL_VALUE_BIT));
+				case ATOMTYPE_STRINGID_BIT:
+					a.uintval = ((LIGHTSPARK_ATOM_VALTYPE)abstract_s(wrk,(a.uintval & ATOMTYPE_32BIT_BITS))) | ATOM_STRINGPTR ;
+					break;
 				default:
+					throw RunTimeException("calling toObject on invalid asAtom, should not happen");
 					break;
 			}
 			break;
 		}
-		case ATOM_STRINGID:
-			a.uintval = ((LIGHTSPARK_ATOM_VALTYPE)abstract_s(wrk,(a.uintval>>3))) | ATOM_STRINGPTR ;
-			break;
-		default:
-			throw RunTimeException("calling toObject on invalid asAtom, should not happen");
+		default: // double
+			a.uintval = ((LIGHTSPARK_ATOM_VALTYPE)abstract_d(wrk,a.dval))|ATOM_NUMBERPTR;
 			break;
 	}
 	return getObjectNoCheck(a);
@@ -6321,38 +6140,4 @@ bool garbagecollectorstate::isIgnored(ASObject* o)
 bool garbagecollectorstate::hasMember(ASObject* o)
 {
 	return o->gccounter.hasmember;
-}
-
-number_t asAtomWithNumber::toNumber(ASWorker* wrk) const
-{
-	return asAtomHandler::isLocalNumber(value) ?
-			   numbervalue
-		   : wrk->needsActionScript3() ?
-			asAtomHandler::toNumber(value)
-			: asAtomHandler::AVM1toNumber(value,wrk->AVM1getSwfVersion());
-}
-
-tiny_string asAtomWithNumber::toString(ASWorker* wrk) const
-{
-	return asAtomHandler::isLocalNumber(value) ?
-			Number::toString(numbervalue)
-		   : wrk->needsActionScript3() ?
-			asAtomHandler::toString(value,wrk)
-			: asAtomHandler::AVM1toString(value,wrk);
-}
-
-std::string asAtomWithNumber::toDebugString() const
-{
-	std::string res;
-	if (asAtomHandler::isLocalNumber(value))
-	{
-		res += Number::toString(numbervalue);
-		res += " (ln:";
-		res += Number::toString(value.uintval>>8);
-		res += ")";
-	}
-	else
-		res = asAtomHandler::toDebugString(value);
-	return res;
-
 }

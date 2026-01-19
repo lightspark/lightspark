@@ -51,7 +51,7 @@ void FrameLabel::sinit(Class_base* c)
 ASFUNCTIONBODY_ATOM(FrameLabel,_getFrame)
 {
 	FrameLabel* th=asAtomHandler::as<FrameLabel>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->frame+1);
+	asAtomHandler::setUInt(ret,th->frame+1);
 }
 
 ASFUNCTIONBODY_ATOM(FrameLabel,_getName)

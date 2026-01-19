@@ -157,7 +157,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideLineTo)
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)(GRAPHICSPATH_COMMANDTYPE::LINE_TO));
 	th->commands->append(v);
-	asAtom n = asAtomHandler::fromNumber(wrk,0.0,false);
+	asAtom n = asAtomHandler::fromNumber(0.0);
 	ASATOM_INCREF(n);
 	th->data->append(n);
 	ASATOM_INCREF(n);
@@ -178,7 +178,7 @@ ASFUNCTIONBODY_ATOM(GraphicsPath, wideMoveTo)
 	th->ensureValid();
 	asAtom v = asAtomHandler::fromInt((int32_t)(GRAPHICSPATH_COMMANDTYPE::MOVE_TO));
 	th->commands->append(v);
-	asAtom n = asAtomHandler::fromNumber(wrk,0.0,false);
+	asAtom n = asAtomHandler::fromNumber(0.0);
 	ASATOM_INCREF(n);
 	th->data->append(n);
 	ASATOM_INCREF(n);

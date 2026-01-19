@@ -48,8 +48,8 @@ void ABCVm::registerClassesToplevel(Global* builtin)
 	// NOTE: `NaN`, and `Infinity` were added in SWF 5.
 	if (m_sys->mainClip->needsActionScript3() || m_sys->getSwfVersion() >= 5)
 	{
-		builtin->setVariableAtomByQName("NaN",nsNameAndKind(),asAtomHandler::fromNumber(m_sys->worker,numeric_limits<double>::quiet_NaN(),true),CONSTANT_TRAIT);
-		builtin->setVariableAtomByQName("Infinity",nsNameAndKind(),asAtomHandler::fromNumber(m_sys->worker,numeric_limits<double>::infinity(),true),CONSTANT_TRAIT);
+		builtin->setVariableAtomByQName("NaN",nsNameAndKind(),asAtomHandler::fromNumber(numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
+		builtin->setVariableAtomByQName("Infinity",nsNameAndKind(),asAtomHandler::fromNumber(numeric_limits<double>::infinity()),CONSTANT_TRAIT);
 	}
 	builtin->registerBuiltin("String","",Class<ASString>::getRef(m_sys));
 	builtin->registerBuiltin("Array","",Class<Array>::getRef(m_sys));

@@ -148,7 +148,7 @@ void lightspark::abc_getProperty_constant_constant_localresult(call_context* con
 	LOG_CALL( "getProperty_ccl " << *name << ' ' << asAtomHandler::toDebugString(obj));
 	asAtom prop=asAtomHandler::invalidAtom;
 	bool canCache=false;
-	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE,instrptr->local3.pos);
+	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
 	if (checkPropertyException(obj,name,prop,context->worker))
 		return;
 	REPLACELOCALRESULT(context,instrptr->local3.pos,prop);
@@ -173,7 +173,7 @@ void lightspark::abc_getProperty_local_constant_localresult(call_context* contex
 		multiname* name=context->mi->context->getMultinameImpl(*instrptr->arg2_constant,nullptr,t,false);
 		LOG_CALL( "getProperty_lcl " << *name << ' ' << asAtomHandler::toDebugString(obj));
 		bool canCache=false;
-		asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE,instrptr->local3.pos);
+		asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
 		if (checkPropertyException(obj,name,prop,context->worker))
 			return;
 	}
@@ -189,7 +189,7 @@ void lightspark::abc_getProperty_constant_local_localresult(call_context* contex
 	LOG_CALL( "getProperty_cll " << *name << ' ' << asAtomHandler::toDebugString(obj));
 	asAtom prop=asAtomHandler::invalidAtom;
 	bool canCache=false;
-	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE,instrptr->local3.pos);
+	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
 	if (checkPropertyException(obj,name,prop,context->worker))
 		return;
 	REPLACELOCALRESULT(context,instrptr->local3.pos,prop);
@@ -214,7 +214,7 @@ void lightspark::abc_getProperty_local_local_localresult(call_context* context)
 		multiname* name=context->mi->context->getMultinameImpl(CONTEXT_GETLOCAL(context,instrptr->local_pos2),nullptr,t,false);
 		LOG_CALL( "getProperty_lll " << *name << ' ' << asAtomHandler::toDebugString(obj));
 		bool canCache=false;
-		asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE,instrptr->local3.pos);
+		asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);
 		if (checkPropertyException(obj,name,prop,context->worker))
 			return;
 	}
@@ -396,7 +396,7 @@ void lightspark::abc_getPropertyStaticName_constant_localresult(call_context* co
 	LOG_CALL( "getProperty_scl " << *name << ' ' << asAtomHandler::toDebugString(obj));
 	asAtom prop=asAtomHandler::invalidAtom;
 	bool canCache=false;
-	multiname* simplegetter = asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE,instrptr->local3.pos);
+	multiname* simplegetter = asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE);
 	if (simplegetter)
 		instrptr->cachedmultiname2 = simplegetter;
 	if(checkPropertyException(obj,name,prop,context->worker))
@@ -428,7 +428,7 @@ void lightspark::abc_getPropertyStaticName_local_localresult(call_context* conte
 		asAtom obj = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
 		asAtom prop=asAtomHandler::invalidAtom;
 		bool canCache=false;
-		multiname* simplegetter = asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE,instrptr->local3.pos);
+		multiname* simplegetter = asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE);
 		if (simplegetter)
 			instrptr->cachedmultiname2 = simplegetter;
 		LOG_CALL("getProperty_sll done " << *name << ' ' << asAtomHandler::toDebugString(obj)<<" "<<instrptr->local3.pos<<" "<<asAtomHandler::toDebugString(prop));
@@ -447,7 +447,7 @@ void lightspark::abc_getPropertyStaticName_localresult(call_context* context)
 	LOG_CALL( "getProperty_slr " << *name << ' ' << asAtomHandler::toDebugString(*obj)<<" "<<instrptr->local3.pos);
 	asAtom prop=asAtomHandler::invalidAtom;
 	bool canCache=false;
-	multiname* simplegetter = asAtomHandler::getVariableByMultiname(*obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE,instrptr->local3.pos);
+	multiname* simplegetter = asAtomHandler::getVariableByMultiname(*obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE);
 	if (simplegetter)
 		instrptr->cachedmultiname2 = simplegetter;
 	if(checkPropertyException(*obj,name,prop,context->worker))

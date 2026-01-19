@@ -391,7 +391,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel)
 	ARG_CHECK(ARG_UNPACK(x)(y));
 	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	uint32_t pix=th->pixels->getPixel(x, y,false);
-	asAtomHandler::setUInt(ret,wrk,pix & 0xffffff);
+	asAtomHandler::setUInt(ret,pix & 0xffffff);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,getPixel32)
@@ -407,12 +407,12 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel32)
 	if (wrk->needsActionScript3())
 	{
 		uint32_t pix=th->pixels->getPixel(x, y,false);
-		asAtomHandler::setUInt(ret,wrk,pix);
+		asAtomHandler::setUInt(ret,pix);
 	}
 	else
 	{
 		int32_t pix=(int32_t)th->pixels->getPixel(x, y,false);
-		asAtomHandler::setInt(ret,wrk,pix);
+		asAtomHandler::setInt(ret,pix);
 	}
 }
 
@@ -460,7 +460,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,_getHeight)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->checkDisposed(ret))
 		return;
-	asAtomHandler::setInt(ret,wrk,th->getHeight());
+	asAtomHandler::setInt(ret,th->getHeight());
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,_getWidth)
@@ -468,7 +468,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,_getWidth)
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
 	if(th->checkDisposed(ret))
 		return;
-	asAtomHandler::setInt(ret,wrk,th->getWidth());
+	asAtomHandler::setInt(ret,th->getWidth());
 }
 ASFUNCTIONBODY_ATOM(BitmapData,_getTransparent)
 {
@@ -1303,7 +1303,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 	if (!asAtomHandler::is<BitmapData>(obj))
 	{
 		if (!isAS3)
-			asAtomHandler::setInt(ret,wrk,-1);
+			asAtomHandler::setInt(ret,-1);
 		return;
 	}
 	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
@@ -1313,7 +1313,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 
 	if (!isAS3 && th->pixels.isNull())
 	{
-		asAtomHandler::setInt(ret,wrk,-1);
+		asAtomHandler::setInt(ret,-1);
 		return;
 	}
 
@@ -1322,24 +1322,24 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 		if (isAS3)
 			createError<TypeError>(wrk,kNullPointerError, "otherBitmapData");
 		else
-			asAtomHandler::setInt(ret,wrk,-2);
+			asAtomHandler::setInt(ret,-2);
 		return;
 	}
 
 	if (!isAS3 && otherBitmapData->pixels.isNull())
 	{
-		asAtomHandler::setInt(ret,wrk,-2);
+		asAtomHandler::setInt(ret,-2);
 		return;
 	}
 
 	if (th->getWidth() != otherBitmapData->getWidth())
 	{
-		asAtomHandler::setInt(ret,wrk,-3);
+		asAtomHandler::setInt(ret,-3);
 		return;
 	}
 	if (th->getHeight() != otherBitmapData->getHeight())
 	{
-		asAtomHandler::setInt(ret,wrk,-4);
+		asAtomHandler::setInt(ret,-4);
 		return;
 	}
 	RECT rect;
@@ -1382,7 +1382,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,compare)
 	}
 	if (!different)
 	{
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 		res->decRef();
 	}
 	else

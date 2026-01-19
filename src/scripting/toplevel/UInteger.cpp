@@ -157,16 +157,16 @@ ASFUNCTIONBODY_ATOM(UInteger,_constructor)
 ASFUNCTIONBODY_ATOM(UInteger,generator)
 {
 	if (argslen == 0)
-		asAtomHandler::setUInt(ret,wrk,(uint32_t)0);
+		asAtomHandler::setUInt(ret,(uint32_t)0);
 	else
-		asAtomHandler::setUInt(ret,wrk,asAtomHandler::toUInt(args[0]));
+		asAtomHandler::setUInt(ret,asAtomHandler::toUInt(args[0]));
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_valueOf)
 {
 	if(Class<UInteger>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		asAtomHandler::setUInt(ret,wrk,(uint32_t)0);
+		asAtomHandler::setUInt(ret,(uint32_t)0);
 		return;
 	}
 
@@ -176,7 +176,7 @@ ASFUNCTIONBODY_ATOM(UInteger,_valueOf)
 		return;
 	}
 
-	asAtomHandler::setUInt(ret,wrk,asAtomHandler::toUInt(obj));
+	asAtomHandler::setUInt(ret,asAtomHandler::toUInt(obj));
 }
 
 void UInteger::sinit(Class_base* c)

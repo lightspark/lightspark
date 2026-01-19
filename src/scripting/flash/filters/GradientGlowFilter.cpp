@@ -45,7 +45,7 @@ GradientGlowFilter::GradientGlowFilter(ASWorker* wrk, Class_base* c, const GRADI
 		for (uint8_t i = 0; i < filter.NumColors; i++)
 		{
 			colors->push(asAtomHandler::fromUInt(RGB(filter.GradientColors[i].Red,filter.GradientColors[i].Green,filter.GradientColors[i].Blue).toUInt()));
-			alphas->push(asAtomHandler::fromNumber(wrk,filter.GradientColors[i].af(),false));
+			alphas->push(asAtomHandler::fromNumber(filter.GradientColors[i].af()));
 		}
 	}
 	if (filter.NumColors)

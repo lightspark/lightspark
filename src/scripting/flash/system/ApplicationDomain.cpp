@@ -542,7 +542,7 @@ ASFUNCTIONBODY_ATOM(ApplicationDomain,_constructor)
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_getMinDomainMemoryLength)
 {
-	asAtomHandler::setUInt(ret,wrk,(uint32_t)MIN_DOMAIN_MEMORY_LIMIT);
+	asAtomHandler::setUInt(ret,(uint32_t)MIN_DOMAIN_MEMORY_LIMIT);
 }
 
 ASFUNCTIONBODY_ATOM(ApplicationDomain,_getCurrentDomain)

@@ -548,7 +548,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 ASFUNCTIONBODY_ATOM(TextField,_getWidth)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->width);
+	asAtomHandler::setUInt(ret,th->width);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_setWidth)
@@ -577,9 +577,9 @@ ASFUNCTIONBODY_ATOM(TextField,_getHeight)
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	// it seems that Adobe returns the textHeight if in autoSize mode
 	if (th->autoSize != AS_NONE)
-		asAtomHandler::setUInt(ret,wrk,th->textHeight);
+		asAtomHandler::setUInt(ret,th->textHeight);
 	else
-		asAtomHandler::setUInt(ret,wrk,th->height);
+		asAtomHandler::setUInt(ret,th->height);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_setHeight)
@@ -605,7 +605,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setHeight)
 ASFUNCTIONBODY_ATOM(TextField,_getTextFieldX)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->originalXPosition+th->autosizeposition);
+	asAtomHandler::setNumber(ret, th->originalXPosition+th->autosizeposition);
 }
 ASFUNCTIONBODY_ATOM(TextField,_setTextFieldX)
 {
@@ -617,13 +617,13 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFieldX)
 ASFUNCTIONBODY_ATOM(TextField,_getTextWidth)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->textWidth);
+	asAtomHandler::setUInt(ret,th->textWidth);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getTextHeight)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->textHeight);
+	asAtomHandler::setUInt(ret,th->textHeight);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getHtmlText)
@@ -846,7 +846,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getCharIndexAtPoint)
 	ARG_CHECK(ARG_UNPACK(x) (y));
 	LOG(LOG_NOT_IMPLEMENTED,"Textfield.getCharIndexAtPoint");
 
-	asAtomHandler::setInt(ret,wrk,-1);
+	asAtomHandler::setInt(ret,-1);
 }
 
 
@@ -867,12 +867,12 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineIndexAtPoint)
 		if (x > th->textlines[i].autosizeposition && x <= th->textlines[i].autosizeposition+th->textlines[i].textwidth &&
 		    y > Ymin && y <= Ymax)
 		{
-			asAtomHandler::setInt(ret,wrk,i);
+			asAtomHandler::setInt(ret,i);
 			return;
 		}
 		Ymin+=th->textlines[i].height;
 	}
-	asAtomHandler::setInt(ret,wrk,-1);
+	asAtomHandler::setInt(ret,-1);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getLineIndexOfChar)
@@ -883,7 +883,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineIndexOfChar)
 
 	if (charIndex < 0)
 	{
-		asAtomHandler::setInt(ret,wrk,-1);
+		asAtomHandler::setInt(ret,-1);
 		return;
 	}
 
@@ -894,7 +894,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineIndexOfChar)
 		if (uint32_t(charIndex) >= firstCharOffset &&
 		    uint32_t(charIndex) < firstCharOffset + th->textlines[i].text.numChars())
 		{
-			asAtomHandler::setInt(ret,wrk,i);
+			asAtomHandler::setInt(ret,i);
 			return;
 		}
 		firstCharOffset+=th->textlines[i].text.numChars()+1; // add one for the \n
@@ -902,7 +902,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineIndexOfChar)
 
 	// testing shows that returns -1 on invalid index instead of
 	// throwing RangeError
-	asAtomHandler::setInt(ret,wrk,-1);
+	asAtomHandler::setInt(ret,-1);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getLineLength)
@@ -918,7 +918,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineLength)
 		return;
 	}
 
-	asAtomHandler::setInt(ret,wrk,th->textlines[lineIndex].text.numChars());
+	asAtomHandler::setInt(ret,th->textlines[lineIndex].text.numChars());
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getLineMetrics)
@@ -961,7 +961,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineOffset)
 		firstCharOffset+=th->textlines[i].text.numChars()+1; // add one for the \n
 	}
 
-	asAtomHandler::setInt(ret,wrk,firstCharOffset);
+	asAtomHandler::setInt(ret,firstCharOffset);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getLineText)
@@ -1035,14 +1035,14 @@ ASFUNCTIONBODY_ATOM(TextField,_getLength)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	Locker l(*th->linemutex);
-	asAtomHandler::setUInt(ret,wrk,th->getText().numChars());
+	asAtomHandler::setUInt(ret,th->getText().numChars());
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getNumLines)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	Locker l(*th->linemutex);
-	asAtomHandler::setInt(ret,wrk,(int32_t)th->getLineCount());
+	asAtomHandler::setInt(ret,(int32_t)th->getLineCount());
 }
 ASFUNCTIONBODY_ATOM(TextField,_getSelectedText)
 {
@@ -1061,13 +1061,13 @@ ASFUNCTIONBODY_ATOM(TextField,_getSelectedText)
 ASFUNCTIONBODY_ATOM(TextField,_getMaxScrollH)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	asAtomHandler::setInt(ret,wrk,th->getMaxScrollH());
+	asAtomHandler::setInt(ret,th->getMaxScrollH());
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getMaxScrollV)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	asAtomHandler::setInt(ret,wrk,th->getMaxScrollV());
+	asAtomHandler::setInt(ret,th->getMaxScrollV());
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getBottomScrollV)
@@ -1080,12 +1080,12 @@ ASFUNCTIONBODY_ATOM(TextField,_getBottomScrollV)
 	{
 		if (Ymin >= (int)th->height)
 		{
-			asAtomHandler::setInt(ret,wrk,(int32_t)k);
+			asAtomHandler::setInt(ret,(int32_t)k);
 			return;
 		}
 		Ymin+=th->textlines[k-1].height;
 	}
-	asAtomHandler::setInt(ret,wrk,(int32_t)th->getLineCount() + 1);
+	asAtomHandler::setInt(ret,(int32_t)th->getLineCount() + 1);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getRestrict)
@@ -1709,7 +1709,7 @@ void TextField::avm1SyncTagVar()
 			number_t n;
 			linemutex->lock();
 			if (Integer::fromStringFlashCompatible(getText().raw_buf(),n,10,true))
-				value = asAtomHandler::fromNumber(getInstanceWorker(),n,false);
+				value = asAtomHandler::fromNumber(n);
 			else
 				value = asAtomHandler::fromString(getSystemState(),getText());
 			linemutex->unlock();

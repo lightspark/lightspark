@@ -31,12 +31,12 @@ void lightspark::abc_negate_constant(call_context* context)
 	if (asAtomHandler::isInteger(res) && asAtomHandler::toInt(res) != 0)
 	{
 		int32_t ret=-(asAtomHandler::toInt(res));
-		asAtomHandler::setInt(res,context->worker, ret);
+		asAtomHandler::setInt(res, ret);
 	}
 	else
 	{
 		number_t ret=-(asAtomHandler::getNumber(context->worker,res));
-		res = asAtomHandler::fromNumber(context->worker,ret,false);
+		res = asAtomHandler::fromNumber(ret);
 	}
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
@@ -48,12 +48,12 @@ void lightspark::abc_negate_local(call_context* context)
 	if (asAtomHandler::isInteger(res) && asAtomHandler::toInt(res) != 0)
 	{
 		int32_t ret=-(asAtomHandler::toInt(res));
-		asAtomHandler::setInt(res,context->worker, ret);
+		asAtomHandler::setInt(res, ret);
 	}
 	else
 	{
 		number_t ret=-(asAtomHandler::getNumber(context->worker,res));
-		res = asAtomHandler::fromNumber(context->worker,ret,false);
+		res = asAtomHandler::fromNumber(ret);
 	}
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
@@ -66,14 +66,14 @@ void lightspark::abc_negate_constant_localresult(call_context* context)
 	if (asAtomHandler::isInteger(res) && asAtomHandler::toInt(res) != 0)
 	{
 		int32_t ret=-(asAtomHandler::toInt(res));
-		asAtomHandler::setInt(res,context->worker, ret);
+		asAtomHandler::setInt(res, ret);
 		REPLACELOCALRESULT(context,instrptr->local3.pos,res);
 	}
 	else
 	{
 		asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 		number_t ret=-(asAtomHandler::getNumber(context->worker,res));
-		asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker,ret,instrptr->local3.pos);
+		asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
 		ASATOM_DECREF(oldres);
 	}
 	++(context->exec_pos);
@@ -86,14 +86,14 @@ void lightspark::abc_negate_local_localresult(call_context* context)
 	if (asAtomHandler::isInteger(res) && asAtomHandler::toInt(res) != 0)
 	{
 		int32_t ret=-(asAtomHandler::toInt(res));
-		asAtomHandler::setInt(res,context->worker, ret);
+		asAtomHandler::setInt(res, ret);
 		REPLACELOCALRESULT(context,instrptr->local3.pos,res);
 	}
 	else
 	{
 		asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
 		number_t ret=-(asAtomHandler::getNumber(context->worker,res));
-		asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker,ret,instrptr->local3.pos);
+		asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,instrptr->local3.pos),ret);
 		ASATOM_DECREF(oldres);
 	}
 	++(context->exec_pos);
@@ -104,17 +104,17 @@ void lightspark::abc_negate_constant_setslotnocoerce(call_context* context)
 	if (asAtomHandler::isInteger(res) && asAtomHandler::toInt(res) != 0)
 	{
 		int32_t ret=-(asAtomHandler::toInt(res));
-		asAtomHandler::setInt(res,context->worker, ret);
+		asAtomHandler::setInt(res, ret);
 	}
 	else
 	{
 		number_t ret=-(asAtomHandler::getNumber(context->worker,res));
-		res = asAtomHandler::fromNumber(context->worker,ret,false);
+		res = asAtomHandler::fromNumber(ret);
 	}
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
 	LOG_CALL("negate_cs " << t << " "<< asAtomHandler::toDebugString(res) << " "<< asAtomHandler::toDebugString(obj));
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res);
 	++(context->exec_pos);
 }
 void lightspark::abc_negate_local_setslotnocoerce(call_context* context)
@@ -123,17 +123,17 @@ void lightspark::abc_negate_local_setslotnocoerce(call_context* context)
 	if (asAtomHandler::isInteger(res) && asAtomHandler::toInt(res) != 0)
 	{
 		int32_t ret=-(asAtomHandler::toInt(res));
-		asAtomHandler::setInt(res,context->worker, ret);
+		asAtomHandler::setInt(res, ret);
 	}
 	else
 	{
 		number_t ret=-(asAtomHandler::getNumber(context->worker,res));
-		res = asAtomHandler::fromNumber(context->worker,ret,false);
+		res = asAtomHandler::fromNumber(ret);
 	}
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
 	LOG_CALL("negate_ls " << t << " "<< asAtomHandler::toDebugString(res) << " "<< asAtomHandler::toDebugString(obj));
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res);
 	++(context->exec_pos);
 }
 

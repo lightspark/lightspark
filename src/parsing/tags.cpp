@@ -2181,12 +2181,12 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			if (var)
 			{
 				if (var->getObjectVar() != currchar)
-					var->setVarNoCoerce(v,parent->getInstanceWorker());
+					var->setVarNoCoerce(v);
 			}
 			else
 			{
 				currchar->incRef();
-				parent->setDynamicVariableNoCheck(nameID,v,false,parent->getInstanceWorker());
+				parent->setDynamicVariableNoCheck(nameID,v,false);
 			}
 		}
 		else

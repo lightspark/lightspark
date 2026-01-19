@@ -203,50 +203,42 @@ public:
 		RUNTIME_STACK_POP_CREATE(th,arg1);
 		uint32_t addr=asAtomHandler::toUInt(*arg1);
 		number_t ret=appDomain->readFromDomainMemory<float>(addr);
+		if (std::isnan(ret))
+			ret =numeric_limits<double>::quiet_NaN();
 		ASATOM_DECREF_POINTER(arg1);
-		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getInstanceWorker(),ret,false));
+		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(ret));
 	}
-	static FORCE_INLINE void loadFloat(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1, uint16_t resultlocalnumber=UINT16_MAX)
+	static FORCE_INLINE void loadFloat(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1)
 	{
 		uint32_t addr=asAtomHandler::toUInt(arg1);
 		number_t res=appDomain->readFromDomainMemory<float>(addr);
+		if (std::isnan(res))
+			res =numeric_limits<double>::quiet_NaN();
 		ASObject* oldret = asAtomHandler::getObject(ret);
-		if (resultlocalnumber != UINT16_MAX)
-		{
-			asAtomHandler::setNumber(ret,appDomain->getInstanceWorker(),res,resultlocalnumber);
-			if (oldret)
-				oldret->decRef();
-		}
-		else if (asAtomHandler::replaceNumber(ret,appDomain->getInstanceWorker(),res))
-		{
-			if (oldret)
-				oldret->decRef();
-		}
+		asAtomHandler::setNumber(ret,res);
+		if (oldret)
+			oldret->decRef();
 	}
 	static FORCE_INLINE void loadDouble(ApplicationDomain* appDomain,call_context *th)
 	{
 		RUNTIME_STACK_POP_CREATE(th,arg1);
 		uint32_t addr=asAtomHandler::toUInt(*arg1);
 		number_t res=appDomain->readFromDomainMemory<double>(addr);
+		if (std::isnan(res))
+			res =numeric_limits<double>::quiet_NaN();
 		ASATOM_DECREF_POINTER(arg1);
-		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(appDomain->getInstanceWorker(),res,false));
+		RUNTIME_STACK_PUSH(th,asAtomHandler::fromNumber(res));
 	}
-	static FORCE_INLINE void loadDouble(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1, uint16_t resultlocalnumber=UINT16_MAX)
+	static FORCE_INLINE void loadDouble(ApplicationDomain* appDomain,asAtom& ret, asAtom& arg1)
 	{
 		uint32_t addr=asAtomHandler::toUInt(arg1);
 		number_t res=appDomain->readFromDomainMemory<double>(addr);
+		if (std::isnan(res))
+			res =numeric_limits<double>::quiet_NaN();
 		ASObject* oldret = asAtomHandler::getObject(ret);
-		if (resultlocalnumber != UINT16_MAX)
-		{
-			asAtomHandler::setNumber(ret,appDomain->getInstanceWorker(),res,resultlocalnumber);
-			if (oldret)
-				oldret->decRef();
-		}
-		else if (asAtomHandler::replaceNumber(ret,appDomain->getInstanceWorker(),res))
-		{
-			if (oldret)
-				oldret->decRef();
-		}
+		asAtomHandler::setNumber(ret,res);
+		if (oldret)
+			oldret->decRef();
 	}
 
 	static FORCE_INLINE void storeFloat(ApplicationDomain* appDomain,call_context *th)

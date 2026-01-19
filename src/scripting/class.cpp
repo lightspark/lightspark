@@ -349,7 +349,7 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 	assert_and_throw(var);
 	if(var->isValidVar())
 	{
-		asAtom func = var->getVar(c->getInstanceWorker());
+		asAtom func = var->getVar();
 		assert_and_throw(asAtomHandler::isFunction(func));
 		ASATOM_INCREF(func);
 		c->setDeclaredMethodAtomByQName(name,interfaceNs,func,NORMAL_METHOD,true);
@@ -383,7 +383,7 @@ void lightspark::lookupAndLink(Class_base* c, uint32_t nameID, uint32_t interfac
 	assert_and_throw(var);
 	if(var->isValidVar())
 	{
-		asAtom func = var->getVar(c->getInstanceWorker());
+		asAtom func = var->getVar();
 		assert_and_throw(var->isFunctionVar());
 		ASATOM_INCREF(func);
 		c->setDeclaredMethodAtomByQName(nameID,nsNameAndKind(c->getSystemState(),interfaceNsID, NAMESPACE),func,NORMAL_METHOD,true);
@@ -428,7 +428,7 @@ void Class<ASObject>::AVM1generator(ASWorker* wrk, asAtom& ret, asAtom* args, co
 			obj = abstract_b
 			(
 				getSystemState(),
-				args[0].uintval & 0x80
+				args[0].uintval & ATOMTYPE_BOOL_VALUE_BIT
 			);
 			break;
 		case T_NUMBER:

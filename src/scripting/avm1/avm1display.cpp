@@ -679,35 +679,35 @@ ASFUNCTIONBODY_ATOM(AVM1Color,getTransform)
 		m.name_type=multiname::NAME_STRING;
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ra");
-		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->redMultiplier*100.0,false);
+		a = asAtomHandler::fromNumber(th->target->colorTransform->redMultiplier*100.0);
 		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("rb");
-		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->redOffset,false);
+		a = asAtomHandler::fromNumber(th->target->colorTransform->redOffset);
 		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ga");
-		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->greenMultiplier*100.0,false);
+		a = asAtomHandler::fromNumber(th->target->colorTransform->greenMultiplier*100.0);
 		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("gb");
-		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->greenOffset,false);
+		a = asAtomHandler::fromNumber(th->target->colorTransform->greenOffset);
 		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ba");
-		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->blueMultiplier*100.0,false);
+		a = asAtomHandler::fromNumber(th->target->colorTransform->blueMultiplier*100.0);
 		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("bb");
-		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->blueOffset,false);
+		a = asAtomHandler::fromNumber(th->target->colorTransform->blueOffset);
 		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("aa");
-		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->alphaMultiplier*100.0,false);
+		a = asAtomHandler::fromNumber(th->target->colorTransform->alphaMultiplier*100.0);
 		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("ab");
-		a = asAtomHandler::fromNumber(wrk,th->target->colorTransform->alphaOffset,false);
+		a = asAtomHandler::fromNumber(th->target->colorTransform->alphaOffset);
 		o->setVariableByMultiname(m,a,CONST_ALLOWED,nullptr,wrk);
 
 	}

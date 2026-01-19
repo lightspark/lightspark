@@ -312,7 +312,7 @@ const char *XML::nodekindString()
 
 ASFUNCTIONBODY_ATOM(XML,length)
 {
-	asAtomHandler::setInt(ret,wrk,1);
+	asAtomHandler::setInt(ret,1);
 }
 
 ASFUNCTIONBODY_ATOM(XML,localName)
@@ -911,12 +911,12 @@ ASFUNCTIONBODY_ATOM(XML,childIndex)
 			ASObject* o= parent->childrenlist->nodes[i].getPtr();
 			if (o == th)
 			{
-				asAtomHandler::setUInt(ret,wrk,i);
+				asAtomHandler::setUInt(ret,i);
 				return;
 			}
 		}
 	}
-	asAtomHandler::setInt(ret,wrk,-1);
+	asAtomHandler::setInt(ret,-1);
 }
 
 ASFUNCTIONBODY_ATOM(XML,_hasSimpleContent)
@@ -1733,60 +1733,6 @@ GET_VARIABLE_RESULT XML::getVariableByInteger(asAtom &ret, int index, GET_VARIAB
 	else
 		asAtomHandler::setUndefined(ret);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
-}
-
-asAtomWithNumber XML::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	bool isAttr=name.isAttribute;
-	unsigned int index=0;
-
-	uint32_t normalizedNameID=name.normalizedNameId(getInstanceWorker());
-	tiny_string normalizedName = name.normalizedName(getInstanceWorker());
-	if(normalizedNameID!=BUILTIN_STRINGS::EMPTY && normalizedName.charAt(0)=='@')
-	{
-		normalizedNameID = getSystemState()->getUniqueStringId(normalizedName.substr(1,normalizedName.end()));
-		isAttr=true;
-	}
-	asAtomWithNumber ret;
-	if(isAttr)
-	{
-		//Lookup attribute
-		const XMLVector& attributes=getAttributesByMultiname(name,normalizedNameID);
-		ret.value = asAtomHandler::fromObject(XMLList::create(getInstanceWorker(),attributes,attributelist.getPtr(),name));
-	}
-	else if(XML::isValidMultiname(getInstanceWorker(),name,index))
-	{
-		// If the multiname is a valid array property, the XML
-		// object is treated as a single-item XMLList.
-		if(index==0)
-			ret.value = asAtomHandler::fromObject(this);
-		else
-			ret.value = asAtomHandler::undefinedAtom;
-	}
-	else if (!childrenlist.isNull())
-	{
-		if (normalizedNameID == BUILTIN_STRINGS::STRING_WILDCARD)
-		{
-			XMLVector res;
-			childrenImpl(res, BUILTIN_STRINGS::STRING_WILDCARD);
-			multiname mname(nullptr);
-			mname.name_s_id=BUILTIN_STRINGS::STRING_WILDCARD;
-			mname.name_type=multiname::NAME_STRING;
-			mname.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-			XMLList* retObj=XMLList::create(getInstanceWorker(),res,this->getChildrenlist(),mname);
-			ret.value = asAtomHandler::fromObject(retObj);
-		}
-		else
-		{
-			const XMLVector& res=getValuesByMultiname(childrenlist,name);
-
-			if(!res.empty())
-			{
-				ret.value =asAtomHandler::fromObject(XMLList::create(getInstanceWorker(),res,this->getChildrenlist(),name));
-			}
-		}
-	}
-	return ret;
 }
 
 multiname *XML::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
@@ -2904,7 +2850,7 @@ uint32_t XML::nextNameIndex(uint32_t cur_index)
 void XML::nextName(asAtom& ret,uint32_t index)
 {
 	if(index<=1)
-		asAtomHandler::setUInt(ret,this->getInstanceWorker(),index-1);
+		asAtomHandler::setUInt(ret,index-1);
 	else
 		throw RunTimeException("XML::nextName out of bounds");
 }

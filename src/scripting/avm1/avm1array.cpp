@@ -273,9 +273,9 @@ ASFUNCTIONBODY_ATOM(AVM1Array,AVM1_getLength)
 {
 	AVM1Array* th=asAtomHandler::as<AVM1Array>(obj);
 	if (th->avm1_currentsize<0) // AVM1 allows negative length
-		asAtomHandler::setInt(ret,wrk,th->avm1_currentsize);
+		asAtomHandler::setInt(ret,th->avm1_currentsize);
 	else
-		asAtomHandler::setInt(ret,wrk,th->currentsize);
+		asAtomHandler::setInt(ret,th->currentsize);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Array,AVM1_setLength)

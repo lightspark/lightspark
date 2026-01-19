@@ -167,12 +167,12 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,isGlobal)
 ASFUNCTIONBODY_ATOM(avmplusSystem,_freeMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.freeMemory is unimplemented.");
-	asAtomHandler::setUInt(ret,wrk,1024);
+	asAtomHandler::setUInt(ret,1024);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_totalMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.totalMemory is unimplemented.");
-	asAtomHandler::setUInt(ret,wrk,1024);
+	asAtomHandler::setUInt(ret,1024);
 }
 //#include <sys/resource.h>
 //#include <stdio.h>
@@ -197,11 +197,11 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,_totalMemory)
 ASFUNCTIONBODY_ATOM(avmplusSystem,_privateMemory)
 {
 	LOG(LOG_NOT_IMPLEMENTED, "avmplus.System.privateMemory is unimplemented.");
-	asAtomHandler::setUInt(ret,wrk,1024);
+	asAtomHandler::setUInt(ret,1024);
 }
 ASFUNCTIONBODY_ATOM(avmplusSystem,_swfVersion)
 {
-	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->getSwfVersion());
+	asAtomHandler::setUInt(ret,wrk->getSystemState()->getSwfVersion());
 }
 
 ASFUNCTIONBODY_ATOM(avmplusSystem,argv)
@@ -242,11 +242,11 @@ ASFUNCTIONBODY_ATOM(avmplusSystem,canonicalizeNumber)
 		case T_UINTEGER:
 		case T_NULL:
 		case T_UNDEFINED:
-			wrk->setBuiltinCallResultLocalNumber(ret, o->toNumber());
+			asAtomHandler::setNumber(ret, o->toNumber());
 			break;
 		case T_QNAME:
 		case T_NAMESPACE:
-			wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+			asAtomHandler::setNumber(ret, Number::NaN);
 			break;
 		default:
 			o->incRef();
@@ -292,7 +292,7 @@ ASFUNCTIONBODY_ATOM(avmplusDomain,_getCurrentDomain)
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,_getMinDomainMemoryLength)
 {
-	asAtomHandler::setUInt(ret,wrk,MIN_DOMAIN_MEMORY_LIMIT);
+	asAtomHandler::setUInt(ret,MIN_DOMAIN_MEMORY_LIMIT);
 }
 ASFUNCTIONBODY_ATOM(avmplusDomain,load)
 {
@@ -393,5 +393,5 @@ ASFUNCTIONBODY_ATOM(lightspark,casi32)
 		ByteArray::atomicCompareAndSwapIntAt(ret,wrk,a,args,argslen);
 	}
 	else
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 }

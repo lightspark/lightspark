@@ -554,7 +554,7 @@ uint32_t Stage::internalGetHeight() const
 
 ASFUNCTIONBODY_ATOM(Stage,_getStageWidth)
 {
-	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->stage->internalGetWidth());
+	asAtomHandler::setUInt(ret,wrk->getSystemState()->stage->internalGetWidth());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setStageWidth)
@@ -565,7 +565,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setStageWidth)
 
 ASFUNCTIONBODY_ATOM(Stage,_getStageHeight)
 {
-	asAtomHandler::setUInt(ret,wrk,wrk->getSystemState()->stage->internalGetHeight());
+	asAtomHandler::setUInt(ret,wrk->getSystemState()->stage->internalGetHeight());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setStageHeight)
@@ -1448,9 +1448,9 @@ ASFUNCTIONBODY_ATOM(Stage,_getFrameRate)
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	_NR<RootMovieClip> root = th->getRoot();
 	if (root.isNull())
-		wrk->setBuiltinCallResultLocalNumber(ret, wrk->getSystemState()->mainClip->applicationDomain->getFrameRate());
+		asAtomHandler::setNumber(ret, wrk->getSystemState()->mainClip->applicationDomain->getFrameRate());
 	else
-		wrk->setBuiltinCallResultLocalNumber(ret, root->applicationDomain->getFrameRate());
+		asAtomHandler::setNumber(ret, root->applicationDomain->getFrameRate());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setFrameRate)
@@ -1500,7 +1500,7 @@ ASFUNCTIONBODY_ATOM(Stage,_getColor)
 	_NR<RootMovieClip> root = th->getRoot();
 	if (!root.isNull())
 		rgb = root->getBackground();
-	asAtomHandler::setUInt(ret,wrk,rgb.toUInt());
+	asAtomHandler::setUInt(ret,rgb.toUInt());
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setColor)

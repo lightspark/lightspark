@@ -57,7 +57,7 @@ ASFUNCTIONBODY_ATOM(Integer,_valueOf)
 {
 	if(Class<Integer>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 		return;
 	}
 
@@ -85,9 +85,9 @@ ASFUNCTIONBODY_ATOM(Integer,_constructor)
 ASFUNCTIONBODY_ATOM(Integer,generator)
 {
 	if (argslen == 0)
-		asAtomHandler::setInt(ret,wrk,(int32_t)0);
+		asAtomHandler::setInt(ret,(int32_t)0);
 	else
-		asAtomHandler::setInt(ret,wrk,asAtomHandler::toInt(args[0]));
+		asAtomHandler::setInt(ret,asAtomHandler::toInt(args[0]));
 }
 
 TRISTATE Integer::isLess(ASObject* o)

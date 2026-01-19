@@ -87,7 +87,7 @@ void IntervalManager::setupTimer(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom
 		if (!asAtomHandler::isFunction(func))
 		{
 			uint32_t id = getFreeID();
-			asAtomHandler::setInt(ret,wrk,(int32_t)id);
+			asAtomHandler::setInt(ret,(int32_t)id);
 			return;
 		}
 	}
@@ -96,13 +96,13 @@ void IntervalManager::setupTimer(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom
 	if (asAtomHandler::isNull(args[delayarg]))
 	{
 		uint32_t id = getFreeID();
-		asAtomHandler::setInt(ret,wrk,(int32_t)id);
+		asAtomHandler::setInt(ret,(int32_t)id);
 		return;
 	}
 	if (!asAtomHandler::isFunction(func))
 	{
 		uint32_t id = getFreeID();
-		asAtomHandler::setInt(ret,wrk,(int32_t)id);
+		asAtomHandler::setInt(ret,(int32_t)id);
 		return;
 	}
 	if (!asAtomHandler::is<AVM1Function>(func))
@@ -146,7 +146,7 @@ void IntervalManager::setupTimer(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom
 	}
 	//Add runner to map
 	runners[id] = runner;
-	asAtomHandler::setInt(ret,wrk,(int32_t)id);
+	asAtomHandler::setInt(ret,(int32_t)id);
 }
 
 uint32_t IntervalManager::getFreeID()

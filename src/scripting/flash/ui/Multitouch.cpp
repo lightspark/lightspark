@@ -44,7 +44,7 @@ ASFUNCTIONBODY_GETTER_SETTER_STATIC(Multitouch, inputMode);
 ASFUNCTIONBODY_ATOM(Multitouch, getMaxTouchPoints)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Multitouch not supported");
-	asAtomHandler::setInt(ret,wrk,1);
+	asAtomHandler::setInt(ret,1);
 }
 
 ASFUNCTIONBODY_ATOM(Multitouch, getSupportedGestures)

@@ -314,7 +314,7 @@ ASFUNCTIONBODY_ATOM(Capabilities,_maxLevelIDC)
 ASFUNCTIONBODY_ATOM(Capabilities,_pixelAspectRatio)
 {
     LOG(LOG_NOT_IMPLEMENTED,"Capabilities.pixelAspectRatio always returns 1");
-	wrk->setBuiltinCallResultLocalNumber(ret, 1);
+	asAtomHandler::setNumber(ret, 1);
 }
 
 ASFUNCTIONBODY_ATOM(Capabilities,_screenColor)
@@ -344,17 +344,17 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getScreenResolutionX)
 {
 	SDL_DisplayMode screen;
 	if (!wrk->getSystemState()->getEngineData()->getScreenData(&screen))
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 	else
-		asAtomHandler::setInt(ret,wrk,screen.w);
+		asAtomHandler::setInt(ret,screen.w);
 }
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenResolutionY)
 {
 	SDL_DisplayMode screen;
 	if (!wrk->getSystemState()->getEngineData()->getScreenData(&screen))
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 	else
-		asAtomHandler::setInt(ret,wrk,screen.h);
+		asAtomHandler::setInt(ret,screen.h);
 }
 ASFUNCTIONBODY_ATOM(Capabilities,_getHasAccessibility)
 {
@@ -365,7 +365,7 @@ ASFUNCTIONBODY_ATOM(Capabilities,_getHasAccessibility)
 ASFUNCTIONBODY_ATOM(Capabilities,_getScreenDPI)
 {
 	number_t dpi = wrk->getSystemState()->getEngineData()->getScreenDPI();
-	wrk->setBuiltinCallResultLocalNumber(ret, dpi);
+	asAtomHandler::setNumber(ret, dpi);
 }
 
 LoaderContext::LoaderContext(ASWorker* wrk, Class_base* c):
@@ -554,7 +554,7 @@ ASFUNCTIONBODY_ATOM(System,totalMemory)
 {
 #if defined (_WIN32) || defined (__APPLE__)
 	LOG(LOG_NOT_IMPLEMENTED,"System.totalMemory not implemented for this platform");
-	asAtomHandler::setUInt(ret,wrk,1024);
+	asAtomHandler::setUInt(ret,1024);
 	return;
 #else
 	char* buf=nullptr;
@@ -563,7 +563,7 @@ ASFUNCTIONBODY_ATOM(System,totalMemory)
 	if (!f || malloc_info(0,f)!=0)
 	{
 		LOG(LOG_ERROR,"System.totalMemory failed");
-		asAtomHandler::setUInt(ret,wrk,1024);
+		asAtomHandler::setUInt(ret,1024);
 		return;
 	}
 	fclose(f);
@@ -588,7 +588,7 @@ ASFUNCTIONBODY_ATOM(System,totalMemory)
 		memsize += s.attribute("size").as_uint(0);
 		n = n.next_sibling("heap");
 	}
-	asAtomHandler::setUInt(ret,wrk,memsize);
+	asAtomHandler::setUInt(ret,memsize);
 #endif
 }
 ASFUNCTIONBODY_ATOM(System,disposeXML)

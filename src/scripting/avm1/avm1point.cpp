@@ -181,8 +181,8 @@ ASFUNCTIONBODY_ATOM(AVM1Point,AVM1_interpolate)
 	ARG_CHECK(ARG_UNPACK_NO_ERROR(pt1)(pt2)(f, Number::NaN));
 
 	Vector2f interpPoint = pt2 - (pt2 - pt1) * f;
-	res->setX(asAtomHandler::fromNumber(wrk,interpPoint.x,false),wrk,false);
-	res->setY(asAtomHandler::fromNumber(wrk,interpPoint.y,false),wrk,false);
+	res->setX(asAtomHandler::fromNumber(interpPoint.x),wrk,false);
+	res->setY(asAtomHandler::fromNumber(interpPoint.y),wrk,false);
 	ret = asAtomHandler::fromObject(res);
 }
 
@@ -206,7 +206,7 @@ ASFUNCTIONBODY_ATOM(AVM1Point,AVM1_distance)
 
 	Vector2f diff = pt2 - pt1;
 	number_t res=lenImpl(diff.x, diff.y);
-	wrk->setBuiltinCallResultLocalNumber(ret, res);
+	asAtomHandler::setNumber(ret, res);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Point,AVM1_normalize)
@@ -216,8 +216,8 @@ ASFUNCTIONBODY_ATOM(AVM1Point,AVM1_normalize)
 	number_t len = th->len();
 	if (std::isnan(len) || !asAtomHandler::isNumeric(th->atomX) || !asAtomHandler::isNumeric(th->atomY))
 		return;
-	th->setX(asAtomHandler::fromNumber(wrk,len == 0 ? 0 : th->x * thickness / len,false),wrk,false);
-	th->setY(asAtomHandler::fromNumber(wrk,len == 0 ? 0 : th->y * thickness / len,false),wrk,false);
+	th->setX(asAtomHandler::fromNumber(len == 0 ? 0 : th->x * thickness / len),wrk,false);
+	th->setY(asAtomHandler::fromNumber(len == 0 ? 0 : th->y * thickness / len),wrk,false);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Point,AVM1_offset)
@@ -227,8 +227,8 @@ ASFUNCTIONBODY_ATOM(AVM1Point,AVM1_offset)
 		return;
 	number_t dx = asAtomHandler::toNumber(args[0]);
 	number_t dy = argslen > 1 ? asAtomHandler::toNumber(args[1]) : Number::NaN;
-	th->setX(asAtomHandler::fromNumber(wrk,th->x + dx,false),wrk,false);
-	th->setY(asAtomHandler::fromNumber(wrk,th->y + dy,false),wrk,false);
+	th->setX(asAtomHandler::fromNumber(th->x + dx),wrk,false);
+	th->setY(asAtomHandler::fromNumber(th->y + dy),wrk,false);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Point,AVM1_polar)
@@ -238,8 +238,8 @@ ASFUNCTIONBODY_ATOM(AVM1Point,AVM1_polar)
 	number_t len = asAtomHandler::toNumber(args[0]);
 	number_t angle = argslen > 1 ? asAtomHandler::toNumber(args[1]) : Number::NaN;
 	AVM1Point* res=Class<AVM1Point>::getInstanceS(wrk);
-	res->setX(asAtomHandler::fromNumber(wrk,len * cos(angle),false),wrk,false);
-	res->setY(asAtomHandler::fromNumber(wrk,len * sin(angle),false),wrk,false);
+	res->setX(asAtomHandler::fromNumber(len * cos(angle)),wrk,false);
+	res->setY(asAtomHandler::fromNumber(len * sin(angle)),wrk,false);
 	ret = asAtomHandler::fromObject(res);
 }
 

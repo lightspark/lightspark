@@ -174,7 +174,6 @@ void Dictionary::getKeyFromMultiname(const multiname& name,asAtom& key)
 }
 multiname *Dictionary::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset, ASWorker* wrk)
 {
-	asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	assert_and_throw(implEnable);
 	asAtom key=asAtomHandler::invalidAtom;
 	getKeyFromMultiname(name,key);
@@ -283,30 +282,6 @@ GET_VARIABLE_RESULT Dictionary::getVariableByMultiname(asAtom& ret, const multin
 	}
 	//Try with the base implementation
 	return getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
-}
-
-asAtomWithNumber Dictionary::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	asAtom key=asAtomHandler::invalidAtom;
-	getKeyFromMultiname(name,key);
-	Dictionary::dictType::iterator it=findKey(key);
-	if(it != data.end())
-	{
-		asAtomWithNumber res;
-		res.value = it->second;
-		return res;
-	}
-	if (asAtomHandler::isPrimitive(key))
-	{
-		// primitive key, fallback to base implementation
-		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-	}
-	else
-	{
-		asAtomWithNumber res;
-		res.value = asAtomHandler::undefinedAtom;
-		return res;
-	}
 }
 
 bool Dictionary::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype,ASWorker* wrk)

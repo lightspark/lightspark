@@ -77,9 +77,9 @@ ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_getYear)
 	AVM1Date* th = asAtomHandler::as<AVM1Date>(obj);
 
 	if (th->isValid())
-		asAtomHandler::setInt(ret, wrk, th->getYear() - 1900);
+		asAtomHandler::setInt(ret, th->getYear() - 1900);
 	else
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_getUTCYear)
@@ -87,9 +87,9 @@ ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_getUTCYear)
 	AVM1Date* th = asAtomHandler::as<AVM1Date>(obj);
 
 	if (th->isValid())
-		asAtomHandler::setInt(ret, wrk, th->getUTCYear() - 1900);
+		asAtomHandler::setInt(ret, th->getUTCYear() - 1900);
 	else
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_setYear)

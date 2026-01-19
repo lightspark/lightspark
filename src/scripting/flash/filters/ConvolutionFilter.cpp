@@ -59,7 +59,7 @@ ConvolutionFilter::ConvolutionFilter(ASWorker* wrk,Class_base* c, const CONVOLUT
 		matrix = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		for (uint8_t i = 0; i < filter.MatrixX * filter.MatrixY; i++)
 		{
-			matrix->push(asAtomHandler::fromNumber(wrk,(FLOAT)filter.Matrix[i],false));
+			matrix->push(asAtomHandler::fromNumber((FLOAT)filter.Matrix[i]));
 		}
 	}
 }

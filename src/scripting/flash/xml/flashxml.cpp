@@ -144,7 +144,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,_constructor)
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
 	tiny_string value;
 	ARG_CHECK(ARG_UNPACK(th->nodetype)(value));
-	// it seems flash treats the undocmented types as text nodes(?), see ruffle test avm2/xmlnode
+	// it seems flash treats the undocumented types as text nodes(?), see ruffle test avm2/xmlnode
 	switch (th->nodetype)
 	{
 		case 1:
@@ -242,7 +242,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,get_attributes)
 	{
 		uint32_t attrName = wrk->getSystemState()->getUniqueStringId(it->name());
 		asAtom  attrValue = asAtomHandler::fromString(wrk->getSystemState(),it->value());
-		res->setDynamicVariableNoCheck(attrName,attrValue,false,wrk,!wrk->needsActionScript3());
+		res->setDynamicVariableNoCheck(attrName,attrValue,false,!wrk->needsActionScript3());
 	}
 }
 ASFUNCTIONBODY_ATOM(XMLNode,set_attributes)
@@ -534,7 +534,7 @@ ASFUNCTIONBODY_ATOM(XMLNode,previousSibling)
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeType)
 {
 	XMLNode* th=asAtomHandler::as<XMLNode>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->nodetype);
+	asAtomHandler::setUInt(ret,th->nodetype);
 }
 
 ASFUNCTIONBODY_ATOM(XMLNode,_getNodeName)

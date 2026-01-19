@@ -30,10 +30,7 @@
 		return; \
 	} \
 	asAtom oldres = CONTEXT_GETLOCAL(context,pos);\
-	if (asAtomHandler::isLocalNumber(ret)) \
-		asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,pos),context->worker,asAtomHandler::getLocalNumber(context,ret),pos);\
-	else \
-		asAtomHandler::set(CONTEXT_GETLOCAL(context,pos),ret);\
+	asAtomHandler::set(CONTEXT_GETLOCAL(context,pos),ret);\
 	ASATOM_DECREF(oldres);\
 }
 

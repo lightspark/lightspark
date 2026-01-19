@@ -1463,9 +1463,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getAlpha)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	if (th->loadedFrom->usesActionScript3)
-		wrk->setBuiltinCallResultLocalNumber(ret, !th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier : 1.0);
+		asAtomHandler::setNumber(ret, !th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier : 1.0);
 	else // AVM1 uses alpha values from 0-100
-		wrk->setBuiltinCallResultLocalNumber(ret, !th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier*100.0 : 100.0);
+		asAtomHandler::setNumber(ret, !th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier*100.0 : 100.0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMask)
@@ -1499,7 +1499,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setMask)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleX)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->sx);
+	asAtomHandler::setNumber(ret, th->sx);
 }
 
 void DisplayObject::setScaleX(number_t val)
@@ -1533,7 +1533,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleX)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleY)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->sy);
+	asAtomHandler::setNumber(ret, th->sy);
 }
 
 void DisplayObject::setScaleY(number_t val)
@@ -1567,7 +1567,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleY)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getScaleZ)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->sz);
+	asAtomHandler::setNumber(ret, th->sz);
 }
 
 void DisplayObject::setScaleZ(number_t val)
@@ -1621,7 +1621,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleZ)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getX)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->tx);
+	asAtomHandler::setNumber(ret, th->tx);
 }
 
 void DisplayObject::setX(number_t val)
@@ -1710,7 +1710,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setX)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getY)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->ty);
+	asAtomHandler::setNumber(ret, th->ty);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setY)
@@ -1724,7 +1724,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setY)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getZ)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->tz);
+	asAtomHandler::setNumber(ret, th->tz);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setZ)
@@ -2014,7 +2014,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getRoot)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getRotation)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->rotation);
+	asAtomHandler::setNumber(ret, th->rotation);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setVisible)
@@ -2098,7 +2098,7 @@ _NR<Stage> DisplayObject::getStage()
 ASFUNCTIONBODY_ATOM(DisplayObject,_getWidth)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->computeWidth());
+	asAtomHandler::setNumber(ret, th->computeWidth());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
@@ -2145,7 +2145,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getHeight)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->computeHeight());
+	asAtomHandler::setNumber(ret, th->computeHeight());
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setHeight)
@@ -2197,13 +2197,13 @@ Vector2f DisplayObject::getLocalMousePos()
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseX)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->getLocalMousePos().x);
+	asAtomHandler::setNumber(ret, th->getLocalMousePos().x);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseY)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->getLocalMousePos().y);
+	asAtomHandler::setNumber(ret, th->getLocalMousePos().y);
 }
 
 bool DisplayObject::hitTestMask(const Vector2f& globalPoint, HIT_TYPE type)
@@ -3293,7 +3293,7 @@ void DisplayObject::removeAVM1Listeners()
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setInt(ret,wrk,round(th->sx*100.0));
+	asAtomHandler::setInt(ret,round(th->sx*100.0));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleX)
@@ -3309,7 +3309,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleX)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleY)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setInt(ret,wrk,round(th->sy*100.0));
+	asAtomHandler::setInt(ret,round(th->sy*100.0));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setScaleY)
@@ -3405,8 +3405,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_localToGlobal)
 	th->localToGlobal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy,false);
 	ASATOM_DECREF(x);
 	ASATOM_DECREF(y);
-	asAtomHandler::setNumber(x,wrk,tempx);
-	asAtomHandler::setNumber(y,wrk,tempy);
+	asAtomHandler::setNumber(x,tempx);
+	asAtomHandler::setNumber(y,tempy);
 	bool alreadyset=false;
 	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,&alreadyset,wrk);
 	if (alreadyset)
@@ -3442,8 +3442,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_globalToLocal)
 	th->globalToLocal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy,false);
 	ASATOM_DECREF(x);
 	ASATOM_DECREF(y);
-	asAtomHandler::setNumber(x,wrk,tempx);
-	asAtomHandler::setNumber(y,wrk,tempy);
+	asAtomHandler::setNumber(x,tempx);
+	asAtomHandler::setNumber(y,tempy);
 	bool alreadyset=false;
 	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,&alreadyset,wrk);
 	if (alreadyset)
@@ -3455,12 +3455,12 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_globalToLocal)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesLoaded)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->loaderInfo ? th->loaderInfo->getBytesLoaded() : 0);
+	asAtomHandler::setUInt(ret,th->loaderInfo ? th->loaderInfo->getBytesLoaded() : 0);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBytesTotal)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->loaderInfo ? th->loaderInfo->getBytesTotal() : 0);
+	asAtomHandler::setUInt(ret,th->loaderInfo ? th->loaderInfo->getBytesTotal() : 0);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getQuality)
 {
@@ -3474,7 +3474,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setQuality)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getAlpha)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, !th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier*100.0 : 100.0);
+	asAtomHandler::setNumber(ret, !th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier*100.0 : 100.0);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 {
@@ -3554,16 +3554,16 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("xMin");
-	v = asAtomHandler::fromNumber(wrk,x1,false);
+	v = asAtomHandler::fromNumber(x1);
 	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("xMax");
-	v = asAtomHandler::fromNumber(wrk,x2,false);
+	v = asAtomHandler::fromNumber(x2);
 	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("yMin");
-	v = asAtomHandler::fromNumber(wrk,y1,false);
+	v = asAtomHandler::fromNumber(y1);
 	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("yMax");
-	v = asAtomHandler::fromNumber(wrk,y2,false);
+	v = asAtomHandler::fromNumber(y2);
 	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_swapDepths)

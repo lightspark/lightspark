@@ -117,7 +117,7 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedClassName)
 			c=asAtomHandler::as<Class_base>(args[0]);
 			break;
 		case T_NUMBER:
-			if (asAtomHandler::isLocalNumber(args[0]) || asAtomHandler::as<Number>(args[0])->isfloat)
+			if (asAtomHandler::isNumber(args[0]))
 				c=Class<Number>::getRef(wrk->getSystemState()).getPtr();
 			else if (asAtomHandler::toInt64(args[0]) > INT32_MIN && asAtomHandler::toInt64(args[0])< INT32_MAX)
 				c=Class<Integer>::getRef(wrk->getSystemState()).getPtr();
@@ -467,7 +467,7 @@ ASFUNCTIONBODY_ATOM(lightspark,describeTypeJSON)
 ASFUNCTIONBODY_ATOM(lightspark,getTimer)
 {
 	uint64_t res=wrk->getSystemState()->getCurrentTime_ms() - wrk->getSystemState()->startTime;
-	asAtomHandler::setInt(ret,wrk,(int32_t)res);
+	asAtomHandler::setInt(ret,(int32_t)res);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,setInterval)

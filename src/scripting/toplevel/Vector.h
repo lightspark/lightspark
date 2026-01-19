@@ -318,7 +318,6 @@ public:
 		*alreadyset=false;
 		if(size_t(index) < vec.size())
 		{
-			asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 			if (vec[index].uintval != o.uintval)
 			{
 				ASObject* obj = asAtomHandler::getObject(vec[index]);
@@ -334,7 +333,6 @@ public:
 		}
 		else if(!fixed && size_t(index) == vec.size())
 		{
-			asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 			ASObject* obj = asAtomHandler::getObject(o);
 			if (obj)
 				obj->addStoredMember();
@@ -351,7 +349,6 @@ public:
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
 	GET_VARIABLE_RESULT getVariableByInteger(asAtom& ret, int index, GET_VARIABLE_OPTION opt,ASWorker* wrk) override;
-	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt) override;
 
 	FORCE_INLINE void getVariableByIntegerDirect(asAtom& ret, int index, ASWorker* wrk)
 	{
@@ -381,7 +378,6 @@ public:
 	{
 		if (index < size())
 		{
-			asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),v);
 			ASObject* obj = asAtomHandler::getObject(vec[index]);
 			if (obj)
 				obj->removeStoredMember();

@@ -520,10 +520,10 @@ bool JSON::parseNumber(const tiny_string &jsonstring, CharIterator& it, asAtom& 
 		return false;
 
 	if (asAtomHandler::isInvalid(parent))
-		parent = asAtomHandler::fromNumber(wrk,num,false);
+		parent = asAtomHandler::fromNumber(num);
 	else if (asAtomHandler::isObject(parent))
 	{
-		asAtom v = asAtomHandler::fromNumber(wrk,num,false);
+		asAtom v = asAtomHandler::fromNumber(num);
 		asAtomHandler::getObjectNoCheck(parent)->setVariableByMultiname(key,v,CONST_NOT_ALLOWED,nullptr,wrk);
 	}
 	else

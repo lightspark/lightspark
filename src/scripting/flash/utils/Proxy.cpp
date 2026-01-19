@@ -128,46 +128,6 @@ GET_VARIABLE_RESULT Proxy::getVariableByMultiname(asAtom& ret, const multiname& 
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
-asAtomWithNumber Proxy::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	//It seems that various kind of implementation works only with the empty namespace
-	asAtom o=asAtomHandler::invalidAtom;
-	GET_VARIABLE_RESULT res = GET_VARIABLE_RESULT::GETVAR_NORMAL;
-	LOG_CALL("Proxy::getVar "<< name << " " << this->toDebugString()<<" "<<ASObject::hasPropertyByMultiname(name, true, true,wrk));
-	if(ASObject::hasPropertyByMultiname(name, true, true,wrk))
-		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-	if (!implEnable)
-		return asAtomWithNumber();
-
-	//Check if there is a custom getter defined, skipping implementation to avoid recursive calls
-	multiname getPropertyName(nullptr);
-	getPropertyName.name_type=multiname::NAME_STRING;
-	getPropertyName.name_s_id=getSystemState()->getUniqueStringId("getProperty");
-	getPropertyName.ns.emplace_back(getSystemState(),flash_proxy,NAMESPACE);
-	res = getVariableByMultiname(o,getPropertyName,GET_VARIABLE_OPTION::SKIP_IMPL,wrk);
-
-	if(asAtomHandler::isInvalid(o))
-		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-	assert_and_throw(asAtomHandler::isFunction(o));
-
-	ASObject* namearg = abstract_s(getInstanceWorker(),name.normalizedName(wrk));
-	namearg->setProxyProperty(name);
-	asAtom arg = asAtomHandler::fromObject(namearg);
-	//We now suppress special handling
-	implEnable=false;
-	LOG_CALL("Proxy::getProperty "<< name.normalizedNameUnresolved(getSystemState()) << " " << this->toDebugString() <<" "<<asAtomHandler::toDebugString(o) <<" "<<asAtomHandler::toDebugString(o));
-	asAtom v = asAtomHandler::fromObject(this);
-	ASATOM_INCREF(v);
-	asAtomWithNumber ret;
-	// TODO avoid creation of Number object for return value
-	asAtomHandler::callFunction(o,getInstanceWorker(),ret.value,v,&arg,1,true);
-	if (res & GET_VARIABLE_RESULT::GETVAR_ISINCREFFED)
-		ASATOM_DECREF(o);
-	implEnable=true;
-	return res;
-
-}
-
 bool Proxy::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk)
 {
 	if (name.normalizedName(getInstanceWorker()) == "isAttribute")

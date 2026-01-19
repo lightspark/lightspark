@@ -1070,7 +1070,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				ASATOM_DECREF(aa);
 				ASATOM_DECREF(ab);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionAdd "<<b<<"+"<<a);
-				PushStack(stack,asAtomHandler::fromNumber(wrk,a+b,false));
+				PushStack(stack,asAtomHandler::fromNumber(a+b));
 				break;
 			}
 			case 0x0b: // ActionSubtract
@@ -1082,7 +1082,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				ASATOM_DECREF(aa);
 				ASATOM_DECREF(ab);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSubtract "<<b<<"-"<<a);
-				PushStack(stack,asAtomHandler::fromNumber(wrk,b-a,false));
+				PushStack(stack,asAtomHandler::fromNumber(b-a));
 				break;
 			}
 			case 0x0c: // ActionMultiply
@@ -1096,7 +1096,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				ASATOM_DECREF(aa);
 				ASATOM_DECREF(ab);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionMultiply "<<b<<"*"<<a);
-				PushStack(stack,asAtomHandler::fromNumber(wrk,b*a,false));
+				PushStack(stack,asAtomHandler::fromNumber(b*a));
 				break;
 			}
 			case 0x0d: // ActionDivide
@@ -1114,10 +1114,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					if (clip->loadedFrom->version == 4)
 						ret = asAtomHandler::fromString(clip->getSystemState(),"#ERROR#");
 					else
-						ret = asAtomHandler::fromNumber(wrk,Number::NaN,false);
+						ret = asAtomHandler::fromNumber(Number::NaN);
 				}
 				else
-					ret = asAtomHandler::fromNumber(wrk,b/a,false);
+					ret = asAtomHandler::fromNumber(b/a);
 				PushStack(stack,ret);
 				break;
 			}
@@ -1258,8 +1258,23 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom value = PopStack(stack);
 				asAtom name = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionSetVariable "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(value));
+				bool found=false;
+				if (!paramnames.empty())
+				{
+					uint32_t nameId = asAtomHandler::AVM1toStringId(name,wrk,context->isCaseSensitive());
+					for (uint32_t i = 0; i < paramnames.size(); i++)
+					{
+						if (paramnames[i] == nameId)
+						{
+							// don't overwrite param
+							found = true;
+							break;
+						}
+					}
+				}
+				if (!found)
+					context->setVariable(thisObj, originalclip, clip, name, value);
 				ASATOM_DECREF(name);
-				context->setVariable(thisObj, originalclip, clip, name, value);
 				break;
 			}
 			case 0x20: // ActionSetTarget2
@@ -1591,7 +1606,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x34: // ActionGetTime
 			{
 				uint64_t runtime = clip->getSystemState()->getCurrentTime_ms()-clip->getSystemState()->startTime;
-				asAtom ret=asAtomHandler::fromNumber(wrk,(number_t)runtime,false);
+				asAtom ret=asAtomHandler::fromNumber((number_t)runtime);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetTime "<<asAtomHandler::toDebugString(ret));
 				PushStack(stack,asAtom(ret));
 				break;
@@ -1733,7 +1748,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom x = PopStack(stack);
 				asAtom tmp = x;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionModulo "<<asAtomHandler::toDebugString(x)<<" % "<<asAtomHandler::toDebugString(y));
-				asAtomHandler::modulo(x,wrk,y,false);
+				asAtomHandler::modulo(x,y,false);
 				ASATOM_DECREF(y);
 				ASATOM_DECREF(tmp);
 				PushStack(stack,x);
@@ -1857,7 +1872,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					asAtom value = PopStack(stack);
 					asAtom name = PopStack(stack);
 					uint32_t nameid=asAtomHandler::toStringId(name,wrk);
-					ret->setDynamicVariableNoCheck(nameid,value,asAtomHandler::isInteger(name),wrk);
+					ret->setDynamicVariableNoCheck(nameid,value,asAtomHandler::isInteger(name));
 				}
 				ASATOM_DECREF(na);
 				PushStack(stack,asAtomHandler::fromObject(ret));
@@ -1937,7 +1952,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x4a: // ActionToNumber
 			{
 				asAtom arg = PopStack(stack);
-				PushStack(stack,asAtomHandler::fromNumber(wrk,asAtomHandler::AVM1toNumber(arg,clip->loadedFrom->version),false));
+				PushStack(stack,asAtomHandler::fromNumber(asAtomHandler::AVM1toNumber(arg,clip->loadedFrom->version)));
 				ASATOM_DECREF(arg);
 				break;
 			}
@@ -2146,7 +2161,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			{
 				asAtom num = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionIncrement "<<asAtomHandler::toDebugString(num));
-				PushStack(stack,asAtomHandler::fromNumber(wrk,asAtomHandler::AVM1toNumber(num,clip->loadedFrom->version)+1,false));
+				PushStack(stack,asAtomHandler::fromNumber(asAtomHandler::AVM1toNumber(num,clip->loadedFrom->version)+1));
 				ASATOM_DECREF(num);
 				break;
 			}
@@ -2154,7 +2169,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			{
 				asAtom num = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDecrement "<<asAtomHandler::toDebugString(num));
-				PushStack(stack,asAtomHandler::fromNumber(wrk,asAtomHandler::AVM1toNumber(num,clip->loadedFrom->version)-1,false));
+				PushStack(stack,asAtomHandler::fromNumber(asAtomHandler::AVM1toNumber(num,clip->loadedFrom->version)-1));
 				ASATOM_DECREF(num);
 				break;
 			}
@@ -2281,7 +2296,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						{
 							scrobj->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 							if (!asAtomHandler::isValid(func) && scrobj->is<Class_base>())
-								scrobj->as<Class_base>()->getClassVariableByMultiname(func,m,wrk,asAtomHandler::invalidAtom,UINT16_MAX);
+								scrobj->as<Class_base>()->getClassVariableByMultiname(func,m,wrk,asAtomHandler::invalidAtom);
 						}
 						if (!asAtomHandler::isValid(func))
 						{
@@ -2468,7 +2483,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom arg2 = PopStack(stack);
 				asAtom tmp = arg1;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionBitAnd "<<asAtomHandler::toDebugString(arg1)<<" & "<<asAtomHandler::toDebugString(arg2));
-				asAtomHandler::bit_and(arg1,wrk,arg2);
+				asAtomHandler::bit_and(arg1,arg2);
 				PushStack(stack,arg1);
 				ASATOM_DECREF(tmp);
 				ASATOM_DECREF(arg2);
@@ -2480,7 +2495,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom arg2 = PopStack(stack);
 				asAtom tmp = arg1;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionBitOr "<<asAtomHandler::toDebugString(arg1)<<" | "<<asAtomHandler::toDebugString(arg2));
-				asAtomHandler::bit_or(arg1,wrk,arg2);
+				asAtomHandler::bit_or(arg1,arg2);
 				PushStack(stack,arg1);
 				ASATOM_DECREF(tmp);
 				ASATOM_DECREF(arg2);
@@ -2492,7 +2507,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom arg2 = PopStack(stack);
 				asAtom tmp = arg1;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionBitXOr "<<asAtomHandler::toDebugString(arg1)<<" ^ "<<asAtomHandler::toDebugString(arg2));
-				asAtomHandler::bit_xor(arg1,wrk,arg2);
+				asAtomHandler::bit_xor(arg1,arg2);
 				PushStack(stack,arg1);
 				ASATOM_DECREF(tmp);
 				ASATOM_DECREF(arg2);
@@ -2533,7 +2548,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				// NOTE: In SWF 8-9, ActionBitURShift actually returns
 				// a signed value.
 				if (swfVersion == 8 || swfVersion == 9)
-					asAtomHandler::setInt(value, wrk, asAtomHandler::toInt(value));
+					asAtomHandler::setInt(value, asAtomHandler::toInt(value));
 				PushStack(stack,value);
 				ASATOM_DECREF(tmp);
 				ASATOM_DECREF(count);
@@ -2843,7 +2858,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							f.read((const uint8_t*)&(*it));
 							it+=4;
 							len-=4;
-							asAtom a = asAtomHandler::fromNumber(wrk,f,false);
+							asAtom a = asAtomHandler::fromNumber(f);
 							PushStack(stack,a);
 							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 1 "<<asAtomHandler::toDebugString(a));
 							break;
@@ -2880,7 +2895,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							d.read((const uint8_t*)&(*it));
 							it+=8;
 							len-=8;
-							asAtom a = asAtomHandler::fromNumber(wrk,d,false);
+							asAtom a = asAtomHandler::fromNumber(d);
 							PushStack(stack,a);
 							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionPush 6 "<<asAtomHandler::toDebugString(a));
 							break;

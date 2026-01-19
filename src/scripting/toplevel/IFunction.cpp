@@ -105,10 +105,10 @@ ASFUNCTIONBODY_ATOM(IFunction,_length)
 	if (asAtomHandler::is<IFunction>(obj))
 	{
 		IFunction* th=asAtomHandler::as<IFunction>(obj);
-		asAtomHandler::setUInt(ret,wrk,th->length);
+		asAtomHandler::setUInt(ret,th->length);
 	}
 	else
-		asAtomHandler::setUInt(ret,wrk,1);
+		asAtomHandler::setUInt(ret,1);
 }
 
 ASFUNCTIONBODY_ATOM(IFunction,apply)

@@ -336,7 +336,7 @@ void ABCVm::abc_hasnext(call_context* context)
 	uint32_t newIndex=asAtomHandler::toObject(*v1,context->worker)->nextNameIndex(curIndex);
 	ASATOM_DECREF_POINTER(pval);
 	ASATOM_DECREF_POINTER(v1);
-	asAtomHandler::setInt(*pval,context->worker,newIndex);
+	asAtomHandler::setInt(*pval,newIndex);
 	++(context->exec_pos);
 }
 void ABCVm::abc_pushnull(call_context* context)
@@ -611,12 +611,9 @@ void ABCVm::abc_returnvoid(call_context* context)
 }
 void ABCVm::abc_returnvalue(call_context* context)
 {
-	asAtom v;
+	asAtom v=asAtomHandler::invalidAtom;
 	RUNTIME_STACK_POP(context,v);
-	if (asAtomHandler::isLocalNumber(v))
-		asAtomHandler::setNumber(context->locals[context->mi->body->getReturnValuePos()],context->worker,asAtomHandler::getLocalNumber(context,v),context->mi->body->getReturnValuePos());
-	else
-		asAtomHandler::set(context->locals[context->mi->body->getReturnValuePos()],v);
+	asAtomHandler::set(context->locals[context->mi->body->getReturnValuePos()],v);
 	LOG_CALL("returnValue " << asAtomHandler::toDebugString(context->locals[context->mi->body->getReturnValuePos()]));
 	++(context->exec_pos);
 }
@@ -662,7 +659,7 @@ void ABCVm::abc_sxi1(call_context* context)
 	RUNTIME_STACK_POINTER_CREATE(context,arg1);
 	int32_t ret=asAtomHandler::toUInt(*arg1)&0x1 ? -1 : 0;
 	ASATOM_DECREF_POINTER(arg1);
-	asAtomHandler::setInt(*arg1,context->worker,ret);
+	asAtomHandler::setInt(*arg1,ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sxi8(call_context* context)
@@ -671,7 +668,7 @@ void ABCVm::abc_sxi8(call_context* context)
 	RUNTIME_STACK_POINTER_CREATE(context,arg1);
 	int32_t ret=(int8_t)asAtomHandler::toUInt(*arg1);
 	ASATOM_DECREF_POINTER(arg1);
-	asAtomHandler::setInt(*arg1,context->worker,ret);
+	asAtomHandler::setInt(*arg1,ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_sxi16(call_context* context)
@@ -680,7 +677,7 @@ void ABCVm::abc_sxi16(call_context* context)
 	RUNTIME_STACK_POINTER_CREATE(context,arg1);
 	int32_t ret=(int16_t)asAtomHandler::toUInt(*arg1);
 	ASATOM_DECREF_POINTER(arg1);
-	asAtomHandler::setInt(*arg1,context->worker,ret);
+	asAtomHandler::setInt(*arg1,ret);
 	++(context->exec_pos);
 }
 void ABCVm::abc_constructgenerictype(call_context* context)
@@ -831,16 +828,8 @@ void ABCVm::abc_setlocal(call_context* context)
 	assert(i <= context->mi->body->getReturnValuePos()+context->mi->body->localresultcount);
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
-		if (asAtomHandler::isLocalNumber(*obj))
-		{
-			ASATOM_DECREF(context->locals[i]);
-			asAtomHandler::setNumber(context->locals[i],context->worker,asAtomHandler::getLocalNumber(context,*obj),i);
-		}
-		else
-		{
-			ASATOM_DECREF(context->locals[i]);
-			context->locals[i]=*obj;
-		}
+		ASATOM_DECREF(context->locals[i]);
+		context->locals[i]=*obj;
 	}
 }
 void ABCVm::abc_getglobalscope(call_context* context)
@@ -877,7 +866,7 @@ void ABCVm::abc_getProperty(call_context* context)
 			assert(instrptr->cacheobj2->type == T_FUNCTION);
 			IFunction* f = instrptr->cacheobj2->as<IFunction>();
 			asAtom closure = asAtomHandler::fromObject(instrptr->cacheobj3 ? instrptr->cacheobj3 : obj);
-			f->callGetter(prop,closure,context->worker,UINT16_MAX);
+			f->callGetter(prop,closure,context->worker);
 			LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 			if(asAtomHandler::isInvalid(prop))
 			{
@@ -914,7 +903,7 @@ void ABCVm::abc_getProperty(call_context* context)
 		IFunction* f = asAtomHandler::as<IFunction>(prop);
 		asAtom closure = asAtomHandler::getClosureAtom(prop,asAtomHandler::fromObject(obj));
 		prop = asAtom();
-		f->callGetter(prop,closure,context->worker,UINT16_MAX);
+		f->callGetter(prop,closure,context->worker);
 		LOG_CALL("End of getter"<< ' ' << f->toDebugString()<<" result:"<<asAtomHandler::toDebugString(prop));
 		if(asAtomHandler::isValid(prop))
 		{
@@ -1048,7 +1037,7 @@ void ABCVm::abc_convert_i(call_context* context)
 	{
 		int32_t v= asAtomHandler::toIntStrict(context->worker,*pval);
 		ASATOM_DECREF_POINTER(pval);
-		asAtomHandler::setInt(*pval,context->worker,v);
+		asAtomHandler::setInt(*pval,v);
 	}
 	++(context->exec_pos);
 }
@@ -1060,7 +1049,7 @@ void ABCVm::abc_convert_u(call_context* context)
 	{
 		uint32_t v= asAtomHandler::toUInt(*pval);
 		ASATOM_DECREF_POINTER(pval);
-		asAtomHandler::setUInt(*pval,context->worker,v);
+		asAtomHandler::setUInt(*pval,v);
 	}
 	++(context->exec_pos);
 }
@@ -1072,7 +1061,7 @@ void ABCVm::abc_convert_d(call_context* context)
 	{
 		number_t v= asAtomHandler::toNumber(*pval);
 		ASATOM_DECREF_POINTER(pval);
-		asAtomHandler::setNumber(*pval,context->worker,v);
+		asAtomHandler::setNumber(*pval,v);
 	}
 	++(context->exec_pos);
 }
@@ -1178,13 +1167,13 @@ void ABCVm::abc_negate(call_context* context)
 	{
 		int32_t ret=-(asAtomHandler::toInt(*pval));
 		ASATOM_DECREF_POINTER(pval);
-		asAtomHandler::setInt(*pval,context->worker, ret);
+		asAtomHandler::setInt(*pval, ret);
 	}
 	else
 	{
 		number_t ret=-(asAtomHandler::toNumber(*pval));
 		ASATOM_DECREF_POINTER(pval);
-		*pval = asAtomHandler::fromNumber(context->worker,ret,false);
+		*pval = asAtomHandler::fromNumber(ret);
 	}
 	++(context->exec_pos);
 }
@@ -1232,7 +1221,7 @@ void ABCVm::abc_not(call_context* context)
 void ABCVm::abc_bitnot(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::bitnot(*pval,context->worker);
+	asAtomHandler::bitnot(*pval);
 
 	++(context->exec_pos);
 }
@@ -1289,7 +1278,7 @@ void ABCVm::abc_modulo(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::modulo(*pval,context->worker,*v2,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
+	asAtomHandler::modulo(*pval,*v2,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 	ASATOM_DECREF_POINTER(v2);
 	if (o)
 		o->decRef();
@@ -1337,7 +1326,7 @@ void ABCVm::abc_bitand(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::bit_and(*pval,context->worker,*v1);
+	asAtomHandler::bit_and(*pval,*v1);
 	ASATOM_DECREF_POINTER(v1);
 	if (o)
 		o->decRef();
@@ -1349,7 +1338,7 @@ void ABCVm::abc_bitor(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::bit_or(*pval,context->worker,*v1);
+	asAtomHandler::bit_or(*pval,*v1);
 	ASATOM_DECREF_POINTER(v1);
 	if (o)
 		o->decRef();
@@ -1361,7 +1350,7 @@ void ABCVm::abc_bitxor(call_context* context)
 	RUNTIME_STACK_POP_CREATE(context,v1);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	ASObject* o = asAtomHandler::getObject(*pval);
-	asAtomHandler::bit_xor(*pval,context->worker,*v1);
+	asAtomHandler::bit_xor(*pval,*v1);
 	ASATOM_DECREF_POINTER(v1);
 	if (o)
 		o->decRef();
@@ -1508,14 +1497,14 @@ void ABCVm::abc_increment_i(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("increment_i:"<<asAtomHandler::toDebugString(*pval));
-	asAtomHandler::increment_i(*pval,context->worker);
+	asAtomHandler::increment_i(*pval);
 	++(context->exec_pos);
 }
 void ABCVm::abc_decrement_i(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
 	LOG_CALL("decrement_i:"<<asAtomHandler::toDebugString(*pval));
-	asAtomHandler::decrement_i(*pval,context->worker);
+	asAtomHandler::decrement_i(*pval);
 	++(context->exec_pos);
 }
 void ABCVm::abc_inclocal_i(call_context* context)
@@ -1533,28 +1522,28 @@ void ABCVm::abc_declocal_i(call_context* context)
 void ABCVm::abc_negate_i(call_context* context)
 {
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::negate_i(*pval,context->worker);
+	asAtomHandler::negate_i(*pval);
 	++(context->exec_pos);
 }
 void ABCVm::abc_add_i(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::add_i(*pval,context->worker,*v2);
+	asAtomHandler::add_i(*pval,*v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_subtract_i(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::subtract_i(*pval,context->worker,*v2);
+	asAtomHandler::subtract_i(*pval,*v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_multiply_i(call_context* context)
 {
 	RUNTIME_STACK_POP_CREATE(context,v2);
 	RUNTIME_STACK_POINTER_CREATE(context,pval);
-	asAtomHandler::multiply_i(*pval,context->worker,*v2);
+	asAtomHandler::multiply_i(*pval,*v2);
 	++(context->exec_pos);
 }
 void ABCVm::abc_getlocal_0(call_context* context)
@@ -1601,16 +1590,8 @@ void ABCVm::abc_setlocal_0(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
-		if (asAtomHandler::isLocalNumber(*obj))
-		{
-			ASATOM_DECREF(context->locals[i]);
-			asAtomHandler::setNumber(context->locals[i],context->worker,asAtomHandler::getLocalNumber(context,*obj),i);
-		}
-		else
-		{
-			ASATOM_DECREF(context->locals[i]);
-			context->locals[i]=*obj;
-		}
+		ASATOM_DECREF(context->locals[i]);
+		context->locals[i]=*obj;
 	}
 	++(context->exec_pos);
 }
@@ -1628,16 +1609,8 @@ void ABCVm::abc_setlocal_1(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
-		if (asAtomHandler::isLocalNumber(*obj))
-		{
-			ASATOM_DECREF(context->locals[i]);
-			asAtomHandler::setNumber(context->locals[i],context->worker,asAtomHandler::getLocalNumber(context,*obj),i);
-		}
-		else
-		{
-			ASATOM_DECREF(context->locals[i]);
-			context->locals[i]=*obj;
-		}
+		ASATOM_DECREF(context->locals[i]);
+		context->locals[i]=*obj;
 	}
 }
 void ABCVm::abc_setlocal_2(call_context* context)
@@ -1653,16 +1626,8 @@ void ABCVm::abc_setlocal_2(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
-		if (asAtomHandler::isLocalNumber(*obj))
-		{
-			ASATOM_DECREF(context->locals[i]);
-			asAtomHandler::setNumber(context->locals[i],context->worker,asAtomHandler::getLocalNumber(context,*obj),i);
-		}
-		else
-		{
-			ASATOM_DECREF(context->locals[i]);
-			context->locals[i]=*obj;
-		}
+		ASATOM_DECREF(context->locals[i]);
+		context->locals[i]=*obj;
 	}
 }
 void ABCVm::abc_setlocal_3(call_context* context)
@@ -1678,16 +1643,8 @@ void ABCVm::abc_setlocal_3(call_context* context)
 	}
 	if ((int)i != context->argarrayposition || asAtomHandler::isArray(*obj))
 	{
-		if (asAtomHandler::isLocalNumber(*obj))
-		{
-			ASATOM_DECREF(context->locals[i]);
-			asAtomHandler::setNumber(context->locals[i],context->worker,asAtomHandler::getLocalNumber(context,*obj),i);
-		}
-		else
-		{
-			ASATOM_DECREF(context->locals[i]);
-			context->locals[i]=*obj;
-		}
+		ASATOM_DECREF(context->locals[i]);
+		context->locals[i]=*obj;
 	}
 }
 void ABCVm::abc_debug(call_context* context)

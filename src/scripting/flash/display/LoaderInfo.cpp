@@ -537,7 +537,7 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesLoaded)
 {
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 	// we always return bytesLoadedPublic to ensure it shows the same value as the last handled ProgressEvent
-	asAtomHandler::setUInt(ret,wrk,th->bytesLoadedPublic);
+	asAtomHandler::setUInt(ret,th->bytesLoadedPublic);
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesTotal)
@@ -545,9 +545,9 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getBytesTotal)
 	LoaderInfo* th=asAtomHandler::as<LoaderInfo>(obj);
 
 	if (th->loadStatus <= LOAD_OPENED)
-		asAtomHandler::setUInt(ret,wrk,0);
+		asAtomHandler::setUInt(ret,0);
 	else
-		asAtomHandler::setUInt(ret,wrk,th->bytesTotal);
+		asAtomHandler::setUInt(ret,th->bytesTotal);
 }
 
 bool LoaderInfo::fillBytesData(ByteArray* data)
@@ -624,20 +624,20 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getWidth)
 	{
 		if (th == wrk->getSystemState()->mainClip->loaderInfo)
 		{
-			asAtomHandler::setInt(ret,wrk,wrk->getSystemState()->mainClip->getNominalWidth());
+			asAtomHandler::setInt(ret,wrk->getSystemState()->mainClip->getNominalWidth());
 			return;
 		}
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 		return;
 	}
 	DisplayObject* o=th->loader->getContent();
 	if (!o)
 	{
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 		return;
 	}
 
-	asAtomHandler::setInt(ret,wrk,o->getNominalWidth());
+	asAtomHandler::setInt(ret,o->getNominalWidth());
 }
 
 ASFUNCTIONBODY_ATOM(LoaderInfo,_getHeight)
@@ -648,18 +648,18 @@ ASFUNCTIONBODY_ATOM(LoaderInfo,_getHeight)
 	{
 		if (th == wrk->getSystemState()->mainClip->loaderInfo)
 		{
-			asAtomHandler::setInt(ret,wrk,wrk->getSystemState()->mainClip->getNominalHeight());
+			asAtomHandler::setInt(ret,wrk->getSystemState()->mainClip->getNominalHeight());
 			return;
 		}
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 		return;
 	}
 	DisplayObject* o=th->loader->getContent();
 	if (!o)
 	{
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 		return;
 	}
 
-	asAtomHandler::setInt(ret,wrk,o->getNominalHeight());
+	asAtomHandler::setInt(ret,o->getNominalHeight());
 }

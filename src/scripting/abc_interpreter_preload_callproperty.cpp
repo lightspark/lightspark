@@ -373,7 +373,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							{
 								variable* mvar = typestack[typestack.size()-2].obj->as<Class_base>()->getBorrowedVariableByMultiname(*name);
 								if (mvar)
-									func = mvar->getVar(state.worker);
+									func = mvar->getVar();
 							}
 							if (asAtomHandler::isClass(func) && asAtomHandler::as<Class_base>(func)->isBuiltin())
 							{

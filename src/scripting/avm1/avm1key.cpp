@@ -80,7 +80,7 @@ ASFUNCTIONBODY_ATOM(AVM1Key,getCode)
 	AS3KeyCode c = wrk->getSystemState()->getInputThread()->getLastKeyDown();
 	if (c==0)
 		c = wrk->getSystemState()->getInputThread()->getLastKeyUp();
-	asAtomHandler::setInt(ret,wrk,c);
+	asAtomHandler::setInt(ret,c);
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,getAscii)
 {
@@ -90,7 +90,7 @@ ASFUNCTIONBODY_ATOM(AVM1Key,getAscii)
 	LSModifier m = wrk->getSystemState()->getInputThread()->getLastKeyMod();
 	if (m & LSModifier::Shift)
 		c = (AS3KeyCode)toupper((int)c);
-	asAtomHandler::setInt(ret,wrk,c);
+	asAtomHandler::setInt(ret,c);
 }
 ASFUNCTIONBODY_ATOM(AVM1Key,get_listeners)
 {

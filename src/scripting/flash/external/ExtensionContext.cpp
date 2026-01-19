@@ -98,7 +98,7 @@ public:
 		ASWorker* wrk = getWorker();
 		if (!wrk || wrk->nativeExtensionCallCount==0)
 			return FRE_WRONG_THREAD;
-		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromNumber(wrk,value,false));
+		wrk->nativeExtensionAtomlist.push_back(asAtomHandler::fromNumber(value));
 		*object = &wrk->nativeExtensionAtomlist.back();
 		LOG(LOG_CALLS,"nativeExtension:fromDouble:"<<value);
 		return FRE_OK;

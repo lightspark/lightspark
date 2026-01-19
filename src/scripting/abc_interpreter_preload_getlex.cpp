@@ -77,7 +77,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 			{
 				if (v->kind == TRAIT_KIND::CONSTANT_TRAIT)
 				{
-					asAtom a = v->getVar(state.worker);
+					asAtom a = v->getVar();
 					addCachedConstant(state,state.mi, a,code);
 					if (v->isResolved && dynamic_cast<const Class_base*>(v->type))
 						resulttype = (Class_base*)v->type;
@@ -219,7 +219,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 				}
 				else if (v->kind == TRAIT_KIND::CONSTANT_TRAIT && !v->isNullVar()) // class may not be constructed yet, so the result is null and we do not cache
 				{
-					asAtom a=v->getVar(state.worker);
+					asAtom a=v->getVar();
 					addCachedConstant(state,state.mi, a,code);
 					if (v->isResolved && dynamic_cast<const Class_base*>(v->type))
 						resulttype = (Class_base*)v->type;
@@ -349,7 +349,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 				{
 					if (v->kind == TRAIT_KIND::CONSTANT_TRAIT)
 					{
-						asAtom a = v->getVar(state.worker);
+						asAtom a = v->getVar();
 						addCachedConstant(state,state.mi, a,code);
 						if (v->isResolved && dynamic_cast<const Class_base*>(v->type))
 							resulttype = (Class_base*)v->type;
@@ -361,7 +361,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 					{
 						if (v->isClassVar())
 						{
-							asAtom a = v->getVar(state.worker);
+							asAtom a = v->getVar();
 							addCachedConstant(state,state.mi, a,code);
 							if (v->isResolved && dynamic_cast<const Class_base*>(v->type))
 								resulttype = (Class_base*)v->type;

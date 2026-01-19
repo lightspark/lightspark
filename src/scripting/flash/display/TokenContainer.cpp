@@ -580,9 +580,9 @@ TokenList::const_iterator addDrawCommand(GRAPHICSPATH_COMMANDTYPE cmd, int argco
 		GeomToken p(*(++it),false);
 		Vector2f v(p.vec.x*scale,p.vec.y*scale);
 		v = matrix.multiply2D(v);
-		asAtom d1 = asAtomHandler::fromNumber(wrk,v.x,false);
+		asAtom d1 = asAtomHandler::fromNumber(v.x);
 		(*currentpath)->data->append(d1);
-		asAtom d2 = asAtomHandler::fromNumber(wrk,v.y,false);
+		asAtom d2 = asAtomHandler::fromNumber(v.y);
 		(*currentpath)->data->append(d2);
 	}
 	return it;

@@ -85,13 +85,13 @@ ASFUNCTIONBODY_ATOM(Point,_constructor)
 ASFUNCTIONBODY_ATOM(Point,_getX)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->x);
+	asAtomHandler::setNumber(ret, th->x);
 }
 
 ASFUNCTIONBODY_ATOM(Point,_getY)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->y);
+	asAtomHandler::setNumber(ret, th->y);
 }
 
 ASFUNCTIONBODY_ATOM(Point,_setX)
@@ -112,7 +112,7 @@ ASFUNCTIONBODY_ATOM(Point,_getlength)
 {
 	Point* th=asAtomHandler::as<Point>(obj);
 	assert_and_throw(argslen==0);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->len());
+	asAtomHandler::setNumber(ret, th->len());
 }
 
 ASFUNCTIONBODY_ATOM(Point,interpolate)
@@ -152,7 +152,7 @@ ASFUNCTIONBODY_ATOM(Point,distance)
 
 	Vector2f diff = pt2 - pt1;
 	number_t res=lenImpl(diff.x, diff.y);
-	wrk->setBuiltinCallResultLocalNumber(ret, res);
+	asAtomHandler::setNumber(ret, res);
 }
 
 ASFUNCTIONBODY_ATOM(Point,add)

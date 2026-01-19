@@ -195,7 +195,7 @@ ASFUNCTIONBODY_ATOM(Number,_toLocaleString)
 ASFUNCTIONBODY_ATOM(Number,generator)
 {
 	if(argslen==0)
-		wrk->setBuiltinCallResultLocalNumber(ret, 0.);
+		asAtomHandler::setNumber(ret, 0.);
 	else if (asAtomHandler::isUndefined(args[0]) && !wrk->needsActionScript3())
 	{
 		if (wrk->AVM1getSwfVersion() < 7)
@@ -209,7 +209,7 @@ ASFUNCTIONBODY_ATOM(Number,generator)
 		if (std::isnan(n))
 			ret = wrk->getSystemState()->nanAtom;
 		else
-			wrk->setBuiltinCallResultLocalNumber(ret, n);
+			asAtomHandler::setNumber(ret, n);
 	}
 }
 
@@ -682,11 +682,11 @@ void Number::sinit(Class_base* c)
 {
 	CLASS_SETUP_CONSTRUCTOR_1_PARAMETER(c, ASObject, _constructor, 1, Type::anyType, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
-	c->setVariableAtomByQName("NEGATIVE_INFINITY",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),-numeric_limits<double>::infinity(),true),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("POSITIVE_INFINITY",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),numeric_limits<double>::infinity(),true),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),numeric_limits<double>::max(),true),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),numeric_limits<double>::min(),true),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("NaN",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),numeric_limits<double>::quiet_NaN(),true),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NEGATIVE_INFINITY",nsNameAndKind(),asAtomHandler::fromNumber(-numeric_limits<double>::infinity()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("POSITIVE_INFINITY",nsNameAndKind(),asAtomHandler::fromNumber(numeric_limits<double>::infinity()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtomHandler::fromNumber(numeric_limits<double>::max()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtomHandler::fromNumber(numeric_limits<double>::min()),CONSTANT_TRAIT);
+	c->setVariableAtomByQName("NaN",nsNameAndKind(),asAtomHandler::fromNumber(numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toFixed",AS3,c->getSystemState()->getBuiltinFunction(toFixed,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toExponential",AS3,c->getSystemState()->getBuiltinFunction(toExponential,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
@@ -699,14 +699,14 @@ void Number::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toPrecision","",c->getSystemState()->getBuiltinFunction(Number::toPrecision,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(_valueOf,0,Class<Number>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
 
-	c->setVariableAtomByQName("E",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),2.71828182845905,true),CONSTANT_TRAIT,false);
-	c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),2.302585092994046,true),CONSTANT_TRAIT,false);
-	c->setVariableAtomByQName("LN2",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),0.6931471805599453,true),CONSTANT_TRAIT,false);
-	c->setVariableAtomByQName("LOG10E",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),0.4342944819032518,true),CONSTANT_TRAIT,false);
-	c->setVariableAtomByQName("LOG2E",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),1.442695040888963387,true),CONSTANT_TRAIT,false);
-	c->setVariableAtomByQName("PI",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),3.141592653589793,true),CONSTANT_TRAIT,false);
-	c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),0.7071067811865476,true),CONSTANT_TRAIT,false);
-	c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtomHandler::fromNumber(c->getInstanceWorker(),1.4142135623730951,true),CONSTANT_TRAIT,false);
+	c->setVariableAtomByQName("E",nsNameAndKind(),asAtomHandler::fromNumber(2.71828182845905),CONSTANT_TRAIT,false);
+	c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtomHandler::fromNumber(2.302585092994046),CONSTANT_TRAIT,false);
+	c->setVariableAtomByQName("LN2",nsNameAndKind(),asAtomHandler::fromNumber(0.6931471805599453),CONSTANT_TRAIT,false);
+	c->setVariableAtomByQName("LOG10E",nsNameAndKind(),asAtomHandler::fromNumber(0.4342944819032518),CONSTANT_TRAIT,false);
+	c->setVariableAtomByQName("LOG2E",nsNameAndKind(),asAtomHandler::fromNumber(1.442695040888963387),CONSTANT_TRAIT,false);
+	c->setVariableAtomByQName("PI",nsNameAndKind(),asAtomHandler::fromNumber(3.141592653589793),CONSTANT_TRAIT,false);
+	c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtomHandler::fromNumber(0.7071067811865476),CONSTANT_TRAIT,false);
+	c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtomHandler::fromNumber(1.4142135623730951),CONSTANT_TRAIT,false);
 
 	c->setDeclaredMethodByQName("abs","",c->getSystemState()->getBuiltinFunction(Math::abs,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
 	c->setDeclaredMethodByQName("acos","",c->getSystemState()->getBuiltinFunction(Math::acos,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
@@ -907,7 +907,7 @@ ASFUNCTIONBODY_ATOM(Number,_valueOf)
 {
 	if(Class<Number>::getClass(wrk->getSystemState())->prototype->getObj() == asAtomHandler::getObject(obj))
 	{
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 		return;
 	}
 

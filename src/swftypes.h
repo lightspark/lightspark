@@ -635,29 +635,16 @@ struct nsNameAndKind
 	}
 };
 
-#ifdef LIGHTSPARK_64
 union asAtom
 {
-	int64_t intval;
 	uint64_t uintval;
+	number_t dval;
 	bool operator<(const asAtom& r) const
 	{
 		return uintval < r.uintval;
 	}
 };
 #define LIGHTSPARK_ATOM_VALTYPE uint64_t
-#else
-union asAtom
-{
-	int32_t intval;
-	uint32_t uintval;
-	bool operator<(const asAtom& r) const
-	{
-		return uintval < r.uintval;
-	}
-};
-#define LIGHTSPARK_ATOM_VALTYPE uint32_t
-#endif
 
 struct multiname: public memory_reporter
 {

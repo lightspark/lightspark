@@ -155,21 +155,6 @@ FORCE_INLINE void resetLocals(call_context *cc, call_context* saved_cc, const as
 		if (o)
 			o->decRef();
 	}
-	if (saved_cc)
-	{
-		// reset local number positions
-		int i = saved_cc->mi->body->getMaxLocalNumbersWithoutSlots();
-		for (auto it = saved_cc->mi->body->localconstantslots.begin(); it != saved_cc->mi->body->localconstantslots.end(); it++)
-		{
-			assert(it->local_pos < (saved_cc->mi->numArgs()-saved_cc->mi->numOptions())+1);
-			if (asAtomHandler::isObject(saved_cc->locals[it->local_pos]))
-			{
-				ASObject* o = asAtomHandler::getObjectNoCheck(saved_cc->locals[it->local_pos]);
-				o->getSlotVar(it->slot_number)->setLocalNumberPos(i);
-			}
-			i++;
-		}
-	}
 }
 
 /**
@@ -177,7 +162,7 @@ FORCE_INLINE void resetLocals(call_context *cc, call_context* saved_cc, const as
  * by ABCVm::executeFunction() or through JIT.
  * It consumes one reference of obj and one of each arg
  */
-void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs, bool coerceresult, bool coercearguments, uint16_t resultlocalnumberpos)
+void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *args, uint32_t numArgs, bool coerceresult, bool coercearguments)
 {
 #ifdef PROFILING_SUPPORT
 	uint64_t t1 = compat_get_thread_cputime_us();
@@ -199,19 +184,16 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		ABCVm::preloadFunction(this,wrk);
 		mi->body->codeStatus = method_body_info::PRELOADED;
 		mi->cc.exec_pos = mi->body->preloadedcode.data();
-		mi->cc.locals = new asAtom[mi->body->getMaxLocalNumbersWithoutSlots()];
+		mi->cc.locals = new asAtom[mi->body->getMaxLocalsWithoutSlots()];
 		mi->cc.stack = new asAtom[mi->body->max_stack+1];
 		mi->cc.scope_stack = new asAtom[mi->body->max_scope_depth];
 		mi->cc.scope_stack_dynamic = new bool[mi->body->max_scope_depth];
 		mi->cc.max_stackp=mi->cc.stack+mi->cc.mi->body->max_stack;
-		mi->cc.lastlocal = mi->cc.locals+mi->cc.mi->body->getMaxLocalNumbersWithoutSlots();
-		mi->cc.localslots = new asAtom*[mi->body->getMaxLocalNumbers()];
-		mi->cc.localNumbers = new number_t[mi->body->getMaxLocalNumbersWithoutSlots()];
-		mi->cc.localNumbersIncludingSlots = new number_t*[mi->body->getMaxLocalNumbers()];
-		for (uint32_t i = 0; i < uint32_t(mi->body->getMaxLocalNumbersWithoutSlots()); i++)
+		mi->cc.lastlocal = mi->cc.locals+mi->cc.mi->body->getMaxLocalsWithoutSlots();
+		mi->cc.localslots = new asAtom*[mi->body->getMaxLocals()];
+		for (uint32_t i = 0; i < uint32_t(mi->body->getMaxLocalsWithoutSlots()); i++)
 		{
 			mi->cc.localslots[i] = &mi->cc.locals[i];
-			mi->cc.localNumbersIncludingSlots[i] = &mi->cc.localNumbers[i];
 		}
 	}
 	if (saved_cc && saved_cc->exceptionthrown)
@@ -308,19 +290,16 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		cc->sys = getSystemState();
 		cc->worker=wrk;
 		cc->exceptionthrown = nullptr;
-		cc->locals= LS_STACKALLOC(asAtom, mi->body->getMaxLocalNumbersWithoutSlots());
+		cc->locals= LS_STACKALLOC(asAtom, mi->body->getMaxLocalsWithoutSlots());
 		cc->stack = LS_STACKALLOC(asAtom, mi->body->max_stack+1);
 		cc->scope_stack=LS_STACKALLOC(asAtom, mi->body->max_scope_depth);
 		cc->scope_stack_dynamic=LS_STACKALLOC(bool, mi->body->max_scope_depth);
 		cc->max_stackp=cc->stackp+cc->mi->body->max_stack;
-		cc->lastlocal = cc->locals+mi->body->getMaxLocalNumbersWithoutSlots();
-		cc->localslots = LS_STACKALLOC(asAtom*,mi->body->getMaxLocalNumbers());
-		cc->localNumbers = LS_STACKALLOC(number_t,mi->body->getMaxLocalNumbersWithoutSlots());
-		cc->localNumbersIncludingSlots = LS_STACKALLOC(number_t*,mi->body->getMaxLocalNumbers());
-		for (uint32_t i = 0; i < uint32_t(mi->body->getMaxLocalNumbersWithoutSlots()); i++)
+		cc->lastlocal = cc->locals+mi->body->getMaxLocalsWithoutSlots();
+		cc->localslots = LS_STACKALLOC(asAtom*,mi->body->getMaxLocals());
+		for (uint32_t i = 0; i < uint32_t(mi->body->getMaxLocalsWithoutSlots()); i++)
 		{
 			cc->localslots[i] = &cc->locals[i];
-			cc->localNumbersIncludingSlots[i] = &cc->localNumbers[i];
 		}
 	}
 	else
@@ -339,16 +318,6 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	wrk->callStack.push_back(cc);
 	/* Set the current global object, each script in each DoABCTag has its own */
 	wrk->currentCallContext = cc;
-	if (saved_cc)
-	{
-		// set local number values for arguments
-		for (uint32_t i = 0; i < numArgs; i++)
-		{
-			if (asAtomHandler::isLocalNumber(args[i]))
-				asAtomHandler::setNumber(args[i],wrk,asAtomHandler::getLocalNumber(saved_cc,args[i]),i+1);
-		}
-	}
-
 	cc->locals[0]=obj;
 
 	if (coercearguments)
@@ -389,7 +358,9 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 			cc->locals[i+1]=asAtomHandler::undefinedAtom;
 		}
 	}
-	memset(cc->locals+args_len+1,ATOMTYPE_UNDEFINED_BIT,(mi->body->getReturnValuePos()+mi->body->localresultcount-(args_len))*sizeof(asAtom));
+	uint32_t lastlocalcount=mi->body->getMaxLocals();
+	for(uint32_t i=args_len+1;i<lastlocalcount;++i)
+		(cc->locals+i)->uintval = asAtomHandler::undefinedAtom.uintval;
 	if (mi->body->localsinitialvalues)
 		memcpy(cc->locals+args_len+1,mi->body->localsinitialvalues,(mi->body->local_count-(args_len+1))*sizeof(asAtom));
 
@@ -446,7 +417,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				// returnvalue
 				cc->locals[mi->body->getReturnValuePos()]=asAtomHandler::invalidAtom;
 				// fill additional locals with slots of objects that don't change during execution
-				int i = mi->body->getMaxLocalNumbersWithoutSlots();
+				int i = mi->body->getMaxLocalsWithoutSlots();
 				int p=0;
 				for (auto it = mi->body->localconstantslots.begin(); it != mi->body->localconstantslots.end(); it++)
 				{
@@ -454,9 +425,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 					if (asAtomHandler::isObject(cc->locals[it->local_pos]))
 					{
 						ASObject* o = asAtomHandler::getObjectNoCheck(cc->locals[it->local_pos]);
-						o->getSlotVar(it->slot_number)->setLocalNumberPos(i);
 						cc->localslots[i] = o->getSlotVar(it->slot_number)->getVarValuePtr();
-						cc->localNumbersIncludingSlots[i] = o->getSlotVar(it->slot_number)->getVarNumberPtr();
 						LOG_CALL("localconstant:"<<i<<"/"<<p<<" "<<it->slot_number<<" "<<o->toDebugString());
 					}
 					else
@@ -559,18 +528,8 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		Log::calls_indent--;
 #endif
 
-	if (saved_cc && resultlocalnumberpos!= UINT16_MAX && asAtomHandler::isLocalNumber(cc->locals[mi->body->getReturnValuePos()]))
-	{
-		// result is stored as local number
-		saved_cc->localNumbers[resultlocalnumberpos]=asAtomHandler::getNumber(wrk,cc->locals[mi->body->getReturnValuePos()]);
-		ret.uintval=resultlocalnumberpos<<8 | ATOMTYPE_LOCALNUMBER_BIT;
-	}
-	else
-	{
-		ret.uintval = cc->locals[mi->body->getReturnValuePos()].uintval;
-		if (!asAtomHandler::localNumberToGlobalNumber(wrk,ret))
-			ASATOM_INCREF(ret);
-	}
+	ret.uintval = cc->locals[mi->body->getReturnValuePos()].uintval;
+	ASATOM_INCREF(ret);
 
 	//The stack may be not clean, is this a programmer/compiler error?
 	if(cc->stackp != cc->stack)
@@ -941,7 +900,7 @@ ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 
 	if((radix != 0) && ((radix < 2) || (radix > 36)))
 	{
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 
@@ -950,11 +909,11 @@ ASFUNCTIONBODY_ATOM(lightspark,parseInt)
 	bool valid=Integer::fromStringFlashCompatible(cur,res,radix);
 
 	if(valid==false)
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 	else if (res < INT32_MAX && res > INT32_MIN)
-		asAtomHandler::setInt(ret,wrk,(int32_t)res);
+		asAtomHandler::setInt(ret,(int32_t)res);
 	else
-		wrk->setBuiltinCallResultLocalNumber(ret, res);
+		asAtomHandler::setNumber(ret, res);
 }
 
 ASFUNCTIONBODY_ATOM(lightspark,parseFloat)
@@ -962,7 +921,7 @@ ASFUNCTIONBODY_ATOM(lightspark,parseFloat)
 	tiny_string str;
 	ARG_CHECK(ARG_UNPACK (str, ""));
 
-	wrk->setBuiltinCallResultLocalNumber(ret, parseNumber(str,wrk->getSystemState()->getSwfVersion()<11));
+	asAtomHandler::setNumber(ret, parseNumber(str,wrk->getSystemState()->getSwfVersion()<11));
 }
 number_t lightspark::parseNumber(const tiny_string str, bool useoldversion)
 {
@@ -1438,14 +1397,6 @@ GET_VARIABLE_RESULT ObjectPrototype::getVariableByMultiname(asAtom& ret, const m
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt,wrk);
 }
 
-asAtomWithNumber ObjectPrototype::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	asAtomWithNumber ret = ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-	if(asAtomHandler::isValid(ret.value) || prevPrototype.isNull())
-		return ret;
-	return prevPrototype->getObj()->getAtomWithNumberByMultiname(name,wrk,opt);
-}
-
 multiname *ObjectPrototype::setVariableByMultiname(multiname &name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
 	if (this->isSealed && this->hasPropertyByMultiname(name,false,true,wrk))
@@ -1509,15 +1460,6 @@ GET_VARIABLE_RESULT ArrayPrototype::getVariableByMultiname(asAtom& ret, const mu
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt,wrk);
 }
 
-asAtomWithNumber ArrayPrototype::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	asAtomWithNumber ret = Array::getAtomWithNumberByMultiname(name,wrk,opt);
-	if(asAtomHandler::isValid(ret.value) || prevPrototype.isNull())
-		return ret;
-
-	return prevPrototype->getObj()->getAtomWithNumberByMultiname(name,wrk,opt);
-}
-
 multiname *ArrayPrototype::setVariableByMultiname(multiname &name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
 {
 	if (this->isSealed && this->hasPropertyByMultiname(name,false,true,wrk))
@@ -1538,26 +1480,12 @@ GET_VARIABLE_RESULT ObjectConstructor::getVariableByMultiname(asAtom& ret, const
 		ret = asAtomHandler::fromObject(prototype->getObj());
 	}
 	else if (name.normalizedName(getInstanceWorker()) == "length")
-		asAtomHandler::setUInt(ret,getInstanceWorker(),_length);
+		asAtomHandler::setUInt(ret,_length);
 	else
 		return getClass()->getVariableByMultiname(ret,name, opt,wrk);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 }
 
-asAtomWithNumber ObjectConstructor::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	asAtomWithNumber ret;
-	if (name.normalizedName(getInstanceWorker()) == "prototype")
-	{
-		prototype->getObj()->incRef();
-		ret.value = asAtomHandler::fromObject(prototype->getObj());
-	}
-	else if (name.normalizedName(getInstanceWorker()) == "length")
-		asAtomHandler::setUInt(ret.value,getInstanceWorker(),_length);
-	else
-		return getClass()->getAtomWithNumberByMultiname(name,wrk,opt);
-	return ret;
-}
 bool ObjectConstructor::isEqual(ASObject* r)
 {
 	return this == r || getClass() == r;
@@ -1592,14 +1520,6 @@ GET_VARIABLE_RESULT FunctionPrototype::getVariableByMultiname(asAtom& ret, const
 		return res;
 
 	return prevPrototype->getObj()->getVariableByMultiname(ret,name, opt,wrk);
-}
-
-asAtomWithNumber FunctionPrototype::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	asAtomWithNumber ret =Function::getAtomWithNumberByMultiname(name,wrk,opt);
-	if(asAtomHandler::isValid(ret.value) || prevPrototype.isNull())
-		return ret;
-	return prevPrototype->getObj()->getAtomWithNumberByMultiname(name,wrk,opt);
 }
 
 multiname* FunctionPrototype::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk)
@@ -1673,17 +1593,6 @@ GET_VARIABLE_RESULT Function_object::getVariableByMultiname(asAtom& ret, const m
 	return GETVAR_NORMAL;
 }
 
-asAtomWithNumber Function_object::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	asAtomWithNumber ret = ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-	if(asAtomHandler::isValid(ret.value) )
-		return ret;
-	ASObject* o = asAtomHandler::getObject(functionPrototype);
-	if (o)
-		return o->getAtomWithNumberByMultiname(name,wrk,opt);
-	return ret;
-}
-
 AVM1Super_object::AVM1Super_object(ASWorker* wrk, Class_base* c, ASObject* obj, ASObject* _super) : ASObject(wrk,c,T_OBJECT,SUBTYPE_AVM1SUPEROBJECT),baseobject(obj),super(_super)
 {
 	prototype=nullptr;
@@ -1722,14 +1631,6 @@ GET_VARIABLE_RESULT AVM1Super_object::getVariableByMultiname(asAtom& ret, const 
 	return baseobject->getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
 }
 
-asAtomWithNumber AVM1Super_object::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	asAtomWithNumber ret;
-	if (checkPrototype(ret.value,name))
-		return ret;
-	ret.value = asAtomHandler::invalidAtom;
-	return baseobject->getAtomWithNumberByMultiname(name,wrk,opt);
-}
 GET_VARIABLE_RESULT AVM1Super_object::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath)
 {
 	if (checkPrototype(ret,name))

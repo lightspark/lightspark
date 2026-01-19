@@ -354,7 +354,7 @@ SystemState::SystemState
 	falseRef=Class<Boolean>::getInstanceS(this->worker,false);
 	falseRef->setRefConstant();
 
-	nanAtom = asAtomHandler::fromNumber(this->worker,Number::NaN,true);
+	nanAtom = asAtomHandler::fromNumber(Number::NaN);
 
 	systemDomain = Class<ApplicationDomain>::getInstanceS(this->worker);
 	systemDomain->setRefConstant();
@@ -851,7 +851,6 @@ void SystemState::destroy()
 
 	for(auto it=profilingData.begin();it!=profilingData.end();it++)
 		delete *it;
-	uniqueStringMap.clear();
 }
 
 bool SystemState::isOnError() const
@@ -1990,7 +1989,6 @@ void ParseThread::parseSWF(UI8 ver)
 
 					RELEASE_WRITE(root->finishedLoading,true);
 					done=true;
-					root->check();
 					delete tag;
 					break;
 				}

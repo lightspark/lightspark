@@ -28,7 +28,7 @@ void lightspark::abc_bitnot_constant(call_context* context)
 {
 	LOG_CALL( "bitnot_c");
 	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::bitnot(res,context->worker);
+	asAtomHandler::bitnot(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -36,7 +36,7 @@ void lightspark::abc_bitnot_local(call_context* context)
 {
 	LOG_CALL( "bitnot_l");
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::bitnot(res,context->worker);
+	asAtomHandler::bitnot(res);
 	RUNTIME_STACK_PUSH(context,res);
 	++(context->exec_pos);
 }
@@ -45,7 +45,7 @@ void lightspark::abc_bitnot_constant_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "bitnot_cl");
 	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::bitnot(res,context->worker);
+	asAtomHandler::bitnot(res);
 	REPLACELOCALRESULT(context,instrptr->local3.pos,res);
 	++(context->exec_pos);
 }
@@ -54,28 +54,28 @@ void lightspark::abc_bitnot_local_localresult(call_context* context)
 	preloadedcodedata* instrptr = context->exec_pos;
 	LOG_CALL( "bitnot_ll");
 	asAtom res = CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-	asAtomHandler::bitnot(res,context->worker);
+	asAtomHandler::bitnot(res);
 	REPLACELOCALRESULT(context,instrptr->local3.pos,res);
 	++(context->exec_pos);
 }
 void lightspark::abc_bitnot_constant_setslotnocoerce(call_context* context)
 {
 	asAtom res = *context->exec_pos->arg1_constant;
-	asAtomHandler::bitnot(res,context->worker);
+	asAtomHandler::bitnot(res);
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
 	LOG_CALL("bitnot_cs " << t << " "<< asAtomHandler::toDebugString(res) << " "<< asAtomHandler::toDebugString(obj));
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res);
 	++(context->exec_pos);
 }
 void lightspark::abc_bitnot_local_setslotnocoerce(call_context* context)
 {
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
-	asAtomHandler::bitnot(res,context->worker);
+	asAtomHandler::bitnot(res);
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
 	LOG_CALL("bitnot_ls " << t << " "<< asAtomHandler::toDebugString(res) << " "<< asAtomHandler::toDebugString(obj));
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res);
 	++(context->exec_pos);
 }
 

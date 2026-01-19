@@ -73,69 +73,69 @@ void lightspark::abc_add_local_local(call_context* context)
 void lightspark::abc_add_constant_constant_localresult(call_context* context)
 {
 	LOG_CALL("add_ccl");
-	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant,context->exec_pos->local3.flags & ABC_OP_FORCEINT,context->exec_pos->local3.pos);
+	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void lightspark::abc_add_local_constant_localresult(call_context* context)
 {
 	LOG_CALL("add_lcl");
-	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant,context->exec_pos->local3.flags & ABC_OP_FORCEINT,context->exec_pos->local3.pos);
+	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void lightspark::abc_add_constant_local_localresult(call_context* context)
 {
 	LOG_CALL("add_cll");
-	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->local3.flags & ABC_OP_FORCEINT,context->exec_pos->local3.pos);
+	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 
 void lightspark::abc_add_local_local_localresult(call_context* context)
 {
 	LOG_CALL("add_lll "<<context->exec_pos->local_pos1<<"/"<<context->exec_pos->local_pos2<<"/"<<context->exec_pos->local3.pos);
-	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->local3.flags & ABC_OP_FORCEINT,context->exec_pos->local3.pos);
+	asAtomHandler::addreplace(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 	++(context->exec_pos);
 }
 void lightspark::abc_add_constant_constant_setslotnocoerce(call_context* context)
 {
 	LOG_CALL("add_ccs");
 	asAtom res = asAtomHandler::invalidAtom;
-	asAtomHandler::addreplace(res,context->worker,*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant,context->exec_pos->local3.flags & ABC_OP_FORCEINT,UINT16_MAX);
+	asAtomHandler::addreplace(res,context->worker,*context->exec_pos->arg1_constant,*context->exec_pos->arg2_constant,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res);
 	++(context->exec_pos);
 }
 void lightspark::abc_add_local_constant_setslotnocoerce(call_context* context)
 {
 	LOG_CALL("add_lcs");
 	asAtom res = asAtomHandler::invalidAtom;
-	asAtomHandler::addreplace(res,context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant,context->exec_pos->local3.flags & ABC_OP_FORCEINT,UINT16_MAX);
+	asAtomHandler::addreplace(res,context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),*context->exec_pos->arg2_constant,context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res);
 	++(context->exec_pos);
 }
 void lightspark::abc_add_constant_local_setslotnocoerce(call_context* context)
 {
 	LOG_CALL("add_cls");
 	asAtom res = asAtomHandler::invalidAtom;
-	asAtomHandler::addreplace(res,context->worker,*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->local3.flags & ABC_OP_FORCEINT,UINT16_MAX);
+	asAtomHandler::addreplace(res,context->worker,*context->exec_pos->arg1_constant,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res);
 	++(context->exec_pos);
 }
 void lightspark::abc_add_local_local_setslotnocoerce(call_context* context)
 {
 	LOG_CALL("add_lls");
 	asAtom res = asAtomHandler::invalidAtom;
-	asAtomHandler::addreplace(res,context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->local3.flags & ABC_OP_FORCEINT,UINT16_MAX);
+	asAtomHandler::addreplace(res,context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->exec_pos->local3.flags & ABC_OP_FORCEINT);
 
 	asAtom obj = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	uint32_t t = context->exec_pos->local3.flags & ~ABC_OP_BITMASK_USED;
-	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res,context->worker);
+	asAtomHandler::getObjectNoCheck(obj)->setSlotNoCoerce(t,res);
 	++(context->exec_pos);
 }

@@ -37,7 +37,6 @@ friend class ABCVm;
 private:
 	static tiny_string purgeExponentLeadingZeros(const tiny_string& exponentialForm);
 	static int32_t countSignificantDigits(double v);
-	static std::string AVM1toString(double val, int radix);
 	enum DTOSTRMODE { DTOSTR_NORMAL, DTOSTR_FIXED, DTOSTR_PRECISION, DTOSTR_EXPONENTIAL };
 	static tiny_string toString(number_t value, DTOSTRMODE mode, int32_t precision);
 public:
@@ -63,6 +62,7 @@ public:
 	ASFUNCTION_ATOM(toFixed);
 	ASFUNCTION_ATOM(_valueOf);
 	tiny_string toString() const;
+	static std::string AVM1toString(double val, int radix);
 	static tiny_string toString(number_t val) { return toString(val,DTOSTR_NORMAL,15);}
 	static tiny_string toStringRadix(number_t val, int radix);
 	static tiny_string toExponentialString(double v, int32_t fractionDigits);
@@ -88,29 +88,7 @@ public:
 	int32_t toInt() override
 	{
 		if (!isfloat) return ival;
-		return toInt(dval);
-	}
-	static int32_t toInt(number_t val)
-	{
-		double posInt;
-
-		/* step 2 */
-		if(std::isnan(val) || std::isinf(val) || val == 0.0)
-			return 0;
-		/* step 3 */
-		posInt = floor(fabs(val));
-		/* step 4 */
-		if (posInt > 4294967295.0)
-			posInt = fmod(posInt, 4294967296.0);
-		/* step 5 */
-		if (posInt >= 2147483648.0) {
-			// follow tamarin
-			if(val < 0.0)
-				return 0x80000000 - (int32_t)(posInt - 2147483648.0);
-			else
-				return 0x80000000 + (int32_t)(posInt - 2147483648.0);
-		}
-		return (int32_t)(val < 0.0 ? -posInt : posInt);
+		return numberToInt(dval);
 	}
 	TRISTATE isLess(ASObject* o) override;
 	bool isEqual(ASObject* o) override;

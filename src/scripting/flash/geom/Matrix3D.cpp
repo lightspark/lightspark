@@ -522,9 +522,9 @@ ASFUNCTIONBODY_ATOM(Matrix3D,transformVectors)
 		number_t x = asAtomHandler::toNumber(vin->at(i));
 		number_t y = asAtomHandler::toNumber(vin->at(i+1));
 		number_t z = asAtomHandler::toNumber(vin->at(i+2));
-		asAtom xout = asAtomHandler::fromNumber(wrk, x * th->data[0] + y * th->data[4] + z * th->data[8] + th->data[12],false);
-		asAtom yout = asAtomHandler::fromNumber(wrk, x * th->data[1] + y * th->data[5] + z * th->data[9] + th->data[13],false);
-		asAtom zout = asAtomHandler::fromNumber(wrk, x * th->data[2] + y * th->data[6] + z * th->data[10] + th->data[14],false);
+		asAtom xout = asAtomHandler::fromNumber( x * th->data[0] + y * th->data[4] + z * th->data[8] + th->data[12]);
+		asAtom yout = asAtomHandler::fromNumber( x * th->data[1] + y * th->data[5] + z * th->data[9] + th->data[13]);
+		asAtom zout = asAtomHandler::fromNumber( x * th->data[2] + y * th->data[6] + z * th->data[10] + th->data[14]);
 		vout->set(i,xout);
 		vout->set(i+1,yout);
 		vout->set(i+2,zout);
@@ -864,14 +864,14 @@ ASFUNCTIONBODY_ATOM(Matrix3D,copyRawDataTo)
 		src[15] = th->data[15];
 		for (uint32_t i = 0; i < vector->size()-index && i < 16; i++)
 		{
-			vector->set(index+i,asAtomHandler::fromNumber(wrk,src[i],false));
+			vector->set(index+i,asAtomHandler::fromNumber(src[i]));
 		}
 	}
 	else
 	{
 		for (uint32_t i = 0; i < vector->size()-index && i < 16; i++)
 		{
-			vector->set(index+i,asAtomHandler::fromNumber(wrk,th->data[i],false));
+			vector->set(index+i,asAtomHandler::fromNumber(th->data[i]));
 		}
 	}
 }
@@ -1044,7 +1044,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,invert)
 ASFUNCTIONBODY_ATOM(Matrix3D,_get_determinant)
 {
 	Matrix3D * th=asAtomHandler::as<Matrix3D>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->getDeterminant());
+	asAtomHandler::setNumber(ret, th->getDeterminant());
 }
 ASFUNCTIONBODY_ATOM(Matrix3D,_get_rawData)
 {
@@ -1055,7 +1055,7 @@ ASFUNCTIONBODY_ATOM(Matrix3D,_get_rawData)
 	Vector *result = asAtomHandler::as<Vector>(v);
 	for (uint32_t i = 0; i < 4*4; i++)
 	{
-		asAtom o = asAtomHandler::fromNumber(wrk,th->data[i],false);
+		asAtom o = asAtomHandler::fromNumber(th->data[i]);
 		result->append(o);
 	}
 	ret =asAtomHandler::fromObject(result);

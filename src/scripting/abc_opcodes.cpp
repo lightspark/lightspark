@@ -796,7 +796,7 @@ void ABCVm::incLocal(call_context* th, int n)
 	LOG_CALL( "incLocal " << n );
 	number_t tmp=asAtomHandler::toNumber(th->locals[n]);
 	ASATOM_DECREF(th->locals[n]);
-	asAtomHandler::setNumber(th->locals[n],th->worker,tmp+1);
+	asAtomHandler::setNumber(th->locals[n],tmp+1);
 }
 
 void ABCVm::incLocal_i(call_context* th, int n)
@@ -804,7 +804,7 @@ void ABCVm::incLocal_i(call_context* th, int n)
 	LOG_CALL( "incLocal_i " << n );
 	int32_t tmp=asAtomHandler::toInt(th->locals[n]);
 	ASATOM_DECREF(th->locals[n]);
-	asAtomHandler::setInt(th->locals[n],th->worker,tmp+1);
+	asAtomHandler::setInt(th->locals[n],tmp+1);
 }
 
 void ABCVm::decLocal(call_context* th, int n)
@@ -812,7 +812,7 @@ void ABCVm::decLocal(call_context* th, int n)
 	LOG_CALL( "decLocal " << n );
 	number_t tmp=asAtomHandler::toNumber(th->locals[n]);
 	ASATOM_DECREF(th->locals[n]);
-	asAtomHandler::setNumber(th->locals[n],th->worker,tmp-1);
+	asAtomHandler::setNumber(th->locals[n],tmp-1);
 }
 
 void ABCVm::decLocal_i(call_context* th, int n)
@@ -820,7 +820,7 @@ void ABCVm::decLocal_i(call_context* th, int n)
 	LOG_CALL( "decLocal_i " << n );
 	int32_t tmp=asAtomHandler::toInt(th->locals[n]);
 	ASATOM_DECREF(th->locals[n]);
-	asAtomHandler::setInt(th->locals[n],th->worker,tmp-1);
+	asAtomHandler::setInt(th->locals[n],tmp-1);
 }
 
 /* This is called for expressions like
@@ -2477,7 +2477,7 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 
 	uint32_t newIndex=obj->nextNameIndex(curIndex);
 	ASATOM_DECREF(th->locals[m]);
-	asAtomHandler::setUInt(th->locals[m],th->worker,newIndex);
+	asAtomHandler::setUInt(th->locals[m],newIndex);
 	if(newIndex==0)
 	{
 		ASATOM_DECREF(th->locals[n]);
@@ -2502,7 +2502,7 @@ void ABCVm::newObject(call_context* th, int n)
 		if (!isInt && asAtomHandler::isString(*name))
 			isInt = Array::isIntegerWithoutLeadingZeros(asAtomHandler::toString(*name,th->worker));
 		ASATOM_DECREF_POINTER(name);
-		ret->setDynamicVariableNoCheck(nameid,*value,isInt,th->worker);
+		ret->setDynamicVariableNoCheck(nameid,*value,isInt);
 	}
 
 	RUNTIME_STACK_PUSH(th,asAtomHandler::fromObject(ret));

@@ -121,13 +121,13 @@ ASFUNCTIONBODY_ATOM(Timer,_constructor)
 ASFUNCTIONBODY_ATOM(Timer,_getCurrentCount)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	asAtomHandler::setInt(ret,wrk,th->currentCount);
+	asAtomHandler::setInt(ret,th->currentCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getRepeatCount)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	asAtomHandler::setInt(ret,wrk,th->repeatCount);
+	asAtomHandler::setInt(ret,th->repeatCount);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setRepeatCount)
@@ -152,7 +152,7 @@ ASFUNCTIONBODY_ATOM(Timer,_getRunning)
 ASFUNCTIONBODY_ATOM(Timer,_getDelay)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->delay);
+	asAtomHandler::setNumber(ret, th->delay);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_setDelay)

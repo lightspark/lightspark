@@ -103,11 +103,11 @@ ASFUNCTIONBODY_ATOM(SoundTransform,_get_pan)
 {
 	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
 	if (th->leftToRight != 0.0 || th->rightToLeft != 0.0)
-		wrk->setBuiltinCallResultLocalNumber(ret, 0.0);
+		asAtomHandler::setNumber(ret, 0.0);
 	else
 	{
 		number_t n = number_t(th->leftToLeft/100.0);
-		wrk->setBuiltinCallResultLocalNumber(ret, 1.0-n*n);
+		asAtomHandler::setNumber(ret, 1.0-n*n);
 	}
 }
 ASFUNCTIONBODY_ATOM(SoundTransform,_set_pan)
@@ -121,7 +121,7 @@ ASFUNCTIONBODY_ATOM(SoundTransform,_get_volume)
 {
 	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
 	number_t n = number_t(th->volume)/100.0;
-	wrk->setBuiltinCallResultLocalNumber(ret, n);
+	asAtomHandler::setNumber(ret, n);
 }
 ASFUNCTIONBODY_ATOM(SoundTransform,_set_volume)
 {
@@ -134,7 +134,7 @@ ASFUNCTIONBODY_ATOM(SoundTransform,_set_volume)
 ASFUNCTIONBODY_ATOM(SoundTransform,_get_leftToLeft)
 {
 	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
-	ret = asAtomHandler::fromNumber(wrk,number_t(th->leftToLeft)/100.0,false);
+	ret = asAtomHandler::fromNumber(number_t(th->leftToLeft)/100.0);
 }
 ASFUNCTIONBODY_ATOM(SoundTransform,_set_leftToLeft)
 {
@@ -146,7 +146,7 @@ ASFUNCTIONBODY_ATOM(SoundTransform,_set_leftToLeft)
 ASFUNCTIONBODY_ATOM(SoundTransform,_get_leftToRight)
 {
 	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
-	ret = asAtomHandler::fromNumber(wrk,number_t(th->leftToRight)/100.0,false);
+	ret = asAtomHandler::fromNumber(number_t(th->leftToRight)/100.0);
 }
 ASFUNCTIONBODY_ATOM(SoundTransform,_set_leftToRight)
 {
@@ -158,7 +158,7 @@ ASFUNCTIONBODY_ATOM(SoundTransform,_set_leftToRight)
 ASFUNCTIONBODY_ATOM(SoundTransform,_get_rightToLeft)
 {
 	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
-	ret = asAtomHandler::fromNumber(wrk,number_t(th->rightToLeft)/100.0,false);
+	ret = asAtomHandler::fromNumber(number_t(th->rightToLeft)/100.0);
 }
 ASFUNCTIONBODY_ATOM(SoundTransform,_set_rightToLeft)
 {
@@ -170,7 +170,7 @@ ASFUNCTIONBODY_ATOM(SoundTransform,_set_rightToLeft)
 ASFUNCTIONBODY_ATOM(SoundTransform,_get_rightToRight)
 {
 	SoundTransform* th=asAtomHandler::as<SoundTransform>(obj);
-	ret = asAtomHandler::fromNumber(wrk,number_t(th->rightToRight)/100.0,false);
+	ret = asAtomHandler::fromNumber(number_t(th->rightToRight)/100.0);
 }
 ASFUNCTIONBODY_ATOM(SoundTransform,_set_rightToRight)
 {
@@ -439,7 +439,7 @@ ASFUNCTIONBODY_ATOM(Video,_getVideoWidth)
 		th->videoHeight=th->netStream->getVideoHeight();
 		th->netStream->unlock();
 	}
-	asAtomHandler::setUInt(ret,wrk,th->videoWidth);
+	asAtomHandler::setUInt(ret,th->videoWidth);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_getVideoHeight)
@@ -452,13 +452,13 @@ ASFUNCTIONBODY_ATOM(Video,_getVideoHeight)
 		th->videoHeight=th->netStream->getVideoHeight();
 		th->netStream->unlock();
 	}
-	asAtomHandler::setUInt(ret,wrk,th->videoHeight);
+	asAtomHandler::setUInt(ret,th->videoHeight);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_getWidth)
 {
 	Video* th=asAtomHandler::as<Video>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->width);
+	asAtomHandler::setUInt(ret,th->width);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_setWidth)
@@ -472,7 +472,7 @@ ASFUNCTIONBODY_ATOM(Video,_setWidth)
 ASFUNCTIONBODY_ATOM(Video,_getHeight)
 {
 	Video* th=asAtomHandler::as<Video>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->height);
+	asAtomHandler::setUInt(ret,th->height);
 }
 
 ASFUNCTIONBODY_ATOM(Video,_setHeight)
@@ -1274,7 +1274,7 @@ ASFUNCTIONBODY_ATOM(SoundChannel,getPosition)
 		return;
 	}
 	SoundChannel* th = asAtomHandler::as<SoundChannel>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->audioStream ? th->audioStream->getPlayedTime() : th->startTime);
+	asAtomHandler::setUInt(ret,th->audioStream ? th->audioStream->getPlayedTime() : th->startTime);
 }
 void SoundChannel::execute()
 {
@@ -1637,13 +1637,13 @@ void StageVideo::finalize()
 ASFUNCTIONBODY_ATOM(StageVideo,_getVideoWidth)
 {
 	StageVideo* th=asAtomHandler::as<StageVideo>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->videoWidth);
+	asAtomHandler::setUInt(ret,th->videoWidth);
 }
 
 ASFUNCTIONBODY_ATOM(StageVideo,_getVideoHeight)
 {
 	StageVideo* th=asAtomHandler::as<StageVideo>(obj);
-	asAtomHandler::setUInt(ret,wrk,th->videoHeight);
+	asAtomHandler::setUInt(ret,th->videoHeight);
 }
 
 ASFUNCTIONBODY_ATOM(StageVideo,attachNetStream)

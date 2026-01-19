@@ -70,7 +70,6 @@ public:
 		assert_and_throw(implEnable);
 		throw UnsupportedException("getVariableByMultiName_i not supported for Dictionary");
 	}
-	asAtomWithNumber getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt) override;
 	multiname* setVariableByMultiname(multiname& name, asAtom &o, CONST_ALLOWED_FLAG allowConst, bool* alreadyset,ASWorker* wrk) override;
 	void setVariableByMultiname_i(multiname& name, int32_t value, ASWorker* wrk) override;
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;

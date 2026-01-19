@@ -310,7 +310,7 @@ ASFUNCTIONBODY_ATOM(Date,UTC)
 {
 	for (uint32_t i = 0; i < argslen; i++) {
 		if(asAtomHandler::isNumeric(args[i]) && std::isnan(asAtomHandler::toNumber(args[i]))) {
-			wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+			asAtomHandler::setNumber(ret, Number::NaN);
 			return;
 		}
 	}
@@ -322,7 +322,7 @@ ASFUNCTIONBODY_ATOM(Date,UTC)
 
 	dt->MakeDate(year, month+1, day, hour, minute,second, millisecond,false);
 	if(dt->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	ret = dt->msSinceEpoch();
@@ -332,182 +332,182 @@ ASFUNCTIONBODY_ATOM(Date,getTimezoneOffset)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	GTimeSpan diff = g_date_time_get_utc_offset(th->datetime);
-	asAtomHandler::setInt(ret,wrk,(int32_t)(-diff/G_TIME_SPAN_MINUTE));
+	asAtomHandler::setInt(ret,(int32_t)(-diff/G_TIME_SPAN_MINUTE));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCFullYear)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,th->extrayears + g_date_time_get_year(th->datetimeUTC));
+	asAtomHandler::setInt(ret,th->extrayears + g_date_time_get_year(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCMonth)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_month(th->datetimeUTC)-1);
+	asAtomHandler::setInt(ret,g_date_time_get_month(th->datetimeUTC)-1);
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCDate)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_day_of_month(th->datetimeUTC));
+	asAtomHandler::setInt(ret,g_date_time_get_day_of_month(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCDay)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_day_of_week(th->datetimeUTC)%7);
+	asAtomHandler::setInt(ret,g_date_time_get_day_of_week(th->datetimeUTC)%7);
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCHours)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_hour(th->datetimeUTC));
+	asAtomHandler::setInt(ret,g_date_time_get_hour(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCMinutes)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_minute(th->datetimeUTC));
+	asAtomHandler::setInt(ret,g_date_time_get_minute(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCSeconds)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_second(th->datetimeUTC));
+	asAtomHandler::setInt(ret,g_date_time_get_second(th->datetimeUTC));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCMilliseconds)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,(int32_t)(int64_t(th->milliseconds) % 1000));
+	asAtomHandler::setInt(ret,(int32_t)(int64_t(th->milliseconds) % 1000));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getFullYear)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,th->extrayears + g_date_time_get_year(th->datetime));
+	asAtomHandler::setInt(ret,th->extrayears + g_date_time_get_year(th->datetime));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getMonth)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_month(th->datetime)-1);
+	asAtomHandler::setInt(ret,g_date_time_get_month(th->datetime)-1);
 }
 
 ASFUNCTIONBODY_ATOM(Date,getDate)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_day_of_month(th->datetime));
+	asAtomHandler::setInt(ret,g_date_time_get_day_of_month(th->datetime));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getDay)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_day_of_week(th->datetime)%7);
+	asAtomHandler::setInt(ret,g_date_time_get_day_of_week(th->datetime)%7);
 }
 
 ASFUNCTIONBODY_ATOM(Date,getHours)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_hour(th->datetime));
+	asAtomHandler::setInt(ret,g_date_time_get_hour(th->datetime));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getMinutes)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_minute(th->datetime));
+	asAtomHandler::setInt(ret,g_date_time_get_minute(th->datetime));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getSeconds)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,g_date_time_get_second(th->datetime));
+	asAtomHandler::setInt(ret,g_date_time_get_second(th->datetime));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getMilliseconds)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,wrk,(int32_t)(int64_t(th->milliseconds) % 1000));
+	asAtomHandler::setInt(ret,(int32_t)(int64_t(th->milliseconds) % 1000));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getTime)
 {
 	if (!asAtomHandler::is<Date>(obj)) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	ret = th->msSinceEpoch();
@@ -518,7 +518,7 @@ ASFUNCTIONBODY_ATOM(Date,setFullYear)
 	Date* th=asAtomHandler::as<Date>(obj);
 	if (argslen == 0)
 	{
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	number_t y, m, d;
@@ -548,7 +548,7 @@ ASFUNCTIONBODY_ATOM(Date,setMonth)
 	ARG_CHECK(ARG_UNPACK (m) (d, 0));
 
 	if (th->nan) {
-		asAtomHandler::setNumber(ret,wrk,Number::NaN);
+		asAtomHandler::setNumber(ret,Number::NaN);
 		return;
 	}
 	if (argslen < 2)
@@ -571,7 +571,7 @@ ASFUNCTIONBODY_ATOM(Date,setDate)
 	ARG_CHECK(ARG_UNPACK (d));
 
 	if (th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), d, g_date_time_get_hour(th->datetime),g_date_time_get_minute(th->datetime),g_date_time_get_second(th->datetime),int64_t(th->milliseconds) % 1000,true);
@@ -592,7 +592,7 @@ ASFUNCTIONBODY_ATOM(Date,setHours)
 	ARG_CHECK(ARG_UNPACK (h) (min, 0) (sec, 0) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
 
 	if (th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	if (argslen < 2) min = g_date_time_get_minute(th->datetime);
@@ -620,9 +620,8 @@ ASFUNCTIONBODY_ATOM(Date,setMinutes)
 	{
 		ARG_CHECK(ARG_UNPACK (min,Number::NaN) (sec, 0) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
 	}
-
 	if (th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	if (argslen < 2) sec = g_date_time_get_second(th->datetime);
@@ -657,7 +656,7 @@ ASFUNCTIONBODY_ATOM(Date,setSeconds)
 		|| std::isnan(ms)
 		|| std::isinf(ms))
 	{
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), g_date_time_get_day_of_month(th->datetime),  g_date_time_get_hour(th->datetime), g_date_time_get_minute(th->datetime), int64_t(sec), int64_t(ms),true);
@@ -685,7 +684,7 @@ ASFUNCTIONBODY_ATOM(Date,setMilliseconds)
 	}
 
 	if (th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), g_date_time_get_day_of_month(th->datetime),  g_date_time_get_hour(th->datetime), g_date_time_get_minute(th->datetime), g_date_time_get_second(th->datetime), ms,true);
@@ -705,7 +704,7 @@ ASFUNCTIONBODY_ATOM(Date,setUTCFullYear)
 	number_t y, m, d;
 	ARG_CHECK(ARG_UNPACK (y) (m, 0) (d, 0));
 	if (th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	if (argslen > 1)
@@ -732,7 +731,7 @@ ASFUNCTIONBODY_ATOM(Date,setUTCMonth)
 	ARG_CHECK(ARG_UNPACK (m) (d, 0));
 
 	if (th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	if (argslen < 2)
@@ -755,7 +754,7 @@ ASFUNCTIONBODY_ATOM(Date,setUTCDate)
 	ARG_CHECK(ARG_UNPACK (d));
 
 	if (th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), d, g_date_time_get_hour(th->datetimeUTC),g_date_time_get_minute(th->datetimeUTC),g_date_time_get_second(th->datetimeUTC),int64_t(th->milliseconds) % 1000,false);
@@ -776,7 +775,7 @@ ASFUNCTIONBODY_ATOM(Date,setUTCHours)
 	ARG_CHECK(ARG_UNPACK (h) (min, 0) (sec, 0) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
 
 	if (th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	if (argslen < 2) min = g_date_time_get_minute(th->datetimeUTC);
@@ -805,7 +804,7 @@ ASFUNCTIONBODY_ATOM(Date,setUTCMinutes)
 		ARG_CHECK(ARG_UNPACK (min,Number::NaN) (sec, 0) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
 	}
 	if (th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	if (argslen < 2) sec = g_date_time_get_second(th->datetimeUTC);
@@ -835,7 +834,7 @@ ASFUNCTIONBODY_ATOM(Date,setUTCSeconds)
 	}
 
 	if (th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), g_date_time_get_day_of_month(th->datetimeUTC),  g_date_time_get_hour(th->datetimeUTC), g_date_time_get_minute(th->datetimeUTC), sec, ms,false);
@@ -864,7 +863,7 @@ ASFUNCTIONBODY_ATOM(Date,setUTCMilliseconds)
 
 	if (th->nan || std::isnan(ms) || std::isinf(ms)) {
 		th->nan=true;
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), g_date_time_get_day_of_month(th->datetimeUTC),  g_date_time_get_hour(th->datetimeUTC), g_date_time_get_minute(th->datetimeUTC), g_date_time_get_second(th->datetimeUTC), ms,false);
@@ -890,9 +889,9 @@ ASFUNCTIONBODY_ATOM(Date,setTime)
 		name.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		name.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 		name.isAttribute = true;
-		asAtom v = asAtomHandler::fromNumber(wrk,ms,false);
+		asAtom v = asAtomHandler::fromNumber(ms);
 		asAtomHandler::toObject(obj,wrk)->setVariableByMultiname(name,v,CONST_NOT_ALLOWED,nullptr,wrk);
-		wrk->setBuiltinCallResultLocalNumber(ret, ms);
+		asAtomHandler::setNumber(ret, ms);
 		return;
 	}
 	assert_and_throw(asAtomHandler::is<Date>(obj));
@@ -901,7 +900,7 @@ ASFUNCTIONBODY_ATOM(Date,setTime)
 	if (std::isnan(ms))
 	{
 		th->nan = true;
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	th->MakeDateFromMilliseconds(int64_t(ms));
@@ -920,20 +919,20 @@ ASFUNCTIONBODY_ATOM(Date,valueOf)
 {
 	if (!asAtomHandler::is<Date>(obj))
 	{
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
 	Date* th=asAtomHandler::as<Date>(obj);
 	if(th->nan) {
-		wrk->setBuiltinCallResultLocalNumber(ret, Number::NaN);
+		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	wrk->setBuiltinCallResultLocalNumber(ret, (int64_t)th->getMsSinceEpoch());
+	asAtomHandler::setNumber(ret, (int64_t)th->getMsSinceEpoch());
 }
 
 asAtom Date::msSinceEpoch()
 {
-	return this->nan ? getSystemState()->nanAtom : asAtomHandler::fromNumber(getInstanceWorker(),getMsSinceEpoch(),false);
+	return this->nan ? getSystemState()->nanAtom : asAtomHandler::fromNumber(getMsSinceEpoch());
 }
 number_t Date::getMsSinceEpoch()
 {
@@ -1046,7 +1045,7 @@ ASFUNCTIONBODY_ATOM(Date,toLocaleTimeString)
 
 ASFUNCTIONBODY_ATOM(Date,_parse)
 {
-	wrk->setBuiltinCallResultLocalNumber(ret, parse(asAtomHandler::toString(args[0],wrk)));
+	asAtomHandler::setNumber(ret, parse(asAtomHandler::toString(args[0],wrk)));
 }
 
 static const char* months[] = { "Jan", "Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
@@ -1252,7 +1251,6 @@ number_t Date::parse(tiny_string str)
 }
 bool Date::isEqual(ASObject* r)
 {
-	check();
 	//if we are comparing the same object the answer is true
 	if(this==r)
 		return true;

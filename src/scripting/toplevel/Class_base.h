@@ -546,7 +546,7 @@ public:
 	EARLY_BIND_STATUS resolveMultinameStatically(const multiname& name) const override;
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { /*TODO: implement*/ return nullptr; }
 	bool checkExistingFunction(const multiname& name);
-	multiname* getClassVariableByMultiname(asAtom& ret, const multiname& name, ASWorker* wrk, asAtom& closure, uint16_t resultlocalnumberpos);
+	multiname* getClassVariableByMultiname(asAtom& ret, const multiname& name, ASWorker* wrk, asAtom& closure);
 	variable* getBorrowedVariableByMultiname(const multiname& name)
 	{
 		return borrowedVariables.findObjVar(getInstanceWorker(),name,NO_CREATE_TRAIT,DECLARED_TRAIT);

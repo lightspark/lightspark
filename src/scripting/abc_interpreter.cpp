@@ -2387,7 +2387,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 							if (resulttype && !resulttype->isConstructed())
 								resulttype=nullptr;
 
-							asAtom cval = v->getVar(state.worker,UINT16_MAX);
+							asAtom cval = v->getVar();
 							if (!asAtomHandler::isNull(cval) && !asAtomHandler::isUndefined(cval)
 									&& (v->kind == TRAIT_KIND::CONSTANT_TRAIT
 										|| asAtomHandler::is<Class_base>(cval)
@@ -2466,7 +2466,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 									if (cls == Class<Number>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())
 									{
 										asAtom* pv = mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
-										v = asAtomHandler::fromNumber(wrk,asAtomHandler::toNumber(*pv),true);
+										v = asAtomHandler::fromNumber(asAtomHandler::toNumber(*pv));
 										skip=true;
 									}
 									else if (cls  == Class<Integer>::getRef(mi->context->applicationDomain->getSystemState()).getPtr())

@@ -1387,7 +1387,7 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 					asAtomHandler::divide(res,state.worker,*op2,false);
 					break;
 				case ABC_OP_OPTIMZED_MODULO:
-					asAtomHandler::modulo(res,state.worker,*op2,false);
+					asAtomHandler::modulo(res,*op2,false);
 					break;
 				case ABC_OP_OPTIMZED_LSHIFT:
 					asAtomHandler::lshift(res,state.worker,*op2);
@@ -1399,13 +1399,13 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 					asAtomHandler::urshift(res,state.worker,*op2);
 					break;
 				case ABC_OP_OPTIMZED_BITAND:
-					asAtomHandler::bit_and(res,state.worker,*op2);
+					asAtomHandler::bit_and(res,*op2);
 					break;
 				case ABC_OP_OPTIMZED_BITOR:
-					asAtomHandler::bit_or(res,state.worker,*op2);
+					asAtomHandler::bit_or(res,*op2);
 					break;
 				case ABC_OP_OPTIMZED_BITXOR:
-					asAtomHandler::bit_xor(res,state.worker,*op2);
+					asAtomHandler::bit_xor(res,*op2);
 					break;
 				default:
 					LOG(LOG_ERROR,"setupInstructionTwoArguments: trying to collapse invalid opcode:"<<hex<<operator_start);
@@ -2051,7 +2051,8 @@ bool checkInitializeLocalToConstant(preloadstate& state,int32_t value)
 		if (!state.mi->body->localsinitialvalues)
 		{
 			state.mi->body->localsinitialvalues = new asAtom[state.mi->body->local_count -(state.mi->numArgs()+1)];
-			memset(state.mi->body->localsinitialvalues,ATOMTYPE_UNDEFINED_BIT,(state.mi->body->local_count -(state.mi->numArgs()+1))*sizeof(asAtom));
+			for (uint32_t i = 0; i < state.mi->body->local_count -(state.mi->numArgs()+1); i++)
+				state.mi->body->localsinitialvalues[i] = asAtomHandler::undefinedAtom;
 		}
 		state.mi->body->localsinitialvalues[value]= *state.mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
 		state.canlocalinitialize[value]=false;

@@ -278,7 +278,7 @@ inline bool Class<Number>::coerce(ASWorker* wrk,asAtom& o)
 	if (asAtomHandler::isNumeric(o))
 		return false;
 	number_t n = asAtomHandler::toNumber(o);
-	asAtomHandler::setNumber(o,wrk,n);
+	asAtomHandler::setNumber(o,n);
 	return true;
 }
 
@@ -288,7 +288,7 @@ inline bool Class<UInteger>::coerce(ASWorker* wrk,asAtom& o)
 	if (asAtomHandler::isUInteger(o))
 		return false;
 	uint32_t n = asAtomHandler::toUInt(o);
-	asAtomHandler::setUInt(o,wrk,n);
+	asAtomHandler::setUInt(o,n);
 	return true;
 }
 
@@ -298,7 +298,7 @@ inline bool Class<Integer>::coerce(ASWorker* wrk,asAtom& o)
 	if (asAtomHandler::isInteger(o))
 		return false;
 	int32_t n = asAtomHandler::toInt(o);
-	asAtomHandler::setInt(o,wrk,n);
+	asAtomHandler::setInt(o,n);
 	return true;
 }
 

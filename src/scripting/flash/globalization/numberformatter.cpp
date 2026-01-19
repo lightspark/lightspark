@@ -393,7 +393,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,parse)
 	else
 	{
 		th->lastOperationStatus="noError";
-        ret = asAtomHandler::fromNumber(wrk,num, true);
+		ret = asAtomHandler::fromNumber(num);
 	}
     npr->value = num;
     ret = asAtomHandler::fromObject(npr);
@@ -440,7 +440,7 @@ ASFUNCTIONBODY_ATOM(NumberFormatter,parseNumber)
 	else
 	{
 		th->lastOperationStatus="noError";
-		ret = asAtomHandler::fromNumber(wrk,num, true);
+		ret = asAtomHandler::fromNumber(num);
 	}
     std::locale::global(l);
 }

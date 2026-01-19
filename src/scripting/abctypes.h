@@ -343,8 +343,9 @@ struct method_body_info
 	std::vector<preloadedcodedata> preloadedcode;
 	asAtom* localsinitialvalues;
 	inline uint16_t getReturnValuePos() const { return returnvaluepos; }
-	inline uint16_t getMaxLocalNumbers() const { return returnvaluepos+localresultcount+1+localconstantslots.size(); }
-	inline uint16_t getMaxLocalNumbersWithoutSlots() const { return returnvaluepos+localresultcount+1; }
+	inline uint16_t getMaxLocals() const { return returnvaluepos+localresultcount+1+localconstantslots.size(); }
+	inline uint16_t getMaxLocalsWithoutSlots() const { return returnvaluepos+localresultcount+1; }
+
 };
 
 std::istream& operator>>(std::istream& in, u8& v);

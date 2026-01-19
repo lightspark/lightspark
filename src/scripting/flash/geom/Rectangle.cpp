@@ -125,7 +125,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_constructor)
 ASFUNCTIONBODY_ATOM(Rectangle,_getLeft)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->x);
+	asAtomHandler::setNumber(ret, th->x);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setLeft)
@@ -155,7 +155,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setX)
 ASFUNCTIONBODY_ATOM(Rectangle,_getRight)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->x + th->width);
+	asAtomHandler::setNumber(ret, th->x + th->width);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setRight)
@@ -173,7 +173,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setRight)
 ASFUNCTIONBODY_ATOM(Rectangle,_getWidth)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->width);
+	asAtomHandler::setNumber(ret, th->width);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setWidth)
@@ -191,7 +191,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setWidth)
 ASFUNCTIONBODY_ATOM(Rectangle,_getTop)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->y);
+	asAtomHandler::setNumber(ret, th->y);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setTop)
@@ -221,7 +221,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setY)
 ASFUNCTIONBODY_ATOM(Rectangle,_getBottom)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->y + th->height);
+	asAtomHandler::setNumber(ret, th->y + th->height);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setBottom)
@@ -304,7 +304,7 @@ ASFUNCTIONBODY_ATOM(Rectangle,_setSize)
 ASFUNCTIONBODY_ATOM(Rectangle,_getHeight)
 {
 	Rectangle* th=asAtomHandler::as<Rectangle>(obj);
-	wrk->setBuiltinCallResultLocalNumber(ret, th->height);
+	asAtomHandler::setNumber(ret, th->height);
 }
 
 ASFUNCTIONBODY_ATOM(Rectangle,_setHeight)

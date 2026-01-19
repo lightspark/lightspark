@@ -352,7 +352,7 @@ ASFUNCTIONBODY_ATOM(XMLList,_getLength)
 {
 	XMLList* th=asAtomHandler::as<XMLList>(obj);
 	assert_and_throw(argslen==0);
-	asAtomHandler::setInt(ret,wrk,(int32_t)th->nodes.size());
+	asAtomHandler::setInt(ret,(int32_t)th->nodes.size());
 }
 
 ASFUNCTIONBODY_ATOM(XMLList,_hasSimpleContent)
@@ -903,52 +903,6 @@ GET_VARIABLE_RESULT XMLList::getVariableByInteger(asAtom &ret, int index, GET_VA
 	else
 		asAtomHandler::setUndefined(ret);
 	return GET_VARIABLE_RESULT::GETVAR_NORMAL;
-}
-
-asAtomWithNumber XMLList::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	asAtomWithNumber ret;
-	if (name.isAttribute)
-	{
-		XML::XMLVector retnodes;
-		auto it=nodes.begin();
-		for(; it!=nodes.end(); ++it)
-		{
-			asAtom o=asAtomHandler::invalidAtom;
-			(*it)->getVariableByMultiname(o,name,GET_VARIABLE_OPTION::NONE,wrk);
-			if(asAtomHandler::is<XMLList>(o))
-				retnodes.insert(retnodes.end(), asAtomHandler::as<XMLList>(o)->nodes.begin(), asAtomHandler::as<XMLList>(o)->nodes.end());
-			ASATOM_DECREF(o);
-		}
-
-		ret.value = asAtomHandler::fromObject(create(getInstanceWorker(),retnodes,this,name));
-		return ret;
-	}
-	unsigned int index=0;
-	if(XML::isValidMultiname(getInstanceWorker(),name,index))
-	{
-		if(index<nodes.size())
-		{
-			ret.value = asAtomHandler::fromObject(nodes[index].getPtr());
-		}
-		else
-			asAtomHandler::setUndefined(ret.value);
-	}
-	else
-	{
-		XML::XMLVector retnodes;
-		auto it=nodes.begin();
-		for(; it!=nodes.end(); ++it)
-		{
-			asAtom o=asAtomHandler::invalidAtom;
-			(*it)->getVariableByMultiname(o,name,GET_VARIABLE_OPTION::NONE,wrk);
-			if(asAtomHandler::is<XMLList>(o))
-				retnodes.insert(retnodes.end(), asAtomHandler::as<XMLList>(o)->nodes.begin(), asAtomHandler::as<XMLList>(o)->nodes.end());
-			ASATOM_DECREF(o);
-		}
-		ret.value = asAtomHandler::fromObject(create(getInstanceWorker(),retnodes,this,name));
-	}
-	return ret;
 }
 
 bool XMLList::hasPropertyByMultiname(const multiname& name, bool considerDynamic, bool considerPrototype, ASWorker* wrk)
@@ -1531,7 +1485,7 @@ uint32_t XMLList::nextNameIndex(uint32_t cur_index)
 void XMLList::nextName(asAtom& ret,uint32_t index)
 {
 	if(index<=nodes.size())
-		asAtomHandler::setUInt(ret,getInstanceWorker(),index-1);
+		asAtomHandler::setUInt(ret,index-1);
 	else
 		throw RunTimeException("XMLList::nextName out of bounds");
 }

@@ -256,7 +256,6 @@ void Vector::generator(asAtom& ret, ASWorker* wrk, asAtom &o_class, asAtom* args
 			for(auto i = arg->vec.begin(); i != arg->vec.end(); ++i)
 			{
 				asAtom o = *i;
-				asAtomHandler::localNumberToGlobalNumber(wrk,o);
 				if (!type->coerce(wrk,o))
 					ASATOM_INCREF(o);
 				ASObject* obj = asAtomHandler::getObject(o);
@@ -599,7 +598,7 @@ ASFUNCTIONBODY_ATOM(Vector,push)
 		}
 		th->vec.push_back(v);
 	}
-	asAtomHandler::setUInt(ret,wrk,(uint32_t)th->vec.size());
+	asAtomHandler::setUInt(ret,(uint32_t)th->vec.size());
 }
 
 ASFUNCTIONBODY_ATOM(Vector,_pop)
@@ -618,7 +617,7 @@ ASFUNCTIONBODY_ATOM(Vector,_pop)
 		else if(th->vec_type == Class<UInteger>::getRef(wrk->getSystemState()).getPtr())
 			ret = asAtomHandler::fromUInt(0);
 		else if(th->vec_type == Class<Number>::getRef(wrk->getSystemState()).getPtr())
-			ret = asAtomHandler::fromNumber(wrk,0,false);
+			ret = asAtomHandler::fromNumber(0);
 		else
 			ret = asAtomHandler::undefinedAtom;
 		return;
@@ -635,7 +634,7 @@ ASFUNCTIONBODY_ATOM(Vector,_pop)
 
 ASFUNCTIONBODY_ATOM(Vector,getLength)
 {
-	asAtomHandler::setUInt(ret,wrk,(uint32_t)asAtomHandler::as<Vector>(obj)->vec.size());
+	asAtomHandler::setUInt(ret,(uint32_t)asAtomHandler::as<Vector>(obj)->vec.size());
 }
 
 ASFUNCTIONBODY_ATOM(Vector,setLength)
@@ -737,7 +736,7 @@ ASFUNCTIONBODY_ATOM(Vector,lastIndexOf)
 
 	if(th->vec.size() == 0)
 	{
-		asAtomHandler::setInt(ret,wrk,(int32_t)-1);
+		asAtomHandler::setInt(ret,(int32_t)-1);
 		return;
 	}
 
@@ -745,7 +744,7 @@ ASFUNCTIONBODY_ATOM(Vector,lastIndexOf)
 
 	if(argslen == 2 && std::isnan(asAtomHandler::toNumber(args[1])))
 	{
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 		return;
 	}
 
@@ -777,7 +776,7 @@ ASFUNCTIONBODY_ATOM(Vector,lastIndexOf)
 	}
 	while(i--);
 
-	asAtomHandler::setInt(ret,wrk,res);
+	asAtomHandler::setInt(ret,res);
 }
 
 ASFUNCTIONBODY_ATOM(Vector,shift)
@@ -853,7 +852,6 @@ asAtom Vector::getDefaultValue()
 bool Vector::checkValue(asAtom& o, bool allowconversion,bool* isNewObject)
 {
 	asAtom oldValue = o;
-	bool waslocalnumber=asAtomHandler::localNumberToGlobalNumber(getInstanceWorker(),o);
 	if (!vec_type->coerceForTemplate(getInstanceWorker(),o,allowconversion))
 	{
 		Class_base* cls = dynamic_cast<Class_base*>(vec_type);
@@ -861,8 +859,6 @@ bool Vector::checkValue(asAtom& o, bool allowconversion,bool* isNewObject)
 			createError<TypeError>(getInstanceWorker(),kCheckTypeFailedError, asAtomHandler::getClass(o,getSystemState())->getQualifiedClassName(), cls->getQualifiedClassName());
 		if (isNewObject)
 			*isNewObject=false;
-		if (waslocalnumber)
-			ASATOM_DECREF(o);
 		return false;
 	}
 	if (isNewObject && oldValue.uintval != o.uintval)
@@ -1009,7 +1005,7 @@ ASFUNCTIONBODY_ATOM(Vector,indexOf)
 			break;
 		}
 	}
-	asAtomHandler::setInt(ret,wrk,res);
+	asAtomHandler::setInt(ret,res);
 }
 bool Vector::sortComparatorDefault::operator()(const asAtom& d1, const asAtom& d2)
 {
@@ -1345,7 +1341,7 @@ ASFUNCTIONBODY_ATOM(Vector,unshift)
 			}
 		}
 	}
-	asAtomHandler::setInt(ret,wrk,(int32_t)th->size());
+	asAtomHandler::setInt(ret,(int32_t)th->size());
 }
 
 ASFUNCTIONBODY_ATOM(Vector,_map)
@@ -1584,7 +1580,6 @@ GET_VARIABLE_RESULT Vector::getVariableByMultiname(asAtom& ret, const multiname&
 	if(index < vec.size())
 	{
 		ret = vec[index];
-		assert (!asAtomHandler::isLocalNumber(ret));
 		if (!(opt & NO_INCREF))
 			ASATOM_INCREF(ret);
 	}
@@ -1601,39 +1596,12 @@ GET_VARIABLE_RESULT Vector::getVariableByInteger(asAtom &ret, int index, GET_VAR
 	if (index >=0 && uint32_t(index) < size())
 	{
 		ret = vec[index];
-		assert (!asAtomHandler::isLocalNumber(ret));
 		if (!(opt & NO_INCREF))
 			ASATOM_INCREF(ret);
 		return GET_VARIABLE_RESULT::GETVAR_NORMAL;
 	}
 	else
 		return getVariableByIntegerIntern(ret,index,opt,wrk);
-}
-
-asAtomWithNumber Vector::getAtomWithNumberByMultiname(const multiname& name, ASWorker* wrk, GET_VARIABLE_OPTION opt)
-{
-	if(!implEnable)
-	{
-		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-	}
-
-	if(!name.hasEmptyNS)
-	{
-		return ASObject::getAtomWithNumberByMultiname(name,wrk,opt);
-	}
-
-	unsigned int index=0;
-	bool isNumber = false;
-	if(!Vector::isValidMultiname(getInstanceWorker(),name,index,&isNumber) || index > vec.size())
-	{
-		return asAtomWithNumber();
-	}
-	asAtomWithNumber ret;
-	if(index < vec.size())
-	{
-		ret.value = vec[index];
-	}
-	return ret;
 }
 
 multiname *Vector::setVariableByMultiname(multiname& name, asAtom& o, CONST_ALLOWED_FLAG allowConst,bool* alreadyset,ASWorker* wrk)
@@ -1812,7 +1780,7 @@ uint32_t Vector::nextNameIndex(uint32_t cur_index)
 void Vector::nextName(asAtom& ret,uint32_t index)
 {
 	if(index<=vec.size())
-		asAtomHandler::setUInt(ret,this->getInstanceWorker(),index-1);
+		asAtomHandler::setUInt(ret,index-1);
 	else
 		throw RunTimeException("Vector::nextName out of bounds");
 }

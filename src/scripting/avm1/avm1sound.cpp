@@ -116,10 +116,10 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getVolume)
 	{
 		if (!th->soundChannel->soundTransform)
 			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
-		wrk->setBuiltinCallResultLocalNumber(ret, th->soundChannel->soundTransform->volume);
+		asAtomHandler::setNumber(ret, th->soundChannel->soundTransform->volume);
 	}
 	else
-		asAtomHandler::setInt(ret,wrk,wrk->getSystemState()->static_SoundMixer_soundTransform->volume);
+		asAtomHandler::setInt(ret,wrk->getSystemState()->static_SoundMixer_soundTransform->volume);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,setVolume)
 {
@@ -150,9 +150,9 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getPan)
 	else
 		st = wrk->getSystemState()->static_SoundMixer_soundTransform.getPtr();
 	if (st->leftToLeft == 100)
-		asAtomHandler::setInt(ret,wrk,abs(st->rightToRight)-100);
+		asAtomHandler::setInt(ret,abs(st->rightToRight)-100);
 	else
-		asAtomHandler::setInt(ret,wrk,100-abs(st->leftToLeft));
+		asAtomHandler::setInt(ret,100-abs(st->leftToLeft));
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,setPan)
 {
@@ -277,13 +277,13 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getPosition)
 		SoundChannel::getPosition(ret,wrk,o,args,argslen);
 	}
 	else
-		asAtomHandler::setInt(ret,wrk,0);
+		asAtomHandler::setInt(ret,0);
 }
 ASFUNCTIONBODY_ATOM(AVM1Sound,AVM1_duration)
 {
 	AVM1Sound* th=asAtomHandler::as<AVM1Sound>(obj);
 	if (th->soundChannel)
-		ret = asAtomHandler::fromNumber(wrk,::round(th->length),false);
+		ret = asAtomHandler::fromNumber(::round(th->length));
 	else
 		ret = asAtomHandler::undefinedAtom;
 }

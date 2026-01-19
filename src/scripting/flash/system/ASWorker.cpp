@@ -42,7 +42,6 @@ extern uint32_t asClassCount;
 ASWorker::ASWorker(SystemState* s):
 	EventDispatcher(this,nullptr),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
-	builtinCallResultlocalnumber(UINT16_MAX),
 	stage(nullptr),
 	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),
 	cur_recursion(0),AVM1_cur_recursion_function(0),AVM1_cur_recursion_internal(0),
@@ -65,7 +64,6 @@ ASWorker::ASWorker(SystemState* s):
 ASWorker::ASWorker(Class_base* c):
 	EventDispatcher(c->getSystemState()->worker,c),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
-	builtinCallResultlocalnumber(UINT16_MAX),
 	stage(nullptr),
 	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),
 	cur_recursion(0),AVM1_cur_recursion_function(0),AVM1_cur_recursion_internal(0),
@@ -87,7 +85,6 @@ ASWorker::ASWorker(Class_base* c):
 ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
 	EventDispatcher(wrk,c),parser(nullptr),
 	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
-	builtinCallResultlocalnumber(UINT16_MAX),
 	stage(nullptr),
 	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),
 	cur_recursion(0),AVM1_cur_recursion_function(0),AVM1_cur_recursion_internal(0),

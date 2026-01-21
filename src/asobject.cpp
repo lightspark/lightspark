@@ -4767,7 +4767,7 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 		int64_t num2=toInt64(v2);
 		int64_t res = num1+num2;
 		LOG_CALL("addI " << num1 << '+' << num2 <<"="<<res);
-		if (forceint || (res >= -INT32_MIN && res < INT32_MAX))
+		if (forceint || (res > INT32_MIN && res < INT32_MAX))
 			setInt(a,int32_t(res));
 		else if (res >= 0 && res < UINT32_MAX)
 			setUInt(a,res);
@@ -5058,9 +5058,9 @@ bool asAtomHandler::AVM1add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 
 
 		// NOTE: Returning an integer here is an optimization.
-		if (forceint || (isInt && val >= -(1 << 28) && val < (1 << 28)))
+		if (forceint || (isInt && val > INT32_MIN && val < INT32_MAX))
 			setInt(a, val);
-		else if (isInt && val >= 0 && val < (1 << 29))
+		else if (isInt && val >= 0 && val < UINT32_MAX)
 			setUInt(a, val);
 		else
 			setNumber(a, val);
@@ -5973,26 +5973,40 @@ call_context *asAtomHandler::getCallContext(ASWorker* wrk)
 	return wrk->currentCallContext;
 }
 
-TRISTATE asAtomHandler::AVM1isLess(asAtom& a, ASWorker* wrk, asAtom& v2)
+asAtom asAtomHandler::AVM1isLess(asAtom& a, ASWorker* wrk, asAtom& v2)
 {
+	asAtom ret = asAtomHandler::undefinedAtom;
 	bool isRefCounted1 = false;
 	bool isRefCounted2 = false;
 	asAtom aa = a;
 	asAtom bb = v2;
 
-	if (asAtomHandler::isObject(aa))
-		AVM1toPrimitive(aa, wrk, isRefCounted1, NUMBER_HINT);
-	if (asAtomHandler::isObject(bb))
-		AVM1toPrimitive(bb, wrk, isRefCounted2, NUMBER_HINT);
 	// If either parameter's `valueOf` results in a non-movieclip object, immediately return false.
 	// This is the common case for objects because `Object.prototype.valueOf` returns the same object.
+	if (asAtomHandler::isObject(aa))
+		AVM1toPrimitive(aa, wrk, isRefCounted1, NUMBER_HINT);
 	ASObject* oa = asAtomHandler::getObject(aa);
 	if(oa && !oa->is<MovieClip>() && !isPrimitive(aa))
-		return TRISTATE::TFALSE;
+		return asAtomHandler::falseAtom;
+	if (asAtomHandler::isObject(bb))
+		AVM1toPrimitive(bb, wrk, isRefCounted2, NUMBER_HINT);
 	ASObject* ob = asAtomHandler::getObject(bb);
 	if(ob && !ob->is<MovieClip>() && !isPrimitive(bb))
-		return TRISTATE::TFALSE;
-	TRISTATE ret = isLess(aa,wrk,bb);
+		return asAtomHandler::falseAtom;
+	if (asAtomHandler::isString(aa) && asAtomHandler::isString(bb))
+	{
+		ret = AVM1toString(aa,wrk) < AVM1toString(bb,wrk) ? asAtomHandler::trueAtom : asAtomHandler::falseAtom;
+	}
+	else
+	{
+		auto swfVersion = wrk->AVM1getSwfVersion();
+		number_t na = asAtomHandler::AVM1toNumber(aa,swfVersion);
+		number_t nb = asAtomHandler::AVM1toNumber(bb,swfVersion);
+		if (std::isnan(na) || std::isnan(nb))
+			ret = asAtomHandler::undefinedAtom;
+		else
+			ret = na < nb ? asAtomHandler::trueAtom:asAtomHandler::falseAtom;
+	}
 	if (isRefCounted1)
 		ASATOM_DECREF(aa);
 	if (isRefCounted2)

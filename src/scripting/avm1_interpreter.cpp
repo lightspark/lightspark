@@ -1934,7 +1934,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom arg1 = PopStack(stack);
 				asAtom arg2 = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionLess2 "<<asAtomHandler::toDebugString(arg2)<<" < "<<asAtomHandler::toDebugString(arg1));
-				PushStack(stack,asAtomHandler::fromBool(asAtomHandler::AVM1isLess(arg2,wrk,arg1) == TTRUE));
+				PushStack(stack,asAtomHandler::AVM1isLess(arg2,wrk,arg1));
 				ASATOM_DECREF(arg1);
 				ASATOM_DECREF(arg2);
 				break;
@@ -2569,7 +2569,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom arg1 = PopStack(stack);
 				asAtom arg2 = PopStack(stack);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGreater "<<asAtomHandler::toDebugString(arg2)<<" > "<<asAtomHandler::toDebugString(arg1));
-				PushStack(stack,asAtomHandler::fromBool(asAtomHandler::AVM1isLess(arg1,wrk,arg2) == TTRUE));
+				PushStack(stack,asAtomHandler::AVM1isLess(arg1,wrk,arg2));
 				ASATOM_DECREF(arg1);
 				ASATOM_DECREF(arg2);
 				break;

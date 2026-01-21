@@ -262,7 +262,7 @@ void ApplicationDomain::registerEmbeddedFont(const tiny_string fontname, FontTag
 	embeddedfontsByID[tag->getId()] = tag;
 }
 
-FontTag* ApplicationDomain::getEmbeddedFont(const tiny_string fontname) const
+FontTag* ApplicationDomain::getEmbeddedFont(const tiny_string& fontname) const
 {
 	auto it = embeddedfonts.find(fontname);
 	if (it != embeddedfonts.end())

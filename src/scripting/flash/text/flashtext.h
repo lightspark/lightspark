@@ -322,7 +322,10 @@ protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
-	StaticText(ASWorker* wrk,Class_base* c):DisplayObject(wrk,c),TokenContainer(this),tagID(UINT32_MAX) {}
+	StaticText(ASWorker* wrk,Class_base* c):DisplayObject(wrk,c),TokenContainer(this),tagID(UINT32_MAX)
+	{
+		subtype=SUBTYPE_STATICTEXT;
+	}
 	StaticText(ASWorker* wrk,Class_base* c, tokensVector* tokens,const RECT& b,uint32_t _tagID);
 	static void sinit(Class_base* c);
 	void afterLegacyInsert() override;

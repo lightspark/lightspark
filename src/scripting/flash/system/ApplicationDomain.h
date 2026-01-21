@@ -86,7 +86,7 @@ public:
 	DictionaryTag* dictionaryLookup(int id);
 	DictionaryTag* dictionaryLookupByName(uint32_t nameID, bool recursive=false);
 	void registerEmbeddedFont(const tiny_string fontname, FontTag *tag);
-	FontTag* getEmbeddedFont(const tiny_string fontname) const;
+	FontTag* getEmbeddedFont(const tiny_string& fontname) const;
 	FontTag* getEmbeddedFontByID(uint32_t fontID) const;
 	void addToScalingGrids(const DefineScalingGridTag* r);
 	RECT* ScalingGridsLookup(int id);

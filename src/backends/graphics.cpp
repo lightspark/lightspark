@@ -1122,7 +1122,7 @@ FontTag* TextData::checkEmbeddedFont(DisplayObject* d)
 {
 	ApplicationDomain* currentDomain=d->loadedFrom;
 	if (!currentDomain) currentDomain = d->getSystemState()->mainClip->applicationDomain.getPtr();
-	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentDomain->getEmbeddedFontByID(fontID) : currentDomain->getEmbeddedFont(font));
+	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentDomain->getEmbeddedFontByID(fontID) : currentDomain->getEmbeddedFont(d->getSystemState()->getStringFromUniqueId(fontname)));
 	if (embeddedfont)
 	{
 		for (auto it = textlines.begin(); it != textlines.end(); it++)

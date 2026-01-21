@@ -1660,6 +1660,7 @@ class StackOverflowError;
 class Stage;
 class Stage3D;
 class StatusEvent;
+class StaticText;
 class SyntaxError;
 class Template_base;
 class TextBlock;
@@ -1765,7 +1766,8 @@ template<> inline bool ASObject::is<DisplayObject>() const
 		   || subtype == SUBTYPE_MORPHSHAPE
 		   || subtype == SUBTYPE_LOADER
 		   || subtype == SUBTYPE_AVM1MOVIECLIP
-		   || subtype == SUBTYPE_AVM1MOVIE;
+		   || subtype == SUBTYPE_AVM1MOVIE
+		   || subtype == SUBTYPE_STATICTEXT;
 }
 template<> inline bool ASObject::is<DisplayObjectContainer>() const { return subtype==SUBTYPE_DISPLAYOBJECTCONTAINER || subtype==SUBTYPE_STAGE || subtype==SUBTYPE_ROOTMOVIECLIP || subtype==SUBTYPE_SPRITE || subtype == SUBTYPE_MOVIECLIP || subtype == SUBTYPE_TEXTLINE || subtype == SUBTYPE_SIMPLEBUTTON || subtype==SUBTYPE_LOADER || subtype == SUBTYPE_AVM1MOVIECLIP || subtype == SUBTYPE_AVM1MOVIE; }
 template<> inline bool ASObject::is<DropShadowFilter>() const { return subtype==SUBTYPE_DROPSHADOWFILTER; }
@@ -1868,6 +1870,7 @@ template<> inline bool ASObject::is<Sprite>() const { return subtype==SUBTYPE_SP
 template<> inline bool ASObject::is<StackOverflowError>() const { return subtype==SUBTYPE_STACKOVERFLOWERROR; }
 template<> inline bool ASObject::is<Stage>() const { return subtype==SUBTYPE_STAGE; }
 template<> inline bool ASObject::is<Stage3D>() const { return subtype==SUBTYPE_STAGE3D; }
+template<> inline bool ASObject::is<StaticText>() const { return subtype==SUBTYPE_STATICTEXT; }
 template<> inline bool ASObject::is<StatusEvent>() const { return subtype==SUBTYPE_STATUSEVENT; }
 template<> inline bool ASObject::is<SyntaxError>() const { return subtype==SUBTYPE_SYNTAXERROR; }
 template<> inline bool ASObject::is<SyntheticFunction>() const { return subtype==SUBTYPE_SYNTHETICFUNCTION; }
@@ -2609,9 +2612,9 @@ FORCE_INLINE void asAtomHandler::subtract(asAtom& a, ASWorker *wrk, asAtom &v2, 
 
 		LOG_CALL("subtractI " << num1 << '-' << num2);
 		int64_t res = num1-num2;
-		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
+		if (forceint || (res > INT32_MIN && res < INT32_MAX))
 			setInt(a,int32_t(res));
-		else if (res >= 0 && res < UINT32_MAX>>3)
+		else if (res >= 0 && res < UINT32_MAX)
 			setUInt(a,res);
 		else
 			a = fromNumber(res);
@@ -2639,9 +2642,9 @@ FORCE_INLINE void asAtomHandler::subtractreplace(asAtom& ret, ASWorker* wrk, con
 		LOG_CALL("subtractreplaceI " << num1 << '-' << num2);
 		ASATOM_DECREF(ret);
 		int64_t res = num1-num2;
-		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
+		if (forceint || (res > INT32_MIN && res < INT32_MAX))
 			setInt(ret,int32_t(res));
-		else if (res >= 0 && res < UINT32_MAX>>3)
+		else if (res >= 0 && res < UINT32_MAX)
 			setUInt(ret,res);
 		else
 			setNumber(ret,res);
@@ -2672,9 +2675,9 @@ FORCE_INLINE void asAtomHandler::multiply(asAtom& a, ASWorker* wrk, asAtom &v2, 
 
 		LOG_CALL("multiplyI " << num1 << '*' << num2);
 		int64_t res = num1*num2;
-		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
+		if (forceint || (res > INT32_MIN && res < INT32_MAX))
 			setInt(a,int32_t(res));
-		else if (res >= 0 && res < UINT32_MAX>>3)
+		else if (res >= 0 && res < UINT32_MAX)
 			setUInt(a,res);
 		else
 			a = fromNumber(res);
@@ -2703,13 +2706,9 @@ FORCE_INLINE void asAtomHandler::multiplyreplace(asAtom& ret, ASWorker* wrk, con
 		ASObject* o = getObject(ret);
 		int64_t res = num1*num2;
 
-		if (forceint || (res > INT32_MIN>>3 && res < INT32_MAX>>3))
-		{
+		if (forceint || (res > INT32_MIN && res < INT32_MAX))
 			setInt(ret,int32_t(res));
-			if (o)
-				o->decRef();
-		}
-		else if (res >= 0 && res < UINT32_MAX>>3)
+		else if (res >= 0 && res < UINT32_MAX)
 			setUInt(ret,res);
 		else
 			setNumber(ret,res);

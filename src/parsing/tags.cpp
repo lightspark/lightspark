@@ -485,7 +485,7 @@ ASObject* DefineEditTextTag::instance(Class_base* c, ASObject* prevInstance, boo
 		FontTag* fonttag =  dynamic_cast<FontTag*>(loadedFrom->dictionaryLookup(FontID));
 		if (fonttag)
 		{
-			textData.font = fonttag->getFontname();
+			textData.fontname = loadedFrom->getSystemState()->getUniqueStringId(fonttag->getFontname());
 			textData.fontID = fonttag->getId();
 		}
 	}

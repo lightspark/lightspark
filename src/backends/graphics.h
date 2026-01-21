@@ -407,7 +407,7 @@ struct FormatText
 	ALIGNMENT align {AS_NONE};
 	RGBA fontColor {0x000000,0}; // use alpha 0 as "not set" indicator
 	uint32_t fontSize {0};
-	tiny_string font;
+	uint32_t font {BUILTIN_STRINGS::EMPTY};
 	tiny_string url;
 	tiny_string target;
 	number_t kerning {0};
@@ -441,18 +441,19 @@ protected:
 	std::vector<textline> textlines;
 public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
-	TextData() : swfversion(0), width(100), height(100),leading(0), textWidth(0), textHeight(0), font("Times New Roman"),fontID(UINT32_MAX), scrollH(0), scrollV(1), backgroundColor(0xFFFFFF),borderColor(0x000000),
+	TextData() : swfversion(0), width(100), height(100),leading(0), textWidth(0), textHeight(0), fontname(BUILTIN_STRINGS::STRING_TIMES_NEW_ROMAN),fontID(UINT32_MAX), scrollH(0), scrollV(1), backgroundColor(0xFFFFFF),borderColor(0x000000),
 		background(false),border(false), multiline(false),isBold(false),isItalic(false),wordWrap(false),caretblinkstate(false),isPassword(false),
 		autoSize(AS_NONE),align(AS_NONE), fontSize(12),
-	embeddedFont(nullptr),nanoVGFontID(-1)
+		embeddedFont(nullptr),nanoVGFontID(-1)
 	{}
+
 	uint32_t swfversion;
 	uint32_t width;
 	uint32_t height;
 	int32_t leading;
 	uint32_t textWidth;
 	uint32_t textHeight;
-	tiny_string font;
+	uint32_t fontname;
 	uint32_t fontID;
 	int32_t scrollH; // pixels, 0-based
 	int32_t scrollV; // lines, 1-based

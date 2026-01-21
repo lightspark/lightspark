@@ -842,12 +842,12 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 		
 
 	// Set baseline font
-	textLine->font = th->baselineZero;
+	textLine->fontname = th->getSystemState()->getUniqueStringId(th->baselineZero);
 
 	// Set font from FontDescription in TextBlock if possible
  	if (!th->baselineFontDescription.isNull())
 	{
- 		textLine->font = th->baselineFontDescription->fontName;
+		textLine->fontname = th->getSystemState()->getUniqueStringId(th->baselineFontDescription->fontName);
 	}
 
 	// Set font from FontDescription in TextElement if possible
@@ -855,7 +855,7 @@ ASFUNCTIONBODY_ATOM(TextBlock, createTextLine)
 	if (!elementFormat.isNull() &&
 		!elementFormat->fontDescription.isNull()   )
 	{
-		textLine->font = asAtomHandler::as<TextElement>(th->content)->elementFormat->fontDescription->fontName;
+		textLine->fontname = th->getSystemState()->getUniqueStringId(asAtomHandler::as<TextElement>(th->content)->elementFormat->fontDescription->fontName);
 	}
 
 	textLine->specifiedWidth = width;

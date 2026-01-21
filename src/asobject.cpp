@@ -4767,9 +4767,9 @@ bool asAtomHandler::add(asAtom& a, asAtom &v2, ASWorker* wrk, bool forceint)
 		int64_t num2=toInt64(v2);
 		int64_t res = num1+num2;
 		LOG_CALL("addI " << num1 << '+' << num2 <<"="<<res);
-		if (forceint || (res >= -(1<<28) && res < (1<<28)))
+		if (forceint || (res >= -INT32_MIN && res < INT32_MAX))
 			setInt(a,int32_t(res));
-		else if (res >= 0 && res < (1<<29))
+		else if (res >= 0 && res < UINT32_MAX)
 			setUInt(a,res);
 		else
 			setNumber(a,res);

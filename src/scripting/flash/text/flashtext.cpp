@@ -669,7 +669,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getTextFormat)
 	TextFormat *format=Class<TextFormat>::getInstanceS(wrk);
 
 	format->color= asAtomHandler::fromUInt(th->textColor.toUInt());
-	format->font = asAtomHandler::fromString(wrk->getSystemState(),th->font);
+	format->font = asAtomHandler::fromStringID(th->fontname);
 	format->size = asAtomHandler::fromUInt(th->fontSize);
 
 	LOG(LOG_NOT_IMPLEMENTED, "getTextFormat is not fully implemeted");
@@ -730,10 +730,10 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	}
 	if(!asAtomHandler::isNull(tf->font))
 	{
-		tiny_string fnt = asAtomHandler::toString(tf->font,wrk);
-		if (fnt != th->font)
+		uint32_t fnt = asAtomHandler::toStringId(tf->font,wrk);
+		if (fnt != th->fontname)
 			updatesizes = true;
-		th->font = fnt;
+		th->fontname = fnt;
 		th->fontID = UINT32_MAX;
 	}
 	if (!asAtomHandler::isNull(tf->size) && th->fontSize != asAtomHandler::toUInt(tf->size) && asAtomHandler::toUInt(tf->size)>0)
@@ -760,7 +760,7 @@ ASFUNCTIONBODY_ATOM(TextField,_getDefaultTextFormat)
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	
 	TextFormat* tf = Class<TextFormat>::getInstanceS(wrk);
-	tf->font = asAtomHandler::fromString(wrk->getSystemState(),th->font);
+	tf->font = asAtomHandler::fromStringID(th->fontname);
 	tf->bold = th->isBold ? asAtomHandler::trueAtom : asAtomHandler::nullAtom;
 	tf->italic = th->isItalic ? asAtomHandler::trueAtom : asAtomHandler::nullAtom;
 	LOG(LOG_NOT_IMPLEMENTED,"getDefaultTextFormat does not get all fields of TextFormat");
@@ -778,7 +778,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setDefaultTextFormat)
 		th->textColor = asAtomHandler::toUInt(tf->color);
 	if(!asAtomHandler::isNull(tf->font))
 	{
-		th->font = asAtomHandler::toString(tf->font,wrk);
+		th->fontname = asAtomHandler::toStringId(tf->font,wrk);
 		th->fontID = UINT32_MAX;
 	}
 	if (!asAtomHandler::isNull(tf->size) && asAtomHandler::toUInt(tf->size) > 0)
@@ -1503,7 +1503,7 @@ tiny_string TextField::toHtmlText()
 				}
 			}
 		}
-		bool fontchanged = !format.font.empty() && (format.font != prevformat.font || !(format.fontColor == prevformat.fontColor) || format.fontSize != prevformat.fontSize);
+		bool fontchanged = format.font!=BUILTIN_STRINGS::EMPTY && (format.font != prevformat.font || !(format.fontColor == prevformat.fontColor) || format.fontSize != prevformat.fontSize);
 		bool needsbold=false;
 		bool needsitalic=false;
 		bool needsunderline=false;
@@ -1550,7 +1550,7 @@ tiny_string TextField::toHtmlText()
 				ostringstream ss;
 				ss << format.fontSize;
 				if (setfont || format.font != lastformat.font)
-					node.append_attribute("FACE").set_value(format.font.raw_buf());
+					node.append_attribute("FACE").set_value(getSystemState()->getStringFromUniqueId(format.font).raw_buf());
 				if (setfont || format.fontSize != lastformat.fontSize)
 					node.append_attribute("SIZE").set_value(ss.str().c_str());
 				if (setfont || !(format.fontColor == lastformat.fontColor))
@@ -1682,7 +1682,7 @@ std::string TextField::toDebugString() const
 	res += this->getText(0);
 	res += "\";";
 	char buf[100];
-	sprintf(buf,"%dx%d %5.2f %d/%d %s",textWidth,textHeight,autosizeposition,autoSize,align,font.raw_buf());
+	sprintf(buf,"%dx%d %5.2f %d/%d %s",textWidth,textHeight,autosizeposition,autoSize,align,getSystemState()->getStringFromUniqueId(fontname).raw_buf());
 	res += buf;
 	return res;
 }
@@ -2206,7 +2206,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	FormatText format;
 	if (formatStack.empty())
 	{
-		format.font = textdata->font;
+		format.font = textdata->fontname;
 		format.fontColor = textdata->textColor;
 		format.fontSize = textdata->fontSize;
 		format.align = textdata->align;
@@ -2271,7 +2271,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 			tiny_string attrname = it->name();
 			attrname = attrname.lowercase();
 			if (attrname == "face")
-				format.font = it->value();
+				format.font = appdomain->getSystemState()->getUniqueStringId(it->value());
 			else if (attrname == "size")
 				format.fontSize = parseFontSize(it->value(), format.fontSize);
 			else if (attrname == "color")
@@ -2282,7 +2282,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 				if (appdomain)
 				{
 					// it seems that adobe overwrites the kerning setting if it is an embedded font without kerning table
-					FontTag* font = appdomain->getEmbeddedFont(format.font);
+					FontTag* font = appdomain->getEmbeddedFont(appdomain->getSystemState()->getStringFromUniqueId(format.font));
 					if (font && !font->hasKerning())
 						format.kerning = 0;
 				}
@@ -2790,6 +2790,7 @@ StaticText::StaticText(ASWorker* wrk, Class_base* c, tokensVector* tokens, const
 	,bounds(b)
 	,tagID(_tagID)
 {
+	subtype=SUBTYPE_STATICTEXT;
 }
 void StaticText::afterLegacyInsert()
 {

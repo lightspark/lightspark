@@ -3725,7 +3725,8 @@ void ABCVm::abc_add_i_local_local_localresult(call_context* context)
 	asAtom arg2 = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2);
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	if (USUALLY_TRUE((context->exec_pos->local3.flags & ABC_OP_FORCEINT)|| (
-			 (((res.uintval | arg2.uintval) & (ATOMTYPE_TYPE_BITS | 0xc0000000)) ==ATOM_INTEGER)
+			 ((res.uintval & (ATOMTYPE_TYPE_BITS | 0xc0000000)) ==ATOM_INTEGER)
+			&& ((arg2.uintval & (ATOMTYPE_TYPE_BITS | 0xc0000000)) ==ATOM_INTEGER)
 			&& !asAtomHandler::isObject(oldres))))
 	{
 		// fast path for common case that both arguments are ints and the result doesn't overflow

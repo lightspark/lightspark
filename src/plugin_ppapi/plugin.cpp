@@ -3025,7 +3025,7 @@ uint8_t* ppPluginEngineData::getFontPixelBuffer(int32_t externalressource,int wi
 int32_t ppPluginEngineData::setupFontRenderer(const TextData &_textData,float a, SMOOTH_MODE smoothing)
 {
 	PP_BrowserFont_Trusted_Description desc;
-	desc.face = g_var_interface->VarFromUtf8(_textData.font.raw_buf(),_textData.font.numBytes());
+	desc.face = g_var_interface->VarFromUtf8(this->sys->getStringFromUniqueId(_textData.fontname).raw_buf(),this->sys->getStringFromUniqueId(_textData.fontname).numBytes());
 	desc.family = PP_BROWSERFONT_TRUSTED_FAMILY_DEFAULT;
 	desc.size = _textData.fontSize;
 	desc.italic = PP_FALSE;
@@ -3048,7 +3048,7 @@ int32_t ppPluginEngineData::setupFontRenderer(const TextData &_textData,float a,
 	PP_Resource image_data = g_imagedata_interface->Create(instance->m_ppinstance,PP_IMAGEDATAFORMAT_BGRA_PREMUL,&size,PP_TRUE);
 	PP_Resource font = g_browserfont_interface->Create(instance->m_ppinstance,&desc);
 	if (font == 0)
-		LOG(LOG_ERROR,"couldn't create font:"<<_textData.font);
+		LOG(LOG_ERROR,"couldn't create font:"<<this->sys->getStringFromUniqueId(_textData.fontname));
 	runInTrueMainThread(sys, [=](SystemState* sys)
 	{
 		g_browserfont_interface->DrawTextAt(font,image_data,&text,&pos,color,nullptr,smoothing != SMOOTH_MODE::SMOOTH_NONE ? PP_TRUE : PP_FALSE);

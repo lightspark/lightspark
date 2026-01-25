@@ -1409,7 +1409,7 @@ FILLSTYLE Graphics::createGradientFill(const tiny_string& type,
 
 	if(matrix.isNull())
 	{
-		cairo_matrix_scale(&style.Matrix, 100.0/16384.0, 100.0/16384.0);
+		style.Matrix.scale(100.0/16384.0, 100.0/16384.0);
 	}
 	else
 	{

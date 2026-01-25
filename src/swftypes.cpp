@@ -25,7 +25,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <cmath>
-#include <cairo.h>
 #include <iomanip>
 #include <algorithm>
 
@@ -441,8 +440,17 @@ MATRIX::MATRIX(number_t sx, number_t sy, number_t sk0, number_t sk1, number_t tx
 MATRIX MATRIX::getInverted() const
 {
 	MATRIX ret(*this);
-	cairo_status_t status=cairo_matrix_invert(&ret);
-	if(status==CAIRO_STATUS_INVALID_MATRIX)
+	number_t det = ret.xx * ret.yy - ret.yx * ret.xy;
+	if (abs(det) > std::numeric_limits<number_t>::epsilon())
+	{
+		ret.xx = yy / det;
+		ret.yx = yx / -det;
+		ret.xy = xy / -det;
+		ret.yy = xx / det;
+		ret.x0 = (yy * x0 - xy * y0) / -det;
+		ret.y0 = (yx * x0 - xx * y0) / det;
+	}
+	else
 	{
 		//Flash does not fail for non invertible matrices
 		//but the result contains a few NaN and Infinite.
@@ -498,7 +506,27 @@ number_t MATRIX::getRotation() const
 		ret = sqrt(xy * xy + yy * yy);
 		ret = M_PI / 2.0 - (yy > 0 ? acos(-xy / ret) : -acos(xy / ret));
 	}
-	return ret*180/M_PI;
+	return ret*180.0/M_PI;
+}
+
+void MATRIX::rotate(number_t angle)
+{
+	number_t s = sin (angle);
+	number_t c = cos (angle);
+	MATRIX m(c,c,s,-s,0,0);
+	*this = m.multiplyMatrix(*this);
+}
+
+void MATRIX::scale(number_t sx, number_t sy)
+{
+	MATRIX m(sx,sy,0,0,0,0);
+	*this = m.multiplyMatrix(*this);
+}
+
+void MATRIX::translate(number_t dx, number_t dy)
+{
+	MATRIX m(1,1,0,0,dx,dy);
+	*this = m.multiplyMatrix(*this);
 }
 
 void MATRIX::get4DMatrix(float matrix[16]) const
@@ -534,16 +562,22 @@ Vector2 MATRIX::multiply2D(const Vector2& in) const
 
 void MATRIX::multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const
 {
-	xout=xin;
-	yout=yin;
-	cairo_matrix_transform_point(this, &xout, &yout);
+	xout = xx * xin + xy * yin + x0 ;
+	yout = yx * xin + yy * yin + y0;
 }
 
 MATRIX MATRIX::multiplyMatrix(const MATRIX& r) const
 {
 	MATRIX ret;
 	//Do post multiplication
-	cairo_matrix_multiply(&ret,&r,this);
+	ret.xx = r.xx * xx + r.yx * xy;
+	ret.yx = r.xx * yx + r.yx * yy;
+
+	ret.xy = r.xy * xx + r.yy * xy;
+	ret.yy = r.xy * yx + r.yy * yy;
+
+	ret.x0 = r.x0 * xx + r.y0 * xy + x0;
+	ret.y0 = r.x0 * yx + r.y0 * yy + y0;
 	return ret;
 }
 

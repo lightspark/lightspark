@@ -166,6 +166,16 @@ void CairoTokenRenderer::quadraticBezier(cairo_t* cr, double control_x, double c
 	               end_x, end_y);
 }
 
+void CairoTokenRenderer::fillFromMATRIX(cairo_matrix_t* m, const MATRIX& mat)
+{
+	m->xx=mat.xx;
+	m->yx=mat.yx;
+	m->xy=mat.xy;
+	m->yy=mat.yy;
+	m->x0=mat.x0;
+	m->y0=mat.y0;
+}
+
 cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask)
 {
 	cairo_pattern_t* pattern = nullptr;
@@ -201,10 +211,10 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			if (style.FillStyleType == LINEAR_GRADIENT)
 			{
 				MATRIX tmp=style.Matrix;
-				tmp.x0 -= number_t(style.ShapeBounds.Xmin)/20.0;
-				tmp.y0 -= number_t(style.ShapeBounds.Ymin)/20.0;
-				tmp.x0/=scaleCorrection;
-				tmp.y0/=scaleCorrection;
+				tmp.x0 = tmp.x0 - number_t(style.ShapeBounds.Xmin)/20.0;
+				tmp.y0 = tmp.y0 - number_t(style.ShapeBounds.Ymin)/20.0;
+				tmp.x0 = tmp.x0 / scaleCorrection;
+				tmp.y0 = tmp.y0 / scaleCorrection;
 				double x0,y0,x1,y1;
 				tmp.multiply2D(-16384.0, 0,x0,y0);
 				tmp.multiply2D(16384.0, 0,x1,y1);
@@ -264,16 +274,21 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 			}
 			pattern = cairo_pattern_reference(bm->cachedCairoPattern);
 			//Make a copy to invert it
-			cairo_matrix_t mat=style.Matrix;
-			mat.x0 -= number_t(style.ShapeBounds.Xmin)/20.0;
-			mat.y0 -= number_t(style.ShapeBounds.Ymin)/20.0;
-			cairo_status_t st = cairo_matrix_invert(&mat);
+			MATRIX mat=style.Matrix;
+
+			mat.x0 = mat.x0 - number_t(style.ShapeBounds.Xmin)/20.0;
+			mat.y0 = mat.y0 - number_t(style.ShapeBounds.Ymin)/20.0;
+
+			cairo_matrix_t m;
+			fillFromMATRIX(&m, mat);
+
+			cairo_status_t st = cairo_matrix_invert(&m);
 			assert(st == CAIRO_STATUS_SUCCESS);
 			(void)st; // silence warning about unused variable
-			mat.x0 /= scaleCorrection;
-			mat.y0 /= scaleCorrection;
+			m.x0 /= scaleCorrection;
+			m.y0 /= scaleCorrection;
 
-			cairo_pattern_set_matrix (pattern, &mat);
+			cairo_pattern_set_matrix (pattern, &m);
 			assert(cairo_pattern_status(pattern) == CAIRO_STATUS_SUCCESS);
 
 			if(style.FillStyleType == NON_SMOOTHED_REPEATING_BITMAP ||
@@ -296,7 +311,7 @@ cairo_pattern_t* CairoTokenRenderer::FILLSTYLEToCairo(const FILLSTYLE& style, do
 
 	return pattern;
 }
-void CairoTokenRenderer::adjustFillStyle(cairo_t* cr, const FILLSTYLE* style, const MATRIX& origmat, double scaleCorrection)
+void CairoTokenRenderer::adjustFillStyle(cairo_t* cr, const FILLSTYLE* style, cairo_matrix_t* origmat, double scaleCorrection)
 {
 	switch (style->FillStyleType)
 	{
@@ -304,23 +319,27 @@ void CairoTokenRenderer::adjustFillStyle(cairo_t* cr, const FILLSTYLE* style, co
 		case FOCAL_RADIAL_GRADIENT:
 		{
 			MATRIX tmp=style->Matrix;
-			tmp.x0 -= number_t(style->ShapeBounds.Xmin)*scaleCorrection;
-			tmp.y0 -= number_t(style->ShapeBounds.Ymin)*scaleCorrection;
-			tmp.x0/=scaleCorrection;
-			tmp.y0/=scaleCorrection;
+			tmp.x0 = tmp.x0 - number_t(style->ShapeBounds.Xmin)*scaleCorrection;
+			tmp.y0 = tmp.y0 - number_t(style->ShapeBounds.Ymin)*scaleCorrection;
+			tmp.x0 = tmp.x0 / scaleCorrection;
+			tmp.y0 = tmp.y0 / scaleCorrection;
 			// adjust gradient translation to current scaling
-			tmp.x0*=origmat.xx;
-			tmp.y0*=origmat.yy;
-			MATRIX m;
-			MATRIX m2 = origmat;
-			m2.x0/=scaleCorrection;
-			m2.y0/=scaleCorrection;
-			cairo_matrix_multiply(&m,&m2,&tmp);
+			tmp.x0 = tmp.x0 * origmat->xx;
+			tmp.y0 = tmp.y0 * origmat->xx;
+			MATRIX mat;
+			MATRIX m2(origmat->xx,origmat->yy,origmat->yx,origmat->xy,origmat->x0,origmat->y0);
+			m2.x0 = m2.x0 / scaleCorrection;
+			m2.y0 = m2.y0 / scaleCorrection;
+			mat = tmp.multiplyMatrix(m2);
 			// TODO there seems to be a bug in cairo (https://gitlab.freedesktop.org/cairo/cairo/-/issues/238) 
 			// that leads to CAIRO_STATUS_NO_MEMORY if the matrix scale is too small, so we ignore those cases for now
-			if (abs(m.getScaleX()) > 1.0/32768.0
-				&& abs(m.getScaleY()) > 1.0/32768.0) 
+			if (abs(mat.getScaleX()) > 1.0/32768.0
+				&& abs(mat.getScaleY()) > 1.0/32768.0)
+			{
+				cairo_matrix_t m;
+				fillFromMATRIX(&m,mat);
 				cairo_set_matrix(cr,&m);
+			}
 			break;
 		}
 		case NON_SMOOTHED_CLIPPED_BITMAP:
@@ -336,10 +355,10 @@ void CairoTokenRenderer::executefill(cairo_t* cr, const FILLSTYLE* style, cairo_
 {
 	if (!style || !pattern)
 		return;
-	MATRIX origmat;
+	cairo_matrix_t origmat;
 	cairo_get_matrix(cr,&origmat);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-	adjustFillStyle(cr, style, origmat, scaleCorrection);
+	adjustFillStyle(cr, style, &origmat, scaleCorrection);
 	cairo_set_source(cr, pattern);
 	cairo_fill(cr);
 	cairo_set_matrix(cr,&origmat);
@@ -349,13 +368,13 @@ void CairoTokenRenderer::executestroke(cairo_t* cr, const LINESTYLE2* style, cai
 {
 	if (!style)
 		return;
-	MATRIX origmat;
+	cairo_matrix_t origmat;
 	cairo_get_matrix(cr,&origmat);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	if (style->HasFillFlag && !skippaint)
 	{
 		assert(pattern);
-		adjustFillStyle(cr, &style->FillType, origmat, scaleCorrection);
+		adjustFillStyle(cr, &style->FillType, &origmat, scaleCorrection);
 		cairo_set_source(cr, pattern);
 	} else {
 		const RGBA& color = style->Color;
@@ -608,7 +627,9 @@ bool CairoTokenRenderer::cairoPathFromTokens(cairo_t* cr, _NR<tokenListRef> toke
 				cairo_pattern_t* pattern;
 				pattern=cairo_get_source(cr);
 				cairo_pattern_get_matrix(pattern, &origmat);
-				MATRIX m(p1.value,p2.value,p3.value,p4.value,p5.value,p6.value);
+				MATRIX m1(p1.value,p2.value,p3.value,p4.value,p5.value,p6.value);
+				cairo_matrix_t m;
+				fillFromMATRIX(&m,m1);
 				cairo_pattern_set_matrix(pattern, &m);
 				executefill(cr,currentfillstyle,currentfillpattern,scaleCorrection);
 				cairo_pattern_set_matrix(pattern, &origmat);

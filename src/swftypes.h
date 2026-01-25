@@ -26,7 +26,6 @@
 #include <map>
 #include <stack>
 #include <list>
-#include <cairo.h>
 
 #include "forwards/swftypes.h"
 #include "forwards/scripting/flash/display/DisplayObject.h"
@@ -761,6 +760,12 @@ protected:
 public:
 	FIXED():val(0){}
 	FIXED(int32_t v):val(v){}
+	FIXED(number_t v):val(v*65536.0){}
+	FIXED& operator=(number_t v)
+	{
+		val=v*65536.0;
+		return *this;
+	}
 	operator number_t() const{ return number_t(val)/65536.0; }
 };
 
@@ -1175,11 +1180,15 @@ template<class T> class Vector2Tmpl;
 typedef Vector2Tmpl<int32_t> Vector2;
 typedef Vector2Tmpl<double> Vector2f;
 
-class MATRIX: public cairo_matrix_t
+class MATRIX
 {
 	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
 	friend std::ostream& operator<<(std::ostream& s, const MATRIX& r);
 public:
+	double xx; double yx;
+	double xy; double yy;
+	double x0; double y0;
+
 	MATRIX(number_t sx=1, number_t sy=1, number_t sk0=0, number_t sk1=0, number_t tx=0, number_t ty=0);
 	void get4DMatrix(float matrix[16]) const;
 	void multiply2D(number_t xin, number_t yin, number_t& xout, number_t& yout) const;
@@ -1204,24 +1213,9 @@ public:
 	/*
 	 * Implement flash style premultiply matrix operators
 	 */
-	void rotate(number_t angle)
-	{
-		cairo_matrix_t tmp;
-		cairo_matrix_init_rotate(&tmp,angle);
-		cairo_matrix_multiply(this,this,&tmp);
-	}
-	void scale(number_t sx, number_t sy)
-	{
-		cairo_matrix_t tmp;
-		cairo_matrix_init_scale(&tmp,sx,sy);
-		cairo_matrix_multiply(this,this,&tmp);
-	}
-	void translate(number_t dx, number_t dy)
-	{
-		cairo_matrix_t tmp;
-		cairo_matrix_init_translate(&tmp,dx,dy);
-		cairo_matrix_multiply(this,this,&tmp);
-	}
+	void rotate(number_t angle);
+	void scale(number_t sx, number_t sy);
+	void translate(number_t dx, number_t dy);
 };
 
 class GRADRECORD

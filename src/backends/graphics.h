@@ -347,7 +347,7 @@ public:
 class CairoTokenRenderer : public CairoRenderer
 {
 private:
-	static void adjustFillStyle(cairo_t* cr, const FILLSTYLE* style, const MATRIX& origmat, double scaleCorrection);
+	static void adjustFillStyle(cairo_t* cr, const FILLSTYLE* style, cairo_matrix_t* origmat, double scaleCorrection);
 	static void executefill(cairo_t* cr, const FILLSTYLE* style, cairo_pattern_t* pattern, double scaleCorrection);
 	static void executestroke(cairo_t* stroke_cr, const LINESTYLE2* style, cairo_pattern_t* pattern, double scaleCorrection, bool isMask, CairoTokenRenderer* th, bool skippaint=false);
 	static cairo_pattern_t* FILLSTYLEToCairo(const FILLSTYLE& style, double scaleCorrection, bool isMask);
@@ -376,7 +376,7 @@ public:
 	   @param _ms The masks that must be applied
 	   @param _smoothing indicates if the tokens should be rendered with antialiasing
 	*/
-CairoTokenRenderer(_NR<tokenListRef> _filltokens,_NR<tokenListRef> _stroketokens, const MATRIX& _m,
+	CairoTokenRenderer(_NR<tokenListRef> _filltokens,_NR<tokenListRef> _stroketokens, const MATRIX& _m,
 			int32_t _x, int32_t _y, int32_t _w, int32_t _h,
 			float _xs, float _ys,
 			bool _ismask, bool _cacheAsBitmap,
@@ -393,6 +393,7 @@ CairoTokenRenderer(_NR<tokenListRef> _filltokens,_NR<tokenListRef> _stroketokens
 	   @param y The Y in local coordinates
 	*/
 	static bool hitTest(NullableRef<tokenListRef> tokens, float scaleFactor, const Vector2f& point);
+	static void fillFromMATRIX(cairo_matrix_t* m, const MATRIX& mat);
 };
 
 enum ALIGNMENT {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };

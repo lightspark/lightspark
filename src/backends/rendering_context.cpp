@@ -542,7 +542,14 @@ void CairoRenderContext::transformedBlit(const MATRIX& m, BitmapContainer* bc, C
 	cairo_pattern_set_filter(sourcePattern, (filterMode==FILTER_SMOOTH)?CAIRO_FILTER_BILINEAR:CAIRO_FILTER_NEAREST);
 	cairo_pattern_set_extend(sourcePattern, CAIRO_EXTEND_NONE);
 	cairo_set_source(cr, sourcePattern);
-	cairo_matrix_t matrix = m.getInverted();
+	cairo_matrix_t matrix;
+	MATRIX m2 = m.getInverted();
+	matrix.xx=m2.xx;
+	matrix.yx=m2.yx;
+	matrix.xy=m2.xy;
+	matrix.yy=m2.yy;
+	matrix.x0=m2.x0;
+	matrix.y0=m2.y0;
 	cairo_pattern_set_matrix(sourcePattern, &matrix);
 	cairo_pattern_destroy(sourcePattern);
 	cairo_rectangle(cr, x, y, w, h);

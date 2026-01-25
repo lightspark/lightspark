@@ -1284,9 +1284,17 @@ void RenderThread::drawDebugPoint(const Vector2f& pos)
 
 	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
 
-	MATRIX m;
+	cairo_matrix_t m;
 	cairo_get_matrix(cr, &m);
-	cairo_set_matrix(cr, &mt);
+
+	cairo_matrix_t m2;
+	m2.xx=mt.xx;
+	m2.yx=mt.yx;
+	m2.xy=mt.xy;
+	m2.yy=mt.yy;
+	m2.x0=mt.x0;
+	m2.y0=mt.y0;
+	cairo_set_matrix(cr, &m2);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgb(cr, 1, 0, 1);
 	cairo_set_line_width(cr, 1);
@@ -1321,9 +1329,11 @@ void RenderThread::drawDebugLine(const Vector2f &a, const Vector2f &b)
 
 	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
 
-	MATRIX m;
+	cairo_matrix_t m;
 	cairo_get_matrix(cr, &m);
-	cairo_set_matrix(cr, &stageMatrix);
+	cairo_matrix_t m2;
+	CairoTokenRenderer::fillFromMATRIX(&m2,stageMatrix);
+	cairo_set_matrix(cr, &m2);
 
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgb(cr, 0, 1, 0);
@@ -1368,9 +1378,11 @@ void RenderThread::drawDebugRect(float x, float y, float width, float height, co
 
 	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
 
-	MATRIX m;
+	cairo_matrix_t m;
 	cairo_get_matrix(cr, &m);
-	cairo_set_matrix(cr, &mt);
+	cairo_matrix_t m2;
+	CairoTokenRenderer::fillFromMATRIX(&m2,mt);
+	cairo_set_matrix(cr, &m2);
 	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgb(cr, 0.0, 0.5, 1);
 	cairo_set_line_width(cr, 1);

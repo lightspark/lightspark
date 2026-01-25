@@ -687,7 +687,7 @@ ASFUNCTIONBODY_ATOM(Matrix,concat)
 	Matrix* m=asAtomHandler::as<Matrix>(args[0]);
 
 	//Premultiply, which is flash convention
-	cairo_matrix_multiply(&th->matrix,&th->matrix,&m->matrix);
+	th->matrix = m->matrix.multiplyMatrix(th->matrix);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,identity)
@@ -695,7 +695,7 @@ ASFUNCTIONBODY_ATOM(Matrix,identity)
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
 	assert_and_throw(argslen==0);
 	
-	cairo_matrix_init_identity(&th->matrix);
+	th->matrix=MATRIX();
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,invert)
@@ -744,8 +744,8 @@ void Matrix::_createBox (number_t scaleX, number_t scaleY, number_t angle, numbe
 	 */
 
 	//Initialize using rotation
-	cairo_matrix_init_rotate(&matrix,angle);
-
+	matrix=MATRIX();
+	matrix.rotate(angle);
 	matrix.scale(scaleX,scaleY);
 	matrix.translate(x,y);
 }
@@ -796,9 +796,7 @@ ASFUNCTIONBODY_ATOM(Matrix,transformPoint)
 	if (argslen > 0)
 	{
 		Point* pt=asAtomHandler::as<Point>(args[0]);
-		ttx = pt->getX();
-		tty = pt->getY();
-		cairo_matrix_transform_point(&th->matrix,&ttx,&tty);
+		th->matrix.multiply2D(pt->getX(),pt->getY(),ttx,tty);
 	}
 	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,ttx, tty));
 }
@@ -812,9 +810,9 @@ ASFUNCTIONBODY_ATOM(Matrix,deltaTransformPoint)
 	if (argslen > 0)
 	{
 		Point* pt=asAtomHandler::as<Point>(args[0]);
-		ttx = pt->getX();
-		tty = pt->getY();
-		cairo_matrix_transform_distance(&th->matrix,&ttx,&tty);
+		th->matrix.multiply2D(pt->getX(),pt->getY(),ttx,tty);
+		ttx -= th->matrix.getTranslateX();
+		tty -= th->matrix.getTranslateY();
 	}
 	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,ttx, tty));
 }
@@ -823,15 +821,16 @@ ASFUNCTIONBODY_ATOM(Matrix,setTo)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
 	
-	//Mapping to cairo_matrix_t
+	//Mapping to MATRIX
 	//a -> xx
 	//b -> yx
 	//c -> xy
 	//d -> yy
 	//tx -> x0
 	//ty -> y0
-	
-	ARG_CHECK(ARG_UNPACK(th->matrix.xx)(th->matrix.yx)(th->matrix.xy)(th->matrix.yy)(th->matrix.x0)(th->matrix.y0));
+	number_t a,b,c,d,tx,ty;
+	ARG_CHECK(ARG_UNPACK(a)(b)(c)(d)(tx)(ty));
+	th->matrix = MATRIX(a,d,b,c,tx,ty);
 }
 ASFUNCTIONBODY_ATOM(Matrix,copyFrom)
 {

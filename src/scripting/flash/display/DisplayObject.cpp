@@ -54,10 +54,6 @@
 #include <algorithm>
 #include <array>
 
-// adobe seems to use twips as the base of the internal coordinate system, so we have to "round" coordinates to twips
-// TODO I think we should also use a twips-based coordinate system
-#define ROUND_TO_TWIPS(v) v = number_t(int(v*20))/20.0
-
 using namespace lightspark;
 using namespace std;
 
@@ -66,8 +62,8 @@ ATOMIC_INT32(DisplayObject::instanceCount);
 Vector2f DisplayObject::getXY()
 {
 	Vector2f ret;
-	ret.x = getMatrix().getTranslateX();
-	ret.y = getMatrix().getTranslateY();
+	ret.x = getMatrix().getTranslateX()/TWIPS_FACTOR;
+	ret.y = getMatrix().getTranslateY()/TWIPS_FACTOR;
 	return ret;
 }
 
@@ -103,7 +99,7 @@ number_t DisplayObject::getNominalWidth()
 		return 0;
 
 	bool ret=boundsRect(xmin,xmax,ymin,ymax,false);
-	return ret?(xmax-xmin):0;
+	return ret?(xmax-xmin)/TWIPS_FACTOR:0;
 }
 
 number_t DisplayObject::getNominalHeight()
@@ -114,7 +110,7 @@ number_t DisplayObject::getNominalHeight()
 		return 0;
 
 	bool ret=boundsRect(xmin,xmax,ymin,ymax,false);
-	return ret?(ymax-ymin):0;
+	return ret?(ymax-ymin)/TWIPS_FACTOR:0;
 }
 
 bool DisplayObject::inMask() const
@@ -818,8 +814,8 @@ void DisplayObject::setMatrix3D(_NR<Matrix3D> m)
 		matrix= NullRef;
 		float rawdata[16];
 		m->getRawDataAsFloat(rawdata);
-		this->tx = rawdata[12];
-		this->ty = rawdata[13];
+		this->tx = rawdata[12]*TWIPS_FACTOR;
+		this->ty = rawdata[13]*TWIPS_FACTOR;
 		this->tz = rawdata[14];
 		this->sx = rawdata[0];
 		this->sy = rawdata[5];
@@ -1038,7 +1034,9 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		state->hasOpaqueBackground = true;
 		state->renderWithNanoVG = true;
 		state->opaqueBackground=this->as<RootMovieClip>()->getBackground();
-		this->boundsRect(state->bounds.min.x, state->bounds.max.x, state->bounds.min.y, state->bounds.max.y, false);
+		RectF rc;
+		if (this->boundsRect(rc.min.x,rc.max.x, rc.min.y, rc.max.y, false))
+			state->bounds=rc;
 	}
 	else
 	{
@@ -1143,7 +1141,7 @@ float DisplayObject::getConcatenatedAlpha() const
 
 float DisplayObject::getScaleFactor() const
 {
-	return TWIPS_SCALING_FACTOR;
+	return 1.0;
 }
 
 void DisplayObject::onNewEvent(Event* ev)
@@ -1260,6 +1258,8 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	ctxt.lsglLoadIdentity();
 	ColorTransformBase ct = t.colorTransform;
 	MATRIX m = t.matrix;
+	m.x0 /= TWIPS_FACTOR;
+	m.y0 /= TWIPS_FACTOR;
 	ctxt.renderTextured(*surface->tex, surface->getState()->alpha, RenderContext::RGB_MODE,
 						ct, false,0.0,RGB(),surface->getState()->smoothing,m,r->getRect(),t.blendmode);
 	return false;
@@ -1574,7 +1574,6 @@ void DisplayObject::setScaleZ(number_t val)
 {
 	if (std::isnan(val))
 		return;
-	ROUND_TO_TWIPS(val);
 	//Apply the difference
 	if(sz!=val)
 	{
@@ -1621,7 +1620,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleZ)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getX)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret, th->tx);
+	asAtomHandler::setNumber(ret, float(th->tx)/TWIPS_FACTOR);
 }
 
 void DisplayObject::setX(number_t val)
@@ -1636,11 +1635,10 @@ void DisplayObject::setX(number_t val)
 		else
 			return;
 	}
-	ROUND_TO_TWIPS(val);
 	//Apply translation, it's trivial
-	if(tx!=val)
+	if(tx!=val*20)
 	{
-		tx=val;
+		tx=val*20;
 		hasChanged=true;
 		geometryChanged();
 		if(onStage)
@@ -1662,11 +1660,10 @@ void DisplayObject::setY(number_t val)
 		else
 			return;
 	}
-	ROUND_TO_TWIPS(val);
 	//Apply translation, it's trivial
-	if(ty!=val)
+	if(ty!=val*20)
 	{
-		ty=val;
+		ty=val*20;
 		hasChanged=true;
 		geometryChanged();
 		if(onStage)
@@ -1685,7 +1682,6 @@ void DisplayObject::setZ(number_t val)
 		useLegacyMatrix=false;
 	if (std::isnan(val))
 		return;
-	ROUND_TO_TWIPS(val);
 	//Apply translation, it's trivial
 	if(tz!=val)
 	{
@@ -1710,7 +1706,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setX)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getY)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret, th->ty);
+	asAtomHandler::setNumber(ret, float(th->ty)/TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setY)
@@ -1769,10 +1765,10 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getBounds)
 	{
 		//Bounds are in the form [XY]{min,max}
 		//convert it to rect (x,y,width,height) representation
-		res->x=x1;
-		res->width=x2-x1;
-		res->y=y1;
-		res->height=y2-y1;
+		res->x=x1/TWIPS_FACTOR;
+		res->width=(x2/TWIPS_FACTOR-x1/TWIPS_FACTOR);
+		res->y=y1/TWIPS_FACTOR;
+		res->height=(y2/TWIPS_FACTOR-y1/TWIPS_FACTOR);
 	}
 	else
 	{
@@ -1897,9 +1893,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,localToGlobal)
 
 	number_t tempx, tempy;
 
-	th->localToGlobal(pt->getX(), pt->getY(), tempx, tempy,false);
+	th->localToGlobal(pt->getX()*TWIPS_FACTOR, pt->getY()*TWIPS_FACTOR, tempx, tempy,false);
 
-	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,tempx, tempy));
+	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,tempx/TWIPS_FACTOR, tempy/TWIPS_FACTOR));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,globalToLocal)
@@ -1911,9 +1907,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,globalToLocal)
 
 	number_t tempx, tempy;
 
-	th->globalToLocal(pt->getX(), pt->getY(), tempx, tempy,false);
+	th->globalToLocal(pt->getX()*TWIPS_FACTOR, pt->getY()*TWIPS_FACTOR, tempx, tempy,false);
 
-	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,tempx, tempy));
+	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,tempx/TWIPS_FACTOR, tempy/TWIPS_FACTOR));
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setRotation)
@@ -1968,10 +1964,10 @@ void DisplayObject::setScalingGrid()
 	if (r)
 	{
 		this->scalingGrid = _MR(Class<Rectangle>::getInstanceS(getInstanceWorker()));
-		this->scalingGrid->x=r->Xmin/20.0;
-		this->scalingGrid->y=r->Ymin/20.0;
-		this->scalingGrid->width=(r->Xmax-r->Xmin)/20.0;
-		this->scalingGrid->height=(r->Ymax-r->Ymin)/20.0;
+		this->scalingGrid->x=r->Xmin;
+		this->scalingGrid->y=r->Ymin;
+		this->scalingGrid->width=(r->Xmax-r->Xmin);
+		this->scalingGrid->height=(r->Ymax-r->Ymin);
 	}
 }
 
@@ -2098,7 +2094,7 @@ _NR<Stage> DisplayObject::getStage()
 ASFUNCTIONBODY_ATOM(DisplayObject,_getWidth)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret, th->computeWidth());
+	asAtomHandler::setNumber(ret, th->computeWidth()/TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
@@ -2109,7 +2105,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
 		return;
 	if (std::isinf(newwidth) && th->needsActionScript3())
 		newwidth = 0;
-	ROUND_TO_TWIPS(newwidth);
+	newwidth *= TWIPS_FACTOR;
 
 	number_t xmin,xmax,y1,y2;
 	bool hasBounds = th->boundsRect(xmin,xmax,y1,y2,false);
@@ -2145,7 +2141,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setWidth)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getHeight)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret, th->computeHeight());
+	asAtomHandler::setNumber(ret, th->computeHeight()/TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setHeight)
@@ -2156,7 +2152,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setHeight)
 		return;
 	if (std::isinf(newheight) && th->needsActionScript3())
 		newheight = 0;
-	ROUND_TO_TWIPS(newheight);
+	newheight *= TWIPS_FACTOR;
 
 	number_t x1,x2,ymin,ymax;
 	bool hasBounds = th->boundsRect(x1,x2,ymin,ymax,false);
@@ -2191,7 +2187,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setHeight)
 
 Vector2f DisplayObject::getLocalMousePos()
 {
-	return getConcatenatedMatrix().getInverted().multiply2D(getSystemState()->getInputThread()->getMousePos());
+	return getConcatenatedMatrix().getInverted().multiply2D(getSystemState()->getInputThread()->getMousePos()*TWIPS_FACTOR)/TWIPS_FACTOR;
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMouseX)
@@ -2572,6 +2568,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 	number_t y;
 	bool shapeFlag;
 	ARG_CHECK(ARG_UNPACK (x) (y) (shapeFlag, false));
+	x*=TWIPS_FACTOR;
+	y*=TWIPS_FACTOR;
 
 	number_t xmin, xmax, ymin, ymax;
 	if (!th->boundsRectGlobal(xmin, xmax, ymin, ymax,false))
@@ -2605,7 +2603,6 @@ ASFUNCTIONBODY_ATOM(DisplayObject,hitTestPoint)
 			asAtomHandler::setBool(ret,false);
 			return;
 		}
-
 		_NR<DisplayObject> hit = th->hitTest(Vector2f(x, y), Vector2f(localX, localY),
 						     HIT_TYPE::GENERIC_HIT_INVISIBLE,false);
 
@@ -3402,11 +3399,11 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_localToGlobal)
 
 	number_t tempx, tempy;
 
-	th->localToGlobal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy,false);
+	th->localToGlobal(asAtomHandler::toNumber(x)*TWIPS_FACTOR, asAtomHandler::toNumber(y)*TWIPS_FACTOR, tempx, tempy,false);
 	ASATOM_DECREF(x);
 	ASATOM_DECREF(y);
-	asAtomHandler::setNumber(x,tempx);
-	asAtomHandler::setNumber(y,tempy);
+	asAtomHandler::setNumber(x,tempx/TWIPS_FACTOR);
+	asAtomHandler::setNumber(y,tempy/TWIPS_FACTOR);
 	bool alreadyset=false;
 	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,&alreadyset,wrk);
 	if (alreadyset)
@@ -3439,11 +3436,11 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_globalToLocal)
 
 	number_t tempx, tempy;
 
-	th->globalToLocal(asAtomHandler::toNumber(x), asAtomHandler::toNumber(y), tempx, tempy,false);
+	th->globalToLocal(asAtomHandler::toNumber(x)*TWIPS_FACTOR, asAtomHandler::toNumber(y)*TWIPS_FACTOR, tempx, tempy,false);
 	ASATOM_DECREF(x);
 	ASATOM_DECREF(y);
-	asAtomHandler::setNumber(x,tempx);
-	asAtomHandler::setNumber(y,tempy);
+	asAtomHandler::setNumber(x,tempx/TWIPS_FACTOR);
+	asAtomHandler::setNumber(y,tempy/TWIPS_FACTOR);
 	bool alreadyset=false;
 	pt->setVariableByMultiname(mx,x,CONST_ALLOWED,&alreadyset,wrk);
 	if (alreadyset)
@@ -3554,16 +3551,16 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("xMin");
-	v = asAtomHandler::fromNumber(x1);
+	v = asAtomHandler::fromNumber(x1/TWIPS_FACTOR);
 	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("xMax");
-	v = asAtomHandler::fromNumber(x2);
+	v = asAtomHandler::fromNumber(x2/TWIPS_FACTOR);
 	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("yMin");
-	v = asAtomHandler::fromNumber(y1);
+	v = asAtomHandler::fromNumber(y1/TWIPS_FACTOR);
 	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 	name.name_s_id=wrk->getSystemState()->getUniqueStringId("yMax");
-	v = asAtomHandler::fromNumber(y2);
+	v = asAtomHandler::fromNumber(y2/TWIPS_FACTOR);
 	o->setVariableByMultiname(name,v,CONST_ALLOWED,nullptr,wrk);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_swapDepths)

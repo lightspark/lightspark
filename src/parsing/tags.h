@@ -225,8 +225,18 @@ private:
 public:
 	DefineMorphShape2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 };
-
-class DefineEditTextTag: public DictionaryTag
+class TextTag: public DictionaryTag
+{
+public:
+	FLOAT Thickness;
+	FLOAT Sharpness;
+	uint8_t GridFit;
+	bool UseFlashType;
+	TextTag(RECORDHEADER h, RootMovieClip* root):DictionaryTag(h,root),GridFit(0),UseFlashType(false)
+	{
+	}
+};
+class DefineEditTextTag: public TextTag
 {
 friend class TextField;
 private:
@@ -616,7 +626,7 @@ public:
 	ASObject* instance(Class_base* c=nullptr,ASObject* prevInstance=nullptr, bool temporary=false) override;
 };
 
-class DefineTextTag: public DictionaryTag
+class DefineTextTag: public TextTag
 {
 	friend class GLYPHENTRY;
 private:
@@ -837,7 +847,7 @@ public:
 class CSMTextSettingsTag: public Tag
 {
 public:
-	CSMTextSettingsTag(RECORDHEADER h, std::istream& in);
+	CSMTextSettingsTag(RECORDHEADER h, std::istream& in,RootMovieClip* root);
 };
 
 class ScriptLimitsTag: public ControlTag

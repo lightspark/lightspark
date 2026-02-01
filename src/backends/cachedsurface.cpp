@@ -88,7 +88,7 @@ void SurfaceState::reset()
 	maxfilterborder=0;
 	smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS;
 	blendmode= AS_BLENDMODE::BLENDMODE_NORMAL;
-	scaling=TWIPS_SCALING_FACTOR;
+	scaling=1.0;
 	scrollRect=RECT();
 	scalingGrid=RECT();
 	visible=true;
@@ -402,7 +402,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 		_matrix = *startmatrix;
 	else
 		_matrix = state->matrix;
-	_matrix.translate(-state->scrollRect.Xmin,-state->scrollRect.Ymin);
+	_matrix.translate(-state->scrollRect.Xmin*TWIPS_FACTOR,-state->scrollRect.Ymin*TWIPS_FACTOR);
 	AS_BLENDMODE bl = container ? container->blendMode : state->blendmode;
 	ColorTransformBase ct = container ? container->ct : state->colortransform;
 	Transform2D currenttransform(_matrix,ct,bl);
@@ -427,7 +427,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 		initialMatrix.scale(scale.x, scale.y);
 		RectF bounds = boundsRectWithRenderTransform(baseTransform.matrix, initialMatrix);
 		Vector2f offset(bounds.min.x-baseTransform.matrix.x0,bounds.min.y-baseTransform.matrix.y0);
-		Vector2f size = bounds.size();
+		Vector2f size = bounds.size()/TWIPS_FACTOR;
 		
 		// don't force refresh if only the position has changed
 		bool hasDirtyMatrix = baseTransform.matrix.xx!=state->cachedMatrix.xx
@@ -450,8 +450,8 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 		if (cachedFilterTextureID != UINT32_MAX)
 		{
 			MATRIX m;
-			m.x0 = std::round(baseTransform.matrix.x0+offset.x);
-			m.y0 = std::round(baseTransform.matrix.y0+offset.y);
+			m.x0 = std::round(baseTransform.matrix.x0+offset.x)/TWIPS_FACTOR;
+			m.y0 = std::round(baseTransform.matrix.y0+offset.y)/TWIPS_FACTOR;
 			if (DisplayObject::isShaderBlendMode(state->blendmode))
 			{
 				assert (!sys->getRenderThread()->filterframebufferstack.empty());
@@ -537,7 +537,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 	if (hasscrollrect)
 	{
 		MATRIX m = ctxt.transformStack().transform().matrix;
-		sys->getEngineData()->exec_glScissor(m.getTranslateX()+state->scrollRect.Xmin*m.getScaleX()
+		sys->getEngineData()->exec_glScissor(m.getTranslateX()/TWIPS_FACTOR+state->scrollRect.Xmin*m.getScaleX()
 											 ,sys->getRenderThread()->currentframebufferHeight-state->scrollRect.Ymax*m.getScaleY()
 											 ,(state->scrollRect.Xmax-state->scrollRect.Xmin)*m.getScaleX()
 											 ,(state->scrollRect.Ymax-state->scrollRect.Ymin)*m.getScaleY());
@@ -594,9 +594,12 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 				}
 			}
 			MATRIX m = ctxt.transformStack().transform().matrix;
+			number_t scalefactor = TWIPS_FACTOR;
+			m.x0 /= scalefactor;
+			m.y0 /= scalefactor;
 			nvgTransform(nvgctxt,m.xx,m.yx,m.xy,m.yy,m.x0,m.y0);
-			nvgTranslate(nvgctxt,state->xOffset,state->yOffset);
-			nvgScale(nvgctxt,state->scaling,state->scaling);
+			nvgTranslate(nvgctxt,state->xOffset/scalefactor,state->yOffset/scalefactor);
+			nvgScale(nvgctxt,state->scaling/scalefactor,state->scaling/scalefactor);
 			float basetransform[6];
 			nvgCurrentTransform(nvgctxt,basetransform);
 			NVGcolor startcolor = nvgRGBA(0,0,0,0);
@@ -888,6 +891,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 				{
 					nvgFontSize(nvgctxt,state->textdata.fontSize);
 					nvgFontFaceId(nvgctxt,state->textdata.nanoVGFontID);
+					float ypos=state->textdata.fontSize;
 					for (auto it = state->textdata.textlines.begin(); it != state->textdata.textlines.end(); ++it)
 					{
 						ALIGNMENT al = it->format.align;
@@ -906,7 +910,8 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 								nvgTextAlign(nvgctxt,NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
 								break;
 						}
-						nvgTextBox(nvgctxt,0,0,state->textdata.width,(*it).text.raw_buf(),nullptr);
+						nvgTextBox(nvgctxt,0,ypos,state->textdata.width,(*it).text.raw_buf(),nullptr);
+						ypos += state->textdata.fontSize;
 					}
 				}
 			}
@@ -1044,9 +1049,6 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	fe.filterrenderbuffer=filterrenderbuffer;
 	fe.filtertextureID=filterTextureIDoriginal;
 	
-	Vector2f scale = sys->getRenderThread()->getScale();
-	fe.filterborderx=(-state->bounds.min.x+state->maxfilterborder)*scale.x;
-	fe.filterbordery=(-state->bounds.min.y+state->maxfilterborder)*scale.y;
 	sys->getRenderThread()->filterframebufferstack.push_back(fe);
 	renderImpl(sys, ctxt, nullptr);
 	// bind rendered filter source to g_tex_filter1
@@ -1158,13 +1160,14 @@ void CachedSurface::defaultRender(RenderContext& ctxt)
 	ctxt.lsglLoadIdentity();
 	ColorTransformBase ct = t.colorTransform;
 	MATRIX m = t.matrix;
+	m.x0 /= TWIPS_FACTOR;
+	m.y0 /= TWIPS_FACTOR;
 	ctxt.renderTextured(*tex, state->alpha, state->isYUV ? RenderContext::YUV_MODE : RenderContext::RGB_MODE,
 						ct, false,0.0,RGB(),state->smoothing,m,state->scalingGrid,t.blendmode);
 }
 RectF CachedSurface::boundsRectWithRenderTransform(const MATRIX& matrix, const MATRIX& initialMatrix)
 {
-	RectF bounds = state->bounds;
-	bounds *= matrix;
+	RectF bounds = state->bounds*matrix;
 	for (auto child : state->childrenlist)
 	{
 		if (!child->state)
@@ -1175,10 +1178,10 @@ RectF CachedSurface::boundsRectWithRenderTransform(const MATRIX& matrix, const M
 	if (!state->filters.empty())
 	{
 		number_t filterborder = state->maxfilterborder;
-		bounds.min.x -= filterborder*initialMatrix.getScaleX();
-		bounds.max.x += filterborder*initialMatrix.getScaleX();
-		bounds.min.y -= filterborder*initialMatrix.getScaleY();
-		bounds.max.y += filterborder*initialMatrix.getScaleY();
+		bounds.min.x -= filterborder*initialMatrix.getScaleX()*TWIPS_FACTOR;
+		bounds.max.x += filterborder*initialMatrix.getScaleX()*TWIPS_FACTOR;
+		bounds.min.y -= filterborder*initialMatrix.getScaleY()*TWIPS_FACTOR;
+		bounds.max.y += filterborder*initialMatrix.getScaleY()*TWIPS_FACTOR;
 	}
 	return bounds;
 }

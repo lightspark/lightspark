@@ -318,6 +318,7 @@ private:
 	ASFUNCTION_ATOM(_getText);
 	RECT bounds;
 	uint32_t tagID;
+	bool usesAdvancedTextEngine;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
@@ -326,7 +327,7 @@ public:
 	{
 		subtype=SUBTYPE_STATICTEXT;
 	}
-	StaticText(ASWorker* wrk,Class_base* c, tokensVector* tokens,const RECT& b,uint32_t _tagID);
+	StaticText(ASWorker* wrk,Class_base* c, tokensVector* tokens,const RECT& b,uint32_t _tagID, bool _usesAdvancedTextEngine);
 	static void sinit(Class_base* c);
 	void afterLegacyInsert() override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }

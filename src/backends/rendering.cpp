@@ -1891,7 +1891,7 @@ void RenderThread::renderBitmap(BitmapContainer* bm, Bitmap* tempBitmap, bool wa
 		mutexRenderToBitmapContainer.unlock();
 		return;
 	}
-	if (bm->getRenderData()->rendercalls.empty())
+	if (bm->getRenderData()->rendercalls.empty() || bm->isEmpty() || bm->getWidth()==0 || bm->getHeight()==0)
 	{
 		mutexRenderToBitmapContainer.unlock();
 		return;

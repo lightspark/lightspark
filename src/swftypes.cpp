@@ -1304,8 +1304,8 @@ std::istream& lightspark::operator>>(std::istream& stream, MATRIX& v)
 		v.xy = 0;
 	}
 	int NTranslateBits=UB(5,bs);
-	v.x0=SB(NTranslateBits,bs)/20.0;
-	v.y0=SB(NTranslateBits,bs)/20.0;
+	v.x0=SB(NTranslateBits,bs);
+	v.y0=SB(NTranslateBits,bs);
 	return stream;
 }
 

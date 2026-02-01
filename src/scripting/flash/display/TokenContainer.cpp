@@ -37,7 +37,7 @@ using namespace lightspark;
 using namespace std;
 
 TokenContainer::TokenContainer(DisplayObject* _o) : owner(_o),tokens(nullptr)
-  ,scaling(0.05),renderWithNanoVG(false)
+  ,scaling(1.0),renderWithNanoVG(false)
 {
 }
 
@@ -241,10 +241,10 @@ bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, 
 {
 	if (!tk || tk->empty())
 		return false;
-	xmin = tk->boundsRect.Xmin*scaling;
-	xmax = tk->boundsRect.Xmax*scaling;
-	ymin = tk->boundsRect.Ymin*scaling;
-	ymax = tk->boundsRect.Ymax*scaling;
+	xmin = tk->boundsRect.Xmin;
+	xmax = tk->boundsRect.Xmax;
+	ymin = tk->boundsRect.Ymin;
+	ymax = tk->boundsRect.Ymax;
 	return true;
 }
 

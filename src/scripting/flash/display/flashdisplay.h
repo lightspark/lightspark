@@ -129,7 +129,7 @@ private:
 	set<int32_t> legacyChildrenMarkedForDeletion;
 	map<int32_t,DisplayObject*> mapFrameDepthToLegacyChildRemembered;
 	bool _contains(DisplayObject* child);
-	void getObjectsFromPoint(Point* point, Array* ar);
+	void getObjectsFromPoint(const Vector2f& point, Array* ar);
 	number_t boundsrectXmin;
 	number_t boundsrectYmin;
 	number_t boundsrectXmax;

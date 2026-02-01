@@ -1372,7 +1372,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			case GETMOUSETARGET_EVENT:
 			{
 				GetMouseTargetEvent* ev=static_cast<GetMouseTargetEvent*>(e.second.getPtr());
-				Vector2f point(ev->x, ev->y);
+				Vector2f point(ev->x*TWIPS_FACTOR, ev->y*TWIPS_FACTOR);
 				ev->dispobj=m_sys->stage->hitTest(point, point, ev->type,true);
 				break;
 			}

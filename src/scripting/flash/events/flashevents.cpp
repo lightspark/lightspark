@@ -470,7 +470,9 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localX)
 	if(asAtomHandler::isValid(th->target) &&(asAtomHandler::toObject(th->target,wrk)->getClass()->isSubClass(Class<InteractiveObject>::getClass(wrk->getSystemState()))))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>(asAtomHandler::getObject(th->target));
-		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
+		tar->localToGlobal(th->localX*TWIPS_FACTOR, th->localY*TWIPS_FACTOR, th->stageX, th->stageY);
+		th->stageX /= TWIPS_FACTOR;
+		th->stageY /= TWIPS_FACTOR;
 	}
 }
 
@@ -489,7 +491,9 @@ ASFUNCTIONBODY_ATOM(MouseEvent,_setter_localY)
 	if(asAtomHandler::isValid(th->target) &&(asAtomHandler::toObject(th->target,wrk)->getClass()->isSubClass(Class<InteractiveObject>::getClass(wrk->getSystemState()))))
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>(asAtomHandler::getObject(th->target));
-		tar->localToGlobal(th->localX, th->localY, th->stageX, th->stageY);
+		tar->localToGlobal(th->localX*TWIPS_FACTOR, th->localY*TWIPS_FACTOR, th->stageX, th->stageY);
+		th->stageX /= TWIPS_FACTOR;
+		th->stageY /= TWIPS_FACTOR;
 	}
 }
 
@@ -561,7 +565,9 @@ void MouseEvent::setTarget(asAtom t)
 	else if(asAtomHandler::toObject(t,getInstanceWorker())->getClass()->isSubClass(Class<InteractiveObject>::getClass(getSystemState())))	
 	{		
 		InteractiveObject* tar = static_cast<InteractiveObject*>(asAtomHandler::getObject(t));
-		tar->localToGlobal(localX, localY, stageX, stageY);
+		tar->localToGlobal(localX*TWIPS_FACTOR, localY*TWIPS_FACTOR, stageX, stageY);
+		stageX /= TWIPS_FACTOR;
+		stageY /= TWIPS_FACTOR;
 	}
 }
 

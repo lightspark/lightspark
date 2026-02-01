@@ -49,7 +49,7 @@ class SurfaceState
 public:
 	SurfaceState(float _xoffset=0.0,float _yoffset=0.0, float _alpha=1.0, float _xscale=1.0, float _yscale=1.0,
 				 const ColorTransformBase& _colortransform=ColorTransformBase(), const MATRIX& _matrix=MATRIX(), bool _ismask=false, bool _cacheAsBitmap=false,
-				 AS_BLENDMODE _blendmode=BLENDMODE_NORMAL, SMOOTH_MODE _smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS, float _scaling=TWIPS_SCALING_FACTOR, bool _needsfilterrefresh=true, bool _needslayer=false);
+				 AS_BLENDMODE _blendmode=BLENDMODE_NORMAL, SMOOTH_MODE _smoothing=SMOOTH_MODE::SMOOTH_ANTIALIAS, float _scaling=1.0, bool _needsfilterrefresh=true, bool _needslayer=false);
 	virtual ~SurfaceState();
 	void reset();
 	void setupChildrenList(std::vector < DisplayObject* >& dynamicDisplayList);

@@ -22,7 +22,7 @@
 
 #define CHUNKSIZE_REAL 126 // 1 pixel on each side is used for clamping to edge
 #define CHUNKSIZE 128
-#define TWIPS_SCALING_FACTOR 1.0/20.0
+#define TWIPS_FACTOR 20.0
 
 #include "forwards/swftypes.h"
 #include "forwards/backends/cachedsurface.h"

@@ -306,30 +306,30 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 		return false;
 	if (this->type == ET_EDITABLE && tag)
 	{
-		xmin=tag->Bounds.Xmin/20.0f;
-		xmax=tag->Bounds.Xmax/20.0f;
-		ymin=tag->Bounds.Ymin/20.0f;
-		ymax=tag->Bounds.Ymax/20.0f;
+		xmin=tag->Bounds.Xmin;
+		xmax=tag->Bounds.Xmax;
+		ymin=tag->Bounds.Ymin;
+		ymax=tag->Bounds.Ymax;
 		return true;
 	}
 	if ((!this->legacy || (tag==nullptr) || autoSize!=AS_NONE))
 	{
-		xmin=tag ? tag->Bounds.Xmin/20.0f : 0.0f;
+		xmin=tag ? tag->Bounds.Xmin : 0.0f;
 		if (wordWrap || autoSize==AS_NONE)
-			xmax=max(0.0f,float(width))+ (tag ? tag->Bounds.Xmin/20.0f : 0.0f);
+			xmax=max(0.0f,float(width*TWIPS_FACTOR))+ (tag ? tag->Bounds.Xmin : 0.0f);
 		else
-			xmax=max(0.0f,float(textWidth+autosizeposition))+2*TEXTFIELD_PADDING+ (tag ? tag->Bounds.Xmin/20.0f : 0.0f);
-		ymin=tag ? tag->Bounds.Ymin/20.0f : 0.0f;
-		ymax=max(0.0f,float(height)+(tag ? tag->Bounds.Ymin/20.0f :0.0f)+2*TEXTFIELD_PADDING);
+			xmax=max(0.0f,float(textWidth+autosizeposition))*TWIPS_FACTOR+2*TEXTFIELD_PADDING+ (tag ? tag->Bounds.Xmin : 0.0f);
+		ymin=tag ? tag->Bounds.Ymin : 0.0f;
+		ymax=max(0.0f,float(height*TWIPS_FACTOR)+(tag ? tag->Bounds.Ymin :0.0f)+2*TEXTFIELD_PADDING);
 		return true;
 	}
-	xmin=tag->Bounds.Xmin/20.0f;
+	xmin=tag->Bounds.Xmin;
 	if (wordWrap)
-		xmax=max(0.0f,float(width)+tag->Bounds.Xmin/20.0f);
+		xmax=max(0.0f,float(width*TWIPS_FACTOR)+tag->Bounds.Xmin);
 	else
-		xmax=max(0.0f,float(textWidth)+2*TEXTFIELD_PADDING+tag->Bounds.Xmin/20.0f);
-	ymin=tag->Bounds.Ymin/20.0f;
-	ymax=max(0.0f,float(height)+tag->Bounds.Ymin/20.0f);
+		xmax=max(0.0f,float(textWidth*TWIPS_FACTOR)+2*TEXTFIELD_PADDING+tag->Bounds.Xmin);
+	ymin=tag->Bounds.Ymin;
+	ymax=max(0.0f,float(height*TWIPS_FACTOR)+tag->Bounds.Ymin);
 	return true;
 }
 
@@ -1193,7 +1193,7 @@ void TextField::replaceText(unsigned int begin, unsigned int end, const tiny_str
 void TextField::getTextBounds(const tiny_string& txt,number_t &xmin,number_t &xmax,number_t &ymin,number_t &ymax)
 {
 	if (embeddedFont)
-		scaling = 1.0f/1024.0f/20.0f;
+		scaling = 1.0f/1024.0f;
 	getTextSizes(getSystemState(),txt,xmax,ymax);
 	xmin = autosizeposition;
 	xmax += autosizeposition;
@@ -1330,7 +1330,7 @@ void TextField::updateSizes()
 	tw = 0;
 	th = 0;
 	
-	scaling = 1.0f/1024.0f/20.0f;
+	scaling = 1.0f/1024.0f;
 	th=0;
 	number_t w=0;
 	number_t h=0;
@@ -1975,7 +1975,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 		//No contents, nothing to do
 		return nullptr;
 	}
-	
+
 	ColorTransformBase ct;
 	ct.fillConcatenated(this);
 	MATRIX matrix = getMatrix();
@@ -2052,7 +2052,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 			tokens.filltokens->tokens.push_back(GeomToken(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
 			tokens.filltokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
 		}
-		int32_t startposy = TEXTFIELD_PADDING+bymin;
+		int32_t startposy = TEXTFIELD_PADDING+bymin+fontSize*TWIPS_FACTOR;
 		linemutex->lock();
 		RGBA color(textColor.Red,textColor.Green,textColor.Blue,0xff);
 		tokensVector* tk = &tokens;
@@ -2067,16 +2067,17 @@ IDrawable* TextField::invalidate(bool smoothing)
 			if (!first)
 				tk = tk->next = new tokensVector();
 			first = false;
+			int startposx = (TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition)*TWIPS_FACTOR;
 			if (isPassword)
 			{
 				tiny_string pwtxt;
 				for (uint32_t i = 0; i < (*it).text.numChars(); i++)
 					pwtxt+="*";
-				tk = embeddedFont->fillTextTokens(*tk,pwtxt,fontSize,color,leading,TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition,startposy);
+				tk = embeddedFont->fillTextTokens(*tk,pwtxt,fontSize,color,leading,startposx,startposy);
 			}
 			else
-				tk = embeddedFont->fillTextTokens(*tk,(*it).text,fontSize,color,leading,TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition,startposy);
-			startposy += this->leading+(embeddedFont->getAscent()+embeddedFont->getDescent()+embeddedFont->getLeading())*fontSize/1024;
+				tk = embeddedFont->fillTextTokens(*tk,(*it).text,fontSize,color,leading,startposx,startposy);
+			startposy += (this->leading+(embeddedFont->getAscent()+embeddedFont->getDescent()+embeddedFont->getLeading())*fontSize/1024)*TWIPS_FACTOR;
 		}
 		linemutex->unlock();
 		if (tokens.empty())
@@ -2122,10 +2123,10 @@ IDrawable* TextField::invalidate(bool smoothing)
 																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode());
 	if (res != nullptr)
 		return res;
-	res = new RefreshableDrawable(x,y+height/2.0, ceil(width), ceil(height)
+	res = new RefreshableDrawable(x,y, ceil(width), ceil(height)
 								   , matrix.getScaleX(), matrix.getScaleY()
 								   , isMask, cacheAsBitmap
-								   , 1.0, getConcatenatedAlpha()
+								   , TWIPS_FACTOR, getConcatenatedAlpha()
 								   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
 	res->getState()->textdata = *this;
 	res->getState()->renderWithNanoVG = true;
@@ -2760,20 +2761,40 @@ bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numb
 {
 	if (visibleOnly && !this->isVisible())
 		return false;
-	xmin=bounds.Xmin/20.0;
-	xmax=bounds.Xmax/20.0;
-	ymin=bounds.Ymin/20.0;
-	ymax=bounds.Ymax/20.0;
+	xmin=bounds.Xmin;
+	xmax=bounds.Xmax;
+	ymin=bounds.Ymin;
+	ymax=bounds.Ymax;
 	return true;
 }
 
-_NR<DisplayObject> StaticText::hitTestImpl(const Vector2f&, const Vector2f& localPoint, HIT_TYPE type, bool interactiveObjectsOnly)
+_NR<DisplayObject> StaticText::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin,xmax,ymin,ymax;
+	if (usesAdvancedTextEngine)
+	{
+		// when using advancet text rendering, hittesting is done on the transformed bounds rect
+		getBounds(xmin,xmax,ymin,ymax,getConcatenatedMatrix(false,false));
+		if( xmin > globalPoint.x
+			|| globalPoint.x > xmax
+			|| ymin > globalPoint.y
+			|| globalPoint.y > ymax)
+		{
+			return NullRef;
+		}
+		else
+		{
+			incRef();
+			return _MNR(this);
+		}
+	}
 	// TODO: Add an overload for RECT.
 	boundsRect(xmin,xmax,ymin,ymax,false);
 	//TODO: Add a point intersect function to RECT, and use that instead.
-	if( xmin > localPoint.x || localPoint.x > xmax || ymin > localPoint.y || localPoint.y > ymax)
+	if( xmin > localPoint.x
+		|| localPoint.x > xmax
+		|| ymin > localPoint.y
+		|| localPoint.y > ymax)
 	{
 		return NullRef;
 	}
@@ -2785,10 +2806,11 @@ _NR<DisplayObject> StaticText::hitTestImpl(const Vector2f&, const Vector2f& loca
 	return NullRef;
 }
 
-StaticText::StaticText(ASWorker* wrk, Class_base* c, tokensVector* tokens, const RECT& b, uint32_t _tagID):DisplayObject(wrk,c)
+StaticText::StaticText(ASWorker* wrk, Class_base* c, tokensVector* tokens, const RECT& b, uint32_t _tagID, bool _usesAdvancedTextEngine):DisplayObject(wrk,c)
 	,TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f)
 	,bounds(b)
 	,tagID(_tagID)
+	,usesAdvancedTextEngine(_usesAdvancedTextEngine)
 {
 	subtype=SUBTYPE_STATICTEXT;
 }

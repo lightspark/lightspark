@@ -258,17 +258,17 @@ bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t
 		// values for invalid bounds, see ruffle avm1/movieclip_invalid_get_bounds_<x> tests
 		if (getSystemState()->useNewInvalidBounds )
 		{
-			xmin=number_t(0x8000000)/20.0;
-			xmax=number_t(0x8000000)/20.0;
-			ymin=number_t(0x8000000)/20.0;
-			ymax=number_t(0x8000000)/20.0;
+			xmin=number_t(0x8000000);
+			xmax=number_t(0x8000000);
+			ymin=number_t(0x8000000);
+			ymax=number_t(0x8000000);
 		}
 		else
 		{
-			xmin=number_t(0x7ffffff)/20.0;
-			xmax=number_t(0x7ffffff)/20.0;
-			ymin=number_t(0x7ffffff)/20.0;
-			ymax=number_t(0x7ffffff)/20.0;
+			xmin=number_t(0x7ffffff);
+			xmax=number_t(0x7ffffff);
+			ymin=number_t(0x7ffffff);
+			ymax=number_t(0x7ffffff);
 		}
 		return false;
 	}
@@ -1614,13 +1614,13 @@ IDrawable* DisplayObjectContainer::invalidate(bool smoothing)
 			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(SET_STROKE).uval);
 			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(getSystemState()->avm1FocusRectLinestyle).uval);
 			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(MOVE).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2(0.0 , (bymin-bxmin)*20.0)).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2(0.0 , (bymin-bxmin))).uval);
 			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2(0.0, (bymax-bymin)*20.0)).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2(0.0, (bymax-bymin))).uval);
 			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)*20.0, (bymax-bymin)*20.0)).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin), (bymax-bymin))).uval);
 			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)*20.0, 0.0)).uval);
+			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin), 0.0)).uval);
 			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
 			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2(0.0, 0.0)).uval);
 			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
@@ -2190,24 +2190,24 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,getObjectsUnderPoint)
 	ARG_CHECK(ARG_UNPACK(point));
 	Array* res = Class<Array>::getInstanceSNoArgs(wrk);
 	if (!point.isNull())
-		th->getObjectsFromPoint(point.getPtr(),res);
+	{
+		Vector2f vec(point->getX()*TWIPS_FACTOR,point->getY()*TWIPS_FACTOR);
+		th->getObjectsFromPoint(vec,res);
+	}
 	ret = asAtomHandler::fromObject(res);
 }
 
-void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
+void DisplayObjectContainer::getObjectsFromPoint(const Vector2f& point, Array *ar)
 {
 	Locker l(mutexDisplayList);
 	if (getClipDepth())
 		return;
-	Vector2f globalPoint(point->getX(), point->getY());
-	if (!hitTestMask(globalPoint,HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN))
+	if (!hitTestMask(point,HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN))
 		return;
 	if  (!isVisible())
 		return;
-	number_t localX;
-	number_t localY;
-	this->globalToLocal(point->getX(), point->getY(), localX, localY,false);
-	auto obj = this->hitTest(globalPoint,Vector2f(localX,localY),HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN,false);
+	Vector2f localpoint = this->globalToLocal(point,false);
+	auto obj = this->hitTest(point,localpoint,HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN,false);
 	if (obj)
 	{
 		obj->incRef();
@@ -2223,8 +2223,8 @@ void DisplayObjectContainer::getObjectsFromPoint(Point* point, Array *ar)
 				it++;
 				continue;
 			}
-			(*it)->globalToLocal(point->getX(), point->getY(), localX, localY,false);
-			auto obj = (*it)->hitTest(Vector2f(point->getX(), point->getY()),Vector2f(localX,localY),HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN,false);
+			localpoint = (*it)->globalToLocal(point, false);
+			auto obj = (*it)->hitTest(point, localpoint,HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN,false);
 			if (obj)
 			{
 				obj->incRef();

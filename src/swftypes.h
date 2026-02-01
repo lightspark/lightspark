@@ -1185,9 +1185,9 @@ class MATRIX
 	friend std::istream& operator>>(std::istream& stream, MATRIX& v);
 	friend std::ostream& operator<<(std::ostream& s, const MATRIX& r);
 public:
-	double xx; double yx;
-	double xy; double yy;
-	double x0; double y0;
+	float xx; float yx;
+	float xy; float yy;
+	float x0; float y0;
 
 	MATRIX(number_t sx=1, number_t sy=1, number_t sk0=0, number_t sk1=0, number_t tx=0, number_t ty=0);
 	void get4DMatrix(float matrix[16]) const;

@@ -556,7 +556,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 	d->scrollRect=asAtomHandler::fromObjectNoPrimitive(sourceRect.getPtr());
 	ASATOM_ADDSTOREDMEMBER(d->scrollRect);
 	MATRIX m;
-	m.translate(destPoint->getX(),destPoint->getY());
+	m.translate(destPoint->getX()*TWIPS_FACTOR,destPoint->getY()*TWIPS_FACTOR);
 	th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer());
 	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread(),d);
 
@@ -1416,7 +1416,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 		d->scrollRect=asAtomHandler::fromObjectNoPrimitive(sourceRect.getPtr());
 		ASATOM_ADDSTOREDMEMBER(d->scrollRect);
 		MATRIX m;
-		m.translate(destPoint->getX(),destPoint->getY());
+		m.translate(destPoint->getX()*TWIPS_FACTOR,destPoint->getY()*TWIPS_FACTOR);
 		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,sourceBitmapData->getBitmapContainer()==th->getBitmapContainer());
 		th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread(),d);
 		th->notifyUsers();

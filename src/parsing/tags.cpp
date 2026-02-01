@@ -266,7 +266,7 @@ Tag* TagFactory::readTag(RootMovieClip* root, DefineSpriteTag *sprite)
 				ret=new DefineFontAlignZonesTag(h,f);
 				break;
 			case 74:
-				ret=new CSMTextSettingsTag(h,f);
+				ret=new CSMTextSettingsTag(h,f,root);
 				break;
 			case 75:
 				ret=new DefineFont3Tag(h,f,root);
@@ -375,7 +375,7 @@ SetBackgroundColorTag::SetBackgroundColorTag(RECORDHEADER h, std::istream& in):C
 	in >> BackgroundColor;
 }
 
-DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):DictionaryTag(h,root)
+DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):TextTag(h,root)
 {
 	//setVariableByName("text",SWFObject(new Integer(0)));
 	in >> CharacterID >> Bounds;
@@ -756,7 +756,7 @@ void FontTag::fillTokens(int glyphposition, const RGBA& color, tokensVector* tk,
 	if (!it->second.at(glyphposition).isFilled)
 	{
 		MATRIX m;
-		m.scale(scaling,scaling);
+		m.scale(scaling*TWIPS_FACTOR,scaling*TWIPS_FACTOR);
 		const std::vector<SHAPERECORD>& sr = getGlyphShapes().at(glyphposition).ShapeRecords;
 		TokenContainer::FromShaperecordListToShapeVector(sr,it->second.at(glyphposition),true,m);
 	}
@@ -1327,7 +1327,7 @@ tokensVector* DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_st
 						tk->startMatrix=glyphMatrix;
 					}
 					if (FontFlagsHasLayout)
-						curPos.x += FontAdvanceTable[i];
+						curPos.x += FontAdvanceTable[i]*TWIPS_FACTOR;
 					found = true;
 					break;
 				}
@@ -1515,7 +1515,7 @@ ASObject* BitmapTag::instance(Class_base* c, ASObject* prevInstance, bool tempor
 	return new (classRet->memoryAccount) BitmapData(loadedFrom->getInstanceWorker(),classRet, bitmap);
 }
 
-DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, RootMovieClip* root,int v):DictionaryTag(h,root),version(v)
+DefineTextTag::DefineTextTag(RECORDHEADER h, istream& in, RootMovieClip* root,int v):TextTag(h,root),version(v)
 {
 	in >> CharacterId >> TextBounds >> TextMatrix >> GlyphBits >> AdvanceBits;
 	assert(v==1 || v==2);
@@ -1550,7 +1550,7 @@ ASObject* DefineTextTag::instance(Class_base* c, ASObject* prevInstance, bool te
 	if(c==nullptr)
 		c=Class<StaticText>::getClass(loadedFrom->getSystemState());
 
-	StaticText* ret=new (c->memoryAccount) StaticText(loadedFrom->getInstanceWorker(),c, &tokens,TextBounds,this->getId());
+	StaticText* ret=new (c->memoryAccount) StaticText(loadedFrom->getInstanceWorker(),c, &tokens,TextBounds,this->getId(),UseFlashType);
 	return ret;
 }
 
@@ -1562,18 +1562,11 @@ void DefineTextTag::computeCached()
 	FontTag* curFont = nullptr;
 	Vector2f curPos;
 
-	/*
-	 * All coordinates are scaled into 1024*20*20 units per pixel.
-	 * This is scaled back to pixels by cairo. (1024 is the glyph
-	 * EM square scale, 20 is twips-per-pixel and the second 20
-	 * comes from TextHeight, which is also in twips)
-	 */
-	const int twipsScaling = 1024*20;
-	const int pixelScaling = 1024*20*20;
+	const int twipsScaling = 1024*TWIPS_FACTOR;
 
 	// Scale the translation component of TextMatrix.
 	MATRIX scaledTextMatrix = TextMatrix;
-	scaledTextMatrix.translate((TextMatrix.getTranslateX()-TextBounds.Xmin/20) *pixelScaling,(TextMatrix.getTranslateY()-TextBounds.Ymin/20) *pixelScaling);
+	scaledTextMatrix.translate((TextMatrix.getTranslateX()-TextBounds.Xmin) *twipsScaling,(TextMatrix.getTranslateY()-TextBounds.Ymin) *twipsScaling);
 
 	bool first=true;
 	bool emptytoken=false;// indicates "space" glyph
@@ -1617,7 +1610,7 @@ void DefineTextTag::computeCached()
 			emptytoken = tk->empty();
 			if (!tk->empty())
 			{
-				Vector2f glyphPos = curPos*twipsScaling;
+				Vector2f glyphPos = curPos*twipsScaling*20;
 
 				MATRIX glyphMatrix(1, 1, 0, 0,
 								   glyphPos.x,
@@ -1701,7 +1694,7 @@ ASObject* DefineShapeTag::instance(Class_base *c, ASObject* prevInstance, bool t
 		}
 	}
 	if (!temporary)
-		ret->setupShape(this, 1.0f/20.0f);
+		ret->setupShape(this, 1.0f);
 	return ret;
 }
 
@@ -3619,4 +3612,24 @@ DefineScalingGridTag::DefineScalingGridTag(RECORDHEADER h, std::istream& in):Con
 void DefineScalingGridTag::execute(RootMovieClip* root) const
 {
 	root->applicationDomain->addToScalingGrids(this);
+}
+CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):Tag(h)
+{
+	UI16_SWF TextID;
+	in >> TextID;
+	TextTag* texttag = dynamic_cast<TextTag*>(root->applicationDomain->dictionaryLookup(TextID));
+	if (!texttag)
+	{
+		LOG(LOG_ERROR,"CSMTextSettingsTag TextTag not found:"<<TextID);
+		ignore(in,h.getLength()-2);
+		return;
+	}
+	BitStream bs(in);
+	texttag->UseFlashType=UB(2,bs);
+	texttag->GridFit = UB(3,bs);
+	UB(3,bs);
+	in >> texttag->Thickness >> texttag->Sharpness;
+	LOG(LOG_NOT_IMPLEMENTED,"CSMTextSettingsTag entries are not used in rendering");
+	UB(8,bs);
+
 }

@@ -60,7 +60,7 @@ private:
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
 	static ATOMIC_INT32(instanceCount);
 	_NR<Matrix> matrix;
-	number_t tx,ty,tz;
+	int32_t tx,ty,tz;
 	number_t rotation;
 	number_t sx,sy,sz;
 	AS_BLENDMODE blendMode;

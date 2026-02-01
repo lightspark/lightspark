@@ -39,12 +39,6 @@ DefineFontAlignZonesTag::DefineFontAlignZonesTag(RECORDHEADER h, std::istream& i
 	skip(in);
 }
 
-CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in):Tag(h)
-{
-	LOG(LOG_NOT_IMPLEMENTED,"CSMTextSettingsTag");
-	skip(in);
-}
-
 UnimplementedTag::UnimplementedTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"Unimplemented Tag " << h.getTagType());

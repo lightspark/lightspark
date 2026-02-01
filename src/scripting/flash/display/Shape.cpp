@@ -35,10 +35,10 @@ bool Shape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, number_t 
 			return graphics->boundsRect(xmin,xmax,ymin,ymax);
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax,this->tokens);
 	}
-	xmin=fromTag->ShapeBounds.Xmin/20.0;
-	xmax=fromTag->ShapeBounds.Xmax/20.0;
-	ymin=fromTag->ShapeBounds.Ymin/20.0;
-	ymax=fromTag->ShapeBounds.Ymax/20.0;
+	xmin=fromTag->ShapeBounds.Xmin;
+	xmax=fromTag->ShapeBounds.Xmax;
+	ymin=fromTag->ShapeBounds.Ymin;
+	ymax=fromTag->ShapeBounds.Ymax;
 	return true;
 }
 

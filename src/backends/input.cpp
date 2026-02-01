@@ -323,7 +323,7 @@ void InputThread::handleMouseDown(const LSMouseButtonEvent& event)
 	_NR<InteractiveObject> selected = getMouseTarget(event.stagePos, MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
-	Vector2f local = selected->globalToLocal(event.stagePos);
+	Vector2f local = selected->globalToLocal(event.stagePos*TWIPS_FACTOR)/TWIPS_FACTOR;
 	m_sys->currentVm->addIdleEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseDown",local.x,local.y,true,event.modifiers,event.pressed)));
 	Locker locker(mutexListeners);
@@ -343,7 +343,7 @@ void InputThread::handleMouseDoubleClick(const LSMouseButtonEvent& event)
 		if (!lastMouseUpTarget.isNull())
 		{
 			// add mousedown event for last mouseUp target
-			Vector2f local = lastMouseUpTarget->globalToLocal(event.stagePos);
+			Vector2f local = lastMouseUpTarget->globalToLocal(event.stagePos*TWIPS_FACTOR)/TWIPS_FACTOR;
 			m_sys->currentVm->addIdleEvent(lastMouseUpTarget,
 										   _MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseDown",local.x,local.y,true,event.modifiers,event.pressed)));
 			// reset lastMouseDownTarget to lastMouseUpTarget to ensure a normal "click" event is sended
@@ -352,7 +352,7 @@ void InputThread::handleMouseDoubleClick(const LSMouseButtonEvent& event)
 		}
 		return;
 	}
-	Vector2f local = selected->globalToLocal(event.stagePos);
+	Vector2f local = selected->globalToLocal(event.stagePos*TWIPS_FACTOR)/TWIPS_FACTOR;
 	m_sys->currentVm->addIdleEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"doubleClick",local.x,local.y,true,event.modifiers,event.pressed)));
 }
@@ -366,7 +366,7 @@ void InputThread::handleMouseUp(const LSMouseButtonEvent& event)
 	_NR<InteractiveObject> selected = getMouseTarget(event.stagePos, MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
-	Vector2f local = selected->globalToLocal(event.stagePos);
+	Vector2f local = selected->globalToLocal(event.stagePos*TWIPS_FACTOR)/TWIPS_FACTOR;
 	if (event.button == Button::Right)
 	{
 		m_sys->currentVm->addIdleEvent(selected,
@@ -433,7 +433,7 @@ void InputThread::handleMouseMove(const LSMouseMoveEvent& event)
 	mutexDragged.unlock();
 	if(!currentMouseOver.isNull() && currentMouseOver != selected)
 	{
-		Vector2f local = currentMouseOver->globalToLocal(event.stagePos);
+		Vector2f local = currentMouseOver->globalToLocal(event.stagePos*TWIPS_FACTOR)/TWIPS_FACTOR;
 		m_sys->currentVm->addIdleEvent(currentMouseOver,
 			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOut",local.x,local.y,true,event.modifiers,event.pressed,selected)));
 		if (selected.isNull())
@@ -442,7 +442,7 @@ void InputThread::handleMouseMove(const LSMouseMoveEvent& event)
 	}
 	if (selected.isNull())
 		return;
-	Vector2f local = selected->globalToLocal(event.stagePos);
+	Vector2f local = selected->globalToLocal(event.stagePos*TWIPS_FACTOR)/TWIPS_FACTOR;
 	if(currentMouseOver == selected)
 	{
 		m_sys->currentVm->addIdleEvent(selected,
@@ -474,7 +474,7 @@ void InputThread::handleScrollEvent(const LSMouseWheelEvent& event)
 	_NR<InteractiveObject> selected = getMouseTarget(event.stagePos, MOUSE_CLICK_HIT);
 	if (selected.isNull())
 		return;
-	Vector2f local = selected->globalToLocal(event.stagePos);
+	Vector2f local = selected->globalToLocal(event.stagePos*TWIPS_FACTOR)/TWIPS_FACTOR;
 	m_sys->currentVm->addIdleEvent(selected,
 		_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseWheel",local.x,local.y,true,event.modifiers,event.pressed,NullRef,event.delta)));
 }
@@ -500,7 +500,7 @@ bool InputThread::handleKeyboardShortcuts(const LSKeyEvent& event)
 		_NR<InteractiveObject> selected = getMouseTarget(event.stagePos, MOUSE_CLICK_HIT);
 		if (!selected.isNull())
 		{
-			Vector2f local = selected->globalToLocal(event.stagePos);
+			Vector2f local = selected->globalToLocal(event.stagePos*TWIPS_FACTOR)/TWIPS_FACTOR;
 			m_sys->currentVm->addIdleEvent(selected,
 				_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"contextMenu",local.x,local.y,true,event.modifiers,false)));
 			return true;

@@ -193,17 +193,18 @@ void Bitmap::setupTokens()
 			bitmaptokens.filltokens=_MR(new tokenListRef());
 		fs.FillStyleType = smoothing ? CLIPPED_BITMAP : NON_SMOOTHED_CLIPPED_BITMAP;
 		fs.bitmap = bitmapData->getBitmapContainer();
+		scaling=TWIPS_FACTOR;
 		bitmaptokens.filltokens->tokens.reserve(14);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(SET_FILL).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(fs).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(0,0)).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(number_t(bitmapData->getWidth())/scaling,0)).uval);
+		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(number_t(bitmapData->getWidth()),0)).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(number_t(bitmapData->getWidth())/scaling,number_t(bitmapData->getHeight())/scaling)).uval);
+		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(number_t(bitmapData->getWidth()),number_t(bitmapData->getHeight()))).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(0,number_t(bitmapData->getHeight())/scaling)).uval);
+		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(0,number_t(bitmapData->getHeight()))).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(0,0)).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(CLEAR_FILL).uval);
@@ -229,8 +230,8 @@ bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t
 		return false;
 	xmin = 0;
 	ymin = 0;
-	xmax = size.x;
-	ymax = size.y;
+	xmax = size.x*TWIPS_FACTOR;
+	ymax = size.y*TWIPS_FACTOR;
 	return true;
 }
 

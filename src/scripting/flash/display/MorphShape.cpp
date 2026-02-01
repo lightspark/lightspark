@@ -29,13 +29,13 @@ using namespace lightspark;
 MorphShape::MorphShape(ASWorker* wrk, Class_base* c):DisplayObject(wrk,c),TokenContainer(this),morphshapetag(nullptr),currentratio(0)
 {
 	subtype=SUBTYPE_MORPHSHAPE;
-	scaling = 1.0f/20.0f;
+	scaling = 1.0f;
 }
 
 MorphShape::MorphShape(ASWorker* wrk,Class_base *c, DefineMorphShapeTag* _morphshapetag):DisplayObject(wrk,c),TokenContainer(this),morphshapetag(_morphshapetag),currentratio(0)
 {
 	subtype=SUBTYPE_MORPHSHAPE;
-	scaling = 1.0f/20.0f;
+	scaling = 1.0f;
 	if (this->morphshapetag)
 		this->morphshapetag->getTokensForRatio(&tokens,0);
 }
@@ -64,10 +64,10 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 	if (!this->legacy || (morphshapetag==nullptr))
 		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax,this->tokens);
 	float curratiofactor = float(currentratio)/65535.0;
-	xmin=(morphshapetag->StartBounds.Xmin + (float(morphshapetag->EndBounds.Xmin - morphshapetag->StartBounds.Xmin)*curratiofactor))/20.0;
-	xmax=(morphshapetag->StartBounds.Xmax + (float(morphshapetag->EndBounds.Xmax - morphshapetag->StartBounds.Xmax)*curratiofactor))/20.0;
-	ymin=(morphshapetag->StartBounds.Ymin + (float(morphshapetag->EndBounds.Ymin - morphshapetag->StartBounds.Ymin)*curratiofactor))/20.0;
-	ymax=(morphshapetag->StartBounds.Ymax + (float(morphshapetag->EndBounds.Ymax - morphshapetag->StartBounds.Ymax)*curratiofactor))/20.0;
+	xmin=(morphshapetag->StartBounds.Xmin + (float(morphshapetag->EndBounds.Xmin - morphshapetag->StartBounds.Xmin)*curratiofactor));
+	xmax=(morphshapetag->StartBounds.Xmax + (float(morphshapetag->EndBounds.Xmax - morphshapetag->StartBounds.Xmax)*curratiofactor));
+	ymin=(morphshapetag->StartBounds.Ymin + (float(morphshapetag->EndBounds.Ymin - morphshapetag->StartBounds.Ymin)*curratiofactor));
+	ymax=(morphshapetag->StartBounds.Ymax + (float(morphshapetag->EndBounds.Ymax - morphshapetag->StartBounds.Ymax)*curratiofactor));
 	return true;
 }
 

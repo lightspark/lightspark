@@ -139,8 +139,6 @@ struct filterstackentry
 	uint32_t filterframebuffer;
 	uint32_t filterrenderbuffer;
 	uint32_t filtertextureID;
-	number_t filterborderx;
-	number_t filterbordery;
 };
 
 class GLRenderContext: public RenderContext

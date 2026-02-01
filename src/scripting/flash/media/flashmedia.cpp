@@ -413,9 +413,9 @@ bool Video::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t&
 	if (visibleOnly && !this->isVisible())
 		return false;
 	xmin=0;
-	xmax=width;
+	xmax=width*TWIPS_FACTOR;
 	ymin=0;
-	ymax=height;
+	ymax=height*TWIPS_FACTOR;
 	return true;
 }
 

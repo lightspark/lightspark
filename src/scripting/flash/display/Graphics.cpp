@@ -34,7 +34,6 @@
 #include "backends/cachedsurface.h"
 #include "swf.h"
 
-#define TWIPS_FACTOR 20.0f
 using namespace std;
 using namespace lightspark;
 
@@ -345,7 +344,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRect)
 		th->AddStrokeToken(GeomToken(Vector2(x+width, y+height-ellipseHeight)));
 	}
 	th->hasChanged = true;
-	th->dorender(true);
+	th->dorender(false);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
@@ -394,7 +393,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRoundRectComplex)
 		th->AddStrokeToken(GeomToken(a));
 	}
 	th->hasChanged = true;
-	th->dorender(true);
+	th->dorender(false);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,drawCircle)
@@ -600,7 +599,7 @@ ASFUNCTIONBODY_ATOM(Graphics,drawRect)
 		th->AddStrokeToken(GeomToken(Vector2(a)));
 	}
 	th->hasChanged = true;
-	th->dorender(true);
+	th->dorender(false);
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,drawPath)
@@ -853,16 +852,16 @@ bool Graphics::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number
 	if (!hasBounds())
 		return false;
 	RECT rc = needsRefresh ? tokenBoundsRect : renderBoundsRect;
-	xmin = float(rc.Xmin)/TWIPS_FACTOR;
-	xmax = float(rc.Xmax)/TWIPS_FACTOR;
-	ymin = float(rc.Ymin)/TWIPS_FACTOR;
-	ymax = float(rc.Ymax)/TWIPS_FACTOR;
+	xmin = float(rc.Xmin);
+	xmax = float(rc.Xmax);
+	ymin = float(rc.Ymin);
+	ymax = float(rc.Ymax);
 	return true;
 }
 bool Graphics::hitTest(const Vector2f& point)
 {
 	tokensVector* tk = needsRefresh ? &tokens : &rendertokens;
-	return tk->hitTest(getSystemState(),point,1.0/TWIPS_FACTOR);
+	return tk->hitTest(getSystemState(),point,1.0);
 }
 
 bool Graphics::destruct()
@@ -1343,7 +1342,7 @@ ASFUNCTIONBODY_ATOM(Graphics,beginGradientFill)
 					m.name_s_id = wrk->getSystemState()->getUniqueStringId("r");
 					asAtom r=asAtomHandler::invalidAtom;
 					mat->getVariableByMultiname(r,m,GET_VARIABLE_OPTION::NONE,wrk);
-					matrix->_createBox(asAtomHandler::toNumber(w), asAtomHandler::toNumber(h), asAtomHandler::toNumber(r), asAtomHandler::toNumber(x), asAtomHandler::toNumber(y));
+					matrix->_createBox(asAtomHandler::toNumber(w), asAtomHandler::toNumber(h), asAtomHandler::toNumber(r), asAtomHandler::toNumber(x)*TWIPS_FACTOR, asAtomHandler::toNumber(y)*TWIPS_FACTOR);
 				}
 			}
 		}

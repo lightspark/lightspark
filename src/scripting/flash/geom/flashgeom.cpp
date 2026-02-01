@@ -467,10 +467,10 @@ ASFUNCTIONBODY_ATOM(Transform,_getPixelBounds)
 	MATRIX m = th->getConcatenatedMatrix();
 	if (th->owner->getBounds(xmin,xmax,ymin,ymax,m))
 	{
-		rc->x = xmin;
-		rc->y = ymin;
-		rc->width=xmax-xmin;
-		rc->height=ymax-ymin;
+		rc->x = xmin/TWIPS_FACTOR;
+		rc->y = ymin/TWIPS_FACTOR;
+		rc->width=xmax/TWIPS_FACTOR-xmin/TWIPS_FACTOR;
+		rc->height=ymax/TWIPS_FACTOR-ymin/TWIPS_FACTOR;
 	}
 	ret = asAtomHandler::fromObject(rc);
 }
@@ -562,9 +562,9 @@ ASFUNCTIONBODY_ATOM(Matrix,_constructor)
 	if (argslen >= 4)
 		th->matrix.yy = asAtomHandler::toNumber(args[3]);
 	if (argslen >= 5)
-		th->matrix.x0 = asAtomHandler::toNumber(args[4]);
+		th->matrix.x0 = asAtomHandler::toNumber(args[4])*TWIPS_FACTOR;
 	if (argslen == 6)
-		th->matrix.y0 = asAtomHandler::toNumber(args[5]);
+		th->matrix.y0 = asAtomHandler::toNumber(args[5])*TWIPS_FACTOR;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_toString)
@@ -576,8 +576,8 @@ ASFUNCTIONBODY_ATOM(Matrix,_toString)
 			 Number::toString(th->matrix.yx).raw_buf(),
 			 Number::toString(th->matrix.xy).raw_buf(),
 			 Number::toString(th->matrix.yy).raw_buf(),
-			 Number::toString(th->matrix.x0).raw_buf(),
-			 Number::toString(th->matrix.y0).raw_buf());
+			 Number::toString(th->matrix.x0/TWIPS_FACTOR).raw_buf(),
+			 Number::toString(th->matrix.y0/TWIPS_FACTOR).raw_buf());
 	ret = asAtomHandler::fromObject(abstract_s(wrk,buf));
 }
 
@@ -647,27 +647,27 @@ ASFUNCTIONBODY_ATOM(Matrix,_set_d)
 ASFUNCTIONBODY_ATOM(Matrix,_get_tx)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
-	asAtomHandler::setNumber(ret, th->matrix.x0);
+	asAtomHandler::setNumber(ret, th->matrix.x0/TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_tx)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
 	assert_and_throw(argslen==1);
-	th->matrix.x0 = asAtomHandler::toNumber(args[0]);
+	th->matrix.x0 = asAtomHandler::toNumber(args[0])*TWIPS_FACTOR;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_get_ty)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
-	asAtomHandler::setNumber(ret, th->matrix.y0);
+	asAtomHandler::setNumber(ret, th->matrix.y0/TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_set_ty)
 {
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
 	assert_and_throw(argslen==1);
-	th->matrix.y0 = asAtomHandler::toNumber(args[0]);
+	th->matrix.y0 = asAtomHandler::toNumber(args[0])*TWIPS_FACTOR;
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,clone)
@@ -709,8 +709,8 @@ ASFUNCTIONBODY_ATOM(Matrix,translate)
 {
 	assert_and_throw(argslen==2);
 	Matrix* th=asAtomHandler::as<Matrix>(obj);
-	number_t dx = asAtomHandler::toNumber(args[0]);
-	number_t dy = asAtomHandler::toNumber(args[1]);
+	number_t dx = asAtomHandler::toNumber(args[0])*TWIPS_FACTOR;
+	number_t dy = asAtomHandler::toNumber(args[1])*TWIPS_FACTOR;
 
 	th->matrix.translate(dx,dy);
 }
@@ -766,7 +766,7 @@ ASFUNCTIONBODY_ATOM(Matrix,createBox)
 	number_t translateY = 0;
 	if ( argslen > 4 ) translateY = asAtomHandler::toNumber(args[4]);
 
-	th->_createBox(scaleX, scaleY, angle, translateX, translateY);
+	th->_createBox(scaleX, scaleY, angle, translateX*TWIPS_FACTOR, translateY*TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,createGradientBox)
@@ -785,7 +785,7 @@ ASFUNCTIONBODY_ATOM(Matrix,createGradientBox)
 	number_t translateY = height/2.0;
 	if ( argslen > 4 ) translateY += asAtomHandler::toNumber(args[4]);
 
-	th->_createBox(width / 1638.4, height / 1638.4, angle, translateX, translateY);
+	th->_createBox(width / 1638.4, height / 1638.4, angle, translateX*TWIPS_FACTOR, translateY*TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,transformPoint)
@@ -796,7 +796,7 @@ ASFUNCTIONBODY_ATOM(Matrix,transformPoint)
 	if (argslen > 0)
 	{
 		Point* pt=asAtomHandler::as<Point>(args[0]);
-		th->matrix.multiply2D(pt->getX(),pt->getY(),ttx,tty);
+		th->matrix.multiply2D(pt->getX()*TWIPS_FACTOR,pt->getY()*TWIPS_FACTOR,ttx,tty);
 	}
 	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,ttx, tty));
 }
@@ -810,11 +810,11 @@ ASFUNCTIONBODY_ATOM(Matrix,deltaTransformPoint)
 	if (argslen > 0)
 	{
 		Point* pt=asAtomHandler::as<Point>(args[0]);
-		th->matrix.multiply2D(pt->getX(),pt->getY(),ttx,tty);
+		th->matrix.multiply2D(pt->getX()*TWIPS_FACTOR,pt->getY()*TWIPS_FACTOR,ttx,tty);
 		ttx -= th->matrix.getTranslateX();
 		tty -= th->matrix.getTranslateY();
 	}
-	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,ttx, tty));
+	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,ttx/TWIPS_FACTOR, tty/TWIPS_FACTOR));
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,setTo)

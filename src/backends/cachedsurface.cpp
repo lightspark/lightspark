@@ -799,7 +799,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 								nvgLineJoin(nvgctxt, NVG_MITER);
 								nvgMiterLimit(nvgctxt,style->MiterLimitFactor);
 							}
-							nvgStrokeWidth(nvgctxt,style->Width==0 ? 1.0/state->scaling :(float)style->Width);
+							nvgStrokeWidth(nvgctxt,style->Width==0 ? (1.0/state->scaling)*TWIPS_FACTOR :(float)style->Width);
 							if (style->NoHScaleFlag)
 							{
 								strokescalex=m.getScaleX();

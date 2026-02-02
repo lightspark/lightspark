@@ -858,7 +858,7 @@ bool tokensVector::hitTest(SystemState* sys, const Vector2f& point, float scalin
 						nvgLineJoin(nvgctxt, NVG_MITER);
 						nvgMiterLimit(nvgctxt,style->MiterLimitFactor);
 					}
-					nvgStrokeWidth(nvgctxt,style->Width==0 ? 1.0 :(float)style->Width);
+					nvgStrokeWidth(nvgctxt,style->Width==0 ? TWIPS_FACTOR :(float)style->Width);
 					if (style->NoHScaleFlag)
 					{
 						strokescalex=scaling;

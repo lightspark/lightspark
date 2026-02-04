@@ -1486,6 +1486,8 @@ ASObject* BitmapTag::instance(Class_base* c, ASObject* prevInstance, bool tempor
 		if(realClass->isSubClass(Class<Bitmap>::getClass(realClass->getSystemState())))
 		{
 			BitmapData* ret=new (classRet->memoryAccount) BitmapData(loadedFrom->getInstanceWorker(),classRet, bitmap);
+			ret->setIsInitialized();
+			ret->setConstructIndicator();
 			Bitmap* bitmapRet= new (realClass->memoryAccount) Bitmap(loadedFrom->getInstanceWorker(),realClass,_MR(ret));
 			return bitmapRet;
 		}

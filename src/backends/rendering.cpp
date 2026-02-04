@@ -485,8 +485,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 									);
 						engineData->exec_glClear(CLEARMASK::COLOR);
 					}
-					bmc->setModifiedTexture(true);
 					bmc->setModifiedData(false);
+					bmc->setModifiedTexture(true);
 					if (container.cachedsurface)
 					{
 						// render DisplayObject to texture

@@ -557,8 +557,13 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 	ASATOM_ADDSTOREDMEMBER(d->scrollRect);
 	MATRIX m;
 	m.translate(destPoint->getX()*TWIPS_FACTOR,destPoint->getY()*TWIPS_FACTOR);
-	th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer());
-	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread(),d);
+	if (mergeAlpha)
+		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer());
+	else
+	{
+		RGBA fillcolor(0,0,0,0);
+		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer(),&fillcolor);
+	}
 
 	th->notifyUsers();
 }

@@ -219,7 +219,7 @@ int nanoVGCreateImageFromData(int width,int height, uint8_t* data, EngineData* e
 	return -1;
 }
 
-int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style)
+int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style, SystemState* sys)
 {
 	if (!style->bitmap)
 		return -1;
@@ -234,9 +234,7 @@ int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style)
 		style->bitmap->setModifiedData(false);
 	}
 	else
-	{
-		assert(!style->bitmap->getModifiedData());
-	}
+		style->bitmap->checkTextureForUpload(sys);
 	return style->bitmap->nanoVGImageHandle;
 }
 
@@ -251,7 +249,7 @@ int toNanoVGSpreadMode(int spreadMode)
 	}
 }
 
-void nanoVGFillStyle(NVGcontext* nvgctxt, const FILLSTYLE& style, ColorTransformBase& ct, float scaling, bool isFill)
+void nanoVGFillStyle(NVGcontext* nvgctxt, const FILLSTYLE& style, ColorTransformBase& ct, float scaling, bool isFill,SystemState* sys)
 {
 	auto applyColorTransform = [&](const RGBA& color, ColorTransformBase& ct)
 	{
@@ -298,7 +296,7 @@ void nanoVGFillStyle(NVGcontext* nvgctxt, const FILLSTYLE& style, ColorTransform
 		case NON_SMOOTHED_REPEATING_BITMAP:
 		case NON_SMOOTHED_CLIPPED_BITMAP:
 		{
-			int img = setNanoVGImage(nvgctxt,&style);
+			int img = setNanoVGImage(nvgctxt,&style,sys);
 			if (img == -1)
 				break;
 
@@ -538,7 +536,9 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 	{
 		MATRIX m = ctxt.transformStack().transform().matrix;
 		sys->getEngineData()->exec_glScissor(m.getTranslateX()/TWIPS_FACTOR+state->scrollRect.Xmin*m.getScaleX()
-											 ,sys->getRenderThread()->currentframebufferHeight-state->scrollRect.Ymax*m.getScaleY()
+											 ,sys->getRenderThread()->getFlipVertical()
+												? sys->getRenderThread()->currentframebufferHeight-(m.getTranslateY()/TWIPS_FACTOR + state->scrollRect.Ymax*m.getScaleY())
+												: m.getTranslateY()/TWIPS_FACTOR + state->scrollRect.Ymin*m.getScaleY()
 											 ,(state->scrollRect.Xmax-state->scrollRect.Xmin)*m.getScaleX()
 											 ,(state->scrollRect.Ymax-state->scrollRect.Ymin)*m.getScaleY());
 	}
@@ -752,7 +752,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 								strokescaley = 1.0;
 							}
 							infill=true;
-							nanoVGFillStyle(nvgctxt, *p1.fillStyle, ct, state->scaling, true);
+							nanoVGFillStyle(nvgctxt, *p1.fillStyle, ct, state->scaling, true,sys);
 							break;
 						}
 						case SET_STROKE:
@@ -775,7 +775,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 							instroke = true;
 							const LINESTYLE2* style = p1.lineStyle;
 							if (style->HasFillFlag)
-								nanoVGFillStyle(nvgctxt, style->FillType, ct, state->scaling, false);
+								nanoVGFillStyle(nvgctxt, style->FillType, ct, state->scaling, false,sys);
 							else
 							{
 								RGBA color = style->Color;

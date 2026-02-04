@@ -449,7 +449,31 @@ private:
 	mutable std::vector<Class_base*> interfaces_added;
 	std::set<uint32_t> overriddenmethods;
 	std::map<Class_base*,bool> subclasses_map;
-	std::map<QName,uint32_t> borrowedVariableNameSlotMap;
+	struct borrowedSlotKey
+	{
+		uint32_t nameID;
+		uint32_t nsNameID;
+		NS_KIND kind;
+		bool operator<(const borrowedSlotKey& r) const
+		{
+			if (nameID != r.nameID)
+				return nameID<r.nameID;
+			if (nsNameID != r.nsNameID)
+				return nsNameID < r.nsNameID;
+			return kind < r.kind;
+		}
+		bool operator==(const borrowedSlotKey& r) const
+		{
+			return nameID==r.nameID && nsNameID==r.nsNameID && kind == r.kind;
+		}
+		borrowedSlotKey(variable* var)
+		{
+			nameID = var->nameStringID;
+			nsNameID = var->ns.nsNameId;
+			kind = var->ns.kind;
+		}
+	};
+	std::map<borrowedSlotKey,uint32_t> borrowedVariableNameSlotMap;
 	std::vector<variable*> borrowedVariableSlots;
 	nsNameAndKind protected_ns;
 	void initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns, ApplicationDomain* appdomain);

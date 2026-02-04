@@ -1402,7 +1402,7 @@ void Class_base::setupBorrowedSlot(variable* var)
 	if (slotID==UINT32_MAX)
 	{
 		slotID=borrowedVariableSlots.size();
-		QName nm(var->nameStringID,var->ns.nsNameId);
+		borrowedSlotKey nm(var);
 		borrowedVariableNameSlotMap[nm]=slotID;
 		borrowedVariableSlots.push_back(var);
 	}
@@ -1416,7 +1416,7 @@ void Class_base::setupBorrowedSlot(variable* var)
 
 uint32_t Class_base::findBorrowedSlotID(variable* var)
 {
-	QName nm(var->nameStringID,var->ns.nsNameId);
+	borrowedSlotKey nm(var);
 	auto it = borrowedVariableNameSlotMap.find(nm);
 	if (it != borrowedVariableNameSlotMap.end())
 		return (*it).second;

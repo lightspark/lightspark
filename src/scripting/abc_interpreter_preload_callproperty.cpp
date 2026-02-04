@@ -86,7 +86,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 		{
 			if (state.function->inClass)
 				cls = state.function->inClass->super.getPtr();
-			else	if (typestack.size() >= operationcount && typestack[typestack.size()-operationcount].obj)
+			else if (typestack.size() >= operationcount && typestack[typestack.size()-operationcount].obj)
 				cls = typestack[typestack.size()-operationcount].obj;
 		}
 		else
@@ -736,7 +736,12 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 						}
 						else
 						{
-							assert (!needSuper);
+							if (needSuper)
+							{
+								// not enough operands for super method call, use standard call
+								setUnoptimizedCall(state,typestack,opcode,lastlocalresulttype,argcount,resulttype,needResult,t);
+								break;
+							}
 							if (func)
 							{
 								state.preloadedcode.push_back((uint32_t)(!needResult ? ABC_OP_OPTIMZED_CALLFUNCTIONVOIDSYNTHETIC_STATICNAME_MULTIARGS:ABC_OP_OPTIMZED_CALLFUNCTIONSYNTHETIC_STATICNAME_MULTIARGS));

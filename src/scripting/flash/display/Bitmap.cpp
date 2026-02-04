@@ -242,7 +242,7 @@ _NR<DisplayObject> Bitmap::hitTestImpl(const Vector2f&, const Vector2f& localPoi
 	//NOTE: on the Y asix the 0th line is valid, while the one past the width is not
 	//NOTE: This is tested behaviour!
 	//TODO: Add a point intersect function to RECT, and use that instead.
-	if(!bitmapData.isNull() && localPoint.x > 0 && localPoint.x <= bitmapData->getWidth() && localPoint.y >=0 && localPoint.y < bitmapData->getHeight())
+	if(!bitmapData.isNull() && localPoint.x > 0 && localPoint.x <= bitmapData->getWidth()*TWIPS_FACTOR && localPoint.y >=0 && localPoint.y < bitmapData->getHeight()*TWIPS_FACTOR)
 	{
 		this->incRef();
 		return _MR(this);

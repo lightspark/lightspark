@@ -947,11 +947,7 @@ bool Graphics::hasBounds() const
 void Graphics::AddFillToken(const GeomToken& token)
 {
 	if (!tokens.filltokens)
-	{
 		tokens.filltokens = _MR(new tokenListRef());
-		tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2(0, 0)).uval);
-	}
 	if (!tokensHaveChanged && (
 		rendertokens.empty()
 		|| !rendertokens.filltokens

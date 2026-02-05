@@ -689,6 +689,7 @@ bool tokensVector::hitTest(SystemState* sys, const Vector2f& point, float scalin
 	bool firstglyph=true;
 	int tokentype = 1;
 	int hitregionid = 1;
+	bool firstmove=true;
 	while (tokentype)
 	{
 		TokenList::const_iterator it;
@@ -775,11 +776,15 @@ bool tokensVector::hitTest(SystemState* sys, const Vector2f& point, float scalin
 						nvgClosePath(nvgctxt);
 						nvgBeginPath(nvgctxt);
 					}
+					firstmove=false;
 					nvgMoveTo(nvgctxt, (p1.vec.x)*strokescalex, (p1.vec.y)*strokescaley);
 					break;
 				}
 				case STRAIGHT:
 				{
+					if (firstmove)
+						nvgMoveTo(nvgctxt, 0, 0);
+					firstmove=false;
 					renderneeded=true;
 					GeomToken p1(*(++it),false);
 					nvgLineTo(nvgctxt, (p1.vec.x)*strokescalex, (p1.vec.y)*strokescaley);
@@ -787,6 +792,9 @@ bool tokensVector::hitTest(SystemState* sys, const Vector2f& point, float scalin
 				}
 				case CURVE_QUADRATIC:
 				{
+					if (firstmove)
+						nvgMoveTo(nvgctxt, 0, 0);
+					firstmove=false;
 					renderneeded=true;
 					GeomToken p1(*(++it),false);
 					GeomToken p2(*(++it),false);
@@ -795,6 +803,9 @@ bool tokensVector::hitTest(SystemState* sys, const Vector2f& point, float scalin
 				}
 				case CURVE_CUBIC:
 				{
+					if (firstmove)
+						nvgMoveTo(nvgctxt, 0, 0);
+					firstmove=false;
 					renderneeded=true;
 					GeomToken p1(*(++it),false);
 					GeomToken p2(*(++it),false);

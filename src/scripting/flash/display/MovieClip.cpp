@@ -1474,7 +1474,7 @@ void MovieClip::advanceFrame(bool implicit)
 	if (state.last_FP!=-1)
 		state.advancedByTick=true;
 	checkSound(state.next_FP);
-	if (state.frameadvanced && state.explicit_FP)
+	if (state.frameadvanced)
 	{
 		// frame was advanced more than once in one EnterFrame event, so initFrame was not called
 		// set last_FP to the FP set by previous advanceFrame

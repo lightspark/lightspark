@@ -1171,7 +1171,11 @@ tiny_string DisplayObject::AVM1GetPath(bool dotnotation)
 {
 	tiny_string res;
 	if (getParent())
+	{
+		if (getParent()->is<AVM1Movie>())
+			return "_root";
 		res = getParent()->AVM1GetPath(dotnotation);
+	}
 	if (this->name != BUILTIN_STRINGS::EMPTY && this->name != UINT32_MAX)
 	{
 		if (dotnotation)
@@ -2857,7 +2861,7 @@ asAtom DisplayObject::resolvePathProperty(const tiny_string& name, ASWorker* wrk
 		return asAtomHandler::fromObject(AVM1getRoot());
 	else if (name.equalsWithCase("_parent", caseSensitive))
 	{
-		if (parent != nullptr)
+		if (parent != nullptr && !parent->isInaccessibleParent)
 			return asAtomHandler::fromObject(parent);
 		return asAtomHandler::undefinedAtom;
 	}
@@ -3663,7 +3667,10 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path, asAtom* mem
 	{
 		if (member)
 			*member=asAtomHandler::invalidAtom;
-		return getParent();
+		DisplayObjectContainer* p = getParent();
+		if (p && p->isInaccessibleParent)
+			return nullptr;
+		return p;
 	}
 	if (path.startsWith("/"))
 	{

@@ -516,7 +516,6 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DefineButtonTag *tag)
 	,upStateHasMovieClip(false)
 {
 	subtype = SUBTYPE_SIMPLEBUTTON;
-	isInaccessibleParent=true;
 	if (tag)
 		this->loadedFrom = tag->loadedFrom;
 	if (!needsActionScript3())

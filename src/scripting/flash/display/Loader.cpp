@@ -541,9 +541,11 @@ void Loader::setContent(DisplayObject* o)
 		if (needsActionScript3() && o->is<RootMovieClip>() && o != getSystemState()->mainClip && !o->as<RootMovieClip>()->needsActionScript3())
 		{
 			AVM1Movie* m = Class<AVM1Movie>::getInstanceS(getInstanceWorker());
+			m->setIsInitialized();
+			m->setConstructIndicator();
 			m->setLoaderInfo(this->loaderInfo);
 			o->incRef();
-			m->_addChildAt(o,0);
+			m->insertLegacyChildAt(-0xF000,o,false,false);
 			m->addStoredMember();
 			content = m;
 		}
@@ -567,19 +569,16 @@ void Loader::setContent(DisplayObject* o)
 		o->sy = avm1target->sy;
 		o->sz = avm1target->sz;
 		o->name = avm1target->name;
+
 		DisplayObjectContainer* p = avm1target->getParent();
 		if (p)
 		{
 			int depth=avm1level < 0 ? p->findLegacyChildDepth(avm1target): avm1level;
 			if (p->is<Stage>() && avm1level < 0)
-			{
 				p->_removeChild(avm1target);
-			}
 			else
-			{
-
 				p->deleteLegacyChildAt(depth,false);
-			}
+			p->removeChildName(avm1target);
 			o->incRef();
 			p->insertLegacyChildAt(depth,o,false,false);
 		}

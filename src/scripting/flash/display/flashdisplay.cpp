@@ -831,8 +831,9 @@ void DisplayObjectContainer::removeChildName(DisplayObject* obj)
 		objName.name_type=multiname::NAME_STRING;
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		variable* v = this->findVariableByMultiname(objName,this->getClass(),nullptr,nullptr,true,loadedFrom->getInstanceWorker());
-		if (v && v->getObjectVar() == obj) //only reset if the stored variable is the same as the DisplayObject to delete
+		asAtom a=asAtomHandler::invalidAtom;
+		getVariableByMultiname(a,objName,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE,getInstanceWorker());
+		if (asAtomHandler::getObject(a))
 		{
 			asAtom newobj = needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom;
 			for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); ++it)
@@ -847,6 +848,7 @@ void DisplayObjectContainer::removeChildName(DisplayObject* obj)
 			}
 			setVariableByMultiname(objName,newobj, CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 		}
+		ASATOM_DECREF(a);
 	}
 }
 
@@ -855,7 +857,6 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 	if(!hasLegacyChildAt(depth))
 		return;
 	DisplayObject* obj = mapDepthToLegacyChild.at(depth);
-	removeChildName(obj);
 	if (!inskipping && obj->is<SimpleButton>())
 	{
 		auto inserted = mapFrameDepthToLegacyChildRemembered.insert(make_pair(depth,obj));
@@ -1655,7 +1656,7 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		}
 		else
 		{
-			child->getParent()->_removeChild(child,inskipping,this->isOnStage());
+			child->getParent()->_removeChild(child,false,inskipping);
 		}
 	}
 	getSystemState()->removeFromResetParentList(child);
@@ -1728,7 +1729,11 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child, bool direct, boo
 	if (!direct && !inskipping && !isVmThread())
 		getSystemState()->addDisplayObjectToResetParentList(child);
 	else
+	{
 		child->setParent(nullptr);
+		if (child->legacy)
+			removeChildName(child);
+	}
 	this->hasChanged=true;
 	this->requestInvalidation(getSystemState());
 	getSystemState()->stage->prepareForRemoval(child);
@@ -1845,6 +1850,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChildAt)
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
 	assert_and_throw(index >= 0 && (size_t)index<=th->dynamicDisplayList.size());
 	d->incRef();
+	d->legacy=false;
 	th->_addChildAt(d,index);
 
 	//incRef again as the value is getting returned
@@ -1867,6 +1873,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChild)
 	//Cast to object
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
 	d->incRef();
+	d->legacy=false;
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());
 
 	d->incRef();
@@ -1893,6 +1900,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChild)
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
 	//As we return the child we have to incRef it
 	d->incRef();
+	d->legacy=false;
 
 	if(!th->_removeChild(d))
 	{
@@ -1927,6 +1935,8 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 	}
 	//As we return the child we incRef it
 	child->incRef();
+	child->legacy=false;
+
 	th->_removeChild(child);
 	ret = asAtomHandler::fromObject(child);
 }
@@ -1964,6 +1974,7 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildren)
 		auto it = childrenToRemove.begin();
 		while (it != childrenToRemove.end())
 		{
+			(*it)->legacy=false;
 			th->_removeChild(*it);
 			it++;
 		}
@@ -2255,8 +2266,8 @@ void DisplayObjectContainer::clearDisplayList()
 		DisplayObject* c = (*it);
 		dynamicDisplayList.pop_back();
 		c->setParent(nullptr);
-		getSystemState()->removeFromResetParentList(c);
 		c->removeStoredMember();
+		getSystemState()->removeFromResetParentList(c);
 		it = dynamicDisplayList.rbegin();
 	}
 }
@@ -2487,6 +2498,7 @@ void DisplayObjectContainer::advanceFrame(bool implicit)
 AVM1Movie::AVM1Movie(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
 {
 	subtype=SUBTYPE_AVM1MOVIE;
+	isInaccessibleParent=true;
 }
 
 void AVM1Movie::sinit(Class_base* c)

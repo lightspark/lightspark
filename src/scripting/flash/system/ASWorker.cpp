@@ -158,6 +158,9 @@ void ASWorker::finalize()
 			delete contexts[i];
 		}
 	}
+	constantrefs.erase(stage);
+	stage->destruct();
+	stage->finalize();
 	stage=nullptr;
 	destroyContents();
 	loader.reset();

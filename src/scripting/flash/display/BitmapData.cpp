@@ -560,10 +560,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 	if (mergeAlpha)
 		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer());
 	else
-	{
-		RGBA fillcolor(0,0,0,0);
-		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer(),&fillcolor);
-	}
+		th->drawDisplayObject(d, m,true,BLENDMODE_INTERN_REPLACE,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer());
+	th->getBitmapContainer()->addTemporaryBitmap(th->getSystemState()->getRenderThread(),d);
 
 	th->notifyUsers();
 }

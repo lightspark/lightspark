@@ -1001,6 +1001,53 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 	return 1;
 }
 
+static int glnvg__renderUpdateTextureFlags(void* uptr, int image, int imageFlags)
+{
+	GLNVGcontext* gl = (GLNVGcontext*)uptr;
+	GLNVGtexture* tex = glnvg__findTexture(gl, image);
+
+	if (tex == NULL) return 0;
+	glnvg__bindTexture(gl, tex->tex);
+
+	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+		if (imageFlags & NVG_IMAGE_NEAREST) {
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+		} else {
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		}
+	} else {
+		if (imageFlags & NVG_IMAGE_NEAREST) {
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		} else {
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		}
+	}
+
+	if (imageFlags & NVG_IMAGE_NEAREST) {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	} else {
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
+
+	if (imageFlags & NVG_IMAGE_REPEATX)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	else if (imageFlags & NVG_IMAGE_MIRRORX)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
+	else
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+
+	if (imageFlags & NVG_IMAGE_REPEATY)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	else if (imageFlags & NVG_IMAGE_MIRRORY)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
+	else
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glnvg__bindTexture(gl, 0);
+
+	return 1;
+}
+
 static int glnvg__renderGetTextureSize(void* uptr, int image, int* w, int* h)
 {
 	GLNVGcontext* gl = (GLNVGcontext*)uptr;
@@ -2043,6 +2090,7 @@ NVGcontext* nvgCreateGLES3(int flags)
 	params.renderCreateTexture = glnvg__renderCreateTexture;
 	params.renderDeleteTexture = glnvg__renderDeleteTexture;
 	params.renderUpdateTexture = glnvg__renderUpdateTexture;
+	params.renderUpdateTextureFlags = glnvg__renderUpdateTextureFlags;
 	params.renderGetTextureSize = glnvg__renderGetTextureSize;
 	params.renderViewport = glnvg__renderViewport;
 	params.renderCancel = glnvg__renderCancel;

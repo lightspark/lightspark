@@ -896,6 +896,10 @@ void nvgUpdateImage(NVGcontext* ctx, int image, const unsigned char* data)
 	ctx->params.renderGetTextureSize(ctx->params.userPtr, image, &w, &h);
 	ctx->params.renderUpdateTexture(ctx->params.userPtr, image, 0,0, w,h, data);
 }
+void nvgUpdateImageFlags(NVGcontext* ctx, int image, int imageFlags)
+{
+	ctx->params.renderUpdateTextureFlags(ctx->params.userPtr, image, imageFlags);
+}
 
 void nvgImageSize(NVGcontext* ctx, int image, int* w, int* h)
 {

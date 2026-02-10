@@ -408,7 +408,8 @@ int nvgCreateImageRGBA(NVGcontext* ctx, int w, int h, int imageFlags, const unsi
 
 // Updates image data specified by image handle.
 void nvgUpdateImage(NVGcontext* ctx, int image, const unsigned char* data);
-
+// Updates image flags specified by image handle.
+void nvgUpdateImageFlags(NVGcontext* ctx, int image, int imageFlags);
 // Returns the dimensions of a created image.
 void nvgImageSize(NVGcontext* ctx, int image, int* w, int* h);
 
@@ -780,6 +781,7 @@ struct NVGparams {
 	int (*renderCreateTexture)(void* uptr, int type, int w, int h, int imageFlags, const unsigned char* data);
 	int (*renderDeleteTexture)(void* uptr, int image);
 	int (*renderUpdateTexture)(void* uptr, int image, int x, int y, int w, int h, const unsigned char* data);
+	int (*renderUpdateTextureFlags)(void* uptr, int image, int imageFlags);
 	int (*renderGetTextureSize)(void* uptr, int image, int* w, int* h);
 	void (*renderViewport)(void* uptr, float width, float height, float devicePixelRatio);
 	void (*renderCancel)(void* uptr);

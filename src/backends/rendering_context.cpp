@@ -211,6 +211,9 @@ void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase&
 		case BLENDMODE_LIGHTEN: // handled through blendMode uniform
 			engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
 			break;
+		case BLENDMODE_INTERN_REPLACE:
+			engineData->exec_glBlendFunc(BLEND_ZERO,BLEND_ONE);
+			break;
 		default:
 			LOG(LOG_NOT_IMPLEMENTED,"renderTextured of blend mode "<<(int)blendmode);
 			break;

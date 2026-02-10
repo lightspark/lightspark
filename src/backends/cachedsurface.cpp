@@ -223,18 +223,21 @@ int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style, SystemState* sys)
 {
 	if (!style->bitmap)
 		return -1;
+	int imageFlags = NVG_IMAGE_GENERATE_MIPMAPS;
+	if (!isSmoothed(style->FillStyleType))
+		imageFlags |= NVG_IMAGE_NEAREST;
+	if (isRepeating(style->FillStyleType))
+		imageFlags |= NVG_IMAGE_REPEATX|NVG_IMAGE_REPEATY;
 	if (style->bitmap->nanoVGImageHandle == -1)
 	{
-		int imageFlags = NVG_IMAGE_GENERATE_MIPMAPS;
-		if (!isSmoothed(style->FillStyleType))
-			imageFlags |= NVG_IMAGE_NEAREST;
-		if (isRepeating(style->FillStyleType))
-			imageFlags |= NVG_IMAGE_REPEATX|NVG_IMAGE_REPEATY;
 		style->bitmap->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,style->bitmap->getWidth(),style->bitmap->getHeight(),imageFlags,style->bitmap->getData());
 		style->bitmap->setModifiedData(false);
 	}
 	else
+	{
 		style->bitmap->checkTextureForUpload(sys);
+		nvgUpdateImageFlags(nvgctxt,style->bitmap->nanoVGImageHandle,imageFlags);
+	}
 	return style->bitmap->nanoVGImageHandle;
 }
 
@@ -576,6 +579,9 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 				case BLENDMODE_INVERT:
 				 	nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE_MINUS_DST_COLOR,NVG_ZERO);
 				 	break;
+				case BLENDMODE_INTERN_REPLACE: // ignored, only used for rendering to bitmap
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ONE_MINUS_SRC_ALPHA);
+					break;
 				default:
 					LOG(LOG_NOT_IMPLEMENTED,"renderTextured of nanoVG blend mode "<<(int)ctxt.transformStack().transform().blendmode);
 					break;

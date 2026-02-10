@@ -285,6 +285,7 @@ bool BitmapContainer::checkTextureForUpload(SystemState* sys)
 
 void BitmapContainer::clone(BitmapContainer* c)
 {
+	checkModifiedTexture();
 	memcpy (c->getOriginalData(),getOriginalData(),getWidth()*getHeight()*4);
 	if (!currentcolortransform.isIdentity())
 	{
@@ -334,6 +335,7 @@ void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlp
 {
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return;
+	checkModifiedTexture();
 	uint8_t* d = getCurrentData();
 	uint32_t *p=reinterpret_cast<uint32_t *>(&d[y*stride + 4*x]);
 	if (ispremultiplied || ((color&0xff000000) == 0xff000000))

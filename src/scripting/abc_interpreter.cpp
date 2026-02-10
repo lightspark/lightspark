@@ -1705,6 +1705,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 	Activation_object* activationobject=nullptr;
 	std::list<Catchscope_object*> catchscopelist;
 	int dup_indicator=0;
+	int swap_indicator=0;
 	bool opcode_skipped=false;
 	bool coercereturnvalue=false;
 	bool reverse_iftruefalse=false;
@@ -1748,6 +1749,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					break;
 				case 2:// opcode after dup handled
 					dup_indicator=0;
+					break;
+			}
+			switch (swap_indicator)
+			{
+				case 0:
+					break;
+				case 1:// swap optimized
+					swap_indicator=2;
+					break;
+				case 2:// opcode after swap handled
+					swap_indicator=0;
+					state.lastoperandsSwapped=false;
 					break;
 			}
 		}
@@ -3870,6 +3883,8 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 						&& state.jumptargets.find(code.tellg()) == state.jumptargets.end())
 				{
 					std::swap(state.operandlist[state.operandlist.size()-2],state.operandlist[state.operandlist.size()-1]);
+					state.lastoperandsSwapped=true;
+					swap_indicator=1;
 					opcode_skipped=true;
 				}
 				else

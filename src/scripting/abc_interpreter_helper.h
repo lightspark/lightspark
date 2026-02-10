@@ -73,6 +73,7 @@ struct preloadstate
 	uint32_t lastlocalresultpos;
 	bool duplocalresult;
 	bool atexceptiontarget;
+	bool lastoperandsSwapped;
 	preloadstate(SyntheticFunction* _f, ASWorker* _w);
 	void refreshOldNewPosition(memorystream& code);
 	void checkClearOperands(uint32_t p,Class_base** lastlocalresulttype);

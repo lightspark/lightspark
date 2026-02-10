@@ -42,11 +42,13 @@ using namespace lightspark;
 namespace lightspark
 {
 preloadstate::preloadstate(SyntheticFunction* _f, ASWorker* _w):
-	function(_f),worker(_w),
-	mi(_f->getMethodInfo()),
-	lastlocalresultpos(UINT32_MAX),
-	duplocalresult(false),
-	atexceptiontarget(false)
+	function(_f)
+	,worker(_w)
+	,mi(_f->getMethodInfo())
+	,lastlocalresultpos(UINT32_MAX)
+	,duplocalresult(false)
+	,atexceptiontarget(false)
+	,lastoperandsSwapped(false)
 {
 
 }
@@ -127,6 +129,7 @@ void clearOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastloc
 	if (clear)
 		state.operandlist.clear();
 	state.duplocalresult=false;
+	state.lastoperandsSwapped=false;
 }
 void removeOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastlocalresulttype,uint32_t opcount)
 {
@@ -143,6 +146,7 @@ void removeOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastlo
 	for (uint32_t i = 0; i < opcount; i++)
 		state.operandlist.pop_back();
 	state.duplocalresult=false;
+	state.lastoperandsSwapped=false;
 }
 void setOperandModified(preloadstate& state,OPERANDTYPES type, int index)
 {

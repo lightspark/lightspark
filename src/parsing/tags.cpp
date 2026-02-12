@@ -572,9 +572,14 @@ DefineSpriteTag::DefineSpriteTag(RECORDHEADER h, std::istream& in, RootMovieClip
 				}
 				break;
 			case AVM1INITACTION_TAG:
-				LOG(LOG_NOT_IMPLEMENTED,"InitActionTag inside sprite "<< SpriteID);
-				delete tag;
+			{
+				if (!static_cast<AVM1InitActionTag*>(tag)->empty())
+				{
+					root->getFrameContainer()->addAVM1InitAction(static_cast<AVM1InitActionTag*>(tag));
+					empty=false;
+				}
 				break;
+			}
 			case ENABLEDEBUGGER_TAG:
 			case METADATA_TAG:
 			case FILEATTRIBUTES_TAG:
@@ -3361,7 +3366,7 @@ void AVM1ActionTag::setActions(AVM1scriptToExecute& script) const
 	script.startactionpos = startactionpos;
 }
 
-AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, AdditionalDataTag* datatag):ControlTag(h)
+AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, AdditionalDataTag* datatag):Tag(h)
 {
 	// InitActionTags are ignored if clip uses actionscript3
 	if (root->needsActionScript3())
@@ -3378,12 +3383,10 @@ AVM1InitActionTag::AVM1InitActionTag(RECORDHEADER h, istream &s, RootMovieClip *
 	}
 	s >> SpriteId;
 	s.read((char*)actions.data()+startactionpos,Header.getLength()-2);
-	root->AVM1registerInitActionTag(SpriteId,this);
 }
 
 void AVM1InitActionTag::execute(RootMovieClip *root) const
 {
-
 	DefineSpriteTag* sprite = dynamic_cast<DefineSpriteTag*>(root->loadedFrom->dictionaryLookup(SpriteId));
 	if (!sprite)
 	{
@@ -3396,15 +3399,11 @@ void AVM1InitActionTag::execute(RootMovieClip *root) const
 	clip->state.last_FP=0; // avoid declaring the first frame
 	clip->constructionComplete(true,true);
 	clip->afterConstruction(true);
-	root->AVM1checkInitActions(clip);
-	clip->decRef();
-}
-
-void AVM1InitActionTag::executeDirect(MovieClip* clip) const
-{
+	root->insertLegacyChildAt(LEGACY_DEPTH_START,clip);
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString());
 	ACTIONRECORD::executeActions(clip,clip->getAVM1Context(),actions,startactionpos,nullptr,true);
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions done "<< clip->toDebugString());
+	root->deleteLegacyChildAt(LEGACY_DEPTH_START,false);
 }
 
 AdditionalDataTag::AdditionalDataTag(RECORDHEADER h, istream &in):Tag(h)

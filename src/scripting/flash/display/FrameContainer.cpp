@@ -22,6 +22,7 @@
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/display/FrameContainer.h"
 #include "scripting/flash/display/MovieClip.h"
+#include "scripting/flash/display/RootMovieClip.h"
 #include "parsing/tags.h"
 #include "scripting/class.h"
 #include "scripting/argconv.h"
@@ -131,10 +132,21 @@ void Frame::destroyTags()
 	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
 		delete (*it);
+	auto it2=avm1initactiontags.begin();
+	for(;it2!=avm1initactiontags.end();++it2)
+		delete (*it2);
 }
 
 void Frame::execute(DisplayObjectContainer* displayList, bool inskipping, std::vector<_R<DisplayObject>>& removedFrameScripts)
 {
+	while (!avm1initactiontags.empty())
+	{
+		AVM1InitActionTag* t = *avm1initactiontags.begin();
+		// a new instance of the sprite may be constructed during code execution, so we remove it from the initactionlist before executing the code to ensure it's only executed once
+		avm1initactiontags.pop_front();
+		t->execute(displayList->getRoot().getPtr());
+		delete t;
+	}
 	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
 	{
@@ -172,6 +184,10 @@ void FrameContainer::addToFrame(DisplayListTag* t)
 {
 	frames.back().blueprint.push_back(t);
 }
+void FrameContainer::addAVM1InitAction(AVM1InitActionTag* t)
+{
+	frames.back().avm1initactiontags.push_back(t);
+}
 /**
  * Find the scene to which the given frame belongs and
  * adds the frame label to that scene.
@@ -191,6 +207,7 @@ void FrameContainer::addFrameLabel(uint32_t frame, const tiny_string& label)
 	}
 	scenes.back().addFrameLabel(frame-startframe,label);
 }
+
 void FrameContainer::destroyTags()
 {
 	for(auto it=frames.begin();it!=frames.end();++it)

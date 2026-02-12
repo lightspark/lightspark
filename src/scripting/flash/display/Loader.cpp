@@ -524,7 +524,7 @@ void Loader::threadFinished(IThreadJob* finishedJob)
 	jobs.remove(finishedJob);
 	delete finishedJob;
 }
-
+#define LOADER_CONTENT_LEGACY_DEPTH -16384-0xF000
 void Loader::setContent(DisplayObject* o)
 {
 	if (o->isOnStage() || content==o || (content && o->getParent()==content))
@@ -545,7 +545,7 @@ void Loader::setContent(DisplayObject* o)
 			m->setConstructIndicator();
 			m->setLoaderInfo(this->loaderInfo);
 			o->incRef();
-			m->insertLegacyChildAt(-0xF000,o,false,false);
+			m->insertLegacyChildAt(LOADER_CONTENT_LEGACY_DEPTH,o,false,false);
 			m->addStoredMember();
 			content = m;
 		}

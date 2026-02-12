@@ -75,6 +75,7 @@ class Frame
 {
 public:
 	std::list<DisplayListTag*> blueprint;
+	std::list<AVM1InitActionTag*> avm1initactiontags;
 	void execute(DisplayObjectContainer* displayList, bool inskipping, std::vector<_R<DisplayObject>>& removedFrameScripts);
 	void AVM1executeActions(DisplayObjectContainer* clip);
 	/**
@@ -112,7 +113,7 @@ public:
 	void addToFrame(DisplayListTag *r);
 	void addFrameLabel(uint32_t frame, const tiny_string& label);
 	uint32_t getFramesLoaded() { return framesLoaded; }
-	void setAvm1InitAction(AVM1InitActionTag* t);
+	void addAVM1InitAction(AVM1InitActionTag* t);
 	void destroyTags();
 	void addFrame();
 	uint32_t getCurrentScene(uint32_t frame) const;

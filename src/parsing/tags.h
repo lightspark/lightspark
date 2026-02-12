@@ -132,7 +132,7 @@ public:
 	bool empty() { return actions.empty(); }
 	void setActions(AVM1scriptToExecute& script) const;
 };
-class AVM1InitActionTag: public ControlTag
+class AVM1InitActionTag: public Tag
 {
 private:
 	UI16_SWF SpriteId;
@@ -141,9 +141,8 @@ private:
 public:
 	AVM1InitActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root, AdditionalDataTag* datatag);
 	TAGTYPE getType() const override { return AVM1INITACTION_TAG; }
-	void execute(RootMovieClip* root) const override;
 	bool empty() { return actions.empty(); }
-	void executeDirect(MovieClip *clip) const;
+	void execute(RootMovieClip *root) const;
 };
 
 class DefineShapeTag: public DictionaryTag

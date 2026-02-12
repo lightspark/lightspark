@@ -1245,14 +1245,6 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				contexts.push_back(ev->context);
 				break;
 			}
-			case AVM1INITACTION_EVENT:
-			{
-				LOG(LOG_CALLS,"AVM1INITACTION:"<<e.second->toDebugString());
-				AVM1InitActionEvent* ev=static_cast<AVM1InitActionEvent*>(e.second.getPtr());
-				ev->executeActions();
-				LOG(LOG_CALLS,"AVM1INITACTION done");
-				break;
-			}
 			case INIT_FRAME:
 			{
 				m_sys->setFramePhase(FramePhase::INIT_FRAME);
@@ -1343,7 +1335,10 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 						ev->root->as<MovieClip>()->initFrame();
 					}
 					else
-						ev->root->as<MovieClip>()->advanceFrame(true);
+					{
+						if (ev->root->loaderInfo && ev->root->loaderInfo->getLoader())
+							ev->root->loaderInfo->getLoader()->setContent(ev->root);
+					}
 				}
 				break;
 			}

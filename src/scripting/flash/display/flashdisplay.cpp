@@ -1849,6 +1849,12 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChildAt)
 	//Cast to object
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
 	assert_and_throw(index >= 0 && (size_t)index<=th->dynamicDisplayList.size());
+	if (th->needsActionScript3() &&
+		(!d->needsActionScript3() || d->is<AVM1Movie>()))
+	{
+		createError<ArgumentError>(wrk,2180,"addChildAt: child is AS2");
+		return;
+	}
 	d->incRef();
 	d->legacy=false;
 	th->_addChildAt(d,index);
@@ -1872,6 +1878,12 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,addChild)
 
 	//Cast to object
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
+	if (th->needsActionScript3() &&
+		(!d->needsActionScript3() || d->is<AVM1Movie>()))
+	{
+		createError<ArgumentError>(wrk,2180,"addChild: child is AS2");
+		return;
+	}
 	d->incRef();
 	d->legacy=false;
 	th->_addChildAt(d,numeric_limits<unsigned int>::max());

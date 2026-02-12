@@ -342,25 +342,6 @@ void RootMovieClip::setupAVM1RootMovie()
 	}
 }
 
-void RootMovieClip::AVM1registerInitActionTag(uint32_t spriteID, AVM1InitActionTag *tag)
-{
-	avm1InitActionTags[spriteID] = tag;
-}
-void RootMovieClip::AVM1checkInitActions(MovieClip* sprite)
-{
-	if (!sprite)
-		return;
-	auto it = avm1InitActionTags.find(sprite->getTagID());
-	if (it != avm1InitActionTags.end())
-	{
-		AVM1InitActionTag* t = it->second;
-		// a new instance of the sprite may be constructed during code execution, so we remove it from the initactionlist before executing the code to ensure it's only executed once
-		avm1InitActionTags.erase(it);
-		t->executeDirect(sprite);
-		delete t;
-	}
-}
-
 void RootMovieClip::AVM1setLevel(int level)
 {
 	if (level < 0)

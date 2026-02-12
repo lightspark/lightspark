@@ -2311,11 +2311,13 @@ void DisplayObject::setNameOnParent()
 		if (!asAtomHandler::is<DisplayObject>(obj)
 			|| asAtomHandler::as<DisplayObject>(obj)->getDepth() >= this->getDepth())
 		{
+			ASATOM_DECREF(obj); // decref old var before setting new var is needed for proper garbage collection
 			this->incRef();
 			asAtom v = asAtomHandler::fromObject(this);
 			getParent()->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
 		}
-		ASATOM_DECREF(obj);
+		else
+			ASATOM_DECREF(obj);
 	}
 }
 void DisplayObject::beforeConstruction(bool _explicit)

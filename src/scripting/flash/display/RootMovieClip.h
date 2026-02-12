@@ -47,7 +47,6 @@ private:
 	void executeFrameScript() override;
 	ACQUIRE_RELEASE_FLAG(finishedLoading);
 	
-	unordered_map<uint32_t,AVM1InitActionTag*> avm1InitActionTags;
 public:
 	RootMovieClip(ASWorker* wrk,LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c);
 	~RootMovieClip();
@@ -91,8 +90,6 @@ public:
 	_NR<Stage> getStage() override;
 	void bindClass(const QName &classname, Class_inherit* cls);
 	void setupAVM1RootMovie();
-	void AVM1registerInitActionTag(uint32_t spriteID, AVM1InitActionTag* tag);
-	void AVM1checkInitActions(MovieClip *sprite);
 	int AVM1getLevel() const { return avm1level; }
 	void AVM1setLevel(int level);
 	inline bool hasScenes() const { return hasDefineSceneAndFrameLabelDataTag; }

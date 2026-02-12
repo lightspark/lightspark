@@ -36,7 +36,7 @@ enum EVENT_TYPE { EVENT=0, BIND_CLASS, SHUTDOWN, SYNC, MOUSE_EVENT,
 	FUNCTION,FUNCTION_ASYNC, EXTERNAL_CALL, CONTEXT_INIT, INIT_FRAME,
 	FLUSH_INVALIDATION_QUEUE, FLUSH_EVENT_BUFFER, ADVANCE_FRAME, PARSE_RPC_MESSAGE,
 	EXECUTE_FRAMESCRIPT,TEXTINPUT_EVENT,IDLE_EVENT,
-	AVM1INITACTION_EVENT,SET_LOADER_CONTENT_EVENT,ROOTCONSTRUCTEDEVENT,
+	SET_LOADER_CONTENT_EVENT,ROOTCONSTRUCTEDEVENT,
 	LOCALCONNECTIONEVENT,GETMOUSETARGET_EVENT, RENDER_FRAME,
 	BROADCAST_EVENT,
 	STARTJOB_EVENT,
@@ -454,20 +454,6 @@ public:
 	static void sinit(Class_base*);
 	EVENT_TYPE getEventType() const override { return CONTEXT_INIT; }
 };
-class AVM1InitActionEvent: public Event
-{
-friend class ABCVm;
-private:
-	RootMovieClip* root;
-	_NR<MovieClip> clip;
-public:
-	AVM1InitActionEvent(RootMovieClip* r, _NR<MovieClip> c);
-	static void sinit(Class_base*);
-	EVENT_TYPE getEventType() const override { return AVM1INITACTION_EVENT; }
-	void executeActions();
-	void finalize() override;
-};
-
 
 class Frame;
 

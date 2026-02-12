@@ -1320,20 +1320,6 @@ ABCContextInitEvent::ABCContextInitEvent(ABCContext* c, bool l):Event(nullptr,nu
 {
 }
 
-AVM1InitActionEvent::AVM1InitActionEvent(RootMovieClip* r,  _NR<MovieClip> c):Event(nullptr,nullptr, "AVM1InitActionEvent"),root(r),clip(c)
-{
-}
-void AVM1InitActionEvent::finalize()
-{
-	root = nullptr;
-	clip.reset();
-	Event::finalize();
-}
-void AVM1InitActionEvent::executeActions()
-{
-	root->AVM1checkInitActions(clip.getPtr());
-}
-
 ShutdownEvent::ShutdownEvent():Event(nullptr,nullptr, "shutdownEvent")
 {
 }

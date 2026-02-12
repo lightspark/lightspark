@@ -35,6 +35,7 @@
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/Stage.h"
+#include "scripting/flash/display/FrameContainer.h"
 #include "scripting/flash/events/AsyncErrorEvent.h"
 #include "scripting/flash/events/LocalConnectionEvent.h"
 #include "scripting/flash/events/StatusEvent.h"
@@ -2047,8 +2048,7 @@ void ParseThread::parseSWF(UI8 ver)
 				}
 				case AVM1INITACTION_TAG:
 				{
-					const ControlTag* ctag = static_cast<const ControlTag*>(tag);
-					ctag->execute(root);
+					root->framecontainer->addAVM1InitAction(static_cast<AVM1InitActionTag*>(tag));
 					break;
 				}
 				case BACKGROUNDCOLOR_TAG:
@@ -2994,7 +2994,7 @@ void SystemState::resetParentList()
 	auto it = listResetParent.begin();
 	while (it != listResetParent.end())
 	{
-		if ((*it)->getParent())
+		if ((*it)->legacy && (*it)->getParent())
 			(*it)->getParent()->removeChildName(*it);
 		(*it)->setParent(nullptr);
 		(*it)->removeStoredMember();

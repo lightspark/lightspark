@@ -132,6 +132,7 @@ jobs:
             glew \
             fontconfig \
             ffmpeg \
+            rtmpdump \
             sdl2 \
       - name: Run Build
         run: |

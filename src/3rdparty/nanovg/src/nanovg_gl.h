@@ -1008,20 +1008,22 @@ static int glnvg__renderUpdateTextureFlags(void* uptr, int image, int imageFlags
 
 	if (tex == NULL) return 0;
 	glnvg__bindTexture(gl, tex->tex);
+	tex->flags = imageFlags;
 
-	if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
-		if (imageFlags & NVG_IMAGE_NEAREST) {
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
-		} else {
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-		}
-	} else {
-		if (imageFlags & NVG_IMAGE_NEAREST) {
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		} else {
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		}
-	}
+	// TODO: figure out why setting this doesn't work
+	// if (imageFlags & NVG_IMAGE_GENERATE_MIPMAPS) {
+	// 	if (imageFlags & NVG_IMAGE_NEAREST) {
+	// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
+	// 	} else {
+	// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	// 	}
+	// } else {
+	// 	if (imageFlags & NVG_IMAGE_NEAREST) {
+	// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	// 	} else {
+	// 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	// 	}
+	// }
 
 	if (imageFlags & NVG_IMAGE_NEAREST) {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

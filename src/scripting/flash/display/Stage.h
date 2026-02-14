@@ -75,7 +75,7 @@ public:
 	void AVM1RootClipAdded() { hasAVM1Clips = true; }
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 	void setOnStage(bool staged, bool force,bool inskipping=false) override { assert(false); /* we are the stage */}
-	_NR<RootMovieClip> getRoot() override;
+	RootMovieClip* getRoot() override;
 	void setRoot(_NR<RootMovieClip> _root);
 	Stage(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);

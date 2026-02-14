@@ -1791,8 +1791,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getLoaderInfo)
 	/* According to tests returning root.loaderInfo is the correct
 	 * behaviour, even though the documentation states that only
 	 * the main class should have non-null loaderInfo. */
-	_NR<RootMovieClip> r=th->getRoot();
-	if(r.isNull() || !r->loaderInfo)
+	RootMovieClip* r=th->getRoot();
+	if(!r || !r->loaderInfo)
 	{
 		asAtomHandler::setNull(ret);
 		return;
@@ -1991,24 +1991,25 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getParent)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getRoot)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	_NR<DisplayObject> res;
+	DisplayObject* res;
 
 	if (th->isLoadedRootObject())
-		res = _NR<DisplayObject>(th);
+		res = th;
 	else if (th->is<Stage>())
+	{
 		// according to spec, the root of the stage is the stage itself
-		res = _NR<DisplayObject>(th);
+		res = th;
+	}
 	else
 		res =th->getRoot();
-	if(res.isNull())
+	if(!res)
 	{
 		asAtomHandler::setUndefined(ret);
 		return;
 	}
-	res->incRef(); // one ref will be removed during destruction of res
 
 	res->incRef();
-	ret = asAtomHandler::fromObject(res.getPtr());
+	ret = asAtomHandler::fromObject(res);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getRotation)
@@ -2079,10 +2080,10 @@ int DisplayObject::getClipDepth() const
 	return ClipDepth ? ClipDepth + 16384 : 0;
 }
 
-_NR<RootMovieClip> DisplayObject::getRoot()
+RootMovieClip* DisplayObject::getRoot()
 {
 	if(!parent)
-		return NullRef;
+		return nullptr;
 
 	return parent->getRoot();
 }
@@ -3677,7 +3678,7 @@ DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path, asAtom* mem
 	if (path.startsWith("/"))
 	{
 		tiny_string newpath = path.substr_bytes(1,path.numBytes()-1);
-		MovieClip* root = getRoot().getPtr();
+		MovieClip* root = getRoot();
 		if (root)
 			return root->AVM1GetClipFromPath(newpath,member);
 		LOG(LOG_ERROR,"AVM1: no root movie clip for path:"<<path<<" "<<this->toDebugString());
@@ -3766,7 +3767,7 @@ void DisplayObject::AVM1SetVariable(tiny_string &name, asAtom v, bool setMember)
 	if (name.startsWith("/"))
 	{
 		tiny_string newpath = name.substr_bytes(1,name.numBytes()-1);
-		MovieClip* root = getRoot().getPtr();
+		MovieClip* root = getRoot();
 		if (root)
 			root->AVM1SetVariable(newpath,v);
 		else

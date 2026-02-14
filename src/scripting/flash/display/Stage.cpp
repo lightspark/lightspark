@@ -512,9 +512,9 @@ _NR<DisplayObject> Stage::hitTestImpl(const Vector2f& globalPoint, const Vector2
 	return ret;
 }
 
-_NR<RootMovieClip> Stage::getRoot()
+RootMovieClip* Stage::getRoot()
 {
-	return root;
+	return root.getPtr();
 }
 
 void Stage::setRoot(_NR<RootMovieClip> _root)
@@ -1446,8 +1446,8 @@ ASFUNCTIONBODY_ATOM(Stage,_setTabChildren)
 ASFUNCTIONBODY_ATOM(Stage,_getFrameRate)
 {
 	Stage* th=asAtomHandler::as<Stage>(obj);
-	_NR<RootMovieClip> root = th->getRoot();
-	if (root.isNull())
+	RootMovieClip* root = th->getRoot();
+	if (!root)
 		asAtomHandler::setNumber(ret, wrk->getSystemState()->mainClip->applicationDomain->getFrameRate());
 	else
 		asAtomHandler::setNumber(ret, root->applicationDomain->getFrameRate());
@@ -1458,8 +1458,8 @@ ASFUNCTIONBODY_ATOM(Stage,_setFrameRate)
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	number_t frameRate;
 	ARG_CHECK(ARG_UNPACK(frameRate));
-	_NR<RootMovieClip> root = th->getRoot();
-	if (!root.isNull())
+	RootMovieClip* root = th->getRoot();
+	if (root)
 		root->applicationDomain->setFrameRate(frameRate);
 }
 
@@ -1497,8 +1497,8 @@ ASFUNCTIONBODY_ATOM(Stage,_getColor)
 {
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	RGB rgb;
-	_NR<RootMovieClip> root = th->getRoot();
-	if (!root.isNull())
+	RootMovieClip* root = th->getRoot();
+	if (root)
 		rgb = root->getBackground();
 	asAtomHandler::setUInt(ret,rgb.toUInt());
 }
@@ -1509,8 +1509,8 @@ ASFUNCTIONBODY_ATOM(Stage,_setColor)
 	uint32_t color;
 	ARG_CHECK(ARG_UNPACK(color));
 	RGB rgb(color);
-	_NR<RootMovieClip> root = th->getRoot();
-	if (!root.isNull())
+	RootMovieClip* root = th->getRoot();
+	if (root)
 		root->setBackground(rgb);
 }
 

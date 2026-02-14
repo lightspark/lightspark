@@ -281,7 +281,7 @@ public:
 	int getDepth();
 	int getClipDepth() const;
 	number_t getMaxFilterBorder() const { return maxfilterborder; }
-	virtual _NR<RootMovieClip> getRoot();
+	virtual RootMovieClip* getRoot();
 	virtual _NR<Stage> getStage();
 	void setLegacyMatrix(const MATRIX& m);
 	void setFilters(const FILTERLIST& filterlist);

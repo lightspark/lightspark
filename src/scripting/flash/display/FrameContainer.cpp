@@ -144,7 +144,7 @@ void Frame::execute(DisplayObjectContainer* displayList, bool inskipping, std::v
 		AVM1InitActionTag* t = *avm1initactiontags.begin();
 		// a new instance of the sprite may be constructed during code execution, so we remove it from the initactionlist before executing the code to ensure it's only executed once
 		avm1initactiontags.pop_front();
-		t->execute(displayList->getRoot().getPtr());
+		t->execute(displayList->getRoot());
 		delete t;
 	}
 	auto it=blueprint.begin();

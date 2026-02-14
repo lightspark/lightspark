@@ -86,7 +86,7 @@ public:
 	 */
 	_NR<SecurityDomain> securityDomain;
 	//DisplayObject interface
-	_NR<RootMovieClip> getRoot() override;
+	RootMovieClip* getRoot() override;
 	_NR<Stage> getStage() override;
 	void bindClass(const QName &classname, Class_inherit* cls);
 	void setupAVM1RootMovie();

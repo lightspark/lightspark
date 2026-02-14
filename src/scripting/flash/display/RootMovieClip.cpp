@@ -228,10 +228,9 @@ void RootMovieClip::setBackground(const RGB& bg)
 	Background=bg;
 }
 
-_NR<RootMovieClip> RootMovieClip::getRoot()
+RootMovieClip* RootMovieClip::getRoot()
 {
-	this->incRef();
-	return _MR(this);
+	return this;
 }
 
 _NR<Stage> RootMovieClip::getStage()

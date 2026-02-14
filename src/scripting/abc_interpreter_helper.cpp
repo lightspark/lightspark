@@ -2462,6 +2462,15 @@ void preloadFunction_secondPass(preloadstate& state)
 				skipunreachablecode(state,codetypes,false);
 				currenttype=nullptr;
 				break;
+			case 0x35://li8
+			case 0x36://li16
+			case 0x37://li32
+				currenttype=Class<Integer>::getRef(function->getSystemState()).getPtr();
+				break;
+			case 0x38://lf32
+			case 0x39://lf64
+				currenttype=Class<Number>::getRef(function->getSystemState()).getPtr();
+				break;
 			default:
 				currenttype=nullptr;
 				break;

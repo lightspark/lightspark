@@ -41,7 +41,7 @@ struct asAtomStrictHash
 {
 	std::size_t operator()(const asAtomStrict& s) const noexcept
 	{
-		return s.key.uintval>>3;
+		return s.key.uintval & ~ATOMTYPE_TYPE_BITS;
 	}
 };
 class Dictionary: public ASObject

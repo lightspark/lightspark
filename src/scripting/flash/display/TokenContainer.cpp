@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <cairo.h>
 #include "platforms/engineutils.h"
 #include "scripting/flash/display/TokenContainer.h"
 #include "scripting/flash/display/flashdisplay.h"
@@ -273,10 +272,7 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics, 
 
 	if(width==0 || height==0)
 		return nullptr;
-	ColorTransformBase ct;
-	if (owner->colorTransform)
-		ct = *owner->colorTransform.getPtr();
-	
+	ColorTransformBase ct = owner->colorTransform;
 	Rectangle* r = owner->scalingGrid.getPtr();
 	if (!r && owner->getParent())
 		r = owner->getParent()->scalingGrid.getPtr();

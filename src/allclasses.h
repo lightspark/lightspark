@@ -486,5 +486,7 @@ REGISTER_CLASS_NAME_AVM1(AVM1FileReference,"FileReference","")
 REGISTER_CLASS_NAME_AVM1(AVM1FileReferenceList,"FileReferenceList","")
 REGISTER_CLASS_NAME_AVM1(AVM1Point,"Point","flash.geom")
 REGISTER_CLASS_NAME_AVM1(AVM1Rectangle,"Rectangle","flash.geom")
+REGISTER_CLASS_NAME_AVM1(AVM1Transform,"Transform","flash.geom")
+REGISTER_CLASS_NAME_AVM1(AVM1ColorTransform,"ColorTransform","flash.geom")
 
 

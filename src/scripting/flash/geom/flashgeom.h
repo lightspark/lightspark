@@ -22,7 +22,7 @@
 
 #include "compat.h"
 #include "asobject.h"
-#include "backends/graphics.h"
+#include "backends/colortransformbase.h"
 
 namespace lightspark
 {
@@ -48,7 +48,6 @@ public:
 		ColorTransformBase::operator=(r);
 		return *this;
 	}
-	void setProperties(const CXFORMWITHALPHA& cx);
 	
 	static void sinit(Class_base* c);
 	bool destruct() override;
@@ -129,14 +128,14 @@ class Matrix3D;
 class Transform: public ASObject
 {
 friend class DisplayObject;
-private:
+protected:
 	DisplayObject* owner;
+private:
 	void onSetMatrix3D(_NR<Matrix3D> oldValue);
 	MATRIX getConcatenatedMatrix();
 public:
 	Transform(ASWorker* wrk,Class_base* c);
 	Transform(ASWorker* wrk, Class_base* c, DisplayObject* o);
-	ASFUNCTION_ATOM(_constructor);
 	static void sinit(Class_base* c);
 	bool destruct() override;
 	void finalize() override;

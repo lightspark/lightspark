@@ -813,10 +813,7 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,c
 	if(!hasLegacyChildAt(depth))
 		return;
 	DisplayObject* o = mapDepthToLegacyChild.at(depth);
-	if (o->colorTransform.isNull())
-		o->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(getInstanceWorker(),colortransform));
-	else
-		o->colorTransform->setProperties(colortransform);
+	o->colorTransform.setProperties(colortransform);
 	markAsChanged();
 }
 void DisplayObjectContainer::removeChildName(DisplayObject* obj)
@@ -1584,10 +1581,7 @@ IDrawable* DisplayObjectContainer::invalidate(bool smoothing)
 	m.scale(matrix.getScaleX(),matrix.getScaleY());
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 	
-	ColorTransformBase ct;
-	if (this->colorTransform)
-		ct=*this->colorTransform.getPtr();
-	
+	ColorTransformBase ct=this->colorTransform;
 	this->resetNeedsTextureRecalculation();
 	
 	res = new RefreshableDrawable(x, y, ceil(width), ceil(height)

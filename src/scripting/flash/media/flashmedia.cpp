@@ -275,10 +275,7 @@ IDrawable *Video::invalidate(bool smoothing)
 	m.scale(matrix.getScaleX(),matrix.getScaleY());
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 	
-	ColorTransformBase ct;
-	if (this->colorTransform)
-		ct=*this->colorTransform.getPtr();
-	
+	ColorTransformBase ct = this->colorTransform;
 	this->resetNeedsTextureRecalculation();
 	IDrawable* res = new RefreshableDrawable(x, y, ceil(width), ceil(height)
 											 , matrix.getScaleX(), matrix.getScaleY()

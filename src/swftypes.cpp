@@ -1161,14 +1161,34 @@ SHAPERECORD::SHAPERECORD(SHAPE* parent,BitStream& bs):AnchorDeltaX(0),AnchorDelt
 	}
 }
 
+void CXFORMWITHALPHA::getParameters(FIXED8& redMultiplier,
+									FIXED8& greenMultiplier,
+									FIXED8& blueMultiplier,
+									FIXED8& alphaMultiplier,
+									int16_t& redOffset,
+									int16_t& greenOffset,
+									int16_t& blueOffset,
+									int16_t& alphaOffset) const
+{
+	// multipliers are stored as values from 0.0 to 1.0
+	redMultiplier = RedMultTerm/256.0;
+	greenMultiplier = GreenMultTerm/256.0;
+	blueMultiplier = BlueMultTerm/256.0;
+	alphaMultiplier = AlphaMultTerm/256.0;
+
+	redOffset = RedAddTerm;
+	greenOffset = GreenAddTerm;
+	blueOffset = BlueAddTerm;
+	alphaOffset = AlphaAddTerm;
+}
 void CXFORMWITHALPHA::getParameters(number_t& redMultiplier,
-				    number_t& greenMultiplier, 
-				    number_t& blueMultiplier,
-				    number_t& alphaMultiplier,
-				    number_t& redOffset,
-				    number_t& greenOffset,
-				    number_t& blueOffset,
-				    number_t& alphaOffset) const
+									number_t& greenMultiplier,
+									number_t& blueMultiplier,
+									number_t& alphaMultiplier,
+									number_t& redOffset,
+									number_t& greenOffset,
+									number_t& blueOffset,
+									number_t& alphaOffset) const
 {
 	// multipliers are stored as values from 0.0 to 1.0
 	redMultiplier = RedMultTerm/256.0;

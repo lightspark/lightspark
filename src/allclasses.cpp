@@ -192,6 +192,8 @@
 #include "scripting/avm1/avm1filter.h"
 #include "scripting/avm1/avm1point.h"
 #include "scripting/avm1/avm1rectangle.h"
+#include "scripting/avm1/avm1transform.h"
+#include "scripting/avm1/avm1colortransform.h"
 
 using namespace lightspark;
 

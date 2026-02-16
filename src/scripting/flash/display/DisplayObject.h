@@ -20,12 +20,12 @@
 #ifndef SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H
 #define SCRIPTING_FLASH_DISPLAY_DISPLAYOBJECT_H 1
 
-#include "forwards/backends/graphics.h"
 #include "forwards/swftypes.h"
 #include "smartrefs.h"
 #include "scripting/flash/display/IBitmapDrawable.h"
 #include "asobject.h"
 #include "scripting/flash/events/flashevents.h"
+#include "backends/colortransformbase.h"
 
 namespace lightspark
 {
@@ -40,6 +40,8 @@ class Rectangle;
 class KeyboardEvent;
 class InvalidateQueue;
 class CachedSurface;
+class IDrawable;
+
 struct BitmapContainerRenderData;
 
 class DisplayObject: public EventDispatcher, public IBitmapDrawable
@@ -59,7 +61,7 @@ friend std::ostream& operator<<(std::ostream& s, const DisplayObject& r);
 private:
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityProperties>,accessibilityProperties);
 	static ATOMIC_INT32(instanceCount);
-	_NR<Matrix> matrix;
+	MATRIX matrix;
 	int32_t tx,ty,tz;
 	number_t rotation;
 	number_t sx,sy,sz;
@@ -68,6 +70,7 @@ private:
 	bool isLoadedRoot;
 	bool inInitFrame;
 	bool filterlistHasChanged;
+	bool hasMatrix3D;
 	uint32_t ismaskCount; // number of DisplayObjects this is mask of
 	
 	number_t maxfilterborder;
@@ -92,11 +95,7 @@ private:
 	 * It is the cached version of the object for fast draw on the Stage
 	 */
 	_R<CachedSurface> cachedSurface;
-	/*
-	 * Utility function to set internal MATRIX
-	 * Also used by Transform
-	 */
-	void setMatrix(_NR<Matrix> m);
+	void setMatrix(const MATRIX& m);
 	void setMatrix3D(_NR<Matrix3D> m);
 	ACQUIRE_RELEASE_FLAG(constructed);
 	bool useLegacyMatrix;
@@ -173,7 +172,7 @@ public:
 	LoaderInfo* loaderInfo;
 	ASPROPERTY_GETTER_SETTER(_NR<Array>,filters);
 	ASPROPERTY_GETTER_SETTER(asAtom,scrollRect);
-	_NR<ColorTransform> colorTransform;
+	ColorTransformBase colorTransform;
 	void setNeedsTextureRecalculation(bool skippable=false);
 	void resetNeedsTextureRecalculation() { needsTextureRecalculation=false; }
 	bool getNeedsTextureRecalculation() const { return needsTextureRecalculation; }

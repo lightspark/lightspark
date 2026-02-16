@@ -50,6 +50,7 @@
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/Integer.h"
 #include "scripting/avm1/avm1display.h"
+#include "scripting/avm1/avm1transform.h"
 #include "utils/array.h"
 #include <algorithm>
 #include <array>
@@ -145,10 +146,18 @@ void DisplayObject::removeBroadcastEventListener()
 		getSystemState()->unregisterFrameListener(this);
 }
 
-DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),matrix(Class<Matrix>::getInstanceS(wrk)),tx(0),ty(0),rotation(0),
-	sx(1),sy(1),blendMode(BLENDMODE_NORMAL),
-	isLoadedRoot(false),inInitFrame(false),
-	filterlistHasChanged(false),ismaskCount(0),maxfilterborder(0),ClipDepth(0),hasDefaultName(false),
+DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c)
+	,tx(0)
+	,ty(0)
+	,rotation(0)
+	,sx(1)
+	,sy(1)
+	,blendMode(BLENDMODE_NORMAL)
+	,isLoadedRoot(false)
+	,inInitFrame(false)
+	,filterlistHasChanged(false)
+	,hasMatrix3D(false)
+	,ismaskCount(0),maxfilterborder(0),ClipDepth(0),hasDefaultName(false),
 	hiddenPrevDisplayObject(nullptr),hiddenNextDisplayObject(nullptr),avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),cachedSurface(new CachedSurface()),
 	constructed(false),useLegacyMatrix(true),
 	needsTextureRecalculation(true),textureRecalculationSkippable(false),
@@ -195,11 +204,10 @@ void DisplayObject::finalize()
 	if (clipMask)
 		clipMask->removeStoredMember();
 	clipMask=nullptr;
-	matrix.reset();
 	if (loaderInfo)
 		loaderInfo->removeStoredMember();
 	loaderInfo=nullptr;
-	colorTransform.reset();
+	colorTransform = ColorTransformBase();
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
 	scalingGrid.reset();
@@ -251,13 +259,14 @@ bool DisplayObject::destruct()
 	if (clipMask)
 		clipMask->removeStoredMember();
 	clipMask=nullptr;
-	matrix.reset();
+	matrix = MATRIX();
+	hasMatrix3D=false;
 	if (loaderInfo)
 		loaderInfo->removeStoredMember();
 	loaderInfo=nullptr;
 	invalidateQueueNext.reset();
 	accessibilityProperties.reset();
-	colorTransform.reset();
+	colorTransform = ColorTransformBase();
 	scalingGrid.reset();
 	ASATOM_REMOVESTOREDMEMBER(opaqueBackground);
 	opaqueBackground=asAtomHandler::nullAtom;
@@ -319,16 +328,12 @@ void DisplayObject::prepareShutdown()
 
 	if (clipMask)
 		clipMask->prepareShutdown();
-	if (matrix)
-		matrix->prepareShutdown();
 	if (loaderInfo)
 		loaderInfo->prepareShutdown();
 	if (invalidateQueueNext)
 		invalidateQueueNext->prepareShutdown();
 	if (accessibilityProperties)
 		accessibilityProperties->prepareShutdown();
-	if (colorTransform)
-		colorTransform->prepareShutdown();
 	if (scalingGrid)
 		scalingGrid->prepareShutdown();
 	if (filters)
@@ -752,7 +757,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setter_cacheAsBitmap)
 ASFUNCTIONBODY_ATOM(DisplayObject,_getTransform)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	Transform* tf = Class<Transform>::getInstanceS(wrk,th);
+	Transform* tf = th->needsActionScript3() ? Class<Transform>::getInstanceS(wrk,th) : Class<AVM1Transform>::getInstanceS(wrk,th);
 	th->addOwnedObject(tf);
 	ret = asAtomHandler::fromObject(tf);
 }
@@ -764,39 +769,20 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setTransform)
 	ARG_CHECK(ARG_UNPACK(trans));
 	if (!trans.isNull())
 	{
-		th->setMatrix(trans->owner->matrix);
+		th->setMatrix(trans->owner->getMatrix());
 		th->colorTransform = trans->owner->colorTransform;
 		th->hasChanged=true;
 	}
 }
 
-void DisplayObject::setMatrix(_NR<Matrix> m)
+void DisplayObject::setMatrix(const MATRIX& m)
 {
-	bool mustInvalidate=false;
-	if (m.isNull())
+	Locker locker(spinlock);
+	if(getMatrix()!=m)
 	{
-		if (!matrix.isNull())
-		{
-			mustInvalidate=true;
-			geometryChanged();
-		}
-		matrix= NullRef;
-	}
-	else
-	{
-		Locker locker(spinlock);
-		if (matrix.isNull())
-			matrix= _MR(Class<Matrix>::getInstanceS(this->getInstanceWorker()));
-		if(matrix->matrix!=m->matrix)
-		{
-			matrix->matrix=m->matrix;
-			extractValuesFromMatrix();
-			geometryChanged();
-			mustInvalidate=true;
-		}
-	}
-	if(mustInvalidate)
-	{
+		matrix=m;
+		extractValuesFromMatrix();
+		geometryChanged();
 		hasChanged=true;
 		if (onStage)
 			requestInvalidation(getSystemState());
@@ -811,7 +797,7 @@ void DisplayObject::setMatrix3D(_NR<Matrix3D> m)
 	if (!m.isNull())
 	{
 		Locker locker(spinlock);
-		matrix= NullRef;
+		hasMatrix3D=true;
 		float rawdata[16];
 		m->getRawDataAsFloat(rawdata);
 		this->tx = rawdata[12]*TWIPS_FACTOR;
@@ -841,15 +827,13 @@ void DisplayObject::setLegacyMatrix(const lightspark::MATRIX& m)
 	bool mustInvalidate=false;
 	{
 		Locker locker(spinlock);
-		if (matrix.isNull())
-			matrix= _MR(Class<Matrix>::getInstanceS(this->getInstanceWorker()));
 		if(m.getTranslateX() != tx ||
 			m.getTranslateY() != ty ||
 			m.getScaleX() != sx ||
 			m.getScaleY() != sy ||
 			m.getRotation() != rotation)
 		{
-			matrix->matrix=m;
+			matrix=m;
 			extractValuesFromMatrix();
 			geometryChanged();
 			afterSetLegacyMatrix();
@@ -1121,13 +1105,9 @@ MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot, bool fromcurrentre
  * necessary bounded.) */
 float DisplayObject::clippedAlpha() const
 {
-	float a = 1.0;
-	if (!this->colorTransform.isNull())
-	{
-		a = this->colorTransform->alphaMultiplier;
-		if (this->colorTransform->alphaOffset != 0)
-			a += this->colorTransform->alphaOffset /256.;
-	}
+	float 	a = this->colorTransform.alphaMultiplier;
+	if (this->colorTransform.alphaOffset != 0)
+		a += this->colorTransform.alphaOffset /256.;
 	return dmin(dmax(a, 0.), 1.);
 }
 
@@ -1207,9 +1187,7 @@ MATRIX DisplayObject::getMatrix(bool includeRotation) const
 {
 	Locker locker(spinlock);
 	//Start from the residual matrix and construct the whole one
-	MATRIX ret;
-	if (!matrix.isNull())
-		ret=matrix->matrix;
+	MATRIX ret = matrix;
 	ret.scale(sx,sy);
 	if (includeRotation && !std::isnan(rotation))
 		ret.rotate(rotation*M_PI/180.0);
@@ -1226,18 +1204,17 @@ void DisplayObject::extractValuesFromMatrix()
 {
 	//Extract the base components from the matrix and leave in
 	//it only the residual components
-	assert(!matrix.isNull());
-	tx=matrix->matrix.getTranslateX();
-	ty=matrix->matrix.getTranslateY();
-	sx=matrix->matrix.getScaleX();
-	sy=matrix->matrix.getScaleY();
-	rotation=matrix->matrix.getRotation();
+	tx=matrix.getTranslateX();
+	ty=matrix.getTranslateY();
+	sx=matrix.getScaleX();
+	sy=matrix.getScaleY();
+	rotation=matrix.getRotation();
 	//Deapply translation
-	matrix->matrix.translate(-tx,-ty);
+	matrix.translate(-tx,-ty);
 	//Deapply rotation
-	matrix->matrix.rotate(-rotation*M_PI/180.0);
+	matrix.rotate(-rotation*M_PI/180.0);
 	//Deapply scaling
-	matrix->matrix.scale(1.0/sx,1.0/sy);
+	matrix.scale(1.0/sx,1.0/sy);
 }
 
 bool DisplayObject::skipRender() const
@@ -1446,14 +1423,11 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setAlpha)
 	if (!th->loadedFrom->usesActionScript3) // AVM1 uses alpha values from 0-100
 		val /= 100.0;
 
-	if (th->colorTransform.isNull())
-		th->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(th->getInstanceWorker()));
-
 	/* The stored value is not clipped, _getAlpha will return the
 	 * stored value even if it is outside the [0, 1] range. */
-	if(th->colorTransform->alphaMultiplier != val)
+	if(th->colorTransform.alphaMultiplier != val)
 	{
-		th->colorTransform->alphaMultiplier = val;
+		th->colorTransform.alphaMultiplier = val;
 		th->hasChanged=true;
 		if(th->onStage)
 			th->requestInvalidation(wrk->getSystemState(),false);
@@ -1467,9 +1441,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getAlpha)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
 	if (th->loadedFrom->usesActionScript3)
-		asAtomHandler::setNumber(ret, !th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier : 1.0);
+		asAtomHandler::setNumber(ret, (number_t)th->colorTransform.alphaMultiplier);
 	else // AVM1 uses alpha values from 0-100
-		asAtomHandler::setNumber(ret, !th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier*100.0 : 100.0);
+		asAtomHandler::setNumber(ret, (number_t)th->colorTransform.alphaMultiplier*100.0);
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_getMask)
@@ -2400,9 +2374,7 @@ IDrawable* DisplayObject::getFilterDrawable(bool smoothing)
 
 	if(width==0 || height==0)
 		return nullptr;
-	ColorTransformBase ct;
-	if (this->colorTransform)
-		ct = *this->colorTransform.getPtr();
+	ColorTransformBase ct = this->colorTransform;
 	this->resetNeedsTextureRecalculation();
 	return new RefreshableDrawable(x, y, ceil(width), ceil(height)
 				, matrix.getScaleX(), matrix.getScaleY()
@@ -3478,7 +3450,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setQuality)
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getAlpha)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	asAtomHandler::setNumber(ret, !th->colorTransform.isNull() ? th->colorTransform->alphaMultiplier*100.0 : 100.0);
+	asAtomHandler::setNumber(ret, (number_t)th->colorTransform.alphaMultiplier*100.0);
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 {
@@ -3487,12 +3459,9 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_setAlpha)
 	ARG_CHECK(ARG_UNPACK (val));
 	val /= 100.0;
 
-	if (th->colorTransform.isNull())
-		th->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(th->getInstanceWorker()));
-
-	if(th->colorTransform->alphaMultiplier != val)
+	if(th->colorTransform.alphaMultiplier != val)
 	{
-		th->colorTransform->alphaMultiplier = val;
+		th->colorTransform.alphaMultiplier = val;
 		th->hasChanged=true;
 		if(th->onStage)
 			th->requestInvalidation(wrk->getSystemState());

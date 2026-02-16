@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2009-2013  Alessandro Pignotti (a.pignotti@sssup.it)
+	Copyright (C) 2026  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -30,6 +31,8 @@
 #include "scripting/avm1/avm1filter.h"
 #include "scripting/avm1/avm1point.h"
 #include "scripting/avm1/avm1rectangle.h"
+#include "scripting/avm1/avm1transform.h"
+#include "scripting/avm1/avm1colortransform.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/geom/flashgeom.h"
@@ -141,8 +144,8 @@ void ABCVm::registerClassesAVM1()
 		flashpackage->setVariableByQName("geom",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),flashgeompackage,CONSTANT_TRAIT);
 
 		flashgeompackage->setVariableByQName("Matrix","flash.geom",Class<Matrix>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
-		flashgeompackage->setVariableByQName("ColorTransform","flash.geom",Class<ColorTransform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
-		flashgeompackage->setVariableByQName("Transform","flash.geom",Class<Transform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashgeompackage->setVariableByQName("ColorTransform","flash.geom",Class<AVM1ColorTransform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+		flashgeompackage->setVariableByQName("Transform","flash.geom",Class<AVM1Transform>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashgeompackage->setVariableByQName("Rectangle","flash.geom",Class<AVM1Rectangle>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashgeompackage->setVariableByQName("Point","flash.geom",Class<AVM1Point>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 

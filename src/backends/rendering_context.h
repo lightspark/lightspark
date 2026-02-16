@@ -26,6 +26,7 @@
 #include <unordered_map>
 #include "threading.h"
 #include "backends/graphics.h"
+#include "backends/colortransformbase.h"
 
 namespace lightspark
 {

@@ -28,6 +28,7 @@
 #include <vector>
 #include <queue>
 #include "backends/graphics.h"
+#include "backends/colortransformbase.h"
 #include "threading.h"
 
 

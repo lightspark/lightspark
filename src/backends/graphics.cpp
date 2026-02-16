@@ -27,6 +27,7 @@
 #include "backends/cachedsurface.h"
 #include "backends/rendering.h"
 #include "backends/config.h"
+#include "backends/colortransformbase.h"
 #include "compat.h"
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/text/flashtext.h"
@@ -1198,80 +1199,6 @@ void TextData::checklastline(bool needsadditionalline)
 				textlines.back().format.paragraph=true;
 		}
 	}
-}
-
-void ColorTransformBase::fillConcatenated(DisplayObject* src, bool ignoreBlendMode)
-{
-	ColorTransform* ct = src->colorTransform.getPtr();
-	DisplayObjectContainer* p = src->getParent();
-	if (ct)
-	{
-		*this=*ct;
-	}
-	while (p)
-	{
-		if (p->colorTransform)
-		{
-			ct = p->colorTransform.getPtr();
-			if (!ct)
-			{
-				ct = p->colorTransform.getPtr();
-				*this=*ct;
-			}
-			else
-			{
-				ct = p->colorTransform.getPtr();
-				redMultiplier*=ct->redMultiplier;
-				greenMultiplier*=ct->greenMultiplier;
-				blueMultiplier*=ct->blueMultiplier;
-				alphaMultiplier*=ct->alphaMultiplier;
-				redOffset+=ct->redOffset;
-				greenOffset+=ct->greenOffset;
-				blueOffset+=ct->blueOffset;
-				alphaOffset+=ct->alphaOffset;
-			}
-		}
-		if (!ignoreBlendMode && p->isShaderBlendMode(p->getBlendMode()))
-			break;
-		p = p->getParent();
-	}
-}
-void ColorTransformBase::applyTransformation(uint8_t* bm, uint32_t size) const
-{
-	if (isIdentity())
-		return;
-
-	for (uint32_t i = 0; i < size; i+=4)
-	{
-		bm[i+3] = max(0,min(255,int(((number_t(bm[i+3]) * alphaMultiplier) + alphaOffset))));
-		bm[i+2] = max(0,min(255,int(((number_t(bm[i+2]) *  blueMultiplier) +  blueOffset)*(number_t(bm[i+3])/255.0))));
-		bm[i+1] = max(0,min(255,int(((number_t(bm[i+1]) * greenMultiplier) + greenOffset)*(number_t(bm[i+3])/255.0))));
-		bm[i  ] = max(0,min(255,int(((number_t(bm[i  ]) *   redMultiplier) +   redOffset)*(number_t(bm[i+3])/255.0))));
-	}
-}
-uint8_t *ColorTransformBase::applyTransformation(BitmapContainer* bm)
-{
-	if (redMultiplier==1.0 &&
-		greenMultiplier==1.0 &&
-		blueMultiplier==1.0 &&
-		alphaMultiplier==1.0 &&
-		redOffset==0.0 &&
-		greenOffset==0.0 &&
-		blueOffset==0.0 &&
-		alphaOffset==0.0)
-		return (uint8_t*)bm->getData();
-
-	const uint8_t* src = bm->getOriginalData();
-	uint8_t* dst = bm->getDataColorTransformed();
-	uint32_t size = bm->getWidth()*bm->getHeight()*4;
-	for (uint32_t i = 0; i < size; i+=4)
-	{
-		dst[i+3] = max(0,min(255,int(((number_t(src[i+3]) * alphaMultiplier) + alphaOffset))));
-		dst[i+2] = max(0,min(255,int(((number_t(src[i+2]) *  blueMultiplier) +  blueOffset)*(number_t(dst[i+3])/255.0))));
-		dst[i+1] = max(0,min(255,int(((number_t(src[i+1]) * greenMultiplier) + greenOffset)*(number_t(dst[i+3])/255.0))));
-		dst[i  ] = max(0,min(255,int(((number_t(src[i  ]) *   redMultiplier) +   redOffset)*(number_t(dst[i+3])/255.0))));
-	}
-	return (uint8_t*)bm->getDataColorTransformed();
 }
 
 InvalidateQueue::InvalidateQueue(_NR<DisplayObject> _cacheAsBitmapObject):cacheAsBitmapObject(_cacheAsBitmapObject)

@@ -29,6 +29,7 @@
 #include "scripting/toplevel/Vector.h"
 #include "scripting/flash/display/BitmapContainer.h"
 #include "scripting/flash/display/Stage.h"
+#include "scripting/avm1/avm1colortransform.h"
 
 using namespace lightspark;
 using namespace std;
@@ -38,12 +39,6 @@ ColorTransform::ColorTransform(ASWorker* wrk, Class_base* c, const ColorTransfor
 }
 ColorTransform::ColorTransform(ASWorker* wrk, Class_base* c, const CXFORMWITHALPHA& cx)
   : ASObject(wrk,c,T_OBJECT,SUBTYPE_COLORTRANSFORM)
-{
-	cx.getParameters(redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
-					 redOffset, greenOffset, blueOffset, alphaOffset);
-}
-
-void ColorTransform::setProperties(const CXFORMWITHALPHA &cx)
 {
 	cx.getParameters(redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier,
 					 redOffset, greenOffset, blueOffset, alphaOffset);
@@ -137,28 +132,13 @@ ASFUNCTIONBODY_ATOM(ColorTransform,setColor)
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
 	assert_and_throw(argslen==1);
 	uint32_t tmp=asAtomHandler::toInt(args[0]);
-	//Setting multiplier to 0
-	th->redMultiplier=0;
-	th->greenMultiplier=0;
-	th->blueMultiplier=0;
-	//Setting offset to the input value
-	th->redOffset=(tmp>>16)&0xff;
-	th->greenOffset=(tmp>>8)&0xff;
-	th->blueOffset=tmp&0xff;
+	th->setfromRGB(tmp);
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getColor)
 {
 	ColorTransform* th=asAtomHandler::as<ColorTransform>(obj);
-
-	int ro, go, bo;
-	ro = static_cast<int>(th->redOffset) & 0xff;
-	go = static_cast<int>(th->greenOffset) & 0xff;
-	bo = static_cast<int>(th->blueOffset) & 0xff;
-
-	uint32_t color = (ro<<16) | (go<<8) | bo;
-
-	asAtomHandler::setUInt(ret,color);
+	asAtomHandler::setUInt(ret,th->getRGB());
 }
 
 ASFUNCTIONBODY_ATOM(ColorTransform,getRedMultiplier)
@@ -300,9 +280,11 @@ ASFUNCTIONBODY_ATOM(ColorTransform,_toString)
 
 Transform::Transform(ASWorker* wrk, Class_base* c):ASObject(wrk,c),owner(nullptr),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(wrk))
 {
+	subtype=SUBTYPE_TRANSFORM;
 }
 Transform::Transform(ASWorker* wrk,Class_base* c, DisplayObject* o):ASObject(wrk,c),owner(o),perspectiveProjection(Class<PerspectiveProjection>::getInstanceSNoArgs(wrk))
 {
+	subtype=SUBTYPE_TRANSFORM;
 }
 
 bool Transform::destruct()
@@ -345,7 +327,7 @@ bool Transform::countCylicMemberReferences(garbagecollectorstate& gcstate)
 
 void Transform::sinit(Class_base* c)
 {
-	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
 	c->isReusable = true;
 	c->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(_getColorTransform,0,Class<ColorTransform>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(_setColorTransform),SETTER_METHOD,true);
@@ -367,22 +349,11 @@ void Transform::onSetMatrix3D(_NR<Matrix3D> oldValue)
 	owner->setMatrix3D(this->matrix3D);
 }
 
-ASFUNCTIONBODY_ATOM(Transform,_constructor)
-{
-	Transform* th=asAtomHandler::as<Transform>(obj);
-	// it's not in the specs but it seems to be possible to construct a Transform object with an owner as argment
-	if (argslen && asAtomHandler::is<DisplayObject>(args[0]))
-	{
-		th->owner = asAtomHandler::as<DisplayObject>(args[0]);
-		th->owner->addOwnedObject(th);
-	}
-}
-
 ASFUNCTIONBODY_ATOM(Transform,_getMatrix)
 {
 	Transform* th=asAtomHandler::as<Transform>(obj);
 	assert_and_throw(argslen==0);
-	if (th->owner->matrix.isNull())
+	if (th->owner->hasMatrix3D)
 	{
 		asAtomHandler::setNull(ret);
 		return;
@@ -394,18 +365,29 @@ ASFUNCTIONBODY_ATOM(Transform,_getMatrix)
 ASFUNCTIONBODY_ATOM(Transform,_setMatrix)
 {
 	Transform* th=asAtomHandler::as<Transform>(obj);
-	_NR<Matrix> m;
+	asAtom m = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(m));
-	th->owner->setMatrix(m);
+	if (asAtomHandler::isNull(m))
+		return;
+	if (asAtomHandler::is<Matrix>(m))
+	{
+		MATRIX m2 = asAtomHandler::as<Matrix>(m)->getMATRIX();
+		th->owner->setMatrix(m2);
+	}
+	else
+	{
+		createError<ArgumentError>(wrk,kCheckTypeFailedError,
+								   asAtomHandler::getClass(m,wrk->getSystemState())->getQualifiedClassName(),
+								   Class<Matrix>::getClass(wrk->getSystemState())->getQualifiedClassName());
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_getColorTransform)
 {
 	Transform* th=asAtomHandler::as<Transform>(obj);
-	if (th->owner->colorTransform.isNull())
-		th->owner->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(wrk));
-	th->owner->colorTransform->incRef();
-	ret = asAtomHandler::fromObject(th->owner->colorTransform.getPtr());
+	ColorTransform* ct =  Class<ColorTransform>::getInstanceS(wrk,th->owner->colorTransform);
+
+	ret = asAtomHandler::fromObject(ct);
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_setColorTransform)
@@ -419,10 +401,7 @@ ASFUNCTIONBODY_ATOM(Transform,_setColorTransform)
 		return;
 	}
 
-	if (th->owner->colorTransform.isNull())
-		th->owner->colorTransform = _NR<ColorTransform>(Class<ColorTransform>::getInstanceS(wrk, *ct.getPtr()));
-	else
-		*th->owner->colorTransform.getPtr() = *ct.getPtr();
+	th->owner->colorTransform = *ct.getPtr();
 	th->owner->hasChanged=true;
 	if (th->owner->isOnStage())
 		th->owner->requestInvalidation(wrk->getSystemState());
@@ -435,9 +414,10 @@ ASFUNCTIONBODY_ATOM(Transform,_getConcatenatedMatrix)
 	Transform* th=asAtomHandler::as<Transform>(obj);
 	ret = asAtomHandler::fromObject(Class<Matrix>::getInstanceS(wrk,th->getConcatenatedMatrix()));
 }
+
 MATRIX Transform::getConcatenatedMatrix()
 {
-	MATRIX m = owner->getConcatenatedMatrix(true);
+	MATRIX m = owner->getConcatenatedMatrix(true,false);
 	if (!owner->isOnStage() || owner->is<Stage>())
 	{
 		// for some strange reason the stage quality seems to affect the concatenated matrix if we are not on stage
@@ -483,18 +463,15 @@ ASFUNCTIONBODY_ATOM(Transform,getRelativeMatrix3D)
 ASFUNCTIONBODY_ATOM(Transform,_getConcatenatedColorTransform)
 {
 	Transform* th=asAtomHandler::as<Transform>(obj);
-	if (!th->owner->colorTransform.isNull())
+	ColorTransformBase ct = th->owner->colorTransform;
+	DisplayObject* p = th->owner->getParent();
+	while (p)
 	{
-		ColorTransformBase ct = *th->owner->colorTransform.getPtr();
-		DisplayObject* p = th->owner->getParent();
-		while (p && !p->colorTransform.isNull())
-		{
-			ct = ct.multiplyTransform(*p->colorTransform.getPtr());
-			p = p->getParent();
-		}
-		ColorTransform* colortransform = Class<ColorTransform>::getInstanceS(wrk,ct);
-		ret = asAtomHandler::fromObject(colortransform);
+		ct = p->colorTransform.multiplyTransform(ct);
+		p = p->getParent();
 	}
+	ColorTransform* colortransform = Class<ColorTransform>::getInstanceS(wrk,ct);
+	ret = asAtomHandler::fromObject(colortransform);
 }
 
 Matrix::Matrix(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_MATRIX)

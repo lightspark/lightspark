@@ -1958,7 +1958,7 @@ void PlaceObjectTag::execute(DisplayObjectContainer *parent, bool inskipping)
 	if (toAdd->placeFrame == UINT32_MAX && parent->is<MovieClip>())
 		toAdd->placeFrame = parent->as<MovieClip>()->state.FP;
 	if (hasColorTransform)
-		toAdd->colorTransform= _MR(Class<ColorTransform>::getInstanceS(parent->getInstanceWorker(),colorTransform));
+		toAdd->colorTransform.setProperties(colorTransform);
 	parent->insertLegacyChildAt(LEGACY_DEPTH_START+Depth,toAdd,inskipping);
 }
 
@@ -1973,7 +1973,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 
 	//TODO: move these three attributes in PlaceInfo
 	if(PlaceFlagHasColorTransform || newObject)
-		obj->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(obj->getInstanceWorker(),this->ColorTransformWithAlpha));
+		obj->colorTransform.setProperties(this->ColorTransformWithAlpha);
 
 
 	if(PlaceFlagHasRatio)
@@ -2600,7 +2600,7 @@ ASObject* DefineButtonTag::instance(Class_base* c, ASObject* prevInstance, bool 
 				if (i->ButtonHasFilterList)
 					state->setFilters(i->FilterList);
 				if (!i->ColorTransform.isIdentity())
-					state->colorTransform=_NR<ColorTransform>(Class<ColorTransform>::getInstanceS(loadedFrom->getInstanceWorker(),i->ColorTransform));
+					state->colorTransform.setProperties(i->ColorTransform);
 				if (loadedFrom->usesActionScript3 && !state->is<StaticText>())
 				{
 					state->handleConstruction();

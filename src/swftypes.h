@@ -274,6 +274,9 @@ enum CLASS_SUBTYPE { SUBTYPE_NOT_SET
 					 ,SUBTYPE_AVM1POINT
 					 ,SUBTYPE_AVM1RECTANGLE
 					 ,SUBTYPE_STATICTEXT
+					 ,SUBTYPE_TRANSFORM
+					 ,SUBTYPE_AVM1TRANSFORM
+					 ,SUBTYPE_AVM1COLORTRANSFORM
 				   };
  
 enum STACK_TYPE{STACK_NONE=0,STACK_OBJECT,STACK_INT,STACK_UINT,STACK_NUMBER,STACK_BOOLEAN};
@@ -792,6 +795,17 @@ public:
 	FIXED8():val(0){}
 	FIXED8(int16_t v):val(v){}
 	operator number_t() const{ return number_t(val)/256.0; }
+	FIXED8& operator=(number_t v)
+	{
+		val=v*256.0;
+		return *this;
+	}
+	FIXED8& operator*=(const FIXED8& r)
+	{
+		val=int32_t(val)*int32_t(r.val)/256;
+		return *this;
+	}
+
 };
 
 class RECORDHEADER
@@ -1512,14 +1526,22 @@ protected:
 	int16_t BlueAddTerm;
 	int16_t AlphaAddTerm;
 public:
-	void getParameters(number_t& redMultiplier, 
-			   number_t& greenMultiplier, 
-			   number_t& blueMultiplier,
-			   number_t& alphaMultiplier,
-			   number_t& redOffset,
-			   number_t& greenOffset,
-			   number_t& blueOffset,
-			   number_t& alphaOffset) const;
+	void getParameters(FIXED8& redMultiplier,
+					   FIXED8& greenMultiplier,
+					   FIXED8& blueMultiplier,
+					   FIXED8& alphaMultiplier,
+					   int16_t& redOffset,
+					   int16_t& greenOffset,
+					   int16_t& blueOffset,
+					   int16_t& alphaOffset) const;
+	void getParameters(number_t& redMultiplier,
+				   number_t& greenMultiplier,
+				   number_t& blueMultiplier,
+				   number_t& alphaMultiplier,
+				   number_t& redOffset,
+				   number_t& greenOffset,
+				   number_t& blueOffset,
+				   number_t& alphaOffset) const;
 	float transformedAlpha(float alpha) const;
 	bool isIdentity() const;
 	CXFORMWITHALPHA():

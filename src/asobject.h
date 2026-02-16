@@ -1554,6 +1554,7 @@ class ASMutex;
 class ASQName;
 class ASString;
 class ASWorker;
+class AVM1ColorTransform;
 class AVM1Function;
 class AVM1LoadVars;
 class AVM1LocalConnection;
@@ -1563,6 +1564,7 @@ class AVM1Point;
 class AVM1Rectangle;
 class AVM1Sound;
 class AVM1Super_object;
+class AVM1Transform;
 class AVM1XMLDocument;
 class AVM1XMLNode;
 class BevelFilter;
@@ -1675,6 +1677,7 @@ class TextureBase;
 class Timer;
 class TimerEvent;
 class ThrottleEvent;
+class Transform;
 class Type;
 class TypeError;
 class UInteger;
@@ -1712,6 +1715,7 @@ template<> inline bool ASObject::is<ASObject>() const { return true; }
 template<> inline bool ASObject::is<ASQName>() const { return type==T_QNAME; }
 template<> inline bool ASObject::is<ASString>() const { return type==T_STRING; }
 template<> inline bool ASObject::is<ASWorker>() const { return subtype==SUBTYPE_WORKER; }
+template<> inline bool ASObject::is<AVM1ColorTransform>() const { return subtype == SUBTYPE_AVM1COLORTRANSFORM; }
 template<> inline bool ASObject::is<AVM1Function>() const { return subtype==SUBTYPE_AVM1FUNCTION; }
 template<> inline bool ASObject::is<AVM1LoadVars>() const { return subtype == SUBTYPE_AVM1LOADVARS; }
 template<> inline bool ASObject::is<AVM1LocalConnection>() const { return subtype==SUBTYPE_AVM1LOCALCONNECTION; }
@@ -1722,6 +1726,7 @@ template<> inline bool ASObject::is<AVM1Point>() const { return subtype == SUBTY
 template<> inline bool ASObject::is<AVM1Rectangle>() const { return subtype == SUBTYPE_AVM1RECTANGLE; }
 template<> inline bool ASObject::is<AVM1Sound>() const { return subtype == SUBTYPE_AVM1SOUND; }
 template<> inline bool ASObject::is<AVM1Super_object>() const { return subtype == SUBTYPE_AVM1SUPEROBJECT; }
+template<> inline bool ASObject::is<AVM1Transform>() const { return subtype == SUBTYPE_AVM1TRANSFORM; }
 template<> inline bool ASObject::is<AVM1XMLDocument>() const { return subtype == SUBTYPE_AVM1XMLDOCUMENT; }
 template<> inline bool ASObject::is<AVM1XMLNode>() const { return subtype == SUBTYPE_AVM1XMLNODE; }
 template<> inline bool ASObject::is<BevelFilter>() const { return subtype==SUBTYPE_BEVELFILTER; }
@@ -1734,7 +1739,11 @@ template<> inline bool ASObject::is<ByteArray>() const { return subtype==SUBTYPE
 template<> inline bool ASObject::is<Catchscope_object>() const { return subtype==SUBTYPE_CATCHSCOPEOBJECT; }
 template<> inline bool ASObject::is<Class_base>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<Class_inherit>() const { return subtype==SUBTYPE_INHERIT; }
-template<> inline bool ASObject::is<ColorTransform>() const { return subtype==SUBTYPE_COLORTRANSFORM; }
+template<> inline bool ASObject::is<ColorTransform>() const
+{
+	return subtype == SUBTYPE_COLORTRANSFORM
+		   || subtype == SUBTYPE_AVM1COLORTRANSFORM;
+}
 template<> inline bool ASObject::is<ColorMatrixFilter>() const { return subtype==SUBTYPE_COLORMATRIXFILTER; }
 template<> inline bool ASObject::is<ContentElement>() const { return subtype==SUBTYPE_CONTENTELEMENT || subtype == SUBTYPE_TEXTELEMENT; }
 template<> inline bool ASObject::is<Context3D>() const { return subtype==SUBTYPE_CONTEXT3D; }
@@ -1887,6 +1896,11 @@ template<> inline bool ASObject::is<TextureBase>() const { return subtype==SUBTY
 template<> inline bool ASObject::is<Timer>() const { return subtype==SUBTYPE_TIMER; }
 template<> inline bool ASObject::is<TimerEvent>() const { return subtype==SUBTYPE_TIMEREVENT; }
 template<> inline bool ASObject::is<ThrottleEvent>() const { return subtype==SUBTYPE_THROTTLE_EVENT; }
+template<> inline bool ASObject::is<Transform>() const
+{
+	return subtype == SUBTYPE_TRANSFORM
+		   || subtype == SUBTYPE_AVM1TRANSFORM;
+}
 template<> inline bool ASObject::is<Type>() const { return type==T_CLASS; }
 template<> inline bool ASObject::is<TypeError>() const { return subtype==SUBTYPE_TYPEERROR; }
 template<> inline bool ASObject::is<UInteger>() const { return type==T_UINTEGER; }

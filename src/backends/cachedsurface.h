@@ -26,6 +26,7 @@
 #include "swftypes.h"
 #include "backends/geometry.h"
 #include "backends/graphics.h"
+#include "backends/colortransformbase.h"
 #include "memory_support.h"
 
 #define MAX_FILTER_GRADIENTS 16

@@ -834,8 +834,8 @@ void Graphics::dorender(bool closepath)
 					AddStrokeToken(GeomToken(STRAIGHT));
 					AddStrokeToken(GeomToken(Vector2(fillstartx, fillstarty)));
 				}
+				AddFillToken(GeomToken(CLEAR_FILL));
 			}
-			AddFillToken(GeomToken(CLEAR_FILL));
 		}
 		hasChanged = false;
 		if (!tokensHaveChanged && tokens.size()==rendertokens.size())

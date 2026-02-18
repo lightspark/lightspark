@@ -195,7 +195,7 @@ void TestRunner::compareOutput(const tiny_string& actualOutput)
 			actualLineCount << " from Lightspark).";
 			throw TestRunnerException(s.str());
 		}
-		
+
 		auto actualLines = actualOutput.split('\n');
 		auto expectedLines = expectedOutput.split('\n');
 
@@ -205,7 +205,7 @@ void TestRunner::compareOutput(const tiny_string& actualOutput)
 		{
 			std::string actual = *it++;
 			std::string expected = *it2++;
-			
+
 			try
 			{
 				auto actualValue = std::stod(actual);
@@ -282,10 +282,15 @@ void TestRunner::compareOutput(const tiny_string& actualOutput)
 
 void assertTextMatches(const tiny_string& actual, const tiny_string& expected)
 {
-	if (actual != expected)
+	auto _actualLines = actual.split('\n');
+	auto _expectedLines = expected.split('\n');
+	// some expected test outputs have \r\n as line delimiter
+	for (auto it = _expectedLines.begin(); it != _expectedLines.end(); it++)
 	{
-		auto _actualLines = actual.split('\n');
-		auto _expectedLines = expected.split('\n');
+		*it = (*it).stripSuffix("\r");
+	}
+	if (_actualLines != _expectedLines)
+	{
 		std::vector<tiny_string> actualLines(_actualLines.begin(), _actualLines.end());
 		std::vector<tiny_string> expectedLines(_expectedLines.begin(), _expectedLines.end());
 

@@ -141,8 +141,8 @@ void Array::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("insertAt",AS3,c->getSystemState()->getBuiltinFunction(insertAt,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeAt",AS3,c->getSystemState()->getBuiltinFunction(removeAt,1),NORMAL_METHOD,true);
 
-	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_getLength,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_setLength),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_getLength,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_setLength),SETTER_METHOD,false,false);
 	c->prototype->setVariableByQName("concat","",c->getSystemState()->getBuiltinFunction(_concat,1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("every","",c->getSystemState()->getBuiltinFunction(every,1),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("filter","",c->getSystemState()->getBuiltinFunction(filter,1),DYNAMIC_TRAIT);

@@ -445,6 +445,7 @@ public:
 	bool nameIsInteger:1;
 	bool varIsRefCounted:1;
 	bool isStatic:1; // indicates if this variable is a member of a static ASObject
+	bool ignoreswf6:1;
 
 	uint8_t min_swfversion;
 	variable(TRAIT_KIND _k,const nsNameAndKind& _ns,bool _nameIsInteger,uint32_t nameID, bool _isStatic)
@@ -462,6 +463,7 @@ public:
 		,nameIsInteger(_nameIsInteger)
 		,varIsRefCounted(false)
 		,isStatic(_isStatic)
+		,ignoreswf6(false)
 		,min_swfversion(0)
 	{}
 	variable(TRAIT_KIND _k, asAtom _v, multiname* _t, Type* type, const nsNameAndKind &_ns, bool _isenumerable, bool _nameIsInteger, uint32_t nameID, bool _isStatic);
@@ -1218,7 +1220,7 @@ public:
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true,uint8_t min_swfversion=0);
 	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true, uint8_t min_swfversion=0);
-	void setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true, uint8_t min_swfversion=0);
+	void setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true, uint8_t min_swfversion=0, bool forPrototype=false);
 	void setDeclaredMethodAtomByQName(const tiny_string& name, const tiny_string& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom f, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
@@ -1430,6 +1432,10 @@ public:
 
 
 	void setIsEnumerable(const multiname& name, bool isEnum);
+	void setIsDeletable(const multiname& name, bool isDeletable);
+	void setIsReadonly(const multiname &name, bool isReadonly);
+	void setIgnoreSWF6(const multiname &name, bool ignoreswf6);
+	void setMinSWFVersion(const multiname &name, uint32_t minversion);
 	inline void destroyContents()
 	{
 		Variables.destroyContents();

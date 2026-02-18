@@ -44,6 +44,7 @@
 #include "scripting/flash/utils/Dictionary.h"
 #include "scripting/toplevel/Undefined.h"
 #include "scripting/toplevel/Null.h"
+#include "scripting/toplevel/Namespace.h"
 #include <3rdparty/pugixml/src/pugixml.hpp>
 
 using namespace lightspark;
@@ -844,7 +845,7 @@ void ASObject::setDeclaredMethodByQName(const tiny_string& name, const nsNameAnd
 	setDeclaredMethodByQName(getSystemState()->getUniqueStringId(name), ns, o, type, isBorrowed,isEnumerable,min_swfversion);
 }
 
-void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable,uint8_t min_swfversion)
+void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable,uint8_t min_swfversion, bool forPrototype)
 {
 #ifndef NDEBUG
 	assert(!initialized);
@@ -872,11 +873,11 @@ void ASObject::setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns
 	if(isBorrowed)
 	{
 		assert(this->is<Class_base>());
-		obj=this->as<Class_base>()->borrowedVariables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT);
+		obj=this->as<Class_base>()->borrowedVariables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT,false);
 	}
 	else
 	{
-		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT,isEnumerable);
+		obj=Variables.findObjVar(nameId,ns,DECLARED_TRAIT, DECLARED_TRAIT,forPrototype && isEnumerable);
 	}
 	if(this->is<Class_base>())
 	{
@@ -1036,6 +1037,8 @@ variable* ASObject::findSettableImpl(ASWorker* wrk,variables_map& map, const mul
 	variable* ret=map.findVarOrSetter(wrk,name,DECLARED_TRAIT|DYNAMIC_TRAIT);
 	if(ret)
 	{
+		if (ret->min_swfversion && ret->min_swfversion  > wrk->AVM1getSwfVersion())
+			return nullptr;
 		//It seems valid for a class to redefine only the getter, so if we can't find
 		//something to get, it's ok
 		if(!(asAtomHandler::isValid(ret->setter) || ret->isValidVar()))
@@ -1073,6 +1076,8 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 			createError<ReferenceError>(getInstanceWorker(),kConstWriteError, name.normalizedNameUnresolved(getSystemState()), classdef->as<Class_base>()->getQualifiedClassName());
 		return nullptr;
 	}
+	if (!isAS3 && obj && obj->issealed)
+		return nullptr;
 	if(!obj && cls)
 	{
 		//Look for borrowed traits before
@@ -1166,6 +1171,15 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	if (this->is<Class_base>() && obj->kind == INSTANCE_TRAIT)
 		obj->kind =DECLARED_TRAIT;
 
+	if (!isAS3 && obj->min_swfversion > wrk->AVM1getSwfVersion())
+	{
+		obj->min_swfversion = wrk->AVM1getSwfVersion();
+		ASATOM_REMOVESTOREDMEMBER(obj->setter);
+		ASATOM_REMOVESTOREDMEMBER(obj->getter);
+		obj->setter=asAtomHandler::invalidAtom;
+		obj->getter=asAtomHandler::invalidAtom;
+
+	}
 	if(asAtomHandler::isValid(obj->setter))
 	{
 		//Call the setter
@@ -1653,11 +1667,19 @@ ASFUNCTIONBODY_ATOM(ASObject,propertyIsEnumerable)
 			return;
 		}
 	}
-	variable* v = asAtomHandler::toObject(obj,wrk)->Variables.findObjVar(wrk,name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
+	else if (asAtomHandler::is<Namespace>(obj))
+	{
+		if (asAtomHandler::as<Namespace>(obj)->hasPropertyByMultiname(name,true,false,wrk))
+		{
+			asAtomHandler::setBool(ret,true);
+			return;
+		}
+	}
+	variable* v = asAtomHandler::toObject(obj,wrk)->findVariableByMultiname(name,nullptr,nullptr,nullptr,true,wrk);
 	if (v)
 		asAtomHandler::setBool(ret,v->isenumerable);
 	else
-		asAtomHandler::setBool(ret,asAtomHandler::getObject(obj)->hasPropertyByMultiname(name,true,false,wrk));
+		asAtomHandler::setBool(ret,false);
 }
 ASFUNCTIONBODY_ATOM(ASObject,setPropertyIsEnumerable)
 {
@@ -1665,6 +1687,8 @@ ASFUNCTIONBODY_ATOM(ASObject,setPropertyIsEnumerable)
 	bool isEnum;
 	ARG_CHECK(ARG_UNPACK(propname) (isEnum, true));
 	if (asAtomHandler::is<Dictionary>(obj)) // it seems that all entries in dictionary are always enumerable
+		return;
+	if (asAtomHandler::is<Class_base>(obj))
 		return;
 	multiname name(nullptr);
 	name.name_type=multiname::NAME_STRING;
@@ -1813,7 +1837,7 @@ ASFUNCTIONBODY_ATOM(ASObject,AVM1_unwatch)
 
 void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 {
-	variable* v = Variables.findObjVar(getInstanceWorker(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT);
+	variable* v = Variables.findObjVar(getInstanceWorker(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|DECLARED_TRAIT);
 	if (v && v->isenumerable != isEnum)
 	{
 		v->isenumerable = isEnum;
@@ -1822,6 +1846,36 @@ void ASObject::setIsEnumerable(const multiname &name, bool isEnum)
 		else
 			Variables.removeVar(v);
 	}
+}
+void ASObject::setIsDeletable(const multiname &name, bool isDeletable)
+{
+	variable* v = Variables.findObjVar(getInstanceWorker(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|INSTANCE_TRAIT);
+	if (v)
+	{
+		// TODO implement separate flag to indicate "deletable" ?
+		if (isDeletable && v->kind == DECLARED_TRAIT)
+			v->kind = DYNAMIC_TRAIT;
+		if (!isDeletable && v->kind == DYNAMIC_TRAIT)
+			v->kind = DECLARED_TRAIT;
+	}
+}
+void ASObject::setIsReadonly(const multiname &name, bool isReadonly)
+{
+	variable* v = Variables.findObjVar(getInstanceWorker(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|INSTANCE_TRAIT);
+	if (v)
+		v->issealed = isReadonly;
+}
+void ASObject::setIgnoreSWF6(const multiname &name, bool ignoreswf6)
+{
+	variable* v = Variables.findObjVar(getInstanceWorker(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|INSTANCE_TRAIT);
+	if (v)
+		v->ignoreswf6 = ignoreswf6;
+}
+void ASObject::setMinSWFVersion(const multiname &name, uint32_t minversion)
+{
+	variable* v = Variables.findObjVar(getInstanceWorker(),name, NO_CREATE_TRAIT,DYNAMIC_TRAIT|INSTANCE_TRAIT);
+	if (v)
+		v->min_swfversion = minversion;
 }
 
 bool ASObject::cloneInstance(ASObject *target)
@@ -1934,6 +1988,8 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		if(!(asAtomHandler::isValid(obj->getter) || obj->isValidVar()))
 			obj=nullptr;
 		else if (obj->min_swfversion &&  wrk->AVM1getSwfVersion() < obj->min_swfversion)
+			obj = nullptr; // we are in AVM1 script execution and the property asked for is not available for the current swfversion
+		else if (obj->ignoreswf6 &&  wrk->AVM1getSwfVersion() == 6 )
 			obj = nullptr; // we are in AVM1 script execution and the property asked for is not available for the current swfversion
 	}
 	else if (opt & DONT_CHECK_CLASS)
@@ -2320,7 +2376,7 @@ void variables_map::dumpVariables()
 			asAtomHandler::toDebugString(it->second.getVar()) << ' ' <<
 			asAtomHandler::toDebugString(it->second.setter) << ' ' <<
 			asAtomHandler::toDebugString(it->second.getter) << ' ' <<
-			it->second.slotid << ' ');//<<dynamic_cast<const Class_base*>(it->second.type));
+			it->second.slotid << (it->second.isenumerable ? " enumerable" : ""));
 	}
 }
 
@@ -2493,9 +2549,13 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 
 void variables_map::insertVar(variable* v,bool prepend)
 {
-	if (v->nameStringID==BUILTIN_STRINGS::STRING_PROTO || v->nameStringID==BUILTIN_STRINGS::PROTOTYPE)
+	if (v->isenumerable && (
+			v->nameStringID==BUILTIN_STRINGS::STRING_PROTO
+			|| v->nameStringID==BUILTIN_STRINGS::PROTOTYPE
+			|| v->kind == CONSTANT_TRAIT
+			|| v->kind == DECLARED_TRAIT))
 		v->isenumerable=false;
-	if (!v->isenumerable || v->kind != DYNAMIC_TRAIT)
+	if (!v->isenumerable)
 		return;
 	if (prepend)
 		dynamic_vars.insert(dynamic_vars.begin(),v);

@@ -1265,12 +1265,12 @@ void InteractiveObject::sinit(Class_base* c)
 void InteractiveObject::AVM1SetupMethods(Class_base* c)
 {
 	DisplayObject::AVM1SetupMethods(c);
-	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_setter_tabEnabled),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_getter_tabEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_setTabIndex),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_getTabIndex,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_setMouseEnabled),SETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_setter_tabEnabled),SETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_getter_tabEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_setTabIndex),SETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_getTabIndex,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_setMouseEnabled),SETTER_METHOD,false,false);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, accessibilityImplementation)

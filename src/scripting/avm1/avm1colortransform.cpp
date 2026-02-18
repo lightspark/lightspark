@@ -30,26 +30,26 @@ void AVM1ColorTransform::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject,_constructor, CLASS_DYNAMIC_NOT_FINAL);
 
-	c->prototype->setDeclaredMethodByQName("rgb","",c->getSystemState()->getBuiltinFunction(getColor,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("rgb","",c->getSystemState()->getBuiltinFunction(setColor),SETTER_METHOD,false,false);
-
+	c->prototype->setDeclaredMethodByQName("alphaMultiplier","",c->getSystemState()->getBuiltinFunction(getAlphaMultiplier,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("alphaMultiplier","",c->getSystemState()->getBuiltinFunction(setAlphaMultiplier),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("redMultiplier","",c->getSystemState()->getBuiltinFunction(getRedMultiplier,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("redMultiplier","",c->getSystemState()->getBuiltinFunction(setRedMultiplier),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("greenMultiplier","",c->getSystemState()->getBuiltinFunction(getGreenMultiplier,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("greenMultiplier","",c->getSystemState()->getBuiltinFunction(setGreenMultiplier),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("blueMultiplier","",c->getSystemState()->getBuiltinFunction(getBlueMultiplier,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("blueMultiplier","",c->getSystemState()->getBuiltinFunction(setBlueMultiplier),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("alphaMultiplier","",c->getSystemState()->getBuiltinFunction(getAlphaMultiplier,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("alphaMultiplier","",c->getSystemState()->getBuiltinFunction(setAlphaMultiplier),SETTER_METHOD,false);
 
+	c->prototype->setDeclaredMethodByQName("alphaOffset","",c->getSystemState()->getBuiltinFunction(getAlphaOffset,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("alphaOffset","",c->getSystemState()->getBuiltinFunction(setAlphaOffset),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("redOffset","",c->getSystemState()->getBuiltinFunction(getRedOffset,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("redOffset","",c->getSystemState()->getBuiltinFunction(setRedOffset),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("greenOffset","",c->getSystemState()->getBuiltinFunction(getGreenOffset,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("greenOffset","",c->getSystemState()->getBuiltinFunction(setGreenOffset),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("blueOffset","",c->getSystemState()->getBuiltinFunction(getBlueOffset,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("blueOffset","",c->getSystemState()->getBuiltinFunction(setBlueOffset),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("alphaOffset","",c->getSystemState()->getBuiltinFunction(getAlphaOffset,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("alphaOffset","",c->getSystemState()->getBuiltinFunction(setAlphaOffset),SETTER_METHOD,false);
+
+	c->prototype->setDeclaredMethodByQName("rgb","",c->getSystemState()->getBuiltinFunction(getColor,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("rgb","",c->getSystemState()->getBuiltinFunction(setColor),SETTER_METHOD,false,false);
 
 	c->prototype->setDeclaredMethodByQName("concat","",c->getSystemState()->getBuiltinFunction(concat),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);

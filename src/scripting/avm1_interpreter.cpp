@@ -1130,10 +1130,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				ASATOM_DECREF(aa);
 				ASATOM_DECREF(ab);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionEquals "<<b<<"=="<<a<<" "<<(b==a));
-				if (wrk->AVM1getSwfVersion() < 5)
-					PushStack(stack,asAtomHandler::fromInt(b==a ? 1 : 0));
-				else
-					PushStack(stack,asAtomHandler::fromBool(b==a));
+				PushStack(stack,asAtomHandler::fromBool(b==a));
 				break;
 			}
 			case 0x0f: // ActionLess
@@ -1147,10 +1144,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				ASATOM_DECREF(aa);
 				ASATOM_DECREF(ab);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionLess "<<b<<"<"<<a);
-				if (wrk->AVM1getSwfVersion() < 5)
-					PushStack(stack,asAtomHandler::fromInt(b<a ? 1 : 0));
-				else
-					PushStack(stack,asAtomHandler::fromBool(b<a));
+				PushStack(stack,asAtomHandler::fromBool(b<a));
 				break;
 			}
 			case 0x10: // ActionAnd
@@ -1195,10 +1189,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				ASATOM_DECREF(aa);
 				ASATOM_DECREF(ab);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStringEquals "<<a<<" "<<b);
-				if (wrk->AVM1getSwfVersion() < 5)
-					PushStack(stack,asAtomHandler::fromInt(b == a ? 1 : 0));
-				else
-					PushStack(stack,asAtomHandler::fromBool(b == a));
+				PushStack(stack,asAtomHandler::fromBool(b == a));
 				break;
 			}
 			case 0x15: // ActionStringExtract
@@ -3212,10 +3203,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				ASATOM_DECREF(aa);
 				ASATOM_DECREF(ab);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionStringLess "<<a<<" "<<b<<" "<<(b<a));
-				if (wrk->AVM1getSwfVersion() < 5)
-					PushStack(stack,asAtomHandler::fromInt(b < a ? 1 : 0));
-				else
-					PushStack(stack,asAtomHandler::fromBool(b < a));
+				PushStack(stack,asAtomHandler::fromBool(b < a));
 				break;
 			}
 			case 0x31: // ActionMBStringLength

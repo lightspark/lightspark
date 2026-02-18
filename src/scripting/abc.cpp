@@ -2357,7 +2357,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 		}
 	}
 #endif
-	bool isenumerable = true;
+	bool isenumerable = false;
 	if(t->kind&traits_info::Metadata)
 	{
 		for(unsigned int i=0;i<t->metadata_count;i++)
@@ -2497,8 +2497,8 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			}
 			// the variable on the Definition object is set to null now (it will be set to the real value after the class init function was executed in newclass opcode)
 			// testing for class==null in actionscript code is used to determine if the class initializer function has been called
-			variable* v = obj->is<Global>() ? obj->setVariableAtomByQName(mname->name_s_id,mname->ns[0], asAtomHandler::nullAtom,DECLARED_TRAIT)
-											: obj->setVariableByQName(mname->name_s_id,mname->ns[0], ret,DECLARED_TRAIT);
+			variable* v = obj->is<Global>() ? obj->setVariableAtomByQName(mname->name_s_id,mname->ns[0], asAtomHandler::nullAtom,DECLARED_TRAIT,false)
+											: obj->setVariableByQName(mname->name_s_id,mname->ns[0], ret,DECLARED_TRAIT,false);
 
 			//LOG(LOG_CALLS,"Class slot "<< t->slot_id << " type Class name " << *mname << " id " << t->classi);
 			if(t->slot_id)

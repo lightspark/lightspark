@@ -273,11 +273,11 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		// TODO not really sure how to set the closure of the callee
 		// for now we just set it to the closure of this or the class, if no closure is present
 		if (this->inClass)
-			argumentsArray->setVariableByQName("callee","",this->bind(asAtomHandler::isValid(this->closure_this) ? this->closure_this : asAtomHandler::fromObject(this->inClass),wrk),DECLARED_TRAIT);
+			argumentsArray->setVariableByQName("callee","",this->bind(asAtomHandler::isValid(this->closure_this) ? this->closure_this : asAtomHandler::fromObject(this->inClass),wrk),DECLARED_TRAIT,false);
 		else
 		{
 			incRef();
-			argumentsArray->setVariableByQName("callee","",this,DECLARED_TRAIT);
+			argumentsArray->setVariableByQName("callee","",this,DECLARED_TRAIT,false);
 		}
 	}
 
@@ -823,7 +823,7 @@ IFunction* Class<IFunction>::getNopFunction()
 	ret->prototype = asAtomHandler::fromObject(pr);
 	pr->addStoredMember();
 	ret->incRef();
-	pr->setVariableByQName("constructor","",ret,DECLARED_TRAIT);
+	pr->setVariableByQName("constructor","",ret,DECLARED_TRAIT,false);
 	this->global->addOwnedObject(ret);
 	return ret;
 }
@@ -863,7 +863,7 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 		ret->setSuper(Class<ASObject>::getRef(s));
 		//The prototype for Function seems to be a function object. Use the special FunctionPrototype
 		ret->prototype = _MNR(new_functionPrototype(sys->worker,ret, ret->super->prototype));
-		ret->prototype->getObj()->setVariableByQName("constructor","",ret,DECLARED_TRAIT);
+		ret->prototype->getObj()->setVariableByQName("constructor","",ret,DECLARED_TRAIT,false);
 		ret->prototype->getObj()->setConstructIndicator();
 		ret->incRef();
 		*retAddr = ret;
@@ -1087,12 +1087,20 @@ ASFUNCTIONBODY_ATOM(lightspark,AVM1_updateAfterEvent)
 
 ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 {
-	_NR<ASObject> o;
+	ASObject* o;
 	tiny_string names;
-	uint32_t set_true;
-	uint32_t set_false;
-	ARG_CHECK(ARG_UNPACK(o)(names)(set_true)(set_false,0));
-	if (o.isNull())
+	uint32_t set_true=0;
+	uint32_t set_false=0;
+	if (argslen <3)
+		return;
+	// for some reason adobe reads the arguments in a very weird order, see test  avm1/as_set_prop_flags
+	set_true= asAtomHandler::toUInt(args[2]);
+	if (argslen >3)
+		set_false= asAtomHandler::toUInt(args[3]);
+	names= asAtomHandler::toString(args[1],wrk);
+	o = asAtomHandler::getObject(args[0]);
+
+	if (!o)
 	{
 		createError<ArgumentError>(wrk,kInvalidArgumentError,Integer::toString(0));
 		return;
@@ -1124,34 +1132,60 @@ ASFUNCTIONBODY_ATOM(lightspark,AVM1_ASSetPropFlags)
 		name.name_s_id=*it;
 		name.ns.emplace_back(wrk->getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		name.isAttribute=false;
+		int setenumerable = -1;
 		if (set_false & 0x01) // dontEnum
-			o->setIsEnumerable(name, true);
+			setenumerable = 1;
 		if (set_true & 0x01) // dontEnum
-			o->setIsEnumerable(name, false);
+			setenumerable = 0;
+		if (setenumerable >= 0)
+			o->setIsEnumerable(name, setenumerable);
+		int setdeletable = -1;
+		if (set_false & 0x02) // dontDelete
+			setdeletable = 1;
+		if (set_true & 0x02) // dontDelete
+			setdeletable = 0;
+		if (setdeletable >= 0)
+			o->setIsDeletable(name, setdeletable);
+		int setreadonly = -1;
+		if (set_false & 0x04) // readOnly
+			setreadonly = 0;
+		if (set_true & 0x04) // readOnly
+			setreadonly = 1;
+		if (setreadonly >= 0)
+			o->setIsReadonly(name, setreadonly);
+
+		int32_t minswfversion=-1;
+		if (set_false & 0x0080) // minSWF6
+			minswfversion = 0;
+		if (set_true & 0x0080) // minSWF6
+			minswfversion = 6;
+		if (set_false & 0x0400) // minSWF7
+			minswfversion = 0;
+		if (set_true & 0x0400) // minSWF7
+			minswfversion = 7;
+		if (set_false & 0x1000) // minSWF8
+			minswfversion = 0;
+		if (set_true & 0x1000) // minSWF8
+			minswfversion = 8;
+		if (set_false & 0x2000) // minSWF9
+			minswfversion = 0;
+		if (set_true & 0x2000) // minSWF9
+			minswfversion = 9;
+		if (set_false & 0x4000) // minSWF10
+			minswfversion = 0;
+		if (set_true & 0x4000) // minSWF10
+			minswfversion = 10;
+		if (minswfversion >= 0)
+			o->setMinSWFVersion(name, minswfversion);
+
+		int setIgnoreSWF6 = -1;
+		if (set_false & 0x0100) // ignoreSWF6
+			setIgnoreSWF6 = 0;
+		if (set_true & 0x0100) // ignoreSWF6
+			setIgnoreSWF6 = 1;
+		if (setIgnoreSWF6 >= 0)
+			o->setIgnoreSWF6(name, setIgnoreSWF6);
 	}
-	if (set_true & ~0x0001)
-		LOG(LOG_NOT_IMPLEMENTED,"AVM1_ASSetPropFlags with set_true flags "<<hex<<set_true);
-	if (set_false & ~0x0001)
-		LOG(LOG_NOT_IMPLEMENTED,"AVM1_ASSetPropFlags with set_false flags "<<hex<<set_false);
-/* definition from gnash:
-	enum Flags {
-		/// Protect from enumeration
-		dontEnum	= 1 << 0, // 1
-		/// Protect from deletion
-		dontDelete	= 1 << 1, // 2
-		/// Protect from assigning a value
-		readOnly	= 1 << 2, // 4
-		/// Only visible by VM initialized for version 6 or higher 
-		onlySWF6Up 	= 1 << 7, // 128
-		/// Ignore in SWF6-initialized VM
-		ignoreSWF6	= 1 << 8, // 256
-		/// Only visible by VM initialized for version 7 or higher 
-		onlySWF7Up 	= 1 << 10, // 1024
-		/// Only visible by VM initialized for version 8 or higher 
-		onlySWF8Up	= 1 << 12, // 4096
-		/// Only visible by VM initialized for version 9 or higher 
-		onlySWF9Up	= 1 << 13 // 8192
-*/
 }
 bool lightspark::isXMLName(ASWorker* wrk, asAtom& obj)
 {

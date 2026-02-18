@@ -47,10 +47,10 @@ void AVM1LocalConnection::sinit(Class_base *c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->prototype->setDeclaredMethodByQName("allowDomain","",c->getSystemState()->getBuiltinFunction(allowDomain),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("allowInsecureDomain","",c->getSystemState()->getBuiltinFunction(allowInsecureDomain),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("send","",c->getSystemState()->getBuiltinFunction(send),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("domain","",c->getSystemState()->getBuiltinFunction(domain),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("send","",c->getSystemState()->getBuiltinFunction(send),NORMAL_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("domain","",c->getSystemState()->getBuiltinFunction(domain),NORMAL_METHOD,false,false);
 }
 
 void AVM1LocalConnection::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)

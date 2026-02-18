@@ -868,7 +868,7 @@ void ABCVm::constructFunction(asAtom &ret, call_context* th, asAtom &f, asAtom *
 		constructor->setVariableByQName("prototype","",Class<ASObject>::getRef(asAtomHandler::as<IFunction>(f)->getSystemState())->getPrototype(th->worker)->getObj(),DECLARED_TRAIT);
 	}
 	
-	asAtomHandler::getObject(ret)->setVariableByQName("constructor","",constructor,DECLARED_TRAIT);
+	asAtomHandler::getObject(ret)->setVariableByQName("constructor","",constructor,DECLARED_TRAIT,false);
 
 	ASATOM_INCREF(ret);
 	ASATOM_INCREF(f);
@@ -2472,7 +2472,6 @@ bool ABCVm::hasNext2(call_context* th, int n, int m)
 	//If the local is not assigned or is a primitive bail out
 	if(obj==nullptr)
 		return false;
-
 	uint32_t curIndex=asAtomHandler::toUInt(th->locals[m]);
 
 	uint32_t newIndex=obj->nextNameIndex(curIndex);

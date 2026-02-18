@@ -40,6 +40,7 @@ IFunction::IFunction(ASWorker* wrk,Class_base* c,CLASS_SUBTYPE st):ASObject(wrk,
 
 void IFunction::sinit(Class_base* c)
 {
+	ASObject::sinit(c);
 	c->isReusable=true;
 	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(IFunction::_toString),DYNAMIC_TRAIT);
 

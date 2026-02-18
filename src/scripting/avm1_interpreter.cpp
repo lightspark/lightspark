@@ -2624,6 +2624,14 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionGetURL clip not found "<<s1<<" "<<s2<<" "<<asAtomHandler::toDebugString(obj));
 					}
 				}
+				else if (s1.lowercase().startsWith("fscommand:"))
+				{
+					asAtom ret = asAtomHandler::invalidAtom;
+					asAtom obj = asAtomHandler::undefinedAtom;
+					tiny_string s3 = s1.substr_bytes(10,UINT32_MAX,s1.isSinglebyte());
+					asAtom arg = asAtomHandler::fromString(clip->getSystemState(),s3);
+					fscommand(ret,wrk,obj,&arg,1);
+				}
 				else
 					clip->getSystemState()->openPageInBrowser(s1,s2);
 				break;

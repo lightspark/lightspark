@@ -332,6 +332,12 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			{
 				itsur->displayobject->updateCachedSurface(itsur->drawable);
 				delete itsur->drawable;
+				// ensure that the DisplayObject is moved to freelist in vm thread
+				if (getVm(m_sys))
+				{
+					itsur->displayobject->incRef();
+					getVm(m_sys)->addDeletableObject(itsur->displayobject.getPtr());
+				}
 				itsur = renderdata->surfacesToRefresh.erase(itsur);
 			}
 			bool wasmodifiedTexture = bmc->getModifiedTexture();

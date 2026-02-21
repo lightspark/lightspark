@@ -2452,6 +2452,7 @@ bool variables_map::cloneInstance(variables_map &map)
 	{
 		if (it->second.slotid)
 			map.initSlot(it->second.slotid,&(it->second));
+		it->second.isStatic=false;
 		it++;
 	}
 	return true;

@@ -468,11 +468,19 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 				NVGcontext* nvgctxt = sys->getEngineData()->nvgcontext;
 				if (nvgctxt)
 				{
-					// hack: render an empty stroke to force filling the stencil buffer with the current mask
-					nvgBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
+					// render an empty frame to force filling the stencil buffer with the current mask
+					float w = sys->getRenderThread()->currentframebufferWidth;
+					float h= sys->getRenderThread()->currentframebufferHeight;
+					nvgBeginFrame(nvgctxt, w, h, 1.0);
+					NVGcolor fillcolor = nvgRGBA(0,0,0,0);
+					nvgFillColor(nvgctxt,fillcolor);
 					nvgBeginPath(nvgctxt);
 					nvgMoveTo(nvgctxt,0,0);
-					nvgStroke(nvgctxt);
+					nvgLineTo(nvgctxt,w,0);
+					nvgLineTo(nvgctxt,w,h);
+					nvgLineTo(nvgctxt,0,h);
+					nvgLineTo(nvgctxt,0,0);
+					nvgFill(nvgctxt);
 					nvgClosePath(nvgctxt);
 					nvgEndFrame(nvgctxt);
 					engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);

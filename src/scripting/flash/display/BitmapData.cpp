@@ -345,6 +345,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 		d = Class<Bitmap>::getInstanceSNoArgs(wrk);
 		d->as<Bitmap>()->setupTemporaryBitmap(drawable->as<BitmapData>());
 		needscopy=drawable->as<BitmapData>()->getBitmapContainer() == th->getBitmapContainer();
+		if (!th->users.empty())
+			th->getBitmapContainer()->addTemporaryBitmap(th->getSystemState()->getRenderThread(),d->as<Bitmap>());
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());

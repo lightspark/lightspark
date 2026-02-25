@@ -612,10 +612,10 @@ void AVM1Color::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
 	c->isReusable = true;
-	c->prototype->setDeclaredMethodByQName("getRGB","",c->getSystemState()->getBuiltinFunction(getRGB),GETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("setRGB","",c->getSystemState()->getBuiltinFunction(setRGB),SETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("getTransform","",c->getSystemState()->getBuiltinFunction(getTransform),GETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("setTransform","",c->getSystemState()->getBuiltinFunction(setTransform),SETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("getRGB","",c->getSystemState()->getBuiltinFunction(getRGB),NORMAL_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("setRGB","",c->getSystemState()->getBuiltinFunction(setRGB),NORMAL_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("getTransform","",c->getSystemState()->getBuiltinFunction(getTransform),NORMAL_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("setTransform","",c->getSystemState()->getBuiltinFunction(setTransform),NORMAL_METHOD,false,false);
 }
 ASFUNCTIONBODY_ATOM(AVM1Color,_constructor)
 {

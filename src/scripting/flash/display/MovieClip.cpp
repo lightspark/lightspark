@@ -1268,14 +1268,20 @@ void MovieClip::declareFrame(bool implicit)
 	//Declared traits must exists before legacy objects are added
 	if (getClass())
 		getClass()->setupDeclaredTraits(this);
+	bool wasAVM1loaded = isAVM1Loaded;
+	if (!needsActionScript3() && !state.frameadvanced && !isAVM1Loaded)
+		AVM1AddScriptEvents();
 
 	bool newFrame = (int)state.FP != state.last_FP;
-	if (newFrame ||!state.frameadvanced)
+	if (newFrame)
 	{
 		framecontainer->declareFrame(this);
-		if (newFrame)
-			state.frameadvanced=true;
 	}
+	if (!needsActionScript3()  && !state.frameadvanced && wasAVM1loaded)
+		AVM1AddScriptEvents();
+	if (newFrame)
+		state.frameadvanced=true;
+
 	// remove all legacy objects that have not been handled in the PlaceObject/RemoveObject tags
 	LegacyChildEraseDeletionMarked();
 	if (needsActionScript3())

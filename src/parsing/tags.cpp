@@ -347,7 +347,7 @@ RemoveObjectTag::RemoveObjectTag(RECORDHEADER h, istream &in):DisplayListTag(h)
 	in >> CharacterID >> Depth;
 	LOG(LOG_TRACE,"RemoveObject Depth: " << Depth<<" char:"<<CharacterID);
 }
-void RemoveObjectTag::execute(DisplayObjectContainer *parent, bool inskipping)
+void RemoveObjectTag::execute(DisplayObjectContainer *parent, bool inskipping, bool inRewind)
 {
 	parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
 	parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
@@ -364,7 +364,7 @@ DictionaryTag::DictionaryTag(RECORDHEADER h, RootMovieClip* root):Tag(h),bindedT
 	assert(root->applicationDomain.getPtr());
 }
 
-void RemoveObject2Tag::execute(DisplayObjectContainer* parent,bool inskipping)
+void RemoveObject2Tag::execute(DisplayObjectContainer* parent,bool inskipping, bool inRewind)
 {
 	parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
 	parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
@@ -1682,6 +1682,7 @@ ASObject* DefineShapeTag::instance(Class_base *c, ASObject* prevInstance, bool t
 		// adobe seems to reuse the previous instance and just replace the graphics if the previous instance was a shape
 		// see ruffle test timeline/nav/shape
 		ret = prevInstance->as<Shape>();
+		ret->incRef();
 		ret->markAsChanged();
 		ret->geometryChanged();
 	}
@@ -1905,7 +1906,7 @@ PlaceObjectTag::PlaceObjectTag(RECORDHEADER h, istream &in):DisplayListTag(h)
 	if (hasColorTransform)
 		in >> colorTransform;
 }
-void PlaceObjectTag::execute(DisplayObjectContainer *parent, bool inskipping)
+void PlaceObjectTag::execute(DisplayObjectContainer *parent, bool inskipping, bool inRewind)
 {
 	if (parent->hasLegacyChildAt(LEGACY_DEPTH_START+Depth))
 	{
@@ -1972,7 +1973,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 	}
 
 	//TODO: move these three attributes in PlaceInfo
-	if(PlaceFlagHasColorTransform || newObject)
+	if(PlaceFlagHasColorTransform)
 		obj->colorTransform.setProperties(this->ColorTransformWithAlpha);
 
 
@@ -1997,7 +1998,7 @@ void PlaceObject2Tag::setProperties(DisplayObject* obj, DisplayObjectContainer* 
 		obj->setFilters(FILTERLIST());
 }
 
-void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
+void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping, bool inRewind)
 {
 	if(!PlaceFlagHasCharacter && !PlaceFlagMove)
 	{
@@ -2012,14 +2013,14 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 		currchar = parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth);
 		nameID = currchar->name;
 		if (parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth)
-			||(PlaceFlagHasCharacter && currchar->getTagID()==CharacterId &&  currchar->Ratio != this->Ratio))
+			|| (PlaceFlagHasCharacter && currchar->getTagID()!=CharacterId)
+			|| (PlaceFlagHasCharacter && currchar->getTagID()==CharacterId &&  ((!inskipping && !inRewind) || currchar->Ratio != this->Ratio)))
 		{
 			parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
 			exists = false;
 		}
 	}
 	bool newInstance = false;
-	bool reused = false;
 	bool needsSetName = false;
 	if(PlaceFlagHasCharacter && (!exists || (currchar->getTagID() != CharacterId)))
 	{
@@ -2059,7 +2060,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 
 			//We can create the object right away
 
-			ASObject* instance = placedTag->instance(nullptr,!PlaceFlagMove || placedTag->bindedTo ? nullptr : currchar);
+			ASObject* instance = placedTag->instance(nullptr, inRewind || !PlaceFlagMove || placedTag->bindedTo ? nullptr : currchar);
 			if (!placedTag->bindedTo)
 				instance->setIsInitialized();
 			if (instance->is<BitmapData>())
@@ -2088,13 +2089,20 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 				instance->decRef();
 				return;
 			}
-			reused = toAdd == currchar;
 			newInstance = true;
-			if(!reused && defaultNameID != UINT32_MAX)
+			if(toAdd != currchar && defaultNameID != UINT32_MAX)
 			{
 				toAdd->name = defaultNameID;
 				toAdd->hasDefaultName=true;
 			}
+			if (toAdd == currchar)
+			{
+				// ensure DisplayObject is properly setup in parent for reuse
+				parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth,UINT32_MAX);
+				parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
+				currchar->markedForLegacyDeletion=false;
+			}
+
 		}
 		assert_and_throw(toAdd);
 
@@ -2109,14 +2117,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 			toAdd->placeFrame = parent->as<MovieClip>()->state.FP;
 
 		setProperties(toAdd, parent,true);
-		if (reused)
-		{
-			// ensure DisplayObject is properly setup in parent for reuse
-			parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth,UINT32_MAX);
-			parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
-			currchar->markedForLegacyDeletion=false;
-		}
-		else if(exists)
+		if(exists)
 		{
 			if(!PlaceFlagHasColorTransform) // reuse colortransformation of existing DispayObject at this depth
 				toAdd->colorTransform= parent->getLegacyChildAt(LEGACY_DEPTH_START+Depth)->colorTransform;
@@ -2147,7 +2148,11 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	else
 	{
 		if (currchar)
+		{
 			setProperties(currchar, parent,PlaceFlagHasCharacter);
+			if(PlaceFlagHasCharacter && !PlaceFlagHasColorTransform)
+				currchar->colorTransform=ColorTransformBase();
+		}
 		if (PlaceFlagHasMatrix)
 		{
 			if(placedTag==nullptr && currchar)
@@ -2164,8 +2169,7 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping)
 	if (exists
 		&& (currchar->getTagID() == CharacterId)
 		&& nameID != BUILTIN_STRINGS::EMPTY
-		&& nameID != UINT32_MAX
-		&& !reused)
+		&& nameID != UINT32_MAX)
 	{
 		// reuse name of existing DispayObject at this depth
 		asAtom v = asAtomHandler::fromObject(currchar);
@@ -2949,7 +2953,7 @@ StartSoundTag::StartSoundTag(RECORDHEADER h, std::istream& in):DisplayListTag(h)
 	in >> SoundId >> SoundInfo;
 }
 
-void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping)
+void StartSoundTag::execute(DisplayObjectContainer *parent, bool inskipping, bool inRewind)
 {
 	if (inskipping) // it seems that StartSoundTags are not executed if we are skipping the frame due to a gotoframe action
 		return;
@@ -3345,9 +3349,11 @@ AVM1ActionTag::AVM1ActionTag(RECORDHEADER h, istream &s, RootMovieClip *root, Ad
 	s.read((char*)actions.data()+startactionpos,Header.getLength());
 }
 
-void AVM1ActionTag::execute(DisplayObjectContainer* parent, bool inskipping)
+void AVM1ActionTag::execute(DisplayObjectContainer* parent, bool inskipping, bool inRewind)
 {
-	if (parent->is<MovieClip>() && !inskipping)
+	if (parent->is<MovieClip>()
+		&& !inskipping
+		)
 	{
 		AVM1scriptToExecute script;
 		setActions(script);
@@ -3633,4 +3639,34 @@ CSMTextSettingsTag::CSMTextSettingsTag(RECORDHEADER h, std::istream& in, RootMov
 	LOG(LOG_NOT_IMPLEMENTED,"CSMTextSettingsTag entries are not used in rendering");
 	UB(8,bs);
 
+}
+
+void TagExecutionList::addEntry(uint32_t depth, DisplayListTag* tag, bool hasCharacter)
+{
+	if (hasCharacter)
+		removeAllEntries(depth,nullptr);
+	executionList.push_back(make_pair(tag,inSkipping));
+	auto l = executionDepthMap.insert(make_pair(depth,std::queue<std::pair<DisplayListTag*,uint32_t>>()));
+	l.first->second.push(make_pair(tag,executionList.size()-1));
+}
+
+void TagExecutionList::removeAllEntries(uint32_t depth, DisplayListTag* tag)
+{
+	auto it = executionDepthMap.find(depth);
+	if (it == executionDepthMap.end())
+	{
+		if (tag)
+			addEntry(depth,tag,false);
+	}
+	else
+	{
+		auto l = it->second;
+		while (!l.empty())
+		{
+			executionList[l.front().second].first=nullptr;
+			l.pop();
+		}
+		if (tag && !inSkipping)
+			addEntry(depth,tag,false);
+	}
 }

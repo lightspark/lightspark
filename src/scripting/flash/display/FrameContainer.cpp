@@ -139,14 +139,7 @@ void Frame::destroyTags()
 
 void Frame::execute(DisplayObjectContainer* displayList, bool inskipping, std::vector<_R<DisplayObject>>& removedFrameScripts)
 {
-	while (!avm1initactiontags.empty())
-	{
-		AVM1InitActionTag* t = *avm1initactiontags.begin();
-		// a new instance of the sprite may be constructed during code execution, so we remove it from the initactionlist before executing the code to ensure it's only executed once
-		avm1initactiontags.pop_front();
-		t->execute(displayList->getRoot());
-		delete t;
-	}
+	AVM1executeInitActions(displayList);
 	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
 	{
@@ -157,9 +150,37 @@ void Frame::execute(DisplayObjectContainer* displayList, bool inskipping, std::v
 			child->incRef();
 			removedFrameScripts.push_back(_MR(child));
 		}
-		(*it)->execute(displayList,inskipping);
+		(*it)->execute(displayList,inskipping,false);
 	}
 	displayList->checkClipDepth();
+}
+
+void Frame::AVM1executeInitActions(DisplayObjectContainer* displayList)
+{
+	while (!avm1initactiontags.empty())
+	{
+		AVM1InitActionTag* t = *avm1initactiontags.begin();
+		// a new instance of the sprite may be constructed during code execution, so we remove it from the initactionlist before executing the code to ensure it's only executed once
+		avm1initactiontags.pop_front();
+		t->execute(displayList->getRoot());
+		delete t;
+	}
+}
+
+void Frame::fillExecutionList(TagExecutionList* list, DisplayObjectContainer* displayList, std::vector<_R<DisplayObject>>& removedFrameScripts)
+{
+	auto it=blueprint.begin();
+	for(;it!=blueprint.end();++it)
+	{
+		RemoveObject2Tag* obj = static_cast<RemoveObject2Tag*>(*it);
+		if (obj != nullptr && displayList->hasLegacyChildAt(obj->getDepth()))
+		{
+			DisplayObject* child = displayList->getLegacyChildAt(obj->getDepth());
+			child->incRef();
+			removedFrameScripts.push_back(_MR(child));
+		}
+		(*it)->fillExecutionList(*list);
+	}
 }
 void Frame::AVM1executeActions(DisplayObjectContainer* clip)
 {
@@ -167,7 +188,7 @@ void Frame::AVM1executeActions(DisplayObjectContainer* clip)
 	for(;it!=blueprint.end();++it)
 	{
 		if ((*it)->getType() == AVM1ACTION_TAG)
-			(*it)->execute(clip,false);
+			(*it)->execute(clip,false,false);
 	}
 }
 
@@ -435,26 +456,44 @@ void FrameContainer::AVM1ExecuteFrameActions(uint32_t frame, MovieClip* clip)
 
 void FrameContainer::declareFrame(MovieClip* clip)
 {
-	bool wasAVM1loaded = clip->isAVM1Loaded;
-	if (!clip->needsActionScript3() && !clip->state.frameadvanced && !clip->isAVM1Loaded)
-		clip->AVM1AddScriptEvents();
 	if(getFramesLoaded())
 	{
 		auto iter=frames.begin();
 		uint32_t frame = clip->state.FP;
 		clip->removedFrameScripts.clear();
+		TagExecutionList executionlist;
+		if (clip->state.last_FP == (int)frame-1)
+		{
+			// common case moving forward one frame => no need to create execution list, just execute all tags of the current frame
+			for(uint32_t i =0;i<frame;i++)
+			{
+				++iter;
+			}
+			iter->execute(clip,false,clip->removedFrameScripts);
+			return;
+		}
+		// fill all tags to be executed up to current frame
 		for(clip->state.FP=0;clip->state.FP<=frame;clip->state.FP++)
 		{
 			if((int)frame < clip->state.last_FP || (int)clip->state.FP > clip->state.last_FP)
 			{
-				iter->execute(clip,clip->state.FP!=frame,clip->removedFrameScripts);
+				executionlist.inSkipping=clip->state.FP!=frame;
+				iter->AVM1executeInitActions(clip);
+				iter->fillExecutionList(&executionlist,clip,clip->removedFrameScripts);
 			}
 			++iter;
 		}
 		clip->state.FP = frame;
+		// execute all tags
+		for (auto it = executionlist.executionList.begin(); it != executionlist.executionList.end(); ++it)
+		{
+			if (it->first) // entry may be nullptr in case a DisplayObject was placed _and_ removed before we reach the current frame
+			{
+				it->first->execute(clip,it->second,(int)frame < clip->state.last_FP);
+				clip->checkClipDepth();
+			}
+		}
 	}
-	if (!clip->needsActionScript3() && !clip->state.frameadvanced && wasAVM1loaded)
-		clip->AVM1AddScriptEvents();
 }
 
 void FrameContainer::pop_frame()

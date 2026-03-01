@@ -22,6 +22,7 @@
 
 #include "compat.h"
 #include <vector>
+#include <queue>
 #include <iostream>
 #include "swftypes.h"
 #include "backends/geometry.h"
@@ -66,12 +67,27 @@ public:
 	TAGTYPE getType() const override { return END_TAG; }
 };
 
+class DisplayListTag;
+struct TagExecutionList
+{
+	std::vector<std::pair<DisplayListTag*,bool>> executionList;
+	std::map<uint32_t,std::queue<std::pair<DisplayListTag*,uint32_t>>> executionDepthMap;
+	bool inSkipping;
+	void addEntry(uint32_t depth, DisplayListTag* tag, bool hasCharacter);
+	void removeAllEntries(uint32_t depth, DisplayListTag* tag);
+};
 class DisplayListTag: public Tag
 {
 public:
 	DisplayListTag(RECORDHEADER h):Tag(h){}
 	TAGTYPE getType() const override { return DISPLAY_LIST_TAG; }
-	virtual void execute(DisplayObjectContainer* parent,bool inskipping) =0;
+	virtual void execute(DisplayObjectContainer* parent,bool inskipping, bool inRewind) =0;
+	virtual void fillExecutionList(TagExecutionList& list)
+	{
+		// only add place/remove tags if we are skipping
+		if (!list.inSkipping)
+			list.executionList.push_back(std::make_pair(this,false));
+	}
 };
 
 class DictionaryTag: public Tag
@@ -128,7 +144,7 @@ private:
 public:
 	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root, AdditionalDataTag* datatag);
 	TAGTYPE getType() const override { return AVM1ACTION_TAG; }
-	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+	void execute(DisplayObjectContainer* parent,bool inskipping, bool inRewind) override;
 	bool empty() { return actions.empty(); }
 	void setActions(AVM1scriptToExecute& script) const;
 };
@@ -303,7 +319,7 @@ private:
 	SOUNDINFO SoundInfo;
 public:
 	StartSoundTag(RECORDHEADER h, std::istream& s);
-	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+	void execute(DisplayObjectContainer* parent,bool inskipping, bool inRewind) override;
 	const SOUNDINFO* getSoundInfo() const { return &SoundInfo; }
 };
 
@@ -322,7 +338,7 @@ public:
 	~SoundStreamHeadTag();
 	_NR<MemoryStreamCache> SoundData;
 	void setSoundChannel(Sprite* spr);
-	void execute(DisplayObjectContainer *parent,bool inskipping) override {}
+	void execute(DisplayObjectContainer *parent,bool inskipping, bool inRewind) override {}
 };
 
 class SoundStreamBlockTag: public DisplayListTag
@@ -330,7 +346,7 @@ class SoundStreamBlockTag: public DisplayListTag
 public:
 	SoundStreamBlockTag(RECORDHEADER h, std::istream& in, RootMovieClip* root,DefineSpriteTag* sprite);
 	static void decodeSoundBlock(StreamCache *cache, LS_AUDIO_CODEC codec, unsigned char* buf, int len);
-	void execute(DisplayObjectContainer *parent,bool inskipping) override {}
+	void execute(DisplayObjectContainer *parent,bool inskipping, bool inRewind) override {}
 };
 
 class ShowFrameTag: public Tag
@@ -350,7 +366,11 @@ private:
 	bool hasColorTransform;
 public:
 	PlaceObjectTag(RECORDHEADER h, std::istream& in);
-	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+	void execute(DisplayObjectContainer* parent,bool inskipping, bool inRewind) override;
+	void fillExecutionList(TagExecutionList& list) override
+	{
+		list.addEntry(this->Depth,this,this->CharacterId);
+	}
 };
 
 class RemoveObjectTag: public DisplayListTag
@@ -359,7 +379,11 @@ private:
 	UI16_SWF Depth;
 public:
 	RemoveObjectTag(RECORDHEADER h, std::istream& in);
-	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+	void execute(DisplayObjectContainer* parent,bool inskipping, bool inRewind) override;
+	void fillExecutionList(TagExecutionList& list) override
+	{
+		list.removeAllEntries(Depth,this);
+	}
 };
 
 class RemoveObject2Tag: public DisplayListTag
@@ -369,7 +393,11 @@ private:
 
 public:
 	RemoveObject2Tag(RECORDHEADER h, std::istream& in);
-	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+	void execute(DisplayObjectContainer* parent,bool inskipping, bool inRewind) override;
+	void fillExecutionList(TagExecutionList& list) override
+	{
+		list.removeAllEntries(Depth,this);
+	}
 	UI16_SWF getDepth() const { return Depth; }
 };
 
@@ -397,7 +425,11 @@ protected:
 public:
 	uint32_t NameID;
 	PlaceObject2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root, AdditionalDataTag* datatag);
-	void execute(DisplayObjectContainer* parent,bool inskipping) override;
+	void execute(DisplayObjectContainer* parent,bool inskipping, bool inRewind) override;
+	void fillExecutionList(TagExecutionList& list) override
+	{
+		list.addEntry(this->Depth,this,this->CharacterId);
+	}
 };
 
 class PlaceObject3Tag: public PlaceObject2Tag
@@ -828,7 +860,7 @@ private:
 public:
 	VideoFrameTag(RECORDHEADER h, std::istream& in, RootMovieClip* root);
 	~VideoFrameTag();
-	void execute(DisplayObjectContainer* parent, bool inskipping) override {}
+	void execute(DisplayObjectContainer* parent, bool inskipping, bool inRewind) override {}
 	uint8_t* getData() { return framedata; }
 	uint32_t getNumBytes();
 	uint32_t getFrameNumber() { return FrameNum; }

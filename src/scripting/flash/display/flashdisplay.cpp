@@ -963,7 +963,7 @@ void DisplayObjectContainer::purgeLegacyChildren(bool implicit)
 		DisplayObject* obj = i->second;
 		if (i->first < 0 && is<MovieClip>() && obj->placeFrame > as<MovieClip>()->state.FP)
 		{
-			if (implicit || !needsActionScript3())
+			if (implicit)
 				legacyChildrenMarkedForDeletion.insert(i->first);
 			obj->markedForLegacyDeletion=true;
 			if(obj->name != BUILTIN_STRINGS::EMPTY && obj->name != UINT32_MAX)
@@ -1353,7 +1353,6 @@ ASFUNCTIONBODY_ATOM(InteractiveObject,AVM1_setTabIndex)
 
 void InteractiveObject::onContextMenu(asAtom oldValue)
 {
-	ASATOM_REMOVESTOREDMEMBER(oldValue);
 	if (asAtomHandler::is<ContextMenu>(contextMenu))
 		asAtomHandler::as<ContextMenu>(contextMenu)->owner = this;
 }

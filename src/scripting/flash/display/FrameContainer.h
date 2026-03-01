@@ -27,6 +27,7 @@ namespace lightspark
 {
 class DisplayListTag;
 class AVM1InitActionTag;
+struct TagExecutionList;
 
 #define FRAME_NOT_FOUND 0xffffffff //Used by getFrameIdBy*
 
@@ -77,6 +78,8 @@ public:
 	std::list<DisplayListTag*> blueprint;
 	std::list<AVM1InitActionTag*> avm1initactiontags;
 	void execute(DisplayObjectContainer* displayList, bool inskipping, std::vector<_R<DisplayObject>>& removedFrameScripts);
+	void AVM1executeInitActions(DisplayObjectContainer* displayList);
+	void fillExecutionList(TagExecutionList* list, DisplayObjectContainer* displayList, std::vector<Ref<DisplayObject> >& removedFrameScripts);
 	void AVM1executeActions(DisplayObjectContainer* clip);
 	/**
 	 * destroyTags must be called only by the tag destructor, not by

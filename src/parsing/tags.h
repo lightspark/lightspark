@@ -660,6 +660,7 @@ public:
 class DefineTextTag: public TextTag
 {
 	friend class GLYPHENTRY;
+	friend class StaticText;
 private:
 	UI16_SWF CharacterId;
 	RECT TextBounds;

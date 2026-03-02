@@ -1557,7 +1557,7 @@ ASObject* DefineTextTag::instance(Class_base* c, ASObject* prevInstance, bool te
 	if(c==nullptr)
 		c=Class<StaticText>::getClass(loadedFrom->getSystemState());
 
-	StaticText* ret=new (c->memoryAccount) StaticText(loadedFrom->getInstanceWorker(),c, &tokens,TextBounds,this->getId(),UseFlashType);
+	StaticText* ret=new (c->memoryAccount) StaticText(loadedFrom->getInstanceWorker(),c, &tokens,this);
 	return ret;
 }
 
@@ -1569,7 +1569,7 @@ void DefineTextTag::computeCached()
 	FontTag* curFont = nullptr;
 	Vector2f curPos;
 
-	const int twipsScaling = 1024*TWIPS_FACTOR;
+	const int twipsScaling = 1024*TWIPS_FACTOR*TWIPS_FACTOR;
 
 	// Scale the translation component of TextMatrix.
 	MATRIX scaledTextMatrix = TextMatrix;
@@ -1593,13 +1593,9 @@ void DefineTextTag::computeCached()
 		if(TextRecords[i].StyleFlagsHasColor)
 			color = TextRecords[i].TextColor;
 		if(TextRecords[i].StyleFlagsHasXOffset)
-		{
 			curPos.x = TextRecords[i].XOffset;
-		}
 		if(TextRecords[i].StyleFlagsHasYOffset)
-		{
 			curPos.y = TextRecords[i].YOffset;
-		}
 		/*
 		 * In DefineFont3Tags, shape's coordinates are 1024*20 times pixels size,
 		 * in all former DefineFont*Tags, its just 1024 times. We scale everything here
@@ -1617,7 +1613,7 @@ void DefineTextTag::computeCached()
 			emptytoken = tk->empty();
 			if (!tk->empty())
 			{
-				Vector2f glyphPos = curPos*twipsScaling*20;
+				Vector2f glyphPos = curPos*twipsScaling;
 
 				MATRIX glyphMatrix(1, 1, 0, 0,
 								   glyphPos.x,

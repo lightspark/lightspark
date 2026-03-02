@@ -316,23 +316,21 @@ class StaticText: public DisplayObject, public TokenContainer
 {
 private:
 	ASFUNCTION_ATOM(_getText);
-	RECT bounds;
-	uint32_t tagID;
-	bool usesAdvancedTextEngine;
+	DefineTextTag* tag;
 protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 	_NR<DisplayObject> hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly) override;
 public:
-	StaticText(ASWorker* wrk,Class_base* c):DisplayObject(wrk,c),TokenContainer(this),tagID(UINT32_MAX)
+	StaticText(ASWorker* wrk,Class_base* c):DisplayObject(wrk,c),TokenContainer(this)
 	{
 		subtype=SUBTYPE_STATICTEXT;
 	}
-	StaticText(ASWorker* wrk,Class_base* c, tokensVector* tokens,const RECT& b,uint32_t _tagID, bool _usesAdvancedTextEngine);
+	StaticText(ASWorker* wrk,Class_base* c, tokensVector* tokens,DefineTextTag* _tag);
 	static void sinit(Class_base* c);
 	void afterLegacyInsert() override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override { TokenContainer::requestInvalidation(q,forceTextureRefresh); }
 	IDrawable* invalidate(bool smoothing) override;
-	uint32_t getTagID() const override { return tagID; }
+	uint32_t getTagID() const override;
 	float getScaleFactor() const override { return this->scaling; }
 };
 

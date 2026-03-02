@@ -2757,21 +2757,28 @@ IDrawable* StaticText::invalidate(bool smoothing)
 {
 	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);
 }
+
+uint32_t StaticText::getTagID() const
+{
+	return tag ? tag->getId() : UINT32_MAX;
+}
 bool StaticText::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
 	if (visibleOnly && !this->isVisible())
 		return false;
-	xmin=bounds.Xmin;
-	xmax=bounds.Xmax;
-	ymin=bounds.Ymin;
-	ymax=bounds.Ymax;
+	if (!tag)
+		return false;
+	xmin=tag->TextBounds.Xmin;
+	xmax=tag->TextBounds.Xmax;
+	ymin=tag->TextBounds.Ymin;
+	ymax=tag->TextBounds.Ymax;
 	return true;
 }
 
 _NR<DisplayObject> StaticText::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type, bool interactiveObjectsOnly)
 {
 	number_t xmin,xmax,ymin,ymax;
-	if (usesAdvancedTextEngine)
+	if (tag && tag->UseFlashType)
 	{
 		// when using advancet text rendering, hittesting is done on the transformed bounds rect
 		getBounds(xmin,xmax,ymin,ymax,getConcatenatedMatrix(false,false));
@@ -2789,7 +2796,8 @@ _NR<DisplayObject> StaticText::hitTestImpl(const Vector2f& globalPoint, const Ve
 		}
 	}
 	// TODO: Add an overload for RECT.
-	boundsRect(xmin,xmax,ymin,ymax,false);
+	if (!boundsRect(xmin,xmax,ymin,ymax,false))
+		return NullRef;
 	//TODO: Add a point intersect function to RECT, and use that instead.
 	if( xmin > localPoint.x
 		|| localPoint.x > xmax
@@ -2806,11 +2814,9 @@ _NR<DisplayObject> StaticText::hitTestImpl(const Vector2f& globalPoint, const Ve
 	return NullRef;
 }
 
-StaticText::StaticText(ASWorker* wrk, Class_base* c, tokensVector* tokens, const RECT& b, uint32_t _tagID, bool _usesAdvancedTextEngine):DisplayObject(wrk,c)
+StaticText::StaticText(ASWorker* wrk, Class_base* c, tokensVector* tokens, DefineTextTag* _tag):DisplayObject(wrk,c)
 	,TokenContainer(this, tokens, 1.0f/1024.0f/20.0f/20.0f)
-	,bounds(b)
-	,tagID(_tagID)
-	,usesAdvancedTextEngine(_usesAdvancedTextEngine)
+	,tag(_tag)
 {
 	subtype=SUBTYPE_STATICTEXT;
 }

@@ -219,18 +219,13 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 	}
 
 
-	uint32_t *pixelArray=new uint32_t[width*height];
-	uint32_t c=LS_UINT32_TO_BE(fillColor); // fromRGB expects big endian data
-	if(!transparent)
-	{
-		uint8_t *alpha=reinterpret_cast<uint8_t *>(&c);
-		*alpha=0xFF;
-	}
-	else
+	uint32_t c=fillColor;
+	uint32_t alpha = 0xff;
+	if (transparent)
 	{
 		//premultiply alpha
 		uint32_t res = 0;
-		uint32_t alpha = ((fillColor >> 24)&0xff);
+		alpha = ((fillColor >> 24)&0xff);
 		if (alpha != 0xff)
 		{
 			uint32_t alpha = ((fillColor >> 24)&0xff);
@@ -238,13 +233,13 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 			res |= ((((fillColor >> 8 ) &0xff) * alpha +0x7f)/0xff) << 8;
 			res |= ((((fillColor >> 16) &0xff) * alpha +0x7f)/0xff) << 16;
 			res |= alpha<<24;
-			c= LS_UINT32_TO_BE(res);
+			c= res;
 		}
 	}
-	for(uint32_t i=0; i<(uint32_t)(width*height); i++)
-		pixelArray[i]=c;
-	th->pixels->fromRGB(reinterpret_cast<uint8_t *>(pixelArray), width, height, BitmapContainer::ARGB32);
 	th->transparent=transparent;
+	th->pixels->fromRawData(nullptr,width,height);
+	RGBA color(c,alpha);
+	th->drawDisplayObject(nullptr, MATRIX(),true, BLENDMODE_NORMAL ,nullptr,nullptr,false,&color);
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,dispose)
@@ -428,6 +423,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixel)
 	uint32_t color;
 	ARG_CHECK(ARG_UNPACK(x)(y)(color));
 
+	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	th->pixels->setPixel(x, y, color, false,false);
 	th->notifyUsers();
 }
@@ -442,6 +438,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixel32)
 	uint32_t color;
 	ARG_CHECK(ARG_UNPACK(x)(y)(color));
 
+	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	th->pixels->setPixel(x, y, color, th->transparent,false);
 	th->notifyUsers();
 }
@@ -587,6 +584,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixelsToByteArray)
 		createError<TypeError>(wrk,kNullPointerError, "data");
 		return;
 	}
+	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	RECT cliprect;
 	th->pixels->clipRect(rect->getRect(),cliprect);
 	for (int y=cliprect.Ymin; y<cliprect.Ymax; y++)
@@ -688,6 +686,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,hitTest)
 			}
 		}
 	}
+	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 
 	if(secondObject->is<Point>())
 	{
@@ -866,7 +865,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,clone)
 	BitmapData* clone = Class<BitmapData>::getInstanceS(wrk,th->getWidth(),th->getHeight());
 	clone->transparent = th->transparent;
 	if (th->getBitmapContainer())
+	{
+		th->getBitmapContainer()->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 		th->getBitmapContainer()->clone(clone->getBitmapContainer().getPtr());
+	}
 	ret = asAtomHandler::fromObject(clone);
 }
 
@@ -913,6 +915,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyChannel)
 
 	if (regionWidth < 0 || regionHeight < 0)
 		return;
+	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
+	source->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 
 	uint32_t constantChannelsMask = ~(0xFF << destShift);
 	for (int32_t y=0; y<regionHeight; y++)
@@ -993,6 +997,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,histogram)
 		th->pixels->clipRect(inputRect->getRect(), rect);
 	}
 
+	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	unsigned int counts[4][256] = {{0}};
 	for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
 	{
@@ -1037,11 +1042,11 @@ ASFUNCTIONBODY_ATOM(BitmapData,getColorBoundsRect)
 	uint32_t color;
 	bool findColor;
 	ARG_CHECK(ARG_UNPACK(mask) (color) (findColor, true));
-
 	int xmin = th->getWidth();
 	int xmax = 0;
 	int ymin = th->getHeight();
 	int ymax = 0;
+	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	for (int32_t x=0; x<th->getWidth(); x++)
 	{
 		for (int32_t y=0; y<th->getHeight(); y++)
@@ -1148,6 +1153,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixels)
 
 	RECT rect;
 	th->pixels->clipRect(inputRect->getRect(), rect);
+	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
 
 	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
 	{
@@ -1272,6 +1278,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 		}
 	}
 	th->pixels->clipRect(inrect, rect);
+	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 
 	unsigned int i = 0;
 	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
@@ -1449,6 +1456,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,noise)
 	uint32_t randomval = randomSeed <= 0 ? -randomSeed+1 : randomSeed;
 	if (high < low)
 		high=low;
+	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
+
 	uint32_t range = (uint8_t)high-(uint8_t)low;
 	for (int32_t y=0; y<th->getHeight(); y++)
 	{
@@ -1505,6 +1514,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,perlinNoise)
 		LOG(LOG_NOT_IMPLEMENTED,"perlinNoise: parameter fractalNoise is ignored");
 	if (!offsets.isNull())
 		LOG(LOG_NOT_IMPLEMENTED,"perlinNoise: parameter offsets is ignored");
+	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
 
 	const siv::PerlinNoise perlin(randomSeed);
 	for (int32_t x=0; x<th->getWidth(); x++)
@@ -1671,6 +1681,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,pixelDissolve)
 	uint32_t h =(rc.Ymax-rc.Ymin);
 	uint32_t destx=0;
 	uint32_t desty=0;
+	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
+	sourceBitmapData->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
 	if (destPoint->getX()>=0)
 		destx = (uint32_t)destPoint->getX();
 	else
@@ -1703,6 +1715,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,pixelDissolve)
 		w = th->pixels->getWidth()-destx-rc.Xmin;
 	if (h > th->pixels->getHeight()-desty-rc.Ymin)
 		h = th->pixels->getHeight()-desty-rc.Ymin;
+	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	for (int32_t i = 0; i < numPixels; i++)
 	{
 		int x = (((number_t)LehmerRandom(seed))/(number_t)UINT32_MAX)*w+destx;

@@ -249,11 +249,11 @@ void BitmapContainer::fromRawData(uint8_t* data, uint32_t width, uint32_t height
 	this->stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
 	this->width=width;
 	this->height=height;
+	uint32_t dataSize = stride * height;
+	this->data.resize(dataSize);
+	setNeedsClear(false);
 	if (data)
 	{
-		uint32_t dataSize = stride * height;
-		this->data.resize(dataSize);
-		setNeedsClear(false);
 		setModifiedData(true);
 		memcpy(this->data.data(),data,dataSize);
 	}

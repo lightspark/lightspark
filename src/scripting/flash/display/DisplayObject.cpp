@@ -2203,7 +2203,7 @@ bool DisplayObject::hitTestMask(const Vector2f& globalPoint, HIT_TYPE type)
 
 _NR<DisplayObject> DisplayObject::hitTest(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
-	if((!((visible && this->clippedAlpha()>0.0) || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && (!isMask() || !getClipDepth()))
+	if((!(visible || type == GENERIC_HIT_INVISIBLE) || !isConstructed()) && (!isMask() || !getClipDepth()))
 		return NullRef;
 
 	//First check if there is any mask on this object, if so the point must be inside the mask to go on

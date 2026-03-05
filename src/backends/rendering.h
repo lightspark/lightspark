@@ -213,7 +213,9 @@ public:
 		bool isFirstFilter,
 		bool flippedvertical,
 		bool clearstate = true,
-		bool renderstage3d = false
+		bool renderstage3d = false,
+		RECT* scalingGrid = nullptr,
+		RectF* originalbounds = nullptr
 	);
 	cairo_t *cairoTextureContextSettings;
 	cairo_surface_t *cairoTextureSurfaceSettings;

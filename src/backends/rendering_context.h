@@ -162,6 +162,8 @@ protected:
 	int directUniform;
 	int directColorUniform;
 	int blendModeUniform;
+	int slice9sourceborderUniform;
+	int slice9targetborderUniform;
 	int filterdataUniform;
 	int gradientColorsUniform;
 	int gradientStopsUniform;

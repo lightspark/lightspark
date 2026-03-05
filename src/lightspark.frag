@@ -19,6 +19,8 @@ varying vec4 ls_FrontColor;
 uniform vec4 colorTransformMultiply;
 uniform vec4 colorTransformAdd;
 uniform vec4 directColor;
+uniform vec4 slice9sourceborder; // xyzw = left/top/right/bottom
+uniform vec4 slice9targetborder; // xyzw = left/top/right/bottom
 uniform float filterdata[256]; // FILTERDATA_MAXSIZE
 uniform vec4 gradientColors[MAX_FILTER_GRADIENTS];
 uniform float gradientStops[MAX_FILTER_GRADIENTS];
@@ -292,9 +294,26 @@ vec4 filter_convolution()
 				preserveAlpha == 1.0 ? src.a : clamp(alphaResult / divisor + bias,0.0,1.0));
 }
 
+// scaling grid, based on https://github.com/zoltan243/Simple9SliceScale
+float slice9map(float value, float originalMin, float originalMax, float newMin, float newMax) {
+	return (value - originalMin) / (originalMax - originalMin) * (newMax - newMin) + newMin;
+}
+float slice9processAxis(float coord, float textureBorderStart, float windowBorderStart, float textureBorderEnd, float windowBorderEnd)
+{
+	if (coord < windowBorderStart)
+		return slice9map(coord, 0.0, windowBorderStart, 0.0, textureBorderStart) ;
+	if (coord < 1.0 - windowBorderEnd)
+		return slice9map(coord,  windowBorderStart, 1.0 - windowBorderEnd, textureBorderStart, 1.0 - textureBorderEnd);
+	return slice9map(coord, 1.0 - windowBorderEnd, 1.0, 1.0 - textureBorderEnd, 1.0);
+}
+
 void main()
 {
-	vec4 vbase = texture2D(g_tex_standard,ls_TexCoords[0].xy);
+	vec2 newUV = vec2(
+		slice9processAxis(ls_TexCoords[0].x, slice9sourceborder.x, slice9targetborder.x,slice9sourceborder.z,slice9targetborder.z),
+		slice9processAxis(ls_TexCoords[0].y, slice9sourceborder.y, slice9targetborder.y,slice9sourceborder.w,slice9targetborder.w)
+	);
+	vec4 vbase = texture2D(g_tex_standard,newUV);
 #ifdef GL_ES
 //	vbase.rgb = vbase.bgr;
 #endif

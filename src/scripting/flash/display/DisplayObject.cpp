@@ -684,7 +684,8 @@ void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 	if (cachedSurface->cachedFilterTextureID != UINT32_MAX
 		|| (!cachedSurface->isInitialized && (this->hasFilters()
 											 || this->inMask()
-											 || isShaderBlendMode(getBlendMode()))
+											 || isShaderBlendMode(getBlendMode())
+											 || !this->scalingGrid.isNull())
 		))
 	{
 		if (cachedSurface->getState())
@@ -698,7 +699,8 @@ void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 		if (p->cachedSurface->cachedFilterTextureID != UINT32_MAX
 			|| (!p->cachedSurface->isInitialized && (p->hasFilters()
 													|| p->inMask()
-													|| isShaderBlendMode(p->getBlendMode()))
+													|| isShaderBlendMode(p->getBlendMode())
+													|| !p->scalingGrid.isNull())
 			))
 		{
 			p->requestInvalidationFilterParent(q);
@@ -973,6 +975,7 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 	state->depth = this->getDepth();
 	state->isMask = this->ismaskCount || this->getClipDepth();
 	state->visible = this->visible;
+
 	state->alpha = this->clippedAlpha();
 	state->allowAsMask = this->allowAsMask();
 	state->maxfilterborder = this->getMaxFilterBorder();
@@ -1568,7 +1571,10 @@ void DisplayObject::setScaleZ(number_t val)
 void DisplayObject::setVisible(bool v)
 {
 	visible=v;
-	requestInvalidation(getSystemState());
+	if(onStage)
+		requestInvalidation(getSystemState());
+	else
+		requestInvalidationFilterParent();
 }
 
 void DisplayObject::setLoaderInfo(LoaderInfo* li)
@@ -1942,10 +1948,10 @@ void DisplayObject::setScalingGrid()
 	if (r)
 	{
 		this->scalingGrid = _MR(Class<Rectangle>::getInstanceS(getInstanceWorker()));
-		this->scalingGrid->x=r->Xmin;
-		this->scalingGrid->y=r->Ymin;
-		this->scalingGrid->width=(r->Xmax-r->Xmin);
-		this->scalingGrid->height=(r->Ymax-r->Ymin);
+		this->scalingGrid->x=-r->Xmin/TWIPS_FACTOR;
+		this->scalingGrid->y=-r->Ymin/TWIPS_FACTOR;
+		this->scalingGrid->width=(r->Xmax+r->Xmin)/TWIPS_FACTOR;
+		this->scalingGrid->height=(r->Ymax+r->Ymin)/TWIPS_FACTOR;
 	}
 }
 

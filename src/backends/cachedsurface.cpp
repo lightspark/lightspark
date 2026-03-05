@@ -408,8 +408,11 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 	ColorTransformBase ct = container ? container->ct : state->colortransform;
 	Transform2D currenttransform(_matrix,ct,bl);
 	ctxt.transformStack().push(currenttransform);
+	bool hasScalingGrid = state->scalingGrid.Xmin != state->scalingGrid.Xmax && state->scalingGrid.Ymin != state->scalingGrid.Ymax;
+
 	EngineData* engineData = sys->getEngineData();
 	bool needscachedtexture = (!container && state->cacheAsBitmap)
+							  || hasScalingGrid
 							  || ctxt.transformStack().transform().blendmode == BLENDMODE_LAYER
 							  || !state->filters.empty()
 							  || DisplayObject::isShaderBlendMode(ctxt.transformStack().transform().blendmode)
@@ -435,7 +438,21 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 							  || baseTransform.matrix.yx!=state->cachedMatrix.yx
 							  || baseTransform.matrix.xy!=state->cachedMatrix.xy
 							  || baseTransform.matrix.yy!=state->cachedMatrix.yy;
-		if (needsFilterRefresh || hasDirtyMatrix)
+		if (hasScalingGrid)
+		{
+			if (needsFilterRefresh)
+			{
+				bool maskactive = ctxt.isMaskActive();
+				if (maskactive)
+					ctxt.deactivateMask();
+				MATRIX m;
+				m.translate(-state->bounds.min.x,-state->bounds.min.y);
+				this->renderFilters(sys,ctxt,state->bounds.size().x/TWIPS_FACTOR,state->bounds.size().y/TWIPS_FACTOR,m);
+				if (maskactive)
+					ctxt.activateMask();
+			}
+		}
+		else if (needsFilterRefresh || hasDirtyMatrix)
 		{
 			state->cachedMatrix = hasDirtyMatrix ? baseTransform.matrix : state->cachedMatrix;
 			MATRIX m = baseTransform.matrix;
@@ -503,7 +520,10 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 				nullptr,
 				false,
 				true,
-				false
+				false,
+				false,
+				hasScalingGrid ? &state->scalingGrid : nullptr,
+				hasScalingGrid ? &state->bounds : nullptr
 			);
 			if (maskactive)
 			{

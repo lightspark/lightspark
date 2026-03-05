@@ -249,6 +249,8 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	engineData->exec_glUniform1f(directUniform, directMode);
 	engineData->exec_glUniform1f(renderStage3DUniform, 0.0);
 	engineData->exec_glUniform4f(directColorUniform,float(directColor.Red)/255.0,float(directColor.Green)/255.0,float(directColor.Blue)/255.0,1.0);
+	engineData->exec_glUniform4f(slice9sourceborderUniform,0.0f,0.0f,0.0f,0.0f);
+	engineData->exec_glUniform4f(slice9targetborderUniform,0.0f,0.0f,0.0f,0.0f);
 
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(largeTextures[chunk.texId].id);
 	assert(chunk.getNumberOfChunks()==((chunk.width+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL)*((chunk.height+CHUNKSIZE_REAL-1)/CHUNKSIZE_REAL));

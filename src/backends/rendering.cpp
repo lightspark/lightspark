@@ -793,7 +793,9 @@ void RenderThread::renderTextureToFrameBuffer
 	bool isFirstFilter,
 	bool flippedvertical,
 	bool clearstate,
-	bool renderstage3d
+	bool renderstage3d,
+	RECT* scalingGrid,
+	RectF* originalbounds
 )
 {
 	if (filterdata)
@@ -838,7 +840,33 @@ void RenderThread::renderTextureToFrameBuffer
 	engineData->exec_glUniform1f(renderStage3DUniform,renderstage3d ? 1.0 : 0.0);
 	engineData->exec_glUniform1f(directUniform, 0.0);
 	engineData->exec_glUniform1f(isFirstFilterUniform, (float)isFirstFilter);
-
+	if (scalingGrid)
+	{
+		assert(originalbounds);
+		float xmin = float(scalingGrid->Xmin)*scaleX;
+		float ymin = float(scalingGrid->Ymin)*scaleY;
+		float xmax = float(scalingGrid->Xmax)*scaleX;
+		float ymax = float(scalingGrid->Ymax)*scaleY;
+		float origwidth = originalbounds->size().x*scaleX/TWIPS_FACTOR;
+		float origheight = originalbounds->size().y*scaleX/TWIPS_FACTOR;
+		engineData->exec_glUniform4f(slice9sourceborderUniform
+									 ,xmin/origwidth
+									 ,ymin/origheight
+									 ,xmax/origwidth
+									 ,ymax/origheight
+									 );
+		engineData->exec_glUniform4f(slice9targetborderUniform
+									 ,xmin/float(w)
+									 ,ymin/float(h)
+									 ,xmax/float(w)
+									 ,ymax/float(h)
+									 );
+	}
+	else
+	{
+		engineData->exec_glUniform4f(slice9sourceborderUniform,0.0f,0.0f,0.0f,0.0f);
+		engineData->exec_glUniform4f(slice9targetborderUniform,0.0f,0.0f,0.0f,0.0f);
+	}
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID);
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
@@ -848,7 +876,6 @@ void RenderThread::renderTextureToFrameBuffer
 	float texture_coords[] = {0,0, 1,0, 0,1, 1,1};
 	engineData->exec_glVertexAttribPointer(VERTEX_ATTRIB, 0, flippedvertical ? vertex_coords_flipped : vertex_coords,FLOAT_2);
 	engineData->exec_glVertexAttribPointer(TEXCOORD_ATTRIB, 0, texture_coords,FLOAT_2);
-
 	engineData->exec_glEnableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glEnableVertexAttribArray(TEXCOORD_ATTRIB);
 	engineData->exec_glDrawArrays_GL_TRIANGLE_STRIP(0, 4);
@@ -1065,6 +1092,8 @@ void RenderThread::commonGLInit()
 	colortransAddUniform=engineData->exec_glGetUniformLocation(gpu_program,"colorTransformAdd");
 	directColorUniform=engineData->exec_glGetUniformLocation(gpu_program,"directColor");
 	blendModeUniform=engineData->exec_glGetUniformLocation(gpu_program,"blendMode");
+	slice9sourceborderUniform=engineData->exec_glGetUniformLocation(gpu_program,"slice9sourceborder");
+	slice9targetborderUniform=engineData->exec_glGetUniformLocation(gpu_program,"slice9targetborder");
 	filterdataUniform = engineData->exec_glGetUniformLocation(gpu_program,"filterdata");
 	gradientColorsUniform = engineData->exec_glGetUniformLocation(gpu_program,"gradientColors");
 	gradientStopsUniform = engineData->exec_glGetUniformLocation(gpu_program,"gradientStops");

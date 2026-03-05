@@ -30,6 +30,7 @@
 #include "parsing/tags.h"
 #include "backends/rendering.h"
 #include "scripting/flash/geom/flashgeom.h"
+#include "scripting/flash/geom/Rectangle.h"
 #include "backends/cachedsurface.h"
 
 using namespace lightspark;
@@ -285,9 +286,7 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics, 
 		regpointx=bxmin;
 		regpointy=bymin;
 	}
-	if (owner->getSystemState()->getEngineData()->nvgcontext
-		&& !r
-		)
+	if (owner->getSystemState()->getEngineData()->nvgcontext)
 	{
 		renderWithNanoVG=true;
 		if (fromgraphics)
@@ -312,6 +311,14 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics, 
 		ret->getState()->tokens.isGlyph = tokens.isGlyph;
 		ret->getState()->tokens.color = tokens.color;
 		ret->getState()->tokens.startMatrix = tokens.startMatrix;
+		if (r)
+		{
+			ret->getState()->scalingGrid = r->getRect();
+			ret->getState()->scalingGrid.Xmin -= bxmin/TWIPS_FACTOR;
+			ret->getState()->scalingGrid.Ymin -= bymin/TWIPS_FACTOR;
+			ret->getState()->scalingGrid.Xmax -= bxmin/TWIPS_FACTOR;
+			ret->getState()->scalingGrid.Ymax -= bymin/TWIPS_FACTOR;
+		}
 		ret->getState()->renderWithNanoVG = renderWithNanoVG;
 		owner->resetNeedsTextureRecalculation();
 		return ret;

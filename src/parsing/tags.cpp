@@ -2344,6 +2344,8 @@ PlaceObject3Tag::PlaceObject3Tag(RECORDHEADER h, std::istream& in, RootMovieClip
 		in >> tmp;
 		BlendMode=(AS_BLENDMODE)(uint8_t)tmp;
 	}
+	else
+		BlendMode=AS_BLENDMODE::BLENDMODE_NORMAL;
 	if(PlaceFlagHasCacheAsBitmap)
 	{
 		uint32_t end = in.tellg();

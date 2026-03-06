@@ -217,6 +217,7 @@ public:
 		RECT* scalingGrid = nullptr,
 		RectF* originalbounds = nullptr
 	);
+#ifdef ENABLE_CAIRO
 	cairo_t *cairoTextureContext;
 	cairo_surface_t *cairoTextureSurface;
 	uint8_t *cairoTextureData;
@@ -224,6 +225,7 @@ public:
 	cairo_t* getCairoContext(int w, int h);
 	void mapCairoTexture(int w, int h);
 	void renderText(cairo_t *cr, const char *text, int x, int y);
+#endif
 	void waitRendering();
 	void addDeletedTexture(uint32_t textureID)
 	{

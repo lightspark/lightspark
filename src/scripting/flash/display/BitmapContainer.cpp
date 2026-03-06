@@ -40,7 +40,10 @@ BitmapContainer::BitmapContainer(MemoryAccount* m, bool _isfromtag):stride(0),wi
 	isfromtag(_isfromtag),
 	currentrenderdata(0),
 	renderevent(0),
-	nanoVGImageHandle(-1),cachedCairoPattern(nullptr)
+	nanoVGImageHandle(-1)
+#ifdef ENABLE_CAIRO
+	,cachedCairoPattern(nullptr)
+#endif
 {
 }
 
@@ -56,8 +59,10 @@ BitmapContainer::~BitmapContainer()
 	}
 	if (nanoVGImageHandle != -1)
 		nanoVGDeleteImage(nanoVGImageHandle,getSys()->getEngineData());
+#ifdef ENABLE_CAIRO
 	if (cachedCairoPattern)
 		cairo_pattern_destroy(cachedCairoPattern);
+#endif
 }
 
 uint8_t* BitmapContainer::applyColorTransform(ColorTransform *ctransform)
@@ -134,6 +139,81 @@ uint8_t* BitmapContainer::getRectangleData(const RECT& sourceRect)
 	return res;
 }
 
+void convertBitmapWithAlpha(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
+								   uint32_t height, size_t* dataSize, size_t* stride, bool frompng)
+{
+	*stride = width*4;
+	*dataSize = *stride * height;
+	data.resize(*dataSize);
+	uint8_t* outData=&data[0];
+
+	for(uint32_t i = 0; i < height; i++)
+	{
+		for(uint32_t j = 0; j < width; j++)
+		{
+			uint32_t* outDataPos = (uint32_t*)(outData+i*(*stride)) + j;
+			// PNGs are always decoded in RGBA
+			*outDataPos = frompng ? inData[i*(*stride)+j*4+3]<<24 | inData[i*(*stride)+j*4  ]<<16 | inData[i*(*stride)+j*4+1]<<8 | inData[i*(*stride)+j*4+2]
+								  : inData[i*(*stride)+j*4  ]<<24 | inData[i*(*stride)+j*4+1]<<16 | inData[i*(*stride)+j*4+2]<<8 | inData[i*(*stride)+j*4+3];
+		}
+	}
+}
+
+inline void copyRGB15To24(uint32_t& dest, uint8_t* src)
+{
+	// highest bit is ignored
+	uint8_t r = (src[0] & 0x7C) >> 2;
+	uint8_t g = ((src[0] & 0x03) << 3) + (src[1] & 0xE0 >> 5);
+	uint8_t b = src[1] & 0x1F;
+
+	r = r*255/31;
+	g = g*255/31;
+	b = b*255/31;
+
+	dest |= uint32_t(r)<<16;
+	dest |= uint32_t(g)<<8;
+	dest |= uint32_t(b);
+}
+
+inline void copyRGB24To24(uint32_t& dest, uint8_t* src)
+{
+	dest |= uint32_t(src[0])<<16;
+	dest |= uint32_t(src[1])<<8;
+	dest |= uint32_t(src[2]);
+}
+
+void convertBitmap(std::vector<uint8_t, reporter_allocator<uint8_t>>& data, uint8_t* inData, uint32_t width,
+						  uint32_t height, size_t* dataSize, size_t* stride, uint32_t bpp)
+{
+	*stride = width*4;
+	*dataSize = *stride * height;
+	data.resize(*dataSize, 0);
+	uint8_t* outData = &data[0];
+	for(uint32_t i = 0; i < height; i++)
+	{
+		for(uint32_t j = 0; j < width; j++)
+		{
+			uint32_t* outDataPos = (uint32_t*)(outData+i*(*stride)) + j;
+			// set the alpha channel to opaque
+			uint32_t pdata = uint32_t(0xFF)<<24;
+			// copy the RGB bytes to pdata
+			switch (bpp)
+			{
+				case 2:
+					copyRGB15To24(pdata, inData+(i*width+j)*2);
+					break;
+				case 3:
+					copyRGB24To24(pdata, inData+(i*width+j)*3);
+					break;
+				case 4:
+					copyRGB24To24(pdata, inData+(i*width+j)*4+1);
+					break;
+			}
+			*outDataPos = pdata;
+		}
+	}
+}
+
 bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMAT format, bool frompng)
 {
 	if(!rgb)
@@ -143,9 +223,9 @@ bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMA
 	height = h;
 	size_t dataSize;
 	if(format==ARGB32)
-		CairoRenderer::convertBitmapWithAlphaToCairo(data, rgb, width, height, &dataSize, &stride,frompng);
+		convertBitmapWithAlpha(data, rgb, width, height, &dataSize, &stride,frompng);
 	else
-		CairoRenderer::convertBitmapToCairo(data, rgb, width, height, &dataSize, &stride, format==RGB15 ? 2 : (format==RGB24 ? 3 : 4));
+		convertBitmap(data, rgb, width, height, &dataSize, &stride, format==RGB15 ? 2 : (format==RGB24 ? 3 : 4));
 	delete[] rgb;
 	if(data.empty())
 	{
@@ -156,6 +236,7 @@ bool BitmapContainer::fromRGB(uint8_t* rgb, uint32_t w, uint32_t h, BITMAP_FORMA
 	setModifiedData(true);
 	return true;
 }
+
 
 bool BitmapContainer::fromJPEG(uint8_t *inData, int len, const uint8_t *tablesData, int tablesLen)
 {
@@ -246,7 +327,7 @@ bool BitmapContainer::fromPalette(uint8_t* inData, uint32_t w, uint32_t h, uint3
 
 void BitmapContainer::fromRawData(uint8_t* data, uint32_t width, uint32_t height)
 {
-	this->stride = cairo_format_stride_for_width(CAIRO_FORMAT_ARGB32, width);
+	this->stride = width*4;
 	this->width=width;
 	this->height=height;
 	uint32_t dataSize = stride * height;

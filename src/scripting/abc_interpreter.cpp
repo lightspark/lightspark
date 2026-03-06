@@ -64,6 +64,8 @@ uint64_t ABCVm::profilingCheckpoint(uint64_t& startTime)
 }
 
 #ifndef NDEBUG
+// uncomment the following line to actually count how often every opcode is used (makes debugging slower)
+//#define PROFILING_OPCODES
 std::map<abc_function,uint32_t> opcodecounter;
 void ABCVm::dumpOpcodeCounters(uint32_t threshhold)
 {
@@ -109,8 +111,10 @@ void ABCVm::executeFunction(call_context* context)
 		//LOG_CALL("stack:"<<(context->stackp-context->stack)<<" code position:"<<(context->exec_pos- &context->mi->body->preloadedcode.front()));
 
 #ifndef NDEBUG
+#ifdef PROFILING_OPCODES
 		uint32_t c = opcodecounter[context->exec_pos->func];
 		opcodecounter[context->exec_pos->func] = c+1;
+#endif
 #endif
 		// context->exec_pos points to the current instruction, every abc_function has to make sure
 		// it points to the next valid instruction after execution

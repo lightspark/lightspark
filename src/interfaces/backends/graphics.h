@@ -26,7 +26,10 @@
 #include "smartrefs.h"
 #include "swftypes.h"
 #include <vector>
+#ifdef ENABLE_CAIRO
 #include <cairo.h>
+#endif
+
 
 namespace lightspark
 {

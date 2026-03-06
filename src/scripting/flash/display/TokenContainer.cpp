@@ -278,14 +278,6 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics, 
 	if (!r && owner->getParent())
 		r = owner->getParent()->scalingGrid.getPtr();
 	
-	number_t regpointx = 0.0;
-	number_t regpointy = 0.0;
-	if (fromgraphics)
-	{
-		// the tokens are generated from graphics, so we have to translate them to the registration point of the sprite/shape
-		regpointx=bxmin;
-		regpointy=bymin;
-	}
 	if (owner->getSystemState()->getEngineData()->nvgcontext)
 	{
 		renderWithNanoVG=true;
@@ -329,6 +321,15 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics, 
 		owner->setNeedsTextureRecalculation();
 		renderWithNanoVG=false;
 	}
+#ifdef ENABLE_CAIRO
+	number_t regpointx = 0.0;
+	number_t regpointy = 0.0;
+	if (fromgraphics)
+	{
+		// the tokens are generated from graphics, so we have to translate them to the registration point of the sprite/shape
+		regpointx=bxmin;
+		regpointy=bymin;
+	}
 	IDrawable* ret = new CairoTokenRenderer(tokens.filltokens,tokens.stroketokens,matrix
 				, x, y, ceil(width), ceil(height)
 				, matrix.getScaleX(), matrix.getScaleY()
@@ -337,6 +338,9 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics, 
 				, ct, smoothing ? SMOOTH_ANTIALIAS : SMOOTH_NONE,owner->getBlendMode(), regpointx, regpointy);
 	ret->getState()->renderWithNanoVG = renderWithNanoVG;
 	return ret;
+#else
+	return nullptr;
+#endif
 }
 
 bool TokenContainer::hitTestImpl(const Vector2f& point, tokensVector* tk) const

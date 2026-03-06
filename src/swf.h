@@ -124,7 +124,9 @@ public:
 	void accountTime(uint32_t time);
 	void setTag(const std::string& tag);
 	void tick();
+#ifdef ENABLE_CAIRO
 	void plot(uint32_t max, cairo_t *cr);
+#endif
 };
 
 class DLL_PUBLIC SystemState: public ITickJob, public InvalidateQueue

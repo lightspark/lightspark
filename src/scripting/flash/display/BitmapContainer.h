@@ -97,7 +97,9 @@ public:
 	TextureChunk bitmaptexture;
 	int nanoVGImageHandle;
 	RGBA nanoVGImageBackgroundcolor;
+#ifdef ENABLE_CAIRO
 	cairo_pattern_t* cachedCairoPattern;
+#endif
 	BitmapContainer(MemoryAccount* m, bool _isfromtag=false);
 	~BitmapContainer();
 	uint32_t getDataSize() const { return data.size(); }

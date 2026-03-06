@@ -33,7 +33,9 @@
 #include <vector>
 #include "smartrefs.h"
 #include "swftypes.h"
+#ifdef ENABLE_CAIRO
 #include <cairo.h>
+#endif
 #include "backends/geometry.h"
 #include "memory_support.h"
 
@@ -211,6 +213,7 @@ public:
 	DisplayObject* getOwner() { return owner.getPtr(); }
 };
 
+#ifdef ENABLE_CAIRO
 /**
 	The base class for render jobs based on cairo
 	Stores an internal copy of the data to be rendered
@@ -297,7 +300,7 @@ public:
 	static bool hitTest(NullableRef<tokenListRef> tokens, float scaleFactor, const Vector2f& point);
 	static void fillFromMATRIX(cairo_matrix_t* m, const MATRIX& mat);
 };
-
+#endif
 enum ALIGNMENT {AS_NONE = 0, AS_LEFT, AS_RIGHT, AS_CENTER };
 
 struct FormatText

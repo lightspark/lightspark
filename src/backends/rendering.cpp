@@ -71,8 +71,10 @@ RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 	renderNeeded(false),uploadNeeded(false),resizeNeeded(false),newTextureNeeded(false),canrender(false),
 	event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),refreshNeeded(false),renderToBitmapContainerNeeded(false),
-	screenshotneeded(false),inSettings(false),
-	cairoTextureContext(nullptr)
+	screenshotneeded(false),inSettings(false)
+#ifdef ENABLE_CAIRO
+	,cairoTextureContext(nullptr)
+#endif
 {
 	LOG(LOG_INFO,"RenderThread this=" << this);
 #ifdef _WIN32
@@ -1068,7 +1070,9 @@ void RenderThread::commonGLDeinit()
 		engineData->exec_glDeleteTextures(1,&largeTextures[i].id);
 		delete[] largeTextures[i].bitmap;
 	}
+#ifdef ENABLE_CAIRO
 	engineData->exec_glDeleteTextures(1, &cairoTextureID);
+#endif
 }
 
 void RenderThread::commonGLInit()
@@ -1140,8 +1144,9 @@ void RenderThread::commonGLInit()
 	//Texturing must be enabled otherwise no tex coord will be sent to the shaders
 	engineData->exec_glEnable_GL_TEXTURE_2D();
 
+#ifdef ENABLE_CAIRO
 	engineData->exec_glGenTextures(1, &cairoTextureID);
-
+#endif
 	if(handleGLErrors())
 	{
 		LOG(LOG_ERROR,"GL errors during initialization");
@@ -1157,11 +1162,13 @@ void RenderThread::commonGLResize()
 	engineData->exec_glClearColor(bg.Red/255.0F,bg.Green/255.0F,bg.Blue/255.0F,1);
 	engineData->exec_glClear(CLEARMASK(CLEARMASK::COLOR|CLEARMASK::DEPTH|CLEARMASK::STENCIL));
 
+#ifdef ENABLE_CAIRO
 	if (cairoTextureContext)
 	{
 		cairo_destroy(cairoTextureContext);
 		cairoTextureContext=nullptr;
 	}
+#endif
 	lsglLoadIdentity();
 	lsglOrtho(0,windowWidth,0,windowHeight,-100,0);
 	//scaleY is negated to adapt the flash and gl coordinates system
@@ -1225,6 +1232,7 @@ void RenderThread::requestResize(const Vector2f& size, bool force)
 	requestResize(size.x, size.y, force);
 }
 
+#ifdef ENABLE_CAIRO
 cairo_t* RenderThread::getCairoContext(int w, int h)
 {
 	if (!cairoTextureContext) {
@@ -1247,12 +1255,13 @@ void RenderThread::renderText(cairo_t *cr, const char *text, int x, int y)
 	cairo_show_text(cr, text);
 	cairo_restore(cr);
 }
-
+#endif
 void RenderThread::waitRendering()
 {
 	Locker l(mutexRendering);
 }
 
+#ifdef ENABLE_CAIRO
 //Send the texture drawn by Cairo to the GPU
 void RenderThread::mapCairoTexture(int w, int h)
 {
@@ -1273,9 +1282,11 @@ void RenderThread::mapCairoTexture(int w, int h)
 	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glDisableVertexAttribArray(TEXCOORD_ATTRIB);
 }
+#endif
 
 void RenderThread::plotProfilingData()
 {
+#ifdef ENABLE_CAIRO
 	lsglLoadIdentity();
 	lsglScalef(1.0f/scaleX,-1.0f/scaleY,1);
 	lsglTranslatef(-offsetX,(windowHeight-offsetY)*(-1.0f),0);
@@ -1324,11 +1335,12 @@ void RenderThread::plotProfilingData()
 	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(cr);
 	cairo_restore(cr);
-
+#endif
 }
 
 void RenderThread::drawDebugPoint(const Vector2f& pos)
 {
+#ifdef ENABLE_CAIRO
 	lsglLoadIdentity();
 	lsglScalef(1.0f,1.0f,1);
 	lsglTranslatef(-offsetX,-offsetY,0);
@@ -1369,10 +1381,12 @@ void RenderThread::drawDebugPoint(const Vector2f& pos)
 	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(cr);
 	cairo_restore(cr);
+#endif
 }
 
 void RenderThread::drawDebugLine(const Vector2f &a, const Vector2f &b)
 {
+#ifdef ENABLE_CAIRO
 	//Locker l(mutexRendering);
 	lsglLoadIdentity();
 	lsglScalef(1.0f,1.0f,1);
@@ -1411,10 +1425,12 @@ void RenderThread::drawDebugLine(const Vector2f &a, const Vector2f &b)
 	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(cr);
 	cairo_restore(cr);
+#endif
 }
 
 void RenderThread::drawDebugRect(float x, float y, float width, float height, const MATRIX &matrix, bool onlyTranslate)
 {
+#ifdef ENABLE_CAIRO
 	lsglLoadIdentity();
 	lsglScalef(1.0f,1.0f,1);
 	lsglTranslatef(-offsetX,-offsetY,0);
@@ -1457,10 +1473,12 @@ void RenderThread::drawDebugRect(float x, float y, float width, float height, co
 	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(cr);
 	cairo_restore(cr);
+#endif
 }
 
 void RenderThread::drawDebugText(const tiny_string& str, const Vector2f& pos)
 {
+#ifdef ENABLE_CAIRO
 	std::list<tiny_string> lines = str.split('\n');
 	lsglLoadIdentity();
 	lsglScalef(1.0f,1.0f,1);
@@ -1488,7 +1506,7 @@ void RenderThread::drawDebugText(const tiny_string& str, const Vector2f& pos)
 	cairo_set_operator(cr, CAIRO_OPERATOR_CLEAR);
 	cairo_paint(cr);
 	cairo_restore(cr);
-
+#endif
 }
 
 void RenderThread::addDebugRect(DisplayObject* obj, const MATRIX& matrix, bool scaleDown, const Vector2f& pos, const Vector2f& size, bool onlyTranslate)

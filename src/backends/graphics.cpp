@@ -40,6 +40,7 @@
 using namespace lightspark;
 
 extern void nanoVGgetTextBounds(SystemState* sys, TextData& tData, const tiny_string& text, number_t& tw, number_t& th);
+#ifdef ENABLE_CAIRO
 void saveToPNG(uint8_t* data, uint32_t w, uint32_t h, const char* filename)
 {
 	cairo_surface_t* cairoSurface=cairo_image_surface_create_for_data(data, CAIRO_FORMAT_ARGB32, w, h, w*4);
@@ -48,6 +49,7 @@ void saveToPNG(uint8_t* data, uint32_t w, uint32_t h, const char* filename)
 	cairo_surface_write_to_png(cairoSurface,filename);
 	cairo_destroy(cr);
 }
+#endif
 
 TextureChunk::TextureChunk(uint32_t w, uint32_t h)
 {
@@ -141,7 +143,7 @@ bool TextureChunk::resizeIfLargeEnough(uint32_t w, uint32_t h)
 	}
 	return false;
 }
-
+#ifdef ENABLE_CAIRO
 CairoRenderer::CairoRenderer(const MATRIX& _m, float _x, float _y, float _w, float _h, float _xs, float _ys,
 		bool _ismask, bool _cacheAsBitmap,
 		float _scaling, float _a,
@@ -845,7 +847,7 @@ void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator
 		}
 	}
 }
-
+#endif
 AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(o),surfaceBytes(nullptr),uploadNeeded(false),isBufferOwner(true)
 {
 	owner->cachedSurface->wasUpdated=false;

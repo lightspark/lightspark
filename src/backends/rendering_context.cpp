@@ -492,6 +492,7 @@ void GLRenderContext::setMatrixUniform(LSGL_MATRIX m) const
 	engineData->exec_glUniformMatrix4fv(uni, 1, false, lsMVPMatrix);
 }
 
+#ifdef ENABLE_CAIRO
 CairoRenderContext::CairoRenderContext(uint8_t* buf, uint32_t _width, uint32_t _height, bool smoothing)
 {
 	cairoSurface=getCairoSurfaceForData(buf, _width, _height,_width);
@@ -621,3 +622,4 @@ void CairoRenderContext::setupRenderState(cairo_t* cr,AS_BLENDMODE blendmode,boo
 	}
 	
 }
+#endif

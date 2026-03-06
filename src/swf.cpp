@@ -1576,6 +1576,7 @@ void ThreadProfile::tick()
 	}
 }
 
+#ifdef ENABLE_CAIRO
 void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 {
 	if(data.size()<=1)
@@ -1652,6 +1653,7 @@ void ThreadProfile::plot(uint32_t maxTime, cairo_t *cr)
 		}
 	}
 }
+#endif
 
 ParseThread::ParseThread(istream& in, _R<ApplicationDomain> appDomain, _R<SecurityDomain> secDomain, Loader *_loader, tiny_string srcurl)
   : version(0),uncompressedsize(0),

@@ -57,7 +57,6 @@ jobs:
             libavcodec-dev \
             libavformat-dev \
             libswresample-dev \
-            libcairo2-dev \
             libfontconfig-dev \
             libpng-dev \
             libjpeg-dev \
@@ -100,7 +99,6 @@ jobs:
             libavcodec-dev \
             libavformat-dev \
             libswresample-dev \
-            libcairo2-dev \
             libfontconfig-dev \
             libpng-dev \
             libjpeg-dev \

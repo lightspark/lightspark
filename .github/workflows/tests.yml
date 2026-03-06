@@ -39,7 +39,6 @@
                   libavcodec-dev \
                   libavformat-dev \
                   libswresample-dev \
-                  libcairo2-dev \
                   libfontconfig-dev \
                   libpng-dev \
                   libjpeg-dev \
@@ -76,7 +75,6 @@
                   mingw-w64-x86_64-zlib 
                   mingw-w64-x86_64-ffmpeg 
                   mingw-w64-x86_64-rtmpdump 
-                  mingw-w64-x86_64-cairo
                   mingw-w64-x86_64-fontconfig
                   mingw-w64-x86_64-glew 
                   mingw-w64-x86_64-SDL2

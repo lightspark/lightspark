@@ -222,7 +222,7 @@ public:
 	/* Utility */
 	bool handleGLErrors() const;
 };
-
+#ifdef ENABLE_CAIRO
 class CairoRenderContext
 {
 private:
@@ -252,6 +252,6 @@ public:
 	void transformedBlit(const MATRIX& m, BitmapContainer* bc, ColorTransform* ct,
 			FILTER_MODE filterMode, number_t x, number_t y, number_t w, number_t h);
 };
-
+#endif
 }
 #endif /* BACKENDS_RENDERING_CONTEXT_H */

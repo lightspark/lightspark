@@ -65,7 +65,6 @@ jobs:
             libgtk2.0-dev
             libssl1.1
             mxe-i686-w64-mingw32.static-cc
-            mxe-i686-w64-mingw32.static-cairo
             mxe-i686-w64-mingw32.static-fontconfig
             mxe-i686-w64-mingw32.static-jpeg
             mxe-i686-w64-mingw32.static-glew
@@ -132,7 +131,6 @@ jobs:
             libgtk2.0-dev
             libssl1.1
             mxe-x86-64-w64-mingw32.static-cc
-            mxe-x86-64-w64-mingw32.static-cairo
             mxe-x86-64-w64-mingw32.static-fontconfig
             mxe-x86-64-w64-mingw32.static-jpeg
             mxe-x86-64-w64-mingw32.static-glew

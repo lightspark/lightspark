@@ -33,6 +33,7 @@
 #include <sstream>
 #include <unistd.h>
 #include <glib.h> // for screenshot file
+#include "3rdparty/nanovg/src/nanovg.h"
 
 #ifdef _WIN32
 #   define WIN32_LEAN_AND_MEAN
@@ -71,7 +72,7 @@ RenderThread::RenderThread(SystemState* s):GLRenderContext(),
 	event(0),newWidth(0),newHeight(0),scaleX(1),scaleY(1),
 	offsetX(0),offsetY(0),tempBufferAcquired(false),frameCount(0),secsCount(0),initialized(0),refreshNeeded(false),renderToBitmapContainerNeeded(false),
 	screenshotneeded(false),inSettings(false),
-	cairoTextureContextSettings(nullptr),cairoTextureContext(nullptr)
+	cairoTextureContext(nullptr)
 {
 	LOG(LOG_INFO,"RenderThread this=" << this);
 #ifdef _WIN32
@@ -634,6 +635,7 @@ void RenderThread::set_canrender(bool b)
 	Locker l(mutexRendering);
 	canrender = b;
 }
+extern int nanoVGdefaultFontID;
 void RenderThread::renderSettingsPage()
 {
 	int width=210;
@@ -642,87 +644,125 @@ void RenderThread::renderSettingsPage()
 	int startposx = (windowWidth-width)/2;
 	int startposy = (windowHeight-height)/2;
 
-	lsglLoadIdentity();
-	lsglScalef(1.0f,-1.0f,1);
-	lsglTranslatef(-offsetX+startposx,(windowHeight-offsetY-startposy)*(-1.0f),0);
-
-	setMatrixUniform(LSGL_MODELVIEW);
-
 	float bordercolor = 0.3;
 	float backgroundcolor = 0.7;
 	float buttonbackgroundcolor = 0.9;
 	float selectedbackgroundcolor = 0.5;
 	float textcolor = 0.0;
 
-	cairo_t *cr = getCairoContextSettings(width, height);
-
-	cairo_set_source_rgb (cr, backgroundcolor, backgroundcolor,backgroundcolor);
-	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
-	cairo_paint(cr);
-	cairo_set_operator(cr, CAIRO_OPERATOR_OVER);
-	cairo_set_antialias(cr,CAIRO_ANTIALIAS_DEFAULT);
-	cairo_set_source_rgb (cr, bordercolor, bordercolor, bordercolor);
-	cairo_set_line_width(cr, 2);
-	cairo_rectangle(cr, 1, 1, width-2, height-2);
-	cairo_stroke(cr);
-
-	// close button
-	int buttonwidth=50;
-	int buttonheight=20;
-	cairo_set_source_rgb (cr, bordercolor, bordercolor, bordercolor);
-	cairo_set_line_width(cr, 2);
-	cairo_rectangle(cr, width-buttonwidth-10, 15, buttonwidth, buttonheight);
-	cairo_stroke(cr);
-	if (mousepos.x > startposx + (width-buttonwidth-10) && mousepos.x < startposx +(width-10) &&
-		mousepos.y > startposy + (height-buttonheight-15) && mousepos.y < startposy +(height-15))
+	NVGcontext* nvgctxt = m_sys->getEngineData()->nvgcontext;
+	if (nvgctxt)
 	{
-		if (m_sys->getInputThread()->getLeftButtonPressed())
+		float w = currentframebufferWidth;
+		float h = currentframebufferHeight;
+		nvgResetTransform(nvgctxt);
+		nvgBeginFrame(nvgctxt, w, h, 1.0);
+		nvgTranslate(nvgctxt,startposx,startposy);
+		NVGcolor fillcolor = nvgRGBAf(backgroundcolor, backgroundcolor,backgroundcolor,1.0);
+		NVGcolor strokecolor = nvgRGBAf(bordercolor, bordercolor,bordercolor,1.0);
+		NVGcolor selectedfillcolor = nvgRGBAf(selectedbackgroundcolor, selectedbackgroundcolor,selectedbackgroundcolor,1.0);
+		NVGcolor buttonbgcolor = nvgRGBAf(buttonbackgroundcolor, buttonbackgroundcolor,buttonbackgroundcolor,1.0);
+		NVGcolor textdrawcolor = nvgRGBAf(textcolor, textcolor,textcolor,1.0);
+		nvgFontFaceId(nvgctxt,nanoVGdefaultFontID);
+		nvgFontSize(nvgctxt,12);
+
+		nvgFillColor(nvgctxt,fillcolor);
+		nvgBeginPath(nvgctxt);
+		nvgMoveTo(nvgctxt,0,0);
+		nvgLineTo(nvgctxt,width,0);
+		nvgLineTo(nvgctxt,width,height);
+		nvgLineTo(nvgctxt,0,height);
+		nvgLineTo(nvgctxt,0,0);
+		nvgFill(nvgctxt);
+		nvgClosePath(nvgctxt);
+
+		nvgStrokeColor(nvgctxt,strokecolor);
+		nvgStrokeWidth(nvgctxt,2);
+		nvgBeginPath(nvgctxt);
+		nvgMoveTo(nvgctxt,0,0);
+		nvgLineTo(nvgctxt,width,0);
+		nvgLineTo(nvgctxt,width,height);
+		nvgLineTo(nvgctxt,0,height);
+		nvgLineTo(nvgctxt,0,0);
+		nvgStroke(nvgctxt);
+		nvgClosePath(nvgctxt);
+
+
+		// close button
+		int buttonwidth=50;
+		int buttonheight=20;
+		if (mousepos.x > startposx + (width-buttonwidth-10) && mousepos.x < startposx +(width-10) &&
+			mousepos.y > startposy + (height-buttonheight-15) && mousepos.y < startposy +(height-15))
 		{
-			inSettings=false;
+			if (m_sys->getInputThread()->getLeftButtonPressed())
+			{
+				inSettings=false;
+			}
+			nvgFillColor(nvgctxt,selectedfillcolor);
 		}
-		cairo_set_source_rgb (cr, selectedbackgroundcolor, selectedbackgroundcolor, selectedbackgroundcolor);
-	}
-	else
-		cairo_set_source_rgb (cr, buttonbackgroundcolor, buttonbackgroundcolor,buttonbackgroundcolor);
-	cairo_set_line_width(cr, 1);
-	cairo_rectangle(cr, width-buttonwidth-10+1, 15+1, buttonwidth-2, buttonheight-2);
-	cairo_fill(cr);
+		else
+			nvgFillColor(nvgctxt,buttonbgcolor);
+		nvgBeginPath(nvgctxt);
+		nvgMoveTo(nvgctxt,width-buttonwidth-10,height-15);
+		nvgLineTo(nvgctxt,width-10,height-15);
+		nvgLineTo(nvgctxt,width-10,height-buttonheight-15);
+		nvgLineTo(nvgctxt,width-buttonwidth-10,height-buttonheight-15);
+		nvgLineTo(nvgctxt,width-buttonwidth-10,height-15);
+		nvgFill(nvgctxt);
+		nvgStroke(nvgctxt);
+		nvgClosePath(nvgctxt);
+		nvgStrokeWidth(nvgctxt,1);
+		nvgFillColor(nvgctxt,textdrawcolor);
+		nvgTextAlign(nvgctxt,NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+		nvgTextBox(nvgctxt,width-buttonwidth-10,height-15-6,buttonwidth,"close",nullptr);
 
-	cairo_set_source_rgb (cr, textcolor, textcolor,textcolor);
-	renderText(cr, "close",width-50,20);
-
-	// local storage checkbox
-	int checkboxwidth=20;
-	int checkboxheight=20;
-	if (mousepos.x > startposx + (width-checkboxwidth-10) && mousepos.x < startposx +(width-10) &&
-		mousepos.y > startposy + (10) && mousepos.y < startposy +(checkboxheight+10))
-	{
-		if (m_sys->getInputThread()->getLeftButtonPressed())
+		// local storage checkbox
+		int checkboxwidth=20;
+		int checkboxheight=20;
+		if (mousepos.x > startposx + (width-checkboxwidth-10) && mousepos.x < startposx +(width-10) &&
+			mousepos.y > startposy + 10 && mousepos.y < startposy +checkboxheight+10)
 		{
-			m_sys->setLocalStorageAllowed(!m_sys->localStorageAllowed());
+			if (m_sys->getInputThread()->getLeftButtonPressed())
+			{
+				m_sys->setLocalStorageAllowed(!m_sys->localStorageAllowed());
+			}
 		}
-	}
-	cairo_set_source_rgb (cr, bordercolor, bordercolor, bordercolor);
-	cairo_set_line_width(cr, 2);
-	cairo_rectangle(cr, width-checkboxwidth-10, height-checkboxheight-10, checkboxwidth, checkboxheight);
-	cairo_stroke(cr);
-	if (m_sys->localStorageAllowed())
-	{
-		cairo_set_source_rgb (cr, 0, 1.0, 0);
-		cairo_set_line_width(cr, 5);
-		cairo_move_to(cr, width-checkboxwidth-12, height-checkboxheight/2-10);
-		cairo_line_to(cr, width-checkboxwidth/2-10, height-checkboxheight-10);
-		cairo_line_to(cr, width-10, height-8);
-		cairo_stroke(cr);
-	}
-	cairo_set_source_rgb (cr, textcolor, textcolor,textcolor);
-	renderText(cr, "allow local storage",10,height-25);
+		nvgStrokeColor(nvgctxt,strokecolor);
+		nvgStrokeWidth(nvgctxt,2);
+		nvgBeginPath(nvgctxt);
+		nvgMoveTo(nvgctxt,width-checkboxwidth-10,checkboxheight+10);
+		nvgLineTo(nvgctxt,width-10,checkboxheight+10);
+		nvgLineTo(nvgctxt,width-10,10);
+		nvgLineTo(nvgctxt,width-checkboxwidth-10,10);
+		nvgLineTo(nvgctxt,width-checkboxwidth-10,checkboxheight+10);
+		nvgStroke(nvgctxt);
+		nvgClosePath(nvgctxt);
 
-	engineData->exec_glUniform1f(alphaUniform, 1);
-	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
-	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
-	mapCairoTexture(width, height,true);
-	engineData->exec_glFlush();
+		if (m_sys->localStorageAllowed())
+		{
+			nvgStrokeColor(nvgctxt,nvgRGBAf(0, 1,0,1.0));
+			nvgStrokeWidth(nvgctxt,5);
+			nvgBeginPath(nvgctxt);
+			nvgMoveTo(nvgctxt,width-checkboxwidth-12,checkboxheight/2+10);
+			nvgLineTo(nvgctxt,width-checkboxwidth-5,checkboxheight+10);
+			nvgLineTo(nvgctxt,width-10,8);
+			nvgStroke(nvgctxt);
+			nvgClosePath(nvgctxt);
+		}
+		nvgStrokeWidth(nvgctxt,1);
+		nvgFillColor(nvgctxt,textdrawcolor);
+		nvgTextAlign(nvgctxt,NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		nvgTextBox(nvgctxt,10,25,width,"allow local storage",nullptr);
+
+		nvgEndFrame(nvgctxt);
+
+		engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+		engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
+		engineData->exec_glUseProgram(gpu_program);
+	}
+	engineData->exec_glEnable_GL_STENCIL_TEST();
+	engineData->exec_glStencilMask(0x7f);
+	engineData->exec_glStencilFunc(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_EQUAL,0x80,0x80);
 }
 
 void RenderThread::resetViewPort()
@@ -1029,7 +1069,6 @@ void RenderThread::commonGLDeinit()
 		delete[] largeTextures[i].bitmap;
 	}
 	engineData->exec_glDeleteTextures(1, &cairoTextureID);
-	engineData->exec_glDeleteTextures(1, &cairoTextureIDSettings);
 }
 
 void RenderThread::commonGLInit()
@@ -1102,7 +1141,6 @@ void RenderThread::commonGLInit()
 	engineData->exec_glEnable_GL_TEXTURE_2D();
 
 	engineData->exec_glGenTextures(1, &cairoTextureID);
-	engineData->exec_glGenTextures(1, &cairoTextureIDSettings);
 
 	if(handleGLErrors())
 	{
@@ -1123,11 +1161,6 @@ void RenderThread::commonGLResize()
 	{
 		cairo_destroy(cairoTextureContext);
 		cairoTextureContext=nullptr;
-	}
-	if (cairoTextureContextSettings)
-	{
-		cairo_destroy(cairoTextureContextSettings);
-		cairoTextureContextSettings=nullptr;
 	}
 	lsglLoadIdentity();
 	lsglOrtho(0,windowWidth,0,windowHeight,-100,0);
@@ -1204,18 +1237,6 @@ cairo_t* RenderThread::getCairoContext(int w, int h)
 	}
 	return cairoTextureContext;
 }
-cairo_t* RenderThread::getCairoContextSettings(int w, int h)
-{
-	if (!cairoTextureContextSettings) {
-		cairoTextureDataSettings = new uint8_t[w*h*4];
-		cairoTextureSurfaceSettings = cairo_image_surface_create_for_data(cairoTextureDataSettings, CAIRO_FORMAT_ARGB32, w, h, w*4);
-		cairoTextureContextSettings = cairo_create(cairoTextureSurfaceSettings);
-
-		cairo_select_font_face (cairoTextureContextSettings, fontPath.c_str(), CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-		cairo_set_font_size(cairoTextureContextSettings, 11);
-	}
-	return cairoTextureContextSettings;
-}
 
 //Render strings using Cairo's 'toy' text API
 void RenderThread::renderText(cairo_t *cr, const char *text, int x, int y)
@@ -1233,14 +1254,14 @@ void RenderThread::waitRendering()
 }
 
 //Send the texture drawn by Cairo to the GPU
-void RenderThread::mapCairoTexture(int w, int h,bool forsettings)
+void RenderThread::mapCairoTexture(int w, int h)
 {
 	engineData->exec_glEnable_GL_TEXTURE_2D();
-	engineData->exec_glBindTexture_GL_TEXTURE_2D(forsettings ? cairoTextureIDSettings : cairoTextureID);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(cairoTextureID);
 
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
-	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, forsettings ? cairoTextureDataSettings : cairoTextureData,true);
+	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, cairoTextureData,true);
 
 	float vertex_coords[] = {0,0, float(w),0, 0,float(h), float(w),float(h)};
 	float texture_coords[] = {0,0, 1,0, 0,1, 1,1};
@@ -1542,58 +1563,56 @@ void RenderThread::coreRendering()
 //Renders the error message which caused the VM to stop.
 void RenderThread::renderErrorPage(RenderThread *th, bool standalone)
 {
-	lsglLoadIdentity();
-	lsglScalef(1.0f,-1.0f,1);
-	lsglTranslatef(-th->offsetX,(th->windowHeight-th->offsetY)*(-1.0f),0);
+	m_sys->getEngineData()->exec_glClearColor(0,0,0,1);
+	m_sys->getEngineData()->exec_glClear(CLEARMASK::COLOR);
 
-	setMatrixUniform(LSGL_MODELVIEW);
-
-	cairo_t *cr = getCairoContext(windowWidth, windowHeight);
-
-	cairo_set_source_rgb(cr, 0, 0, 0);
-	cairo_paint(cr);
-	cairo_set_source_rgb(cr, 0.8, 0.8, 0.8);
-
-	int y = th->windowHeight-20;
-	renderText(cr, "We're sorry, Lightspark encountered a yet unsupported Flash file",
-			0,y);
-	y -= 20;
-
-	stringstream errorMsg;
-	errorMsg << "SWF file: " << th->m_sys->mainClip->getOrigin().getParsedURL();
-	renderText(cr, errorMsg.str().c_str(),0,y);
-	y -= 20;
-
-	errorMsg.str("");
-	errorMsg << "Cause: " << th->m_sys->errorCause;
-	tiny_string s = errorMsg.str();
-	std::list<tiny_string> msglist = s.split('\n');
-	for (auto it = msglist.begin(); it != msglist.end(); it++)
+	NVGcontext* nvgctxt = m_sys->getEngineData()->nvgcontext;
+	if (nvgctxt)
 	{
-		renderText(cr, (*it).raw_buf(),0,y);
-		y -= 20;
-	}
+		float w = currentframebufferWidth;
+		float h = currentframebufferHeight;
+		nvgResetTransform(nvgctxt);
+		nvgBeginFrame(nvgctxt, w, h, 1.0);
+		nvgFontFaceId(nvgctxt,nanoVGdefaultFontID);
+		nvgFontSize(nvgctxt,12);
+		nvgStrokeWidth(nvgctxt,1);
+		nvgFillColor(nvgctxt,nvgRGBAf(0.8, 0.8, 0.8,1.0));
+		nvgTextAlign(nvgctxt,NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+		int y = 20;
+		nvgTextBox(nvgctxt,10,y,w,"We're sorry, Lightspark encountered a yet unsupported Flash file",nullptr);
+		y += 20;
+		stringstream errorMsg;
+		errorMsg << "SWF file: " << th->m_sys->mainClip->getOrigin().getParsedURL();
+		nvgTextBox(nvgctxt,10,y,w,errorMsg.str().c_str(),nullptr);
+		y += 20;
+		errorMsg.str("");
+		errorMsg << "Cause: " << th->m_sys->errorCause;
+		tiny_string s = errorMsg.str();
+		std::list<tiny_string> msglist = s.split('\n');
+		for (auto it = msglist.begin(); it != msglist.end(); it++)
+		{
+			nvgTextBox(nvgctxt,10,y,w,(*it).raw_buf(),nullptr);
+			y += 20;
+		}
+		if (standalone)
+		{
+			nvgTextBox(nvgctxt,10,y,w,"Please look at the console output to copy this error",nullptr);
+			y += 20;
+			nvgTextBox(nvgctxt,10,y,w,"Press 'Ctrl+Q' to exit",nullptr);
+		}
+		else
+		{
+			nvgTextBox(nvgctxt,10,y,w,"Press Ctrl+C to copy this error to clipboard",nullptr);
+		}
+		nvgEndFrame(nvgctxt);
 
-	if (standalone)
-	{
-		renderText(cr, "Please look at the console output to copy this error",
-			0,y);
-		y -= 20;
-
-		renderText(cr, "Press 'Ctrl+Q' to exit",0,y);
+		engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+		engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ONE_MINUS_SRC_ALPHA);
+		engineData->exec_glUseProgram(gpu_program);
 	}
-	else
-	{
-		renderText(cr, "Press Ctrl+C to copy this error to clipboard",
-				0,y);
-	}
-
-	engineData->exec_glUniform1f(directUniform, 0);
-	engineData->exec_glUniform1f(alphaUniform, 1);
-	engineData->exec_glUniform4f(colortransMultiplyUniform, 1.0,1.0,1.0,1.0);
-	engineData->exec_glUniform4f(colortransAddUniform, 0.0,0.0,0.0,0.0);
-	mapCairoTexture(windowWidth, windowHeight);
-	engineData->exec_glFlush();
+	engineData->exec_glEnable_GL_STENCIL_TEST();
+	engineData->exec_glStencilMask(0x7f);
+	engineData->exec_glStencilFunc(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_EQUAL,0x80,0x80);
 }
 
 void RenderThread::addUploadJob(ITextureUploadable* u)

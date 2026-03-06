@@ -1119,6 +1119,8 @@ void ABCVm::tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e)
 				return;
 			}
 			m_sys->setError(e->as<ASError>()->getStackTraceString());
+			e->decRef();
+			return;
 		}
 		else
 		{

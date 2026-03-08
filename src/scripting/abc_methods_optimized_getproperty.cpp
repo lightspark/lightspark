@@ -376,7 +376,7 @@ void lightspark::abc_getPropertyStaticName_local(call_context* context)
 	else
 	{
 		asAtom obj= CONTEXT_GETLOCAL(context,instrptr->local_pos1);
-		LOG_CALL( "getProperty_sl " << *name << ' ' << asAtomHandler::toDebugString(obj));
+		LOG_CALL( "getProperty_sl " << *name << ' ' << asAtomHandler::toDebugString(obj)<<" ("<<instrptr->local_pos1<<")");
 		bool canCache=false;
 		multiname* simplegetter = asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::NONE);
 		if (simplegetter)

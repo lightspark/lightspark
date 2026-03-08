@@ -382,7 +382,7 @@ void ABCVm::abc_iflt_constant_local(call_context* context)
 void ABCVm::abc_iflt_local_local(call_context* context)
 {
 	bool cond=asAtomHandler::isLess(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)) == TTRUE;
-	LOG_CALL("ifLT_ll (" << ((cond)?"taken)":"not taken)"));
+	LOG_CALL("ifLT_ll (" << ((cond)?"taken)":"not taken)") <<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<"<"<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2))<<" "<<context->exec_pos->local_pos1<<"/"<<context->exec_pos->local_pos2);
 	if(cond)
 		context->exec_pos += context->exec_pos->arg3_int;
 	else
@@ -3179,7 +3179,7 @@ void ABCVm::abc_equals_local_local_localresult(call_context* context)
 	//equals
 
 	bool ret=(asAtomHandler::isEqual(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
-	LOG_CALL("equals_lll "<<ret);
+	LOG_CALL("equals_lll "<<ret<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2))<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
 
 	ASATOM_DECREF(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
 	asAtomHandler::setBool(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),ret);
@@ -4122,7 +4122,8 @@ void ABCVm::abc_dup_increment_local_localresult(call_context* context)
 	ASATOM_INCREF(res);
 	replacelocalresult(context,context->exec_pos->local_pos2,res);
 	asAtomHandler::increment(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker,false);
-	replacelocalresult(context,context->exec_pos->local3.pos,res);
+	if (context->exec_pos->local_pos2 !=context->exec_pos->local3.pos)
+		replacelocalresult(context,context->exec_pos->local3.pos,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_dup_decrement_local_localresult(call_context* context)
@@ -4132,7 +4133,8 @@ void ABCVm::abc_dup_decrement_local_localresult(call_context* context)
 	ASATOM_INCREF(res);
 	replacelocalresult(context,context->exec_pos->local_pos2,res);
 	asAtomHandler::decrement(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2),context->worker,false);
-	replacelocalresult(context,context->exec_pos->local3.pos,res);
+	if (context->exec_pos->local_pos2 !=context->exec_pos->local3.pos)
+		replacelocalresult(context,context->exec_pos->local3.pos,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_dup_increment_i_local_localresult(call_context* context)
@@ -4181,7 +4183,6 @@ void ABCVm::abc_lookupswitch_local(call_context* context)
 	LOG_CALL("lookupswitch_l " << t<<" "<<asAtomHandler::toDebugString(index_obj));
 	uint32_t count = (++(context->exec_pos))->arg3_uint;
 
-	assert_and_throw(asAtomHandler::isNumeric(index_obj));
 	unsigned int index=asAtomHandler::getUInt(context->worker,index_obj);
 	ASATOM_DECREF(index_obj);
 

@@ -1740,8 +1740,28 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 		// 	LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<state.preloadedcode.size()<<" "<<hex<<(int)opcode);
 		// else
 		// 	LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<typestack.back().obj->toDebugString()<<" "<<state.preloadedcode.size()<<" "<< hex<<(int)opcode);
+		switch (swap_indicator)
+		{
+			case 0:
+				break;
+			case 1:// swap optimized
+				if (checkForSwap(state,lastlocalresulttype,code))
+				{
+					swap_indicator=0;
+					state.lastoperandsSwapped=false;
+				}
+				else if (!opcode_skipped)
+					swap_indicator=2;
+				break;
+			case 2:// opcode after swap handled
+				swap_indicator=0;
+				state.lastoperandsSwapped=false;
+				break;
+		}
 		if (opcode_skipped)
+		{
 			opcode_skipped=false;
+		}
 		else
 		{
 			switch (dup_indicator)
@@ -1755,20 +1775,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					dup_indicator=0;
 					break;
 			}
-			switch (swap_indicator)
-			{
-				case 0:
-					break;
-				case 1:// swap optimized
-					swap_indicator=2;
-					break;
-				case 2:// opcode after swap handled
-					swap_indicator=0;
-					state.lastoperandsSwapped=false;
-					break;
-			}
 		}
-
 
 		switch(opcode)
 		{
@@ -2257,9 +2264,13 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				assert_and_throw(value < mi->body->getReturnValuePos());
 #ifdef ENABLE_OPTIMIZATION
 				if (state.setlocal_handled.find(p)!=state.setlocal_handled.end()
-						|| checkInitializeLocalToConstant(state,value))
+					|| checkInitializeLocalToConstant(state,value))
 				{
-					state.setlocal_handled.erase(p);
+					if (state.setlocal_handled.erase(p) && state.operandlist.size())
+					{
+						state.operandlist.back().removeArg(state);
+						state.operandlist.pop_back();
+					}
 					removetypestack(typestack,1);
 					opcode_skipped=true;
 					break;
@@ -2276,21 +2287,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					break;
 				}
 				setOperandModified(state,OP_LOCAL,value);
-				if (state.operandlist.size() && state.operandlist.back().duparg1)
-				{
-					// the argument to set is the argument of a dup, so we just modify the localresult of the dup and skip this opcode
-					state.preloadedcode.at(state.operandlist.back().preloadedcodepos-1).pcode.local3.pos =value;
-					state.preloadedcode.at(state.operandlist.back().preloadedcodepos).pcode.arg3_uint =value;
-					state.operandlist.back().removeArg(state);
-					state.operandlist.pop_back();
-					opcode_skipped=true;
-				}
-				else
 #endif
-				{
-					setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
-					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint = value;
-				}
+				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
+				state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint = value;
 				if (typestack.back().obj && typestack.back().obj->is<Class_base>())
 					state.localtypes[value]=typestack.back().obj->as<Class_base>();
 				else
@@ -2598,8 +2597,9 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				state.preloadedcode.push_back((uint32_t)opcode);
 				state.refreshOldNewPosition(code);
 				state.checkClearOperands(p,&lastlocalresulttype);
-				state.operandlist.push_back(operands(OP_LOCAL,state.localtypes[((uint32_t)opcode)-0xd0],((uint32_t)opcode)-0xd0,1,state.preloadedcode.size()-1));
-				typestack.push_back(typestackentry(state.localtypes[((uint32_t)opcode)-0xd0],false));
+				Class_base* restype = state.localtypes.size()<= ((uint32_t)opcode)-0xd0 ? nullptr : state.localtypes[((uint32_t)opcode)-0xd0];
+				state.operandlist.push_back(operands(OP_LOCAL,restype,((uint32_t)opcode)-0xd0,1,state.preloadedcode.size()-1));
+				typestack.push_back(typestackentry(restype,false));
 				break;
 			}
 			case 0x2a://dup
@@ -4094,26 +4094,18 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				if (state.setlocal_handled.find(p)!=state.setlocal_handled.end()
 						|| checkInitializeLocalToConstant(state,opcode-0xd4))
 				{
-					state.setlocal_handled.erase(p);
+					if (state.setlocal_handled.erase(p) && state.operandlist.size())
+					{
+						state.operandlist.back().removeArg(state);
+						state.operandlist.pop_back();
+					}
 					removetypestack(typestack,1);
 					opcode_skipped=true;
 					break;
 				}
-				if (state.operandlist.size() && state.operandlist.back().duparg1)
-				{
-					// the argument to set is the argument of a dup, so we just modify the localresult of the dup and skip this opcode
-					state.preloadedcode.at(state.operandlist.back().preloadedcodepos-1).pcode.local3.pos =(opcode-0xd4);
-					state.preloadedcode.at(state.operandlist.back().preloadedcodepos).pcode.arg3_uint =(opcode-0xd4);
-					state.operandlist.back().removeArg(state);
-					state.operandlist.pop_back();
-					opcode_skipped=true;
-				}
-				else
 #endif
-				{
-					setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
-					state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint =(opcode-0xd4);
-				}
+				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
+				state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint =(opcode-0xd4);
 #ifdef ENABLE_OPTIMIZATION
 				if (typestack.back().obj && typestack.back().obj->is<Class_base>())
 					state.localtypes[opcode-0xd4]=typestack.back().obj->as<Class_base>();

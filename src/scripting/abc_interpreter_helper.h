@@ -75,7 +75,7 @@ struct preloadstate
 	bool atexceptiontarget;
 	bool lastoperandsSwapped;
 	preloadstate(SyntheticFunction* _f, ASWorker* _w);
-	void refreshOldNewPosition(memorystream& code);
+	void refreshOldNewPosition(memorystream& code, int codepos=-1);
 	void checkClearOperands(uint32_t p,Class_base** lastlocalresulttype);
 };
 
@@ -83,18 +83,24 @@ struct operands
 {
 	OPERANDTYPES type;
 	bool modified;
-	bool duparg1;
+	bool setaslocalresult;
 	Class_base* objtype;
 	int32_t index;
 	uint32_t codecount;
 	uint32_t preloadedcodepos;
 	ASObject* instance;
-	operands():type(OP_UNDEFINED),modified(false),duparg1(false),objtype(nullptr),index(-1),codecount(0),preloadedcodepos(0),instance(nullptr) {}
-	operands(OPERANDTYPES _t, Class_base* _o,int32_t _i,uint32_t _c, uint32_t _p):type(_t),modified(false),duparg1(false),objtype(_o),index(_i),codecount(_c),preloadedcodepos(_p),instance(nullptr) {}
+	operands():type(OP_UNDEFINED),modified(false),setaslocalresult(false),objtype(nullptr),index(-1),codecount(0),preloadedcodepos(0),instance(nullptr) {}
+	operands(OPERANDTYPES _t, Class_base* _o,int32_t _i,uint32_t _c, uint32_t _p):type(_t),modified(false),setaslocalresult(false),objtype(_o),index(_i),codecount(_c),preloadedcodepos(_p),instance(nullptr) {}
 	void removeArg(preloadstate& state)
 	{
 		if (codecount)
+		{
 			state.preloadedcode.erase(state.preloadedcode.begin()+preloadedcodepos,state.preloadedcode.begin()+preloadedcodepos+codecount);
+			// check and correct code position of all operands
+			for (auto it = state.operandlist.begin(); it != state.operandlist.end(); it++)
+				if (it->preloadedcodepos+it->codecount > preloadedcodepos+codecount)
+					it->preloadedcodepos -=codecount;
+		}
 	}
 	bool fillCode(preloadstate& state,int pos, int codepos, bool switchopcode,int* opcode=nullptr, uint32_t* opcode_setslot=nullptr)
 	{
@@ -202,6 +208,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 void preload_setproperty(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, Class_base** lastlocalresulttype, uint32_t simple_setter_opcode_pos);
 void preload_getproperty(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, Class_base** lastlocalresulttype);
 bool preload_findprop(preloadstate& state,memorystream& code,uint32_t t,bool rewritecode,Class_base** lastlocalresulttype,std::vector<typestackentry>& typestack);
+bool checkForSwap(preloadstate& state, Class_base* lastlocalresulttype, memorystream& code);
 }
 #define ABC_OP_OPTIMZED_INCREMENT 0x00000100
 #define ABC_OP_OPTIMZED_PUSHSCOPE 0x00000104

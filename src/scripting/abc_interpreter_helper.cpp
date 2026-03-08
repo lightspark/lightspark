@@ -53,10 +53,14 @@ preloadstate::preloadstate(SyntheticFunction* _f, ASWorker* _w):
 
 }
 
-void preloadstate::refreshOldNewPosition(memorystream& code)
+void preloadstate::refreshOldNewPosition(memorystream& code, int codepos)
 {
 	if (!atexceptiontarget)
-		oldnewpositions[code.tellg()] = (int32_t)preloadedcode.size();
+	{
+		if (codepos==-1)
+			codepos = code.tellg();
+		oldnewpositions[codepos] = (int32_t)preloadedcode.size();
+	}
 }
 
 void preloadstate::checkClearOperands(uint32_t p, Class_base** lastlocalresulttype)
@@ -234,7 +238,6 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		preloadlocalpos = state.preloadedcode.size()-1;
 	uint32_t argsneeded=0;
 
-	uint32_t dupskipped=UINT32_MAX;
 	state.lastlocalresultpos=UINT32_MAX;
 	while (state.jumptargets.find(pos) == state.jumptargets.end() && keepchecking)
 	{
@@ -554,13 +557,6 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				argsneeded++;
 				break;
 			case 0x2a://dup
-				if (!argsneeded)
-				{
-					keepchecking=false;
-					break;
-				}
-				if (dupskipped==UINT32_MAX)
-					dupskipped=argsneeded;
 				b = code.peekbyteFromPosition(pos);
 				pos++;
 				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
@@ -820,7 +816,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					keepchecking=false;
 				break;
 			case 0x2b://swap
-				if (argsneeded>=2
+				if (argsneeded>=1
 						&& state.jumptargets.find(pos) == state.jumptargets.end())
 				{
 					b = code.peekbyteFromPosition(pos);
@@ -923,6 +919,9 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				uint32_t num = code.peeku30FromPosition(pos);
 				state.setlocal_handled.insert(pos);
+				state.operandlist.push_back(operands(OP_LOCAL,restype,num,0,0));
+				state.operandlist.back().setaslocalresult=true;
+
 				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = num;
@@ -942,6 +941,10 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0xd7://setlocal_3
 			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
 			{
+				state.setlocal_handled.insert(pos);
+				state.operandlist.push_back(operands(OP_LOCAL,restype,b-0xd4,0,0));
+				state.operandlist.back().setaslocalresult=true;
+
 				state.setlocal_handled.insert(pos);
 				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
@@ -1256,6 +1259,7 @@ bool setupInstructionTwoArgumentsNoResult(preloadstate& state,int operator_start
 		state.refreshOldNewPosition(code);
 		state.operandlist.pop_back();
 		state.operandlist.pop_back();
+		state.lastoperandsSwapped=false;
 	}
 	else
 #endif
@@ -2517,6 +2521,20 @@ Class_base* getSlotResultTypeFromClass(Class_base* cls, uint32_t slot_id, preloa
 		return resulttype;
 	}
 	return nullptr;
+}
+
+bool checkForSwap(preloadstate& state, Class_base* lastlocalresulttype, memorystream& code)
+{
+	if (state.lastoperandsSwapped && state.jumptargets.find(code.tellg()) != state.jumptargets.end())
+	{
+		// we reached a jump target and last opcode was swap
+		// that means the swap can't be optimized away
+		clearOperands(state,true,&lastlocalresulttype);
+		state.preloadedcode.push_back((uint32_t)0x2b);//swap
+		state.refreshOldNewPosition(code,code.tellg()-1);
+		return true;
+	}
+	return false;
 }
 
 }

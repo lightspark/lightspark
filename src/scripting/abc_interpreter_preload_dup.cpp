@@ -105,6 +105,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 			uint32_t num=0;
 			int32_t jump=0;
 			bool is_iftruefalse=false;
+			list<int32_t> jumptargetstoremove;
 			if (state.jumptargets.find(pos+1) == state.jumptargets.end() && b == 0x76)//convert_b
 			{
 				switch (code.peekbyteFromPosition(pos))
@@ -148,10 +149,12 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 						// optimize common case of checking for multiple conditions like "if (a>0 || b>0)"
 						int jumppos = pos+jump+3+1;
 						bool dupskippable=false;
+						bool skipped_iffalse=false;
 						int lastskipdup=1;
 						int numjumps=0;
-						auto it = state.jumptargets.find(jumppos);
-						while (it != state.jumptargets.end())
+						int origjumppos = jumppos;
+						auto it = state.jumptargets.find(origjumppos);
+						while (it != state.jumptargets.end() && !skipped_iffalse)
 						{
 							int32_t positionsskipped;
 							int32_t newjumppos = skipIgnorables(code,jumppos,positionsskipped);
@@ -159,12 +162,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 							if (code.peekbyteFromPosition(jumppos-1) ==0x11)//iftrue
 							{
 								if (!numjumps)
-								{
-									if ((*it).second == 1)
-										state.jumptargets.erase(it);
-									else
-										(*it).second--;
-								}
+									jumptargetstoremove.push_back(origjumppos);
 								dupskippable= lastskipdup;
 								int32_t jumpdelta = code.peeks24FromPosition(jumppos);
 								jump += jumpdelta+3+1+positionsskipped;
@@ -172,20 +170,16 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 								it = state.jumptargets.find(jumppos);
 								numjumps++;
 							}
-							else if (code.peekbyteFromPosition(jumppos-1) ==0x12)//iffalse
+							else if (!skipped_iffalse && code.peekbyteFromPosition(jumppos-1) ==0x12)//iffalse
 							{
 								if (!numjumps)
-								{
-									if ((*it).second == 1)
-										state.jumptargets.erase(it);
-									else
-										(*it).second--;
-								}
+									jumptargetstoremove.push_back(origjumppos);
 								dupskippable= lastskipdup;
 								jump += 3+1+positionsskipped; // jump to first opcode after iffalse
 								jumppos = pos+jump+3+1;
 								it = state.jumptargets.find(jumppos);
 								numjumps++;
+								skipped_iffalse=true;
 							}
 							else
 							{
@@ -220,9 +214,11 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 						int jumppos = pos+jump+3+1;
 						int numjumps=0;
 						bool dupskippable = false;
+						bool skipped_iftrue=false;
 						int lastskipdup=1;
-						auto it = state.jumptargets.find(jumppos);
-						while (it != state.jumptargets.end())
+						int origjumppos = jumppos;
+						auto it = state.jumptargets.find(origjumppos);
+						while (it != state.jumptargets.end() && !skipped_iftrue)
 						{
 							int32_t positionsskipped;
 							int32_t newjumppos = skipIgnorables(code,jumppos,positionsskipped);
@@ -230,12 +226,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 							if (code.peekbyteFromPosition(jumppos-1) ==0x12)//iffalse
 							{
 								if (!numjumps)
-								{
-									if ((*it).second == 1)
-										state.jumptargets.erase(it);
-									else
-										(*it).second--;
-								}
+									jumptargetstoremove.push_back(origjumppos);
 								dupskippable= lastskipdup;
 								int32_t jumpdelta = code.peeks24FromPosition(jumppos);
 								jump += jumpdelta+3+1+positionsskipped;
@@ -243,20 +234,16 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 								it = state.jumptargets.find(jumppos);
 								numjumps++;
 							}
-							else if (code.peekbyteFromPosition(jumppos-1) ==0x11)//iftrue
+							else if (!skipped_iftrue && code.peekbyteFromPosition(jumppos-1) ==0x11)//iftrue
 							{
 								if (!numjumps)
-								{
-									if ((*it).second == 1)
-										state.jumptargets.erase(it);
-									else
-										(*it).second--;
-								}
+									jumptargetstoremove.push_back(origjumppos);
 								dupskippable= lastskipdup;
 								jump += 3+1+positionsskipped; // jump to first opcode after iftrue
 								jumppos = pos+jump+3+1;
 								it = state.jumptargets.find(jumppos);
 								numjumps++;
+								skipped_iftrue=true;
 							}
 							else
 							{
@@ -286,6 +273,8 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 			}
 			if (opcode_optimized)
 			{
+				int32_t positionsskipped;
+				pos = skipIgnorables(code,pos,positionsskipped);
 				b = code.peekbyteFromPosition(pos);
 				switch (b)
 				{
@@ -321,11 +310,26 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 					default:
 						is_iftruefalse=false;
 						opcode_optimized=0;
+						// this ensures that the "old" value is stored in a localresult and can be used later, as the duplicated value may be changed by an increment etc.
+						setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DUP,opcode,code,false,true,restype,code.tellg(),opcode_optimized==0,false,true,true,ABC_OP_OPTIMZED_DUP_SETSLOT);
 						break;
 				}
 			}
 			if (is_iftruefalse)
 			{
+				// remove unneeded jumptargets
+				for (auto itr = jumptargetstoremove.begin(); itr != jumptargetstoremove.end(); itr++)
+				{
+					auto itj = state.jumptargets.find(*itr);
+					if (itj != state.jumptargets.end())
+					{
+						if ((*itj).second == 1)
+							state.jumptargets.erase(itj);
+						else
+							(*itj).second--;
+					}
+				}
+
 				// remove used operand
 				auto it = state.operandlist.end();
 				(--it)->removeArg(state);
@@ -354,20 +358,31 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 				state.localtypes.push_back(restype);
 				state.defaultlocaltypes.push_back(restype);
 				state.defaultlocaltypescacheable.push_back(true);
-				uint32_t num2 = state.mi->body->getReturnValuePos()+1+state.mi->body->localresultcount;
-				state.mi->body->localresultcount++;
-				state.preloadedcode.back().pcode.local3.pos = num2;
+				int prevargindex= state.operandlist.back().index;
+				uint8_t b = code.peekbyteFromPosition(pos);
+				switch (b)
+				{
+					case 0x29: //pop
+						++pos;
+						break;
+					case 0xd4: //setlocal_0
+					case 0xd5: //setlocal_1
+					case 0xd6: //setlocal_2
+					case 0xd7: //setlocal_3
+						++pos;
+						prevargindex= b-0xd4;
+						break;
+					case 0x63://setlocal
+						prevargindex= code.peeku30FromPosition(pos+1) ;
+						pos = code.skipu30FromPosition(pos+1);
+						break;
+					default:
+						break;
+				}
 				code.seekg(pos);
-				removeOperands(state,false,nullptr,1);
-				state.preloadedcode.push_back(0x62);//getlocal
-				state.preloadedcode.back().pcode.arg3_uint = num2;
-				state.refreshOldNewPosition(code);
-				state.operandlist.push_back(operands(OP_LOCAL,restype,num2,1,state.preloadedcode.size()-1));
-				state.operandlist.back().duparg1=true;
+				state.preloadedcode.back().pcode.local3.pos = prevargindex;
 				return;
 			}
-			// this ensures that the "old" value is stored in a localresult and can be used later, as the duplicated value may be changed by an increment etc.
-			setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DUP,opcode,code,false,true,restype,code.tellg(),opcode_optimized==0,false,true,true,ABC_OP_OPTIMZED_DUP_SETSLOT);
 			if (!dupoperand)
 				addOperand(state,op,code);
 		}
@@ -376,7 +391,8 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 			operands op = state.operandlist.back();
 			uint32_t preloadedcodepos = op.codecount ? op.preloadedcodepos : state.preloadedcode.size()-1;
 			uint32_t val = state.preloadedcode[preloadedcodepos].pcode.arg3_uint;
-			state.preloadedcode.push_back(state.preloadedcode[preloadedcodepos].opcode);
+			state.preloadedcode.push_back((uint32_t)opcode);
+
 			state.preloadedcode.back().pcode.arg3_uint=val;
 			state.refreshOldNewPosition(code);
 			state.operandlist.push_back(operands(op.type,op.objtype,op.index,1,state.preloadedcode.size()-1));

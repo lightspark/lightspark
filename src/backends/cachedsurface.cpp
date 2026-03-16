@@ -925,7 +925,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 				{
 					nvgFontSize(nvgctxt,state->textdata.fontSize);
 					nvgFontFaceId(nvgctxt,state->textdata.nanoVGFontID);
-					float ypos=state->textdata.fontSize;
+					float ypos=TEXTFIELD_PADDING;
 					for (auto it = state->textdata.textlines.begin(); it != state->textdata.textlines.end(); ++it)
 					{
 						ALIGNMENT al = it->format.align;
@@ -935,17 +935,17 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 						{
 							case ALIGNMENT::AS_LEFT:
 							case ALIGNMENT::AS_NONE:
-								nvgTextAlign(nvgctxt,NVG_ALIGN_LEFT | NVG_ALIGN_BASELINE);
+								nvgTextAlign(nvgctxt,NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
 								break;
 							case ALIGNMENT::AS_CENTER:
-								nvgTextAlign(nvgctxt,NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
+								nvgTextAlign(nvgctxt,NVG_ALIGN_CENTER | NVG_ALIGN_TOP);
 								break;
 							case ALIGNMENT::AS_RIGHT:
-								nvgTextAlign(nvgctxt,NVG_ALIGN_RIGHT | NVG_ALIGN_BASELINE);
+								nvgTextAlign(nvgctxt,NVG_ALIGN_RIGHT | NVG_ALIGN_TOP);
 								break;
 						}
-						nvgTextBox(nvgctxt,0,ypos,state->textdata.width,(*it).text.raw_buf(),nullptr);
-						ypos += state->textdata.fontSize;
+						nvgTextBox(nvgctxt,TEXTFIELD_PADDING,ypos,state->textdata.width,(*it).text.raw_buf(),nullptr);
+						ypos += state->textdata.fontSize+state->textdata.leading/TWIPS_FACTOR;
 					}
 				}
 			}

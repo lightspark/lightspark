@@ -262,6 +262,7 @@ private:
 	bool NoSelect:1;
 	bool WasStatic:1;
 	bool HTML:1;
+	bool UseOutlines:1;
 	UI16_SWF FontID;
 	STRING FontClass;
 	UI16_SWF FontHeight;

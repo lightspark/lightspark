@@ -396,9 +396,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	bool Border=UB(1,bs);
 	WasStatic=UB(1,bs);
 	HTML=UB(1,bs);
-	bool UseOutlines=UB(1,bs);
-	if (UseOutlines)
-		LOG(LOG_NOT_IMPLEMENTED,"DefineEditTextTag UseOutlines");
+	UseOutlines=UB(1,bs);
 	if(HasFont)
 	{
 		in >> FontID;
@@ -1300,7 +1298,6 @@ tokensVector* DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_st
 	Vector2 curPos;
 
 	int tokenscaling = fontpixelsize * this->scaling;
-	curPos.y = getRenderCharStartYPos()*this->scaling;
 	bool first = true;
 	bool emptytoken=false;// indicates "space" glyph
 	tokensVector* tk = &tokens;

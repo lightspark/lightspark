@@ -14,7 +14,7 @@
       runs-on: ubuntu-latest
       continue-on-error: true
       steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v6
         - run: gh release delete latest --cleanup-tag -y
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -27,7 +27,7 @@
       outputs:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
       steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v6
         - name: Create Release
           id: create_release
           uses: ncipollo/release-action@v1
@@ -74,7 +74,7 @@
               upx
               git
               base-devel
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v6
 
         - name: Run msys2 Build
           run: |
@@ -127,7 +127,7 @@
               upx
               git
               base-devel
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v6
 
         - name: Run msys2 Build
           run: |
@@ -153,7 +153,7 @@
         image: ghcr.io/flathub-infra/flatpak-github-actions:freedesktop-24.08
         options: --privileged
       steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v6
         - uses: flatpak/flatpak-github-actions/flatpak-builder@v6
           with:
             bundle: lightspark-latest.flatpak

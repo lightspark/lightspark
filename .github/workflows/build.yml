@@ -34,7 +34,7 @@ jobs:
             cxx: g++-10
             cxxpackage: g++-10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Dependencies
         run: |
@@ -79,7 +79,7 @@ jobs:
           - ubuntu-22.04
           - ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Dependencies
         run: |
           sudo `which apt || which apt-get` update
@@ -119,7 +119,7 @@ jobs:
           - macos-14
           - macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Dependencies
         run: |
           brew install \

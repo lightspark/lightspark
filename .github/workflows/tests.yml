@@ -19,7 +19,7 @@
                 - ubuntu-22.04
                 - ubuntu-20.04
           steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
             - name: Install Dependencies
               run: |
                 sudo `which apt || which apt-get` update
@@ -61,7 +61,7 @@
             run:
               shell: msys2 {0}
           steps:
-          - uses: actions/checkout@v3
+          - uses: actions/checkout@v6
           - uses: msys2/setup-msys2@v2
             with:
               msystem: MINGW64
@@ -98,7 +98,7 @@
                 os:
                   - macos-14
             steps:
-              - uses: actions/checkout@v4
+              - uses: actions/checkout@v6
               - name: Install Dependencies
                 run: |
                   brew install \

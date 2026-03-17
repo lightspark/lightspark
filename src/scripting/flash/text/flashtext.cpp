@@ -320,7 +320,7 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 		else
 			xmax=max(0.0f,float(textWidth+autosizeposition))*TWIPS_FACTOR+2*TEXTFIELD_PADDING+ (tag ? tag->Bounds.Xmin : 0.0f);
 		ymin=tag ? tag->Bounds.Ymin : 0.0f;
-		ymax=max(0.0f,float(height*TWIPS_FACTOR)+(tag ? tag->Bounds.Ymin :0.0f)+2*TEXTFIELD_PADDING);
+		ymax=max(0.0f,float(height*TWIPS_FACTOR)+(tag ? tag->Bounds.Ymin :0.0f)+float(2*TEXTFIELD_PADDING*TWIPS_FACTOR));
 		return true;
 	}
 	xmin=tag->Bounds.Xmin;
@@ -744,7 +744,8 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	if (updatesizes)
 	{
 		th->linemutex->lock();
-		th->checkEmbeddedFont(th);
+		if (!th->tag || th->tag->UseOutlines)
+			th->checkEmbeddedFont(th);
 		th->linemutex->unlock();
 		th->updateSizes();
 		th->setSizeAndPositionFromAutoSize();
@@ -1875,7 +1876,8 @@ void TextField::textUpdated()
 	scrollH = 0;
 	scrollV = 1;
 	linemutex->lock();
-	checkEmbeddedFont(this);
+	if (!tag || tag->UseOutlines)
+		checkEmbeddedFont(this);
 	linemutex->unlock();
 	updateSizes();
 	setSizeAndPositionFromAutoSize();
@@ -1984,7 +1986,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 	m.scale(matrix.getScaleX(),matrix.getScaleY());
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 	tokens.clear();
-	if (embeddedFont)
+	if (embeddedFont && (!tag || tag->UseOutlines))
 	{
 		if (!tokens.filltokens)
 			tokens.filltokens = _MR(new tokenListRef());
@@ -2052,7 +2054,8 @@ IDrawable* TextField::invalidate(bool smoothing)
 			tokens.filltokens->tokens.push_back(GeomToken(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
 			tokens.filltokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
 		}
-		int32_t startposy = TEXTFIELD_PADDING+bymin+fontSize*TWIPS_FACTOR;
+		int32_t startposy = TEXTFIELD_PADDING*TWIPS_FACTOR+bymin+(embeddedFont->getAscent()+embeddedFont->getDescent())*TWIPS_FACTOR*fontSize/1024;
+
 		linemutex->lock();
 		RGBA color(textColor.Red,textColor.Green,textColor.Blue,0xff);
 		tokensVector* tk = &tokens;
@@ -2113,7 +2116,8 @@ IDrawable* TextField::invalidate(bool smoothing)
 									   , isMask, cacheAsBitmap
 									   , getScaleFactor(), getConcatenatedAlpha()
 									   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
-	}		
+	}
+
 	float xscale = getConcatenatedMatrix().getScaleX();
 	float yscale = getConcatenatedMatrix().getScaleY();
 	// use specialized Renderer from EngineData, if available, otherwise fallback to nanoVG

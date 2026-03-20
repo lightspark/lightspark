@@ -558,6 +558,13 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 				break;
 			case 0x2a://dup
 				b = code.peekbyteFromPosition(pos);
+				if (!argsneeded &&
+					(b==0x11 //iftrue
+					|| b==0x12)) //iffalse
+				{
+					keepchecking=false;
+					break;
+				}
 				pos++;
 				if ((state.jumptargets.find(pos) == state.jumptargets.end()) && b==0x29) // pop
 				{
@@ -2312,7 +2319,15 @@ void preloadFunction_secondPass(preloadstate& state)
 				break;
 			case 0x63://setlocal
 			{
+				uint32_t p = codetypes.tellg();
 				uint32_t t = codetypes.readu30();
+				if (!state.islocalRead[t]
+					&& prevopcode==0x2a)//dup
+				{
+					// dup followed by setlocal that is never read, can be replaced by nop operation
+					state.mi->body->code[p-2] = 0x02; //nop
+					state.mi->body->code[p-1] = 0xf0; //debugline
+				}
 				state.unchangedlocals.erase(t);
 				setdefaultlocaltype(state,t,currenttype);
 				currenttype=nullptr;
@@ -2322,10 +2337,20 @@ void preloadFunction_secondPass(preloadstate& state)
 			case 0xd5://setlocal_1
 			case 0xd6://setlocal_2
 			case 0xd7://setlocal_3
+			{
+				uint32_t p = codetypes.tellg();
+				if (!state.islocalRead[opcode-0xd4]
+					&& prevopcode==0x2a)//dup
+				{
+					// dup followed by setlocal that is never read, can be replaced by nop operation
+					state.mi->body->code[p-2] = 0x02; //nop
+					state.mi->body->code[p-1] = 0x02; //nop
+				}
 				state.unchangedlocals.erase(opcode-0xd4);
 				setdefaultlocaltype(state,opcode-0xd4,currenttype);
 				currenttype=nullptr;
 				break;
+			}
 			case 0x92://inclocal
 			case 0x94://declocal
 			{

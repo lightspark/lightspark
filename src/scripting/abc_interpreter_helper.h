@@ -65,6 +65,7 @@ struct preloadstate
 	std::vector<Class_base*> defaultlocaltypes;
 	std::vector<bool> defaultlocaltypescacheable;
 	std::vector<bool> canlocalinitialize;
+	std::vector<bool> islocalRead;
 	std::list<scope_entry> scopelist;
 	SyntheticFunction* function;
 	ASWorker* worker;

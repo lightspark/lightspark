@@ -241,10 +241,10 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			bitmapContainerToRenderTo.pop();
 			BitmapContainerRenderData* renderdata = bmc->swapRenderData();
 			// destroy temporary bitmaps used for rendering
-			while (!renderdata->temporaryBitmaps.empty())
+			while (!renderdata->rendercallBitmaps.empty())
 			{
-				(*renderdata->temporaryBitmaps.begin())->decRef();
-				renderdata->temporaryBitmaps.pop_front();
+				(*renderdata->rendercallBitmaps.begin())->resetRenderCall();
+				renderdata->rendercallBitmaps.pop_front();
 			}
 		}
 		mutexRenderToBitmapContainer.unlock();
@@ -556,10 +556,10 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				engineData->exec_glDeleteRenderbuffers(1,&bmrenderbuffer);
 			}
 			// destroy temporary bitmaps used for rendering
-			while (!renderdata->temporaryBitmaps.empty())
+			while (!renderdata->rendercallBitmaps.empty())
 			{
-				(*renderdata->temporaryBitmaps.begin())->decRef();
-				renderdata->temporaryBitmaps.pop_front();
+				(*renderdata->rendercallBitmaps.begin())->resetRenderCall();
+				renderdata->rendercallBitmaps.pop_front();
 			}
 			if (renderdata->needswait)
 			{
@@ -974,11 +974,12 @@ void RenderThread::generateScreenshot()
 	screenshotneeded=false;
 }
 
-void RenderThread::addRefreshableSurface(IDrawable* d, _NR<DisplayObject> o)
+void RenderThread::addRefreshableSurface(IDrawable* d, DisplayObject* o)
 {
 	Locker l(mutexRefreshSurfaces);
 	RefreshableSurface s;
-	s.displayobject = o;
+	o->incRef();
+	s.displayobject = _MR(o);
 	s.drawable = d;
 	surfacesToRefresh.push_back(s);
 }
@@ -1941,7 +1942,7 @@ void RenderThread::readPixelsToBimapContainer(_NR<BitmapContainer> bm)
 	bm->setModifiedTexture(false);
 	bm->setModifiedData(false);
 }
-void RenderThread::addTemporaryBitmap(BitmapContainer* bm, Bitmap* tempBitmap)
+void RenderThread::addRenderCallBitmap(BitmapContainer* bm, Bitmap* tempBitmap)
 {
 	mutexRenderToBitmapContainer.lock();
 	if(m_sys->isShuttingDown() || !EngineData::enablerendering)
@@ -1950,7 +1951,7 @@ void RenderThread::addTemporaryBitmap(BitmapContainer* bm, Bitmap* tempBitmap)
 		mutexRenderToBitmapContainer.unlock();
 		return;
 	}
-	bm->getRenderData()->temporaryBitmaps.push_back(tempBitmap);
+	bm->getRenderData()->rendercallBitmaps.push_back(tempBitmap);
 	mutexRenderToBitmapContainer.unlock();
 }
 void RenderThread::renderBitmap(BitmapContainer* bm, Bitmap* tempBitmap, bool wait)
@@ -1971,7 +1972,7 @@ void RenderThread::renderBitmap(BitmapContainer* bm, Bitmap* tempBitmap, bool wa
 	bm->getRenderData()->readpixels=false;
 	bm->getRenderData()->needswait=wait;
 	if (tempBitmap)
-		bm->getRenderData()->temporaryBitmaps.push_back(tempBitmap);
+		bm->getRenderData()->rendercallBitmaps.push_back(tempBitmap);
 
 	bm->incRef();
 	bitmapContainerToRenderTo.push(_MR(bm));

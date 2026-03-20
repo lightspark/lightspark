@@ -186,11 +186,9 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,smoothing,onSmoothingChanged)
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged)
 void Bitmap::setupTokens()
 {
-	bitmaptokens.clear();
-	if (bitmapData)
+	if (bitmapData && !bitmaptokens.filltokens)
 	{
-		if (!bitmaptokens.filltokens)
-			bitmaptokens.filltokens=_MR(new tokenListRef());
+		bitmaptokens.filltokens=_MR(new tokenListRef());
 		fs.FillStyleType = smoothing ? CLIPPED_BITMAP : NON_SMOOTHED_CLIPPED_BITMAP;
 		fs.bitmap = bitmapData->getBitmapContainer();
 		scaling=TWIPS_FACTOR;
@@ -213,9 +211,12 @@ void Bitmap::setupTokens()
 }
 void Bitmap::updatedData()
 {
-	hasChanged=true;
-	setupTokens();
-	requestInvalidation(getSystemState());
+	if (!bitmaptokens.filltokens || !hasChanged)
+	{
+		setupTokens();
+		hasChanged=true;
+		requestInvalidation(getSystemState());
+	}
 }
 void Bitmap::refreshSurfaceState()
 {
@@ -270,7 +271,7 @@ IDrawable *Bitmap::invalidate(bool smoothing)
 	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);
 }
 
-void Bitmap::setupTemporaryBitmap(BitmapData* data)
+void Bitmap::setupRenderCallBitmap(BitmapData* data)
 {
 	data->incRef();
 	bitmapData =_MR<BitmapData>(data);

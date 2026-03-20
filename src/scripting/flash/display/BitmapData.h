@@ -34,6 +34,7 @@ class BitmapData: public ASObject, public IBitmapDrawable
 {
 private:
 	_NR<BitmapContainer> pixels;
+	_NR<Bitmap> temporaryBitmap;
 	int locked;
 	bool needsupload;
 	bool transparent;
@@ -52,6 +53,7 @@ public:
 	void finalize() override;
 	void prepareShutdown() override;
 	_NR<BitmapContainer> getBitmapContainer() const { return pixels; }
+	Bitmap* getRenderCallBitmap();
 	int getWidth() const { return !pixels.isNull() ? pixels->getWidth() : 0; }
 	int getHeight() const { return !pixels.isNull() ? pixels->getHeight() : 0; }
 	void addUser(Bitmap* b, bool startupload=true);

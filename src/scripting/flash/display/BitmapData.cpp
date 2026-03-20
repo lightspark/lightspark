@@ -146,6 +146,25 @@ void BitmapData::prepareShutdown()
 	pixels.reset();
 	ASObject::prepareShutdown();
 }
+
+Bitmap* BitmapData::getRenderCallBitmap()
+{
+	if (!temporaryBitmap)
+	{
+		temporaryBitmap = _MR(Class<Bitmap>::getInstanceSNoArgs(getInstanceWorker()));
+		temporaryBitmap->setupRenderCallBitmap(this);
+	}
+	Bitmap* ret = temporaryBitmap.getPtr();
+	if (temporaryBitmap->setRenderCall())
+	{
+		// temporaryBitmap is already used in a rendercall, we have to create another one
+		ret = Class<Bitmap>::getInstanceSNoArgs(getInstanceWorker());
+		ret->setupRenderCallBitmap(this);
+	}
+	else
+		ret->incRef();
+	return ret;
+}
 void BitmapData::addUser(Bitmap* b, bool startupload)
 {
 	users.insert(b);
@@ -336,12 +355,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 	}
 	else if(drawable->is<BitmapData>())
 	{
-		// fast path: use temporary Bitmap to render BitmapData (bitmap will be destroyed in renderthread)
-		d = Class<Bitmap>::getInstanceSNoArgs(wrk);
-		d->as<Bitmap>()->setupTemporaryBitmap(drawable->as<BitmapData>());
+		d = drawable->as<BitmapData>()->getRenderCallBitmap();
 		needscopy=drawable->as<BitmapData>()->getBitmapContainer() == th->getBitmapContainer();
 		if (!th->users.empty())
-			th->getBitmapContainer()->addTemporaryBitmap(th->getSystemState()->getRenderThread(),d->as<Bitmap>());
+			th->getBitmapContainer()->addRenderCallBitmap(th->getSystemState()->getRenderThread(),d->as<Bitmap>());
 	}
 	else
 		LOG(LOG_NOT_IMPLEMENTED,"BitmapData.draw does not support " << drawable->toDebugString());
@@ -549,9 +566,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 	if(!alphaBitmapData.isNull())
 		LOG(LOG_NOT_IMPLEMENTED, "BitmapData.copyPixels doesn't support alpha bitmap");
 
-	// use temporary Bitmap to copy BitmapData on GPU (bitmap will be destroyed in renderthread)
-	Bitmap* d = Class<Bitmap>::getInstanceSNoArgs(wrk);
-	d->setupTemporaryBitmap(source.getPtr());
+	Bitmap* d = source->getRenderCallBitmap();
 	d->scrollRect=asAtomHandler::fromObjectNoPrimitive(sourceRect.getPtr());
 	ASATOM_ADDSTOREDMEMBER(d->scrollRect);
 	MATRIX m;
@@ -560,7 +575,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer());
 	else
 		th->drawDisplayObject(d, m,true,BLENDMODE_INTERN_REPLACE,nullptr,nullptr,source->getBitmapContainer()==th->getBitmapContainer());
-	th->getBitmapContainer()->addTemporaryBitmap(th->getSystemState()->getRenderThread(),d);
+	th->getBitmapContainer()->addRenderCallBitmap(th->getSystemState()->getRenderThread(),d);
 
 	th->notifyUsers();
 }
@@ -836,9 +851,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,scroll)
 
 	if (x!=0 && y!=0 && copyWidth > 0 && copyHeight > 0)
 	{
-		// use temporary Bitmap to scroll BitmapData on GPU (bitmap will be destroyed in renderthread)
-		Bitmap* d = Class<Bitmap>::getInstanceSNoArgs(wrk);
-		d->setupTemporaryBitmap(th);
+		Bitmap* d = th->getRenderCallBitmap();
 		Rectangle* rcScroll = Class<Rectangle>::getInstanceSNoArgs(wrk);
 		rcScroll->x = -x;
 		rcScroll->y = -y;
@@ -847,7 +860,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,scroll)
 		d->scrollRect=asAtomHandler::fromObjectNoPrimitive(rcScroll);
 		rcScroll->addStoredMember();
 		th->drawDisplayObject(d, MATRIX(),false,BLENDMODE_NORMAL,nullptr,nullptr,true);
-		th->pixels->addTemporaryBitmap(th->getSystemState()->getRenderThread(),d);
+		th->pixels->addRenderCallBitmap(th->getSystemState()->getRenderThread(),d);
 		th->notifyUsers();
 	}
 }
@@ -1421,9 +1434,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 		createError<TypeError>(wrk,kNullPointerError,"filter");
 	else
 	{
-		// use temporary Bitmap to render filter on GPU (bitmap will be destroyed in renderthread)
-		Bitmap* d = Class<Bitmap>::getInstanceSNoArgs(wrk);
-		d->setupTemporaryBitmap(sourceBitmapData.getPtr());
+		Bitmap* d = sourceBitmapData->getRenderCallBitmap();
 		d->setFilter(filter.getPtr());
 		d->scrollRect=asAtomHandler::fromObjectNoPrimitive(sourceRect.getPtr());
 		ASATOM_ADDSTOREDMEMBER(d->scrollRect);

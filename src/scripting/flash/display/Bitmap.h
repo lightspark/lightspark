@@ -22,6 +22,7 @@
 
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/display/TokenContainer.h"
+#include <atomic>
 
 namespace lightspark
 {
@@ -29,7 +30,7 @@ class BitmapData;
 
 class IntSize
 {
-	public:
+public:
 	uint32_t width;
 	uint32_t height;
 	IntSize(uint32_t w, uint32_t h):width(w),height(h){}
@@ -46,6 +47,7 @@ private:
 	FILLSTYLE fs;
 	tokensVector bitmaptokens;
 	void setupTokens();
+	atomic_flag usedInRenderCall;
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
@@ -70,7 +72,13 @@ public:
 	IDrawable* invalidate(bool smoothing) override;
 	void setSize(const Vector2& _size) { size = _size; }
 	void setSize(int32_t width, int32_t height) { size = Vector2(width, height); }
-	void setupTemporaryBitmap(BitmapData* data);
+	void setupRenderCallBitmap(BitmapData* data);
+	bool setRenderCall() { return usedInRenderCall.test_and_set(); }
+	void resetRenderCall()
+	{
+		usedInRenderCall.clear();
+		decRef();
+	}
 };
 
 }

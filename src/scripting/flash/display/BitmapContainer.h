@@ -55,7 +55,7 @@ struct BitmapContainerRenderData
 	std::list<ITextureUploadable*> uploads;
 	std::list<RefreshableSurface> surfacesToRefresh;
 	std::queue<RenderDisplayObjectToBitmapContainer> rendercalls;
-	std::list<Bitmap*> temporaryBitmaps;
+	std::list<Bitmap*> rendercallBitmaps;
 	bool readpixels:1;
 	bool needswait:1;
 };
@@ -162,7 +162,7 @@ public:
 	bool getNeedsClear() const { return needsclear; }
 	void addRenderCall(RenderDisplayObjectToBitmapContainer& call);
 	void flushRenderCalls(RenderThread* renderthread, Bitmap* tempBitmap=nullptr, bool wait=true);
-	void addTemporaryBitmap(RenderThread* renderthread, Bitmap* tempBitmap);
+	void addRenderCallBitmap(RenderThread* renderthread, Bitmap* tempBitmap);
 };
 
 }

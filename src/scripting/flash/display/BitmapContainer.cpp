@@ -395,11 +395,13 @@ void BitmapContainer::addRenderCall(RenderDisplayObjectToBitmapContainer& call)
 
 void BitmapContainer::flushRenderCalls(RenderThread* renderthread, Bitmap* tempBitmap, bool wait)
 {
+	if (getRenderData()->rendercalls.empty())
+		return;
 	renderthread->renderBitmap(this,tempBitmap, wait);
 }
-void BitmapContainer::addTemporaryBitmap(RenderThread* renderthread, Bitmap* tempBitmap)
+void BitmapContainer::addRenderCallBitmap(RenderThread* renderthread, Bitmap* tempBitmap)
 {
-	renderthread->addTemporaryBitmap(this,tempBitmap);
+	renderthread->addRenderCallBitmap(this,tempBitmap);
 }
 
 void BitmapContainer::setAlpha(int32_t x, int32_t y, uint8_t alpha)

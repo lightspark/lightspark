@@ -146,11 +146,11 @@ public:
 	 * this will be deleted in this method
 	 * @param o target containing the cachedSurface to be updated
 	 */
-	void addRefreshableSurface(IDrawable* d,_NR<DisplayObject> o);
+	void addRefreshableSurface(IDrawable* d,DisplayObject* o);
 	void signalSurfaceRefresh();
 
 	void readPixelsToBimapContainer(_NR<BitmapContainer> bm);
-	void addTemporaryBitmap(BitmapContainer* bm, Bitmap* tempBitmap);
+	void addRenderCallBitmap(BitmapContainer* bm, Bitmap* tempBitmap);
 	void renderBitmap(BitmapContainer* bm, Bitmap* tempBitmap, bool wait);
 
 	/**

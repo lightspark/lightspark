@@ -1268,7 +1268,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				break;
 			}
 			case RENDER_FRAME:
-				m_sys->swapAsyncDrawJobQueue();
+				m_sys->signalRenderFrame();
 				break;
 			case ADVANCE_FRAME:
 			{
@@ -1342,6 +1342,13 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 							ev->root->loaderInfo->getLoader()->setContent(ev->root);
 					}
 				}
+				break;
+			}
+			case ADDTOINVALIDATEQUEUE_EVENT:
+			{
+				AddToInvalidateQueueEvent* ev=static_cast<AddToInvalidateQueueEvent*>(e.second.getPtr());
+				m_sys->addToInvalidateQueue(ev->dobj);
+				ev->dobj->decRef();
 				break;
 			}
 			case IDLE_EVENT:

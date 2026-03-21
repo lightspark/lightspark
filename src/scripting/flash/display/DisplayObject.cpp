@@ -164,7 +164,7 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	avm1mouselistenercount(0),avm1framelistenercount(0),broadcastEventListenerCount(0),
 	onStage(false),visible(true),
 	mask(nullptr),clipMask(nullptr),
-	invalidateQueueNext(),
+	invalidateQueueNext(nullptr),
 	loaderInfo(nullptr),
 	scrollRect(asAtomHandler::undefinedAtom),
 	loadedFrom(nullptr),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
@@ -208,7 +208,7 @@ void DisplayObject::finalize()
 		loaderInfo->removeStoredMember();
 	loaderInfo=nullptr;
 	colorTransform = ColorTransformBase();
-	invalidateQueueNext.reset();
+	invalidateQueueNext=nullptr;
 	accessibilityProperties.reset();
 	scalingGrid.reset();
 	ASATOM_REMOVESTOREDMEMBER(opaqueBackground);
@@ -264,7 +264,7 @@ bool DisplayObject::destruct()
 	if (loaderInfo)
 		loaderInfo->removeStoredMember();
 	loaderInfo=nullptr;
-	invalidateQueueNext.reset();
+	invalidateQueueNext=nullptr;
 	accessibilityProperties.reset();
 	colorTransform = ColorTransformBase();
 	scalingGrid.reset();
@@ -714,8 +714,7 @@ void DisplayObject::requestInvalidationIncludingChildren(InvalidateQueue* q)
 	this->hasChanged=true;
 	if (q)
 	{
-		this->incRef();
-		q->addToInvalidateQueue(_MR(this));
+		q->addToInvalidateQueue(this);
 		if(mask)
 			mask->requestInvalidationIncludingChildren(q);
 	}
@@ -1294,6 +1293,7 @@ void DisplayObject::invalidateForRenderToBitmap(BitmapContainerRenderData* conta
 	if (d)
 	{
 		setupSurfaceState(d);
+#ifdef ENABLE_CAIRO
 		if (getNeedsTextureRecalculation() || !d->isCachedSurfaceUsable(this))
 		{
 			this->incRef();
@@ -1303,6 +1303,7 @@ void DisplayObject::invalidateForRenderToBitmap(BitmapContainerRenderData* conta
 			container->uploads.push_back(j);
 		}
 		else
+#endif
 		{
 			RefreshableSurface s;
 			this->incRef();
@@ -2228,7 +2229,12 @@ void DisplayObject::initFrame()
 	{
 		inInitFrame=true;
 		handleConstruction();
-
+		if (this->is<RootMovieClip>())
+		{
+			// events are handled in RootMovieClip::afterConstruction
+			inInitFrame=false;
+			return;
+		}
 		/*
 		 * Legacy objects have their display list properties set on creation, but
 		 * the related events must only be sent after the constructor is sent.

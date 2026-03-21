@@ -1446,8 +1446,7 @@ void TextLine::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 	else
 	{
 		requestInvalidationFilterParent(q);
-		incRef();
-		q->addToInvalidateQueue(_MR(this));
+		q->addToInvalidateQueue(this);
 	}
 }
 

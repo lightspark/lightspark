@@ -216,15 +216,11 @@ private:
 	/*
 	   The head of the invalidate queue
 	*/
-	_NR<DisplayObject> invalidateQueueHead;
+	DisplayObject* invalidateQueueHead;
 	/*
 	   The tail of the invalidate queue
 	*/
-	_NR<DisplayObject> invalidateQueueTail;
-	/*
-	   The lock for the invalidate queue
-	*/
-	Mutex invalidateQueueLock;
+	DisplayObject* invalidateQueueTail;
 	
 	Mutex drawjobLock;
 	std::unordered_set<AsyncDrawJob*> drawJobsNew;
@@ -494,10 +490,12 @@ public:
 	void handleBroadcastEvent(const tiny_string& event);
 
 	//Invalidation queue management
-	void addToInvalidateQueue(_R<DisplayObject> d) override;
+	void addToInvalidateQueue(DisplayObject* d) override;
 	void flushInvalidationQueue();
+#ifdef ENABLE_CAIRO
 	void AsyncDrawJobCompleted(AsyncDrawJob* j);
-	void swapAsyncDrawJobQueue();
+#endif
+	void signalRenderFrame();
 
 	//Resize support
 	void resizeCompleted();

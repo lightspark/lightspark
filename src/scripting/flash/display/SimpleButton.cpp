@@ -647,9 +647,7 @@ void SimpleButton::requestInvalidation(InvalidateQueue* q, bool forceTextureRefr
 	requestInvalidationFilterParent(q);
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 	hasChanged=true;
-	incRef();
-	q->addToInvalidateQueue(_MR(this));
-
+	q->addToInvalidateQueue(this);
 }
 
 uint32_t SimpleButton::getTagID() const

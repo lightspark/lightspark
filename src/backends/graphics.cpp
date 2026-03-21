@@ -847,15 +847,18 @@ void CairoRenderer::convertBitmapToCairo(std::vector<uint8_t, reporter_allocator
 		}
 	}
 }
-#endif
-AsyncDrawJob::AsyncDrawJob(IDrawable* d, _R<DisplayObject> o):drawable(d),owner(o),surfaceBytes(nullptr),uploadNeeded(false),isBufferOwner(true)
+
+AsyncDrawJob::AsyncDrawJob(IDrawable* d, DisplayObject* o):drawable(d),surfaceBytes(nullptr),uploadNeeded(false),isBufferOwner(true)
 {
+	o->incRef();
+	owner=o;
 	owner->cachedSurface->wasUpdated=false;
 }
 
 AsyncDrawJob::~AsyncDrawJob()
 {
 	owner->getSystemState()->AsyncDrawJobCompleted(this);
+	owner->decRef();
 	delete drawable;
 	if (surfaceBytes && isBufferOwner)
 		delete[] surfaceBytes;
@@ -931,7 +934,7 @@ void AsyncDrawJob::uploadFence()
 	if (getVm(owner->getSystemState()))
 	{
 		owner->incRef();
-		getVm(owner->getSystemState())->addDeletableObject(owner.getPtr());
+		getVm(owner->getSystemState())->addDeletableObject(owner);
 	}
 	delete this;
 }
@@ -947,7 +950,7 @@ void AsyncDrawJob::contentOffset(number_t& x, number_t& y) const
 	x = drawable->getState()->xOffset;
 	y = drawable->getState()->yOffset;
 }
-
+#endif
 IDrawable::IDrawable(float w, float h, float x, float y, float xs, float ys, float xcs, float ycs, bool _ismask, bool _cacheAsBitmap, float _scaling, float a, const ColorTransformBase& _colortransform, SMOOTH_MODE _smoothing, AS_BLENDMODE _blendmode, const MATRIX& _m)
 	:width(w),height(h), xContentScale(xcs), yContentScale(ycs)
 {

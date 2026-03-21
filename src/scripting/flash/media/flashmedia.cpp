@@ -259,8 +259,7 @@ void Video::refreshSurfaceState()
 void Video::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	hasChanged=true;
-	incRef();
-	q->addToInvalidateQueue(_MR(this));
+	q->addToInvalidateQueue(this);
 }
 IDrawable *Video::invalidate(bool smoothing)
 {

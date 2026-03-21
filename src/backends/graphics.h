@@ -177,7 +177,7 @@ public:
 	float getYContentScale() const { return yContentScale; }
 	SurfaceState* getState() const { return state; }
 };
-
+#ifdef ENABLE_CAIRO
 class AsyncDrawJob: public IThreadJob, public ITextureUploadable
 {
 private:
@@ -186,7 +186,7 @@ private:
 	 * The DisplayObject owning this render request. We incRef/decRef it
 	 * in our constructor/destructor to make sure that it does not go away
 	 */
-	_R<DisplayObject> owner;
+	DisplayObject* owner;
 	uint8_t* surfaceBytes;
 	bool uploadNeeded;
 	bool isBufferOwner;
@@ -197,7 +197,7 @@ public:
 	 * @param d IDrawable to be rendered asynchronously. The pointer is now
 	 * owned by this instance
 	 */
-	AsyncDrawJob(IDrawable* d, _R<DisplayObject> o);
+	AsyncDrawJob(IDrawable* d, DisplayObject* o);
 	~AsyncDrawJob();
 	//IThreadJob interface
 	void execute() override;
@@ -210,10 +210,9 @@ public:
 	void uploadFence() override;
 	void contentScale(number_t& x, number_t& y) const override;
 	void contentOffset(number_t& x, number_t& y) const override;
-	DisplayObject* getOwner() { return owner.getPtr(); }
+	DisplayObject* getOwner() { return owner; }
 };
 
-#ifdef ENABLE_CAIRO
 /**
 	The base class for render jobs based on cairo
 	Stores an internal copy of the data to be rendered
@@ -436,7 +435,7 @@ public:
 	InvalidateQueue(_NR<DisplayObject> _cacheAsBitmapObject=NullRef);
 	virtual ~InvalidateQueue();
 	//Invalidation queue management
-	virtual void addToInvalidateQueue(_R<DisplayObject> d) = 0;
+	virtual void addToInvalidateQueue(DisplayObject* d) = 0;
 	_NR<DisplayObject> getCacheAsBitmapObject() const;
 };
 

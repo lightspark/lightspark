@@ -245,12 +245,16 @@ SystemState::SystemState
 	),
 	logger(_logger),
 	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
-	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0),
-	vmVersion(VMNONE),childPid(0),
-	parameters(NullRef),
-	invalidateQueueHead(NullRef),invalidateQueueTail(NullRef),lastUsedNamespaceId(0x7fffffff),framePhase(FramePhase::IDLE),
-	instanceCounter(0),
-	showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),avm1global(nullptr),
+	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0)
+	,vmVersion(VMNONE)
+	,childPid(0)
+	,parameters(NullRef)
+	,invalidateQueueHead(nullptr)
+	,invalidateQueueTail(nullptr)
+	,lastUsedNamespaceId(0x7fffffff)
+	,framePhase(FramePhase::IDLE)
+	,instanceCounter(0)
+	,showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),avm1global(nullptr),
 	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),
 	ignoreUnhandledExceptions(false),runSingleThreaded(_runSingleThreaded),
 	useNewInvalidBounds(false),
@@ -666,15 +670,15 @@ void SystemState::saveMemoryUsageInformation(ofstream& out, int snapshotCount) c
 
 void SystemState::systemFinalize()
 {
-	_NR<DisplayObject> cur=invalidateQueueHead;
-	while(!cur.isNull())
+	DisplayObject* cur=invalidateQueueHead;
+	while(cur)
 	{
-		_NR<DisplayObject> next=cur->invalidateQueueNext;
-		cur->invalidateQueueNext=NullRef;
+		DisplayObject* next=cur->invalidateQueueNext;
+		cur->invalidateQueueNext=nullptr;
 		cur=next;
 	}
-	invalidateQueueHead.reset();
-	invalidateQueueTail.reset();
+	invalidateQueueHead=nullptr;
+	invalidateQueueTail=nullptr;
 	parameters.reset();
 	for (auto it = localconnection_client_map.begin(); it != localconnection_client_map.end(); ++it)
 		it->second->removeStoredMember();
@@ -1406,12 +1410,19 @@ ThreadProfile* SystemState::allocateProfiler(const lightspark::RGB& color)
 	return ret;
 }
 
-void SystemState::addToInvalidateQueue(_R<DisplayObject> d)
+void SystemState::addToInvalidateQueue(DisplayObject* d)
 {
-	Locker l(invalidateQueueLock);
-	//Check if the object is already in the queue
-	if(!d->invalidateQueueNext.isNull() || d==invalidateQueueTail || isShuttingDown())
+	if(USUALLY_FALSE(!isVmThread() && !isShuttingDown()))
+	{
+		d->incRef(); // will be decreffed after event was handled
+		_R<AddToInvalidateQueueEvent> ev = _MR(new (unaccountedMemory) AddToInvalidateQueueEvent(d));
+		getVm(this)->addEvent(NullRef,ev);
 		return;
+	}
+	//Check if the object is already in the queue
+	if(d->invalidateQueueNext || d==invalidateQueueTail || isShuttingDown())
+		return;
+	d->incRef(); // will be decreffed in flushInvalidationQueue
 	if(!invalidateQueueHead)
 		invalidateQueueHead=invalidateQueueTail=d;
 	else if (influshing)
@@ -1432,40 +1443,42 @@ void SystemState::flushInvalidationQueue()
 {
 	if (isShuttingDown())
 	{
-		_NR<DisplayObject> cur=invalidateQueueHead;
-		while(!cur.isNull())
+		DisplayObject* cur=invalidateQueueHead;
+		while(cur)
 		{
-			_NR<DisplayObject> next=cur->invalidateQueueNext;
-			cur->invalidateQueueNext=NullRef;
+			DisplayObject* next=cur->invalidateQueueNext;
+			cur->invalidateQueueNext=nullptr;
+			cur->decRef();
 			cur=next;
 		}
-		invalidateQueueHead.reset();
-		invalidateQueueTail.reset();
+		invalidateQueueHead=nullptr;
+		invalidateQueueTail=nullptr;
 		return;
 	}
-	Locker l(invalidateQueueLock);
+	assert(isVmThread());
 	influshing=true;
-	_NR<DisplayObject> cur=invalidateQueueHead;
+	DisplayObject* cur=invalidateQueueHead;
 	MATRIX initialMatrix;
-	if (!cur.isNull())
+	if (cur)
 	{
 		float scalex, scaley;
 		int offx, offy;
 		stageCoordinateMapping(renderThread->windowWidth, renderThread->windowHeight, offx, offy, scalex, scaley);
 		initialMatrix.scale(scalex,scaley);
 	}
-	while(!cur.isNull())
+	while(cur)
 	{
 		if((cur->isOnStage() || cur->isMask()) && cur->hasChanged)
 		{
-			_NR<DisplayObject> drawobj=cur;
+			DisplayObject* drawobj=cur;
 			IDrawable* d=cur->invalidate(true);
 			//Check if the drawable is valid and forge a new job to
 			//render it and upload it to GPU
 			if(d)
 			{
 				cur->setupSurfaceState(d);
-				if (EngineData::enablerendering && (drawobj->getNeedsTextureRecalculation() || !d->isCachedSurfaceUsable(drawobj.getPtr())))
+#ifdef ENABLE_CAIRO
+				if (EngineData::enablerendering && (drawobj->getNeedsTextureRecalculation() || !d->isCachedSurfaceUsable(drawobj)))
 				{
 					drawjobLock.lock();
 					AsyncDrawJob* j = new AsyncDrawJob(d,drawobj);
@@ -1473,7 +1486,7 @@ void SystemState::flushInvalidationQueue()
 					{
 						for (auto it = drawJobsPending.begin(); it != drawJobsPending.end(); it++)
 						{
-							if ((*it)->getOwner() == drawobj.getPtr())
+							if ((*it)->getOwner() == drawobj)
 							{
 								// older drawjob currently running for this DisplayObject, abort it
 								(*it)->threadAborting=true;
@@ -1483,7 +1496,7 @@ void SystemState::flushInvalidationQueue()
 						}
 						for (auto it = drawJobsNew.begin(); it != drawJobsNew.end(); it++)
 						{
-							if ((*it)->getOwner() == drawobj.getPtr())
+							if ((*it)->getOwner() == drawobj)
 							{
 								// older drawjob currently running for this DisplayObject, abort it
 								(*it)->threadAborting=true;
@@ -1496,23 +1509,27 @@ void SystemState::flushInvalidationQueue()
 					addJob(j);
 					drawjobLock.unlock();
 				}
-				else if (EngineData::enablerendering && renderThread != nullptr)
+				else
+#endif
+				if (EngineData::enablerendering && renderThread != nullptr)
 					renderThread->addRefreshableSurface(d,drawobj);
 				if (renderThread != nullptr && renderThread->isStarted())
 					drawobj->resetNeedsTextureRecalculation();
 			}
 			drawobj->hasChanged=false;
 		}
-		_NR<DisplayObject> next=cur->invalidateQueueNext;
-		cur->invalidateQueueNext=NullRef;
+		DisplayObject* next=cur->invalidateQueueNext;
+		cur->invalidateQueueNext=nullptr;
+		cur->decRef();
 		cur=next;
 	}
 	influshing=false;
 	if (EngineData::enablerendering && renderThread != nullptr)
 		renderThread->signalSurfaceRefresh();
-	invalidateQueueHead=NullRef;
-	invalidateQueueTail=NullRef;
+	invalidateQueueHead=nullptr;
+	invalidateQueueTail=nullptr;
 }
+#ifdef ENABLE_CAIRO
 void SystemState::AsyncDrawJobCompleted(AsyncDrawJob *j)
 {
 	drawjobLock.lock();
@@ -1520,13 +1537,17 @@ void SystemState::AsyncDrawJobCompleted(AsyncDrawJob *j)
 	drawJobsPending.erase(j);
 	drawjobLock.unlock();
 }
-void SystemState::swapAsyncDrawJobQueue()
+#endif
+void SystemState::signalRenderFrame()
 {
+	bool canrender = true;
+#ifdef ENABLE_CAIRO
 	drawjobLock.lock();
 	drawJobsPending.insert(drawJobsNew.begin(),drawJobsNew.end());
 	drawJobsNew.clear();
-	bool canrender = drawJobsPending.empty();
+	canrender = drawJobsPending.empty();
 	drawjobLock.unlock();
+#endif
 	if (getRenderThread())
 		getRenderThread()->set_canrender(canrender);
 }

@@ -231,10 +231,9 @@ void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRe
 		return;
 	owner->requestInvalidationFilterParent(q);
 	
-	owner->incRef();
 	if (forceTextureRefresh)
 		owner->setNeedsTextureRecalculation();
-	q->addToInvalidateQueue(_MR(owner));
+	q->addToInvalidateQueue(owner);
 }
 
 bool TokenContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, tokensVector* tk)

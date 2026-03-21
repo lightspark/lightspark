@@ -1896,10 +1896,9 @@ void TextField::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh
 		TokenContainer::requestInvalidation(q,forceTextureRefresh);
 	else
 	{
-		incRef();
 		updateSizes();
 		requestInvalidationFilterParent(q);
-		q->addToInvalidateQueue(_MR(this));
+		q->addToInvalidateQueue(this);
 	}
 }
 

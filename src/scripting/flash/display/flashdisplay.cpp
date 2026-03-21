@@ -379,8 +379,7 @@ void Sprite::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 	if (graphics && graphics->hasBounds())
 	{
 		requestInvalidationFilterParent(q);
-		incRef();
-		q->addToInvalidateQueue(_MR(this));
+		q->addToInvalidateQueue(this);
 	}
 	DisplayObjectContainer::requestInvalidation(q,forceTextureRefresh);
 }
@@ -1547,8 +1546,7 @@ void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceT
 	if (forceTextureRefresh)
 		this->setNeedsTextureRecalculation();
 	hasChanged=true;
-	incRef();
-	q->addToInvalidateQueue(_MR(this));
+	q->addToInvalidateQueue(this);
 	requestInvalidationFilterParent(q);
 }
 void DisplayObjectContainer::requestInvalidationIncludingChildren(InvalidateQueue* q)

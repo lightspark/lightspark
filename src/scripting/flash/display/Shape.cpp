@@ -132,8 +132,7 @@ void Shape::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 	if (graphics && graphics->hasBounds())
 	{
 		requestInvalidationFilterParent(q);
-		incRef();
-		q->addToInvalidateQueue(_MR(this));
+		q->addToInvalidateQueue(this);
 		
 	}
 	TokenContainer::requestInvalidation(q,forceTextureRefresh);

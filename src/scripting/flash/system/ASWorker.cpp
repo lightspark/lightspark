@@ -23,6 +23,7 @@
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/display/Stage.h"
 #include "scripting/flash/display/Loader.h"
+#include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/errors/flasherrors.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "scripting/flash/system/ApplicationDomain.h"
@@ -39,14 +40,24 @@ using namespace lightspark;
 
 extern uint32_t asClassCount;
 
-ASWorker::ASWorker(SystemState* s):
-	EventDispatcher(this,nullptr),parser(nullptr),
-	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
-	stage(nullptr),
-	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),
-	cur_recursion(0),AVM1_cur_recursion_function(0),AVM1_cur_recursion_internal(0),
-	isPrimordial(true),state("running"),
-	nativeExtensionCallCount(0)
+ASWorker::ASWorker(SystemState* s)
+	:EventDispatcher(this,nullptr)
+	,parser(nullptr)
+	,giveAppPrivileges(false)
+	,started(false)
+	,inGarbageCollection(false)
+	,inShutdown(false)
+	,inFinalize(false)
+	,stage(nullptr)
+	,freelist(new asfreelist[asClassCount])
+	,freelist_template(new asfreelist[asClassCount])
+	,currentCallContext(nullptr)
+	,cur_recursion(0)
+	,AVM1_cur_recursion_function(0)
+	,AVM1_cur_recursion_internal(0)
+	,isPrimordial(true)
+	,state("running")
+	,nativeExtensionCallCount(0)
 {
 	subtype = SUBTYPE_WORKER;
 	setSystemState(s);
@@ -61,14 +72,24 @@ ASWorker::ASWorker(SystemState* s):
 	gcPrev=this;
 }
 
-ASWorker::ASWorker(Class_base* c):
-	EventDispatcher(c->getSystemState()->worker,c),parser(nullptr),
-	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
-	stage(nullptr),
-	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),
-	cur_recursion(0),AVM1_cur_recursion_function(0),AVM1_cur_recursion_internal(0),
-	isPrimordial(false),state("new"),
-	nativeExtensionCallCount(0)
+ASWorker::ASWorker(Class_base* c)
+	:EventDispatcher(c->getSystemState()->worker,c)
+	,parser(nullptr)
+	,giveAppPrivileges(false)
+	,started(false)
+	,inGarbageCollection(false)
+	,inShutdown(false)
+	,inFinalize(false)
+	,stage(nullptr)
+	,freelist(new asfreelist[asClassCount])
+	,freelist_template(new asfreelist[asClassCount])
+	,currentCallContext(nullptr)
+	,cur_recursion(0)
+	,AVM1_cur_recursion_function(0)
+	,AVM1_cur_recursion_internal(0)
+	,isPrimordial(false)
+	,state("new")
+	,nativeExtensionCallCount(0)
 {
 	subtype = SUBTYPE_WORKER;
 	// TODO: it seems that AIR applications have a higher default value for max_recursion
@@ -82,14 +103,24 @@ ASWorker::ASWorker(Class_base* c):
 	gcNext=this;
 	gcPrev=this;
 }
-ASWorker::ASWorker(ASWorker* wrk, Class_base* c):
-	EventDispatcher(wrk,c),parser(nullptr),
-	giveAppPrivileges(false),started(false),inGarbageCollection(false),inShutdown(false),inFinalize(false),
-	stage(nullptr),
-	freelist(new asfreelist[asClassCount]),currentCallContext(nullptr),
-	cur_recursion(0),AVM1_cur_recursion_function(0),AVM1_cur_recursion_internal(0),
-	isPrimordial(false),state("new"),
-	nativeExtensionCallCount(0)
+ASWorker::ASWorker(ASWorker* wrk, Class_base* c)
+	:EventDispatcher(wrk,c)
+	,parser(nullptr)
+	,giveAppPrivileges(false)
+	,started(false)
+	,inGarbageCollection(false)
+	,inShutdown(false)
+	,inFinalize(false)
+	,stage(nullptr)
+	,freelist(new asfreelist[asClassCount])
+	,freelist_template(new asfreelist[asClassCount])
+	,currentCallContext(nullptr)
+	,cur_recursion(0)
+	,AVM1_cur_recursion_function(0)
+	,AVM1_cur_recursion_internal(0)
+	,isPrimordial(false)
+	,state("new")
+	,nativeExtensionCallCount(0)
 {
 	subtype = SUBTYPE_WORKER;
 	// TODO: it seems that AIR applications have a higher default value for max_recursion
@@ -209,6 +240,8 @@ void ASWorker::finalize()
 	delete[] stacktrace;
 	delete[] freelist;
 	freelist=nullptr;
+	delete[] freelist_template;
+	freelist_template=nullptr;
 }
 
 void ASWorker::prepareShutdown()
@@ -442,6 +475,8 @@ void ASWorker::execute()
 			}
 			else
 				handleInternalEvent(e.getPtr());
+
+			processGarbageCollection(false);
 		}
 		catch(LightsparkException& e)
 		{
@@ -495,6 +530,37 @@ void ASWorker::handleInternalEvent(Event* e)
 			else
 				ev->base->loadedFrom->buildClassAndInjectBase(ev->class_name.raw_buf(),ev->base);
 			LOG(LOG_CALLS,"End of binding of " << ev->class_name);
+			break;
+		}
+		case ROOTCONSTRUCTEDEVENT:
+		{
+			RootConstructedEvent* ev=static_cast<RootConstructedEvent*>(e);
+			LOG(LOG_CALLS,"RootConstructedEvent");
+			ev->clip->constructionComplete(ev->_explicit);
+			break;
+		}
+		case FIRST_FRAME_AVAILABLE_EVENT:
+		{
+			FirstFrameAvailableEvent* ev=static_cast<FirstFrameAvailableEvent*>(e);
+
+			if (ev->root == getSystemState()->mainClip)
+			{
+				getSystemState()->removeJob(getSystemState());
+				getSystemState()->addFrameTick(getSystemState());
+			}
+			else
+			{
+				if (ev->root->needsActionScript3())
+				{
+					ev->root->as<MovieClip>()->declareFrame(false);
+					ev->root->as<MovieClip>()->initFrame();
+				}
+				else
+				{
+					if (ev->root->loaderInfo && ev->root->loaderInfo->getLoader())
+						ev->root->loaderInfo->getLoader()->setContent(ev->root);
+				}
+			}
 			break;
 		}
 		default:

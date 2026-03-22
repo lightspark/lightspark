@@ -1912,10 +1912,14 @@ AdvanceFrameEvent::AdvanceFrameEvent(_NR<DisplayObject> m): Event(nullptr,nullpt
 {
 }
 
-RootConstructedEvent::RootConstructedEvent(_NR<DisplayObject> m, bool explicit_): Event(nullptr,nullptr,"RootConstructedEvent"),clip(m),_explicit(explicit_)
+RootConstructedEvent::RootConstructedEvent(_NR<DisplayObject> m, bool explicit_): Event(m->getInstanceWorker(),nullptr,"RootConstructedEvent"),clip(m),_explicit(explicit_)
 {
 }
 
 TextInputEvent::TextInputEvent(_NR<InteractiveObject> m, const tiny_string& s) : Event(nullptr,nullptr, "TextInputEvent"),target(m),text(s)
+{
+}
+
+FirstFrameAvailableEvent::FirstFrameAvailableEvent(RootMovieClip* _root):Event(_root->getInstanceWorker(),nullptr, "FirstFrameAvailableEvent"),root(_root)
 {
 }

@@ -527,10 +527,9 @@ public:
 class RootConstructedEvent: public Event
 {
 friend class ABCVm;
-private:
+public:
 	_NR<DisplayObject> clip;
 	bool _explicit;
-public:
 	RootConstructedEvent(_NR<DisplayObject> m, bool explicit_ = false);
 	EVENT_TYPE getEventType() const override { return ROOTCONSTRUCTEDEVENT; }
 };
@@ -600,7 +599,7 @@ class FirstFrameAvailableEvent: public Event
 {
 public:
 	RootMovieClip* root;
-	FirstFrameAvailableEvent(RootMovieClip* _root):Event(nullptr,nullptr, "FirstFrameAvailableEvent"),root(_root) {}
+	FirstFrameAvailableEvent(RootMovieClip* _root);
 	EVENT_TYPE getEventType() const override { return FIRST_FRAME_AVAILABLE_EVENT; }
 };
 class AddToInvalidateQueueEvent: public Event

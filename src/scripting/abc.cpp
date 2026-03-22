@@ -1151,6 +1151,8 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 		switch(e.second->getEventType())
 		{
 			case BIND_CLASS:
+			case ROOTCONSTRUCTEDEVENT:
+			case FIRST_FRAME_AVAILABLE_EVENT:
 				e.second->getInstanceWorker()->handleInternalEvent(e.second.getPtr());
 				break;
 			case SHUTDOWN:
@@ -1291,13 +1293,6 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				ev->content->placedByActionScript = true;
 				break;
 			}
-			case ROOTCONSTRUCTEDEVENT:
-			{
-				RootConstructedEvent* ev=static_cast<RootConstructedEvent*>(e.second.getPtr());
-				LOG(LOG_CALLS,"RootConstructedEvent");
-				ev->clip->constructionComplete(ev->_explicit);
-				break;
-			}
 			case LOCALCONNECTIONEVENT:
 			{
 				LocalConnectionEvent* ev=static_cast<LocalConnectionEvent*>(e.second.getPtr());
@@ -1320,30 +1315,6 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				m_sys->stage->cleanupRemovedDisplayObjects();
 				m_sys->worker->processGarbageCollection(false);
 				break;
-			case FIRST_FRAME_AVAILABLE_EVENT:
-			{
-				FirstFrameAvailableEvent* ev=static_cast<FirstFrameAvailableEvent*>(e.second.getPtr());
-
-				if (ev->root == m_sys->mainClip)
-				{
-					m_sys->removeJob(m_sys);
-					m_sys->addFrameTick(m_sys);
-				}
-				else
-				{
-					if (ev->root->needsActionScript3())
-					{
-						ev->root->as<MovieClip>()->declareFrame(false);
-						ev->root->as<MovieClip>()->initFrame();
-					}
-					else
-					{
-						if (ev->root->loaderInfo && ev->root->loaderInfo->getLoader())
-							ev->root->loaderInfo->getLoader()->setContent(ev->root);
-					}
-				}
-				break;
-			}
 			case ADDTOINVALIDATEQUEUE_EVENT:
 			{
 				AddToInvalidateQueueEvent* ev=static_cast<AddToInvalidateQueueEvent*>(e.second.getPtr());
@@ -1502,7 +1473,10 @@ bool ABCVm::prependEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool force)
 bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool isGlobalMessage)
 {
 	if (!isGlobalMessage
-			&& (!obj.isNull() || ev->getEventType() == BIND_CLASS)
+			&& (!obj.isNull()
+			|| ev->getEventType() == BIND_CLASS
+			|| ev->getEventType() == FIRST_FRAME_AVAILABLE_EVENT
+			|| ev->getEventType() == ROOTCONSTRUCTEDEVENT)
 			&& ev->getInstanceWorker()
 			&& !ev->getInstanceWorker()->isPrimordial)
 	{
@@ -2427,6 +2401,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 				applicationDomain->customClasses.insert(make_pair(mname->name_s_id,ci));
 				ci->isInterface = true;
 				Function* f = Class<IFunction>::getFunction(obj->getSystemState(),Class_base::_toString);
+				f->setWorker(applicationDomain->getInstanceWorker());
 				f->setRefConstant();
 				ci->setDeclaredMethodByQName("toString",AS3,f,NORMAL_METHOD,false);
 				//LOG(LOG_CALLS,"Building class traits");
@@ -2529,6 +2504,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 			// 	LOG(LOG_CALLS,"Method trait: " << *mname << " #" << t->method);
 			method_info* m=&methods[t->method];
 			SyntheticFunction* f=Class<IFunction>::getSyntheticFunction(obj->getInstanceWorker(),m,m->numArgs()-m->numOptions());
+			f->setWorker(applicationDomain->getInstanceWorker());
 
 #ifdef PROFILING_SUPPORT
 			if(!m->validProfName)

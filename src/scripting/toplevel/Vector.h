@@ -26,7 +26,6 @@
 
 namespace lightspark
 {
-
 /* This is a class which was instantiated from a Template<T> */
 template<class T>
 class TemplatedClass : public Class<T>
@@ -35,15 +34,22 @@ private:
 	/* the Template<T>* this class was generated from */
 	const Template_base* templ;
 	std::vector<Type*> types;
-	asfreelist freelist;
+	asfreelist freelist_template_inherited;
+	uint32_t builtinID;
 public:
 	TemplatedClass(const QName& name, const std::vector<Type*>& _types, Template_base* _templ, MemoryAccount* m)
-		: Class<T>(name,ClassName<T>::id, m), templ(_templ), types(_types)
+		:Class<T>(name,ClassName<T>::id, m)
+		,templ(_templ)
+		,types(_types)
+		,builtinID(UINT32_MAX)
 	{
+		if (!types.empty() && types[0]->isBuiltin())
+			builtinID=((Class_base*)types[0])->classID;
 	}
-	asfreelist* getFreeList(ASWorker*) override
+	asfreelist* getFreeList(ASWorker* w) override
 	{
-		return &freelist;
+		return builtinID==UINT32_MAX ? &freelist_template_inherited
+			   : w ? &w->freelist_template[builtinID] : nullptr;
 	}
 
 	void getInstance(ASWorker* wrk,asAtom& ret, bool construct, asAtom* args,

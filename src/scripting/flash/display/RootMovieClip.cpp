@@ -165,7 +165,7 @@ void RootMovieClip::constructionComplete(bool _explicit, bool forInitAction)
 		else
 		{
 			MovieClip::constructionComplete(_explicit,forInitAction);
-			if (this==getInstanceWorker()->rootClip.getPtr())
+			if (getInstanceWorker()->isPrimordial && this==getInstanceWorker()->rootClip.getPtr())
 			{
 				incRef();
 				getInstanceWorker()->stage->_addChildAt(this,0);

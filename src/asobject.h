@@ -2920,17 +2920,9 @@ FORCE_INLINE void asAtomHandler::add_i(asAtom& a, asAtom &v2)
 	int64_t num2=toInt(v2);
 	int64_t num1=toInt(a);
 
-	LOG_CALL("add_i " << num1 << '+' << num2);
 	int64_t res = num1+num2;
-	if (res >= INT32_MAX || res <= INT32_MIN)
-	{
-		if (res >=0 && res <= UINT32_MAX)
-			setUInt(a,res);
-		else
-			setNumber(a,res);
-	}
-	else
-		setInt(a,res);
+	LOG_CALL("add_i " << num1 << '+' << num2 <<'='<<(int32_t)res);
+	setInt(a,res);
 }
 
 FORCE_INLINE void asAtomHandler::subtract_i(asAtom& a, asAtom &v2)

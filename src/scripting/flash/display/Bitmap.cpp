@@ -37,11 +37,13 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c):
 	DisplayObject(wrk,c),TokenContainer(this,&bitmaptokens,1.0),fs(0xff),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
+	usedInRenderCall.clear();
 }
 Bitmap::Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, std::istream *s, FILE_TYPE type):
 	DisplayObject(wrk,c),TokenContainer(this,&bitmaptokens,1.0),fs(0xff),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
+	usedInRenderCall.clear();
 	setLoaderInfo(li);
 
 	bitmapData = _MR(Class<BitmapData>::getInstanceS(wrk));
@@ -75,6 +77,7 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, std::istream *s, FI
 			LOG(LOG_ERROR,"Unsupported image type");
 			break;
 	}
+	bitmapcontainer=bitmapData->getBitmapContainer();
 	setSize(bitmapData->getWidth(), bitmapData->getHeight());
 	updatedData();
 	afterConstruction();
@@ -84,8 +87,11 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startuplo
 	DisplayObject(wrk,c),TokenContainer(this,&bitmaptokens,1.0),size(data->getWidth(), data->getHeight()),fs(0xff),smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
+	usedInRenderCall.clear();
 	bitmapData = data;
 	bitmapData->addUser(this,startupload);
+	bitmapcontainer = bitmapData->getBitmapContainer();
+	setSize(bitmapData->getWidth(), bitmapData->getHeight());
 	updatedData();
 }
 
@@ -98,14 +104,17 @@ bool Bitmap::destruct()
 	if(!bitmapData.isNull())
 		bitmapData->removeUser(this);
 	bitmapData.reset();
+	bitmapcontainer.reset();
 	smoothing = false;
 	bitmaptokens.clear();
+	usedInRenderCall.clear();
 	return DisplayObject::destruct();
 }
 
 void Bitmap::finalize()
 {
 	bitmapData.reset();
+	bitmapcontainer.reset();
 	DisplayObject::finalize();
 }
 
@@ -148,8 +157,9 @@ ASFUNCTIONBODY_ATOM(Bitmap,_constructor)
 	if(!_bitmapData.isNull())
 	{
 		th->bitmapData=_bitmapData;
-		th->bitmapData->addUser(th);
+		th->bitmapcontainer=_bitmapData->getBitmapContainer();
 		th->setSize(_bitmapData->getWidth(), _bitmapData->getHeight());
+		th->bitmapData->addUser(th);
 		th->updatedData();
 	}
 }
@@ -159,13 +169,18 @@ void Bitmap::onBitmapData(_NR<BitmapData> old)
 	if(!old.isNull())
 		old->removeUser(this);
 	if(!bitmapData.isNull())
-	{
 		bitmapData->addUser(this);
+	geometryChanged();
+	if (bitmapData)
+	{
+		bitmapcontainer=bitmapData->getBitmapContainer();
 		setSize(bitmapData->getWidth(), bitmapData->getHeight());
 	}
 	else
-		setSize(Vector2());
-	geometryChanged();
+	{
+		bitmapcontainer.reset();
+		setSize(0,0);
+	}
 	updatedData();
 }
 
@@ -186,11 +201,13 @@ ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,smoothing,onSmoothingChanged)
 ASFUNCTIONBODY_GETTER_SETTER_CB(Bitmap,pixelSnapping,onPixelSnappingChanged)
 void Bitmap::setupTokens()
 {
-	if (bitmapData && !bitmaptokens.filltokens)
+	if (bitmapcontainer.isNull())
+		return;
+	fs.FillStyleType = smoothing ? CLIPPED_BITMAP : NON_SMOOTHED_CLIPPED_BITMAP;
+	fs.bitmap = bitmapcontainer;
+	if (!bitmaptokens.filltokens)
 	{
 		bitmaptokens.filltokens=_MR(new tokenListRef());
-		fs.FillStyleType = smoothing ? CLIPPED_BITMAP : NON_SMOOTHED_CLIPPED_BITMAP;
-		fs.bitmap = bitmapData->getBitmapContainer();
 		scaling=TWIPS_FACTOR;
 		bitmaptokens.filltokens->tokens.reserve(14);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(SET_FILL).uval);
@@ -198,11 +215,11 @@ void Bitmap::setupTokens()
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(0,0)).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(number_t(bitmapData->getWidth()),0)).uval);
+		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(number_t(size.x),0)).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(number_t(bitmapData->getWidth()),number_t(bitmapData->getHeight()))).uval);
+		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(number_t(size.x),number_t(size.y))).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(0,number_t(bitmapData->getHeight()))).uval);
+		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(0,number_t(size.y))).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(Vector2(0,0)).uval);
 		bitmaptokens.filltokens->tokens.push_back(GeomToken(CLEAR_FILL).uval);
@@ -222,12 +239,14 @@ void Bitmap::refreshSurfaceState()
 {
 	if (bitmapData)
 		bitmapData->checkForUpload();
+	else
+		bitmapcontainer->checkTextureForUpload(getSystemState());
 }
 bool Bitmap::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
 {
 	if (visibleOnly && !this->isVisible())
 		return false;
-	if (bitmapData.isNull())
+	if (bitmapcontainer.isNull() || bitmapcontainer->isEmpty())
 		return false;
 	xmin = 0;
 	ymin = 0;
@@ -266,15 +285,13 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 
 IDrawable *Bitmap::invalidate(bool smoothing)
 {
-	if (this->bitmapData)
-		this->bitmapData->getBitmapContainer()->flushRenderCalls(getSystemState()->getRenderThread(),nullptr,false);
+	bitmapcontainer->flushRenderCalls(getSystemState()->getRenderThread(),nullptr,false);
 	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);
 }
 
 void Bitmap::setupRenderCallBitmap(BitmapData* data)
 {
-	data->incRef();
-	bitmapData =_MR<BitmapData>(data);
+	bitmapcontainer = data->getBitmapContainer();
 	setSize(data->getWidth(), data->getHeight());
 	hasChanged=true;
 	setupTokens();

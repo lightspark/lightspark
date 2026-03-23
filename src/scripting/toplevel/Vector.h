@@ -46,6 +46,7 @@ public:
 		if (!types.empty() && types[0]->isBuiltin())
 			builtinID=((Class_base*)types[0])->classID;
 	}
+	bool isBuiltin() const override { return false; }
 	asfreelist* getFreeList(ASWorker* w) override
 	{
 		return builtinID==UINT32_MAX ? &freelist_template_inherited

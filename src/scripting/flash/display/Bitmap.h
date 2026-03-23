@@ -46,6 +46,7 @@ private:
 	Vector2 size;
 	FILLSTYLE fs;
 	tokensVector bitmaptokens;
+	_NR<BitmapContainer> bitmapcontainer;
 	void setupTokens();
 	atomic_flag usedInRenderCall;
 public:
@@ -77,6 +78,7 @@ public:
 	void resetRenderCall()
 	{
 		usedInRenderCall.clear();
+		ASATOM_REMOVESTOREDMEMBER(scrollRect);
 		decRef();
 	}
 };

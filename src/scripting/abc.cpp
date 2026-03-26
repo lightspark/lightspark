@@ -605,10 +605,7 @@ ABCContext::ABCContext(ApplicationDomain* appDomain,SecurityDomain* secDomain, i
 			n >= INT32_MIN && n <= INT32_MAX)
 			constantAtoms_doubles[i] = asAtomHandler::fromInt(n);
 		else
-		{
-			ASObject* res = abstract_d_constant(applicationDomain->getInstanceWorker(),n);
-			constantAtoms_doubles[i] = asAtomHandler::fromObject(res);
-		}
+			constantAtoms_doubles[i] = asAtomHandler::fromNumber(n);
 	}
 	constantAtoms_strings.resize(constant_pool.strings.size());
 	for (uint32_t i = 0; i < constant_pool.strings.size(); i++)

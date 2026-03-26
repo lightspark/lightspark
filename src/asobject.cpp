@@ -2482,8 +2482,10 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 	bool ret = false;
 	int step = 0;
 	// loop over members in two steps:
-	// first loop looks for variables that are also members of a static object so we can stop gc early
-	// second loop checks all "normal" variables
+	// first loop sets "hasmember" of parent if it has startobject as member
+	// so that all variables checked in third loop will have the member indicator set if they also have an indirect reference to parent
+	// second loop looks for variables that are also members of a static object so we can stop gc early
+	// third loop checks all "normal" variables
 	while (step != 2)
 	{
 		auto it=Variables.cbegin();
@@ -2502,11 +2504,27 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 				++it;
 				continue;
 			}
-			if ((step && !o->hasStoredMemberStatic())
-				|| (!step && o->hasStoredMemberStatic()))
+			switch (step)
 			{
-				it++;
-				continue;
+				case 0:
+					if (o == gcstate.startobj)
+						parent->gccounter.hasmember=true;
+					it++;
+					continue;
+				case 1:
+					if (o->hasStoredMemberStatic())
+					{
+						it++;
+						continue;
+					}
+					break;
+				case 2:
+					if (!o->hasStoredMemberStatic())
+					{
+						it++;
+						continue;
+					}
+					break;
 			}
 
 			if (it->second.isRefcountedVar() && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
@@ -5515,9 +5533,15 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 							}
 						}
 						default: // double
-							if(std::isnan(a.dval))
+						{
+							number_t n1 = toNumber(a);
+							if(std::isnan(n1))
 								return TUNDEFINED;
-							return (a.dval < (v2.uintval & ATOMTYPE_32BIT_BITS))?TTRUE:TFALSE;
+							number_t n2 = toNumber(v2);
+							if(std::isnan(n2))
+								return TUNDEFINED;
+							return (n1 < n2)?TTRUE:TFALSE;
+						}
 					}
 					break;
 				default: // INVALID
@@ -5531,7 +5555,7 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 			{
 				case ATOM_INTEGER:
 				case ATOM_UINTEGER:
-					return toString(a,w) < toString(v2,w) ? TTRUE : TFALSE;
+					return toInt(a) < toInt(v2) ? TTRUE : TFALSE;
 				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 					return getObject(a)->isLessAtom(v2);
 				case ATOM_STRINGPTR:
@@ -5540,8 +5564,15 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				case ATOM_OBJECTPTR:
 					break;
 				default: // double
-					return toString(a,w) < toString(v2,w) ? TTRUE : TFALSE;
-					break;
+				{
+					number_t n1 = toNumber(a);
+					if(std::isnan(n1))
+						return TUNDEFINED;
+					number_t n2 = toNumber(v2);
+					if(std::isnan(n2))
+						return TUNDEFINED;
+					return (n1 < n2)?TTRUE:TFALSE;
+				}
 			}
 			break;
 		}
@@ -5554,9 +5585,15 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 				case ATOM_UINTEGER:
 					return (toUInt(a) < asAtomHandler::getUInt(v2))?TTRUE:TFALSE;
 				case ATOM_NUMBERPTR:
-					if(std::isnan(toNumber(v2)))
+				{
+					number_t n1 = toNumber(a);
+					if(std::isnan(n1))
 						return TUNDEFINED;
-					return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
+					number_t n2 = toNumber(v2);
+					if(std::isnan(n2))
+						return TUNDEFINED;
+					return (n1 < n2)?TTRUE:TFALSE;
+				}
 				case ATOM_INVALID_UNDEFINED_NULL_BOOL_STRINGID:
 				{
 					switch (v2.uintval&ATOMTYPE_BIT_FLAGS)
@@ -5608,11 +5645,15 @@ TRISTATE asAtomHandler::isLessIntern(asAtom& a, ASWorker* w, asAtom &v2)
 			break;
 		}
 		default: // double
-			if(std::isnan(toNumber(a)))
+		{
+			number_t n1 = toNumber(a);
+			if(std::isnan(n1))
 				return TUNDEFINED;
-			if(std::isnan(toNumber(v2)))
+			number_t n2 = toNumber(v2);
+			if(std::isnan(n2))
 				return TUNDEFINED;
-			return (toNumber(a) < toNumber(v2))?TTRUE:TFALSE;
+			return (n1 < n2)?TTRUE:TFALSE;
+		}
 	}
 	assert(getObject(a));
 	assert(getObject(v2));

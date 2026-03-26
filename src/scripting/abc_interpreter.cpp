@@ -1739,32 +1739,20 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 		}
 		uint8_t prevopcode=opcode;
 		opcode = code.readbyte();
-		// if (typestack.empty() || typestack.back().obj==nullptr)
-		// 	LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<state.preloadedcode.size()<<" "<<hex<<(int)opcode);
-		// else
-		// 	LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<typestack.back().obj->toDebugString()<<" "<<state.preloadedcode.size()<<" "<< hex<<(int)opcode);
 
-		if (//state.function->inClass && state.function->inClass->toDebugString().find("TitleWorld") != std::string::npos
-			//&&
-			Log::getLevel()==LOG_CALLS
-			//state.function->functionname == getSys()->getUniqueStringId("GetChildByClass")
-			)
+		if (Log::getLevel()==LOG_CALLS)
 		{
-		if (typestack.empty() || typestack.back().obj==nullptr)
-		{
-			if (state.operandlist.empty())
-				LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<state.preloadedcode.size()<<" "<<hex<<(int)opcode);
+			if (typestack.empty() || typestack.back().obj==nullptr)
+			{
+				if (state.operandlist.empty())
+					LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<state.preloadedcode.size()<<" "<<hex<<(int)opcode);
+				else
+					LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<state.preloadedcode.size()<<" "<<hex<<(int)opcode<<dec<<" ("<<state.operandlist.front().index<<")");
+			}
+			else if (state.operandlist.empty())
+				LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<typestack.back().obj->toDebugString()<<" "<<state.preloadedcode.size()<<" "<< hex<<(int)opcode<<dec);
 			else
-				LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<state.preloadedcode.size()<<" "<<hex<<(int)opcode<<dec<<" ("<<state.operandlist.front().index<<")");
-		}
-		else if (state.operandlist.empty())
-			LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<typestack.back().obj->toDebugString()<<" "<<state.preloadedcode.size()<<" "<< hex<<(int)opcode<<dec);
-		else
-			LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<typestack.back().obj->toDebugString()<<" "<<state.preloadedcode.size()<<" "<< hex<<(int)opcode<<dec<<" ("<<state.operandlist.front().index<<")");
-		// if (code.tellg()> 523)// && getSys()->getStringFromUniqueId(state.function->functionname)=="nextStage")
-		// {
-		// 	int x=0;
-		// }
+				LOG(LOG_INFO,"preload pass3 opcode:"<<function->getSystemState()->getStringFromUniqueId(function->functionname)<<" "<< code.tellg()-1<<" "<<state.operandlist.size()<<" "<<typestack.size()<<" "<<typestack.back().obj->toDebugString()<<" "<<state.preloadedcode.size()<<" "<< hex<<(int)opcode<<dec<<" ("<<state.operandlist.front().index<<")");
 		}
 		switch (swap_indicator)
 		{

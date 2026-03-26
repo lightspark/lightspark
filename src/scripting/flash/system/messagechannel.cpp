@@ -196,30 +196,31 @@ ASFUNCTIONBODY_ATOM(MessageChannel,send)
 		createError<IOError>(wrk,0,"MessageChannel closed");
 		return;
 	}
-	_NR<ASObject> msg;
+	asAtom msg = asAtomHandler::invalidAtom;
 	int queueLimit;
 	ARG_CHECK(ARG_UNPACK(msg)(queueLimit,-1));
-	if (msg.isNull() || th->receiver==nullptr)
+	if (asAtomHandler::isNull(msg) || th->receiver==nullptr)
 		return;
 	if (queueLimit != -1)
 		LOG(LOG_NOT_IMPLEMENTED,"MessageChannel.send ignores parameter queueLimit");
 	Locker l(th->messagequeuemutex);
-	if (msg->is<ASWorker>()
-			|| msg->is<MessageChannel>()
-			|| (msg->is<ByteArray>() && msg->as<ByteArray>()->shareable)
-			|| msg->is<ASMutex>()
-			|| msg->is<ASCondition>()
+	if (asAtomHandler::is<ASWorker>(msg)
+			|| asAtomHandler::is<MessageChannel>(msg)
+			|| (asAtomHandler::is<ByteArray>(msg) && asAtomHandler::as<ByteArray>(msg)->shareable)
+			|| asAtomHandler::is<ASMutex>(msg)
+			|| asAtomHandler::is<ASCondition>(msg)
 			)
 	{
-		msg->objfreelist=nullptr; // message will be used in another thread, make it not reusable
-		msg->incRef();
-		msg->addStoredMember();
-		th->messagequeue.push_back(msg.getPtr());
+		ASObject* omsg = asAtomHandler::getObjectNoCheck(msg);
+		omsg->objfreelist=nullptr; // message will be used in another thread, make it not reusable
+		omsg->incRef();
+		omsg->addStoredMember();
+		th->messagequeue.push_back(omsg);
 	}
 	else
 	{
 		ByteArray* b = Class<ByteArray>::getInstanceSNoArgs(th->receiver);
-		b->writeObject(msg.getPtr(),th->receiver);
+		b->writeAtomObject(msg,th->receiver);
 		b->setPosition(0);
 		b->addStoredMember();
 		th->messagequeue.push_back(b);

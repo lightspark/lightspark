@@ -280,15 +280,10 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata2 = bufferIDindex
 			//action.udata3 = offset
 			uint32_t bufferID = getBufferID(action.udata2);
-			if (bufferID != UINT32_MAX)
-			{
-				attribs[action.udata1>>4 &0x7].bufferID = bufferID;
-				attribs[action.udata1>>4 &0x7].data32PerVertex = action.udata1>>8;
-				attribs[action.udata1>>4 &0x7].offset = action.udata3;
-				attribs[action.udata1>>4 &0x7].format = VERTEXBUFFER_FORMAT(action.udata1&0x7);
-			}
-			else
-				LOG(LOG_ERROR,"Context3D: setVertexBuffer without valid BufferID, should not happen");
+			attribs[action.udata1>>4 &0x7].bufferID = bufferID;
+			attribs[action.udata1>>4 &0x7].data32PerVertex = action.udata1>>8;
+			attribs[action.udata1>>4 &0x7].offset = action.udata3;
+			attribs[action.udata1>>4 &0x7].format = VERTEXBUFFER_FORMAT(action.udata1&0x7);
 			break;
 		}
 		case RENDER_DRAWTRIANGLES:
@@ -1904,12 +1899,18 @@ ASFUNCTIONBODY_ATOM(Context3D,setVertexBufferAt)
 		createError<RangeError>(wrk,kParamRangeError);
 		return;
 	}
-	if (buffer.isNull())
-		return;
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_SETVERTEXBUFFER;
-	action.udata1 = index<<4 | buffer->data32PerVertex<<8;
-	action.udata2 = buffer->bufferIDindex;
+	if (buffer.isNull())
+	{
+		action.udata1 = index<<4;
+		action.udata2 = UINT32_MAX;
+	}
+	else
+	{
+		action.udata1 = index<<4 | buffer->data32PerVertex<<8;
+		action.udata2 = buffer->bufferIDindex;
+	}
 	action.udata3 = bufferOffset;
 	if (format == "bytes4")
 		action.udata1 |= VERTEXBUFFER_FORMAT::BYTES_4;

@@ -1297,7 +1297,7 @@ void DisplayObject::invalidateForRenderToBitmap(BitmapContainerRenderData* conta
 		if (getNeedsTextureRecalculation() || !d->isCachedSurfaceUsable(this))
 		{
 			this->incRef();
-			AsyncDrawJob* j = new AsyncDrawJob(d,_MR(this));
+			AsyncDrawJob* j = new AsyncDrawJob(d,this);
 			j->execute();
 			j->threadAbort(); // avoid addUploadJob in jobFence()
 			container->uploads.push_back(j);

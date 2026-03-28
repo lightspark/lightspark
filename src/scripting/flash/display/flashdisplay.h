@@ -122,6 +122,7 @@ public:
 
 class DisplayObjectContainer: public InteractiveObject
 {
+friend struct FrameContainer;
 private:
 	bool mouseChildren;
 	map<int32_t,DisplayObject*> mapDepthToLegacyChild;

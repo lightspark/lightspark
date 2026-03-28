@@ -3661,7 +3661,7 @@ void TagExecutionList::removeAllEntries(uint32_t depth, DisplayListTag* tag)
 			executionList[l.front().second].first=nullptr;
 			l.pop();
 		}
-		if (tag && !inSkipping)
+		if (tag && (!inSkipping || originalDepthMap->find(LEGACY_DEPTH_START+depth) != originalDepthMap->end()))
 			addEntry(depth,tag,false);
 	}
 }

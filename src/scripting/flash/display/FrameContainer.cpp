@@ -143,7 +143,7 @@ void Frame::execute(DisplayObjectContainer* displayList, bool inskipping, std::v
 	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
 	{
-		RemoveObject2Tag* obj = static_cast<RemoveObject2Tag*>(*it);
+		RemoveObject2Tag* obj = dynamic_cast<RemoveObject2Tag*>(*it);
 		if (obj != nullptr && displayList->hasLegacyChildAt(obj->getDepth()))
 		{
 			DisplayObject* child = displayList->getLegacyChildAt(obj->getDepth());
@@ -472,6 +472,7 @@ void FrameContainer::declareFrame(MovieClip* clip)
 			iter->execute(clip,false,clip->removedFrameScripts);
 			return;
 		}
+		executionlist.originalDepthMap = &clip->mapDepthToLegacyChild;
 		// fill all tags to be executed up to current frame
 		for(clip->state.FP=0;clip->state.FP<=frame;clip->state.FP++)
 		{

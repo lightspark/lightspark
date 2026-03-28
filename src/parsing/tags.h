@@ -72,6 +72,7 @@ struct TagExecutionList
 {
 	std::vector<std::pair<DisplayListTag*,bool>> executionList;
 	std::map<uint32_t,std::queue<std::pair<DisplayListTag*,uint32_t>>> executionDepthMap;
+	std::map<int32_t,DisplayObject*>* originalDepthMap;
 	bool inSkipping;
 	void addEntry(uint32_t depth, DisplayListTag* tag, bool hasCharacter);
 	void removeAllEntries(uint32_t depth, DisplayListTag* tag);
@@ -84,7 +85,7 @@ public:
 	virtual void execute(DisplayObjectContainer* parent,bool inskipping, bool inRewind) =0;
 	virtual void fillExecutionList(TagExecutionList& list)
 	{
-		// only add place/remove tags if we are skipping
+		// only add place/remove tags if we are not skipping
 		if (!list.inSkipping)
 			list.executionList.push_back(std::make_pair(this,false));
 	}

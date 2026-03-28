@@ -350,6 +350,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 			else if (handled)
 			{
 				op.removeArg(state);
+				state.operandlist.back().codecount=0;
 				state.preloadedcode.push_back(opcode_optimized);
 				state.refreshOldNewPosition(code);
 				state.preloadedcode.back().pcode.local_pos1 = op.index;

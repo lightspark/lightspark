@@ -4143,7 +4143,8 @@ void ABCVm::abc_dup_increment_i_local_localresult(call_context* context)
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	replacelocalresult(context,context->exec_pos->local_pos2,res);
 	asAtomHandler::increment_i(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	replacelocalresult(context,context->exec_pos->local3.pos,res);
+	if (context->exec_pos->local_pos2 !=context->exec_pos->local3.pos)
+		replacelocalresult(context,context->exec_pos->local3.pos,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_dup_decrement_i_local_localresult(call_context* context)
@@ -4152,7 +4153,8 @@ void ABCVm::abc_dup_decrement_i_local_localresult(call_context* context)
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	replacelocalresult(context,context->exec_pos->local_pos2,res);
 	asAtomHandler::decrement_i(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2));
-	replacelocalresult(context,context->exec_pos->local3.pos,res);
+	if (context->exec_pos->local_pos2 !=context->exec_pos->local3.pos)
+		replacelocalresult(context,context->exec_pos->local3.pos,res);
 	++(context->exec_pos);
 }
 void ABCVm::abc_lookupswitch_constant(call_context* context)

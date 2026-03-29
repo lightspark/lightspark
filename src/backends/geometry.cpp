@@ -140,19 +140,13 @@ void ShapesBuilder::endSubpathForStyles(unsigned fill0, unsigned fill1, unsigned
 	if (fill0)
 	{
 		auto& segments = filledShapesMap[fill0];
-		if (!formorphing || !segments.empty())
-		{
-			for (int i = currentSubpath.size()-1; i >= 0; --i) {
-				segments.push_back(currentSubpath[i].reverse());
-			}
-		}
-		else // it seems that for morphshapes the first subpath has to be added in "normal" order
-			segments.insert(segments.end(), currentSubpath.begin(), currentSubpath.end());
+		segments.insert(segments.end(), currentSubpath.begin(), currentSubpath.end());
 	}
 
 	if (fill1) {
 		auto& segments = filledShapesMap[fill1];
-		segments.insert(segments.end(), currentSubpath.begin(), currentSubpath.end());
+		for (int i = currentSubpath.size()-1; i >= 0; --i)
+			segments.push_back(currentSubpath[i].reverse());
 	}
 
 	if (stroke && !fill0 && !fill1) {

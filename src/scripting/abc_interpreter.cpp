@@ -1346,17 +1346,22 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				uint32_t t = codejumps.readu30();
 				skippablekills.erase(t);
 				constantsstack.clear();
-				state.islocalRead[t]=true;
+				if (state.islocalRead.size() > t)
+					state.islocalRead[t]=true;
 				break;
 			}
 			case 0xd0://getlocal_0
 			case 0xd1://getlocal_1
 			case 0xd2://getlocal_2
 			case 0xd3://getlocal_3
-				skippablekills.erase(opcode-0xd0);
+			{
+				uint32_t v = opcode-0xd0;
+				skippablekills.erase(v);
 				constantsstack.clear();
-				state.islocalRead[opcode-0xd0]=true;
+				if (state.islocalRead.size() > v)
+					state.islocalRead[v]=true;
 				break;
+			}
 			case 0x80://coerce
 				codejumps.readu30();
 				constantsstack.clear();
@@ -2275,40 +2280,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			{
 				int32_t p = code.tellg();
 				uint32_t value =code.readu30();
-				assert_and_throw(value < mi->body->getReturnValuePos());
-#ifdef ENABLE_OPTIMIZATION
-				if (state.setlocal_handled.find(p)!=state.setlocal_handled.end()
-					|| checkInitializeLocalToConstant(state,value))
-				{
-					if (state.setlocal_handled.erase(p) && state.operandlist.size())
-					{
-						state.operandlist.back().removeArg(state);
-						state.operandlist.pop_back();
-					}
-					removetypestack(typestack,1);
-					opcode_skipped=true;
-					break;
-				}
-				removeInitializeLocalToConstant(state,value);
-				if (state.operandlist.size() && state.operandlist.back().type==OP_LOCAL && state.operandlist.back().index==(int32_t)value)
-				{
-					// getlocal followed by setlocal on same index, can be skipped
-					state.operandlist.back().removeArg(state);
-					state.operandlist.pop_back();
-					removetypestack(typestack,1);
-					opcode_skipped=true;
-					removeInitializeLocalToConstant(state,value);
-					break;
-				}
-				setOperandModified(state,OP_LOCAL,value);
-#endif
-				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
-				state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint = value;
-				if (typestack.back().obj && typestack.back().obj->is<Class_base>())
-					state.localtypes[value]=typestack.back().obj->as<Class_base>();
-				else
-					state.localtypes[value]=nullptr;
-				removetypestack(typestack,1);
+				opcode_skipped = preload_setlocal(state,code,value,p,opcode,typestack);
 				break;
 			}
 			case 0x65://getscopeobject
@@ -4102,31 +4074,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0xd7://setlocal_3
 			{
 				int32_t p = code.tellg();
-#ifdef ENABLE_OPTIMIZATION
-				assert_and_throw(uint32_t(opcode-0xd4) < mi->body->local_count);
-				setOperandModified(state,OP_LOCAL,opcode-0xd4);
-				if (state.setlocal_handled.find(p)!=state.setlocal_handled.end()
-						|| checkInitializeLocalToConstant(state,opcode-0xd4))
-				{
-					if (state.setlocal_handled.erase(p) && state.operandlist.size())
-					{
-						state.operandlist.back().removeArg(state);
-						state.operandlist.pop_back();
-					}
-					removetypestack(typestack,1);
-					opcode_skipped=true;
-					break;
-				}
-#endif
-				setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
-				state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint =(opcode-0xd4);
-#ifdef ENABLE_OPTIMIZATION
-				if (typestack.back().obj && typestack.back().obj->is<Class_base>())
-					state.localtypes[opcode-0xd4]=typestack.back().obj->as<Class_base>();
-				else
-					state.localtypes[opcode-0xd4]=nullptr;
-#endif
-				removetypestack(typestack,1);
+				opcode_skipped = preload_setlocal(state,code,opcode-0xd4,p, opcode,typestack);
 				break;
 			}
 			case 0x50://sxi1

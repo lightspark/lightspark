@@ -60,7 +60,7 @@ struct preloadstate
 	std::map<int32_t,Class_base*> jumptargeteresulttypes;
 	// local variables (arguments and "this" object) that do not change during execution
 	std::set<int32_t> unchangedlocals;
-	std::set<int32_t> setlocal_handled;
+	std::map<int32_t,uint32_t> setlocal_handled;
 	std::vector<Class_base*> localtypes;
 	std::vector<Class_base*> defaultlocaltypes;
 	std::vector<bool> defaultlocaltypescacheable;
@@ -209,6 +209,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 void preload_setproperty(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, Class_base** lastlocalresulttype, uint32_t simple_setter_opcode_pos);
 void preload_getproperty(preloadstate& state, std::vector<typestackentry>& typestack, memorystream& code, int opcode, Class_base** lastlocalresulttype);
 bool preload_findprop(preloadstate& state,memorystream& code,uint32_t t,bool rewritecode,Class_base** lastlocalresulttype,std::vector<typestackentry>& typestack);
+bool preload_setlocal(preloadstate& state, memorystream& code, uint32_t value, int32_t p, uint32_t opcode, std::vector<typestackentry>& typestack);
 bool checkForSwap(preloadstate& state, Class_base* lastlocalresulttype, memorystream& code);
 }
 #define ABC_OP_OPTIMZED_INCREMENT 0x00000100

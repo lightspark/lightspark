@@ -103,6 +103,7 @@ SET(LIBSPARK_SOURCES
   scripting/abc_interpreter_preload_getlex.cpp
   scripting/abc_interpreter_preload_getproperty.cpp
   scripting/abc_interpreter_preload_setproperty.cpp
+  scripting/abc_interpreter_preload_setlocal.cpp
   scripting/abc_methods.cpp
   scripting/abc_methods_optimized.cpp
   scripting/abc_methods_optimized_add.cpp

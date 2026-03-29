@@ -925,7 +925,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
 			{
 				uint32_t num = code.peeku30FromPosition(pos);
-				state.setlocal_handled.insert(pos);
+				state.setlocal_handled.insert(make_pair(pos,state.operandlist.size()));
 				state.operandlist.push_back(operands(OP_LOCAL,restype,num,0,0));
 				state.operandlist.back().setaslocalresult=true;
 
@@ -948,11 +948,10 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		case 0xd7://setlocal_3
 			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
 			{
-				state.setlocal_handled.insert(pos);
+				state.setlocal_handled.insert(make_pair(pos,state.operandlist.size()));
 				state.operandlist.push_back(operands(OP_LOCAL,restype,b-0xd4,0,0));
 				state.operandlist.back().setaslocalresult=true;
 
-				state.setlocal_handled.insert(pos);
 				// set optimized opcode to corresponding opcode with local result
 				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
 				state.preloadedcode[preloadlocalpos].pcode.local3.pos = b-0xd4;
@@ -2321,7 +2320,8 @@ void preloadFunction_secondPass(preloadstate& state)
 			{
 				uint32_t p = codetypes.tellg();
 				uint32_t t = codetypes.readu30();
-				if (!state.islocalRead[t]
+				if (state.islocalRead.size() > t
+					&& !state.islocalRead[t]
 					&& prevopcode==0x2a)//dup
 				{
 					// dup followed by setlocal that is never read, can be replaced by nop operation
@@ -2339,15 +2339,17 @@ void preloadFunction_secondPass(preloadstate& state)
 			case 0xd7://setlocal_3
 			{
 				uint32_t p = codetypes.tellg();
-				if (!state.islocalRead[opcode-0xd4]
+				uint32_t v = opcode-0xd4;
+				if (state.islocalRead.size() > v
+					&& !state.islocalRead[v]
 					&& prevopcode==0x2a)//dup
 				{
 					// dup followed by setlocal that is never read, can be replaced by nop operation
 					state.mi->body->code[p-2] = 0x02; //nop
 					state.mi->body->code[p-1] = 0x02; //nop
 				}
-				state.unchangedlocals.erase(opcode-0xd4);
-				setdefaultlocaltype(state,opcode-0xd4,currenttype);
+				state.unchangedlocals.erase(v);
+				setdefaultlocaltype(state,v,currenttype);
 				currenttype=nullptr;
 				break;
 			}

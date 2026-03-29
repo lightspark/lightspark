@@ -219,8 +219,8 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 						state.preloadedcode.push_back(0);
 						state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local3.pos = opcode; // use local3.pos as indicator for setproperty/initproperty
 						state.operandlist.back().removeArg(state);
+						state.operandlist.pop_back();
 						setOperandModified(state,cachedslot ? OP_CACHED_SLOT : OP_LOCAL,index);
-						clearOperands(state,false,lastlocalresulttype);
 					}
 					else
 					{

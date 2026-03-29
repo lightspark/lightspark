@@ -279,20 +279,24 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 				switch (b)
 				{
 					case 0x63://setlocal
-					{
 						num = code.peeku30FromPosition(pos+1);
-						pos = code.skipu30FromPosition(pos+1);
-						handled = true;
+						if (uint32_t(op.index) != num)
+						{
+							pos = code.skipu30FromPosition(pos+1);
+							handled = true;
+						}
 						is_iftruefalse=false;
 						break;
-					}
 					case 0xd4: //setlocal_0
 					case 0xd5: //setlocal_1
 					case 0xd6: //setlocal_2
 					case 0xd7: //setlocal_3
 						num = b-0xd4;
-						pos++;
-						handled = true;
+						if (uint32_t(op.index) != num)
+						{
+							pos++;
+							handled = true;
+						}
 						is_iftruefalse=false;
 						break;
 					case 0x29: //pop
@@ -310,8 +314,6 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 					default:
 						is_iftruefalse=false;
 						opcode_optimized=0;
-						// this ensures that the "old" value is stored in a localresult and can be used later, as the duplicated value may be changed by an increment etc.
-						setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DUP,opcode,code,false,true,restype,code.tellg(),opcode_optimized==0,false,true,true,ABC_OP_OPTIMZED_DUP_SETSLOT);
 						break;
 				}
 			}
@@ -365,6 +367,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 				{
 					case 0x29: //pop
 						++pos;
+						state.operandlist.pop_back();
 						break;
 					case 0xd4: //setlocal_0
 					case 0xd5: //setlocal_1
@@ -372,10 +375,12 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 					case 0xd7: //setlocal_3
 						++pos;
 						prevargindex= b-0xd4;
+						state.operandlist.pop_back();
 						break;
 					case 0x63://setlocal
 						prevargindex= code.peeku30FromPosition(pos+1) ;
 						pos = code.skipu30FromPosition(pos+1);
+						state.operandlist.pop_back();
 						break;
 					default:
 						break;
@@ -383,6 +388,12 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 				code.seekg(pos);
 				state.preloadedcode.back().pcode.local3.pos = prevargindex;
 				return;
+			}
+			else
+			{
+				// this ensures that the "old" value is stored in a localresult and can be used later, as the duplicated value may be changed by an increment etc.
+				//setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DUP,opcode,code,false,true,restype,code.tellg(),opcode_optimized==0,false,true,true,ABC_OP_OPTIMZED_DUP_SETSLOT);
+				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DUP,opcode,code,false,true,restype,code.tellg(),true,false,true,true,ABC_OP_OPTIMZED_DUP_SETSLOT);
 			}
 			if (!dupoperand)
 				addOperand(state,op,code);

@@ -2486,7 +2486,7 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 	// so that all variables checked in third loop will have the member indicator set if they also have an indirect reference to parent
 	// second loop looks for variables that are also members of a static object so we can stop gc early
 	// third loop checks all "normal" variables
-	while (step != 2)
+	while (step != 3)
 	{
 		auto it=Variables.cbegin();
 		while(it!=Variables.cend())
@@ -2512,14 +2512,14 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 					it++;
 					continue;
 				case 1:
-					if (o->hasStoredMemberStatic())
+					if (!o->hasStoredMemberStatic())
 					{
 						it++;
 						continue;
 					}
 					break;
 				case 2:
-					if (!o->hasStoredMemberStatic())
+					if (o->hasStoredMemberStatic())
 					{
 						it++;
 						continue;

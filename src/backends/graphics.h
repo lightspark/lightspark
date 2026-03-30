@@ -346,10 +346,33 @@ protected:
 	std::vector<textline> textlines;
 public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
-	TextData() : swfversion(0), width(100), height(100),leading(0), textWidth(0), textHeight(0), fontname(BUILTIN_STRINGS::STRING_TIMES_NEW_ROMAN),fontID(UINT32_MAX), scrollH(0), scrollV(1), backgroundColor(0xFFFFFF),borderColor(0x000000),
-		background(false),border(false), multiline(false),isBold(false),isItalic(false),wordWrap(false),caretblinkstate(false),isPassword(false),
-		autoSize(AS_NONE),align(AS_NONE), fontSize(12),
-		embeddedFont(nullptr),nanoVGFontID(-1)
+	TextData()
+	:swfversion(0)
+	,width(100)
+	,height(100)
+	,leading(0)
+	,textWidth(0)
+	,textHeight(0)
+	,fontname(BUILTIN_STRINGS::STRING_TIMES_NEW_ROMAN)
+	,fontID(UINT32_MAX)
+	,scrollH(0)
+	,scrollV(1)
+	,backgroundColor(0xFFFFFF)
+	,borderColor(0x000000)
+	,background(false)
+	,border(false)
+	,multiline(false)
+	,isBold(false)
+	,isItalic(false)
+	,wordWrap(false)
+	,caretblinkstate(false)
+	,isPassword(false)
+	,useOutlines(false)
+	,autoSize(AS_NONE)
+	,align(AS_NONE)
+	,fontSize(12)
+	,embeddedFont(nullptr)
+	,nanoVGFontID(-2) // -2 means no check for system font executed
 	{}
 
 	uint32_t swfversion;
@@ -372,6 +395,7 @@ public:
 	bool wordWrap:1;
 	bool caretblinkstate:1;
 	bool isPassword:1;
+	bool useOutlines;
 	RGB textColor;
 	ALIGNMENT autoSize;
 	ALIGNMENT align;

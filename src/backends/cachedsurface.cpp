@@ -119,17 +119,26 @@ void SurfaceState::setupChildrenList(std::vector<DisplayObject*>& dynamicDisplay
 int nanoVGdefaultFontID=-1;
 void nanoVGSetupFont(SystemState* sys, TextData& tData)
 {
+	if (tData.nanoVGFontID==-1) // system font was searched previously but no matching font found
+		return;
+	if (tData.nanoVGFontID >=0) // system font already found
+		return;
 	EngineData* engineData = sys->getEngineData();
 	NVGcontext* nvgctxt = engineData ? engineData->nvgcontext : nullptr;
-	if (tData.nanoVGFontID<0)
-		tData.nanoVGFontID = nvgFindFont(nvgctxt,sys->getStringFromUniqueId(tData.fontname).raw_buf());
+	tiny_string fontname = sys->getStringFromUniqueId(tData.fontname);
+	if (tData.isBold)
+		fontname += ":bold";
+	if (tData.isItalic)
+		fontname += ":italic";
+	if (tData.nanoVGFontID==-2)
+		tData.nanoVGFontID = nvgFindFont(nvgctxt,fontname.raw_buf());
 #ifdef ENABLE_FONTCONFIG
 	if (tData.nanoVGFontID<0)
 	{
 		FcPattern *pat;
 		FcPattern *match;
 		FcResult   result;
-		pat = FcNameParse ((const FcChar8 *)sys->getStringFromUniqueId(tData.fontname).raw_buf());
+		pat = FcNameParse ((const FcChar8 *)fontname.raw_buf());
 		FcConfigSubstitute (0, pat, FcMatchPattern);
 #if FC_VERSION >= 21700
 		FcConfigSetDefaultSubstitute (0, pat);
@@ -139,30 +148,32 @@ void nanoVGSetupFont(SystemState* sys, TextData& tData)
 		{
 			FcChar8* fontfile = nullptr;
 			if (FcResultMatch == FcPatternGetString(match, FC_FILE, 0, &fontfile))
-				tData.nanoVGFontID = nvgCreateFont(nvgctxt,sys->getStringFromUniqueId(tData.fontname).raw_buf(),(const char*)fontfile);
+				tData.nanoVGFontID = nvgCreateFont(nvgctxt,fontname.raw_buf(),(const char*)fontfile);
 		}
 		FcPatternDestroy (pat);
 		FcPatternDestroy (match);
 	}
 #endif
-	if (tData.nanoVGFontID<0)
-	{
-		// fallback to default font
-		tData.nanoVGFontID=nanoVGdefaultFontID;
-	}
 }
 void nanoVGgetTextBounds(SystemState* sys, TextData& tData, const tiny_string& text, number_t& tw, number_t& th)
 {
+	if (tData.nanoVGFontID==-1)
+		return;
 	if (sys->getRenderThread())
 		sys->getRenderThread()->mutexRendering.lock();
 	tw=0;
 	th=0;
-	if (sys->getEngineData()->nvgcontext)
+	auto nvgctxt = sys->getEngineData()->nvgcontext;
+	if (nvgctxt)
 	{
 		if (tData.nanoVGFontID < 0)
 			nanoVGSetupFont(sys,tData);
 		float bounds[4];
-		nvgTextBounds(sys->getEngineData()->nvgcontext,0,0,text.raw_buf(),nullptr,bounds);
+		nvgResetTransform(nvgctxt);
+		nvgTextAlign(nvgctxt,NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+		nvgFontSize(nvgctxt,tData.fontSize);
+		nvgFontFaceId(nvgctxt,tData.nanoVGFontID);
+		nvgTextBounds(nvgctxt,0,0,text.raw_buf(),nullptr,bounds);
 		tw = bounds[2]-bounds[0];
 		th = bounds[3]-bounds[1];
 	}
@@ -914,7 +925,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 			}
 			if (ctxt.isDrawingMask())
 				nvgEndClip(nvgctxt);
-			if (!state->textdata.embeddedFont && state->textdata.getLineCount())
+			if ((!state->textdata.embeddedFont || !state->textdata.useOutlines) && state->textdata.getLineCount())
 			{
 				NVGcolor textcolor =nvgRGB(state->textdata.textColor.Red,state->textdata.textColor.Green,state->textdata.textColor.Blue);
 				nvgFillColor(nvgctxt,textcolor);

@@ -263,7 +263,6 @@ private:
 	bool NoSelect:1;
 	bool WasStatic:1;
 	bool HTML:1;
-	bool UseOutlines:1;
 	UI16_SWF FontID;
 	STRING FontClass;
 	UI16_SWF FontHeight;
@@ -559,6 +558,8 @@ public:
 	virtual int32_t getAscent() const =0;
 	virtual int32_t getDescent() const =0;
 	virtual bool hasKerning() const =0;
+	bool isBold() const { return FontFlagsBold; }
+	bool isItalic() const { return FontFlagsItalic; }
 };
 
 class DefineFontTag: public FontTag

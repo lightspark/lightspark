@@ -31,7 +31,7 @@ using namespace lightspark;
 ASObject* lightspark::new_asobject(ASWorker* wrk)
 {
 	Class_base* c=Class<ASObject>::getClass(wrk->getSystemState());
-	ASObject* ret = wrk->freelist_asobject.getObjectFromFreeList()->as<Activation_object>();
+	ASObject* ret = wrk->freelist_asobject.getObjectFromFreeList();
 	if (!ret)
 	{
 		ret=new (c->memoryAccount) ASObject(wrk,c);

@@ -396,7 +396,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	bool Border=UB(1,bs);
 	WasStatic=UB(1,bs);
 	HTML=UB(1,bs);
-	UseOutlines=UB(1,bs);
+	textData.useOutlines=UB(1,bs);
 	if(HasFont)
 	{
 		in >> FontID;

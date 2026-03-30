@@ -1127,7 +1127,17 @@ bool TextData::isWhitespaceOnly(bool multiline) const
 void TextData::getTextSizes(SystemState* sys,const tiny_string& text, number_t& tw, number_t& th)
 {
 	if (embeddedFont)
+	{
+		if (!useOutlines)
+		{
+			if (nanoVGFontID != -1)
+				nanoVGgetTextBounds(sys,*this,text, tw, th);
+			if (nanoVGFontID > 0) // system font found
+				return;
+			// no system font found, fallback to embedded font
+		}
 		embeddedFont->getTextBounds(text,fontSize,tw,th);
+	}
 	else
 		nanoVGgetTextBounds(sys,*this,text, tw, th);
 	
@@ -1144,7 +1154,8 @@ bool TextData::TextIsEqual(const std::vector<tiny_string>& lines) const
 	}
 	return true;
 }
-
+extern int nanoVGdefaultFontID;
+extern void nanoVGSetupFont(SystemState* sys, TextData& tData);
 FontTag* TextData::checkEmbeddedFont(DisplayObject* d)
 {
 	ApplicationDomain* currentDomain=d->loadedFrom;
@@ -1152,15 +1163,27 @@ FontTag* TextData::checkEmbeddedFont(DisplayObject* d)
 	FontTag* embeddedfont = (fontID != UINT32_MAX ? currentDomain->getEmbeddedFontByID(fontID) : currentDomain->getEmbeddedFont(d->getSystemState()->getStringFromUniqueId(fontname)));
 	if (embeddedfont)
 	{
-		for (auto it = textlines.begin(); it != textlines.end(); it++)
+		this->isBold = embeddedfont->isBold();
+		this->isItalic = embeddedfont->isItalic();
+		this->fontname = d->getSystemState()->getUniqueStringId(embeddedfont->getFontname());
+		if (!useOutlines)
+			nanoVGSetupFont(d->getSystemState(),*this);
+		if (!useOutlines && nanoVGFontID >=0)
+			embeddedfont=nullptr; // use system font
+		else
 		{
-			if (!embeddedfont->hasGlyphs((*it).text))
+			for (auto it = textlines.begin(); it != textlines.end(); it++)
 			{
-				embeddedfont=nullptr;
-				break;
+				if (!embeddedfont->hasGlyphs((*it).text))
+				{
+					embeddedfont=nullptr;
+					break;
+				}
 			}
 		}
 	}
+	else if (nanoVGFontID==-1) // no system font found, fallback to default font
+		nanoVGFontID = nanoVGdefaultFontID;
 	this->embeddedFont=embeddedfont;
 	return embeddedfont;
 }

@@ -744,8 +744,7 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	if (updatesizes)
 	{
 		th->linemutex->lock();
-		if (!th->tag || th->tag->UseOutlines)
-			th->checkEmbeddedFont(th);
+		th->checkEmbeddedFont(th);
 		th->linemutex->unlock();
 		th->updateSizes();
 		th->setSizeAndPositionFromAutoSize();
@@ -1876,8 +1875,7 @@ void TextField::textUpdated()
 	scrollH = 0;
 	scrollV = 1;
 	linemutex->lock();
-	if (!tag || tag->UseOutlines)
-		checkEmbeddedFont(this);
+	checkEmbeddedFont(this);
 	linemutex->unlock();
 	updateSizes();
 	setSizeAndPositionFromAutoSize();
@@ -1965,6 +1963,7 @@ void TextField::defaultEventBehavior(_R<Event> e)
 		}
 	}
 }
+
 IDrawable* TextField::invalidate(bool smoothing)
 {
 	Locker l(invalidatemutex);
@@ -1985,74 +1984,74 @@ IDrawable* TextField::invalidate(bool smoothing)
 	m.scale(matrix.getScaleX(),matrix.getScaleY());
 	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
 	tokens.clear();
-	if (embeddedFont && (!tag || tag->UseOutlines))
+	if (!tokens.filltokens)
+		tokens.filltokens = _MR(new tokenListRef());
+	scaling = 1.0f/1024.0f/20.0f;
+	if (this->border || this->background)
 	{
-		if (!tokens.filltokens)
-			tokens.filltokens = _MR(new tokenListRef());
-		scaling = 1.0f/1024.0f/20.0f;
-		if (this->border || this->background)
+		fillstyleBackgroundColor.FillStyleType=SOLID_FILL;
+		fillstyleBackgroundColor.Color=this->backgroundColor;
+		tokens.filltokens->tokens.push_back(GeomToken(SET_FILL).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(fillstyleBackgroundColor).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(CLEAR_FILL).uval);
+	}
+	if (this->border)
+	{
+		lineStyleBorder.Color=this->borderColor;
+		lineStyleBorder.Width=20;
+		tokens.filltokens->tokens.push_back(GeomToken(SET_STROKE).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(lineStyleBorder).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
+	}
+	if (this->caretblinkstate)
+	{
+		uint32_t tw=0;
+		if (!getText().empty())
 		{
-			fillstyleBackgroundColor.FillStyleType=SOLID_FILL;
-			fillstyleBackgroundColor.Color=this->backgroundColor;
-			tokens.filltokens->tokens.push_back(GeomToken(SET_FILL).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(fillstyleBackgroundColor).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(CLEAR_FILL).uval);
+			tiny_string tmptxt = getText().substr(0,caretIndex);
+			number_t w,h;
+			getTextSizes(getSystemState(),tmptxt,w,h);
+			tw = w;
+			tw += autosizeposition/scaling;
 		}
-		if (this->border)
+		else
 		{
-			lineStyleBorder.Color=this->borderColor;
-			lineStyleBorder.Width=20;
-			tokens.filltokens->tokens.push_back(GeomToken(SET_STROKE).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(lineStyleBorder).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
+			tw += autosizeposition;
+			tw /=scaling;
 		}
-		if (this->caretblinkstate)
-		{
-			uint32_t tw=0;
-			if (!getText().empty())
-			{
-				tiny_string tmptxt = getText().substr(0,caretIndex);
-				number_t w,h;
-				getTextSizes(getSystemState(),tmptxt,w,h);
-				tw = w;
-				tw += autosizeposition/scaling;
-			}
-			else
-			{
-				tw += autosizeposition;
-				tw /=scaling;
-			}
-			lineStyleCaret.Color=RGB(0,0,0);
-			lineStyleCaret.Width=40;
-			int ypadding = (bymax-bymin-2)/scaling;
-			tokens.filltokens->tokens.push_back(GeomToken(SET_STROKE).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(lineStyleCaret).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2(tw, bymin/scaling+ypadding)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
-			tokens.filltokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
-		}
+		lineStyleCaret.Color=RGB(0,0,0);
+		lineStyleCaret.Width=40;
+		int ypadding = (bymax-bymin-2)/scaling;
+		tokens.filltokens->tokens.push_back(GeomToken(SET_STROKE).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(lineStyleCaret).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2(tw, bymin/scaling+ypadding)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
+	}
+	if (embeddedFont)
+	{
 		int32_t startposy = TEXTFIELD_PADDING*TWIPS_FACTOR+bymin+(embeddedFont->getAscent()+embeddedFont->getDescent())*TWIPS_FACTOR*fontSize/1024;
 
 		linemutex->lock();
@@ -2131,6 +2130,11 @@ IDrawable* TextField::invalidate(bool smoothing)
 								   , isMask, cacheAsBitmap
 								   , TWIPS_FACTOR, getConcatenatedAlpha()
 								   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+	res->getState()->tokens.filltokens = tokens.filltokens;
+	res->getState()->tokens.stroketokens = tokens.stroketokens;
+	res->getState()->tokens.next = tokens.next;
+	res->getState()->tokens.color = tokens.color;
+	res->getState()->tokens.startMatrix = tokens.startMatrix;
 	res->getState()->textdata = *this;
 	res->getState()->renderWithNanoVG = true;
 	this->resetNeedsTextureRecalculation();

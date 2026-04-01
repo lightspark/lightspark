@@ -4562,10 +4562,9 @@ static int nvg__pickSubPath(const NVGpickScene* ps, const NVGpickSubPath* psp, f
 
 	// Trace a line from x,y out along the positive x axis and count the
 	// number of intersections.
-
 	for (s = 0; s < nsegments; ++s, ++seg) {
-		if ((seg->bounds[1] - NVG_PICK_EPS) < y &&
-			(seg->bounds[3] - NVG_PICK_EPS) > y &&
+		if ((seg->bounds[1]) < y &&
+			(seg->bounds[3]) >= y &&
 			seg->bounds[2] > x) {
 			// Line hits the box.
 			switch(seg->type) {

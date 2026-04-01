@@ -669,6 +669,7 @@ bool tokensVector::hitTest(SystemState* sys, const Vector2f& point, float scalin
 	if (!nvgctxt)
 		return false;
 	bool ret = false;
+	nvgReset(nvgctxt);
 	nvgResetTransform(nvgctxt);
 	nvgHitTestBeginFrame(nvgctxt, sys->getRenderThread()->currentframebufferWidth, sys->getRenderThread()->currentframebufferHeight, 1.0);
 	NVGcolor startcolor = nvgRGBA(1,1,1,1);
@@ -684,6 +685,8 @@ bool tokensVector::hitTest(SystemState* sys, const Vector2f& point, float scalin
 	int tokentype = 1;
 	int hitregionid = 1;
 	bool firstmove=true;
+	float x = point.x/scaling;
+	float y = point.y/scaling;
 	while (tokentype)
 	{
 		TokenList::const_iterator it;
@@ -707,7 +710,7 @@ bool tokensVector::hitTest(SystemState* sys, const Vector2f& point, float scalin
 					if (!firstglyph)
 					{
 						nvgClosePath(nvgctxt);
-						ret = nvgHitTest(nvgctxt,point.x/scaling,point.y/scaling, NVG_TEST_ALL) >=0;
+						ret = nvgHitTest(nvgctxt,x,y, NVG_TEST_ALL) >=0;
 						nvgHitTestEndFrame(nvgctxt);
 						if (ret)
 							return ret;
@@ -939,7 +942,7 @@ bool tokensVector::hitTest(SystemState* sys, const Vector2f& point, float scalin
 			nvgFillHitRegion(nvgctxt, hitregionid);
 	}
 	nvgClosePath(nvgctxt);
-	ret = nvgHitTest(nvgctxt,point.x/scaling,point.y/scaling, NVG_TEST_ALL) >=0;
+	ret = nvgHitTest(nvgctxt,x,y, NVG_TEST_ALL) >=0;
 	nvgHitTestEndFrame(nvgctxt);
 
 	return ret;

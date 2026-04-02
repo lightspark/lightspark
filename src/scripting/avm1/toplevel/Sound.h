@@ -38,6 +38,7 @@ class AVM1SystemClass;
 class AVM1Value;
 class MovieClip;
 class Sound;
+class SystemState;
 
 struct QueuedPlay
 {
@@ -45,6 +46,8 @@ struct QueuedPlay
 	number_t startOffset;
 	size_t loops;
 };
+
+struct EmptySound {};
 
 class SoundState
 {
@@ -74,23 +77,19 @@ public:
 	) : type(Type::Loading) queuedPlays(_queuedPlays) {}
 	SoundState(Sound* _sound) : type(Type::Loaded), sound(_sound) {}
 
-	~SoundState()
-	{
-		if (type == Type::Loading)
-			queuedPlays.~std::vector<QueuedPlay>();
-	}
+	~SoundState();
+	SoundState& operator=(const SoundState& other);
 
-	SoundState& operator=(const SoundState& other)
+	template<typename V>
+	constexpr auto visit(V&& visitor)
 	{
-		type = other.type;
 		switch (type)
 		{
-			case Type::Loading:
-				new(&queuedPlays) std::vector<QueuedPlay>(other.queuedPlays);
-				break;
-			case Type::Loaded: sound = other.sound;
+			case Type::Empty: return visitor(EmptySound {}); break;
+			case Type::Loading: return visitor(queuedPlays); break;
+			case Type::Loaded: return visitor(sound); break;
+			default: assert(false); break;
 		}
-		return *this;
 	}
 };
 
@@ -140,21 +139,10 @@ public:
 	bool getIsStreaming() const { return isStreaming; }
 	void setIsStreaming(bool _isStreaming) { isStreaming = _isStreaming; }
 
-	void play(const QueuedPlay& play);
+	void play(SystemState* sys, const QueuedPlay& play);
 	void setIsLoading();
-	void loadSound
-	(
-		AVM1Activation& act,
-		GcPtr<AVM1Sound> soundObj,
-		Sound* sound
-	);
-
-	void loadID3
-	(
-		AVM1Activation& act,
-		GcPtr<AVM1Sound> soundObj,
-		const Span<uint8_t>& bytes
-	);
+	void loadSound(AVM1Activation& act, Sound* sound);
+	void loadID3(AVM1Activation& act, const Span<uint8_t>& bytes);
 
 	AVM1_FUNCTION_DECL(ctor);
 	// NOTE: These aren't properties.

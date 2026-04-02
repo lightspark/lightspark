@@ -39,6 +39,25 @@ using namespace lightspark;
 
 // Based on Ruffle's `avm1::globals::sound` crate.
 
+SoundState::~SoundState()
+{
+	if (type == Type::Loading)
+		queuedPlays.~std::vector<QueuedPlay>();
+}
+
+SoundState& SoundState::operator=(const SoundState& other)
+{
+	type = other.type;
+	switch (type)
+	{
+		case Type::Loading:
+			new(&queuedPlays) std::vector<QueuedPlay>(other.queuedPlays);
+			break;
+		case Type::Loaded: sound = other.sound;
+	}
+	return *this;
+}
+
 AVM1Sound::AVM1Sound
 (
 	AVM1Activation& act,
@@ -52,6 +71,129 @@ soundInstance(nullptr),
 clip(_clip),
 soundPos(0),
 isStreaming(false)
+{
+}
+
+Sound* AVM1Sound::getSound() const
+{
+	return state.visit(makeVisitor
+	(
+		[](Sound* sound) { return sound; },
+		[](const auto&) { return nullptr; }
+	));
+}
+
+void AVM1Sound::play(SystemState* sys, const QueuedPlay& play)
+{
+	auto sound = state.visit(makeVisitor
+	(
+		[](const auto&)
+		{
+			LOG
+			(
+				LOG_ERROR,
+				"AVM1Sound::play(): "
+				"Ignoring playback of this sound, due "
+				"to it not being loaded."
+			);
+			return nullptr;
+		},
+		[&](const std::vector<QueuedPlay>& queuedPlays)
+		{
+			queuedPlays.push_back(play);
+			return nullptr;
+		},
+		[](Sound* sound) { return sound; }
+	));
+
+	if (sound == nullptr)
+		return;
+
+	// NOTE: Streaming MP3s can only have a single instance active.
+	if (isStreaming && soundInstance != nullptr)
+		sys->stopSound(soundInstance);
+
+	auto _soundInstance = sys->startSound
+	(
+		sound,
+		SoundInfo
+		{
+			.sync = Sync::NoMultiple,
+			.inSample =
+			(
+				play.startOffset > 0 ?
+				Optional<size_t>(play.startOffset * 44100) :
+				Optional<size_t>()
+			),
+			.numLoops = play.loops
+		},
+		{},
+		clip,
+		play.soundObj
+	);
+
+	soundInstance = _soundInstance != nullptr ? _soundInstance : soundInstance;
+}
+
+void AVM1Sound::setIsLoading()
+{
+	// All queued plays are discarded at this point.
+	state = std::vector<QueuedPlay>();
+}
+
+void AVM1Sound::loadSound(AVM1Activation& act, Sound* sound)
+{
+
+	state.visit(makeVisitor
+	(
+		[&](const std::vector<QueuedPlay>& queuedPlays)
+		{
+			for (auto _play : queuedPlays)
+				play(act.getSys(), _play);
+		},
+		[](const auto&) {}
+	));
+
+	state = sound;
+
+	if (hasProp(act, "position") && hasProp(act, "duration"))
+		return;
+
+	auto funcProto = act.getPrototypes().function->proto;
+	auto propFlags =
+	(
+		AVM1PropFlags::DontEnum |
+		AVM1PropFlags::DontDelete
+	);
+	addProp
+	(
+		"position",
+		NEW_GC_PTR(act.getGcCtx(), AVM1FunctionObject
+		(
+			act,
+			AVM1_TYPE_GETTER(Position),
+			funcProto,
+			nullptr
+		)),
+		NullGc,
+		propFlags
+	);
+	addProp
+	(
+		"duration",
+		NEW_GC_PTR(act.getGcCtx(), AVM1FunctionObject
+		(
+			act,
+			AVM1_TYPE_GETTER(Duration),
+			funcProto,
+			nullptr
+		)),
+		NullGc,
+		propFlags
+	);
+}
+
+void AVM1Sound::loadID3(AVM1Activation& act, const Span<uint8_t>& bytes)
 {
 }
 

@@ -197,6 +197,26 @@ void AVM1Sound::loadID3(AVM1Activation& act, const Span<uint8_t>& bytes)
 {
 }
 
+const SoundTransform& AVM1Sound::getTransform(SystemState* sys) const
+{
+	return
+	(
+		!clip.isNull() ?
+		clip->getSoundTransform() :
+		sys->getSoundTransform()
+	);
+}
+
+SoundTransform& AVM1Sound::getTransform(SystemState* sys)
+{
+	return
+	(
+		!clip.isNull() ?
+		clip->getSoundTransform() :
+		sys->getSoundTransform()
+	);
+}
+
 template<bool requiresSWF6 = false>
 constexpr auto protoFlags =
 (
@@ -267,64 +287,253 @@ AVM1_FUNCTION_BODY(AVM1Sound, ctor)
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getPan)
 {
+	return _this->getTransform(act.getSys()).getPan();
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, setPan)
 {
+	number_t _pan;
+	AVM1_ARG_UNPACK(_pan, 0);
+
+	auto pan = clampToInt<int32_t>(_pan);
+
+	_this->getTransform(act.getSys()).setPan(pan);
+	return AVM1Value:undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getTransform)
 {
+	const auto& transform = _this->getTransform(act.getSys());
+
+	auto obj = NEW_GC_PTR(act.getGcCtx(), AVM1Object(act));
+
+	// NOTE: For some reason, `lr` means "right to left", and `rl` means
+	// "left to right".
+	obj->setProp(act, "ll", transform.leftToLeft);
+	obj->setProp(act, "lr", transform.rightToLeft);
+	obj->setProp(act, "rl", transform.leftToRight);
+	obj->setProp(act, "rr", transform.rightToRight);
+	return obj;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, setTransform)
 {
+	AVM1_ARG_UNPACK_NAMED(unpacker);
+	auto obj = unpacker.unpack<GcPtr<AVM1Object>>();
+
+	auto& transform = _this->getTransform(act.getSys());
+
+	if (obj->hasOwnProp(act, "ll"))
+		transform.leftToLeft = obj->getProp(act, "ll").toInt32(act);
+
+	// NOTE: For some reason, `lr` means "right to left", and `rl` means
+	// "left to right".
+	if (obj->hasOwnProp(act, "rl"))
+		transform.leftToRight = obj->getProp(act, "rl").toInt32(act);
+	if (obj->hasOwnProp(act, "lr"))
+		transform.rightToLeft = obj->getProp(act, "lr").toInt32(act);
+	if (obj->hasOwnProp(act, "rr"))
+		transform.rightToRight = obj->getProp(act, "rr").toInt32(act);
+	return AVM1Value:undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getVolume)
 {
+	return _this->getTransform(act.getSys()).getVolume();
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, setVolume)
 {
+	number_t _volume;
+	AVM1_ARG_UNPACK(_volume, 0);
+
+	auto volume = clampToInt<int32_t>(_volume);
+
+	_this->getTransform(act.getSys()).setVolume(volume);
+	return AVM1Value:undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, stop)
 {
+	auto clip = _this->getClip();
+
+	if (args.empty() && clip.isNull())
+	{
+		// Usage 1: If there's no owner, and no name, it acts like
+		// `stopAllSounds()`.
+		act.getSys()->audioManager->stopAllSounds();
+		return AVM1Value:undefinedVal;
+	}
+	else if (args.empty())
+	{
+		// Usage 2: Stop all sounds owned by a given clip.
+		act.getSys()->stopSoundsOwnedBy(clip);
+		setSoundInstance(NullGc);
+		return AVM1Value:undefinedVal;
+	}
+
+	// Usage 3: Stop all instances of a specific sound, using the `name`
+	// argument.
+	tiny_string name;
+	AVM1_ARG_UNPACK(name);
+	auto movie =
+	(
+		!clip.isNull() ?
+		clip->getMovie() :
+		act.getBaseClip()->getAVM1Root()->getMovie()
+	);
+
+	auto tag = dynamic_cast<DefineSoundTag*>
+	(
+		movie->dictionaryLookupByName(name)
+	);
+
+	if (tag != nullptr)
+	{
+		// Stop all sounds, with the given name.
+		act.getSys()->stopSoundsOwnedBy(tag);
+	}
+	else
+	{
+		LOG
+		(
+			LOG_ERROR,
+			"Sound.stop(): "
+			"Sound \"" << name << "\" not found."
+		);
+	}
+
+	return AVM1Value:undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, attachSound)
 {
+	AVM1Value nameVal;
+	AVM1_ARG_UNPACK(name);
+
+	auto name = nameVal.toString(act);
+	auto clip = _this->getClip();
+
+	auto movie =
+	(
+		!clip.isNull() ?
+		clip->getMovie() :
+		act.getBaseClip()->getAVM1Root()->getMovie()
+	);
+
+	auto tag = dynamic_cast<DefineSoundTag*>
+	(
+		movie->dictionaryLookupByName(name)
+	);
+
+	if (tag == nullptr)
+	{
+		LOG
+		(
+			LOG_ERROR,
+			"Sound.attachSound(): "
+			"Sound \"" << name << "\" not found."
+		);
+		return AVM1Value:undefinedVal;
+	}
+
+	_this->loadSound(act, tag);
+	_this->setIsStreaming(false);
+	_this->setDuration(tag->getDurationInMS());
+	_this->setPos(0);
+	return AVM1Value:undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, start)
 {
+	number_t startOffset;
+	size_t loops;
+
+	AVM1_ARG_UNPACK(startOffset, 0)(loops, 1);
+	_this->play(act.getSys(), QueuedPlay
+	{
+		.soundObj = _this,
+		.startOffset = startOffset,
+		.loops = loops
+	});
+
+	return AVM1Value:undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getDuration)
 {
+	const auto& undefVal = AVM1Value::undefinedVal;
+	return _this->getDuration().transformOr(undefVal, [](auto val)
+	{
+		return val;
+	});
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, setDuration)
 {
+	LOG
+	(
+		LOG_NOT_IMPLEMENTED,
+		"AVM1: `Sound.setDuration()` is a stub."
+	);
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getPosition)
 {
+	return _this->getPosition();
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, setPosition)
 {
+	LOG
+	(
+		LOG_NOT_IMPLEMENTED,
+		"AVM1: `Sound.setPosition()` is a stub."
+	);
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, loadSound)
 {
+	tiny_string url;
+	bool isStreaming;
+	AVM1_ARG_UNPACK(url)(isStreaming);
+
+	// NOTE: Streaming MP3s can only have a single active instance
+	// (Earlier `attachSound()` instances will continue to play).
+	if (isStreaming && _this->getSoundInstance() != nullptr)
+		act.getSys()->stopSound(_this->getSoundInstance());
+
+	_this->setIsStreaming(isStreaming);
+	_this->setIsLoading();
+
+	act.getSys()->loaderManager->loadSound
+	(
+		sys,
+		_this,
+		RequestMethod(url),
+		isStreaming
+	);
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getBytesLoaded)
 {
+	LOG
+	(
+		LOG_NOT_IMPLEMENTED,
+		"AVM1: `Sound.getBytesLoaded()` is a stub."
+	);
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getBytesTotal)
 {
+	LOG
+	(
+		LOG_NOT_IMPLEMENTED,
+		"AVM1: `Sound.getBytesTotal()` is a stub."
+	);
+	return AVM1Value::undefinedVal;
 }

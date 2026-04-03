@@ -32,6 +32,7 @@
 #include "scripting/flash/geom/flashgeom.h"
 #include "scripting/flash/geom/Rectangle.h"
 #include "backends/cachedsurface.h"
+#include "backends/shapesbuilder.h"
 
 using namespace lightspark;
 using namespace std;

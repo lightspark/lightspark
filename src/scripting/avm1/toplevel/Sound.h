@@ -143,6 +143,8 @@ public:
 	void setIsLoading();
 	void loadSound(AVM1Activation& act, Sound* sound);
 	void loadID3(AVM1Activation& act, const Span<uint8_t>& bytes);
+	const SoundTransform& getTransform(SystemState* sys) const;
+	SoundTransform& getTransform(SystemState* sys);
 
 	AVM1_FUNCTION_DECL(ctor);
 	// NOTE: These aren't properties.

@@ -2813,7 +2813,7 @@ _NR<DisplayObject> StaticText::hitTestImpl(const Vector2f& globalPoint, const Ve
 	{
 		return NullRef;
 	}
-	else if (this->tokens->hitTest(getSystemState(),localPoint,scaling))
+	else if (this->tokens->hitTest(getSystemState(),Vector2f(localPoint.x-xmin,localPoint.y-ymin),scaling))
 	{
 		incRef();
 		return _MNR(this);

@@ -285,26 +285,20 @@ AVM1_FUNCTION_BODY(AVM1Sound, ctor)
 	));
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getPan)
+AVM1_GETTER_TYPE_BODY(AVM1Sound, AVM1Sound, Pan)
 {
 	return _this->getTransform(act.getSys()).getPan();
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, setPan)
+AVM1_SETTER_TYPE_BODY(AVM1Sound, AVM1Sound, Pan)
 {
-	number_t _pan;
-	AVM1_ARG_UNPACK(_pan, 0);
-
-	auto pan = clampToInt<int32_t>(_pan);
-
+	auto pan = clampToInt<int32_t>(value.toNumber(act));
 	_this->getTransform(act.getSys()).setPan(pan);
-	return AVM1Value:undefinedVal;
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getTransform)
+AVM1_GETTER_TYPE_BODY(AVM1Sound, AVM1Sound, Transform)
 {
 	const auto& transform = _this->getTransform(act.getSys());
-
 	auto obj = NEW_GC_PTR(act.getGcCtx(), AVM1Object(act));
 
 	// NOTE: For some reason, `lr` means "right to left", and `rl` means
@@ -316,12 +310,10 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getTransform)
 	return obj;
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, setTransform)
+AVM1_SETTER_TYPE_BODY(AVM1Sound, AVM1Sound, Transform)
 {
-	AVM1_ARG_UNPACK_NAMED(unpacker);
-	auto obj = unpacker.unpack<GcPtr<AVM1Object>>();
-
 	auto& transform = _this->getTransform(act.getSys());
+	auto obj = value.toObject();
 
 	if (obj->hasOwnProp(act, "ll"))
 		transform.leftToLeft = obj->getProp(act, "ll").toInt32(act);
@@ -334,23 +326,17 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, setTransform)
 		transform.rightToLeft = obj->getProp(act, "lr").toInt32(act);
 	if (obj->hasOwnProp(act, "rr"))
 		transform.rightToRight = obj->getProp(act, "rr").toInt32(act);
-	return AVM1Value:undefinedVal;
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getVolume)
+AVM1_GETTER_TYPE_BODY(AVM1Sound, AVM1Sound, Volume)
 {
 	return _this->getTransform(act.getSys()).getVolume();
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, setVolume)
+AVM1_SETTER_TYPE_BODY(AVM1Sound, AVM1Sound, Volume)
 {
-	number_t _volume;
-	AVM1_ARG_UNPACK(_volume, 0);
-
-	auto volume = clampToInt<int32_t>(_volume);
-
+	auto volume = clampToInt<int32_t>(value.toNumber(act));
 	_this->getTransform(act.getSys()).setVolume(volume);
-	return AVM1Value:undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, stop)
@@ -460,7 +446,7 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, start)
 	return AVM1Value:undefinedVal;
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getDuration)
+AVM1_GETTER_TYPE_BODY(AVM1Sound, AVM1Sound, Duration)
 {
 	const auto& undefVal = AVM1Value::undefinedVal;
 	return _this->getDuration().transformOr(undefVal, [](auto val)
@@ -469,29 +455,27 @@ AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getDuration)
 	});
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, setDuration)
+AVM1_SETTER_TYPE_BODY(AVM1Sound, AVM1Sound, Duration)
 {
 	LOG
 	(
 		LOG_NOT_IMPLEMENTED,
 		"AVM1: `Sound.setDuration()` is a stub."
 	);
-	return AVM1Value::undefinedVal;
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, getPosition)
+AVM1_GETTER_TYPE_BODY(AVM1Sound, AVM1Sound, Position)
 {
 	return _this->getPosition();
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, setPosition)
+AVM1_SETTER_TYPE_BODY(AVM1Sound, AVM1Sound, Position)
 {
 	LOG
 	(
 		LOG_NOT_IMPLEMENTED,
 		"AVM1: `Sound.setPosition()` is a stub."
 	);
-	return AVM1Value::undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1Sound, AVM1Sound, loadSound)

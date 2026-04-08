@@ -130,7 +130,15 @@ void ShapesBuilder::endSubpathForStyles(unsigned fill0, unsigned fill1, unsigned
 	if (fill0)
 	{
 		auto& segments = filledShapesMap[fill0];
-		segments.insert(segments.end(), currentSubpath.begin(), currentSubpath.end());
+		if (formorphing && !segments.empty())
+		{
+			// HACK: it seems that subpaths added to a nonempty morphshape path need to be reversed
+			// fixes rendering in "AstroFlyer", see https://github.com/lightspark/lightspark/issues/1066
+			for (int i = currentSubpath.size()-1; i >= 0; --i)
+				segments.push_back(currentSubpath[i].reverse());
+		}
+		else
+			segments.insert(segments.end(), currentSubpath.begin(), currentSubpath.end());
 	}
 
 	if (fill1) {
@@ -146,7 +154,7 @@ void ShapesBuilder::endSubpathForStyles(unsigned fill0, unsigned fill1, unsigned
 
 	currentSubpath.clear();
 }
-void ShapesBuilder::fillTokensFromSegemnt(vector<ShapePathSegment>& segments, tokenListRef* tokens)
+void ShapesBuilder::fillTokensFromSegment(vector<ShapePathSegment>& segments, tokenListRef* tokens)
 {
 	for (size_t j = 0; j < segments.size(); ++j)
 	{
@@ -191,7 +199,7 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 			tokens.filltokens->tokens.push_back(GeomToken(*stylesIt).uval);
 		}
 		vector<ShapePathSegment>& segments = it->second;
-		fillTokensFromSegemnt(segments, tokens.filltokens.getPtr());
+		fillTokensFromSegment(segments, tokens.filltokens.getPtr());
 		tokens.filltokens->tokens.push_back(GeomToken(CLEAR_FILL).uval);
 		int currentlinestyle=0;
 		// add tokens for strokes intertwined with current fill
@@ -264,7 +272,7 @@ void ShapesBuilder::outputTokens(const std::list<FILLSTYLE> &styles, const std::
 			vector<ShapePathSegment>& segments = it->second;
 			tokens.stroketokens->tokens.push_back(GeomToken(SET_STROKE).uval);
 			tokens.stroketokens->tokens.push_back(GeomToken(*stylesIt).uval);
-			fillTokensFromSegemnt(segments, tokens.stroketokens.getPtr());
+			fillTokensFromSegment(segments, tokens.stroketokens.getPtr());
 		}
 	}
 }
@@ -501,7 +509,7 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 		tokens.filltokens->tokens.push_back(GeomToken(SET_FILL).uval);
 		tokens.filltokens->tokens.push_back(GeomToken((*itfs).second).uval);
 		vector<ShapePathSegment>& segments = it->second;
-		fillTokensFromSegemnt(segments, tokens.filltokens.getPtr());
+		fillTokensFromSegment(segments, tokens.filltokens.getPtr());
 		tokens.filltokens->tokens.push_back(GeomToken(CLEAR_FILL).uval);
 		// add tokens for strokes intertwined with current fill
 		int currentlinestyle=0;
@@ -574,7 +582,7 @@ void ShapesBuilder::outputMorphTokens(std::list<MORPHFILLSTYLE>& styles, std::li
 			vector<ShapePathSegment>& segments = it->second;
 			tokens.stroketokens->tokens.push_back(GeomToken(SET_STROKE).uval);
 			tokens.stroketokens->tokens.push_back(GeomToken((*itls).second).uval);
-			fillTokensFromSegemnt(segments, tokens.stroketokens.getPtr());
+			fillTokensFromSegment(segments, tokens.stroketokens.getPtr());
 		}
 	}
 }

@@ -58,7 +58,7 @@ private:
 		return ret;
 	}
 	std::map<uint16_t,LINESTYLE2>::iterator getStrokeLineStyle(const std::list<MORPHLINESTYLE2>::iterator& stylesIt, uint16_t ratio, std::map<uint16_t, LINESTYLE2>* linestylecache, const RECT& boundsrc);
-	void fillTokensFromSegemnt(std::vector<ShapePathSegment>& segments, tokenListRef* tokens);
+	void fillTokensFromSegment(std::vector<ShapePathSegment>& segments, tokenListRef* tokens);
 public:
 	void extendOutline(const Vector2f& v1, const Vector2f& v2, int linestyleindex);
 	void extendOutlineCurve(const Vector2f& start, const Vector2f& control, const Vector2f& end, int linestyleindex);

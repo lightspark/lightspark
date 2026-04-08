@@ -459,7 +459,7 @@ _NR<DisplayObject> DisplayObjectContainer::hitTestImpl(const Vector2f& globalPoi
 			continue; /* The object is shrunk to zero size */
 
 		const auto childPoint = m.getInverted().multiply2D(localPoint);
-		ret=(*j)->hitTest(globalPoint, childPoint,type,interactiveObjectsOnly);
+		ret=(*j)->hitTest(globalPoint, childPoint,type == GENERIC_HIT_INVISIBLE ? GENERIC_HIT_INVISIBLE_INCLUDE_MASK: type,interactiveObjectsOnly);
 		
 		if (!ret.isNull())
 		{

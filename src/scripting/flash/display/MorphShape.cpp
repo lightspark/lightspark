@@ -61,14 +61,7 @@ bool MorphShape::boundsRect(number_t &xmin, number_t &xmax, number_t &ymin, numb
 {
 	if (visibleOnly && !this->isVisible())
 		return false;
-	if (!this->legacy || (morphshapetag==nullptr))
-		return TokenContainer::boundsRect(xmin,xmax,ymin,ymax,this->tokens);
-	float curratiofactor = float(currentratio)/65535.0;
-	xmin=(morphshapetag->StartBounds.Xmin + (float(morphshapetag->EndBounds.Xmin - morphshapetag->StartBounds.Xmin)*curratiofactor));
-	xmax=(morphshapetag->StartBounds.Xmax + (float(morphshapetag->EndBounds.Xmax - morphshapetag->StartBounds.Xmax)*curratiofactor));
-	ymin=(morphshapetag->StartBounds.Ymin + (float(morphshapetag->EndBounds.Ymin - morphshapetag->StartBounds.Ymin)*curratiofactor));
-	ymax=(morphshapetag->StartBounds.Ymax + (float(morphshapetag->EndBounds.Ymax - morphshapetag->StartBounds.Ymax)*curratiofactor));
-	return true;
+	return TokenContainer::boundsRect(xmin,xmax,ymin,ymax,this->tokens);
 }
 
 _NR<DisplayObject> MorphShape::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type, bool interactiveObjectsOnly)

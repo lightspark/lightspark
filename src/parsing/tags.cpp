@@ -2007,7 +2007,10 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping, b
 		nameID = currchar->name;
 		if (parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth)
 			|| (PlaceFlagHasCharacter && currchar->getTagID()!=CharacterId)
-			|| (PlaceFlagHasCharacter && currchar->getTagID()==CharacterId &&  ((!inskipping && !inRewind) || currchar->Ratio != this->Ratio)))
+			|| (PlaceFlagHasCharacter && currchar->getTagID()==CharacterId
+				&& (!currchar->is<MorphShape>() || inRewind)
+				&&  ((!inskipping && !inRewind)
+					|| currchar->Ratio != this->Ratio)))
 		{
 			parent->deleteLegacyChildAt(LEGACY_DEPTH_START+Depth,inskipping);
 			exists = false;

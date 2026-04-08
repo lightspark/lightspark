@@ -2214,9 +2214,19 @@ _NR<DisplayObject> DisplayObject::hitTest(const Vector2f& globalPoint, const Vec
 		return NullRef;
 
 	//First check if there is any mask on this object, if so the point must be inside the mask to go on
-	if (type != GENERIC_HIT_EXCLUDE_CHILDREN
-		&& !hitTestMask(globalPoint,type))
-		return NullRef;
+	switch (type)
+	{
+		case GENERIC_HIT_EXCLUDE_CHILDREN:
+			break;
+		case GENERIC_HIT_INVISIBLE:
+			if (mask && !hitTestMask(globalPoint,type))
+				return NullRef;
+			break;
+		default:
+			if (!hitTestMask(globalPoint,type))
+				return NullRef;
+			break;
+	}
 	return hitTestImpl(globalPoint, localPoint, type,interactiveObjectsOnly);
 }
 

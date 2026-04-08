@@ -121,100 +121,145 @@ void TokenContainer::FromShaperecordListToShapeVector(const std::vector<SHAPEREC
 
 	shapesBuilder.outputTokens(fillStyles,lineStyles, tokens,isGlyph);
 }
-
+#define MORPH_CALC(res,start,end) res = float(start) * (1.0-curratiofactor) + float(end) * curratiofactor
 void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *tag, tokensVector& tokens, uint16_t ratio)
 {
-	Vector2 cursor;
+	Vector2 cursor_start;
+	Vector2 cursor_end;
 	unsigned int color0=0;
 	unsigned int color1=0;
 	unsigned int linestyle=0;
 
-	const MATRIX matrix;
 	ShapesBuilder shapesBuilder;
 	float curratiofactor = float(ratio)/65535.0;
-
-	int boundsx = tag->StartBounds.Xmin + (float(tag->EndBounds.Xmin - tag->StartBounds.Xmin)*curratiofactor);
-	int boundsy = tag->StartBounds.Ymin + (float(tag->EndBounds.Ymin - tag->StartBounds.Ymin)*curratiofactor);
-	RECT boundsrc;
-	boundsrc.Xmin=boundsx;
-	boundsrc.Ymin=boundsy;
-	cursor.x= -boundsx;
-	cursor.y= -boundsy;
+	MORPH_CALC(tokens.boundsRect.Xmin,tag->StartBounds.Xmin,tag->EndBounds.Xmin);
+	MORPH_CALC(tokens.boundsRect.Xmax,tag->StartBounds.Xmax,tag->EndBounds.Xmax);
+	MORPH_CALC(tokens.boundsRect.Ymin,tag->StartBounds.Ymin,tag->EndBounds.Ymin);
+	MORPH_CALC(tokens.boundsRect.Ymax,tag->StartBounds.Ymax,tag->EndBounds.Ymax);
+	int boundsx=tokens.boundsRect.Xmin;
+	int boundsy=tokens.boundsRect.Ymin;
 	auto itstart = tag->StartEdges.ShapeRecords.begin();
 	auto itend = tag->EndEdges.ShapeRecords.begin();
-	Vector2 p1(matrix.multiply2D(cursor));
+	Vector2 p1(cursor_start.x - boundsx,cursor_start.y - boundsy);
 	while (itstart != tag->StartEdges.ShapeRecords.end() && itend != tag->EndEdges.ShapeRecords.end())
 	{
 		const SHAPERECORD* curstart=&(*itstart);
 		const SHAPERECORD* curend=&(*itend);
 		if(curstart->TypeFlag)
 		{
-			int controlX;
-			int controlY;
-			int anchorX;
-			int anchorY;
-			if(curstart->StraightFlag)
+			if (!curend->TypeFlag)
 			{
-				if (curend->StraightFlag)
+				if (curend->StateMoveTo)
 				{
-					controlX = curstart->DeltaX/2.0+float(curend->DeltaX/2.0-curstart->DeltaX/2.0)*curratiofactor;
-					controlY = curstart->DeltaY/2.0+float(curend->DeltaY/2.0-curstart->DeltaY/2.0)*curratiofactor;
-					anchorX = curstart->DeltaX/2.0+float(curend->DeltaX/2.0-curstart->DeltaX/2.0)*curratiofactor;
-					anchorY = curstart->DeltaY/2.0+float(curend->DeltaY/2.0-curstart->DeltaY/2.0)*curratiofactor;
+					cursor_end.x = curend->DeltaX;
+					cursor_end.y = curend->DeltaY;
+				}
+				int moveX=0;
+				int moveY=0;
+				MORPH_CALC(moveX,cursor_start.x,cursor_end.x);
+				MORPH_CALC(moveY,cursor_start.y,cursor_end.y);
+				p1.x = moveX-boundsx;
+				p1.y = moveY-boundsy;
+				if(curstart->StraightFlag)
+				{
+					cursor_end.x += curstart->DeltaX;
+					cursor_end.y += curstart->DeltaY;
 				}
 				else
 				{
-					controlX = curstart->DeltaX/2.0+float(curend->DeltaX-curstart->DeltaX/2.0)*curratiofactor;
-					controlY = curstart->DeltaY/2.0+float(curend->DeltaY-curstart->DeltaY/2.0)*curratiofactor;
-					anchorX = curstart->DeltaX/2.0+float(curend->AnchorDeltaX-curstart->DeltaX/2.0)*curratiofactor;
-					anchorY = curstart->DeltaY/2.0+float(curend->AnchorDeltaY-curstart->DeltaY/2.0)*curratiofactor;
+					cursor_end.x += curstart->DeltaX + curstart->AnchorDeltaX;
+					cursor_end.y += curstart->DeltaY + curstart->AnchorDeltaY;
 				}
 			}
 			else
 			{
-				if (curend->StraightFlag)
+				int controlX;
+				int controlY;
+				int anchorX;
+				int anchorY;
+				if(curstart->StraightFlag)
 				{
-					controlX = curstart->DeltaX+float(curend->DeltaX/2.0-curstart->DeltaX)*curratiofactor;
-					controlY = curstart->DeltaY+float(curend->DeltaY/2.0-curstart->DeltaY)*curratiofactor;
-					anchorX = curstart->AnchorDeltaX+float(curend->DeltaX/2.0-curstart->AnchorDeltaX)*curratiofactor;
-					anchorY = curstart->AnchorDeltaY+float(curend->DeltaY/2.0-curstart->AnchorDeltaY)*curratiofactor;
+					if (curend->StraightFlag)
+					{
+						MORPH_CALC(controlX,cursor_start.x+curstart->DeltaX,cursor_end.x+curend->DeltaX);
+						MORPH_CALC(controlY,cursor_start.y+curstart->DeltaY,cursor_end.y+curend->DeltaY);
+						MORPH_CALC(anchorX,cursor_start.x+curstart->DeltaX,cursor_end.x+curend->DeltaX);
+						MORPH_CALC(anchorY,cursor_start.y+curstart->DeltaY,cursor_end.y+curend->DeltaY);
+						cursor_end.x += curend->DeltaX;
+						cursor_end.y += curend->DeltaY;
+					}
+					else
+					{
+						MORPH_CALC(controlX,cursor_start.x+curstart->DeltaX/2.0,cursor_end.x+curend->DeltaX);
+						MORPH_CALC(controlY,cursor_start.y+curstart->DeltaY/2.0,cursor_end.y+curend->DeltaY);
+						MORPH_CALC(anchorX,cursor_start.x+curstart->DeltaX,cursor_end.x+curend->DeltaX+curend->AnchorDeltaX);
+						MORPH_CALC(anchorY,cursor_start.y+curstart->DeltaY,cursor_end.y+curend->DeltaY+curend->AnchorDeltaY);
+						cursor_end.x += curend->DeltaX + curend->AnchorDeltaX;
+						cursor_end.y += curend->DeltaY + curend->AnchorDeltaY;
+					}
+					cursor_start.x += curstart->DeltaX;
+					cursor_start.y += curstart->DeltaY;
 				}
 				else
 				{
-					controlX = curstart->DeltaX+float(curend->DeltaX-curstart->DeltaX)*curratiofactor;
-					controlY = curstart->DeltaY+float(curend->DeltaY-curstart->DeltaY)*curratiofactor;
-					anchorX = curstart->AnchorDeltaX+float(curend->AnchorDeltaX-curstart->AnchorDeltaX)*curratiofactor;
-					anchorY = curstart->AnchorDeltaY+float(curend->AnchorDeltaY-curstart->AnchorDeltaY)*curratiofactor;
+					if (curend->StraightFlag)
+					{
+						MORPH_CALC(controlX,cursor_start.x+curstart->DeltaX,cursor_end.x+curend->DeltaX/2.0);
+						MORPH_CALC(controlY,cursor_start.y+curstart->DeltaY,cursor_end.y+curend->DeltaY/2.0);
+						MORPH_CALC(anchorX,cursor_start.x+curstart->AnchorDeltaX,cursor_end.x+curend->DeltaX);
+						MORPH_CALC(anchorY,cursor_start.y+curstart->AnchorDeltaY,cursor_end.y+curend->DeltaY);
+						cursor_end.x += curend->DeltaX;
+						cursor_end.y += curend->DeltaY;
+					}
+					else
+					{
+						MORPH_CALC(controlX,cursor_start.x+curstart->DeltaX,cursor_end.x+curend->DeltaX);
+						MORPH_CALC(controlY,cursor_start.y+curstart->DeltaY,cursor_end.y+curend->DeltaY);
+						MORPH_CALC(anchorX,cursor_start.x+curstart->AnchorDeltaX,cursor_end.x+curend->AnchorDeltaX);
+						MORPH_CALC(anchorY,cursor_start.y+curstart->AnchorDeltaY,cursor_end.y+curend->AnchorDeltaY);
+						cursor_end.x += curend->DeltaX + curend->AnchorDeltaX;
+						cursor_end.y += curend->DeltaY + curend->AnchorDeltaY;
+					}
+					cursor_start.x += curstart->DeltaX + curstart->AnchorDeltaX;
+					cursor_start.y += curstart->DeltaY + curstart->AnchorDeltaY;
+				}
+				if (controlX || controlY || anchorX || anchorY)
+				{
+					Vector2 p2(controlX-boundsx
+							   ,controlY-boundsy);
+					Vector2 p3(anchorX-boundsx
+							   ,anchorY-boundsy);
+
+					shapesBuilder.extendOutlineCurve(p1, p2, p3,linestyle);
+					p1.x=p3.x;
+					p1.y=p3.y;
 				}
 			}
-			cursor.x += controlX;
-			cursor.y += controlY;
-			Vector2 p2(matrix.multiply2D(cursor));
-			cursor.x += anchorX;
-			cursor.y += anchorY;
-			Vector2 p3(matrix.multiply2D(cursor));
-			
-			shapesBuilder.extendOutlineCurve(p1, p2, p3,linestyle);
-			p1.x=p3.x;
-			p1.y=p3.y;
-			itstart++;
-			itend++;
 		}
 		else
 		{
 			shapesBuilder.endSubpathForStyles(color0, color1, linestyle,true);
-			if(curstart->StateMoveTo)
+			if (curend->TypeFlag)
+				LOG(LOG_NOT_IMPLEMENTED,"MorphShape with StyleChanged start and Edge end:"<<tag->getId()<<" "<<(itstart-tag->StartEdges.ShapeRecords.begin()));
+			if (curstart->StateMoveTo || curend->StateMoveTo)
 			{
-				cursor.x=(curstart->DeltaX-boundsx)+float(curend->DeltaX-curstart->DeltaX)*curratiofactor;
-				cursor.y=(curstart->DeltaY-boundsy)+float(curend->DeltaY-curstart->DeltaY)*curratiofactor;
-				Vector2 tmp(matrix.multiply2D(cursor));
-				p1.x = tmp.x;
-				p1.y = tmp.y;
-				itstart++;
-				itend++;
+				if (curstart->StateMoveTo)
+				{
+					cursor_start.x = curstart->DeltaX;
+					cursor_start.y = curstart->DeltaY;
+				}
+				if (curend->StateMoveTo)
+				{
+					cursor_end.x = curend->DeltaX;
+					cursor_end.y = curend->DeltaY;
+				}
+				int moveX=0;
+				int moveY=0;
+				MORPH_CALC(moveX,cursor_start.x,cursor_end.x);
+				MORPH_CALC(moveY,cursor_start.y,cursor_end.y);
+				p1.x = moveX-boundsx;
+				p1.y = moveY-boundsy;
 			}
-			else
-				itstart++;
 			if(curstart->StateLineStyle)
 				linestyle = curstart->LineStyle;
 			if(curstart->StateFillStyle1)
@@ -222,8 +267,10 @@ void TokenContainer::FromDefineMorphShapeTagToShapeVector(DefineMorphShapeTag *t
 			if(curstart->StateFillStyle0)
 				color0=curstart->FillStyle0;
 		}
+		itstart++;
+		itend++;
 	}
-	shapesBuilder.outputMorphTokens(tag->MorphFillStyles.FillStyles,tag->MorphLineStyles.LineStyles2, tokens,ratio,boundsrc);
+	shapesBuilder.outputMorphTokens(tag->MorphFillStyles.FillStyles,tag->MorphLineStyles.LineStyles2, tokens,ratio,tokens.boundsRect);
 }
 
 void TokenContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
@@ -303,6 +350,7 @@ IDrawable* TokenContainer::invalidate(SMOOTH_MODE smoothing, bool fromgraphics, 
 		ret->getState()->tokens.isGlyph = tokens.isGlyph;
 		ret->getState()->tokens.color = tokens.color;
 		ret->getState()->tokens.startMatrix = tokens.startMatrix;
+		ret->getState()->tokens.boundsRect = tokens.boundsRect;
 		if (r)
 		{
 			ret->getState()->scalingGrid = r->getRect();

@@ -70,6 +70,7 @@ static constexpr auto protoDecls =
 {
 	AVM1_FUNCTION_TYPE_PROTO(AVM1XML, createElement),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1XML, createTextNode),
+	AVM1_FUNCTION_TYPE_PROTO(AVM1XML, parseXML),
 	AVM1_FUNCTION_PROTO(load),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1XML, sendAndLoad),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1XML, onData),
@@ -141,6 +142,31 @@ AVM1_FUNCTION_TYPE_BODY(AVM1XML, AVM1XML, createTextNode)
 		XMLNodeType::Text,
 		text
 	));
+}
+
+AVM1_FUNCTION_TYPE_BODY(AVM1XML, AVM1XML, parseXML)
+{
+	const auto& children = _this->getChildren();
+	for (auto it = children.rbegin(); it != children.rend(); ++it)
+		(*it)->removeNode();
+
+	tiny_string text;
+	AVM1_ARG_CHECK(AVM1_ARG_UNPACK(text));
+
+	try
+	{
+		_this->parse(act, text, _this->getProp
+		(
+			act,
+			"ignoreWhite"
+		).toBool(act.getSwfVersion()));
+	}
+	catch (std::exception& e)
+	{
+		LOG(LOG_ERROR, "Error occured while parsing XML: " << e.what());
+	}
+
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_FUNCTION_BODY(AVM1XML, load)

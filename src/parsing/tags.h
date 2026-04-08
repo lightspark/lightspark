@@ -146,6 +146,7 @@ public:
 	AVM1ActionTag(RECORDHEADER h, std::istream& s,RootMovieClip* root, AdditionalDataTag* datatag);
 	TAGTYPE getType() const override { return AVM1ACTION_TAG; }
 	void execute(DisplayObjectContainer* parent,bool inskipping, bool inRewind) override;
+	void executeDirect(MovieClip* clip);
 	bool empty() { return actions.empty(); }
 	void setActions(AVM1scriptToExecute& script) const;
 };

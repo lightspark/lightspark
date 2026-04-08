@@ -122,8 +122,8 @@ public:
 	void AVM1gotoFrameLabel(const tiny_string &label, bool stop, bool switchplaystate);
 	void AVM1gotoFrame(int frame, bool stop, bool switchplaystate, bool advanceFrame=true);
 	static void AVM1SetupMethods(Class_base* c);
-	void AVM1ExecuteFrameActionsFromLabel(const tiny_string &label);
-	void AVM1ExecuteFrameActions(uint32_t frame);
+	void AVM1ExecuteFrameActionsFromLabelDirect(const tiny_string &label);
+	void AVM1ExecuteFrameActionsDirect(uint32_t frame);
 	void AVM1AddScriptEvents();
 	void AVM1HandleConstruction(bool forInitAction);
 	bool getAVM1Loaded() const { return isAVM1Loaded; }

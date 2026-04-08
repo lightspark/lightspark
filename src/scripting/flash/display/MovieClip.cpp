@@ -333,11 +333,7 @@ void MovieClip::gotoAnd(asAtom* args, const unsigned int argslen, bool stop)
 	else
 	{
 		tiny_string label = asAtomHandler::toString(args[0],getInstanceWorker());
-		number_t ret=0;
-		if (Integer::fromStringFlashCompatible(label.raw_buf(),ret,10,true))
-			dest = framecontainer->getFrameIdByNumber(ret-1, sceneName,state.FP);
-		else
-			dest = framecontainer->getFrameIdByLabel(label, sceneName);
+		dest = framecontainer->getFrameIdByLabel(label, sceneName,state.FP);
 
 		if(dest==FRAME_NOT_FOUND)
 		{
@@ -412,7 +408,7 @@ AVM1context* MovieClip::AVM1getCurrentFrameContext()
 }
 void MovieClip::AVM1gotoFrameLabel(const tiny_string& label,bool stop, bool switchplaystate)
 {
-	uint32_t dest=framecontainer->getFrameIdByLabel(label, "");
+	uint32_t dest=framecontainer->getFrameIdByLabel(label, "",state.FP);
 	if(dest==FRAME_NOT_FOUND)
 	{
 		LOG(LOG_ERROR, "gotoFrameLabel: label not found:" <<label<<" "<<this->toDebugString());
@@ -828,15 +824,36 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(InteractiveObject::_setMouseEnabled),SETTER_METHOD,false,false);
 }
 
-void MovieClip::AVM1ExecuteFrameActionsFromLabel(const tiny_string &label)
+void MovieClip::AVM1ExecuteFrameActionsFromLabelDirect(const tiny_string &label)
 {
-	uint32_t dest=framecontainer->getFrameIdByLabel(label, "");
+	uint32_t dest=framecontainer->getFrameIdByLabel(label, "",state.FP);
+	if(dest==FRAME_NOT_FOUND)
+	{
+		tiny_string path = label;
+		uint32_t colonpos = path.rfind(":");
+		if (colonpos != tiny_string::npos)
+		{
+			// label is "<path>:<frame>"
+			tiny_string framestr = path.substr(colonpos+1,UINT32_MAX);
+			path = path.substr(0,colonpos);
+			DisplayObject* clip = AVM1GetClipFromPath(path);
+			if (clip && clip->is<MovieClip>())
+			{
+				dest = clip->as<MovieClip>()->getFrameContainer()->getFrameIdByLabel(framestr,"",clip->as<MovieClip>()->state.FP);
+				if (dest!=FRAME_NOT_FOUND)
+				{
+					clip->as<MovieClip>()->getFrameContainer()->AVM1ExecuteFrameActionsDirect(dest,clip->as<MovieClip>());
+					return;
+				}
+			}
+		}
+	}
 	if(dest==FRAME_NOT_FOUND)
 	{
 		LOG(LOG_INFO, "AVM1ExecuteFrameActionsFromLabel: label not found:" <<label);
 		return;
 	}
-	framecontainer->AVM1ExecuteFrameActions(dest,this);
+	framecontainer->AVM1ExecuteFrameActionsDirect(dest,this);
 }
 
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)

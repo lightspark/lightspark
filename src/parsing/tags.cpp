@@ -3363,6 +3363,10 @@ void AVM1ActionTag::execute(DisplayObjectContainer* parent, bool inskipping, boo
 		parent->getSystemState()->stage->AVM1AddScriptToExecute(script);
 	}
 }
+void AVM1ActionTag::executeDirect(MovieClip* clip)
+{
+	ACTIONRECORD::executeActions(clip,clip->getAVM1Context(),actions,startactionpos);
+}
 
 void AVM1ActionTag::setActions(AVM1scriptToExecute& script) const
 {

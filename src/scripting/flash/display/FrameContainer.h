@@ -80,7 +80,7 @@ public:
 	void execute(DisplayObjectContainer* displayList, bool inskipping, std::vector<_R<DisplayObject>>& removedFrameScripts);
 	void AVM1executeInitActions(DisplayObjectContainer* displayList);
 	void fillExecutionList(TagExecutionList* list, DisplayObjectContainer* displayList, std::vector<Ref<DisplayObject> >& removedFrameScripts);
-	void AVM1executeActions(DisplayObjectContainer* clip);
+	void AVM1executeActionsDirect(MovieClip* clip);
 	/**
 	 * destroyTags must be called only by the tag destructor, not by
 	 * the objects that are instance of tags
@@ -122,7 +122,7 @@ public:
 	uint32_t getCurrentScene(uint32_t frame) const;
 	const Scene_data *getScene(uint32_t frame, const tiny_string &sceneName, uint32_t currentframe) const;
 	uint32_t getFrameIdByNumber(uint32_t i, const tiny_string& sceneName, uint32_t currentframe) const;
-	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName) const;
+	uint32_t getFrameIdByLabel(const tiny_string& l, const tiny_string& sceneName, uint32_t currentframe) const;
 	uint32_t nextScene(uint32_t frame) const;
 	uint32_t prevScene(uint32_t frame) const;
 	asAtom getScenes(ASWorker* wrk, uint32_t framecount) const;
@@ -132,7 +132,7 @@ public:
 	asAtom getCurrentLabel(ASWorker* wrk, uint32_t frame) const;
 	asAtom getCurrentLabels(ASWorker* wrk, uint32_t frame) const;
 	void addScene(uint32_t sceneNo, uint32_t startframe, const tiny_string& name);
-	void AVM1ExecuteFrameActions(uint32_t frame, MovieClip* clip);
+	void AVM1ExecuteFrameActionsDirect(uint32_t frame, MovieClip* clip);
 	void declareFrame(MovieClip* clip);
 	uint32_t getFramesSize() const { return frames.size(); }
 	void pop_frame();

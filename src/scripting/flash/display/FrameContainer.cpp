@@ -182,13 +182,13 @@ void Frame::fillExecutionList(TagExecutionList* list, DisplayObjectContainer* di
 		(*it)->fillExecutionList(*list);
 	}
 }
-void Frame::AVM1executeActions(DisplayObjectContainer* clip)
+void Frame::AVM1executeActionsDirect(MovieClip* clip)
 {
 	auto it=blueprint.begin();
 	for(;it!=blueprint.end();++it)
 	{
 		if ((*it)->getType() == AVM1ACTION_TAG)
-			(*it)->execute(clip,false,false);
+			static_cast<AVM1ActionTag*>(*it)->executeDirect(clip);
 	}
 }
 
@@ -265,8 +265,11 @@ const Scene_data *FrameContainer::getScene(uint32_t frame, const tiny_string &sc
 /* Return global frame index for a named frame. If sceneName is not
  * empty, return a frame only if it belong to the named scene.
  */
-uint32_t FrameContainer::getFrameIdByLabel(const tiny_string& label, const tiny_string& sceneName) const
+uint32_t FrameContainer::getFrameIdByLabel(const tiny_string& label, const tiny_string& sceneName, uint32_t currentframe) const
 {
+	number_t ret=0;
+	if (Integer::fromStringFlashCompatible(label.raw_buf(),ret,10,true))
+		return getFrameIdByNumber(ret-1, sceneName,currentframe);
 	if (sceneName.empty())
 	{
 		//Find frame in any scene
@@ -439,7 +442,7 @@ void FrameContainer::addScene(uint32_t sceneNo, uint32_t startframe, const tiny_
 		scenes[sceneNo].startframe = startframe;
 	}
 }
-void FrameContainer::AVM1ExecuteFrameActions(uint32_t frame, MovieClip* clip)
+void FrameContainer::AVM1ExecuteFrameActionsDirect(uint32_t frame, MovieClip* clip)
 {
 	auto it=frames.begin();
 	uint32_t i=0;
@@ -450,7 +453,7 @@ void FrameContainer::AVM1ExecuteFrameActions(uint32_t frame, MovieClip* clip)
 	}
 	if (it != frames.end())
 	{
-		it->AVM1executeActions(clip);
+		it->AVM1executeActionsDirect(clip);
 	}
 }
 

@@ -1279,7 +1279,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					clip_isTarget=true;
 					LOG_CALL("AVM1: ActionSetTarget2: setting target to "<<clip->toDebugString());
 				}
-				else
+				else if (wrk->AVM1getSwfVersion() > 6 || !asAtomHandler::isNullOrUndefined(a))
 				{
 					tiny_string s = asAtomHandler::toString(a,wrk);
 					ASATOM_DECREF(a);
@@ -2700,20 +2700,25 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				}
 				else
 				{
-					auto newTarget = clip->AVM1GetClipFromPath(s);
-					if (!clip->isOnStage())
+					auto newTarget = originalclip->AVM1GetClipFromPath(s);
+					if (!originalclip->isOnStage() || newTarget==nullptr)
 					{
-						// clip is not on stage, so we set invalidTarget
+						// originalclip is not on stage, so we set invalidTarget
 						// according to ruffle everything except playhead commands (play/stop/gotoframe...) is handled on root
 						// see ruffle test avm1/removed_base_clip_tell_target
-						invalidTarget=true;
+						//invalidTarget=true;
 						if (clip->getSystemState()->use_testrunner_date)
 						{
 							// Adobe doesn't display any message, but for some reason ruffle does,
 							// so we do the same if we are in the testrunner
 							tiny_string msg("Target not found: Target=\"");
 							msg += s;
-							msg += "\" Base=\"?\"";
+							msg += "\" Base=\"";
+							if (originalclip->isOnStage())
+								msg += originalclip->AVM1GetPath();
+							else
+								msg += "?";
+							msg += "\"";
 							clip->getSystemState()->trace(msg);
 						}
 						newTarget=nullptr;
@@ -3060,13 +3065,13 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				{
 					uint32_t frame = asAtomHandler::toUInt(a);
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCall frame "<<frame);
-					clip->as<MovieClip>()->getFrameContainer()->AVM1ExecuteFrameActions(frame,clip->as<MovieClip>());
+					clip->as<MovieClip>()->getFrameContainer()->AVM1ExecuteFrameActionsDirect(frame-1,clip->as<MovieClip>());
 				}
 				else
 				{
 					tiny_string s = asAtomHandler::AVM1toString(a,wrk);
 					LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCall label "<<s);
-					clip->as<MovieClip>()->AVM1ExecuteFrameActionsFromLabel(s);
+					clip->as<MovieClip>()->AVM1ExecuteFrameActionsFromLabelDirect(s);
 				}
 				ASATOM_DECREF(a);
 				break;
@@ -3127,7 +3132,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (asAtomHandler::isString(a))
 				{
 					tiny_string s = asAtomHandler::toString(a,wrk);
-					frame = clip->as<MovieClip>()->getFrameContainer()->getFrameIdByLabel(s,"");
+					frame = clip->as<MovieClip>()->getFrameContainer()->getFrameIdByLabel(s,"",clip->as<MovieClip>()->state.FP);
 				}
 				else
 				{

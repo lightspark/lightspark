@@ -26,7 +26,6 @@
 
 
 #include "forwards/backends/cachedsurface.h"
-#include "forwards/backends/geometry.h"
 #include "interfaces/backends/graphics.h"
 #include "interfaces/threading.h"
 #include "compat.h"
@@ -313,6 +312,7 @@ struct FormatText
 	RGBA fontColor {0x000000,0}; // use alpha 0 as "not set" indicator
 	uint32_t fontSize {0};
 	uint32_t font {BUILTIN_STRINGS::EMPTY};
+	uint32_t embeddedfontID {UINT32_MAX};
 	tiny_string url;
 	tiny_string target;
 	number_t kerning {0};
@@ -325,6 +325,8 @@ struct FormatText
 	tiny_string tabstops;
 	uint32_t level {0};
 	bool paramsChanged(const FormatText* f) const;
+	FormatText() {}
+	FormatText(const TextData& tdata);
 };
 
 struct textline
@@ -348,8 +350,11 @@ public:
 	/* the default values are from the spec for flash.text.TextField and flash.text.TextFormat */
 	TextData()
 	:swfversion(0)
-	,width(100)
-	,height(100)
+	,width(100*TWIPS_FACTOR)
+	,height(100*TWIPS_FACTOR)
+	,leftMargin(0)
+	,rightMargin(0)
+	,indent(0)
 	,leading(0)
 	,textWidth(0)
 	,textHeight(0)
@@ -378,6 +383,9 @@ public:
 	uint32_t swfversion;
 	uint32_t width;
 	uint32_t height;
+	uint32_t leftMargin;
+	uint32_t rightMargin;
+	uint32_t indent;
 	int32_t leading;
 	uint32_t textWidth;
 	uint32_t textHeight;
@@ -403,14 +411,14 @@ public:
 	FontTag* embeddedFont;
 	int nanoVGFontID;
 	tiny_string getText(uint32_t line=UINT32_MAX) const;
-	void setText(const char* text, bool firstlineonly=false);
+	void setText(const char* text, bool firstlineonly=false, FormatText* format=nullptr);
 	void appendText(const char* text, bool firstlineonly=false, const FormatText* format = nullptr, uint32_t swfversion=UINT32_MAX, bool condensewhite=false);
 	void appendFormatText(const char* text, const FormatText& format, uint32_t swfversion, bool condensewhite);
 	void appendLineBreak(bool needsadditionalbreak, bool emptyline, FormatText format);
 	void clear();
 	bool isWhitespaceOnly(bool multiline) const;
-	void getTextSizes(SystemState* sys, const tiny_string& text, number_t& tw, number_t& th);
-	bool TextIsEqual(const std::vector<tiny_string>& lines) const;
+	void getTextSizes(SystemState* sys, const FormatText& format, FontTag* ef, const tiny_string& text, number_t& tw, number_t& th);
+	bool TextIsEqual(const std::vector<tiny_string>& lines, const std::vector<FormatText>& oldformats) const;
 	uint32_t getLineCount() const { return textlines.size(); }
 	FontTag* checkEmbeddedFont(DisplayObject* d);
 	void checklastline(bool needsadditionalline);

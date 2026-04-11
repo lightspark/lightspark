@@ -124,20 +124,37 @@ ASFUNCTIONBODY_ATOM(ASFont,hasGlyphs)
 	asAtomHandler::setBool(ret,true);
 }
 TextField::TextField(ASWorker* wrk, Class_base* c, const TextData& textData, bool _selectable, bool readOnly, const char *varname, DefineEditTextTag *_tag)
-	: InteractiveObject(wrk,c), TextData(textData), TokenContainer(this), type(ET_READ_ONLY),
-	  antiAliasType(AA_NORMAL), gridFitType(GF_PIXEL),
-	  textInteractionMode(TI_NORMAL),
-	  restrictChars(asAtomHandler::nullAtom),
-	  autosizeposition(0),tagvarname(varname,true),tagvartarget(nullptr),tag(_tag),originalXPosition(0),originalWidth(textData.width),
-	  fillstyleBackgroundColor(0xff),lineStyleBorder(0xff),lineStyleCaret(0xff),linemutex(new Mutex()),inAVM1syncVar(false),
-	  inUpdateVarBinding(false),
-	  alwaysShowSelection(false),
-	  caretIndex(-1),
-	  condenseWhite(false),
-	  embedFonts(false), maxChars(_tag ? int32_t(_tag->MaxLength) : 0),
-	  mouseWheelEnabled(true),
-	  selectable(_selectable), selectionBeginIndex(-1), selectionEndIndex(-1),
-	  sharpness(0), thickness(0), useRichTextClipboard(false)
+	:InteractiveObject(wrk,c)
+	,TextData(textData)
+	,TokenContainer(this)
+	,type(ET_READ_ONLY)
+	,antiAliasType(AA_NORMAL)
+	,gridFitType(GF_PIXEL)
+	,textInteractionMode(TI_NORMAL)
+	,restrictChars(asAtomHandler::nullAtom)
+	,autosizeposition(0)
+	,tagvarname(varname,true)
+	,tagvartarget(nullptr)
+	,tag(_tag)
+	,originalXPosition(0)
+	,originalWidth(textData.width)
+	,fillstyleBackgroundColor(0xff)
+	,lineStyleBorder(0xff)
+	,lineStyleCaret(0xff)
+	,linemutex(new Mutex())
+	,inAVM1syncVar(false)
+	,inUpdateVarBinding(false)
+	,alwaysShowSelection(false)
+	,caretIndex(-1)
+	,condenseWhite(false)
+	,maxChars(_tag ? int32_t(_tag->MaxLength) : 0)
+	,mouseWheelEnabled(true)
+	,selectable(_selectable)
+	,selectionBeginIndex(-1)
+	,selectionEndIndex(-1)
+	,sharpness(0)
+	,thickness(0)
+	,useRichTextClipboard(false)
 {
 	subtype=SUBTYPE_TEXTFIELD;
 	this->swfversion = this->loadedFrom->version;
@@ -215,6 +232,9 @@ void TextField::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(TextField::_getTextFieldX),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(TextField::_setTextFieldX),SETTER_METHOD,true);
 
+	c->setDeclaredMethodByQName("embedFonts","",c->getSystemState()->getBuiltinFunction(TextField::_getEmbedFonts),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("embedFonts","",c->getSystemState()->getBuiltinFunction(TextField::_setEmbedFonts),SETTER_METHOD,true);
+
 	REGISTER_GETTER_SETTER(c, alwaysShowSelection);
 	REGISTER_GETTER_SETTER(c, background);
 	REGISTER_GETTER_SETTER(c, backgroundColor);
@@ -222,7 +242,6 @@ void TextField::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, borderColor);
 	REGISTER_GETTER(c, caretIndex);
 	REGISTER_GETTER_SETTER(c, condenseWhite);
-	REGISTER_GETTER_SETTER(c, embedFonts);
 	REGISTER_GETTER_SETTER(c, maxChars);
 	REGISTER_GETTER_SETTER(c, multiline);
 	REGISTER_GETTER_SETTER(c, mouseWheelEnabled);
@@ -246,7 +265,6 @@ ASFUNCTIONBODY_GETTER_SETTER(TextField, border)
 ASFUNCTIONBODY_GETTER_SETTER(TextField, borderColor)
 ASFUNCTIONBODY_GETTER(TextField, caretIndex)
 ASFUNCTIONBODY_GETTER_SETTER(TextField, condenseWhite)
-ASFUNCTIONBODY_GETTER_SETTER(TextField, embedFonts) // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, maxChars) // stub
 ASFUNCTIONBODY_GETTER_SETTER(TextField, multiline)
 ASFUNCTIONBODY_GETTER_SETTER(TextField, mouseWheelEnabled) // stub
@@ -316,20 +334,20 @@ bool TextField::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, numbe
 	{
 		xmin=tag ? tag->Bounds.Xmin : 0.0f;
 		if (wordWrap || autoSize==AS_NONE)
-			xmax=max(0.0f,float(width*TWIPS_FACTOR))+ (tag ? tag->Bounds.Xmin : 0.0f);
+			xmax=max(0.0f,float(width))+ (tag ? tag->Bounds.Xmin : 0.0f);
 		else
-			xmax=max(0.0f,float(textWidth+autosizeposition))*TWIPS_FACTOR+2*TEXTFIELD_PADDING+ (tag ? tag->Bounds.Xmin : 0.0f);
+			xmax=max(0.0f,float(textWidth+autosizeposition))+2*TEXTFIELD_PADDING+ (tag ? tag->Bounds.Xmin : 0.0f);
 		ymin=tag ? tag->Bounds.Ymin : 0.0f;
-		ymax=max(0.0f,float(height*TWIPS_FACTOR)+(tag ? tag->Bounds.Ymin :0.0f)+float(2*TEXTFIELD_PADDING*TWIPS_FACTOR));
+		ymax=max(0.0f,float(height)+(tag ? tag->Bounds.Ymin :0.0f)+float(2*TEXTFIELD_PADDING));
 		return true;
 	}
 	xmin=tag->Bounds.Xmin;
 	if (wordWrap)
-		xmax=max(0.0f,float(width*TWIPS_FACTOR)+tag->Bounds.Xmin);
+		xmax=max(0.0f,float(width)+tag->Bounds.Xmin);
 	else
-		xmax=max(0.0f,float(textWidth*TWIPS_FACTOR)+2*TEXTFIELD_PADDING+tag->Bounds.Xmin);
+		xmax=max(0.0f,float(textWidth)+2*TEXTFIELD_PADDING+tag->Bounds.Xmin);
 	ymin=tag->Bounds.Ymin;
-	ymax=max(0.0f,float(height*TWIPS_FACTOR)+tag->Bounds.Ymin);
+	ymax=max(0.0f,float(height)+tag->Bounds.Ymin);
 	return true;
 }
 
@@ -500,7 +518,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 			autosizeposition = 0;
 			if (!wordWrap) // not in the specs but Adobe changes x position if wordWrap is not set
 			{
-				this->setX(originalXPosition + (int(originalWidth-TEXTFIELD_PADDING*2 - textWidth))*sx);
+				this->setX((originalXPosition + (int(originalWidth-TEXTFIELD_PADDING*2 - textWidth))*sx)/TWIPS_FACTOR);
 				if (updatewidth)
 					width = textWidth+TEXTFIELD_PADDING*2;
 			}
@@ -519,7 +537,7 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 			autosizeposition = 0;
 			if (!wordWrap) // not in the specs but Adobe changes x position if wordWrap is not set
 			{
-				this->setX(originalXPosition + (int(originalWidth-TEXTFIELD_PADDING*2 - textWidth))/2*sx);
+				this->setX((originalXPosition + (int(originalWidth-TEXTFIELD_PADDING*2 - textWidth))/2*sx)/TWIPS_FACTOR);
 				if (updatewidth)
 					width = textWidth+TEXTFIELD_PADDING*2;
 			}
@@ -548,18 +566,17 @@ void TextField::setSizeAndPositionFromAutoSize(bool updatewidth)
 ASFUNCTIONBODY_ATOM(TextField,_getWidth)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	asAtomHandler::setUInt(ret,th->width);
+	asAtomHandler::setUInt(ret,th->width/TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_setWidth)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	assert_and_throw(argslen==1);
-	if((th->width != asAtomHandler::toUInt(args[0]))
-			&& (th->width != asAtomHandler::toUInt(args[0]))
+	if((th->width != asAtomHandler::toUInt(args[0])*TWIPS_FACTOR)
 			&&  (asAtomHandler::toInt(args[0]) >= 0))
 	{
-		th->width=asAtomHandler::toUInt(args[0]);
+		th->width=asAtomHandler::toUInt(args[0])*TWIPS_FACTOR;
 		th->originalWidth=th->width;
 		th->hasChanged=true;
 		th->setNeedsTextureRecalculation();
@@ -577,9 +594,9 @@ ASFUNCTIONBODY_ATOM(TextField,_getHeight)
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	// it seems that Adobe returns the textHeight if in autoSize mode
 	if (th->autoSize != AS_NONE)
-		asAtomHandler::setUInt(ret,th->textHeight);
+		asAtomHandler::setUInt(ret,th->textHeight/TWIPS_FACTOR);
 	else
-		asAtomHandler::setUInt(ret,th->height);
+		asAtomHandler::setUInt(ret,th->height/TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_setHeight)
@@ -587,10 +604,10 @@ ASFUNCTIONBODY_ATOM(TextField,_setHeight)
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	assert_and_throw(argslen==1);
 	if((th->autoSize == AS_NONE)
-		&& (th->height != asAtomHandler::toUInt(args[0]))
+		&& (th->height != asAtomHandler::toUInt(args[0])*TWIPS_FACTOR)
 			&&  (asAtomHandler::toInt(args[0]) >= 0))
 	{
-		th->height=asAtomHandler::toUInt(args[0]);
+		th->height=asAtomHandler::toUInt(args[0])*TWIPS_FACTOR;
 		th->hasChanged=true;
 		th->setNeedsTextureRecalculation();
 		th->updateSizes();
@@ -605,25 +622,42 @@ ASFUNCTIONBODY_ATOM(TextField,_setHeight)
 ASFUNCTIONBODY_ATOM(TextField,_getTextFieldX)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	asAtomHandler::setNumber(ret, th->originalXPosition+th->autosizeposition);
+	asAtomHandler::setNumber(ret, (th->originalXPosition+th->autosizeposition)/TWIPS_FACTOR);
 }
 ASFUNCTIONBODY_ATOM(TextField,_setTextFieldX)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
 	DisplayObject::_setX(ret,wrk,obj,args,argslen);
-	th->originalXPosition=asAtomHandler::toInt(args[0]);
+	th->originalXPosition=asAtomHandler::toInt(args[0])*TWIPS_FACTOR;
+}
+
+ASFUNCTIONBODY_ATOM(TextField,_getEmbedFonts)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+	asAtomHandler::setBool(ret, th->useOutlines);
+}
+ASFUNCTIONBODY_ATOM(TextField,_setEmbedFonts)
+{
+	TextField* th=asAtomHandler::as<TextField>(obj);
+	ARG_CHECK(ARG_UNPACK(th->useOutlines));
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getTextWidth)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	asAtomHandler::setUInt(ret,th->textWidth);
+	if (th->needsActionScript3())
+		asAtomHandler::setNumber(ret,number_t(th->textWidth)/TWIPS_FACTOR);
+	else
+		asAtomHandler::setUInt(ret,th->textWidth/TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getTextHeight)
 {
 	TextField* th=asAtomHandler::as<TextField>(obj);
-	asAtomHandler::setUInt(ret,th->textHeight);
+	if (th->needsActionScript3())
+		asAtomHandler::setNumber(ret,number_t(th->textHeight)/TWIPS_FACTOR);
+	else
+		asAtomHandler::setUInt(ret,th->textHeight/TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(TextField,_getHtmlText)
@@ -732,9 +766,11 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	{
 		uint32_t fnt = asAtomHandler::toStringId(tf->font,wrk);
 		if (fnt != th->fontname)
+		{
 			updatesizes = true;
-		th->fontname = fnt;
-		th->fontID = UINT32_MAX;
+			th->fontname = fnt;
+			th->fontID = UINT32_MAX;
+		}
 	}
 	if (!asAtomHandler::isNull(tf->size) && th->fontSize != asAtomHandler::toUInt(tf->size) && asAtomHandler::toUInt(tf->size)>0)
 	{
@@ -745,8 +781,13 @@ ASFUNCTIONBODY_ATOM(TextField,_setTextFormat)
 	{
 		th->linemutex->lock();
 		th->checkEmbeddedFont(th);
+		if (th->wordWrap)
+		{
+			FormatText format(*th);
+			th->setText(th->getText().raw_buf(),false,&format);
+		}
 		th->linemutex->unlock();
-		th->updateSizes();
+		th->updateSizes(true);
 		th->setSizeAndPositionFromAutoSize();
 		th->hasChanged=true;
 		th->setNeedsTextureRecalculation();
@@ -935,9 +976,9 @@ ASFUNCTIONBODY_ATOM(TextField,_getLineMetrics)
 	}
 
 	ret = asAtomHandler::fromObject(Class<TextLineMetrics>::getInstanceS(wrk,
-		th->textlines[lineIndex].autosizeposition,
-		th->textlines[lineIndex].textwidth,
-		th->textlines[lineIndex].height,
+		th->textlines[lineIndex].autosizeposition/TWIPS_FACTOR,
+		th->textlines[lineIndex].textwidth/TWIPS_FACTOR,
+		th->textlines[lineIndex].height/TWIPS_FACTOR,
 		0,// TODO:th->textlines[lineIndex].ascent,
 		0,// TODO:th->textlines[lineIndex].descent,
 		parseNumber(th->textlines[lineIndex].format.leading,th->getSystemState()->getSwfVersion()<11)));
@@ -1194,7 +1235,7 @@ void TextField::getTextBounds(const tiny_string& txt,number_t &xmin,number_t &xm
 {
 	if (embeddedFont)
 		scaling = 1.0f/1024.0f;
-	getTextSizes(getSystemState(),txt,xmax,ymax);
+	getTextSizes(getSystemState(),FormatText(),nullptr,txt,xmax,ymax);
 	xmin = autosizeposition;
 	xmax += autosizeposition;
 	ymin=0;
@@ -1218,10 +1259,10 @@ ASFUNCTIONBODY_ATOM(TextField,_getCharBoundaries)
 			th->getTextBounds(text.substr(0,charIndex-1),xmin,xmax,ymin,ymax);
 		number_t xmin2=0,xmax2=0,ymin2=0,ymax2=0;
 		th->getTextBounds(text.substr(0,charIndex),xmin2,xmax2,ymin2,ymax2);
-		rect->x = xmin;
-		rect->y = ymin2;
-		rect->width = xmax2-xmax;
-		rect->height = ymax2-ymin2;
+		rect->x = xmin/TWIPS_FACTOR;
+		rect->y = ymin2/TWIPS_FACTOR;
+		rect->width = (xmax2-xmax)/TWIPS_FACTOR;
+		rect->height = (ymax2-ymin2)/TWIPS_FACTOR;
 	}
 	ret = asAtomHandler::fromObjectNoPrimitive(rect);
 }
@@ -1248,7 +1289,7 @@ ASFUNCTIONBODY_ATOM(TextField,getParagraphLength)
 
 void TextField::afterSetLegacyMatrix()
 {
-	originalXPosition = getXY().x;
+	originalXPosition = getMatrix().getTranslateX();
 	originalWidth = width;
 	textUpdated();
 }
@@ -1323,7 +1364,7 @@ int32_t TextField::getMaxScrollV()
 	return 1;
 }
 
-void TextField::updateSizes()
+void TextField::updateSizes(bool updateformat)
 {
 	Locker l(invalidatemutex);
 	uint32_t tw,th;
@@ -1334,12 +1375,19 @@ void TextField::updateSizes()
 	th=0;
 	number_t w=0;
 	number_t h=0;
+
 	linemutex->lock();
 	auto it = textlines.begin();
 	while (it != textlines.end())
 	{
-		getTextSizes(getSystemState(),(*it).text,w,h);
+		if (updateformat)
+			(*it).format = FormatText(*this);
+		FontTag* ef = nullptr;
+		if ((*it).format.embeddedfontID != UINT32_MAX)
+			ef = this->loadedFrom->getEmbeddedFontByID((*it).format.embeddedfontID);
+		getTextSizes(getSystemState(),(*it).format,ef,(*it).text,w,h);
 		(*it).textwidth=w;
+		(*it).height=h;
 		bool listchanged=false;
 		if (wordWrap && width > TEXTFIELD_PADDING*2 && uint32_t(w) > width-TEXTFIELD_PADDING*2)
 		{
@@ -1348,7 +1396,7 @@ void TextField::updateSizes()
 			uint32_t c= text.rfind(" ");// TODO check for other whitespace characters
 			while (c != tiny_string::npos && c != 0)
 			{
-				getTextSizes(getSystemState(),text.substr(0,c),w,h);
+				getTextSizes(getSystemState(),(*it).format,ef,text.substr(0,c),w,h);
 				if (w <= width-TEXTFIELD_PADDING*2)
 				{
 					if(w>tw)
@@ -1358,9 +1406,10 @@ void TextField::updateSizes()
 					textline t;
 					t.autosizeposition=0;
 					t.text=text.substr(c+1,UINT32_MAX);
-					getTextSizes(getSystemState(),t.text,w,h);
+					getTextSizes(getSystemState(),(*it).format,ef,t.text,w,h);
 					t.textwidth=w;
 					t.height=h;
+					t.format= (*it).format;
 					it = textlines.insert(++it,t);
 					listchanged=true;
 					text =t.text;
@@ -1441,10 +1490,10 @@ tiny_string TextField::toHtmlText()
 				node.append_attribute("RIGHTMARGIN").set_value(format.rightmargin.raw_buf());
 			if (!format.indent.empty())
 				node.append_attribute("INDENT").set_value(format.indent.raw_buf());
-			if (!format.leading.empty())
-				node.append_attribute("LEADING").set_value(format.leading.raw_buf());
 			if (!format.leftmargin.empty())
 				node.append_attribute("LEFTMARGIN").set_value(format.leftmargin.raw_buf());
+			if (!format.leading.empty())
+				node.append_attribute("LEADING").set_value(format.leading.raw_buf());
 			if (!format.tabstops.empty())
 				node.append_attribute("TABSTOPS").set_value(format.tabstops.raw_buf());
 		}
@@ -1647,12 +1696,15 @@ void TextField::setHtmlText(const tiny_string& html)
 {
 	linemutex->lock();
 	vector<tiny_string> oldtext;
+	vector<FormatText> oldformats;
 	if (this->isConstructed())
 	{
 		oldtext.reserve(textlines.size());
+		oldformats.reserve(textlines.size());
 		for (uint32_t i =0; i < textlines.size(); i++)
 		{
 			oldtext.push_back(textlines[i].text);
+			oldformats.push_back(textlines[i].format);
 		}
 	}
 	uint32_t swfversion = this->loadedFrom->version;
@@ -1667,7 +1719,7 @@ void TextField::setHtmlText(const tiny_string& html)
 	}
 	linemutex->unlock();
 
-	if (this->isConstructed() && !this->TextIsEqual(oldtext))
+	if (this->isConstructed() && !this->TextIsEqual(oldtext,oldformats))
 	{
 		hasChanged=true;
 		setNeedsTextureRecalculation();
@@ -1682,7 +1734,7 @@ std::string TextField::toDebugString() const
 	res += this->getText(0);
 	res += "\";";
 	char buf[100];
-	sprintf(buf,"%dx%d %5.2f %d/%d %s",textWidth,textHeight,autosizeposition,autoSize,align,getSystemState()->getStringFromUniqueId(fontname).raw_buf());
+	sprintf(buf,"(%i) %5.2fx%5.2f %5.2f %d/%d %s",this->getLineCount(),textWidth/TWIPS_FACTOR,textHeight/TWIPS_FACTOR,autosizeposition,autoSize,align,getSystemState()->getStringFromUniqueId(fontname).raw_buf());
 	res += buf;
 	return res;
 }
@@ -1692,7 +1744,8 @@ void TextField::updateText(const tiny_string& new_text)
 	if (getText() == new_text)
 		return;
 	linemutex->lock();
-	setText(new_text.raw_buf());
+	FormatText format(*this);
+	setText(new_text.raw_buf(),false,&format);
 	linemutex->unlock();
 	textUpdated();
 }
@@ -1752,9 +1805,7 @@ void TextField::afterLegacyInsert()
 				asAtom value = tagvartarget->as<MovieClip>()->getVariableBindingValue(tagvarname);
 				if (asAtomHandler::isValid(value) && !asAtomHandler::isUndefined(value))
 				{
-					linemutex->lock();
-					this->setText(asAtomHandler::toString(value,getInstanceWorker()).raw_buf());
-					linemutex->unlock();
+					UpdateVariableBinding(value);
 				}
 				ASATOM_DECREF(value);
 				break;
@@ -1773,8 +1824,9 @@ void TextField::afterLegacyInsert()
 		constructionComplete();
 		afterConstruction();
 	}
+	originalWidth=width;
 	avm1SyncTagVar();
-	updateSizes();
+	updateSizes(true);
 	setSizeAndPositionFromAutoSize();
 	InteractiveObject::afterLegacyInsert();
 }
@@ -1987,7 +2039,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 	if (!tokens.filltokens)
 		tokens.filltokens = _MR(new tokenListRef());
 	scaling = 1.0f/1024.0f/20.0f;
-	if (this->border || this->background)
+	if ( this->background)
 	{
 		fillstyleBackgroundColor.FillStyleType=SOLID_FILL;
 		fillstyleBackgroundColor.Color=this->backgroundColor;
@@ -2030,7 +2082,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 		{
 			tiny_string tmptxt = getText().substr(0,caretIndex);
 			number_t w,h;
-			getTextSizes(getSystemState(),tmptxt,w,h);
+			getTextSizes(getSystemState(),FormatText(),nullptr,tmptxt,w,h);
 			tw = w;
 			tw += autosizeposition/scaling;
 		}
@@ -2052,7 +2104,7 @@ IDrawable* TextField::invalidate(bool smoothing)
 	}
 	if (embeddedFont)
 	{
-		int32_t startposy = TEXTFIELD_PADDING*TWIPS_FACTOR+bymin+(embeddedFont->getAscent()+embeddedFont->getDescent())*TWIPS_FACTOR*fontSize/1024;
+		int32_t startposy = TEXTFIELD_PADDING+bymin+(embeddedFont->getAscent()+embeddedFont->getDescent())*TWIPS_FACTOR*fontSize/1024;
 
 		linemutex->lock();
 		RGBA color(textColor.Red,textColor.Green,textColor.Blue,0xff);
@@ -2068,16 +2120,16 @@ IDrawable* TextField::invalidate(bool smoothing)
 			if (!first)
 				tk = tk->next = new tokensVector();
 			first = false;
-			int startposx = (TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition)*TWIPS_FACTOR;
+			int startposx = (TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition);
 			if (isPassword)
 			{
 				tiny_string pwtxt;
 				for (uint32_t i = 0; i < (*it).text.numChars(); i++)
 					pwtxt+="*";
-				tk = embeddedFont->fillTextTokens(*tk,pwtxt,fontSize,color,leading,startposx,startposy);
+				tk = embeddedFont->fillTextTokens(*tk,pwtxt,(*it).format,color,leading,startposx,startposy);
 			}
 			else
-				tk = embeddedFont->fillTextTokens(*tk,(*it).text,fontSize,color,leading,startposx,startposy);
+				tk = embeddedFont->fillTextTokens(*tk,(*it).text,(*it).format,color,leading,startposx,startposy);
 			startposy += (this->leading+(embeddedFont->getAscent()+embeddedFont->getDescent()+embeddedFont->getLeading())*fontSize/1024)*TWIPS_FACTOR;
 		}
 		linemutex->unlock();
@@ -2214,10 +2266,7 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	FormatText format;
 	if (formatStack.empty())
 	{
-		format.font = textdata->fontname;
-		format.fontColor = textdata->textColor;
-		format.fontSize = textdata->fontSize;
-		format.align = textdata->align;
+		format = FormatText(*textdata);
 		formatStack.push_back(format);
 	}
 	format = formatStack.back();
@@ -2325,8 +2374,8 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 		format.bullet = true;
 	else if (name == "textformat")
 	{
-		// Adobe seems to ignore textformat tags not on root level except if it is the child of a textformat tag
-		if (currentDepth==0 || parentname=="textformat")
+		// Adobe seems to ignore textformat tags not on root level except if it is the child of a textformat or font tag
+		if (currentDepth==0 || parentname=="textformat" || parentname=="font")
 		{
 			for (auto it : node.attributes())
 			{
@@ -2390,13 +2439,16 @@ uint32_t TextField::HtmlTextParser::parseFontSize(const char* s,
 		basesize = currentFontSize;
 		if (s[0] == '-')
 			multiplier = -1;
+		s++;
 	}
+	if (s[0]<'0'||s[0]>'9')
+		return currentFontSize;
 
-	int64_t size = basesize + multiplier*strtoll(s, NULL, 10);
+	int64_t size = basesize + multiplier*strtoll(s, nullptr, 10);
 	if (size < 1)
 		size = 1;
-	if (size > UINT32_MAX)
-		size = UINT32_MAX;
+	if (size > 127)
+		size = 127;
 	
 	return (uint32_t)size;
 }

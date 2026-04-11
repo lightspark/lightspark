@@ -155,7 +155,7 @@ void nanoVGSetupFont(SystemState* sys, TextData& tData)
 	}
 #endif
 }
-void nanoVGgetTextBounds(SystemState* sys, TextData& tData, const tiny_string& text, number_t& tw, number_t& th)
+void nanoVGgetTextBounds(SystemState* sys, TextData& tData, const FormatText& format, const tiny_string& text, number_t& tw, number_t& th)
 {
 	if (tData.nanoVGFontID==-1)
 		return;
@@ -171,8 +171,9 @@ void nanoVGgetTextBounds(SystemState* sys, TextData& tData, const tiny_string& t
 		float bounds[4];
 		nvgResetTransform(nvgctxt);
 		nvgTextAlign(nvgctxt,NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-		nvgFontSize(nvgctxt,tData.fontSize);
+		nvgFontSize(nvgctxt,format.fontSize*TWIPS_FACTOR);
 		nvgFontFaceId(nvgctxt,tData.nanoVGFontID);
+		nvgTextLetterSpacing(nvgctxt,format.letterspacing + format.fontSize >= 0 ? format.letterspacing : 0);
 		nvgTextBounds(nvgctxt,0,0,text.raw_buf(),nullptr,bounds);
 		tw = bounds[2]-bounds[0];
 		th = bounds[3]-bounds[1];
@@ -936,7 +937,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 				{
 					nvgFontSize(nvgctxt,state->textdata.fontSize);
 					nvgFontFaceId(nvgctxt,state->textdata.nanoVGFontID);
-					float ypos=TEXTFIELD_PADDING;
+					float ypos=TEXTFIELD_PADDING/TWIPS_FACTOR;
 					for (auto it = state->textdata.textlines.begin(); it != state->textdata.textlines.end(); ++it)
 					{
 						ALIGNMENT al = it->format.align;
@@ -955,7 +956,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 								nvgTextAlign(nvgctxt,NVG_ALIGN_RIGHT | NVG_ALIGN_TOP);
 								break;
 						}
-						nvgTextBox(nvgctxt,TEXTFIELD_PADDING,ypos,state->textdata.width,(*it).text.raw_buf(),nullptr);
+						nvgTextBox(nvgctxt,TEXTFIELD_PADDING/TWIPS_FACTOR,ypos,state->textdata.width/TWIPS_FACTOR,(*it).text.raw_buf(),nullptr);
 						ypos += state->textdata.fontSize+state->textdata.leading/TWIPS_FACTOR;
 					}
 				}

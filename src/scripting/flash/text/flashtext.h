@@ -27,7 +27,7 @@
 #include "3rdparty/pugixml/src/pugixml.hpp"
 
 // according to TextLineMetrics specs, there are always 2 pixels added to each side of a textfield
-#define TEXTFIELD_PADDING 2
+#define TEXTFIELD_PADDING 40
 
 namespace lightspark
 {
@@ -120,7 +120,7 @@ private:
 	void defaultEventBehavior(_R<Event> e) override;
 	void updateText(const tiny_string& new_text);
 	//Computes and changes (text)width and (text)height
-	void updateSizes();
+	void updateSizes(bool updateformat=false);
 	tiny_string toHtmlText();
 	tiny_string compactHTMLWhiteSpace(const tiny_string&);
 	void validateThickness(number_t oldValue);
@@ -236,7 +236,6 @@ public:
 	ASFUNCTION_GETTER_SETTER(borderColor);
 	ASPROPERTY_GETTER(int32_t, caretIndex);
 	ASPROPERTY_GETTER_SETTER(bool, condenseWhite);
-	ASPROPERTY_GETTER_SETTER(bool, embedFonts);
 	ASPROPERTY_GETTER_SETTER(int32_t, maxChars);
 	ASFUNCTION_GETTER_SETTER(multiline);
 	ASPROPERTY_GETTER_SETTER(bool, mouseWheelEnabled);
@@ -253,6 +252,8 @@ public:
 	ASPROPERTY_GETTER_SETTER(bool, useRichTextClipboard);
 	ASFUNCTION_ATOM(_getTextFieldX);
 	ASFUNCTION_ATOM(_setTextFieldX);
+	ASFUNCTION_ATOM(_getEmbedFonts);
+	ASFUNCTION_ATOM(_setEmbedFonts);
 
 	std::string toDebugString() const override;
 };

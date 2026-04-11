@@ -51,6 +51,7 @@
 #include "scripting/avm1/avm1display.h"
 #include "scripting/avm1/avm1media.h"
 #include "scripting/avm1/avm1text.h"
+#include "scripting/toplevel/Integer.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "backends/audio.h"
 #include "backends/rendering.h"
@@ -449,10 +450,7 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 	if (AutoSize && textData.autoSize == ALIGNMENT::AS_NONE)
 		textData.autoSize = ALIGNMENT::AS_LEFT;
 	if(HasText)
-	{
 		in >> InitialText;
-		textData.setText((const char*)InitialText);
-	}
 	textData.wordWrap = WordWrap;
 	textData.multiline = Multiline;
 	textData.border = Border;
@@ -463,10 +461,20 @@ DefineEditTextTag::DefineEditTextTag(RECORDHEADER h, std::istream& in, RootMovie
 		textData.background = true;
 		textData.backgroundColor = RGB(0xff,0xff,0xff);
 	}
-	textData.width = (Bounds.Xmax-Bounds.Xmin)/20;
-	textData.height = (Bounds.Ymax-Bounds.Ymin)/20;
+	textData.width = (Bounds.Xmax-Bounds.Xmin);
+	textData.height = (Bounds.Ymax-Bounds.Ymin);
 	textData.leading = Leading/20;
+	textData.leftMargin = LeftMargin/20;
+	textData.rightMargin = RightMargin/20;
+	textData.indent = Indent/20;
 	textData.isPassword = Password;
+	if(HasText)
+	{
+		FormatText format(textData);
+		if (FontID)
+			format.embeddedfontID=FontID;
+		textData.setText((const char*)InitialText,false,&format);
+	}
 }
 
 ASObject* DefineEditTextTag::instance(Class_base* c, ASObject* prevInstance, bool temporary)
@@ -485,6 +493,7 @@ ASObject* DefineEditTextTag::instance(Class_base* c, ASObject* prevInstance, boo
 		{
 			textData.fontname = loadedFrom->getSystemState()->getUniqueStringId(fonttag->getFontname());
 			textData.fontID = fonttag->getId();
+			textData.embeddedFont = fonttag;
 		}
 	}
 	//TODO: check
@@ -821,11 +830,11 @@ number_t DefineFontTag::getRenderCharAdvance(uint32_t index) const
 	return 0;
 }
 
-void DefineFontTag::getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height)
+void DefineFontTag::getTextBounds(const tiny_string& text, const FormatText& format, number_t& width, number_t& height)
 {
-	int tokenscaling = fontpixelsize * this->scaling;
+	int tokenscaling = format.fontSize * this->scaling;
 	width=0;
-	height=tokenscaling;
+	height=tokenscaling*TWIPS_FACTOR;
 	number_t tmpwidth=0;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
@@ -844,6 +853,7 @@ void DefineFontTag::getTextBounds(const tiny_string& text, int fontpixelsize, nu
 				if (CodeTable[i] == *it)
 				{
 					tmpwidth += tokenscaling;
+					tmpwidth += format.letterspacing;
 					break;
 				}
 			}
@@ -851,6 +861,7 @@ void DefineFontTag::getTextBounds(const tiny_string& text, int fontpixelsize, nu
 	}
 	if (width < tmpwidth)
 		width = tmpwidth;
+	width *= TWIPS_FACTOR;
 }
 
 DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 20, root)
@@ -879,11 +890,11 @@ DefineFontTag::DefineFontTag(RECORDHEADER h, std::istream& in, RootMovieClip* ro
 	root->applicationDomain->registerEmbeddedFont("",this);
 }
 
-tokensVector* DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy)
+tokensVector* DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_string text, const FormatText& format,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy)
 {
 	Vector2 curPos;
 
-	int tokenscaling = fontpixelsize * this->scaling;
+	int tokenscaling = format.fontSize * this->scaling;
 	curPos.y = 1024 + startposy*1024;
 	bool first=true;
 	bool emptytoken=false;// indicates "space" glyph
@@ -916,6 +927,7 @@ tokensVector* DefineFontTag::fillTextTokens(tokensVector &tokens, const tiny_str
 						tk->startMatrix = glyphMatrix;
 					}
 					curPos.x += tokenscaling;
+					curPos.x += format.letterspacing;
 					found = true;
 					break;
 				}
@@ -938,11 +950,11 @@ number_t DefineFont2Tag::getRenderCharAdvance(uint32_t index) const
 	return 0;
 }
 
-void DefineFont2Tag::getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height)
+void DefineFont2Tag::getTextBounds(const tiny_string& text, const FormatText& format, number_t& width, number_t& height)
 {
-	int tokenscaling = fontpixelsize * this->scaling;
+	int tokenscaling = format.fontSize * this->scaling;
 	width=0;
-	height= (number_t(FontAscent+FontDescent+FontLeading)/1024.0)* tokenscaling;
+	height= (number_t(FontAscent+FontDescent+FontLeading)/1024.0)* tokenscaling * TWIPS_FACTOR;
 	number_t tmpwidth=0;
 
 	for (CharIterator it = text.begin(); it != text.end(); it++)
@@ -961,9 +973,10 @@ void DefineFont2Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 				if (CodeTable[i] == *it)
 				{
 					if (FontFlagsHasLayout)
-						tmpwidth += number_t(FontAdvanceTable[i])/1024.0 * fontpixelsize;
+						tmpwidth += number_t(FontAdvanceTable[i])/1024.0 * format.fontSize;
 					else
 						tmpwidth += tokenscaling;
+					tmpwidth += format.letterspacing;
 					break;
 				}
 			}
@@ -971,6 +984,7 @@ void DefineFont2Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 	}
 	if (width < tmpwidth)
 		width = tmpwidth;
+	width *= TWIPS_FACTOR;
 }
 
 DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 20, root)
@@ -1068,11 +1082,11 @@ DefineFont2Tag::DefineFont2Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	root->applicationDomain->registerEmbeddedFont(getFontname(),this);
 }
 
-tokensVector* DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy)
+tokensVector* DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, const FormatText& format,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy)
 {
 	Vector2 curPos;
 
-	int tokenscaling = fontpixelsize * this->scaling;
+	int tokenscaling = format.fontSize * this->scaling;
 	curPos.y = (1024+this->FontLeading/2.0)+startposy*1024;
 
 	bool first=true;
@@ -1109,6 +1123,7 @@ tokensVector* DefineFont2Tag::fillTextTokens(tokensVector &tokens, const tiny_st
 						curPos.x += FontAdvanceTable[i];
 					else
 						curPos.x += tokenscaling;
+					curPos.x += format.letterspacing;
 					found = true;
 					break;
 				}
@@ -1132,12 +1147,13 @@ number_t DefineFont3Tag::getRenderCharAdvance(uint32_t index) const
 	return 0;
 }
 
-void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, number_t& width, number_t& height)
+void DefineFont3Tag::getTextBounds(const tiny_string& text, const FormatText& format, number_t& width, number_t& height)
 {
-	int tokenscaling = fontpixelsize * this->scaling;
+	int tokenscaling = format.fontSize * this->scaling;
 	width=0;
-	height= (number_t(FontAscent+FontDescent)/1024.0/20.0)* tokenscaling;
+	height= (number_t(FontAscent+FontDescent)/1024.0)*number_t(tokenscaling);
 	number_t tmpwidth=0;
+	int lettercount=0;
 	for (CharIterator it = text.begin(); it != text.end(); it++)
 	{
 		if (*it == 13 || *it == 10)
@@ -1145,7 +1161,7 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 			if (width < tmpwidth)
 				width = tmpwidth;
 			tmpwidth = 0;
-			height+=tokenscaling+ (number_t(this->FontLeading)/1024.0/20.0)*this->scaling;
+			height+=tokenscaling+ (number_t(this->FontLeading)/1024.0)*this->scaling;
 		}
 		else
 		{
@@ -1154,24 +1170,27 @@ void DefineFont3Tag::getTextBounds(const tiny_string& text, int fontpixelsize, n
 				if (CodeTable[i] == *it)
 				{
 					if (FontFlagsHasLayout)
-						tmpwidth += number_t(FontAdvanceTable[i])/1024.0/20.0 * tokenscaling;
+						tmpwidth += floor(number_t(FontAdvanceTable[i])/1024.0 * tokenscaling);
 					else
 					{
 						tokensVector tmptokens;
 						fillTokens(i,RGBA(),&tmptokens,tokenscaling);
 						number_t xmin, xmax, ymin, ymax;
 						if (TokenContainer::boundsRectFromTokens(tmptokens,0.05,xmin,xmax,ymin,ymax))
-							tmpwidth += xmax-xmin;
+							tmpwidth += (xmax-xmin) /1024.0;
 						else
-							tmpwidth += tokenscaling/2.0;
+							tmpwidth += tokenscaling;
 					}
+					lettercount++;
 					break;
 				}
 			}
 		}
 	}
+	if (tmpwidth)
+		tmpwidth += lettercount*format.letterspacing*TWIPS_FACTOR;
 	if (width < tmpwidth)
-		width = ceil(tmpwidth);
+		width = tmpwidth;
 }
 
 DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* root):FontTag(h, 1, root),CodeTableOffset(0)
@@ -1293,11 +1312,12 @@ DefineFont3Tag::DefineFont3Tag(RECORDHEADER h, std::istream& in, RootMovieClip* 
 	root->applicationDomain->registerEmbeddedFont(getFontname(),this);
 }
 
-tokensVector* DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, int fontpixelsize,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy)
+tokensVector* DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_string text, const FormatText& format,const RGBA& textColor, int32_t leading, int32_t startposx, int32_t startposy)
 {
 	Vector2 curPos;
 
-	int tokenscaling = fontpixelsize * this->scaling;
+	int tokenscaling = format.fontSize * this->scaling;
+//	startposy += min(0,int(FontLeading))*fontpixelsize/100;
 	bool first = true;
 	bool emptytoken=false;// indicates "space" glyph
 	tokensVector* tk = &tokens;
@@ -1330,6 +1350,7 @@ tokensVector* DefineFont3Tag::fillTextTokens(tokensVector &tokens, const tiny_st
 					}
 					if (FontFlagsHasLayout)
 						curPos.x += FontAdvanceTable[i]*TWIPS_FACTOR;
+					curPos.x += format.letterspacing;
 					found = true;
 					break;
 				}

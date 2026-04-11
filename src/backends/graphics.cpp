@@ -35,11 +35,12 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/RootMovieClip.h"
 #include "scripting/flash/system/ApplicationDomain.h"
+#include "scripting/toplevel/Integer.h"
 #include "parsing/tags.h"
 
 using namespace lightspark;
 
-extern void nanoVGgetTextBounds(SystemState* sys, TextData& tData, const tiny_string& text, number_t& tw, number_t& th);
+extern void nanoVGgetTextBounds(SystemState* sys, TextData& tData, const FormatText& format, const tiny_string& text, number_t& tw, number_t& th);
 #ifdef ENABLE_CAIRO
 void saveToPNG(uint8_t* data, uint32_t w, uint32_t h, const char* filename)
 {
@@ -1006,10 +1007,10 @@ tiny_string TextData::getText(uint32_t line) const
 	return text;
 }
 
-void TextData::setText(const char* text, bool firstlineonly)
+void TextData::setText(const char* text, bool firstlineonly,FormatText* format)
 {
 	textlines.clear();
-	appendText(text,firstlineonly);
+	appendText(text,firstlineonly,format);
 }
 void TextData::appendText(const char *text, bool firstlineonly, const FormatText* format, uint32_t swfversion, bool condenseWhite)
 {
@@ -1124,32 +1125,36 @@ bool TextData::isWhitespaceOnly(bool multiline) const
 	return true;
 }
 
-void TextData::getTextSizes(SystemState* sys,const tiny_string& text, number_t& tw, number_t& th)
+// sizes are returned in twips
+void TextData::getTextSizes(SystemState* sys, const FormatText& format,FontTag* ef, const tiny_string& text, number_t& tw, number_t& th)
 {
-	if (embeddedFont)
+	if (!ef)
+		ef = embeddedFont;
+	if (ef)
 	{
 		if (!useOutlines)
 		{
 			if (nanoVGFontID != -1)
-				nanoVGgetTextBounds(sys,*this,text, tw, th);
+				nanoVGgetTextBounds(sys,*this,format,text, tw, th);
 			if (nanoVGFontID > 0) // system font found
 				return;
 			// no system font found, fallback to embedded font
 		}
-		embeddedFont->getTextBounds(text,fontSize,tw,th);
+		ef->getTextBounds(text,format,tw,th);
 	}
 	else
-		nanoVGgetTextBounds(sys,*this,text, tw, th);
+		nanoVGgetTextBounds(sys,*this,format,text, tw, th);
 	
 }
 
-bool TextData::TextIsEqual(const std::vector<tiny_string>& lines) const
+bool TextData::TextIsEqual(const std::vector<tiny_string>& lines, const vector<FormatText>& oldformats) const
 {
-	if (this->textlines.size() != lines.size())
+	if (this->textlines.size() != lines.size() || oldformats.size() != lines.size())
 		return false;
 	for (uint32_t i = 0; i < this->textlines.size(); i++)
 	{
-		if (this->textlines[i].text != lines[i])
+		if (this->textlines[i].text != lines[i]
+			|| this->textlines[i].format.paramsChanged(&oldformats[i]))
 			return false;
 	}
 	return true;
@@ -1166,6 +1171,7 @@ FontTag* TextData::checkEmbeddedFont(DisplayObject* d)
 		this->isBold = embeddedfont->isBold();
 		this->isItalic = embeddedfont->isItalic();
 		this->fontname = d->getSystemState()->getUniqueStringId(embeddedfont->getFontname());
+		this->fontID = embeddedfont->getId();
 		if (!useOutlines)
 			nanoVGSetupFont(d->getSystemState(),*this);
 		if (!useOutlines && nanoVGFontID >=0)
@@ -1251,8 +1257,28 @@ bool FormatText::paramsChanged(const FormatText* f) const
 		!(fontColor==f->fontColor) ||
 		fontSize!=f->fontSize ||
 		font!=f->font ||
+		embeddedfontID!=f->embeddedfontID ||
 		kerning!=f->kerning ||
 		letterspacing!=f->letterspacing ||
 		url!=f->url ||
 		target!=f->target;
+}
+
+FormatText::FormatText(const TextData& tdata)
+{
+	align = tdata.autoSize;
+	fontColor = tdata.textColor;
+	fontSize = tdata.fontSize;
+	font = tdata.fontname;
+	if (tdata.embeddedFont)
+		embeddedfontID = tdata.embeddedFont->getId();
+	if (tdata.leading)
+		leading = Integer::toString(tdata.leading);
+	if (tdata.leftMargin)
+		leftmargin = Integer::toString(tdata.leftMargin);
+	if (tdata.rightMargin)
+		rightmargin = Integer::toString(tdata.rightMargin);
+	if (tdata.indent)
+		indent = Integer::toString(tdata.indent);
+
 }

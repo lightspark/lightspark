@@ -1220,8 +1220,8 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateTextField)
 	tf->name = wrk->getSystemState()->getUniqueStringId(instanceName);
 	tf->setX(x);
 	tf->setY(y);
-	tf->width = width;
-	tf->height = height;
+	tf->width = width*TWIPS_FACTOR;
+	tf->height = height*TWIPS_FACTOR;
 	if (th->hasLegacyChildAt(depth))
 		th->deleteLegacyChildAt(depth, false);
 	th->insertLegacyChildAt(depth, tf, false, false);

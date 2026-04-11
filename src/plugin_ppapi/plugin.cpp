@@ -3036,7 +3036,7 @@ int32_t ppPluginEngineData::setupFontRenderer(const TextData &_textData,float a,
 	desc.small_caps = PP_FALSE;
 	
 	PP_Point pos = PP_MakePoint(0, _textData.textHeight);
-	PP_Size size = PP_MakeSize(_textData.width, _textData.height);
+	PP_Size size = PP_MakeSize(_textData.width/TWIPS_FACTOR, _textData.height);
 	
 	PP_BrowserFont_Trusted_TextRun text;
 	text.text = g_var_interface->VarFromUtf8(_textData.getText().raw_buf(),_textData.getText().numBytes());

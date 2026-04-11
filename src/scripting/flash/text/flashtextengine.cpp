@@ -1383,19 +1383,19 @@ ASFUNCTIONBODY_ATOM(TextLine, getAscent)
 ASFUNCTIONBODY_ATOM(TextLine, getTextWidth)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
-	asAtomHandler::setInt(ret,th->textWidth);
+	asAtomHandler::setInt(ret,th->textWidth/TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getTextHeight)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
-	asAtomHandler::setInt(ret,th->textHeight);
+	asAtomHandler::setInt(ret,th->textHeight/TWIPS_FACTOR);
 }
 
 ASFUNCTIONBODY_ATOM(TextLine, getUnjustifiedTextWidth)
 {
 	TextLine* th=asAtomHandler::as<TextLine>(obj);
-	asAtomHandler::setInt(ret,th->width);
+	asAtomHandler::setInt(ret,th->width/TWIPS_FACTOR);
 }
 
 void TextLine::updateSizes()
@@ -1404,7 +1404,7 @@ void TextLine::updateSizes()
 	w = width;
 	h = height;
 	//Compute (text)width, (text)height
-	getTextSizes(getSystemState(),this->getText(), w, h);
+	getTextSizes(getSystemState(),FormatText(),nullptr,this->getText(), w, h);
 	textWidth = w;
 	textHeight = h;
 }
@@ -1480,10 +1480,10 @@ IDrawable* TextLine::invalidate(bool smoothing)
 				tiny_string pwtxt;
 				for (uint32_t i = 0; i < (*it).text.numChars(); i++)
 					pwtxt+="*";
-				embeddedFont->fillTextTokens(tokens,pwtxt,fontSize,color,leading,TEXTFIELD_PADDING+(*it).autosizeposition,startposy);
+				embeddedFont->fillTextTokens(tokens,pwtxt,(*it).format,color,leading,TEXTFIELD_PADDING+(*it).autosizeposition,startposy);
 			}
 			else
-				embeddedFont->fillTextTokens(tokens,(*it).text,fontSize,color,leading,TEXTFIELD_PADDING+(*it).autosizeposition,startposy);
+				embeddedFont->fillTextTokens(tokens,(*it).text,(*it).format,color,leading,TEXTFIELD_PADDING+(*it).autosizeposition,startposy);
 			startposy += this->leading+(embeddedFont->getAscent()+embeddedFont->getDescent()+embeddedFont->getLeading())*fontSize/1024;
 		}
 		if (tokens.empty())

@@ -18,6 +18,7 @@
 **************************************************************************/
 
 #include <initializer_list>
+#include <sstream>
 
 #include "gc/context.h"
 #include "scripting/avm1/activation.h"
@@ -226,6 +227,30 @@ Optional<AVM1Value> AVM1XMLNode::lookupNamespaceURI
 	const tiny_string& prefix
 ) const
 {
+	for (auto node = this; node != nullptr; node = node->getParent())
+	{
+		// Iterate through `attributes` in definition order, meaning
+		// the first matching URI is returned.
+		auto attrProps = node->attributes->getOwnProps();
+		for (const auto& prop : attrProps)
+		{
+			#if 1
+			if (!prop.first.startsWith("xmlns"))
+				continue;
+			auto ns = prop.first.stripPrefix("xmlns:");
+			#else
+			auto ns = prop.first.tryStripPrefix("xmlns");
+			if (!ns.hasValue())
+				continue;
+			ns = ns->tryStripPrefix(':');
+			#endif
+			// NOTE: An empty prefix matches every attribute that starts
+			// with `xmlns` (with, or without a colon).
+			if (prefix.empty() || ns == prefix)
+				return prop.second;
+		}
+	}
+	return {};
 }
 
 void AVM1XMLNode::writeToString
@@ -234,6 +259,58 @@ void AVM1XMLNode::writeToString
 	tiny_string& str
 ) const
 {
+	auto escape = [](const tiny_string& str)
+	{
+		std::stringstream s;
+		for (auto ch : str)
+		{
+			switch (ch)
+			{
+				default: s << tiny_string::fromChar(ch); break;
+				case '<': s << "&lt;"; break;
+				case '>': s << "&gt;"; break;
+				case '&': s << "&amp;"; break;
+				case '\'': s << "&apos;"; break;
+				case '"': s << "&quot;"; break;
+			}
+		}
+		return s.str();
+	};
+
+	if (type != XMLNodeType::Element)
+	{
+		str += escape(value);
+		return;
+	}
+
+	if (value.empty())
+	{
+		for (auto child : children)
+			child->writeToString(act, str);
+		return;
+	}
+
+	std::ostringstream s("<", std::ios::ate);
+	s << value;
+
+	auto attrProps = attributes->getOwnProps();
+	for (const auto& prop : attrProps)
+	{
+		s << ' ' << prop.first << "=\"" <<
+		escape(prop.second.toString(act)) << '"';
+	}
+
+	if (children.empty())
+	{
+		str += (s << " />").str();
+		return;
+	}
+
+	str += (s << '>').str();
+	for (auto child : children)
+		child->writeToString(act, str);
+	s.str(str);
+	str = (s << "</" << value << ">").str();
 }
 
 using AVM1XMLNode;

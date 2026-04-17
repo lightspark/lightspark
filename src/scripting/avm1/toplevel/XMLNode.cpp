@@ -321,22 +321,22 @@ static constexpr auto protoDecls =
 	AVM1_FUNCTION_TYPE_PROTO(AVM1XMLNode, removeNode),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1XMLNode, insertBefore),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1XMLNode, appendChild),
-	AVM1_FUNCTION_TYPE_PROTO(AVM1XMLNode, hasChildNode),
+	AVM1_FUNCTION_TYPE_PROTO(AVM1XMLNode, hasChildNodes),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1XMLNode, toString),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1XMLNode, getNamespaceForPrefix),
 	AVM1_FUNCTION_TYPE_PROTO(AVM1XMLNode, getPrefixForNamespace),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, attributes, Attributes),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, childNodes, ChildNodes),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, lastChild, LastChild),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, nextSibling, NextSibling),
+	AVM1_GETTER_TYPE_PROTO(AVM1XMLNode, attributes, Attributes),
+	AVM1_GETTER_TYPE_PROTO(AVM1XMLNode, childNodes, ChildNodes),
+	AVM1_GETTER_TYPE_PROTO(AVM1XMLNode, lastChild, LastChild),
+	AVM1_GETTER_TYPE_PROTO(AVM1XMLNode, nextSibling, NextSibling),
 	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, nodeName, NodeName),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, nodeType, NodeType),
+	AVM1_GETTER_TYPE_PROTO(AVM1XMLNode, nodeType, NodeType),
 	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, nodeValue, NodeValue),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, parentNode, ParentNode),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, previousSibling, PreviousSibling),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, prefix, Prefix),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, localName, LocalName),
-	AVM1_PROPERTY_TYPE_PROTO(AVM1XMLNode, namespaceURI, NamespaceURI)
+	AVM1_GETTER_TYPE_PROTO(AVM1XMLNode, parentNode, ParentNode),
+	AVM1_GETTER_TYPE_PROTO(AVM1XMLNode, previousSibling, PreviousSibling),
+	AVM1_GETTER_TYPE_PROTO(AVM1XMLNode, prefix, Prefix),
+	AVM1_GETTER_TYPE_PROTO(AVM1XMLNode, localName, LocalName),
+	AVM1_GETTER_TYPE_PROTO(AVM1XMLNode, namespaceURI, NamespaceURI)
 };
 
 GcPtr<AVM1SystemClass> AVM1XMLNode::createClass
@@ -352,132 +352,214 @@ GcPtr<AVM1SystemClass> AVM1XMLNode::createClass
 
 AVM1_FUNCTION_BODY(AVM1XMLNode, ctor)
 {
+	XMLNodeType nodeType;
+	tiny_string nodeValue;
+	AVM1_ARG_UNPACK(nodeType, XMLNodeType::Text)(nodeValue);
+
+	INPLACE_NEW_GC_PTR(act.getGcCtx(), _this, AVM1XMLNode
+	(
+		nodeType,
+		nodeValue
+	));
+
+	return _this;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, cloneNode)
 {
+	bool deep;
+	AVM1_ARG_UNPACK(deep, false);
+
+	return _this->duplicate(act, deep);
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, removeNode)
 {
+	_this->removeNode();
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, insertBefore)
 {
+	AVM1XMLNodePtr child;
+	AVM1XMLNodePtr insertPoint;
+	AVM1_ARG_CHECK(AVM1_ARG_UNPACK(child)(insertPoint));
+
+	if (_this->hasChild(child))
+		return AVM1Value::undefinedVal;
+
+	auto pos = _this->getChildPos(insertPoint);
+	if (pos == -1)
+		return AVM1Value::undefinedVal;
+
+	_this->insertChild(pos)
+	return AVM1Value::undefinedVal;
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, appendChild)
 {
+	AVM1XMLNodePtr child;
+	AVM1_ARG_CHECK(AVM1_ARG_UNPACK(child));
+
+	if (_this->hasChild(child))
+		return AVM1Value::undefinedVal;
+
+	_this->insertChild(child, _this->children.size());
+	return AVM1Value::undefinedVal;
 }
 
-AVM1_FUNCTION_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, hasChildNode)
+AVM1_FUNCTION_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, hasChildNodes)
 {
+	return !_this->getChildren().empty();
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, toString)
 {
+	return _this->toString(act);
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, getNamespaceForPrefix)
 {
+	tiny_string prefix;
+	AVM1_ARG_CHECK(AVM1_ARG_UNPACK(prefix));
+
+	return _this->lookupNamespaceURI
+	(
+		prefix
+	).valueOr(AVM1Value::nullVal);
 }
 
 AVM1_FUNCTION_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, getPrefixForNamespace)
 {
+	tiny_string uri;
+	AVM1_ARG_CHECK(AVM1_ARG_UNPACK(uri));
+
+	for (auto node = _this; !node.isNull(); node = node->getParent())
+	{
+		// Iterate through `attributes` in definition order, meaning
+		// the first matching URI is returned.
+		auto attrProps = node->getAttributes()->getOwnProps();
+		for (const auto& prop : attrProps)
+		{
+			auto value = prop.second.toString(act);
+			if (value != uri || !prop.first.startsWith("xmlns"))
+				continue;
+			auto ns = prop.first.stripPrefix("xmlns");
+			if (!ns.startsWith(':'))
+				return "";
+			return ns.substr(1, tiny_string::npos);
+		}
+	}
+	return AVM1Value::nullVal;
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, Attributes)
 {
-}
-
-AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, Attributes)
-{
+	return _this->getAttributes();
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, ChildNodes)
 {
-}
+	std::vector<AVM1Value> children;
+	children.reserve(_this->children.size());
 
-AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, ChildNodes)
-{
+	for (auto child : _this->getChildren())
+		children.emplace_back(child);
+
+	return NEW_GC_PTR(act.getGcCtx(), AVM1Array(act, children));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, LastChild)
 {
-}
-
-AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, LastChild)
-{
+	if (_this->getChildren().empty())
+		return AVM1Value::nullVal;
+	return _this->getChildren().back();
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, NextSibling)
 {
-}
-
-AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, NextSibling)
-{
+	if (_this->getNextSibling().isNull())
+		return AVM1Value::nullVal;
+	return _this->getNextSibling();
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, NodeName)
 {
+	return _this->getName().transformOr
+	(
+		AVM1Value::nullVal,
+		[&](const auto& name) { return name; }
+	);
 }
 
+// NOTE: `node{Name,Value}`'s setters set the same value.
 AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, NodeName)
 {
+	if (!value.is<UndefValue>())
+		_this->setValue(value.toString(act));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, NodeType)
 {
-}
-
-AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, NodeType)
-{
+	return number_t(_this->getNodeType());
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, NodeValue)
 {
+	return _this->getValue().transformOr
+	(
+		AVM1Value::nullVal,
+		[&](const auto& value) { return value; }
+	);
 }
 
+// NOTE: `node{Name,Value}`'s setters set the same value.
 AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, NodeValue)
 {
+	if (!value.is<UndefValue>())
+		_this->setValue(value.toString(act));
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, ParentNode)
 {
-}
-
-AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, ParentNode)
-{
+	if (_this->getParent().isNull())
+		return AVM1Value::nullVal;
+	return _this->getParent();
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, PreviousSibling)
 {
-}
-
-AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, PreviousSibling)
-{
+	if (_this->getPrevSibling().isNull())
+		return AVM1Value::nullVal;
+	return _this->getPrevSibling();
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, Prefix)
 {
-}
-
-AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, Prefix)
-{
+	return _this->getPrefix().transformOr
+	(
+		AVM1Value::nullVal,
+		[&](const auto& prefix) { return prefix; }
+	);
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, LocalName)
 {
-}
-
-AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, LocalName)
-{
+	return _this->getLocalName().transformOr
+	(
+		AVM1Value::nullVal,
+		[&](const auto& localName) { return localName; }
+	);
 }
 
 AVM1_GETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, NamespaceURI)
 {
-}
-
-AVM1_SETTER_TYPE_BODY(AVM1XMLNode, AVM1XMLNode, NamespaceURI)
-{
+	return _this->getPrefix().transformOr
+	(
+		AVM1Value::nullVal,
+		[&](const auto& prefix)
+		{
+			return _this->lookupNamespaceURI(prefix).valueOr("");
+		}
+	);
 }

@@ -177,9 +177,9 @@ public:
 	void fillTabStopsByTabIndex(std::map<int32_t,DisplayObject*>& indexmap);
 	void dumpDisplayList(unsigned int level=0);
 	void handleRemovedEvent(DisplayObject* child, bool keepOnStage, bool inskipping, bool sendevents);
-	bool _removeChild(DisplayObject* child, bool direct=false, bool inskipping=false, bool keeponstage=false, bool sendevents=true);
+	bool _removeChild(DisplayObject* child, bool direct=false, bool inskipping=false, bool keeponstage=false, bool sendevents=true, bool removeName=true);
 	void _removeFromDisplayList(DisplayObject* child);
-	void _removeAllChildren(bool sendevents=true);
+	void _removeAllChildren(bool sendevents, bool recursive);
 	void removeAVM1Listeners() override;
 	int getChildIndex(DisplayObject* child);
 	DisplayObjectContainer(ASWorker* wrk,Class_base* c);
@@ -291,6 +291,7 @@ public:
 	IDrawable* invalidate(bool smoothing) override;
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh=false) override;
 	Graphics* getGraphics();
+	bool hasGraphics() const { return graphics; }
 	void handleMouseCursor(bool rollover) override;
 	bool allowAsMask() const override { return !isEmpty() || !graphics.isNull(); }
 	float getScaleFactor() const override { return this->scaling; }

@@ -223,9 +223,7 @@ DictionaryTag* ApplicationDomain::dictionaryLookup(int id)
 
 DictionaryTag* ApplicationDomain::dictionaryLookupByName(uint32_t nameID, bool recursive)
 {
-	uint32_t nameIDcaseInsensitive=UINT32_MAX;
-	if (this->needsCaseInsensitiveNames())
-		nameIDcaseInsensitive = getSystemState()->getUniqueStringId(getSystemState()->getStringFromUniqueId(nameID),false);
+	uint32_t nameIDcaseInsensitive= getSystemState()->getUniqueStringId(getSystemState()->getStringFromUniqueId(nameID),false);
 	Locker l(dictSpinlock);
 	auto it = dictionary.begin();
 	for(;it!=dictionary.end();++it)

@@ -2143,10 +2143,15 @@ void ASObject::prepareShutdown()
 	preparedforshutdown=true;
 	classdef=nullptr;
 	objfreelist=nullptr;
-	storedmembercountstatic=0;
+	while (!ownedObjects.empty())
+	{
+		auto it = ownedObjects.begin();
+		ASObject* o = *it;
+		ownedObjects.erase(it);
+		o->prepareShutdown();
+		o->removeStoredMember();
+	}
 	Variables.prepareShutdown();
-	for (auto it = ownedObjects.begin(); it != ownedObjects.end(); it++)
-		(*it)->prepareShutdown();
 }
 
 void ASObject::setRefConstant()
@@ -2419,6 +2424,7 @@ void variables_map::prepareShutdown()
 	while(!Variables.empty())
 	{
 		var_iterator it=Variables.begin();
+		bool wasstatic = it->second.isStatic;
 		it->second.isStatic=false;
 		ASObject* var = it->second.isRefcountedVar() && it->second.isAccessibleObjectVar() ? it->second.getObjectVar() : nullptr;
 		ASObject* getter = asAtomHandler::getObject(it->second.getter);
@@ -2428,7 +2434,10 @@ void variables_map::prepareShutdown()
 		if (var)
 		{
 			var->prepareShutdown();
-			var->removeStoredMember();
+			if (wasstatic)
+				var->removeStoredMemberStatic();
+			else
+				var->removeStoredMember();
 		}
 		if (getter)
 		{
@@ -2804,7 +2813,7 @@ bool ASObject::handleGarbageCollection()
 {
 	if (getConstant() || getCached() || this->getInDestruction())
 		return false;
-	LOG(LOG_CALLS,"handleGarbageCollection:"<<this<<" "<<this->getRefCount()<<"/"<<this->storedmembercount<<"("<<this->storedmembercountstatic<<")");
+	LOG_CALL("handleGarbageCollection:"<<this<<" "<<this->getRefCount()<<"/"<<this->storedmembercount<<"("<<this->storedmembercountstatic<<")");
 	if (storedmembercountstatic)
 	{
 		markedforgarbagecollection=false;
@@ -2826,11 +2835,11 @@ bool ASObject::handleGarbageCollection()
 		bool neednewcheck=false;
 		for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 		{
-			LOG(LOG_CALLS,"handleGarbageCollection checked:"<<(*it)<<" "<<(*it)->getRefCount()<<"/"<<(*it)->storedmembercount<<" count:"<<(*it)->gccounter.count<<" "<<((*it)->gccounter.hasmember ? "hasmember" : ""));
+			LOG_CALL("handleGarbageCollection checked:"<<(*it)<<" "<<(*it)->getRefCount()<<"/"<<(*it)->storedmembercount<<" count:"<<(*it)->gccounter.count<<" "<<((*it)->gccounter.hasmember ? "hasmember" : ""));
 			assert((*it) != this);
 			if (((*it)->gccounter.ignore || (*it)->getConstant() || (*it)->gccounter.count!=(uint32_t)(*it)->getRefCount()) && (*it)->gccounter.hasmember)
 			{
-				LOG(LOG_CALLS,"handleGarbageCollection stopped:"<<this<<" "<<this->getRefCount()<<"/"<<this->storedmembercount<<" "<<(*it)<<" "<<(*it)->gccounter.count<<"/"<<(*it)->getRefCount()<<" "<<(*it)->gccounter.hasmember<<" "<<(*it)->markedforgarbagecollection);
+				LOG_CALL("handleGarbageCollection stopped:"<<this<<" "<<this->getRefCount()<<"/"<<this->storedmembercount<<" "<<(*it)<<" "<<(*it)->gccounter.count<<"/"<<(*it)->getRefCount()<<" "<<(*it)->gccounter.hasmember<<" "<<(*it)->markedforgarbagecollection);
 				c = UINT32_MAX;
 
 				if ((*it)->gccounter.hasmember && !(*it)->gccounter.ignore && (*it)->markedforgarbagecollection && !deletedingarbagecollection)
@@ -2844,6 +2853,7 @@ bool ASObject::handleGarbageCollection()
 			return false;
 		}
 		assert(c == UINT32_MAX || c <= storedmembercount || this->preparedforshutdown);
+		LOG_CALL("handleGarbageCollection result:"<<this<<" "<<c<<"/"<<storedmembercount);
 		if (c == storedmembercount)
 		{
 			for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
@@ -2873,7 +2883,7 @@ bool ASObject::handleGarbageCollection()
 			this->deletedingarbagecollection=true;
 			this->markedforgarbagecollection=true;
 			gcstate.reset();
-			LOG(LOG_CALLS,"handleGarbageCollection ok:"<<this);
+			LOG_CALL("handleGarbageCollection ok:"<<this);
 			return true;
 		}
 		gcstate.reset();

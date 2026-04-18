@@ -79,6 +79,7 @@ public:
 	{
 		usedInRenderCall.clear();
 		ASATOM_REMOVESTOREDMEMBER(scrollRect);
+		scrollRect=asAtomHandler::invalidAtom;
 		decRef();
 	}
 };

@@ -63,10 +63,6 @@
 #define LOSSLESS_BITMAP_RGB15 4
 #define LOSSLESS_BITMAP_RGB24 5
 
-// Adobe seems to place legacy displayobjects at negative depths starting at -16384
-// see https://www.kirupa.com/developer/actionscript/depths2.htm
-#define LEGACY_DEPTH_START -16384
-
 using namespace std;
 using namespace lightspark;
 

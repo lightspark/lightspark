@@ -371,11 +371,32 @@ bool Stage::countCylicMemberReferences(garbagecollectorstate& gcstate)
 
 	return ret;
 }
-
-void Stage::prepareShutdown()
+void Stage::AVM1RemoveAllListeners()
 {
-	if (this->preparedforshutdown)
-		return;
+	while (!avm1FocusListeners.empty())
+	{
+		auto it = avm1FocusListeners.begin();
+		asAtom a = *it;
+		avm1FocusListeners.erase(it);
+		ASObject* o = asAtomHandler::getObject(a);
+		ASATOM_REMOVESTOREDMEMBER(a);
+	}
+	while (!avm1KeyboardListeners.empty())
+	{
+		auto it = avm1KeyboardListeners.begin();
+		asAtom a = *it;
+		avm1KeyboardListeners.erase(it);
+		ASObject* o = asAtomHandler::getObject(a);
+		ASATOM_REMOVESTOREDMEMBER(a);
+	}
+	while (!avm1MouseListeners.empty())
+	{
+		auto it = avm1MouseListeners.begin();
+		asAtom a = *it;
+		avm1MouseListeners.erase(it);
+		ASObject* o = asAtomHandler::getObject(a);
+		ASATOM_REMOVESTOREDMEMBER(a);
+	}
 	vector<pair<ASObject*,uint32_t>> tmpeventlisteners = avm1EventListeners;
 	for (auto it = tmpeventlisteners.begin(); it != tmpeventlisteners.end(); it++)
 	{
@@ -383,6 +404,13 @@ void Stage::prepareShutdown()
 			it->first->removeStoredMemberStatic();
 	}
 	avm1EventListeners.clear();
+
+	avm1ResizeListeners.clear();
+}
+void Stage::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
 
 	DisplayObjectContainer::prepareShutdown();
 	while (this->hiddenNextDisplayObject != this)

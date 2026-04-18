@@ -33,8 +33,7 @@ AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, AVM1
 {
 	if (ctx)
 		context.avm1strings.assign(ctx->avm1strings.begin(),ctx->avm1strings.end());
-	clip->incRef();
-	clip->addStoredMember();
+	clip->addOwnedObject(this);
 	scope = _scope;
 	if (scope)
 	{
@@ -47,8 +46,6 @@ AVM1Function::AVM1Function(ASWorker* wrk, Class_base* c, DisplayObject* cl, AVM1
 
 AVM1Function::~AVM1Function()
 {
-	if (clip)
-		clip->removeStoredMember();
 }
 
 asAtom AVM1Function::computeSuper(asAtom obj)
@@ -88,8 +85,6 @@ uint32_t AVM1Function::getSWFVersion()
 
 void AVM1Function::finalize()
 {
-	if (clip)
-		clip->removeStoredMember();
 	clip=nullptr;
 	if (scope)
 	{
@@ -111,8 +106,6 @@ void AVM1Function::finalize()
 
 bool AVM1Function::destruct()
 {
-	if (clip)
-		clip->removeStoredMember();
 	clip=nullptr;
 
 	if (scope)
@@ -156,11 +149,6 @@ void AVM1Function::prepareShutdown()
 		scope->decRef();
 		scope=nullptr;
 	}
-	if (clip)
-	{
-		clip->prepareShutdown();
-		clip->removeStoredMember();
-	}
 	clip=nullptr;
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
@@ -180,8 +168,6 @@ void AVM1Function::prepareShutdown()
 bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = IFunction::countCylicMemberReferences(gcstate);
-	if (clip)
-		ret = clip->countAllCylicMemberReferences(gcstate) || ret;
 	if (scope)
 		ret |= scope->countAllCyclicMemberReferences(gcstate);
 	ASObject* su = asAtomHandler::getObject(superobj);

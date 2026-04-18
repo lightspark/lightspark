@@ -468,7 +468,8 @@ void Loader::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	if (content)
-		content->prepareShutdown();
+		content->removeStoredMember();
+	content=nullptr;
 	if (contentLoaderInfo)
 		contentLoaderInfo->prepareShutdown();
 	if (avm1target)
@@ -574,11 +575,12 @@ void Loader::setContent(DisplayObject* o)
 		if (p)
 		{
 			int depth=avm1level < 0 ? p->findLegacyChildDepth(avm1target): avm1level;
+			if (avm1target->is<DisplayObjectContainer>())
+				avm1target->as<DisplayObjectContainer>()->_removeAllChildren(true,true);
 			if (p->is<Stage>() && avm1level < 0)
 				p->_removeChild(avm1target);
 			else
 				p->deleteLegacyChildAt(depth,false);
-			p->removeChildName(avm1target);
 			o->incRef();
 			p->insertLegacyChildAt(depth,o,false,false);
 		}

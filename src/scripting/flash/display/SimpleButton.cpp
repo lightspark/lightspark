@@ -727,7 +727,7 @@ void SimpleButton::reflectState(BUTTONSTATE oldstate)
 {
 	if (!statesdirty && isConstructed() && oldstate==currentState)
 		return;
-	this->_removeAllChildren();
+	this->_removeAllChildren(false,false);
 
 	if((currentState == STATE_UP || currentState == STATE_OUT))
 		resetStateToStart(BUTTONOBJECTTYPE_UP);
@@ -767,7 +767,7 @@ void SimpleButton::resetStateToStart(BUTTONOBJECTTYPE type)
 		}
 		else if (parentSprite[type]->is<DisplayObjectContainer>())
 		{
-			parentSprite[type]->as<DisplayObjectContainer>()->_removeAllChildren();
+			parentSprite[type]->as<DisplayObjectContainer>()->_removeAllChildren(false,false);
 		}
 	}
 	for (auto it = states[type].begin(); it != states[type].end(); it++)

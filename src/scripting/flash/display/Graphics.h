@@ -150,6 +150,7 @@ public:
 									  _NR<Vector> uvtData,
 									  tiny_string culling,
 									  tokensVector* tokens);
+	void clone(Graphics* source);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(lineBitmapStyle);
 	ASFUNCTION_ATOM(lineGradientStyle);

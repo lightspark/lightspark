@@ -1147,6 +1147,30 @@ void Graphics::drawTrianglesToTokens(_NR<Vector> vertices, _NR<Vector> indices, 
 	}
 }
 
+void Graphics::clone(Graphics* source)
+{
+	if (tokens.filltokens)
+		tokens.filltokens->tokens.clear();
+	if (source->tokens.filltokens)
+	{
+		if (!tokens.filltokens)
+			tokens.filltokens = _MR(new tokenListRef());
+		tokens.filltokens->clone(source->tokens.filltokens.getPtr());
+	}
+	if (tokens.stroketokens)
+		tokens.stroketokens->tokens.clear();
+	if (source->tokens.stroketokens)
+	{
+		if (!tokens.stroketokens)
+			tokens.stroketokens = _MR(new tokenListRef());
+		tokens.stroketokens->clone(source->tokens.stroketokens.getPtr());
+	}
+	tokenBoundsRect = source->tokenBoundsRect;
+	tokensHaveChanged=true; // TODO check if tokens really have changed
+	hasChanged = true;
+	dorender(true);
+}
+
 ASFUNCTIONBODY_ATOM(Graphics,drawGraphicsData)
 {
 	Graphics* th=asAtomHandler::as<Graphics>(obj);
@@ -1514,24 +1538,7 @@ ASFUNCTIONBODY_ATOM(Graphics,copyFrom)
 	ARG_CHECK(ARG_UNPACK(source));
 	if (source.isNull())
 		return;
-	if (th->tokens.filltokens)
-		th->tokens.filltokens->tokens.clear();
-	if (source->tokens.filltokens)
-	{
-		if (!th->tokens.filltokens)
-			th->tokens.filltokens = _MR(new tokenListRef());
-		th->tokens.filltokens->clone(source->tokens.filltokens.getPtr());
-	}
-	if (th->tokens.stroketokens)
-		th->tokens.stroketokens->tokens.clear();
-	if (source->tokens.stroketokens)
-	{
-		if (!th->tokens.stroketokens)
-			th->tokens.stroketokens = _MR(new tokenListRef());
-		th->tokens.stroketokens->clone(source->tokens.stroketokens.getPtr());
-	}
-	th->tokensHaveChanged=true; // TODO check if tokens really have changed
-	th->hasChanged = true;
+	th->clone(source.getPtr());
 }
 
 ASFUNCTIONBODY_ATOM(Graphics,readGraphicsData)

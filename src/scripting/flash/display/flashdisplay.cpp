@@ -818,8 +818,7 @@ void DisplayObjectContainer::checkColorTransformForLegacyChildAt(int32_t depth,c
 void DisplayObjectContainer::removeChildName(DisplayObject* obj)
 {
 	if(obj->name != BUILTIN_STRINGS::EMPTY
-		&& obj->name != UINT32_MAX
-		&& !obj->markedForLegacyDeletion) // member variable was already reset in purgeLegacyChildren
+		&& obj->name != UINT32_MAX)
 	{
 		//The variable is not deleted, but just set to null
 		//This is a tested behavior
@@ -828,7 +827,19 @@ void DisplayObjectContainer::removeChildName(DisplayObject* obj)
 		objName.name_s_id=obj->name;
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		asAtom a=asAtomHandler::invalidAtom;
-		getVariableByMultiname(a,objName,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE,getInstanceWorker());
+		GET_VARIABLE_RESULT r = getVariableByMultiname(a,objName,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE|GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
+		if (r&GET_VARIABLE_RESULT::GETVAR_ISGETTER)
+		{
+			// don't try to remove child name if property is builtin function
+			if (asAtomHandler::is<SyntheticFunction>(a))
+			{
+				IFunction* f = asAtomHandler::as<IFunction>(a);
+				asAtom closure = asAtomHandler::getClosureAtom(a,asAtomHandler::fromObject(this));
+				f->callGetter(a,closure,this->getInstanceWorker());
+			}
+			else
+				a = asAtomHandler::invalidAtom;
+		}
 		if (asAtomHandler::getObject(a))
 		{
 			asAtom newobj = needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom;
@@ -861,7 +872,6 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 			obj->incRef();
 			obj->addStoredMember();
 		}
-		obj->markedForLegacyDeletion=true;
 		if ((*inserted.first).second != obj)
 		{
 			(*inserted.first).second->removeStoredMember();
@@ -870,6 +880,8 @@ void DisplayObjectContainer::deleteLegacyChildAt(int32_t depth, bool inskipping)
 			(*inserted.first).second = obj;
 		}
 	}
+	if (!inskipping)
+		obj->markedForLegacyDeletion=true;
 	obj->afterLegacyDelete(inskipping);
 
 	//this also removes it from depthToLegacyChild
@@ -1701,7 +1713,7 @@ void DisplayObjectContainer::handleRemovedEvent(DisplayObject* child, bool keepO
 		child->setOnStage(false, true, inskipping);
 }
 
-bool DisplayObjectContainer::_removeChild(DisplayObject* child, bool direct, bool inskipping, bool keeponstage, bool sendevents)
+bool DisplayObjectContainer::_removeChild(DisplayObject* child, bool direct, bool inskipping, bool keeponstage, bool sendevents, bool removeName)
 {
 	if(!child->getParent() || child->getParent()!=this)
 		return false;
@@ -1722,7 +1734,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child, bool direct, boo
 	else
 	{
 		child->setParent(nullptr);
-		if (child->legacy)
+		if (removeName)
 			removeChildName(child);
 	}
 	this->hasChanged=true;
@@ -1741,7 +1753,7 @@ void DisplayObjectContainer::_removeFromDisplayList(DisplayObject* child)
 	dynamicDisplayList.erase(it);
 }
 
-void DisplayObjectContainer::_removeAllChildren(bool sendevents)
+void DisplayObjectContainer::_removeAllChildren(bool sendevents, bool recursive)
 {
 	mutexDisplayList.lock();
 	vector<DisplayObject*> childrenToRemove = dynamicDisplayList;
@@ -1751,6 +1763,8 @@ void DisplayObjectContainer::_removeAllChildren(bool sendevents)
 	auto it = childrenToRemove.begin();
 	while (it != childrenToRemove.end())
 	{
+		if (recursive && (*it)->is<DisplayObjectContainer>())
+			(*it)->as<DisplayObjectContainer>()->_removeAllChildren(sendevents,recursive);
 		_removeChild(*it,false,false,false,sendevents);
 		it++;
 	}
@@ -1903,14 +1917,14 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChild)
 	DisplayObject* d=asAtomHandler::as<DisplayObject>(args[0]);
 	//As we return the child we have to incRef it
 	d->incRef();
-	d->legacy=false;
 
-	if(!th->_removeChild(d))
+	if(!th->_removeChild(d,false,false,false,true,false))
 	{
 		createError<ArgumentError>(wrk,2025,"removeChild: child not in list");
 		d->decRef();
 		return;
 	}
+	d->legacy=false;
 
 	ret = asAtomHandler::fromObject(d);
 }
@@ -1938,9 +1952,9 @@ ASFUNCTIONBODY_ATOM(DisplayObjectContainer,removeChildAt)
 	}
 	//As we return the child we incRef it
 	child->incRef();
-	child->legacy=false;
 
-	th->_removeChild(child);
+	th->_removeChild(child,false,false,false,true,false);
+	child->legacy=false;
 	ret = asAtomHandler::fromObject(child);
 }
 
@@ -2268,6 +2282,7 @@ void DisplayObjectContainer::clearDisplayList()
 	{
 		DisplayObject* c = (*it);
 		dynamicDisplayList.pop_back();
+		removeChildName(c);
 		c->setParent(nullptr);
 		c->removeStoredMember();
 		getSystemState()->removeFromResetParentList(c);

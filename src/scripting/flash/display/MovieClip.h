@@ -23,6 +23,10 @@
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/avm1/scope.h"
 
+// Adobe seems to place legacy displayobjects at negative depths starting at -16384
+// see https://www.kirupa.com/developer/actionscript/depths2.htm
+#define LEGACY_DEPTH_START -16384
+
 namespace lightspark
 {
 class FrameContainer;
@@ -129,7 +133,7 @@ public:
 	bool getAVM1Loaded() const { return isAVM1Loaded; }
 	inline AVM1context* getAVM1Context() { return &avm1context; }
 	AVM1context* AVM1getCurrentFrameContext();
-	MovieClip* AVM1CloneSprite(asAtom target, uint32_t Depth, ASObject* initobj);
+	MovieClip* AVM1CloneSprite(uint32_t targetNameID, int32_t Depth, ASObject* initobj);
 
 	ASFUNCTION_ATOM(AVM1AttachMovie);
 	ASFUNCTION_ATOM(AVM1CreateEmptyMovieClip);

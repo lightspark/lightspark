@@ -416,7 +416,7 @@ void Class_base::_getter_constructorprop(asAtom& ret, ASWorker* wrk, asAtom& obj
 
 Prototype* Class_base::getPrototype(ASWorker* wrk) const
 {
-	assert(wrk==getWorker() && !wrk->inFinalization());
+	assert(wrk==getWorker() && (!wrk->inFinalization() || wrk->isInGarbageCollection()));
 	// workers need their own prototype objects for every class
 	if (prototype.isNull() || this->is<Class_inherit>() || wrk->isPrimordial)
 		return prototype.getPtr();

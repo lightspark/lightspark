@@ -724,7 +724,8 @@ SystemState::~SystemState()
 	mutexFrameListeners.unlock();
 
 	this->resetParentList();
-	stage->_removeAllChildren(false);
+	stage->AVM1RemoveAllListeners();
+	stage->_removeAllChildren(false,true);
 	stage->prepareShutdown();
 	// finalize main worker
 	worker->finalize();
@@ -3017,7 +3018,7 @@ void SystemState::resetParentList()
 	auto it = listResetParent.begin();
 	while (it != listResetParent.end())
 	{
-		if ((*it)->legacy && (*it)->getParent())
+		if ((*it)->getParent())
 			(*it)->getParent()->removeChildName(*it);
 		(*it)->setParent(nullptr);
 		(*it)->removeStoredMember();

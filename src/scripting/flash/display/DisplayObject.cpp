@@ -2305,10 +2305,16 @@ void DisplayObject::setNameOnParent()
 		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 		asAtom obj = asAtomHandler::invalidAtom;
 		getParent()->getVariableByMultiname(obj,objName,GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
-		if (!asAtomHandler::is<DisplayObject>(obj)
-			|| asAtomHandler::as<DisplayObject>(obj)->getDepth() >= this->getDepth())
+		if (asAtomHandler::getObject(obj) != this
+				&& (!asAtomHandler::is<DisplayObject>(obj)
+				|| !asAtomHandler::as<DisplayObject>(obj)->getParent()
+				|| asAtomHandler::as<DisplayObject>(obj)->getDepth() >= this->getDepth()))
 		{
-			ASATOM_DECREF(obj); // decref old var before setting new var is needed for proper garbage collection
+			if (asAtomHandler::isValid(obj))
+			{
+				ASATOM_DECREF(obj);
+				getParent()->deleteVariableByMultiname(objName,loadedFrom->getInstanceWorker());
+			}
 			this->incRef();
 			asAtom v = asAtomHandler::fromObject(this);
 			getParent()->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
@@ -2360,7 +2366,7 @@ string DisplayObject::toDebugString() const
 	std::string res = EventDispatcher::toDebugString();
 	res += "tag=";
 	char buf[100];
-	sprintf(buf,"%u pa=%p",getTagID(),getParent());
+	sprintf(buf,"%u %s pa=%p",getTagID(),legacy ? "legacy":"",getParent());
 	res += buf;
 	if (onStage)
 		res += " onstage";

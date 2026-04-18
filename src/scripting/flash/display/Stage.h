@@ -151,6 +151,7 @@ public:
 	void AVM1SetLevelRoot(int level, RootMovieClip* root);
 	void AVM1removeLevelRoot(int level);
 	RootMovieClip* AVM1getLevelRoot(int level);
+	void AVM1RemoveAllListeners();
 };
 
 class StageScaleMode: public ASObject

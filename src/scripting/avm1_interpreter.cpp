@@ -1383,14 +1383,16 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 			case 0x24: // ActionCloneSprite
 			{
 				asAtom ad = PopStack(stack);
-				uint32_t depth = asAtomHandler::toUInt(ad);
 				asAtom target = PopStack(stack);
 				asAtom sp = PopStack(stack);
+				// target and depth need to be evaluated in correct order to match possible toPrimitive() calls
+				uint32_t targetNameId = asAtomHandler::AVM1toStringId(target,wrk,context->isCaseSensitive());
+				int32_t depth = asAtomHandler::AVM1toNumber(ad,clip->loadedFrom->version)+LEGACY_DEPTH_START;
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCloneSprite "<<asAtomHandler::toDebugString(target)<<" "<<asAtomHandler::toDebugString(sp)<<" "<<depth);
 				DisplayObject* source = asAtomHandler::is<DisplayObject>(sp) ? asAtomHandler::as<DisplayObject>(sp) : nullptr;
 				if (!source)
 				{
-					tiny_string sourcepath = asAtomHandler::toString(sp,wrk);
+					tiny_string sourcepath = asAtomHandler::AVM1toString(sp,wrk);
 					source = clip->AVM1GetClipFromPath(sourcepath);
 				}
 				if (source)
@@ -1401,7 +1403,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					else if (!source->is<MovieClip>())
 						LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCloneSprite: the source is not a MovieClip:"<<asAtomHandler::toDebugString(target)<<" "<<source->toDebugString()<<" "<<depth);
 					else
-						source->as<MovieClip>()->AVM1CloneSprite(target,depth,nullptr);
+						source->as<MovieClip>()->AVM1CloneSprite(targetNameId,depth,nullptr);
 				}
 				else
 					LOG(LOG_ERROR,"AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCloneSprite source clip not found:"<<asAtomHandler::toDebugString(target)<<" "<<asAtomHandler::toDebugString(sp)<<" "<<depth);

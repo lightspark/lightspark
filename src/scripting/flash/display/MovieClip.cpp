@@ -39,6 +39,8 @@
 using namespace std;
 using namespace lightspark;
 
+#define AVM_MAX_DEPTH 2130706428
+
 void MovieClip::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Sprite, _constructor, CLASS_DYNAMIC_NOT_FINAL);
@@ -865,6 +867,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 		return;
 	}
 	int Depth = asAtomHandler::toInt(args[2]);
+	if (Depth-LEGACY_DEPTH_START < 0 || Depth > AVM_MAX_DEPTH+LEGACY_DEPTH_START)
+	{
+		ret=asAtomHandler::undefinedAtom;
+		return;
+	}
 	ApplicationDomain* appDomain = th->loadedFrom;
 	auto it = wrk->AVM1callStack.rbegin();
 	while (it != wrk->AVM1callStack.rend())
@@ -936,6 +943,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 		return;
 	}
 	int Depth = asAtomHandler::toInt(args[1]);
+	if (Depth-LEGACY_DEPTH_START < 0 || Depth > AVM_MAX_DEPTH+LEGACY_DEPTH_START)
+	{
+		ret=asAtomHandler::undefinedAtom;
+		return;
+	}
 	uint32_t nameId = asAtomHandler::toStringId(args[0],wrk);
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
@@ -1005,17 +1017,28 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1DuplicateMovieClip)
 		ret = asAtomHandler::undefinedAtom;
 		return;
 	}
-	int Depth = asAtomHandler::toInt(args[1]);
+	// target and depth need to be evaluated in correct order to match possible toPrimitive() calls
+	uint32_t targetNameId = asAtomHandler::AVM1toStringId(args[0],wrk,!th->loadedFrom->needsCaseInsensitiveNames());
+	int32_t Depth = asAtomHandler::AVM1toNumber(args[1],th->loadedFrom->version);
 	ASObject* initobj = nullptr;
 	if (argslen > 2)
 		initobj = asAtomHandler::toObject(args[2],wrk);
-	MovieClip* toAdd=th->AVM1CloneSprite(args[0],Depth,initobj);
-	toAdd->incRef();
-	ret=asAtomHandler::fromObject(toAdd);
+	MovieClip* toAdd=th->AVM1CloneSprite(targetNameId,Depth,initobj);
+	if (toAdd)
+	{
+		toAdd->incRef();
+		ret=asAtomHandler::fromObject(toAdd);
+	}
+	else
+		ret = asAtomHandler::undefinedAtom;
 }
-MovieClip* MovieClip::AVM1CloneSprite(asAtom target, uint32_t Depth,ASObject* initobj)
+// Depth is expected to be LEGACY_DEPTH_START-based
+MovieClip* MovieClip::AVM1CloneSprite(uint32_t targetNameID, int32_t Depth,ASObject* initobj)
 {
-	uint32_t nameId = asAtomHandler::toStringId(target,getInstanceWorker());
+	if (Depth-LEGACY_DEPTH_START < 0 || Depth > AVM_MAX_DEPTH+LEGACY_DEPTH_START)
+	{
+		return nullptr;
+	}
 	AVM1MovieClip* toAdd=nullptr;
 	DefineSpriteTag* tag = getTagID() != UINT32_MAX ? (DefineSpriteTag*)loadedFrom->dictionaryLookup(getTagID()) : nullptr;
 	if (tag)
@@ -1028,19 +1051,25 @@ MovieClip* MovieClip::AVM1CloneSprite(asAtom target, uint32_t Depth,ASObject* in
 	toAdd->loadedFrom=this->loadedFrom;
 	toAdd->setLegacyMatrix(getMatrix());
 	toAdd->colorTransform = this->colorTransform;
-	toAdd->name = nameId;
+	toAdd->name = targetNameID;
 	if (this->actions)
 		toAdd->setupActions(*actions);
-	if(getParent()->hasLegacyChildAt(Depth))
+	DisplayObjectContainer* p = getParent();
+	if(p->hasLegacyChildAt(Depth))
 	{
-		getParent()->deleteLegacyChildAt(Depth,false);
-		getParent()->insertLegacyChildAt(Depth,toAdd,false,false);
+		p->deleteLegacyChildAt(Depth,false);
+		p->insertLegacyChildAt(Depth,toAdd,false,false);
 	}
 	else
-		getParent()->insertLegacyChildAt(Depth,toAdd,false,false);
+		p->insertLegacyChildAt(Depth,toAdd,false,false);
+	toAdd->setNameOnParent();
 	toAdd->beforeConstruction(true);
 	toAdd->constructionComplete();
 	toAdd->afterConstruction();
+	toAdd->isAVM1Loaded=true;
+	if (this->hasGraphics())
+		toAdd->getGraphics()->clone(this->getGraphics());
+
 	if (state.creatingframe)
 		toAdd->advanceFrame(true);
 	return toAdd;

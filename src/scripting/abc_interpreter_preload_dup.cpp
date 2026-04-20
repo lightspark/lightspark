@@ -55,10 +55,13 @@ uint32_t skipIgnorables(memorystream& code,uint32_t pos, int32_t& positionsskipp
 			case 0xf0://debugline
 			case 0xf1://debugfile
 			case 0xf2://bkptline
-				positionsskipped += code.peeku30FromPosition(pos)+1;
-				pos = code.skipu30FromPosition(pos);
+			{
+				uint32_t newpos = code.skipu30FromPosition(pos);
+				positionsskipped += (newpos-pos)+1;
+				pos = newpos;
 				pos++;
 				break;
+			}
 			case 0x2a://dup
 				positionsskipped++;
 				pos++;

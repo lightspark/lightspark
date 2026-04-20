@@ -186,7 +186,7 @@ void lightspark::abc_getProperty_constant_local_localresult(call_context* contex
 	uint32_t t = (++(context->exec_pos))->arg3_uint;
 	multiname* name=context->mi->context->getMultinameImpl(CONTEXT_GETLOCAL(context,instrptr->local_pos2),nullptr,t,false);
 	asAtom obj= *instrptr->arg1_constant;
-	LOG_CALL( "getProperty_cll " << *name << ' ' << asAtomHandler::toDebugString(obj));
+	LOG_CALL( "getProperty_cll " << *name << ' ' << asAtomHandler::toDebugString(obj)<<" "<<instrptr->local_pos2<<" "<<instrptr->local3.pos);
 	asAtom prop=asAtomHandler::invalidAtom;
 	bool canCache=false;
 	asAtomHandler::getVariableByMultiname(obj,prop,*name,context->worker,canCache,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE);

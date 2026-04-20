@@ -131,7 +131,11 @@ void clearOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastloc
 		}
 	}
 	if (clear)
+	{
 		state.operandlist.clear();
+		if (state.lastoperandsSwapped)
+			std::swap(state.preloadedcode[state.preloadedcode.size()-3],state.preloadedcode[state.preloadedcode.size()-2]);
+	}
 	state.duplocalresult=false;
 	state.lastoperandsSwapped=false;
 }

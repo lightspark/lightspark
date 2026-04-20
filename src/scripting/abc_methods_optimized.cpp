@@ -4415,7 +4415,7 @@ void ABCVm::abc_coerce_local_localresult(call_context* context)
 {
 	asAtom res = CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	multiname* mn = context->exec_pos->cachedmultiname2;
-	LOG_CALL("coerce_ll:"<<*mn<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1)));
+	LOG_CALL("coerce_ll:"<<*mn<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1))<<" "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local3.pos);
 	Type* type = mn->cachedType != nullptr ? mn->cachedType : Type::getTypeFromMultiname(mn, context->mi->context);
 	if (type == nullptr)
 	{
@@ -4711,7 +4711,7 @@ void ABCVm::abc_nextname_constant_local_localresult(call_context* context)
 }
 void ABCVm::abc_nextname_local_local_localresult(call_context* context)
 {
-	LOG_CALL("nextname_lll");
+	LOG_CALL("nextname_lll "<<context->exec_pos->local_pos1<<" "<<context->exec_pos->local_pos2<<" "<<context->exec_pos->local3.pos);
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::toObject(CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1),context->worker)->nextName(ret,asAtomHandler::getUInt(context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local_pos2)));
 	replacelocalresult(context,context->exec_pos->local3.pos,ret);

@@ -543,6 +543,7 @@ void ASWorker::handleInternalEvent(Event* e)
 		{
 			FirstFrameAvailableEvent* ev=static_cast<FirstFrameAvailableEvent*>(e);
 
+			ev->root->setFirstframeavailable();
 			if (ev->root == getSystemState()->mainClip)
 			{
 				getSystemState()->removeJob(getSystemState());

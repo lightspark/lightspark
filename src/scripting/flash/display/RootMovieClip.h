@@ -35,6 +35,7 @@ friend class ApplicationDomain;
 private:
 	bool parsingIsFailed;
 	bool waitingforparser;
+	bool firstframeavailable;
 	bool hasDefineSceneAndFrameLabelDataTag;
 	RGB Background;
 	int avm1level;
@@ -55,6 +56,7 @@ public:
 	void finalize() override;
 	bool hasFinishedLoading() override { return ACQUIRE_READ(finishedLoading); }
 	bool isWaitingForParser() { return waitingforparser; }
+	void setFirstframeavailable() { firstframeavailable=true; }
 	void constructionComplete(bool _explicit = false, bool forInitAction = false) override;
 	void afterConstruction(bool _explicit = false) override;
 	bool needsActionScript3() const override;

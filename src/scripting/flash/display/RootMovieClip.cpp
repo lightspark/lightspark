@@ -36,11 +36,17 @@
 using namespace std;
 using namespace lightspark;
 
-RootMovieClip::RootMovieClip(ASWorker* wrk, LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c):
-	MovieClip(wrk,c),
-	parsingIsFailed(false),waitingforparser(false),hasDefineSceneAndFrameLabelDataTag(false),
-	Background(0xFF,0xFF,0xFF),avm1level(-1),
-	finishedLoading(false),applicationDomain(appDomain),securityDomain(secDomain)
+RootMovieClip::RootMovieClip(ASWorker* wrk, LoaderInfo* li, _NR<ApplicationDomain> appDomain, _NR<SecurityDomain> secDomain, Class_base* c)
+	:MovieClip(wrk,c)
+	,parsingIsFailed(false)
+	,waitingforparser(false)
+	,firstframeavailable(false)
+	,hasDefineSceneAndFrameLabelDataTag(false)
+	,Background(0xFF,0xFF,0xFF)
+	,avm1level(-1)
+	,finishedLoading(false)
+	,applicationDomain(appDomain)
+	,securityDomain(secDomain)
 {
 	framecontainer = new FrameContainer();
 	this->avm1focusrect=asAtomHandler::falseAtom;
@@ -255,7 +261,7 @@ void RootMovieClip::initFrame()
 	/* We have to wait for at least one frame
 	 * so our class get the right classdef. Else we will
 	 * call the wrong constructor. */
-	if(getFramesLoaded() == 0)
+	if(!firstframeavailable)
 		return;
 
 	MovieClip::initFrame();
@@ -265,7 +271,7 @@ void RootMovieClip::initFrame()
 void RootMovieClip::advanceFrame(bool implicit)
 {
 	/* We have to wait until enough frames are available */
-	if(this == getSystemState()->mainClip && !state.inEnterFrame && (getFramesLoaded() == 0 || (state.next_FP>=(uint32_t)getFramesLoaded() && !hasFinishedLoading())))
+	if(this == getSystemState()->mainClip && !state.inEnterFrame && (!firstframeavailable || (state.next_FP>=(uint32_t)getFramesLoaded() && !hasFinishedLoading())))
 	{
 		waitingforparser=true;
 		return;
@@ -274,6 +280,7 @@ void RootMovieClip::advanceFrame(bool implicit)
 
 	if (!implicit || !needsActionScript3() || !state.explicit_FP)
 		MovieClip::advanceFrame(implicit);
+
 	// ensure "complete" events are added _after_ the whole SystemState::tick() events are handled at least once
 	if (!completionHandled)
 	{
@@ -285,7 +292,7 @@ void RootMovieClip::advanceFrame(bool implicit)
 
 void RootMovieClip::executeFrameScript()
 {
-	if (waitingforparser)
+	if (waitingforparser || !firstframeavailable)
 		return;
 	MovieClip::executeFrameScript();
 }

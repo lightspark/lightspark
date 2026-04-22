@@ -1741,7 +1741,7 @@ std::string TextField::toDebugString() const
 
 void TextField::updateText(const tiny_string& new_text)
 {
-	if (getText() == new_text)
+	if (!hasChanged && getText() == new_text)
 		return;
 	linemutex->lock();
 	FormatText format(*this);

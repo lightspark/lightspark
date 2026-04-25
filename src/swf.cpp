@@ -397,8 +397,8 @@ SystemState::SystemState
 	loaderInfo->applicationDomain = applicationDomain;
 	loaderInfo->setBytesLoaded(0);
 	loaderInfo->setBytesTotal(0);
+	loaderInfo->setRefConstant();
 	mainClip=RootMovieClip::getInstance(this->worker,loaderInfo, applicationDomain, securityDomain);
-	loaderInfo->decRef();
 	mainClip->setRefConstant();
 	worker->rootClip = _MR(mainClip);
 	workerDomain = Class<WorkerDomain>::getInstanceSNoArgs(this->worker);
@@ -911,7 +911,7 @@ void SystemState::setShutdownFlag()
 	{
 		terminated.signal();
 	}
-	shutdown=true;
+	RELEASE_WRITE(shutdown,true);
 }
 void SystemState::setExitCode(int exitcode)
 {
@@ -1452,6 +1452,8 @@ void SystemState::flushInvalidationQueue()
 			cur->decRef();
 			cur=next;
 		}
+		if (EngineData::enablerendering && renderThread != nullptr)
+			renderThread->signalSurfaceRefresh();
 		invalidateQueueHead=nullptr;
 		invalidateQueueTail=nullptr;
 		return;
@@ -2534,7 +2536,10 @@ void SystemState::tick()
 	/* Step 9: we are idle now, so we can handle all input events */
 	_R<IdleEvent> idle = _MR(new (unaccountedMemory) IdleEvent(this->worker));
 	if (currentVm->addEvent(NullRef, idle) && !runSingleThreaded)
+	{
+		sendMainSignal();
 		idle->wait();
+	}
 	if (runSingleThreaded)
 		currentVm->handleQueuedEvents();
 }
@@ -3020,7 +3025,7 @@ void SystemState::resetParentList()
 	{
 		if ((*it)->getParent())
 			(*it)->getParent()->removeChildName(*it);
-		(*it)->setParent(nullptr);
+		(*it)->setParent(nullptr,true);
 		(*it)->removeStoredMember();
 		it = listResetParent.erase(it);
 	}

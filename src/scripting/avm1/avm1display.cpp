@@ -76,6 +76,8 @@ void AVM1MovieClip::prepareShutdown()
 }
 bool AVM1MovieClip::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
+	if (skipCountCylicMemberReferences(gcstate))
+		return gcstate.hasMember(this);
 	bool ret = MovieClip::countCylicMemberReferences(gcstate);
 	if (droptarget)
 		ret = droptarget->countAllCylicMemberReferences(gcstate) || ret;
@@ -537,7 +539,6 @@ void AVM1MovieClipLoader::finalize()
 
 bool AVM1MovieClipLoader::destruct()
 {
-	getSystemState()->stage->AVM1RemoveEventListener(this);
 	auto itlst = listeners.begin();
 	while (itlst != listeners.end())
 	{

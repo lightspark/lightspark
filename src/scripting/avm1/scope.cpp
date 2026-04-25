@@ -30,12 +30,16 @@ using namespace lightspark;
 
 // Based on Ruffle's `avm1::scope::Scope`.
 
-AVM1Scope::AVM1Scope(AVM1Scope* _parent, const AVM1ScopeClass& type, asAtom _values):
-	parent(_parent),
-	_class(type),
-	values(_values),
-	storedmembercount(0)
+AVM1Scope::AVM1Scope(AVM1Scope* _parent, const AVM1ScopeClass& type, asAtom _values)
+	:parent(_parent)
+	,_class(type)
+	,values(_values)
+	,storedmembercount(0)
+	,gcchecked(false)
+	,gcHasMember(false)
 {
+	if (parent)
+		parent->addStoredMember();
 }
 
 AVM1Scope::AVM1Scope(Global* globals) : AVM1Scope
@@ -69,7 +73,10 @@ AVM1Scope::AVM1Scope
 AVM1Scope::~AVM1Scope()
 {
 	if (parent)
+	{
+		parent->removeStoredMember();
 		parent->decRef();
+	}
 }
 
 void AVM1Scope::setTargetScope(DisplayObject* clip)
@@ -242,18 +249,35 @@ bool AVM1Scope::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 	return false;
 }
 
-bool AVM1Scope::countAllCyclicMemberReferences(garbagecollectorstate& gcstate)
+bool AVM1Scope::countAllCyclicMemberReferences(garbagecollectorstate& gcstate, bool inStack)
 {
 	if (gcstate.stopped || this->getRefCount() != (int)this->storedmembercount)
 		return false;
-	bool ret = false;
+	if (this->gcchecked && inStack)
+	{
+		return gcHasMember;
+	}
+	bool ret = gcHasMember;
 	if (asAtomHandler::isAccessible(values))
 	{
 		ASObject* v = asAtomHandler::getObject(values);
 		if (v)
-			ret = v->countAllCylicMemberReferences(gcstate);
+		{
+			ret = gcHasMember = v->countAllCylicMemberReferences(gcstate);
+		}
 	}
+	if (parent)
+		ret  |= parent->countAllCyclicMemberReferences(gcstate,true) | gcHasMember;
+	gcchecked=true;
 	return ret;
+}
+
+void AVM1Scope::gcCounterReset()
+{
+	if (parent)
+		parent->gcCounterReset();
+	gcchecked=false;
+	gcHasMember=false;
 }
 
 void AVM1Scope::prepareShutdown()
@@ -261,5 +285,12 @@ void AVM1Scope::prepareShutdown()
 	ASObject* v = asAtomHandler::getObject(values);
 	if (v)
 		v->prepareShutdown();
-	ASATOM_REMOVESTOREDMEMBER(values)
+	AVM1Scope* sc = parent;
+	parent=nullptr;
+	if (sc)
+	{
+		sc->prepareShutdown();
+		sc->removeStoredMember();
+		sc->decRef();
+	}
 }

@@ -378,7 +378,6 @@ void Stage::AVM1RemoveAllListeners()
 		auto it = avm1FocusListeners.begin();
 		asAtom a = *it;
 		avm1FocusListeners.erase(it);
-		ASObject* o = asAtomHandler::getObject(a);
 		ASATOM_REMOVESTOREDMEMBER(a);
 	}
 	while (!avm1KeyboardListeners.empty())
@@ -386,7 +385,6 @@ void Stage::AVM1RemoveAllListeners()
 		auto it = avm1KeyboardListeners.begin();
 		asAtom a = *it;
 		avm1KeyboardListeners.erase(it);
-		ASObject* o = asAtomHandler::getObject(a);
 		ASATOM_REMOVESTOREDMEMBER(a);
 	}
 	while (!avm1MouseListeners.empty())
@@ -394,17 +392,15 @@ void Stage::AVM1RemoveAllListeners()
 		auto it = avm1MouseListeners.begin();
 		asAtom a = *it;
 		avm1MouseListeners.erase(it);
-		ASObject* o = asAtomHandler::getObject(a);
 		ASATOM_REMOVESTOREDMEMBER(a);
 	}
 	vector<pair<ASObject*,uint32_t>> tmpeventlisteners = avm1EventListeners;
 	for (auto it = tmpeventlisteners.begin(); it != tmpeventlisteners.end(); it++)
 	{
 		while (it->second--)
-			it->first->removeStoredMemberStatic();
+			it->first->removeStoredMember();
 	}
 	avm1EventListeners.clear();
-
 	avm1ResizeListeners.clear();
 }
 void Stage::prepareShutdown()
@@ -1360,7 +1356,7 @@ void Stage::AVM1AddEventListener(ASObject *o)
 {
 	Locker l(avm1listenerMutex);
 	o->incRef();
-	o->addStoredMemberStatic();
+	o->addStoredMember();
 	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
 	{
 		if ((*it).first == o)
@@ -1380,7 +1376,7 @@ void Stage::AVM1RemoveEventListener(ASObject *o)
 		{
 			assert ((*it).second);
 			--(*it).second;
-			o->removeStoredMemberStatic();
+			o->removeStoredMember();
 			if ((*it).second==0)
 				avm1EventListeners.erase(it);
 			break;

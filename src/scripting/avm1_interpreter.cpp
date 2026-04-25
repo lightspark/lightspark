@@ -2322,6 +2322,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						else
 						{
 							LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod function not found "<<asAtomHandler::toDebugString(scriptobject)<<" "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func));
+							ASATOM_DECREF(func);
 							ret = asAtomHandler::undefinedAtom;
 						}
 					}

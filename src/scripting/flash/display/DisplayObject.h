@@ -102,14 +102,14 @@ private:
 	bool needsTextureRecalculation;
 	bool textureRecalculationSkippable;
 	std::map<uint32_t,asAtom> avm1variables;
-protected:
-	uint32_t avm1mouselistenercount;
 	uint32_t avm1framelistenercount;
+	uint32_t avm1mouselistenercount;
+protected:
 	uint32_t broadcastEventListenerCount;
 	void onSetScrollRect(asAtom oldValue);
 	_NR<Rectangle> scalingGrid;
 	MATRIX currentrendermatrix;
-	std::multimap<uint32_t,_NR<DisplayObject>> variablebindings;
+	std::multimap<uint32_t,DisplayObject*> variablebindings;
 	bool onStage;
 	bool visible;
 	~DisplayObject();
@@ -163,7 +163,7 @@ public:
 	void prepareDestruction()
 	{
 		destroyContents();
-		setParent(nullptr);
+		setParent(nullptr,true);
 		removeAVM1Listeners();
 	}
 	void setNameOnParent();
@@ -200,7 +200,7 @@ public:
 	DisplayObjectContainer* findCommonAncestor(DisplayObject* d, int& depth, bool init = true) const;
 	DisplayObjectContainer* findCommonAncestor(DisplayObject* d) const { int dummy; return findCommonAncestor(d, dummy); }
 	bool findParent(DisplayObject* d) const;
-	void setParent(DisplayObjectContainer* p);
+	void setParent(DisplayObjectContainer* p, bool fordestruction);
 	void setScalingGrid();
 	/*
 	   Used to link DisplayObjects the invalidation queue
@@ -250,6 +250,11 @@ public:
 	virtual void removeAVM1Listeners();
 	void AVM1registerPrototypeListeners();
 	void AVM1unregisterPrototypeListeners();
+	void AVM1addOneEventListener();
+	void AVM1removeOneEventListener();
+	void AVM1addOneMouseEventListener();
+	void AVM1removeOneMouseEventListener();
+
 
 	// used by MorphShapes and embedded video
 	virtual void checkRatio(uint32_t ratio, bool inskipping) {}
@@ -395,7 +400,7 @@ public:
 	asAtom AVM1GetVariable(const tiny_string &name, bool checkrootvars=true);
 	void AVM1UpdateVariableBindings(uint32_t nameID, asAtom &value);
 	asAtom getVariableBindingValue(const tiny_string &name) override;
-	void setVariableBinding(tiny_string& name, _NR<DisplayObject> obj);
+	void setVariableBinding(tiny_string& name, DisplayObject* obj);
 	void AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> obj);
 	AVM1Function *AVM1GetFunction(uint32_t nameID);
 	virtual void AVM1AfterAdvance() {}

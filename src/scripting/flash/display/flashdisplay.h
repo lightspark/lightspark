@@ -122,7 +122,7 @@ public:
 
 class DisplayObjectContainer: public InteractiveObject
 {
-friend struct FrameContainer;
+friend class FrameContainer;
 private:
 	bool mouseChildren;
 	map<int32_t,DisplayObject*> mapDepthToLegacyChild;
@@ -252,7 +252,7 @@ private:
 	//hitTarget is non-null if another Sprite has registered this
 	//Sprite as its hitArea. Hits will be relayed to hitTarget.
 	_NR<Sprite> hitTarget;
-	_NR<SoundChannel> sound;
+	SoundChannel* soundchannel;
 	_NR<SoundTransform> soundtransform;
 	uint32_t soundstartframe;
 	bool streamingsound;

@@ -77,7 +77,6 @@ public:
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	void beforeHandleEvent(Event* ev) override;
 	void afterHandleEvent(Event* ev) override;
-	void addLoaderEvent(Event* ev);
 	void setOpened(bool fromBytes);
 	void setStarted() { loadStatus=LOAD_STARTED; }
 	DisplayObject* getParsedObject() const;

@@ -74,7 +74,6 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c):Sprite(wrk,c),fromDefineSprit
 	,hasAVM1LoadEvent(false)
 	,framecontainer(nullptr)
 	,actions(nullptr)
-	,avm1clipeventlistenercount(0)
 	,totalFrames_unreliable(1)
 	,enabled(true)
 {
@@ -87,7 +86,6 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c, FrameContainer* f, uint32_t d
 	,hasAVM1LoadEvent(false)
 	,framecontainer(f)
 	,actions(nullptr)
-	,avm1clipeventlistenercount(0)
 	,totalFrames_unreliable(f->getFramesLoaded())
 	,enabled(true)
 {
@@ -113,7 +111,6 @@ bool MovieClip::destruct()
 	lastFrameScriptExecuted = UINT32_MAX;
 	lastratio=0;
 	totalFrames_unreliable = 1;
-	avm1clipeventlistenercount=0;
 	inExecuteFramescript=false;
 
 	state.reset();
@@ -127,6 +124,7 @@ bool MovieClip::destruct()
 	}
 	avm1context.setScope(nullptr);
 	avm1context.setGlobalScope(nullptr);
+	AVM1unregisterPrototypeListeners();
 	return Sprite::destruct();
 }
 
@@ -160,6 +158,7 @@ void MovieClip::prepareShutdown()
 {
 	if (preparedforshutdown)
 		return;
+	Sprite::prepareShutdown();
 	if (actions)
 	{
 		if (actions->AllEventFlags.ClipEventMouseDown ||
@@ -169,7 +168,7 @@ void MovieClip::prepareShutdown()
 			actions->AllEventFlags.ClipEventPress ||
 			actions->AllEventFlags.ClipEventMouseUp)
 		{
-			getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+			AVM1removeOneMouseEventListener();
 		}
 		if (actions->AllEventFlags.ClipEventKeyDown ||
 			actions->AllEventFlags.ClipEventKeyUp ||
@@ -177,14 +176,8 @@ void MovieClip::prepareShutdown()
 			getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
 		if (actions->AllEventFlags.ClipEventEnterFrame)
 			getSystemState()->unregisterFrameListener(this);
-
-		while (avm1clipeventlistenercount--)
-		{
-			getSystemState()->stage->AVM1RemoveEventListener(this);
-		}
-
 	}
-	Sprite::prepareShutdown();
+	removedFrameScripts.clear();
 	auto it = frameScripts.begin();
 	while (it != frameScripts.end())
 	{
@@ -192,6 +185,11 @@ void MovieClip::prepareShutdown()
 		if (o)
 			o->prepareShutdown();
 		it++;
+	}
+	for (auto it = this->AVM1FrameContexts.begin(); it != this->AVM1FrameContexts.end(); it++)
+	{
+		it->second.setScope(nullptr);
+		it->second.setGlobalScope(nullptr);
 	}
 	avm1context.setScope(nullptr);
 	avm1context.setGlobalScope(nullptr);
@@ -404,7 +402,6 @@ void MovieClip::runGoto(bool newFrame)
 
 AVM1context* MovieClip::AVM1getCurrentFrameContext()
 {
-
 	auto it = AVM1FrameContexts.insert(make_pair(state.FP,AVM1context())).first;
 	return &it->second;
 }
@@ -708,7 +705,7 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 				if (it->EventFlags.ClipEventLoad && e->type == "complete")
 				{
 					ACTIONRECORD::executeActions(this,this->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
-					getSystemState()->stage->AVM1RemoveEventListener(this);
+					AVM1removeOneEventListener();
 				}
 			}
 		}
@@ -765,8 +762,7 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 			clipactions.AllEventFlags.ClipEventMouseUp)
 	{
 		setMouseEnabled(true);
-		getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-		avm1mouselistenercount++;
+		AVM1addOneMouseEventListener();
 	}
 	if (clipactions.AllEventFlags.ClipEventKeyDown ||
 		clipactions.AllEventFlags.ClipEventKeyUp ||
@@ -777,13 +773,10 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 			clipactions.AllEventFlags.ClipEventUnload)
 	{
 		hasAVM1LoadEvent=true;
-		getSystemState()->stage->AVM1AddEventListener(this);
+		AVM1addOneEventListener();
 	}
 	if (clipactions.AllEventFlags.ClipEventEnterFrame)
-	{
-		getSystemState()->registerFrameListener(this);
-		getSystemState()->stage->AVM1AddEventListener(this);
-	}
+		AVM1addOneEventListener();
 }
 
 void MovieClip::AVM1SetupMethods(Class_base* c)

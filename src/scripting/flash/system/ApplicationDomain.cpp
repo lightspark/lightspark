@@ -67,9 +67,13 @@ void ApplicationDomain::cbDomainMemory(_NR<ByteArray> oldvalue)
 void ApplicationDomain::finalize()
 {
 	ASObject::finalize();
-	for(auto it=dictionary.begin();it!=dictionary.end();++it)
-		delete it->second;
-	dictionary.clear();
+	while (!dictionary.empty())
+	{
+		auto it=dictionary.begin();
+		auto t = it->second;
+		dictionary.erase(it);
+		delete t;
+	}
 	aliasMap.clear();
 	domainMemory.reset();
 	defaultDomainMemory.reset();

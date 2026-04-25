@@ -758,7 +758,7 @@ string ASString::toDebugString() const
 		ret = std::string("\"") + std::string(data) + "\"";
 #ifndef NDEBUG
 	char buf[300];
-	sprintf(buf,"(%p/%d/%d/%d%s) ",this,this->getRefCount(),this->storedmembercount,this->getConstant(),this->isConstructed()?"":" not constructed");
+	sprintf(buf,"(%p/%i/%i/%i%s) ",this,this->getRefCount(),(int32_t)this->storedmembercount,this->getConstant(),this->isConstructed()?"":" not constructed");
 	ret += buf;
 #endif
 	return ret;

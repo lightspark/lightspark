@@ -132,23 +132,11 @@ void AVM1Function::prepareShutdown()
 		return;
 	IFunction::prepareShutdown();
 	if (context.scope)
-	{
 		context.scope->prepareShutdown();
-		context.scope->decRef();
-		context.scope=nullptr;
-	}
 	if (context.globalScope)
-	{
 		context.globalScope->prepareShutdown();
-		context.globalScope->decRef();
-		context.globalScope=nullptr;
-	}
 	if (scope)
-	{
 		scope->prepareShutdown();
-		scope->decRef();
-		scope=nullptr;
-	}
 	clip=nullptr;
 	ASObject* su = asAtomHandler::getObject(superobj);
 	if (su)
@@ -200,4 +188,15 @@ bool AVM1Function::implementsInterface(asAtom &iface)
 			return asAtomHandler::as<AVM1Function>(o)->implementsInterface(iface);
 	}
 	return false;
+}
+
+void AVM1Function::gcCounterReset()
+{
+	if (scope)
+		scope->gcCounterReset();
+	if (context.scope)
+		context.scope->gcCounterReset();
+	if (context.globalScope)
+		context.globalScope->gcCounterReset();
+	ASObject::gcCounterReset();
 }

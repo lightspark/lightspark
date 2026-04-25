@@ -70,6 +70,11 @@ LoaderInfo::LoaderInfo(ASWorker* wrk, Class_base* c, Loader* l):EventDispatcher(
 	parameters = _MR(new_asobject(wrk));
 	uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(wrk));
 	LOG(LOG_NOT_IMPLEMENTED,"LoaderInfo: childAllowsParent and parentAllowsChild always return true");
+	if (loader)
+	{
+		loader->incRef();
+		loader->addStoredMember();
+	}
 }
 
 void LoaderInfo::parseData(streambuf *_sbuf)
@@ -126,6 +131,8 @@ bool LoaderInfo::destruct()
 	sbuf = nullptr;
 
 	sharedEvents.reset();
+	if (loader)
+		loader->removeStoredMember();
 	loader=nullptr;
 	if (content)
 		content->removeStoredMember();
@@ -162,6 +169,8 @@ void LoaderInfo::finalize()
 		delete sbuf;
 	sbuf = nullptr;
 	sharedEvents.reset();
+	if (loader)
+		loader->removeStoredMember();
 	loader=nullptr;
 	if (content)
 		content->removeStoredMember();
@@ -209,6 +218,8 @@ void LoaderInfo::prepareShutdown()
 bool LoaderInfo::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	if (loader)
+		ret = loader->countAllCylicMemberReferences(gcstate) || ret;
 	if (content)
 		ret = content->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
@@ -231,28 +242,6 @@ void LoaderInfo::afterHandleEvent(Event* ev)
 		progressEvent->decRef();
 		progressEvent=nullptr;
 	}
-
-	auto it = loaderevents.find(ev);
-	if (it != loaderevents.end())
-	{
-		this->loader->removeStoredMember();
-		loaderevents.erase(it);
-	}
-}
-
-void LoaderInfo::addLoaderEvent(Event* ev)
-{
-	if (this->loader)
-	{
-		Locker l(spinlock);
-		auto it = loaderevents.find(ev);
-		if (it == loaderevents.end())
-		{
-			this->loader->incRef();
-			this->loader->addStoredMember();
-			loaderevents.insert(ev);
-		}
-	}
 }
 
 void LoaderInfo::setOpened(bool fromBytes)
@@ -273,13 +262,11 @@ void LoaderInfo::setOpened(bool fromBytes)
 	{
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"open");
 		this->incRef();
-		if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
-			addLoaderEvent(ev);
+		getVm(getSystemState())->addEvent(_MR(this),_MR(ev));
 		if (p)
 		{
 			this->incRef();
-			if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
-				addLoaderEvent(p);
+			getVm(getSystemState())->addEvent(_MR(this),_MR(p));
 		}
 	}
 	else
@@ -293,8 +280,7 @@ void LoaderInfo::setOpened(bool fromBytes)
 			else
 			{
 				this->incRef();
-				if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
-					addLoaderEvent(p);
+				getVm(getSystemState())->addEvent(_MR(this),_MR(p));
 			}
 		}
 	}
@@ -329,8 +315,7 @@ void LoaderInfo::setComplete()
 			else
 			{
 				this->incRef();
-				if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
-					addLoaderEvent(p);
+				getVm(getSystemState())->addEvent(_MR(this),_MR(p));
 			}
 		}
 
@@ -340,9 +325,7 @@ void LoaderInfo::setComplete()
 	{
 		this->incRef();
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"avm1_init");
-		if (getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev)))
-			this->addLoaderEvent(ev);
-		
+		getVm(getSystemState())->addIdleEvent(_MR(this),_MR(ev));
 	}
 }
 
@@ -374,8 +357,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 				else
 				{
 					this->incRef();
-					if (getVm(getSystemState())->addEvent(_MR(this),_MR(p)))
-						addLoaderEvent(p);
+					getVm(getSystemState())->addEvent(_MR(this),_MR(p));
 				}
 				spinlock.unlock();
 			}
@@ -385,7 +367,6 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 				if (!progressEvent)
 				{
 					progressEvent = Class<ProgressEvent>::getInstanceS(getInstanceWorker(),bytesLoaded,bytesTotal);
-					this->addLoaderEvent(progressEvent);
 					this->incRef();
 					// progressEvent might already be set to nullptr between spinlock.unlock() and addEvent, so we need a separate variable for this
 					ProgressEvent* e = progressEvent;
@@ -402,7 +383,6 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 					// if event is already in event queue, we don't need to add it again
 					if (!ACQUIRE_READ(progressEvent->queued))
 					{
-						this->addLoaderEvent(progressEvent);
 						this->incRef();
 						// progressEvent might already be set to nullptr between spinlock.unlock() and addEvent, so we need a separate variable for this
 						ProgressEvent* e = progressEvent;
@@ -433,8 +413,7 @@ void LoaderInfo::sendInit()
 	}
 	this->incRef();
 	auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"init");
-	if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
-		this->addLoaderEvent(ev);
+	getVm(getSystemState())->addEvent(_MR(this),_MR(ev));
 	assert(loadStatus<LOAD_INIT_SENT);
 	loadStatus=LOAD_INIT_SENT;
 	checkSendComplete();
@@ -447,15 +426,13 @@ void LoaderInfo::checkSendComplete()
 		{
 			this->incRef();
 			auto ev = Class<HTTPStatusEvent>::getInstanceS(getInstanceWorker());
-			if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
-				this->addLoaderEvent(ev);
+			getVm(getSystemState())->addEvent(_MR(this),_MR(ev));
 		}
 
 		//The clip is also complete now
 		this->incRef();
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"complete");
-		if (getVm(getSystemState())->addEvent(_MR(this),_MR(ev)))
-			this->addLoaderEvent(ev);
+		getVm(getSystemState())->addEvent(_MR(this),_MR(ev));
 		loadStatus=LOAD_COMPLETE;
 	}
 }

@@ -161,7 +161,7 @@ public:
 	void play(number_t starttime=0);
 	void resume();
 	void markFinished(); // indicates that all sound data is available
-	void setSampleProducer(Sound* _sampleproducer) { sampleproducer = _sampleproducer; }
+	void setSampleProducer(Sound* _sampleproducer);
 	void setStartTime(number_t starttime) { startTime = starttime; }
 	void setLoops(int32_t loops) {loopstogo=loops;}
 	static void sinit(Class_base* c);

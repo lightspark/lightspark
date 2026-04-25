@@ -1801,7 +1801,7 @@ void TextField::afterLegacyInsert()
 		{
 			if (tagvartarget->is<MovieClip>())
 			{
-				tagvartarget->as<MovieClip>()->setVariableBinding(tagvarname,_MR(this));
+				tagvartarget->as<MovieClip>()->setVariableBinding(tagvarname,this);
 				asAtom value = tagvartarget->as<MovieClip>()->getVariableBindingValue(tagvarname);
 				if (asAtomHandler::isValid(value) && !asAtomHandler::isUndefined(value))
 				{
@@ -1837,7 +1837,7 @@ void TextField::afterLegacyDelete(bool inskipping)
 	{
 		if (tagvartarget)
 		{
-			tagvartarget->as<MovieClip>()->setVariableBinding(tagvarname,NullRef);
+			tagvartarget->as<MovieClip>()->setVariableBinding(tagvarname,nullptr);
 			tagvartarget->removeStoredMember();
 			tagvartarget=nullptr;
 		}

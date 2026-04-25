@@ -67,8 +67,17 @@ std::ostream& lightspark::operator<<(std::ostream& s, const DisplayObject& r)
 
 
 
-Sprite::Sprite(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),TokenContainer(this),graphics(NullRef),soundstartframe(UINT32_MAX),streamingsound(false),hasMouse(false)
-	,dragged(false),buttonMode(false),useHandCursor(true)
+Sprite::Sprite(ASWorker* wrk, Class_base* c)
+	:DisplayObjectContainer(wrk,c)
+	,TokenContainer(this)
+	,graphics(NullRef)
+	,soundchannel(nullptr)
+	,soundstartframe(UINT32_MAX)
+	,streamingsound(false)
+	,hasMouse(false)
+	,dragged(false)
+	,buttonMode(false)
+	,useHandCursor(true)
 {
 	subtype=SUBTYPE_SPRITE;
 }
@@ -85,7 +94,9 @@ bool Sprite::destruct()
 	useHandCursor = true;
 	streamingsound=false;
 	hasMouse=false;
-	sound.reset();
+	if (soundchannel)
+		soundchannel->removeStoredMember();
+	soundchannel=nullptr;
 	soundtransform.reset();
 	return DisplayObjectContainer::destruct();
 }
@@ -97,7 +108,9 @@ void Sprite::finalize()
 	hitArea.reset();
 	hitTarget.reset();
 	tokens=nullptr;
-	sound.reset();
+	if (soundchannel)
+		soundchannel->removeStoredMember();
+	soundchannel=nullptr;
 	soundtransform.reset();
 	DisplayObjectContainer::finalize();
 }
@@ -106,17 +119,17 @@ void Sprite::prepareShutdown()
 {
 	if (preparedforshutdown)
 		return;
+	DisplayObjectContainer::prepareShutdown();
 	if (graphics)
 		graphics->prepareShutdown();
 	if (hitArea)
 		hitArea->prepareShutdown();
 	if (hitTarget)
 		hitTarget->prepareShutdown();
-	if (sound)
-		sound->prepareShutdown();
+	if (soundchannel)
+		soundchannel->prepareShutdown();
 	if (soundtransform)
 		soundtransform->prepareShutdown();
-	DisplayObjectContainer::prepareShutdown();
 }
 
 void Sprite::sinit(Class_base* c)
@@ -228,14 +241,14 @@ ASFUNCTIONBODY_ATOM(Sprite,getSoundTransform)
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
 	if (!th->soundtransform)
 	{
-		if (th->sound)
-			th->soundtransform = th->sound->soundTransform;
+		if (th->soundchannel)
+			th->soundtransform = th->soundchannel->soundTransform;
 	}
 	if (!th->soundtransform)
 	{
 		th->soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(wrk));
-		if (th->sound)
-			th->sound->soundTransform = th->soundtransform;
+		if (th->soundchannel)
+			th->soundchannel->soundTransform = th->soundtransform;
 	}
 	ret = asAtomHandler::fromObject(th->soundtransform.getPtr());
 	ASATOM_INCREF(ret);
@@ -562,51 +575,64 @@ _NR<DisplayObject> Sprite::hitTestImpl(const Vector2f& globalPoint, const Vector
 
 void Sprite::resetToStart()
 {
-	if (sound && this->getTagID() != UINT32_MAX)
+	if (soundchannel && this->getTagID() != UINT32_MAX)
 	{
-		sound->threadAbort();
+		soundchannel->threadAbort();
 	}
 }
 
 void Sprite::setSound(SoundChannel *s,bool forstreaming)
 {
-	sound = _MR(s);
-	streamingsound = forstreaming;
-	if (sound->soundTransform)
-		this->soundtransform = sound->soundTransform;
+	if (soundchannel)
+	{
+		if (soundchannel != s)
+		{
+			soundchannel->removeStoredMember();
+			soundchannel = s;
+			soundchannel->addStoredMember();
+		}
+	}
 	else
-		sound->soundTransform = this->soundtransform;
+	{
+		soundchannel = s;
+		soundchannel->addStoredMember();
+	}
+	streamingsound = forstreaming;
+	if (soundchannel->soundTransform)
+		this->soundtransform = soundchannel->soundTransform;
+	else
+		soundchannel->soundTransform = this->soundtransform;
 }
 
 SoundChannel* Sprite::getSoundChannel() const
 {
-	return sound.getPtr();
+	return soundchannel;
 }
 
 void Sprite::appendSound(unsigned char *buf, int len, uint32_t frame)
 {
-	if (sound)
-		sound->appendStreamBlock(buf,len);
+	if (soundchannel)
+		soundchannel->appendStreamBlock(buf,len);
 	if (soundstartframe == UINT32_MAX)
 		soundstartframe=frame;
 }
 
 void Sprite::checkSound(uint32_t frame)
 {
-	if (sound && streamingsound && soundstartframe==frame)
-		sound->play();
+	if (soundchannel && streamingsound && soundstartframe==frame)
+		soundchannel->play();
 }
 
 void Sprite::stopSound()
 {
-	if (sound)
-		sound->threadAbort();
+	if (soundchannel)
+		soundchannel->threadAbort();
 }
 
 void Sprite::markSoundFinished()
 {
-	if (sound)
-		sound->markFinished();
+	if (soundchannel)
+		soundchannel->markFinished();
 }
 
 bool Sprite::boundsRectWithoutChildren(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
@@ -1046,9 +1072,8 @@ bool DisplayObjectContainer::destruct()
 	if (getParent())
 		getParent()->_removeFromDisplayList(this);
 	// clear all member variables in the display list first to properly handle cyclic reference detection
-	setParent(nullptr);
+	setParent(nullptr,true);
 	removeAVM1Listeners();
-	prepareDestruction();
 	clearDisplayList();
 	auto it = mapFrameDepthToLegacyChildRemembered.begin();
 	while (it != mapFrameDepthToLegacyChildRemembered.end())
@@ -1073,9 +1098,8 @@ void DisplayObjectContainer::finalize()
 	if (getParent())
 		getParent()->_removeFromDisplayList(this);
 	// clear all member variables in the display list first to properly handle cyclic reference detection
-	setParent(nullptr);
+	setParent(nullptr,true);
 	removeAVM1Listeners();
-	prepareDestruction();
 	clearDisplayList();
 	auto it = mapFrameDepthToLegacyChildRemembered.begin();
 	while (it != mapFrameDepthToLegacyChildRemembered.end())
@@ -1665,7 +1689,7 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 	getSystemState()->removeFromResetParentList(child);
 	if(!child->needsActionScript3())
 		getSystemState()->stage->AVM1AddDisplayObject(child);
-	child->setParent(this);
+	child->setParent(this,false);
 	{
 		Locker l(mutexDisplayList);
 		//We insert the object in the back of the list
@@ -1733,7 +1757,7 @@ bool DisplayObjectContainer::_removeChild(DisplayObject* child, bool direct, boo
 		getSystemState()->addDisplayObjectToResetParentList(child);
 	else
 	{
-		child->setParent(nullptr);
+		child->setParent(nullptr,false);
 		if (removeName)
 			removeChildName(child);
 	}
@@ -2283,7 +2307,7 @@ void DisplayObjectContainer::clearDisplayList()
 		DisplayObject* c = (*it);
 		dynamicDisplayList.pop_back();
 		removeChildName(c);
-		c->setParent(nullptr);
+		c->setParent(nullptr,true);
 		c->removeStoredMember();
 		getSystemState()->removeFromResetParentList(c);
 		it = dynamicDisplayList.rbegin();

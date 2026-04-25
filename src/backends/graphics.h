@@ -137,7 +137,7 @@ public:
 struct RefreshableSurface
 {
 	IDrawable* drawable;
-	_NR<DisplayObject> displayobject;
+	DisplayObject* displayobject;
 };
 
 class IDrawable

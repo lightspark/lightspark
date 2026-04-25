@@ -188,7 +188,6 @@ void AVM1LoadVars::finalize()
 }
 bool AVM1LoadVars::destruct()
 {
-	getSystemState()->stage->AVM1RemoveEventListener(this);
 	if (loader)
 		loader->removeStoredMember();
 	loader=nullptr;

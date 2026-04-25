@@ -819,16 +819,13 @@ void ABCVm::shutdown()
 void ABCVm::addDeletableObject(ASObject *obj)
 {
 	Locker l(deletable_objects_mutex);
-	obj->addStoredMember();
 	deletableObjects.push_back(obj);
 }
 void ABCVm::clearDeletableObjects()
 {
 	deletable_objects_mutex.lock();
 	for (auto it = deletableObjects.begin(); it != deletableObjects.end(); it++)
-	{
 		(*it)->removeStoredMember();
-	}
 	deletableObjects.clear();
 	deletable_objects_mutex.unlock();
 }

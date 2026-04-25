@@ -137,6 +137,8 @@ public:
 	{
 		return avm1Class;
 	}
+	void gcCounterReset() override;
+
 };
 
 }

@@ -45,7 +45,6 @@ ASWorker::ASWorker(SystemState* s)
 	,parser(nullptr)
 	,giveAppPrivileges(false)
 	,started(false)
-	,inGarbageCollection(false)
 	,inShutdown(false)
 	,inFinalize(false)
 	,stage(nullptr)
@@ -77,7 +76,6 @@ ASWorker::ASWorker(Class_base* c)
 	,parser(nullptr)
 	,giveAppPrivileges(false)
 	,started(false)
-	,inGarbageCollection(false)
 	,inShutdown(false)
 	,inFinalize(false)
 	,stage(nullptr)
@@ -108,7 +106,6 @@ ASWorker::ASWorker(ASWorker* wrk, Class_base* c)
 	,parser(nullptr)
 	,giveAppPrivileges(false)
 	,started(false)
-	,inGarbageCollection(false)
 	,inShutdown(false)
 	,inFinalize(false)
 	,stage(nullptr)
@@ -208,6 +205,9 @@ void ASWorker::finalize()
 	// remove all references to variables as they might point to other constant reffed objects
 	for (auto it = constantrefs.begin(); it != constantrefs.end(); it++)
 	{
+		(*it)->resetStoredMemberCount();
+		(*it)->resetStoredMemberCountStatic();
+		(*it)->resetRefCount();
 		(*it)->destruct();
 		(*it)->finalize();
 	}
@@ -217,7 +217,6 @@ void ASWorker::finalize()
 		setTLSWorker(nullptr);
 	// destruct all constant refs
 	auto it = constantrefs.begin();
-	it = constantrefs.begin();
 	while (it != constantrefs.end())
 	{
 		ASObject* o = (*it);
@@ -265,9 +264,9 @@ void ASWorker::prepareShutdown()
 	if (stage)
 		stage->prepareShutdown();
 	ASObject* ogc = this->gcNext;
-	assert(ogc);
 	while (ogc != this)
 	{
+		assert(ogc && ogc->gcPrev && ogc->gcNext);
 		ogc->prepareShutdown();
 		ogc = ogc->gcNext;
 	}
@@ -630,6 +629,7 @@ void ASWorker::dumpStacktrace()
 
 void ASWorker::addObjectToGarbageCollector(ASObject* o)
 {
+	assert (isVmThread() || !this->isPrimordial || getSystemState()->isShuttingDown());
 	if (o->gcPrev || o->gcNext || this->gcNext == o)
 		return;
 	assert(o!=this);
@@ -643,6 +643,7 @@ void ASWorker::addObjectToGarbageCollector(ASObject* o)
 
 void ASWorker::removeObjectFromGarbageCollector(ASObject* o)
 {
+	assert (isVmThread() || !this->isPrimordial || getSystemState()->isShuttingDown());
 	if (!o->gcPrev || !o->gcNext || o==this)
 		return;
 	o->gcPrev->gcNext = o->gcNext;
@@ -668,16 +669,16 @@ void ASWorker::processGarbageCollection(bool force)
 	last_garbagecollection = currtime;
 	if (this->stage)
 		this->stage->cleanupDeadHiddenObjects();
-	inGarbageCollection=true;
 	bool hasEntries=this->gcNext && this->gcNext != this;
 	// use two loops to make sure objects added during inner loop are handled _after_ the inner loop is complete
-	LOG(LOG_CALLS,"start garbage collection");
+	LOG_CALL("start garbage collection");
 	while (hasEntries)
 	{
 		ASObject* ogc = this->gcNext;
 		hasEntries=false;
 		while (ogc && ogc != this)
 		{
+			assert(ogc && ogc->gcPrev && ogc->gcNext);
 			ASObject* ogcnext = ogc->gcNext;
 			if (!ogc->deletedingarbagecollection)
 			{
@@ -692,8 +693,7 @@ void ASWorker::processGarbageCollection(bool force)
 			ogc = ogcnext;
 		}
 	}
-	inGarbageCollection=false;
-	// delete all objects that were destructed during gc
+	// delete all objects that were marked for destruction during gc
 	ASObject* ogc = this->gcNext;
 	while (ogc && ogc != this)
 	{
@@ -703,6 +703,8 @@ void ASWorker::processGarbageCollection(bool force)
 			ogc->deletedingarbagecollection=false;
 			ogc->removefromGarbageCollection();
 			ogc->resetRefCount();
+			ogc->resetStoredMemberCount();
+			ogc->resetStoredMemberCountStatic();
 			ogc->setConstant(false);
 			ogc->decRef();
 		}
@@ -710,7 +712,7 @@ void ASWorker::processGarbageCollection(bool force)
 	}
 	if (force && this->gcNext && this->gcNext != this)
 		processGarbageCollection(true);
-	LOG(LOG_CALLS,"garbage collection done");
+	LOG_CALL("garbage collection done");
 }
 
 void ASWorker::registerConstantRef(ASObject* obj)

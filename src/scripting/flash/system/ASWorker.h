@@ -41,7 +41,6 @@ private:
 	ParseThread* parser;
 	bool giveAppPrivileges;
 	bool started;
-	bool inGarbageCollection;
 	bool inShutdown;
 	bool inFinalize;
 	//Synchronization
@@ -148,11 +147,9 @@ public:
 	tiny_string getDefaultXMLNamespace() const;
 	uint32_t getDefaultXMLNamespaceID() const;
 	void dumpStacktrace();
-	Mutex gcmutex;
 	void addObjectToGarbageCollector(ASObject* o);
 	void removeObjectFromGarbageCollector(ASObject* o);
 	void processGarbageCollection(bool force);
-	FORCE_INLINE bool isInGarbageCollection() const { return inGarbageCollection; }
 	inline bool inFinalization() const { return inFinalize; }
 	void registerConstantRef(ASObject* obj);
 	asAtom getCurrentGlobalAtom(const asAtom& defaultObj);

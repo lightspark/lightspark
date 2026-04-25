@@ -70,6 +70,8 @@ private:
 	AVM1ScopeClass _class;
 	asAtom values;
 	uint32_t storedmembercount;
+	bool gcchecked;
+	bool gcHasMember;
 public:
 	// Contructs/Creates an arbitrary scope.
 	AVM1Scope
@@ -240,7 +242,8 @@ public:
 	// Deletes a variable from the scope.
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk);
 
-	bool countAllCyclicMemberReferences(garbagecollectorstate& gcstate);
+	bool countAllCyclicMemberReferences(garbagecollectorstate& gcstate, bool inStack=false);
+	void gcCounterReset();
 	void prepareShutdown();
 };
 

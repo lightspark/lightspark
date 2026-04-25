@@ -78,7 +78,7 @@ public:
 	void resetRenderCall()
 	{
 		usedInRenderCall.clear();
-		ASATOM_REMOVESTOREDMEMBER(scrollRect);
+		ASATOM_DECREF(scrollRect);
 		scrollRect=asAtomHandler::invalidAtom;
 		decRef();
 	}

@@ -93,12 +93,12 @@ string ASObject::toDebugString() const
 		assert(false);
 	}
 #ifndef NDEBUG
-	assert(storedmembercount<=uint32_t(this->getRefCount()) || this->getConstant());
+	assert(storedmembercount<=this->getRefCount() || this->getConstant());
 	char buf[300];
 	if (this->getConstant())
 		sprintf(buf,"(%p%s)",this,this->isConstructed()?"":" not constructed");
 	else
-		sprintf(buf,"(%p/%d/%d(%d)/%d%s%s)",this,this->getRefCount(),this->storedmembercount,this->storedmembercountstatic,this->getConstant(),this->isConstructed()?"":" not constructed",this->markedforgarbagecollection?" gc":"");
+		sprintf(buf,"(%p/%d/%i(%i)/%d%s%s)",this,this->getRefCount(),(int32_t)this->storedmembercount,(int32_t)this->storedmembercountstatic,this->getConstant(),this->isConstructed()?"":" not constructed",this->markedforgarbagecollection?" gc":"");
 	ret += buf;
 #endif
 	return ret;
@@ -2158,6 +2158,9 @@ void ASObject::setRefConstant()
 {
 	getInstanceWorker()->registerConstantRef(this);
 	this->Variables.isStatic=true;
+	resetRefCount();
+	resetStoredMemberCount();
+	resetStoredMemberCountStatic();
 	setConstant();
 }
 
@@ -2406,10 +2409,16 @@ void variables_map::destroyContents()
 			o->removeStoredMember();
 		if (it->second.isRefcountedVar())
 		{
+			bool wasstatic = it->second.isStatic;
 			o = it->second.isAccessibleObjectVar() ? it->second.getObjectVar() :nullptr;
 			Variables.erase(it);
 			if (o)
-				o->removeStoredMember();
+			{
+				if (wasstatic)
+					o->removeStoredMemberStatic();
+				else
+					o->removeStoredMember();
+			}
 		}
 		else
 			Variables.erase(it);
@@ -2538,7 +2547,7 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 
 			if (it->second.isRefcountedVar() && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
 			{
-				if ((uint32_t)o->getRefCount()==o->storedmembercount ||o==gcstate.startobj)
+				if (o->getRefCount()==o->storedmembercount ||o==gcstate.startobj)
 				{
 					if (o->countAllCylicMemberReferences(gcstate))
 					{
@@ -2752,9 +2761,7 @@ bool ASObject::removefromGarbageCollection()
 {
 	if (!canHaveCyclicMemberReference())
 		return true;
-	if (getInstanceWorker() && getInstanceWorker()->isInGarbageCollection())
-		return true;
-	if (getInstanceWorker())
+	if (getInstanceWorker() && markedforgarbagecollection)
 		getInstanceWorker()->removeObjectFromGarbageCollector(this);
 	markedforgarbagecollection = false;
 	deletedingarbagecollection = false;
@@ -2776,7 +2783,7 @@ void ASObject::addStoredMember()
 {
 	if (this->getConstant() || !this->canHaveCyclicMemberReference())
 		return;
-	assert(storedmembercount<uint32_t(this->getRefCount()));
+	assert(storedmembercount<this->getRefCount());
 	storedmembercount++;
 	if (markedforgarbagecollection)
 	{
@@ -2795,11 +2802,11 @@ void ASObject::removeStoredMember()
 		return;
 	}
 	assert(storedmembercount);
-	assert(storedmembercount<=uint32_t(this->getRefCount()));
+	assert(storedmembercount<=this->getRefCount());
 	storedmembercount--;
 	if (storedmembercount
 		&& !markedforgarbagecollection
-		&& ((uint32_t)this->getRefCount() == storedmembercount+1)
+		&& (this->getRefCount() == storedmembercount+1)
 		&& storedmembercountstatic==0)
 	{
 		getInstanceWorker()->addObjectToGarbageCollector(this);
@@ -2820,7 +2827,7 @@ bool ASObject::handleGarbageCollection()
 		decRef();
 		return false;
 	}
-	if (storedmembercount && this->canHaveCyclicMemberReference() && ((uint32_t)this->getRefCount() == storedmembercount+1))
+	if (storedmembercount && this->canHaveCyclicMemberReference() && (this->getRefCount() == storedmembercount+1))
 	{
 		garbagecollectorstate gcstate(this,max(16U,this->Variables.size()));
 		this->countCylicMemberReferences(gcstate);
@@ -2852,42 +2859,45 @@ bool ASObject::handleGarbageCollection()
 			gcstate.reset();
 			return false;
 		}
-		assert(c == UINT32_MAX || c <= storedmembercount || this->preparedforshutdown);
+		assert(c == UINT32_MAX || c <= uint32_t(storedmembercount) || this->preparedforshutdown);
 		LOG_CALL("handleGarbageCollection result:"<<this<<" "<<c<<"/"<<storedmembercount);
-		if (c == storedmembercount)
+		if (c == (uint32_t)storedmembercount)
 		{
+			vector<ASObject*> deletableobjects;
+			deletableobjects.reserve(gcstate.checkedobjects.size());
 			for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 			{
 				if ((*it) != this && !(*it)->gccounter.ignore && (*it)->gccounter.count==(uint32_t)(*it)->getRefCount() && (*it)->gccounter.hasmember)
 				{
 					assert (!(*it)->getCached());
 					(*it)->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
+					deletableobjects.push_back(*it);
 				}
 			}
+			gcstate.reset();
 			this->setConstant();// this ensures that the object is deleted _after_ all garbage collected objects are processed
 			assert (!this->getCached());
-			for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
+			for (auto it = deletableobjects.begin(); it != deletableobjects.end(); it++)
 			{
-				if (!(*it)->gccounter.ignore && (*it)->gccounter.count==(uint32_t)(*it)->getRefCount() && (*it)->gccounter.hasmember && !(*it)->markedforgarbagecollection)
-				{
-					getInstanceWorker()->addObjectToGarbageCollector((*it));
-					(*it)->deletedingarbagecollection=true;
-					(*it)->markedforgarbagecollection=true;
-					(*it)->destruct();
-					(*it)->finalize();
-				}
+				(*it)->deletedingarbagecollection=true;
+				(*it)->destruct();
+				(*it)->finalize();
+				(*it)->deletedingarbagecollection=true;
+				(*it)->markedforgarbagecollection=true;
+				getInstanceWorker()->addObjectToGarbageCollector((*it));
 			}
-			getInstanceWorker()->addObjectToGarbageCollector(this);
+			this->deletedingarbagecollection=true;
 			this->destruct();
 			this->finalize();
 			this->deletedingarbagecollection=true;
 			this->markedforgarbagecollection=true;
-			gcstate.reset();
+			getInstanceWorker()->addObjectToGarbageCollector(this);
 			LOG_CALL("handleGarbageCollection ok:"<<this);
 			return true;
 		}
 		gcstate.reset();
 	}
+	LOG_CALL("handleGarbageCollection done:"<<this<<" "<<this->getRefCount()<<"/"<<this->storedmembercount<<"("<<this->storedmembercountstatic<<")");
 	decRef();
 	return false;
 }
@@ -2927,11 +2937,13 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 		return this->gccounter.hasmember;
 	if (this == gcstate.startobj)
 	{
+		assert(gccounter.count<(uint32_t)this->getRefCount());
 		gccounter.count++;
 		ret = true;
 	}
 	else if (this->gccounter.inchecking)
 	{
+		assert(gccounter.count<(uint32_t)this->getRefCount());
 		gccounter.count++;
 		ret = this->gccounter.hasmember;
 	}
@@ -2942,6 +2954,7 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 			   && !this->gccounter.inchecking
 			   )
 	{
+		assert(gccounter.count<(uint32_t)this->getRefCount());
 		gccounter.count++;
 		if (this->gccounter.ischecked)
 		{
@@ -4238,7 +4251,7 @@ std::string asAtomHandler::toDebugString(const asAtom a)
 #ifndef NDEBUG
 			assert(getObject(a));
 			char buf[300];
-			sprintf(buf,"(%p/%d/%d/%d)",getObject(a),getObject(a)->getRefCount(),getObject(a)->storedmembercount,getObject(a)->getConstant());
+			sprintf(buf,"(%p/%i/%i/%i)",getObject(a),getObject(a)->getRefCount(),(int32_t)getObject(a)->storedmembercount,getObject(a)->getConstant());
 			ret += buf;
 #endif
 			return ret;
@@ -6245,9 +6258,9 @@ void garbagecollectorstate::ignoreCount(ASObject* o)
 
 void garbagecollectorstate::reset()
 {
-	startobj->gccounter.reset();
+	startobj->gcCounterReset();
 	for (auto it = checkedobjects.begin(); it != checkedobjects.end(); it++)
-		(*it)->gccounter.reset();
+		(*it)->gcCounterReset();
 }
 
 void garbagecollectorstate::setChecked(ASObject* o)

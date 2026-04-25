@@ -953,6 +953,8 @@ void Sound::setBytesLoaded(uint32_t b)
 
 void Sound::setSoundChannel(SoundChannel* channel)
 {
+	if (soundChannel)
+		soundChannel->removeStoredMember();
 	soundChannel = channel;
 	soundChannel->addStoredMember();
 }
@@ -1126,7 +1128,19 @@ void SoundChannel::markFinished()
 	if (stream)
 		stream->markFinished();
 }
+void SoundChannel::setSampleProducer(Sound* _sampleproducer)
+{
+	if (sampleproducer)
+		sampleproducer->removeStoredMember();
+	sampleproducer = _sampleproducer;
+	if (sampleproducer)
+	{
+		sampleproducer->incRef();
+		sampleproducer->addStoredMember();
+	}
 
+
+}
 void SoundChannel::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED | CLASS_FINAL);

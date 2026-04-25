@@ -146,7 +146,7 @@ private:
 	Semaphore terminated;
 	float renderRate;
 	bool error;
-	bool shutdown;
+	ACQUIRE_RELEASE_FLAG(shutdown);
 	bool firsttick;
 	bool localstorageallowed;
 	bool influshing;

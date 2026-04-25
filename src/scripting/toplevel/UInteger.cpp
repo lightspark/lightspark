@@ -244,7 +244,7 @@ string UInteger::toDebugString() const
 	tiny_string ret = toString()+"ui";
 #ifndef NDEBUG
 	char buf[300];
-	sprintf(buf,"(%p/%d/%d%s) ",this,this->getRefCount(),this->storedmembercount,this->isConstructed()?"":" not constructed");
+	sprintf(buf,"(%p/%i/%i%s) ",this,this->getRefCount(),(int32_t)this->storedmembercount,this->isConstructed()?"":" not constructed");
 	ret += buf;
 #endif
 	return ret;

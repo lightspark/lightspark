@@ -224,12 +224,9 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		while (it != surfacesToRefresh.end())
 		{
 			delete it->drawable;
-			// ensure that the DisplayObject is moved to freelist in vm thread
+			// ensure that the DisplayObject is checked for gc in vm thread
 			if (getVm(m_sys))
-			{
-				it->displayobject->incRef();
-				getVm(m_sys)->addDeletableObject(it->displayobject.getPtr());
-			}
+				getVm(m_sys)->addDeletableObject(it->displayobject);
 			it = surfacesToRefresh.erase(it);
 		}
 		mutexRefreshSurfaces.unlock();
@@ -283,12 +280,9 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			it->displayobject->updateCachedSurface(it->drawable);
 			it->displayobject->refreshSurfaceState();
 			delete it->drawable;
-			// ensure that the DisplayObject is moved to freelist in vm thread
+			// ensure that the DisplayObject is checked for gc in vm thread
 			if (getVm(m_sys))
-			{
-				it->displayobject->incRef();
-				getVm(m_sys)->addDeletableObject(it->displayobject.getPtr());
-			}
+				getVm(m_sys)->addDeletableObject(it->displayobject);
 			it = surfacesToRefresh.erase(it);
 		}
 		refreshNeeded=false;
@@ -335,12 +329,9 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			{
 				itsur->displayobject->updateCachedSurface(itsur->drawable);
 				delete itsur->drawable;
-				// ensure that the DisplayObject is moved to freelist in vm thread
+				// ensure that the DisplayObject is checked for gc in vm thread
 				if (getVm(m_sys))
-				{
-					itsur->displayobject->incRef();
-					getVm(m_sys)->addDeletableObject(itsur->displayobject.getPtr());
-				}
+					getVm(m_sys)->addDeletableObject(itsur->displayobject);
 				itsur = renderdata->surfacesToRefresh.erase(itsur);
 			}
 			bool wasmodifiedTexture = bmc->getModifiedTexture();
@@ -979,7 +970,8 @@ void RenderThread::addRefreshableSurface(IDrawable* d, DisplayObject* o)
 	Locker l(mutexRefreshSurfaces);
 	RefreshableSurface s;
 	o->incRef();
-	s.displayobject = _MR(o);
+	o->addStoredMember();
+	s.displayobject = o;
 	s.drawable = d;
 	surfacesToRefresh.push_back(s);
 }

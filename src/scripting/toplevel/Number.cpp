@@ -733,7 +733,7 @@ string Number::toDebugString() const
 	string ret = toString()+(isfloat ? "d" : "di");
 #ifndef NDEBUG
 	char buf[300];
-	sprintf(buf,"(%p/%d/%d/%d)",this,this->getRefCount(),this->storedmembercount,this->getConstant());
+	sprintf(buf,"(%p/%i/%i/%i)",this,this->getRefCount(),(int32_t)this->storedmembercount,this->getConstant());
 	ret += buf;
 #endif
 	return ret;

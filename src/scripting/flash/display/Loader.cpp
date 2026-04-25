@@ -78,8 +78,7 @@ void LoaderThread::execute()
 			LOG(LOG_ERROR, "Loader::execute(): Download of URL failed: " << url);
 			auto ev = Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker());
 			loaderInfo->incRef();
-			if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev)))
-				loaderInfo->addLoaderEvent(ev);
+			getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev));
 			loader->incRef();
 			getVm(loader->getSystemState())->addEvent(_MR(loader),_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker())));
 			delete sbuf;
@@ -124,8 +123,7 @@ void LoaderThread::execute()
 		{
 			auto ev = Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker());
 			loaderInfo->incRef();
-			if (getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev)))
-				loaderInfo->addLoaderEvent(ev);
+			getVm(loader->getSystemState())->addEvent(_MR(loaderInfo),_MR(ev));
 		}
 		return;
 	}
@@ -142,8 +140,11 @@ void LoaderThread::execute()
 
 void LoaderThread::jobFence()
 {
-	loader->removeStoredMember();
-	loaderInfo->removeStoredMember();
+	if (getVm(loader->getSystemState()))
+	{
+		getVm(loader->getSystemState())->addDeletableObject(loader);
+		getVm(loader->getSystemState())->addDeletableObject(loaderInfo);
+	}
 	DownloaderThreadBase::jobFence();
 }
 
@@ -151,12 +152,6 @@ ASFUNCTIONBODY_ATOM(Loader,_constructor)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
 	DisplayObjectContainer::_constructor(ret,wrk,obj,nullptr,0);
-	if (!th->contentLoaderInfo)
-	{
-		th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(wrk,th);
-		th->contentLoaderInfo->addStoredMember();
-	}
-	th->contentLoaderInfo->setLoaderURL(th->getSystemState()->mainClip->getOrigin().getParsedURL());
 	th->uncaughtErrorEvents = _MR(Class<UncaughtErrorEvents>::getInstanceS(wrk));
 }
 
@@ -178,6 +173,11 @@ ASFUNCTIONBODY_ATOM(Loader,_getContent)
 ASFUNCTIONBODY_ATOM(Loader,_getContentLoaderInfo)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
+	if (!th->contentLoaderInfo)
+	{
+		th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(wrk,th);
+		th->contentLoaderInfo->addStoredMember();
+	}
 	th->contentLoaderInfo->incRef();
 	ret = asAtomHandler::fromObject(th->contentLoaderInfo);
 }
@@ -392,8 +392,7 @@ void Loader::unload()
 		auto ev = Class<Event>::getInstanceS(getInstanceWorker(),"unload");
 		LoaderInfo* li = getContentLoaderInfo();
 		li->incRef();
-		if (getVm(getSystemState())->addEvent(_MR(li),_MR(ev)))
-			contentLoaderInfo->addLoaderEvent(ev);
+		getVm(getSystemState())->addEvent(_MR(li),_MR(ev));
 		loaded=false;
 	}
 
@@ -495,8 +494,6 @@ Loader::Loader(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c),conte
 	allowCodeImport(true),avm1level(-1),avm1target(nullptr),avm1container(nullptr),uncaughtErrorEvents(NullRef)
 {
 	subtype=SUBTYPE_LOADER;
-	contentLoaderInfo=Class<LoaderInfo>::getInstanceS(wrk,this);
-	contentLoaderInfo->addStoredMember();
 }
 
 Loader::~Loader()

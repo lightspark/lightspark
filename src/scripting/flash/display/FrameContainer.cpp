@@ -129,12 +129,18 @@ ASFUNCTIONBODY_ATOM(Scene,_getNumFrames)
 
 void Frame::destroyTags()
 {
-	auto it=blueprint.begin();
-	for(;it!=blueprint.end();++it)
-		delete (*it);
-	auto it2=avm1initactiontags.begin();
-	for(;it2!=avm1initactiontags.end();++it2)
-		delete (*it2);
+	while (!blueprint.empty())
+	{
+		DisplayListTag* t = blueprint.back();
+		blueprint.pop_back();
+		delete t;
+	}
+	while (!avm1initactiontags.empty())
+	{
+		AVM1InitActionTag* t = avm1initactiontags.back();
+		avm1initactiontags.pop_back();
+		delete t;
+	}
 }
 
 void Frame::execute(DisplayObjectContainer* displayList, bool inskipping, std::vector<_R<DisplayObject>>& removedFrameScripts)

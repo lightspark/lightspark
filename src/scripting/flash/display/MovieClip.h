@@ -52,7 +52,6 @@ private:
 protected:
 	FrameContainer* framecontainer;
 	const CLIPACTIONS* actions;
-	uint32_t avm1clipeventlistenercount;
 	/* This is read from the SWF header. It's only purpose is for flash.display.MovieClip.totalFrames */
 	uint32_t totalFrames_unreliable;
 	ASPROPERTY_GETTER_SETTER(bool, enabled);

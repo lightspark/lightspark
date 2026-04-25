@@ -917,8 +917,8 @@ protected:
 	ASObject(const ASObject& o);
 	virtual ~ASObject();
 	uint32_t stringId;
-	uint32_t storedmembercount; // count how often this object is stored as a member of another object (needed for cyclic reference detection)
-	uint32_t storedmembercountstatic; // count how often this object is stored as a member of another static object (needed for cyclic reference detection)
+	ATOMIC_INT32(storedmembercount); // count how often this object is stored as a member of another object (needed for cyclic reference detection)
+	ATOMIC_INT32(storedmembercountstatic); // count how often this object is stored as a member of another static object (needed for cyclic reference detection)
 	SWFOBJECT_TYPE type;
 	CLASS_SUBTYPE subtype;
 
@@ -981,40 +981,31 @@ protected:
 			delete proxyMultiName;
 			proxyMultiName = nullptr;
 		}
+		assert(storedmembercount==0 || deletedingarbagecollection);
+		assert(storedmembercountstatic==0 || deletedingarbagecollection);
+		assert(getRefCount()==1 || deletedingarbagecollection);
 		stringId = UINT32_MAX;
 		traitsInitialized =false;
 		constructIndicator = false;
 		constructorCallComplete = false;
 		hasAddedProperty=false;
-		bool keep = canHaveCyclicMemberReference() && removefromGarbageCollection();
 		implEnable = true;
-		storedmembercount=0;
-		storedmembercountstatic=0;
+		deletedingarbagecollection=false;
 		gccounter.reset();
 #ifndef NDEBUG
 		//Stuff only used in debugging
 		initialized=false;
 #endif
 		bool dodestruct = true;
-		if (!keep && objfreelist)
+		if (objfreelist)
 		{
 			if (!getCached())
-			{
-//				assert(getWorker() == this->getInstanceWorker() || !getWorker());
 				dodestruct = !objfreelist->pushObjectToFreeList(this);
-			}
 			else
 				dodestruct = false;
 		}
 		if (dodestruct)
 		{
-			if (keep)
-			{
-				setConstant();
-				deletedingarbagecollection=true;
-				addToGarbageCollection();
-				return false;
-			}
 #ifndef NDEBUG
 			if (classdef)
 			{
@@ -1052,10 +1043,12 @@ public:
 	void removeStoredMemberStatic() { --storedmembercountstatic; removeStoredMember(); }
 	bool hasStoredMemberStatic() const { return storedmembercountstatic; }
 	uint32_t getStoredMemberStatic() const { return storedmembercountstatic; }
+	void resetStoredMemberCount() { storedmembercount=0;}
+	void resetStoredMemberCountStatic() { storedmembercountstatic=0;}
 	FORCE_INLINE void decRefAndGCCheck()
 	{
 		if (storedmembercount
-			&& getRefCount()==int(storedmembercount)+1
+			&& getRefCount()==storedmembercount+1
 			&& addToGarbageCollection())
 			return;
 		else
@@ -1466,6 +1459,10 @@ public:
 	const variables_map* getVariables() const { return &Variables; }
 
 	cyclicmembercount gccounter;
+	virtual void gcCounterReset()
+	{
+		gccounter.reset();
+	}
 };
 
 

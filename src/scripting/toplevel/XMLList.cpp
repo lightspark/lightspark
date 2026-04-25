@@ -1261,6 +1261,8 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 			m.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
 			ASATOM_INCREF(o);
 			targetobject->setVariableByMultinameIntern(m,o,allowConst,replacetext,alreadyset,wrk);
+			if (wrk->currentCallContext && wrk->currentCallContext->exceptionthrown)
+				ASATOM_DECREF(o);
 		}
 		if (asAtomHandler::as<XML>(o)->getNodeKind() == pugi::node_pcdata)
 		{
@@ -1297,7 +1299,6 @@ void XMLList::replace(unsigned int idx, asAtom o, const XML::XMLVector &retnodes
 				if (par == n)
 				{
 					createError<TypeError>(getInstanceWorker(),kXMLIllegalCyclicalLoop);
-					ASATOM_DECREF(o)
 					return;
 				}
 				par = par->parentNode;

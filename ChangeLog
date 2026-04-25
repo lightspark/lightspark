@@ -2,6 +2,7 @@ lightspark: An open source flash player implementation
 
 Version NEXT:
 
+	* improve garbage collection
 	* remove cairo dependency
 	* implement blend modes "lighten" and "darken"
 	* implement high quality drawing of DisplayObjects in BitmapData

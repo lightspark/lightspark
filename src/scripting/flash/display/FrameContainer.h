@@ -22,7 +22,6 @@
 
 #include "asobject.h"
 
-
 namespace lightspark
 {
 class DisplayListTag;

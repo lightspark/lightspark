@@ -2111,7 +2111,6 @@ void PlaceObject2Tag::execute(DisplayObjectContainer* parent, bool inskipping, b
 			if (toAdd == currchar)
 			{
 				// ensure DisplayObject is properly setup in parent for reuse
-				parent->getLastFrameChildAtDepth(LEGACY_DEPTH_START+Depth,UINT32_MAX);
 				parent->LegacyChildRemoveDeletionMark(LEGACY_DEPTH_START+Depth);
 				currchar->markedForLegacyDeletion=false;
 			}

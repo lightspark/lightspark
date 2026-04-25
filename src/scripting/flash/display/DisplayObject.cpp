@@ -157,20 +157,38 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	,inInitFrame(false)
 	,filterlistHasChanged(false)
 	,hasMatrix3D(false)
-	,ismaskCount(0),maxfilterborder(0),ClipDepth(0),hasDefaultName(false),
-	hiddenPrevDisplayObject(nullptr),hiddenNextDisplayObject(nullptr),avm1PrevDisplayObject(nullptr),avm1NextDisplayObject(nullptr),parent(nullptr),cachedSurface(new CachedSurface()),
-	constructed(false),useLegacyMatrix(true),
-	needsTextureRecalculation(true),textureRecalculationSkippable(false),
-	avm1mouselistenercount(0),avm1framelistenercount(0),broadcastEventListenerCount(0),
-	onStage(false),visible(true),
-	mask(nullptr),clipMask(nullptr),
-	invalidateQueueNext(nullptr),
-	loaderInfo(nullptr),
-	scrollRect(asAtomHandler::undefinedAtom),
-	loadedFrom(nullptr),hasChanged(true),legacy(false),placeFrame(UINT32_MAX),markedForLegacyDeletion(false),cacheAsBitmap(false),placedByActionScript(false),skipFrame(false),
-	name(UINT32_MAX),
-	opaqueBackground(asAtomHandler::nullAtom),
-	metaData(asAtomHandler::nullAtom)
+	,ismaskCount(0),maxfilterborder(0),ClipDepth(0),hasDefaultName(false)
+	,hiddenPrevDisplayObject(nullptr)
+	,hiddenNextDisplayObject(nullptr)
+	,avm1PrevDisplayObject(nullptr)
+	,avm1NextDisplayObject(nullptr)
+	,parent(nullptr)
+	,cachedSurface(new CachedSurface())
+	,constructed(false)
+	,useLegacyMatrix(true)
+	,needsTextureRecalculation(true)
+	,textureRecalculationSkippable(false)
+	,avm1framelistenercount(0)
+	,avm1mouselistenercount(0)
+	,broadcastEventListenerCount(0)
+	,onStage(false)
+	,visible(true)
+	,mask(nullptr)
+	,clipMask(nullptr)
+	,invalidateQueueNext(nullptr)
+	,loaderInfo(nullptr)
+	,scrollRect(asAtomHandler::undefinedAtom)
+	,loadedFrom(nullptr)
+	,hasChanged(true)
+	,legacy(false)
+	,placeFrame(UINT32_MAX)
+	,markedForLegacyDeletion(false)
+	,cacheAsBitmap(false)
+	,placedByActionScript(false)
+	,skipFrame(false)
+	,name(UINT32_MAX)
+	,opaqueBackground(asAtomHandler::nullAtom)
+	,metaData(asAtomHandler::nullAtom)
 {
 	subtype=SUBTYPE_DISPLAYOBJECT;
 	if (wrk->rootClip)
@@ -196,7 +214,7 @@ void DisplayObject::finalize()
 	getSystemState()->stage->removeHiddenObject(this);
 	removeAVM1Listeners();
 	EventDispatcher::finalize();
-	setParent(nullptr);
+	setParent(nullptr,true);
 	eventparentmap.clear();
 	if (mask)
 		mask->removeStoredMember();
@@ -204,8 +222,6 @@ void DisplayObject::finalize()
 	if (clipMask)
 		clipMask->removeStoredMember();
 	clipMask=nullptr;
-	if (loaderInfo)
-		loaderInfo->removeStoredMember();
 	loaderInfo=nullptr;
 	colorTransform = ColorTransformBase();
 	invalidateQueueNext=nullptr;
@@ -229,12 +245,22 @@ void DisplayObject::finalize()
 		ASATOM_REMOVESTOREDMEMBER(it->second);
 	}
 	avm1locals.clear();
+	for (auto it = variablebindings.begin(); it != variablebindings.end(); it++)
+	{
+		it->second->removeStoredMember();
+	}
 	variablebindings.clear();
+	while (avm1framelistenercount)
+	{
+		getSystemState()->stage->AVM1RemoveEventListener(this);
+		--avm1framelistenercount;
+	}
 	loadedFrom=getSystemState()->mainClip->applicationDomain.getPtr();
 	hasChanged = true;
 	needsTextureRecalculation=true;
+	if (avm1mouselistenercount)
+		getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 	avm1mouselistenercount=0;
-	avm1framelistenercount=0;
 	if (broadcastEventListenerCount)
 		getSystemState()->unregisterFrameListener(this);
 	broadcastEventListenerCount=0;
@@ -244,13 +270,14 @@ void DisplayObject::finalize()
 
 bool DisplayObject::destruct()
 {
+	assert(!invalidateQueueNext);
 	// TODO make all DisplayObject derived classes reusable
 	getSystemState()->stage->AVM1RemoveDisplayObject(this);
 	getSystemState()->stage->removeHiddenObject(this);
 	removeAVM1Listeners();
 	filterlistHasChanged=false;
 	maxfilterborder=0;
-	setParent(nullptr);
+	setParent(nullptr,true);
 	eventparentmap.clear();
 	if (mask)
 		mask->removeStoredMember();
@@ -261,8 +288,6 @@ bool DisplayObject::destruct()
 	clipMask=nullptr;
 	matrix = MATRIX();
 	hasMatrix3D=false;
-	if (loaderInfo)
-		loaderInfo->removeStoredMember();
 	loaderInfo=nullptr;
 	invalidateQueueNext=nullptr;
 	accessibilityProperties.reset();
@@ -291,8 +316,9 @@ bool DisplayObject::destruct()
 	useLegacyMatrix=true;
 	onStage=false;
 	visible=true;
+	if (avm1mouselistenercount)
+		getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 	avm1mouselistenercount=0;
-	avm1framelistenercount=0;
 	if (broadcastEventListenerCount)
 		getSystemState()->unregisterFrameListener(this);
 	broadcastEventListenerCount=0;
@@ -313,7 +339,16 @@ bool DisplayObject::destruct()
 		ASATOM_REMOVESTOREDMEMBER(it->second);
 	}
 	avm1locals.clear();
+	for (auto it = variablebindings.begin(); it != variablebindings.end(); it++)
+	{
+		it->second->removeStoredMember();
+	}
 	variablebindings.clear();
+	while (avm1framelistenercount)
+	{
+		getSystemState()->stage->AVM1RemoveEventListener(this);
+		--avm1framelistenercount;
+	}
 	placeFrame=UINT32_MAX;
 	return EventDispatcher::destruct();
 }
@@ -369,9 +404,16 @@ void DisplayObject::prepareShutdown()
 	}
 	setMask(NullRef);
 	setClipMask(NullRef);
-	// setParent(nullptr);
-	// getSystemState()->removeFromResetParentList(this);
-	// onStage=false;
+	while (avm1framelistenercount)
+	{
+		getSystemState()->stage->AVM1RemoveEventListener(this);
+		--avm1framelistenercount;
+	}
+	if (avm1mouselistenercount)
+	{
+		getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+		avm1mouselistenercount=0;
+	}
 }
 
 bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
@@ -379,6 +421,9 @@ bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	if (skipCountCylicMemberReferences(gcstate))
 		return gcstate.hasMember(this);
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	gccounter.count += avm1framelistenercount;
+	if (avm1mouselistenercount)
+		gccounter.count++;
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
 	{
 		ASObject* o = asAtomHandler::getObject(it->second);
@@ -390,6 +435,10 @@ bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		ASObject* o = asAtomHandler::getObject(it->second);
 		if (o)
 			ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	}
+	for (auto it = variablebindings.begin(); it != variablebindings.end(); it++)
+	{
+		ret = it->second->countAllCylicMemberReferences(gcstate) || ret;
 	}
 	ASObject* op = asAtomHandler::getObject(opaqueBackground);
 	if (op)
@@ -404,8 +453,6 @@ bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		ret = mask->countAllCylicMemberReferences(gcstate) || ret;
 	if (clipMask)
 		ret = clipMask->countAllCylicMemberReferences(gcstate) || ret;
-	if (loaderInfo)
-		ret = loaderInfo->countAllCylicMemberReferences(gcstate) || ret;
 	if (parent)
 		ret = parent->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
@@ -1307,7 +1354,8 @@ void DisplayObject::invalidateForRenderToBitmap(BitmapContainerRenderData* conta
 		{
 			RefreshableSurface s;
 			this->incRef();
-			s.displayobject = _MR(this);
+			this->addStoredMember();
+			s.displayobject = this;
 			s.drawable = d;
 			container->surfacesToRefresh.push_back(s);
 		}
@@ -1582,12 +1630,6 @@ void DisplayObject::setLoaderInfo(LoaderInfo* li)
 {
 	assert(loaderInfo==nullptr);
 	loaderInfo=li;
-	if (li)
-	{
-		loaderInfo = li;
-		loaderInfo->incRef();
-		loaderInfo->addStoredMember();
-	}
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,_setScaleZ)
@@ -1919,13 +1961,17 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_setRotation)
 	}
 }
 
-void DisplayObject::setParent(DisplayObjectContainer *p)
+void DisplayObject::setParent(DisplayObjectContainer *p, bool fordestruction)
 {
 	Locker locker(spinlock);
 	if(parent!=p)
 	{
 		if (parent)
+		{
+			if (fordestruction)
+				parent->removeChildName(this);
 			parent->removeStoredMember();
+		}
 		if (p)
 		{
 			// mark old parent as dirty
@@ -1938,7 +1984,7 @@ void DisplayObject::setParent(DisplayObjectContainer *p)
 		parent=p;
 		hasChanged=true;
 		geometryChanged();
-		if(onStage && !getSystemState()->isShuttingDown())
+		if(onStage && (!fordestruction && !getSystemState()->isShuttingDown()))
 			requestInvalidation(getSystemState());
 	}
 }
@@ -2516,7 +2562,7 @@ bool DisplayObject::skipCountCylicMemberReferences(garbagecollectorstate& gcstat
 		if(gcstate.isIgnored(this))
 			return true;
 		DisplayObject* p = parent;
-		while (p)
+		while (p && p != gcstate.startobj)
 		{
 			if (p->hasBroadcastListeners() || gcstate.isIgnored(p) || p->hiddenPrevDisplayObject || p->hiddenNextDisplayObject)
 			{
@@ -2985,11 +3031,34 @@ bool DisplayObject::AVM1setLocalByMultiname
 	// If a `TextField` was bound to this property, update it's text.
 	AVM1UpdateVariableBindings(nameID, value);
 
+	bool isFrameEvent =
+	(
+		name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
+		name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD
+	);
+
+
 	// Property search order for `DisplayObject`s.
 	// 1. Expandos (user defined properties on the underlying object).
 	bool hasprop = ASObject::hasPropertyByMultiname(name, true, false, wrk);
 	if (hasprop)
 	{
+		if (isFrameEvent)
+		{
+			asAtom prop = asAtomHandler::invalidAtom;
+			getVariableByMultiname(prop,name,GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
+			if (prop.uintval != value.uintval && asAtomHandler::is<AVM1Function>(prop))
+				AVM1removeOneEventListener();
+			ASATOM_DECREF(prop);
+		}
+		if (isMouseEvent(name.name_s_id))
+		{
+			asAtom prop = asAtomHandler::invalidAtom;
+			getVariableByMultiname(prop,name,GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
+			if (prop.uintval != value.uintval && asAtomHandler::is<AVM1Function>(prop))
+				AVM1removeOneMouseEventListener();
+			ASATOM_DECREF(prop);
+		}
 		EventDispatcher::setVariableByMultiname
 		(
 			name,
@@ -3020,30 +3089,12 @@ bool DisplayObject::AVM1setLocalByMultiname
 		);
 	}
 
-	bool isFrameEvent =
-	(
-		name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
-		name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD
-	);
-
 	if (isFrameEvent)
 	{
 		if (asAtomHandler::isFunction(value))
 		{
-			sys->registerFrameListener(this);
-			sys->stage->AVM1AddEventListener(this);
-			avm1framelistenercount++;
+			AVM1addOneEventListener();
 			setIsEnumerable(name, false);
-		}
-		else // value is not a function, we remove the FrameListener
-		{
-			if(hasprop)
-			{
-				avm1framelistenercount--;
-				sys->stage->AVM1RemoveEventListener(this);
-				if (avm1framelistenercount==0)
-					sys->unregisterFrameListener(this);
-			}
 		}
 	}
 	else if (isMouseEvent(name.name_s_id))
@@ -3051,19 +3102,8 @@ bool DisplayObject::AVM1setLocalByMultiname
 		if (asAtomHandler::isFunction(value))
 		{
 			as<InteractiveObject>()->setMouseEnabled(true);
-			sys->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-			avm1mouselistenercount++;
+			AVM1addOneMouseEventListener();
 			setIsEnumerable(name, false);
-		}
-		else // value is not a function, we remove the MouseListener
-		{
-			if(hasprop)
-			{
-				avm1mouselistenercount--;
-				if (avm1mouselistenercount==0)
-					sys->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-				setIsEnumerable(name, false);
-			}
 		}
 	}
 	return alreadySet;
@@ -3119,83 +3159,72 @@ void DisplayObject::AVM1registerPrototypeListeners()
 		multiname name(nullptr);
 		name.name_type = multiname::NAME_STRING;
 		name.name_s_id = BUILTIN_STRINGS::STRING_ONENTERFRAME;
-		if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
-		{
-			getSystemState()->registerFrameListener(this);
-			getSystemState()->stage->AVM1AddEventListener(this);
-			avm1framelistenercount++;
-		}
+		asAtom prop = asAtomHandler::invalidAtom;
+		pr->getVariableByMultiname(prop,name,GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
+		if (asAtomHandler::is<AVM1Function>(prop))
+			AVM1addOneEventListener();
+		ASATOM_DECREF(prop);
 		name.name_s_id = BUILTIN_STRINGS::STRING_ONLOAD;
-		if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
-		{
-			getSystemState()->registerFrameListener(this);
-			getSystemState()->stage->AVM1AddEventListener(this);
-			avm1framelistenercount++;
-		}
+		prop = asAtomHandler::invalidAtom;
+		pr->getVariableByMultiname(prop,name,GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
+		if (asAtomHandler::is<AVM1Function>(prop))
+			AVM1addOneEventListener();
+		ASATOM_DECREF(prop);
 		if (this->is<InteractiveObject>())
 		{
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-				avm1mouselistenercount++;
+				AVM1addOneMouseEventListener();
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEDOWN;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-				avm1mouselistenercount++;
+				AVM1addOneMouseEventListener();
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEUP;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-				avm1mouselistenercount++;
+				AVM1addOneMouseEventListener();
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONPRESS;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-				avm1mouselistenercount++;
+				AVM1addOneMouseEventListener();
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEWHEEL;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-				avm1mouselistenercount++;
+				AVM1addOneMouseEventListener();
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONROLLOVER;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-				avm1mouselistenercount++;
+				AVM1addOneMouseEventListener();
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONROLLOUT;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-				avm1mouselistenercount++;
+				AVM1addOneMouseEventListener();
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASEOUTSIDE;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-				avm1mouselistenercount++;
+				AVM1addOneMouseEventListener();
 			}
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONRELEASE;
 			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
 			{
 				this->as<InteractiveObject>()->setMouseEnabled(true);
-				getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
-				avm1mouselistenercount++;
+				AVM1addOneMouseEventListener();
 			}
 		}
 		pr = pr->getprop_prototype();
@@ -3203,24 +3232,13 @@ void DisplayObject::AVM1registerPrototypeListeners()
 }
 void DisplayObject::AVM1unregisterPrototypeListeners()
 {
-	assert(!needsActionScript3());
+	if (needsActionScript3())
+		return;
 	ASObject* pr = this->getprop_prototype();
 	while (pr)
 	{
 		multiname name(nullptr);
 		name.name_type = multiname::NAME_STRING;
-		name.name_s_id = BUILTIN_STRINGS::STRING_ONENTERFRAME;
-		if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
-		{
-			getSystemState()->stage->AVM1RemoveEventListener(this);
-			avm1framelistenercount--;
-		}
-		name.name_s_id = BUILTIN_STRINGS::STRING_ONLOAD;
-		if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
-		{
-			getSystemState()->stage->AVM1RemoveEventListener(this);
-			avm1framelistenercount--;
-		}
 		if (this->is<InteractiveObject>())
 		{
 			name.name_s_id = BUILTIN_STRINGS::STRING_ONMOUSEMOVE;
@@ -3256,42 +3274,76 @@ void DisplayObject::AVM1unregisterPrototypeListeners()
 		pr = pr->getprop_prototype();
 	}
 }
+
+void DisplayObject::AVM1addOneEventListener()
+{
+	getSystemState()->registerFrameListener(this);
+	getSystemState()->stage->AVM1AddEventListener(this);
+	avm1framelistenercount++;
+}
+
+void DisplayObject::AVM1removeOneEventListener()
+{
+	assert(avm1framelistenercount);
+	avm1framelistenercount--;
+	getSystemState()->stage->AVM1RemoveEventListener(this);
+	if (avm1framelistenercount==0)
+		getSystemState()->unregisterFrameListener(this);
+}
+
+void DisplayObject::AVM1addOneMouseEventListener()
+{
+	getSystemState()->stage->AVM1AddMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+	avm1mouselistenercount++;
+}
+
+void DisplayObject::AVM1removeOneMouseEventListener()
+{
+	if (avm1mouselistenercount==0)
+		return;
+	avm1mouselistenercount--;
+	if (avm1mouselistenercount==0)
+		getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+}
+
 bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
-	bool res = EventDispatcher::deleteVariableByMultiname(name,wrk);
 	if (!this->loadedFrom->usesActionScript3)
 	{
 		if (name.name_s_id == BUILTIN_STRINGS::STRING_ONENTERFRAME ||
 				name.name_s_id == BUILTIN_STRINGS::STRING_ONLOAD)
 		{
-			avm1framelistenercount--;
-			getSystemState()->stage->AVM1RemoveEventListener(this);
-			if (avm1framelistenercount==0)
-				getSystemState()->unregisterFrameListener(this);
+			asAtom prop = asAtomHandler::invalidAtom;
+			getVariableByMultiname(prop,name,GET_VARIABLE_OPTION::DONT_CALL_GETTER,wrk);
+			if (asAtomHandler::is<AVM1Function>(prop))
+				AVM1removeOneEventListener();
+			ASATOM_DECREF(prop);
 		}
 		if (isMouseEvent(name.name_s_id))
 		{
 			this->as<InteractiveObject>()->setMouseEnabled(false);
-			avm1mouselistenercount--;
-			if (avm1mouselistenercount==0)
-				getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+			AVM1removeOneMouseEventListener();
 		}
+		bool ret = EventDispatcher::deleteVariableByMultiname(name,wrk);
 		tiny_string s = name.normalizedNameUnresolved(getSystemState()).lowercase();
 		AVM1SetVariable(s,asAtomHandler::undefinedAtom,false);
+		return ret;
 	}
-	return res;
+	else
+		return EventDispatcher::deleteVariableByMultiname(name,wrk);
 }
 void DisplayObject::removeAVM1Listeners()
 {
 	if (needsActionScript3())
 		return;
-	getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+	if (avm1mouselistenercount)
+	{
+		avm1mouselistenercount=0;
+		getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+	}
 	getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
 	getSystemState()->stage->AVM1RemoveFocusListener(asAtomHandler::fromObjectNoPrimitive(this));
 	getSystemState()->unregisterFrameListener(this);
-	AVM1unregisterPrototypeListeners();
-	avm1mouselistenercount=0;
-	avm1framelistenercount=0;
 }
 
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getScaleX)
@@ -3586,8 +3638,8 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_swapDepths)
 		asAtom newargs[2];
 		newargs[0] = asAtomHandler::fromObject(child1);
 		newargs[1] = asAtomHandler::fromObject(child2);
-		asAtom obj = asAtomHandler::fromObject(th->getParent());
-		DisplayObjectContainer::swapChildren(ret,wrk,obj,newargs,2);
+		asAtom objparent = asAtomHandler::fromObject(th->getParent());
+		DisplayObjectContainer::swapChildren(ret,wrk,objparent,newargs,2);
 	}
 }
 ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getDepth)
@@ -4003,13 +4055,12 @@ asAtom DisplayObject::getVariableBindingValue(const tiny_string &name)
 	pair.first->decRef();
 	return ret;
 }
-void DisplayObject::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj)
+void DisplayObject::setVariableBinding(tiny_string &name, DisplayObject* obj)
 {
 	bool caseSensitive = loadedFrom->version > 6;
 	uint32_t key = getSystemState()->getUniqueStringId(name, caseSensitive);
 	if (obj)
 	{
-		obj->incRef();
 		auto it = variablebindings.lower_bound(key);
 		while (it != variablebindings.end() && it->first == key)
 		{
@@ -4017,13 +4068,18 @@ void DisplayObject::setVariableBinding(tiny_string &name, _NR<DisplayObject> obj
 				return;
 			it++;
 		}
+		obj->incRef();
+		obj->addStoredMember();
 		variablebindings.insert(std::make_pair(key,obj));
 	}
 	else
 	{
 		auto it = variablebindings.find(key);
 		if (it != variablebindings.end() && it->first == key)
+		{
+			it->second->removeStoredMember();
 			variablebindings.erase(it);
+		}
 	}
 }
 void DisplayObject::AVM1SetFunction(const tiny_string& name, _NR<AVM1Function> obj)

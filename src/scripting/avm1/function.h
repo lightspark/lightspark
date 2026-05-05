@@ -493,6 +493,13 @@ public:
 		proto
 	) {}
 
+	// Constructs the `Function` class.
+	//
+	// NOTE: Because `Object`, and `Function` are heavily intertwined,
+	// this function doesn't create an `Object` to store either prototype.
+	// Instead, they must be provided through the `AVM1DeclContext`.
+	static GcPtr<AVM1SystemClass> createClass(AVM1DeclContext& ctx);
+
 	constexpr operator const GcPtr<AVM1Executable>&() const { return func; }
 	constexpr operator GcPtr<AVM1Executable>&() { return func; }
 
@@ -570,6 +577,18 @@ public:
 	{
 		constructInplace(activation, this, _this, args);
 	}
+
+	// Implements `new Function()`.
+	AVM1_FUNCTION_DECL(ctor);
+
+	// Implements `Function()`.
+	AVM1_FUNCTION_DECL(function);
+
+	// Implements `Function.prototype.call()`.
+	AVM1_FUNCTION_TYPE_DECL(AVM1FunctionObject, call);
+
+	// Implements `Function.prototype.apply()`.
+	AVM1_FUNCTION_TYPE_DECL(AVM1FunctionObject, apply);
 };
 
 }

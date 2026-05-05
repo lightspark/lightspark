@@ -413,3 +413,96 @@ AVM1Value AVM1FunctionObject::construct
 	// Propagate the return value, if we're calling a native ctor.
 	return isNativeCtor() ? ret : _this;
 }
+
+constexpr auto protoFlags =
+(
+	AVM1PropFlags::DontEnum |
+	AVM1PropFlags::DontDelete
+);
+
+using AVM1FunctionObject;
+
+static constexpr auto protoDecls =
+{
+	AVM1_FUNCTION_TYPE_PROTO(AVM1FunctionObject, call, protoFlags),
+	AVM1_FUNCTION_TYPE_PROTO(AVM1FunctionObject, apply, protoFlags)
+};
+
+GcPtr<AVM1SystemClass> AVM1FunctionObject::createClass
+(
+	AVM1DeclContext& ctx
+)
+{
+	auto _class = ctx.makeNativeClassWithProto
+	(
+		ctor,
+		function,
+		ctx.getFuncProto()
+	);
+
+	ctx.definePropsOn(_class->proto, protoDecls);
+	return _class;
+}
+
+AVM1_FUNCTION_BODY(AVM1FunctionObject, ctor)
+{
+	if (args.empty())
+		return _this;
+	return args[0];
+}
+
+AVM1_FUNCTION_BODY(AVM1FunctionObject, function)
+{
+	if (!args.empty())
+		return args[0];
+	// NOTE: Calling `Function()` seems to return a prototypeless, bare
+	// `Object`.
+	return NEW_GC_PTR(act.getGcCtx(), AVM1Object(act.getGcCtx()));
+}
+
+AVM1_FUNCTION_TYPE_BODY(AVM1FunctionObject, AVM1FunctionObject, call)
+{
+	NullableGcPtr<AVM1Object> thisObj;
+	AVM1_ARG_UNPACK(thisObj, act.getGlobal());
+
+	// NOTE This doesn't use `AVM1Object::call()` because `super()` only
+	// works with direct calls.
+	return _this->func->exec
+	(
+		act,
+		"[Anonymous]",
+		thisObj,
+		1,
+		args.tryGetFirst(2),
+		AVM1ExecutionReason::FunctionCall,
+		_this
+	);
+}
+
+AVM1_FUNCTION_TYPE_BODY(AVM1FunctionObject, AVM1FunctionObject, apply)
+{
+	NullableGcPtr<AVM1Object> thisObj;
+	NullableGcPtr<AVM1Object> argsObj;
+	AVM1_ARG_UNPACK(thisObj, act.getGlobal())(argsObj);
+
+	size_t size = !argsObj.isNull() ? argsObj->getLength(act) : 0;
+
+	std::vector<AVM1Value> funcArgs;
+	funcArgs.reserve(size);
+
+	for (size_t i = 0; i < size; ++i)
+		funcArgs.emplace_back(argsObj->getElement(act, i));
+
+	// NOTE This doesn't use `AVM1Object::call()` because `super()` only
+	// works with direct calls.
+	return _this->func->exec
+	(
+		act,
+		"[Anonymous]",
+		thisObj,
+		1,
+		funcArgs,
+		AVM1ExecutionReason::FunctionCall,
+		_this
+	);
+}

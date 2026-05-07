@@ -887,7 +887,7 @@ public:
 	asfreelist* objfreelist;
 private:
 	variables_map Variables;
-	// list of ASObjects which have a (not refcounted) reference to this ASObject (used to avoid circular references)
+	// list of ASObjects that are automatically destructed when this ASObject is destructed (used to avoid circular references)
 	unordered_set<ASObject*> ownedObjects;
 	Class_base* classdef;
 	inline const variable* findGettable(const multiname& name, uint32_t* nsRealId = nullptr) const DLL_LOCAL

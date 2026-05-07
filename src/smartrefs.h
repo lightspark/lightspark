@@ -33,9 +33,20 @@ private:
 	bool inDestruction:1;
 	bool cached:1;
 protected:
-	RefCountable() : ref_count(1),isConstant(false),inDestruction(false),cached(false) {}
+	RefCountable()
+	:ref_count(1)
+	,isConstant(false)
+	,inDestruction(false)
+	,cached(false)
+#ifndef NDEBUG
+	,debugRefCountable(false)
+#endif
+{}
 
 public:
+#ifndef NDEBUG
+	bool debugRefCountable:1; // helper flag to keep track of an object during debugging
+#endif
 	virtual ~RefCountable() {}
 
 	int getRefCount() const { return ref_count; }
@@ -53,7 +64,16 @@ public:
 	inline void incRef()
 	{
 		if (!isConstant)
+		{
+#ifndef NDEBUG
+			if (debugRefCountable)
+			{
+				int r = ref_count;
+				fprintf(stderr,"incref:%p %i\n",this,r);
+			}
+#endif
 			++ref_count;
+		}
 	}
 	bool handleDestruction()
 	{
@@ -76,6 +96,13 @@ public:
 	{
 		if (!isConstant && !cached)
 		{
+#ifndef NDEBUG
+			if (debugRefCountable)
+			{
+				int r = ref_count;
+				fprintf(stderr,"decref:%p %i\n",this,r);
+			}
+#endif
 			assert(ref_count>0);
 			if (ref_count == 1)
 				return handleDestruction();

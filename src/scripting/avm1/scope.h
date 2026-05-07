@@ -72,6 +72,7 @@ private:
 	uint32_t storedmembercount;
 	bool gcchecked;
 	bool gcHasMember;
+	bool preparedforshutdown;
 public:
 	// Contructs/Creates an arbitrary scope.
 	AVM1Scope

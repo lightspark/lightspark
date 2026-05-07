@@ -420,10 +420,14 @@ bool DisplayObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	if (skipCountCylicMemberReferences(gcstate))
 		return gcstate.hasMember(this);
+	bool waschecked = this->gccounter.ischecked;
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
-	gccounter.count += avm1framelistenercount;
-	if (avm1mouselistenercount)
-		gccounter.count++;
+	if (!waschecked)
+	{
+		gccounter.count += avm1framelistenercount;
+		if (avm1mouselistenercount)
+			gccounter.count++;
+	}
 	for (auto it = avm1variables.begin(); it != avm1variables.end(); it++)
 	{
 		ASObject* o = asAtomHandler::getObject(it->second);
@@ -3303,7 +3307,12 @@ void DisplayObject::AVM1removeOneMouseEventListener()
 		return;
 	avm1mouselistenercount--;
 	if (avm1mouselistenercount==0)
+	{
 		getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
+		if (this->is<InteractiveObject>())
+			this->as<InteractiveObject>()->setMouseEnabled(false);
+	}
+
 }
 
 bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
@@ -3321,8 +3330,11 @@ bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* w
 		}
 		if (isMouseEvent(name.name_s_id))
 		{
-			this->as<InteractiveObject>()->setMouseEnabled(false);
-			AVM1removeOneMouseEventListener();
+			asAtom prop = asAtomHandler::invalidAtom;
+			getVariableByMultiname(prop,name,GET_VARIABLE_OPTION::DONT_CALL_GETTER,wrk);
+			if (asAtomHandler::is<AVM1Function>(prop))
+				AVM1removeOneMouseEventListener();
+			ASATOM_DECREF(prop);
 		}
 		bool ret = EventDispatcher::deleteVariableByMultiname(name,wrk);
 		tiny_string s = name.normalizedNameUnresolved(getSystemState()).lowercase();

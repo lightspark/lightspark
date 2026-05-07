@@ -37,6 +37,7 @@ AVM1Scope::AVM1Scope(AVM1Scope* _parent, const AVM1ScopeClass& type, asAtom _val
 	,storedmembercount(0)
 	,gcchecked(false)
 	,gcHasMember(false)
+	,preparedforshutdown(false)
 {
 	if (parent)
 		parent->addStoredMember();
@@ -266,9 +267,9 @@ bool AVM1Scope::countAllCyclicMemberReferences(garbagecollectorstate& gcstate, b
 			ret = gcHasMember = v->countAllCylicMemberReferences(gcstate);
 		}
 	}
+	gcchecked=true;
 	if (parent)
 		ret  |= parent->countAllCyclicMemberReferences(gcstate,true) | gcHasMember;
-	gcchecked=true;
 	return ret;
 }
 
@@ -282,6 +283,9 @@ void AVM1Scope::gcCounterReset()
 
 void AVM1Scope::prepareShutdown()
 {
+	if (preparedforshutdown)
+		return;
+	preparedforshutdown=true;
 	ASObject* v = asAtomHandler::getObject(values);
 	if (v)
 		v->prepareShutdown();

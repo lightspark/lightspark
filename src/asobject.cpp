@@ -3103,6 +3103,7 @@ bool ASObject::AVM1HandleMouseEventStandard(ASObject *dispobj,MouseEvent *e)
 						||(this->is<MovieClip>() && dispobj->as<DisplayObject>()->findParent(this->as<DisplayObject>())))
 						)))
 		{
+			func=asAtomHandler::invalidAtom;
 			m.name_s_id=BUILTIN_STRINGS::STRING_ONRELEASE;
 			AVM1getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 			if (asAtomHandler::is<AVM1Function>(func))

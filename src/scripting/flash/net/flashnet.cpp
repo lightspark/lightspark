@@ -575,6 +575,12 @@ void URLLoader::threadFinished(IThreadJob *finishedJob)
 	if(finishedJob==job)
 	{
 		job=nullptr;
+
+		// ensure loader object is deleted in vm thread
+		this->incRef();
+		this->addStoredMember();
+		getVm(getSystemState())->addDeletableObject(this);
+
 		delete finishedJob;
 	}
 }

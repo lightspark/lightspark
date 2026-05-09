@@ -316,10 +316,11 @@ void RootMovieClip::finalize()
 	if (framecontainer)
 		delete framecontainer;
 	framecontainer=nullptr;
-	applicationDomain.reset();
 	securityDomain.reset();
 	parsethread=nullptr;
-	MovieClip::finalize();
+	if (applicationDomain)
+		MovieClip::finalize();
+	applicationDomain.reset();
 }
 
 void RootMovieClip::bindClass(const QName& classname, Class_inherit* cls)

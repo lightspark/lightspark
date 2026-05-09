@@ -1764,7 +1764,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 			case 0:
 				break;
 			case 1:// swap optimized
-				if (checkForSwap(state,lastlocalresulttype,code))
+				if (!opcode_skipped && checkForSwap(state,lastlocalresulttype,code))
 				{
 					swap_indicator=0;
 					state.lastoperandsSwapped=false;

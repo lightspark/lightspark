@@ -29,8 +29,8 @@ namespace lightspark
 {
 bool preload_setlocal(preloadstate& state,memorystream& code,uint32_t value,int32_t p, uint32_t opcode,std::vector<typestackentry>& typestack)
 {
-	assert_and_throw(value < state.mi->body->getReturnValuePos());
 #ifdef ENABLE_OPTIMIZATION
+	assert_and_throw(value < state.mi->body->getReturnValuePos());
 	auto it = state.setlocal_handled.find(p);
 	if (it!=state.setlocal_handled.end()
 		|| checkInitializeLocalToConstant(state,value))
@@ -61,10 +61,12 @@ bool preload_setlocal(preloadstate& state,memorystream& code,uint32_t value,int3
 #endif
 	setupInstructionOneArgumentNoResult(state,ABC_OP_OPTIMZED_SETLOCAL,opcode,code,p);
 	state.preloadedcode.at(state.preloadedcode.size()-1).pcode.arg3_uint = value;
+#ifdef ENABLE_OPTIMIZATION
 	if (typestack.back().obj && typestack.back().obj->is<Class_base>())
 		state.localtypes[value]=typestack.back().obj->as<Class_base>();
 	else
 		state.localtypes[value]=nullptr;
+#endif
 	removetypestack(typestack,1);
 	return false;
 }

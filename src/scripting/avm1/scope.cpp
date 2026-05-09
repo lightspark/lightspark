@@ -17,284 +17,190 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include "asobject.h"
+#include "display_object/DisplayObject.h"
+#include "gc/context.h"
+#include "scripting/avm1/activation.h"
+#include "scripting/avm1/callable_value.h"
+#include "scripting/avm1/object/display_object.h"
+#include "scripting/avm1/object/object.h"
+#include "scripting/avm1/prop.h"
 #include "scripting/avm1/scope.h"
-#include "scripting/class.h"
-#include "scripting/flash/display/RootMovieClip.h"
-#include "scripting/toplevel/Global.h"
+#include "scripting/avm1/value.h"
+#include "scripting/avm1/toplevel/toplevel.h"
 #include "swf.h"
-#include "swftypes.h"
+#include "tiny_string.h"
+#include "utils/impl.h"
 #include "utils/optional.h"
 
 using namespace lightspark;
 
 // Based on Ruffle's `avm1::scope::Scope`.
 
-AVM1Scope::AVM1Scope(AVM1Scope* _parent, const AVM1ScopeClass& type, asAtom _values)
-	:parent(_parent)
-	,_class(type)
-	,values(_values)
-	,storedmembercount(0)
-	,gcchecked(false)
-	,gcHasMember(false)
-	,preparedforshutdown(false)
+AVM1Scope::AVM1Scope
+(
+	const GcContext& ctx,
+	const GcPtr<AVM1Scope>& parent,
+	const AVM1ScopeClass& type,
+	const GcPtr<AVM1Object>& _values
+) : GcResource(ctx), parent(_parent), _class(type), values(_values)
 {
-	if (parent)
-		parent->addStoredMember();
 }
 
-AVM1Scope::AVM1Scope(Global* globals) : AVM1Scope
+AVM1Scope
+(
+	const GcPtr<AVM1Scope>& parent,
+	const AVM1ScopeClass& type,
+	const GcPtr<AVM1Object>& values
+) : AVM1Scope(values->getGcCtx(), parent, type, values)
+{
+}
+
+AVM1Scope::AVM1Scope(const GcPtr<AVM1Global>& globals) : AVM1Scope
 (
 	// `parent`
 	nullptr,
 	// `_class`
 	AVM1ScopeClass::Global,
 	// `values`
-	asAtomHandler::fromObjectNoPrimitive(globals)
+	globals
 )
 {
 }
 
 AVM1Scope::AVM1Scope
 (
-	AVM1Scope* parent,
-	DisplayObject* clip
-) : AVM1Scope(parent, AVM1ScopeClass::Target, asAtomHandler::fromObjectNoPrimitive(clip))
+	const GcPtr<AVM1Scope> parent,
+	const GcPtr<AVM1DisplayObject>& clip
+) : AVM1Scope(parent, AVM1ScopeClass::Target, clip)
 {
 }
 
 AVM1Scope::AVM1Scope
 (
-	AVM1Scope* parent,
-	ASWorker* wrk
-) : AVM1Scope(parent, AVM1ScopeClass::Local, asAtomHandler::fromObjectNoPrimitive(new_asobject(wrk)))
+	const GcContext& ctx,
+	const GcPtr<AVM1Scope>& parent
+) : AVM1Scope(ctx, parent, AVM1ScopeClass::Local, NEW_GC_PTR(ctx, AVM1Object(ctx)))
 {
 }
 
-AVM1Scope::~AVM1Scope()
-{
-	if (parent)
-	{
-		parent->removeStoredMember();
-		parent->decRef();
-	}
-}
-
-void AVM1Scope::setTargetScope(DisplayObject* clip)
+void AVM1Scope::setTargetScope(const GcPtr<AVM1DisplayObject>& clip)
 {
 	if (isTargetScope())
-		values = asAtomHandler::fromObjectNoPrimitive(clip);
-	else if (parent)
+		values = clip;
+	else if (!parent.isNull())
 		parent->setTargetScope(clip);
 }
 
-asAtom AVM1Scope::resolveRecursiveByMultiname
+Impl<AVM1CallableValue> AVM1Scope::resolveRecursive
 (
-	DisplayObject* baseClip,
-	const multiname& name,
-	const GET_VARIABLE_OPTION& options,
-	ASWorker* wrk,
+	AVM1Activation& act,
+	const tiny_string& name,
 	bool isTopLevel
-)
+) const
 {
-	asAtom ret = asAtomHandler::invalidAtom;
-	if (asAtomHandler::hasPropertyByMultiname(values,name, true, _class != AVM1ScopeClass::Local, wrk))
+	if (values->hasProp(act, name))
 	{
-		asAtomHandler::AVM1getVariableByMultiname(values,ret, name, options, wrk, false);
-		return ret;
+		return AVM1Callable
+		(
+			values,
+			values->getNonSlashPathProp(act, name)
+		);
 	}
 
-	if (!parent)
-		return ret;
+	if (parent.isNull())
+		return AVM1UnCallable(AVM1Value::undefinedVal);
 
-	ret = parent->getVariableByMultiname(baseClip, name, options, wrk);
+	auto ret = parent->getVar(act, name);
 
-	if (asAtomHandler::isValid(ret) || !asAtomHandler::is<DisplayObject>(values))
+	if (ret->isCallable() || !ret->getValue().is<UndefinedVal>())
 		return ret;
 
 	auto clip = asAtomHandler::as<DisplayObject>(values);
-	if (!isTopLevel || (clip->isOnStage() && !clip->hasPropertyByMultiname(name, true, true, wrk)))
+	if (!isTopLevel || ret->isCallable())
+		return ret;
+	if (!ret->getValue().is<UndefinedVal>() || values->hasOwnProp(act, name))
 		return ret;
 
 	// If we failed to find the value in the scope chain, but would've
 	// resolved on `values`, if it were on stage, then try looking for
 	// it in the root clip instead.
-	auto root = baseClip->AVM1getRoot();
-	ret = asAtomHandler::invalidAtom;
-	root->AVM1getVariableByMultiname(ret, name, options, wrk, false);
-	return ret;
+	auto rootObj = act.getRootObject().toObject(act);
+	return AVM1Callable(rootObj, rootObj->getNonSlashPathProp(act, name));
 }
 
-bool AVM1Scope::setVariableByMultiname
+void AVM1Scope::setVar
 (
-	multiname& name,
-	asAtom& value,
-	const CONST_ALLOWED_FLAG& allowConst,
-	ASWorker* wrk
+	AVM1Activation& act,
+	const tiny_string& name,
+	const AVM1Value& value
 )
 {
-	bool ignore =
-	(
-		asAtomHandler::is<MovieClip>(values) &&
-		asAtomHandler::as<MovieClip>(values)->AVM1GetForInitAction()
-	);
+	bool removed = values->tryAs
+	<
+		DisplayObject
+	>().transformOr(false, [&](const auto& obj)
+	{
+		return obj.isAVM1Removed();
+	});
 
-	if (!ignore && asAtomHandler::isValid(values) && (isTargetScope() || asAtomHandler::hasPropertyByMultiname(values,name, true, true, wrk)))
+	if (!removed && (isTargetScope() || values->hasProp(act, name)))
 	{
 		// Found the variable on this object, overwrite it.
 		// Or, we've hit the currently running clip, so create it here.
-		return asAtomHandler::AVM1setVariableByMultiname(values,name, value, allowConst, wrk);
+		return values->setProp(act, name, value);
 	}
-	else if (parent)
+	else if (!parent.isNull())
 	{
 		// Couldn't find the variable, traverse the scope chain.
-		return parent->setVariableByMultiname(name, value, allowConst, wrk);
+		return parent->setVar(act, name, value);
 	}
-	return asAtomHandler::AVM1setVariableByMultiname(values,name, value, allowConst, wrk);
+
+	// This probably shouldn't happen, since all AVM1 code runs in
+	// reference to a `MovieClip`, so we should always have a `MovieClip`
+	// scope. Define it on the top level scope.
+	LOG(LOG_ERROR, "AVM1Scope::setVar: No top level `MovieClip` scope.");
+	return values->setProp(act, name, value);
 }
 
-bool AVM1Scope::defineLocalByMultiname
+void AVM1Scope::defineLocal
 (
-	multiname& name,
-	asAtom& value,
-	const CONST_ALLOWED_FLAG& allowConst,
-	ASWorker* wrk
+	AVM1Activation& act,
+	const tiny_string& name,
+	const AVM1Value& value
 )
 {
-	ASObject* v = asAtomHandler::getObject(values);
-	if (!isWithScope())
-		return v && v->AVM1setVariableByMultiname(name, value, allowConst, wrk);
+	if (!isWithScope() || parent.isNull())
+		return values->setProp(act, name, value);
 	// When defining a local in a `with` scope, we also need to check if
 	// that local exists on the `with` target. If it does, the variable
 	// of the target should be modified. If not, the property should be
 	// defined in the first non-`with` parent scope.
 
 	// Does this variable already exist on the target?
-	if (v)
-	{
-		if (v->hasPropertyByMultiname(name, true, true, wrk))
-			return v->AVM1setVariableByMultiname(name, value, allowConst, wrk);
-	}
+	if (values->hasOwnProp(act, name))
+		return values->setProp(act, name, value);
 
 	// If not, go up the scope chain.
-	return parent->defineLocalByMultiname(name, value, allowConst, wrk);
+	return parent->defineLocal(act, name, value);
 }
 
-bool AVM1Scope::forceDefineLocalByMultiname
-(
-	multiname& name,
-	asAtom& value,
-	const CONST_ALLOWED_FLAG& allowConst,
-	ASWorker* wrk
-)
+void AVM1Scope::forceDefineLocal(const tiny_string& name, const AVM1Value& value)
 {
-	ASObject* v = asAtomHandler::getObject(values);
-	bool alreadySet = false;
-	if (v)
-		v->setVariableByMultiname(name, value, allowConst, &alreadySet, wrk);
-	return alreadySet;
+	values->defineValue(name, value);
 }
 
-bool AVM1Scope::forceDefineLocal
-(
-	const tiny_string& name,
-	asAtom& value,
-	const CONST_ALLOWED_FLAG& allowConst,
-	ASWorker* wrk
-)
+#ifdef USE_STRING_ID
+void AVM1Scope::forceDefineLocal(uint32_t nameID, const AVM1Value& value)
 {
-	return forceDefineLocal
-	(
-		wrk->getSystemState()->getUniqueStringId(name, true),
-		value,
-		allowConst,
-		wrk
-	);
+	values->defineValue(nameID, value);
 }
+#endif
 
-bool AVM1Scope::forceDefineLocal
-(
-	uint32_t nameID,
-	asAtom& value,
-	const CONST_ALLOWED_FLAG& allowConst,
-	ASWorker* wrk
-)
+bool AVM1Scope::deleteVar(AVM1Activation& act, const tiny_string& name)
 {
-	multiname m(nullptr);
-	m.name_type = multiname::NAME_STRING;
-	m.name_s_id = nameID;
-	return forceDefineLocalByMultiname(m, value, allowConst, wrk);
-}
-
-void AVM1Scope::addStoredMember()
-{
-	assert((int)storedmembercount<this->getRefCount());
-	ASATOM_ADDSTOREDMEMBER(values);
-	++storedmembercount;
-}
-
-void AVM1Scope::removeStoredMember()
-{
-	assert(storedmembercount);
-	ASATOM_REMOVESTOREDMEMBER(values);
-	--storedmembercount;
-}
-
-bool AVM1Scope::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
-{
-	ASObject* v = asAtomHandler::getObject(values);
-	if (v && v->hasPropertyByMultiname(name, true, true, wrk))
-		return v->deleteVariableByMultiname(name, wrk);
-	else if (parent)
-		return parent->deleteVariableByMultiname(name, wrk);
+	if (values->hasProp(act, name))
+		return values->deleteProp(act, name);
+	else if (!parent.isNull())
+		return parent->deleteVar(act, name);
 	return false;
-}
-
-bool AVM1Scope::countAllCyclicMemberReferences(garbagecollectorstate& gcstate, bool inStack)
-{
-	if (gcstate.stopped || this->getRefCount() != (int)this->storedmembercount)
-		return false;
-	if (this->gcchecked && inStack)
-	{
-		return gcHasMember;
-	}
-	bool ret = gcHasMember;
-	if (asAtomHandler::isAccessible(values))
-	{
-		ASObject* v = asAtomHandler::getObject(values);
-		if (v)
-		{
-			ret = gcHasMember = v->countAllCylicMemberReferences(gcstate);
-		}
-	}
-	gcchecked=true;
-	if (parent)
-		ret  |= parent->countAllCyclicMemberReferences(gcstate,true) | gcHasMember;
-	return ret;
-}
-
-void AVM1Scope::gcCounterReset()
-{
-	if (parent)
-		parent->gcCounterReset();
-	gcchecked=false;
-	gcHasMember=false;
-}
-
-void AVM1Scope::prepareShutdown()
-{
-	if (preparedforshutdown)
-		return;
-	preparedforshutdown=true;
-	ASObject* v = asAtomHandler::getObject(values);
-	if (v)
-		v->prepareShutdown();
-	AVM1Scope* sc = parent;
-	parent=nullptr;
-	if (sc)
-	{
-		sc->prepareShutdown();
-		sc->removeStoredMember();
-		sc->decRef();
-	}
 }

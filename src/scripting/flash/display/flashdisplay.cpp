@@ -418,6 +418,7 @@ DisplayObject* DisplayObjectContainer::getLastFrameChildAtDepth(int depth, uint3
 			o->markedForLegacyDeletion=false;
 			o->incRef();
 			o->removeStoredMember();
+			o->colorTransform.resetTransformation();
 			mapFrameDepthToLegacyChildRemembered.erase(it);
 			return o;
 		}
@@ -995,7 +996,7 @@ void DisplayObjectContainer::transformLegacyChildAt(int32_t depth, const MATRIX&
 void DisplayObjectContainer::purgeLegacyChildren(bool implicit)
 {
 	auto i = mapDepthToLegacyChild.begin();
-	while( i != mapDepthToLegacyChild.end() )
+	while(i != mapDepthToLegacyChild.end())
 	{
 		DisplayObject* obj = i->second;
 		if (i->first < 0 && is<MovieClip>() && obj->placeFrame > as<MovieClip>()->state.FP)
@@ -1028,8 +1029,11 @@ void DisplayObjectContainer::purgeLegacyChildren(bool implicit)
 				obj->addStoredMember();
 				(*inserted.first).second = obj;
 			}
+			i++;
+			_removeChild(obj,false,true,false,false,false);
 		}
-		i++;
+		else
+			i++;
 	}
 }
 uint32_t DisplayObjectContainer::getMaxLegacyChildDepth()

@@ -26,7 +26,7 @@
 #include "plugin/include/npplat.h"
 #include <cstdio>
 #include <cstdlib>
-#include <glib.h>
+#include "logger.h"
 
 extern NPNetscapeFuncs NPNFuncs;
 
@@ -44,27 +44,13 @@ struct AsyncCallWorkaroundData
     void *data;
 };
 
-static gboolean AsyncCallWorkaroundCallback(void *userData)
-{
-    AsyncCallWorkaroundData *data = (AsyncCallWorkaroundData *) userData;
-    data->func(data->data);
-    delete data;
-    return false;
-}
 //TODO: understand the Call... wrappers and npupp.h
 void NPN_PluginThreadAsyncCall(NPP instance, void (*func) (void *), void *userData)
 {
   if (NPNFuncs.pluginthreadasynccall)
       NPNFuncs.pluginthreadasynccall(instance, func, userData);
-   else
-   {
-      // pluginthreadasynccall is not available on Firefox >= 58, so we use a workaround
-      // taken from vlc npapi plugin ( https://code.videolan.org/videolan/npapi-vlc/ )
-      AsyncCallWorkaroundData *data = new AsyncCallWorkaroundData;
-      data->func = func;
-      data->data = userData;
-      g_idle_add(AsyncCallWorkaroundCallback, (void *)data);
-  }
+  else
+	  LOG(LOG_ERROR,"NPN_PluginThreadAsyncCall not supported by browser");
 }
 
 NPError NPN_GetValueForURL(NPP instance, NPNURLVariable variable, const char *url, char **value, uint32_t *len)

@@ -25,6 +25,7 @@
 #include "backends/streamcache.h"
 #include "backends/config.h"
 #include "backends/rendering.h"
+#include "utils/filesystem.h"
 #include "logger.h"
 #include "compat.h"
 #include <string>
@@ -313,8 +314,8 @@ void NS_DestroyPluginInstance(nsPluginInstanceBase * aPlugin)
 //
 // nsPluginInstance class implementation
 //
-nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) : 
-	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(FALSE),mWindow(0),
+nsPluginInstance::nsPluginInstance(NPP aInstance, int16_t argc, char** argn, char** argv) :
+	nsPluginInstanceBase(), mInstance(aInstance),mInitialized(false),mWindow(0),
 	mainDownloaderStreambuf(nullptr),mainDownloaderStream(nullptr),
 	mainDownloader(nullptr),scriptObject(nullptr),m_pt(nullptr),
 	eventLoop(new Time(), this)
@@ -421,17 +422,17 @@ nsPluginInstance::~nsPluginInstance()
 NPBool nsPluginInstance::init(NPWindow* aWindow)
 {
   if(aWindow == nullptr)
-    return FALSE;
+	return false;
   
   if (SetWindow(aWindow) == NPERR_NO_ERROR)
-  mInitialized = TRUE;
+  mInitialized = true;
 	
   return mInitialized;
 }
 
 void nsPluginInstance::shut()
 {
-  mInitialized = FALSE;
+  mInitialized = false;
 }
 
 const char * nsPluginInstance::getVersion()
@@ -1077,19 +1078,18 @@ PluginEngineData::PluginEngineData(nsPluginInstance *i, uint32_t w, uint32_t h, 
 
 void PluginEngineData::setupLocalStorage()
 {
-	std::string filename = sys->mainClip->getOrigin().getPathDirectory();
-	std::replace(filename.begin(),filename.end(),'/',G_DIR_SEPARATOR);
-	filename+= G_DIR_SEPARATOR;
+	std::string filename = sys->mainClip->getOrigin().getHostname();
+	filename += sys->mainClip->getOrigin().getPathDirectory();
 	filename += sys->mainClip->getOrigin().getPathFile();
-	std::string filedatapath = sys->mainClip->getOrigin().getHostname() + G_DIR_SEPARATOR_S;
-	filedatapath += filename;
-	std::replace(filedatapath.begin(),filedatapath.end(),':','_');
-	std::replace(filedatapath.begin(),filedatapath.end(),'.','_');
-	sharedObjectDatapath = Config::getConfig()->getCacheDirectory();
-	sharedObjectDatapath += G_DIR_SEPARATOR;
-	sharedObjectDatapath += "data";
-	sharedObjectDatapath += G_DIR_SEPARATOR;
-	sharedObjectDatapath += filedatapath;
+	std::replace(filename.begin(),filename.end(),':','_');
+	std::replace(filename.begin(),filename.end(),'.','_');
+	Path subpath(filename,Path::Generic);
+
+	Path p(Config::getConfig()->getCacheDirectory());
+	p /= "data";
+	p /= subpath.getStr();
+	sharedObjectDatapath = p.getStr();
+	LOG(LOG_INFO,"local storage path:"<<sharedObjectDatapath);
 }
 
 void PluginEngineData::stopMainDownload()

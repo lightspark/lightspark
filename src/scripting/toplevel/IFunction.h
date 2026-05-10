@@ -109,6 +109,7 @@ public:
 	{
 		IFunction* ret=nullptr;
 		ret=clone(wrk);
+		ret->clonedFrom=this;
 		ret->setClass(getClass());
 		ret->isStatic=isStatic;
 		ret->constructIndicator = true;

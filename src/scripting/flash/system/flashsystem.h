@@ -145,12 +145,13 @@ friend class SystemState;
 private:
 	Mutex workersharedobjectmutex;
 	_NR<Vector> workerlist;
-	_NR<ASObject> workerSharedObject;
+	ASObject* workerSharedObject;
 	std::unordered_set<MessageChannel*> messagechannellist;
 public:
 	WorkerDomain(ASWorker* wrk, Class_base* c);
 	void finalize() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	static void sinit(Class_base*);
 	void addMessageChannel(MessageChannel* c);
 	void removeWorker(ASWorker* w);

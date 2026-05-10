@@ -163,8 +163,6 @@ bool AVM1Function::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		ret = su->countAllCylicMemberReferences(gcstate) || ret;
 	if (context.scope)
 		ret |= context.scope->countAllCyclicMemberReferences(gcstate);
-	if (context.globalScope)
-		ret |= context.globalScope->countAllCyclicMemberReferences(gcstate);
 	return ret;
 }
 bool AVM1Function::implementsInterface(asAtom &iface)

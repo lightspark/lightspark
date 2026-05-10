@@ -73,6 +73,11 @@ void IFunction::prepareShutdown()
 
 bool IFunction::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
+	if (this->isStatic)
+	{
+		gcstate.ignoreCount(this);
+		return this->gccounter.hasmember;
+	}
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (asAtomHandler::isAccessibleObject(closure_this))
 		ret = asAtomHandler::getObjectNoCheck(closure_this)->countAllCylicMemberReferences(gcstate) || ret;

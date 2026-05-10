@@ -1690,7 +1690,8 @@ ParseThread::ParseThread(istream& in, _R<ApplicationDomain> appDomain, _R<Securi
 	backgroundWorkerFileLength(0)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
-	loader->getContentLoaderInfo()->setContent(parsedObject);
+	if (loader->getContentLoaderInfo())
+		loader->getContentLoaderInfo()->setContent(parsedObject);
 }
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
@@ -1906,10 +1907,12 @@ void ParseThread::parseSWF(UI8 ver)
 	RootMovieClip* root = parsedObject->as<RootMovieClip>();
 	if(loader)
 	{
-		LoaderInfo* li= loader->getContentLoaderInfo();
 		root = parsedObject->as<RootMovieClip>();
 		if (backgroundWorkerFileLength)
 		{
+			loader->checkContentLoaderInfo();
+			LoaderInfo* li= loader->getContentLoaderInfo();
+			root->loaderInfo=li;
 			root->setRefConstant();
 			li->getInstanceWorker()->rootClip = _MR(root);
 			li->getInstanceWorker()->stage = Class<Stage>::getInstanceSNoArgs(li->getInstanceWorker());

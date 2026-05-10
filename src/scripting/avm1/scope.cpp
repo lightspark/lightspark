@@ -83,7 +83,11 @@ AVM1Scope::~AVM1Scope()
 void AVM1Scope::setTargetScope(DisplayObject* clip)
 {
 	if (isTargetScope())
+	{
+		ASATOM_REMOVESTOREDMEMBER(values);
 		values = asAtomHandler::fromObjectNoPrimitive(clip);
+		ASATOM_ADDSTOREDMEMBER(values);
+	}
 	else if (parent)
 		parent->setTargetScope(clip);
 }
@@ -255,21 +259,18 @@ bool AVM1Scope::countAllCyclicMemberReferences(garbagecollectorstate& gcstate, b
 	if (gcstate.stopped || this->getRefCount() != (int)this->storedmembercount)
 		return false;
 	if (this->gcchecked && inStack)
-	{
 		return gcHasMember;
-	}
 	bool ret = gcHasMember;
 	if (asAtomHandler::isAccessible(values))
 	{
 		ASObject* v = asAtomHandler::getObject(values);
 		if (v)
-		{
-			ret = gcHasMember = v->countAllCylicMemberReferences(gcstate);
-		}
+			ret = v->countAllCylicMemberReferences(gcstate);
 	}
 	gcchecked=true;
 	if (parent)
 		ret  |= parent->countAllCyclicMemberReferences(gcstate,true) | gcHasMember;
+	gcHasMember = ret;
 	return ret;
 }
 

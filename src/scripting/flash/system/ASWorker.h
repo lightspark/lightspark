@@ -36,7 +36,7 @@ class ASWorker: public EventDispatcher, public IThreadJob
 friend class WorkerDomain;
 private:
 	Mutex parsemutex;
-	_NR<Loader> loader;
+	Loader* loader;
 	_NR<ByteArray> swf;
 	ParseThread* parser;
 	bool giveAppPrivileges;
@@ -55,6 +55,8 @@ private:
 	std::vector<ABCContext*> contexts;
 	unordered_map<uint32_t,IFunction*> avm1ClassConstructorsCaseSensitive;
 	unordered_map<uint32_t,IFunction*> avm1ClassConstructorsCaseInsensitive;
+	ASObject* gcStart;
+	ASObject* gcEnd;
 public:
 	Stage* stage; // every worker has its own stage. In case of the primordial worker this points to the stage of the SystemState.
 	asfreelist* freelist;

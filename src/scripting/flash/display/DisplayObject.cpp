@@ -288,6 +288,8 @@ bool DisplayObject::destruct()
 	clipMask=nullptr;
 	matrix = MATRIX();
 	hasMatrix3D=false;
+	if (loaderInfo)
+		loaderInfo->setContent(nullptr);
 	loaderInfo=nullptr;
 	invalidateQueueNext=nullptr;
 	accessibilityProperties.reset();
@@ -363,8 +365,6 @@ void DisplayObject::prepareShutdown()
 
 	if (clipMask)
 		clipMask->prepareShutdown();
-	if (loaderInfo)
-		loaderInfo->prepareShutdown();
 	if (invalidateQueueNext)
 		invalidateQueueNext->prepareShutdown();
 	if (accessibilityProperties)

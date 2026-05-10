@@ -42,11 +42,14 @@ extern uint32_t asClassCount;
 
 ASWorker::ASWorker(SystemState* s)
 	:EventDispatcher(this,nullptr)
+	,loader(nullptr)
 	,parser(nullptr)
 	,giveAppPrivileges(false)
 	,started(false)
 	,inShutdown(false)
 	,inFinalize(false)
+	,gcStart(nullptr)
+	,gcEnd(nullptr)
 	,stage(nullptr)
 	,freelist(new asfreelist[asClassCount])
 	,freelist_template(new asfreelist[asClassCount])
@@ -66,18 +69,18 @@ ASWorker::ASWorker(SystemState* s)
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
 	last_garbagecollection = compat_msectiming();
-	// start and end of gc list point to this to ensure that every added object gets a valid pointer set as its next/prev pointers
-	gcNext=this;
-	gcPrev=this;
 }
 
 ASWorker::ASWorker(Class_base* c)
 	:EventDispatcher(c->getSystemState()->worker,c)
+	,loader(nullptr)
 	,parser(nullptr)
 	,giveAppPrivileges(false)
 	,started(false)
 	,inShutdown(false)
 	,inFinalize(false)
+	,gcStart(nullptr)
+	,gcEnd(nullptr)
 	,stage(nullptr)
 	,freelist(new asfreelist[asClassCount])
 	,freelist_template(new asfreelist[asClassCount])
@@ -95,19 +98,21 @@ ASWorker::ASWorker(Class_base* c)
 	limits.max_recursion = c->getSystemState()->flashMode == SystemState::AIR ? 2048 : 256;
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
-	loader = _MR(Class<Loader>::getInstanceS(this));
+	loader = Class<Loader>::getInstanceS(this);
+	loader->addStoredMember();
 	last_garbagecollection = compat_msectiming();
-	// start and end of gc list point to this to ensure that every added object gets a valid pointer set as its next/prev pointers
-	gcNext=this;
-	gcPrev=this;
 }
+
 ASWorker::ASWorker(ASWorker* wrk, Class_base* c)
 	:EventDispatcher(wrk,c)
+	,loader(nullptr)
 	,parser(nullptr)
 	,giveAppPrivileges(false)
 	,started(false)
 	,inShutdown(false)
 	,inFinalize(false)
+	,gcStart(nullptr)
+	,gcEnd(nullptr)
 	,stage(nullptr)
 	,freelist(new asfreelist[asClassCount])
 	,freelist_template(new asfreelist[asClassCount])
@@ -125,11 +130,9 @@ ASWorker::ASWorker(ASWorker* wrk, Class_base* c)
 	limits.max_recursion = c->getSystemState()->flashMode == SystemState::AIR ? 2048 : 256;
 	limits.script_timeout = 20;
 	stacktrace = new stacktrace_entry[limits.max_recursion];
-	loader = _MR(Class<Loader>::getInstanceS(this));
+	loader = Class<Loader>::getInstanceS(this);
+	loader->addStoredMember();
 	last_garbagecollection = compat_msectiming();
-	// start and end of gc list point to this to ensure that every added object gets a valid pointer set as its next/prev pointers
-	gcNext=this;
-	gcPrev=this;
 }
 
 void ASWorker::finalize()
@@ -187,17 +190,31 @@ void ASWorker::finalize()
 		}
 	}
 	constantrefs.erase(stage);
-	stage->destruct();
-	stage->finalize();
-	stage=nullptr;
+	if (!this->isPrimordial)
+	{
+		stage->setConstant(false);
+		stage->resetRefCount();
+		stage->destruct();
+		stage->finalize();
+		stage->decRef();
+		stage=nullptr;
+	}
+	else
+	{
+		stage->destruct();
+		stage->finalize();
+		stage=nullptr;
+	}
 	destroyContents();
-	loader.reset();
+	if (loader)
+		loader->removeStoredMember();
+	loader=nullptr;
 	swf.reset();
 	rootClip.reset();
 	EventDispatcher::finalize();
 	constantrefs.erase(this);
-	ASObject* ogc = this->gcNext;
-	while (ogc && ogc != this)
+	ASObject* ogc = this->gcStart;
+	while (ogc)
 	{
 		ogc->prepareShutdown();
 		ogc=ogc->gcNext;
@@ -263,10 +280,10 @@ void ASWorker::prepareShutdown()
 		swf->prepareShutdown();
 	if (stage)
 		stage->prepareShutdown();
-	ASObject* ogc = this->gcNext;
-	while (ogc != this)
+	ASObject* ogc = this->gcStart;
+	while (ogc)
 	{
-		assert(ogc && ogc->gcPrev && ogc->gcNext);
+		assert(ogc);
 		ogc->prepareShutdown();
 		ogc = ogc->gcNext;
 	}
@@ -422,7 +439,7 @@ void ASWorker::execute()
 	streambuf *sbuf = new bytes_buf(swf->bytes,swf->getLength());
 	istream s(sbuf);
 	parsemutex.lock();
-	parser = new ParseThread(s,_MR(Class<ApplicationDomain>::getInstanceS(this,_MR(getSystemState()->systemDomain))),getSystemState()->mainClip->securityDomain,loader.getPtr(),"");
+	parser = new ParseThread(s,_MR(Class<ApplicationDomain>::getInstanceS(this,_MR(getSystemState()->systemDomain))),getSystemState()->mainClip->securityDomain,loader,"");
 	parser->setForBackgroundWorker(swf->getLength());
 
 	parsemutex.unlock();
@@ -438,7 +455,9 @@ void ASWorker::execute()
 	delete parser;
 	parser = nullptr;
 	parsemutex.unlock();
-	loader.reset();
+	if (loader)
+		loader->removeStoredMember();
+	loader=nullptr;
 	if (swf)
 	{
 		swf->objfreelist=nullptr;
@@ -459,7 +478,7 @@ void ASWorker::execute()
 			}
 		}
 
-		_NR<EventDispatcher> dispatcher=events_queue.front().first;
+		EventDispatcher* dispatcher=events_queue.front().first.getPtr();
 		_R<Event> e=events_queue.front().second;
 		events_queue.pop_front();
 
@@ -469,8 +488,11 @@ void ASWorker::execute()
 			//LOG(LOG_INFO,"worker handle event:"<<e->type);
 			if (dispatcher)
 			{
+				dispatcher->incRef();
+				dispatcher->addStoredMember();
 				dispatcher->handleEvent(e);
 				dispatcher->afterHandleEvent(e.getPtr());
+				dispatcher->removeStoredMember();
 			}
 			else
 				handleInternalEvent(e.getPtr());
@@ -508,6 +530,9 @@ void ASWorker::execute()
 			while(!events_queue.empty())
 			{
 				_R<Event> e=events_queue.front().second;
+				EventDispatcher* dispatcher=events_queue.front().first.getPtr();
+				if (dispatcher)
+					dispatcher->afterHandleEvent(e.getPtr());
 				events_queue.pop_front();
 			}
 			threadAbort();
@@ -573,9 +598,11 @@ void ASWorker::jobFence()
 {
 	state ="terminated";
 	rootClip.reset();
+	this->incRef(); // ensure this worker is not destroyed to early if we are in shutdown
 	this->incRef();
 	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<Event>::getInstanceS(getInstanceWorker(),"workerState")),true);
 	sem_event_cond.signal();
+	this->decRef(); // this worker will be destroyed here if we are in shutdown
 }
 
 void ASWorker::threadAbort()
@@ -629,35 +656,48 @@ void ASWorker::dumpStacktrace()
 
 void ASWorker::addObjectToGarbageCollector(ASObject* o)
 {
-	assert (isVmThread() || !this->isPrimordial || getSystemState()->isShuttingDown());
-	if (o->gcPrev || o->gcNext || this->gcNext == o)
+	assert(o->getInstanceWorker()==this);
+	assert (isVmThread() || o->is<MessageChannel>() || !this->isPrimordial || o->is<ASWorker>() || getSystemState()->isShuttingDown());
+
+	if (o->gcPrev || o->gcNext || this->gcStart == o)
 		return;
 	assert(o!=this);
-	assert (this->gcNext);
-	this->gcPrev=o;
-	o->gcNext=this->gcNext;
-	o->gcPrev=this;
-	this->gcNext->gcPrev=o;
-	this->gcNext=o;
+	if (!this->gcStart)
+	{
+		this->gcStart=o;
+		this->gcEnd=o;
+	}
+	else
+	{
+		this->gcEnd->gcNext=o;
+		o->gcPrev=this->gcEnd;
+		this->gcEnd=o;
+	}
 }
 
 void ASWorker::removeObjectFromGarbageCollector(ASObject* o)
 {
-	assert (isVmThread() || !this->isPrimordial || getSystemState()->isShuttingDown());
-	if (!o->gcPrev || !o->gcNext || o==this)
+	assert (isVmThread() || !this->isPrimordial || o->is<ASWorker>() || getSystemState()->isShuttingDown());
+	if (o==this)
 		return;
-	o->gcPrev->gcNext = o->gcNext;
-	o->gcNext->gcPrev = o->gcPrev;
-	if (o->is<ASWorker>())
-	{
-		o->gcNext=o;
-		o->gcPrev=o;
-	}
+	if (o->gcPrev)
+		o->gcPrev->gcNext=o->gcNext;
 	else
 	{
-		o->gcNext=nullptr;
-		o->gcPrev=nullptr;
+		this->gcStart=o->gcNext;
+		if (this->gcStart)
+			this->gcStart->gcPrev=nullptr;
 	}
+	if (o->gcNext)
+		o->gcNext->gcPrev=o->gcPrev;
+	else
+	{
+		this->gcEnd=o->gcPrev;
+		if (this->gcEnd)
+			this->gcEnd->gcNext=nullptr;
+	}
+	o->gcPrev=nullptr;
+	o->gcNext=nullptr;
 }
 
 void ASWorker::processGarbageCollection(bool force)
@@ -669,16 +709,15 @@ void ASWorker::processGarbageCollection(bool force)
 	last_garbagecollection = currtime;
 	if (this->stage)
 		this->stage->cleanupDeadHiddenObjects();
-	bool hasEntries=this->gcNext && this->gcNext != this;
+	bool hasEntries=this->gcStart;
 	// use two loops to make sure objects added during inner loop are handled _after_ the inner loop is complete
 	LOG_CALL("start garbage collection");
 	while (hasEntries)
 	{
-		ASObject* ogc = this->gcNext;
+		ASObject* ogc = this->gcStart;
 		hasEntries=false;
-		while (ogc && ogc != this)
+		while (ogc)
 		{
-			assert(ogc && ogc->gcPrev && ogc->gcNext);
 			ASObject* ogcnext = ogc->gcNext;
 			if (!ogc->deletedingarbagecollection)
 			{
@@ -694,8 +733,8 @@ void ASWorker::processGarbageCollection(bool force)
 		}
 	}
 	// delete all objects that were marked for destruction during gc
-	ASObject* ogc = this->gcNext;
-	while (ogc && ogc != this)
+	ASObject* ogc = this->gcStart;
+	while (ogc)
 	{
 		ASObject* ogcnext = ogc->gcNext;
 		if (ogc->deletedingarbagecollection)
@@ -710,7 +749,7 @@ void ASWorker::processGarbageCollection(bool force)
 		}
 		ogc = ogcnext;
 	}
-	if (force && this->gcNext && this->gcNext != this)
+	if (force && this->gcStart)
 		processGarbageCollection(true);
 	LOG_CALL("garbage collection done");
 }

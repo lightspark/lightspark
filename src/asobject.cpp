@@ -2850,7 +2850,10 @@ bool ASObject::handleGarbageCollection()
 				c = UINT32_MAX;
 
 				if ((*it)->gccounter.hasmember && !(*it)->gccounter.ignore && (*it)->markedforgarbagecollection && !deletedingarbagecollection)
+				{
+					LOG_CALL("handleGarbageCollection needsnewcheck:"<<(*it)<<" "<<(*it)->gccounter.count<<"/"<<(*it)->getRefCount());
 					neednewcheck = true;
+				}
 			}
 		}
 		if (neednewcheck)

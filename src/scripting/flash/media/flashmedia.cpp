@@ -1104,6 +1104,7 @@ void SoundChannel::play(number_t starttime)
 		{
 			// Start playback
 			incRef();
+			addStoredMember();
 			getSystemState()->addJob(this);
 			RELEASE_WRITE(stopped,false);
 			RELEASE_WRITE(terminated,false);
@@ -1117,6 +1118,7 @@ void SoundChannel::resume()
 	{
 		// Start playback
 		incRef();
+		addStoredMember();
 		getSystemState()->addJob(this);
 		RELEASE_WRITE(stopped,false);
 		RELEASE_WRITE(terminated,false);
@@ -1570,12 +1572,13 @@ void SoundChannel::jobFence()
 	{
 		restartafterabort=false;
 		incRef();
+		addStoredMember();
 		getSystemState()->addJob(this);
 		RELEASE_WRITE(stopped,false);
 		RELEASE_WRITE(terminated,false);
 	}
 	mutex.unlock();
-	this->decRef();
+	this->removeStoredMember();
 }
 
 void SoundChannel::threadAbort()

@@ -634,7 +634,8 @@ WorkerDomain::WorkerDomain(ASWorker* wrk, Class_base* c):
 	ApplicationDomain* appdomain = wrk->rootClip->applicationDomain.getPtr();
 	Template<Vector>::getInstanceS(wrk,v,Class<ASWorker>::getClass(getSystemState()),appdomain);
 	workerlist = _R<Vector>(asAtomHandler::as<Vector>(v));
-	workerSharedObject = _MR(new_asobject(wrk));
+	workerSharedObject = new_asobject(wrk);
+	workerSharedObject->addStoredMember();
 }
 
 void WorkerDomain::finalize()
@@ -642,11 +643,13 @@ void WorkerDomain::finalize()
 	auto it = messagechannellist.begin();
 	while (it != messagechannellist.end())
 	{
-		(*it)->decRef();
+		(*it)->removeStoredMember();
 		it = messagechannellist.erase(it);
 	}
 	workerlist.reset();
-	workerSharedObject.reset();
+	if (workerSharedObject)
+		workerSharedObject->removeStoredMember();
+	workerSharedObject = nullptr;
 }
 
 void WorkerDomain::prepareShutdown()
@@ -660,6 +663,16 @@ void WorkerDomain::prepareShutdown()
 		workerSharedObject->prepareShutdown();
 	for(auto it = messagechannellist.begin(); it != messagechannellist.end(); ++it)
 		(*it)->prepareShutdown();
+}
+
+bool WorkerDomain::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	if (workerSharedObject)
+		ret = workerSharedObject->countAllCylicMemberReferences(gcstate) || ret;
+	for(auto it = messagechannellist.begin(); it != messagechannellist.end(); ++it)
+		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void WorkerDomain::sinit(Class_base* c)
@@ -676,6 +689,7 @@ void WorkerDomain::sinit(Class_base* c)
 void WorkerDomain::addMessageChannel(MessageChannel* c)
 {
 	c->incRef();
+	c->addStoredMember();
 	messagechannellist.insert(c);
 }
 
@@ -685,20 +699,33 @@ void WorkerDomain::removeWorker(ASWorker* w)
 	auto it = messagechannellist.begin();
 	while (it != messagechannellist.end())
 	{
-		if ((*it)->sender == w || (*it)->receiver == w)
+		MessageChannel* o = (*it);
+		if (o->sender == w || o->receiver == w)
 		{
-			if ((*it)->sender == w)
+			if (o->sender == w)
+				o->sender->removeStoredMember();
+			else
+				getVm(getSystemState())->addDeletableObject(o->sender);
+			o->sender=nullptr;
+			if (o->receiver == w)
+				o->receiver->removeStoredMember();
+			else
+				getVm(getSystemState())->addDeletableObject(o->receiver);
+			o->receiver=nullptr;
+			o->clearEventListeners();
+			if (!o->getInstanceWorker()->isPrimordial)
 			{
-				(*it)->sender->removeStoredMember();
-				(*it)->sender=nullptr;
+				// remove from worker gc and add to primordial worker gc
+				if (o->isMarkedForGarbageCollection())
+				{
+					o->removefromGarbageCollection();
+					o->setWorker(this->getInstanceWorker());
+					o->addToGarbageCollection();
+				}
+				else
+					o->setWorker(this->getInstanceWorker());
 			}
-			if ((*it)->receiver == w)
-			{
-				(*it)->receiver->removeStoredMember();
-				(*it)->receiver=nullptr;
-			}
-			(*it)->clearEventListeners();
-			(*it)->decRef();
+			o->removeStoredMember();
 			it = messagechannellist.erase(it);
 		}
 		else

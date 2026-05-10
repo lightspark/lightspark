@@ -173,11 +173,7 @@ ASFUNCTIONBODY_ATOM(Loader,_getContent)
 ASFUNCTIONBODY_ATOM(Loader,_getContentLoaderInfo)
 {
 	Loader* th=asAtomHandler::as<Loader>(obj);
-	if (!th->contentLoaderInfo)
-	{
-		th->contentLoaderInfo=Class<LoaderInfo>::getInstanceS(wrk,th);
-		th->contentLoaderInfo->addStoredMember();
-	}
+	th->checkContentLoaderInfo();
 	th->contentLoaderInfo->incRef();
 	ret = asAtomHandler::fromObject(th->contentLoaderInfo);
 }
@@ -207,11 +203,7 @@ void Loader::loadIntern(URLRequest* r, LoaderContext* context, DisplayObject* _a
 		_avm1target->addStoredMember();
 		this->avm1target=_avm1target;
 	}
-	if (!contentLoaderInfo)
-	{
-		contentLoaderInfo=Class<LoaderInfo>::getInstanceS(getInstanceWorker(),this);
-		contentLoaderInfo->addStoredMember();
-	}
+	checkContentLoaderInfo();
 	this->url=r->getRequestURL();
 	this->contentLoaderInfo->setURL(this->url.getParsedURL());
 	this->contentLoaderInfo->setAVM1Target(this->avm1target);
@@ -596,6 +588,14 @@ void Loader::setContent(DisplayObject* o)
 LoaderInfo* Loader::getContentLoaderInfo()
 {
 	return contentLoaderInfo;
+}
+void Loader::checkContentLoaderInfo()
+{
+	if (!contentLoaderInfo)
+	{
+		contentLoaderInfo=Class<LoaderInfo>::getInstanceS(getInstanceWorker(),this);
+		contentLoaderInfo->addStoredMember();
+	}
 }
 
 void Loader::AVM1setup(int level, ASObject* container)

@@ -84,6 +84,7 @@ public:
 	void setContent(DisplayObject* o);
 	DisplayObject* getContent() const { return content; }
 	LoaderInfo* getContentLoaderInfo();
+	void checkContentLoaderInfo();
 	bool allowLoadingSWF() { return allowCodeImport; }
 	void AVM1setup(int level, ASObject* container);
 	int AVM1getLevel() const { return avm1level; }

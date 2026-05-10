@@ -58,7 +58,6 @@ SET(LIBSPARK_SOURCES
   backends/urlutils.cpp
   backends/xml_support.cpp
   parsing/amf3_generator.cpp
-  parsing/config.cpp
   parsing/crossdomainpolicy.cpp
   parsing/flv.cpp
   parsing/streams.cpp

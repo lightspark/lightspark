@@ -20,7 +20,7 @@
 #ifndef BACKENDS_CONFIG_H
 #define BACKENDS_CONFIG_H 1
 
-#include "parsing/config.h"
+#include "3rdparty/inifile-cpp/include/inicpp.h"
 #include "compat.h"
 
 namespace lightspark
@@ -28,9 +28,7 @@ namespace lightspark
 	class DLL_PUBLIC Config
 	{
 	private:
-		ConfigParser* parser;
-
-		void handleEntry();
+		void handleEntries(ini::IniFile& parser);
 
 		//-- CONFIGURATION FILENAME AND SEARCH DIRECTORIES
 		const std::string configFilename;

@@ -26,6 +26,7 @@
 #include "netutils.h"
 #include "swf.h"
 #include <SDL.h>
+#include <glib.h>
 
 using namespace std;
 using namespace lightspark;

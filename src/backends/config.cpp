@@ -78,7 +78,6 @@ std::string readRegistryEntry(std::string name)
 #endif
 
 Config::Config():
-	parser(nullptr),
 	//CONFIGURATION FILENAME AND SEARCH DIRECTORIES
 	configFilename("lightspark.conf"),
 	systemConfigDirectories(g_get_system_config_dirs()),userConfigDirectory(g_get_user_config_dir()),
@@ -99,21 +98,19 @@ Config::Config():
 	while(*cursor != nullptr)
 	{
 		sysDir = *cursor;
-		parser = new ConfigParser(sysDir + G_DIR_SEPARATOR_S + configFilename);
-		while(parser->read())
-			handleEntry();
-		delete parser;
-		parser = nullptr;
+		ini::IniFile parser;
+		parser.setMultiLineValues(true);
+		parser.load(sysDir + G_DIR_SEPARATOR_S + configFilename);
+		handleEntries(parser);
 
 		++cursor;
 	}
 
 	//Try user config next
-	parser = new ConfigParser(userConfigDirectory + G_DIR_SEPARATOR_S + configFilename);
-	while(parser->read())
-		handleEntry();
-	delete parser;
-	parser = NULL;
+	ini::IniFile parser;
+	parser.setMultiLineValues(true);
+	parser.load(userConfigDirectory + G_DIR_SEPARATOR_S + configFilename);
+	handleEntries(parser);
 
 #ifndef _WIN32
 	//Expand tilde in path
@@ -192,25 +189,31 @@ Config::Config():
 
 Config::~Config()
 {
-	if(parser != NULL)
-		delete parser;
 }
 
 /* This is called by the parser for each entry in the configuration file */
-void Config::handleEntry()
+void Config::handleEntries(ini::IniFile& parser)
 {
-	string group = parser->getGroup();
-	string key = parser->getKey();
-	string value = parser->getValue();
-	//Rendering
-	if(group == "rendering" && key == "enabled")
-		renderingEnabled = atoi(value.c_str());
-	//Cache directory
-	else if(group == "cache" && key == "directory")
-		cacheDirectory = value;
-	//Cache prefix
-	else if(group == "cache" && key == "prefix")
-		cachePrefix = value;
-	else
-		LOG(LOG_ERROR,"Invalid entry encountered in configuration file" << ": '" << group << "/" << key << "'='" << value << "'");
+	for(const auto &sectionPair : parser)
+	{
+		const std::string &group = sectionPair.first;
+
+		for(const auto &fieldPair : sectionPair.second)
+		{
+			const std::string &key = fieldPair.first;
+			const ini::IniField &field = fieldPair.second;
+			const std::string &value = field.as<string>();
+			//Rendering
+			if(group == "rendering" && key == "enabled")
+				renderingEnabled = atoi(value.c_str());
+			//Cache directory
+			else if(group == "cache" && key == "directory")
+				cacheDirectory = value;
+			//Cache prefix
+			else if(group == "cache" && key == "prefix")
+				cachePrefix = value;
+			else
+				LOG(LOG_ERROR,"Invalid entry encountered in configuration file" << ": '" << group << "/" << key << "'='" << value << "'");
+		}
+	}
 }

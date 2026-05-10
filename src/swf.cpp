@@ -77,6 +77,7 @@
 #endif
 
 #include "compat.h"
+#include <glib.h>
 
 #ifdef ENABLE_LIBAVCODEC
 extern "C" {

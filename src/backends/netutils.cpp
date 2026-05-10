@@ -38,6 +38,7 @@
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
 #endif
+#include <glib.h>
 
 using namespace lightspark;
 

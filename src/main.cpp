@@ -34,6 +34,7 @@
 #include "timer.h"
 #include "utils/filesystem.h"
 #include "utils/path.h"
+#include <glib.h>
 
 #ifdef __MINGW32__
     #ifndef PATH_MAX

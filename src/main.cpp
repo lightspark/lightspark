@@ -688,11 +688,10 @@ int main(int argc, char* argv[])
 	//When running in a local sandbox, set the root URL to the current working dir
 	else if(sandboxType != SecurityManager::REMOTE)
 	{
-		char* baseurl = g_filename_to_uri(fs::currentPath().rawBuf(),nullptr,nullptr);
-		string cwdStr = string(baseurl);
-		free(baseurl);
-		cwdStr += "/";
-		sys->mainClip->setOrigin(cwdStr, fileName);
+		tiny_string url("file://");
+		url += fs::currentPath().getGenericStr();
+		url += "/";
+		sys->mainClip->setOrigin(url, fileName);
 	}
 	else
 	{

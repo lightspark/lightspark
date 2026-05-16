@@ -29,6 +29,7 @@
 #include "backends/netutils.h"
 #include "backends/rtmputils.h"
 #include "backends/streamcache.h"
+#include "utils/filesystem.h"
 #include "compat.h"
 #include <string>
 #include <algorithm>
@@ -38,7 +39,6 @@
 #ifdef ENABLE_CURL
 #include <curl/curl.h>
 #endif
-#include <glib.h>
 
 using namespace lightspark;
 
@@ -778,12 +778,10 @@ void LocalDownloader::execute()
 		}
 		//Otherwise we follow the normal procedure
 		else {
-			tiny_string s("file://");
-			s += URLInfo::decode(url, URLInfo::ENCODE_ESCAPE);
-			char* filepath =g_filename_from_uri(s.raw_buf(),nullptr,nullptr);
+			tiny_string s = URLInfo::decode(url, URLInfo::ENCODE_ESCAPE);
+			Path filepath(s.raw_buf(), Path::Generic);
 			std::ifstream file;
-			file.open(filepath, std::ios::in|std::ios::binary);
-			free(filepath);
+			file.open(filepath.getStr(), std::ios::in|std::ios::binary);
 
 			if(file.is_open())
 			{

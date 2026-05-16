@@ -26,7 +26,7 @@
 #include "scripting/abc.h"
 #include "scripting/argconv.h"
 #include "parsing/tags.h"
-#include <glib.h>
+#include "utils/filesystem.h"
 
 using namespace lightspark;
 
@@ -456,11 +456,11 @@ void ApplicationDomain::setOrigin(const tiny_string& u, const tiny_string& filen
 	if(origin.getPathFile() == "" && filename != "")
 	{
 		tiny_string fileurl;
-		if (g_path_is_absolute(filename.raw_buf()))
+		Path p(filename);
+		if (p.isAbsolute())
 		{
-			gchar* uri = g_filename_to_uri(filename.raw_buf(), nullptr,nullptr);
-			fileurl = uri;
-			g_free(uri);
+			fileurl = "file://";
+			fileurl += p.getGenericStr();
 		}
 		else
 			fileurl = filename;

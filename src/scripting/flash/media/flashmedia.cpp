@@ -1578,7 +1578,7 @@ void SoundChannel::jobFence()
 		RELEASE_WRITE(terminated,false);
 	}
 	mutex.unlock();
-	this->removeStoredMember();
+	getVm(getSystemState())->addDeletableObject(this);
 }
 
 void SoundChannel::threadAbort()

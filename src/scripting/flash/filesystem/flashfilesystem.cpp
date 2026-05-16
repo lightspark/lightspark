@@ -28,7 +28,7 @@
 #include "scripting/argconv.h"
 #include "compat.h"
 #include "platforms/engineutils.h"
-#include <glib.h>
+#include "utils/filesystem.h"
 
 using namespace lightspark;
 
@@ -441,7 +441,10 @@ void ASFile::setupFile(const tiny_string& filename, ASWorker* wrk)
 ASFUNCTIONBODY_ATOM(ASFile,_getURL)
 {
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
-	tiny_string url(g_filename_to_uri(th->path.raw_buf(), nullptr, nullptr));
+
+	tiny_string url("file://");
+	Path p(th->path);
+	url += p.getGenericStr();
 	ret = asAtomHandler::fromString(wrk->getSystemState(),url);
 }
 ASFUNCTIONBODY_ATOM(ASFile,_setURL)
@@ -475,40 +478,39 @@ ASFUNCTIONBODY_ATOM(ASFile,resolvePath)
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
 	tiny_string path;
 	ARG_CHECK(ARG_UNPACK(path));
-	tiny_string fullpath;
+	Path fullpath;
 	if (wrk->getSystemState()->getEngineData()->FilePathIsAbsolute(path))
 		fullpath = path;
 	else
 	{
 		fullpath = th->path;
-		fullpath += G_DIR_SEPARATOR_S;
-		fullpath += path;
+		fullpath.append(Path(path));
 	}
-	ASFile* res = Class<ASFile>::getInstanceS(wrk,fullpath);
+	ASFile* res = Class<ASFile>::getInstanceS(wrk,fullpath.getStr());
 	ret = asAtomHandler::fromObjectNoPrimitive(res);
 }
 
 ASFUNCTIONBODY_ATOM(ASFile,createDirectory)
 {
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
-	tiny_string p = th->path;
+	Path p(th->path);
 	// ensure that directory name ends with a directory separator
-	if (!p.endsWith(G_DIR_SEPARATOR_S))
-		p += G_DIR_SEPARATOR_S;
+	if (!p.getGenericStr().endsWith("/"))
+		p += "/";
 	
-	if (!wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),p,true))
+	if (!wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),p.getStr(),true))
 		createError<IOError>(wrk,kFileWriteError,th->path);
 }
 
 ASFUNCTIONBODY_ATOM(ASFile,getDirectoryListing)
 {
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
-	tiny_string p = th->path;
+	Path p(th->path);
 	// ensure that directory name ends with a directory separator
-	if (!p.endsWith(G_DIR_SEPARATOR_S))
-		p += G_DIR_SEPARATOR_S;
+	if (!p.getGenericStr().endsWith("/"))
+		p += "/";
 	std::vector<tiny_string> dirlist;
-	if (!wrk->getSystemState()->getEngineData()->FilGetDirectoryListing(wrk->getSystemState(),p,true,dirlist))
+	if (!wrk->getSystemState()->getEngineData()->FilGetDirectoryListing(wrk->getSystemState(),p.getStr(),true,dirlist))
 	{
 		createError<IOError>(wrk,kFileOpenError,th->path);
 		return;

@@ -61,6 +61,7 @@ public:
 	void addJob(IThreadJob* j);
 	void forceStop();
 	void waitAll();
+	void forceStopWorker(ASWorker* wrk);
 };
 
 }

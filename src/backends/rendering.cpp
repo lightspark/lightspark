@@ -59,6 +59,7 @@ void RenderThread::wait()
 {
 	if(status==STARTED)
 	{
+		stopMe=true;
 		//Signal potentially blocking semaphore
 		event.signal();
 		SDL_WaitThread(t,nullptr);
@@ -216,7 +217,7 @@ extern void nanoVGDeleteImage(int image, EngineData* engineData);
 bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 {
 	event.wait();
-	if(m_sys->isShuttingDown())
+	if(m_sys->isShuttingDown() || this->stopMe)
 	{
 		// cleanup surfaces still waiting for refresh
 		mutexRefreshSurfaces.lock();
@@ -1920,7 +1921,14 @@ void RenderThread::loadChunkBGRA(const TextureChunk& chunk, uint32_t w, uint32_t
 void RenderThread::readPixelsToBimapContainer(_NR<BitmapContainer> bm)
 {
 	if(m_sys->isShuttingDown() || !EngineData::enablerendering)
+	{
+		while (!bm->getRenderData()->rendercallBitmaps.empty())
+		{
+			(*bm->getRenderData()->rendercallBitmaps.begin())->resetRenderCall();
+			bm->getRenderData()->rendercallBitmaps.pop_front();
+		}
 		return;
+	}
 	bm->flushRenderCalls(this,nullptr); // ensure we get the current state of the bitmapcontainer
 	mutexRenderToBitmapContainer.lock();
 	bm->getRenderData()->readpixels=true;

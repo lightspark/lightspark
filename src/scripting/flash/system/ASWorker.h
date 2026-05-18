@@ -86,7 +86,7 @@ public:
 	uint32_t AVM1_cur_recursion_internal; // recursion count for internal avm1 function calls (getters,setters...)
 	stacktrace_entry* stacktrace;
 	void fillStackTrace(StackTraceList& strace);
-	static tiny_string getStackTraceString(SystemState* sys, const StackTraceList& strace, ASObject* error);
+	static tiny_string getStackTraceString(SystemState* sys, const StackTraceList& strace, ASObject* error, bool uncaughtException=false);
 	FORCE_INLINE call_context* incStack(asAtom o, SyntheticFunction* f)
 	{
 		if(USUALLY_FALSE(cur_recursion == limits.max_recursion))

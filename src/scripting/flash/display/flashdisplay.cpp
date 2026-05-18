@@ -72,6 +72,7 @@ Sprite::Sprite(ASWorker* wrk, Class_base* c)
 	,TokenContainer(this)
 	,graphics(NullRef)
 	,soundchannel(nullptr)
+	,soundtransform(nullptr)
 	,soundstartframe(UINT32_MAX)
 	,streamingsound(false)
 	,hasMouse(false)
@@ -97,7 +98,9 @@ bool Sprite::destruct()
 	if (soundchannel)
 		soundchannel->removeStoredMember();
 	soundchannel=nullptr;
-	soundtransform.reset();
+	if (soundtransform)
+		soundtransform->removeStoredMember();
+	soundtransform=nullptr;
 	return DisplayObjectContainer::destruct();
 }
 
@@ -111,7 +114,9 @@ void Sprite::finalize()
 	if (soundchannel)
 		soundchannel->removeStoredMember();
 	soundchannel=nullptr;
-	soundtransform.reset();
+	if (soundtransform)
+		soundtransform->removeStoredMember();
+	soundtransform=nullptr;
 	DisplayObjectContainer::finalize();
 }
 
@@ -130,6 +135,18 @@ void Sprite::prepareShutdown()
 		soundchannel->prepareShutdown();
 	if (soundtransform)
 		soundtransform->prepareShutdown();
+}
+
+bool Sprite::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	if (skipCountCylicMemberReferences(gcstate))
+		return gcstate.hasMember(this);
+	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
+	if (soundchannel)
+		ret = soundchannel->countAllCylicMemberReferences(gcstate) || ret;
+	if (soundtransform)
+		ret = soundtransform->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 void Sprite::sinit(Class_base* c)
@@ -241,16 +258,27 @@ ASFUNCTIONBODY_ATOM(Sprite,getSoundTransform)
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
 	if (!th->soundtransform)
 	{
-		if (th->soundchannel)
+		if (th->soundchannel && th->soundchannel->soundTransform)
+		{
 			th->soundtransform = th->soundchannel->soundTransform;
+			th->soundtransform->incRef();
+			th->soundtransform->addStoredMember();
+		}
 	}
 	if (!th->soundtransform)
 	{
-		th->soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(wrk));
+		th->soundtransform = Class<SoundTransform>::getInstanceSNoArgs(wrk);
+		th->soundtransform->addStoredMember();
 		if (th->soundchannel)
+		{
+			th->soundtransform->incRef();
+			th->soundtransform->addStoredMember();
+			if (th->soundchannel->soundTransform)
+				th->soundchannel->soundTransform->removeStoredMember();
 			th->soundchannel->soundTransform = th->soundtransform;
+		}
 	}
-	ret = asAtomHandler::fromObject(th->soundtransform.getPtr());
+	ret = asAtomHandler::fromObject(th->soundtransform);
 	ASATOM_INCREF(ret);
 }
 ASFUNCTIONBODY_ATOM(Sprite,setSoundTransform)
@@ -258,8 +286,15 @@ ASFUNCTIONBODY_ATOM(Sprite,setSoundTransform)
 	Sprite* th=asAtomHandler::as<Sprite>(obj);
 	if (argslen == 0 || !asAtomHandler::is<SoundTransform>(args[0]))
 		return;
-	ASATOM_INCREF(args[0]);
-	th->soundtransform =  _MR(asAtomHandler::getObject(args[0])->as<SoundTransform>());
+	ASObject* tf = asAtomHandler::getObject(args[0]);
+	if (tf)
+	{
+		tf->incRef();
+		tf->addStoredMember();
+	}
+	if (th->soundtransform)
+		th->soundtransform->removeStoredMember();
+	th->soundtransform =  tf->as<SoundTransform>();
 }
 
 bool DisplayObjectContainer::boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly)
@@ -600,9 +635,22 @@ void Sprite::setSound(SoundChannel *s,bool forstreaming)
 	}
 	streamingsound = forstreaming;
 	if (soundchannel->soundTransform)
+	{
+		if (this->soundtransform)
+			this->soundtransform->removeStoredMember();
 		this->soundtransform = soundchannel->soundTransform;
-	else
+		if (this->soundtransform)
+		{
+			this->soundtransform->incRef();
+			this->soundtransform->addStoredMember();
+		}
+	}
+	else if (this->soundtransform)
+	{
+		this->soundtransform->incRef();
+		this->soundtransform->addStoredMember();
 		soundchannel->soundTransform = this->soundtransform;
+	}
 }
 
 SoundChannel* Sprite::getSoundChannel() const

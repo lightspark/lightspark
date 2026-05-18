@@ -904,15 +904,14 @@ void SystemState::setShutdownFlag()
 	Locker l(rootMutex);
 	if(currentVm && !error)
 	{
-		workerDomain->stopAllBackgroundWorkers();
 		_R<ShutdownEvent> e(new (unaccountedMemory) ShutdownEvent);
 		currentVm->addEvent(NullRef,e);
 	}
 	else
 	{
+		RELEASE_WRITE(shutdown,true);
 		terminated.signal();
 	}
-	RELEASE_WRITE(shutdown,true);
 }
 void SystemState::setExitCode(int exitcode)
 {
@@ -950,6 +949,7 @@ bool SystemState::getInWindowMoveMode() const
 void SystemState::signalTerminated()
 {
 	Locker l(rootMutex);
+	RELEASE_WRITE(shutdown,true);
 	terminated.signal();
 }
 void SystemState::setLocalStorageAllowed(bool allowed)
@@ -977,6 +977,7 @@ void SystemState::removeWorker(ASWorker *w)
 	Locker l(workerMutex);
 	workerDomain->removeWorker(w);
 	singleworker=workerDomain->workerlist->size() <= 1;
+	threadPool->forceStopWorker(w);
 
 }
 void SystemState::addEventToBackgroundWorkers(_NR<EventDispatcher> obj, _R<Event> ev)

@@ -345,7 +345,7 @@ void ASWorker::fillStackTrace(StackTraceList& strace)
 	}
 }
 
-tiny_string ASWorker::getStackTraceString(SystemState* sys,const StackTraceList& strace, ASObject* error)
+tiny_string ASWorker::getStackTraceString(SystemState* sys,const StackTraceList& strace, ASObject* error, bool uncaughtException)
 {
 	tiny_string ret;
 	if (error)
@@ -385,7 +385,7 @@ tiny_string ASWorker::getStackTraceString(SystemState* sys,const StackTraceList&
 		}
 
 		ret += "()";
-		if (sys->use_testrunner_date && !sys->isShuttingDown()
+		if (sys->use_testrunner_date && !uncaughtException
 			&& (*it).clsname==BUILTIN_STRINGS::STRING_GLOBAL
 			&& (*it).init==BUILTIN_STRINGS::STRING_INIT)
 		{
@@ -455,9 +455,6 @@ void ASWorker::execute()
 	delete parser;
 	parser = nullptr;
 	parsemutex.unlock();
-	if (loader)
-		loader->removeStoredMember();
-	loader=nullptr;
 	if (swf)
 	{
 		swf->objfreelist=nullptr;

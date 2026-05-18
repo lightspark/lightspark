@@ -124,6 +124,8 @@ ASFUNCTIONBODY_ATOM(MessageChannel,_addEventListener)
 	MessageChannel* th=asAtomHandler::as<MessageChannel>(obj);
 	if (argslen >=2 && asAtomHandler::isFunction(args[1]))
 	{
+		if (!th->receiver)
+			return; // MessageChannel has no receiver (can happen if receiver worker is already removed)
 		// the function will be executed in the receiver worker, so set its worker accordingly
 		asAtomHandler::as<IFunction>(args[1])->setWorker(th->receiver);
 		asAtomHandler::as<IFunction>(args[1])->objfreelist=nullptr;

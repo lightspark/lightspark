@@ -71,7 +71,7 @@ public:
 	ASFUNCTION_ATOM(_toString);
 	tiny_string toString();
 	static void sinit(Class_base* c);
-	tiny_string getStackTraceString();
+	tiny_string getStackTraceString(bool uncaughtException=false);
 };
 
 class SecurityError: public ASError

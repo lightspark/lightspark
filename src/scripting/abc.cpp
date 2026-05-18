@@ -837,6 +837,7 @@ void ABCVm::finalize()
 	if(status==CREATED && !events_queue.empty())
 		LOG(LOG_ERROR, "Events queue is not empty as expected");
 	events_queue.clear();
+	clearDeletableObjects();
 }
 
 
@@ -1112,7 +1113,7 @@ void ABCVm::tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e)
 				e->decRef();
 				return;
 			}
-			m_sys->setError(e->as<ASError>()->getStackTraceString());
+			m_sys->setError(e->as<ASError>()->getStackTraceString(true));
 			e->decRef();
 			return;
 		}
@@ -1158,6 +1159,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				}
 				//no need to lock as this is the vm thread
 				shuttingdown=true;
+				m_sys->workerDomain->stopAllBackgroundWorkers();
 				m_sys->signalTerminated();
 				break;
 			}

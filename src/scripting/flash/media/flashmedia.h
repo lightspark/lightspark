@@ -141,7 +141,6 @@ private:
 	AudioFormat format;
 	const SOUNDINFO* soundinfo;
 	number_t oldVolume;
-	void validateSoundTransform(_NR<SoundTransform>);
 	void playStream();
 	void playStreamFromSamples();
 	number_t startTime;
@@ -171,7 +170,7 @@ public:
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	bool isPlaying() { return !ACQUIRE_READ(stopped); }
 	bool isStarting() { return ACQUIRE_READ(starting); }
-	ASPROPERTY_GETTER_SETTER(_NR<SoundTransform>,soundTransform);
+	ASPROPERTY_GETTER_SETTER(SoundTransform*,soundTransform);
 	ASPROPERTY_GETTER(number_t,leftPeak);
 	ASPROPERTY_GETTER(number_t,rightPeak);
 	ASFUNCTION_ATOM(_constructor);

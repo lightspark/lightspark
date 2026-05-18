@@ -253,7 +253,7 @@ private:
 	//Sprite as its hitArea. Hits will be relayed to hitTarget.
 	_NR<Sprite> hitTarget;
 	SoundChannel* soundchannel;
-	_NR<SoundTransform> soundtransform;
+	SoundTransform* soundtransform;
 	uint32_t soundstartframe;
 	bool streamingsound;
 	bool hasMouse;
@@ -277,6 +277,7 @@ public:
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(_getGraphics);

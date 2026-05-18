@@ -132,9 +132,9 @@ ASFUNCTIONBODY_ATOM(ASError,_getStackTrace)
 	ASError* th=asAtomHandler::as<ASError>(obj);
 	ret = asAtomHandler::fromObject(abstract_s(wrk,th->getStackTraceString()));
 }
-tiny_string ASError::getStackTraceString()
+tiny_string ASError::getStackTraceString(bool uncaughtException)
 {
-	return ASWorker::getStackTraceString(getSystemState(),stacktrace,this);
+	return ASWorker::getStackTraceString(getSystemState(),stacktrace,this,uncaughtException);
 }
 
 tiny_string ASError::toString()

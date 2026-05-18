@@ -713,7 +713,12 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		RELEASE_WRITE(th->sampledataprocessed,true);
 		th->setSoundChannel(Class<SoundChannel>::getInstanceS(wrk,::ceil(th->buffertime/1000.0),NullRef, AudioFormat(LINEAR_PCM_FLOAT_PLATFORM_ENDIAN,44100,2),nullptr,th));
 		th->soundChannel->setLoops(loops);
-		th->soundChannel->soundTransform = soundtransform;
+		th->soundChannel->soundTransform = soundtransform.getPtr();
+		if (th->soundChannel->soundTransform)
+		{
+			th->soundChannel->soundTransform->incRef();
+			th->soundChannel->soundTransform->addStoredMember();
+		}
 		th->soundChannel->play(startTime);
 		th->soundChannel->incRef();
 		ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel);
@@ -725,7 +730,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 			th->soundChannel->setLoops(loops);
 			if (th->is<AVM1Sound>())
 				th->soundChannel->setSampleProducer(th);
-			th->soundChannel->soundTransform = soundtransform;
+			th->soundChannel->soundTransform = soundtransform.getPtr();
 			th->soundChannel->play(startTime);
 			th->soundChannel->incRef();
 			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel);
@@ -736,7 +741,12 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		s->setLoops(loops);
 		if (th->is<AVM1Sound>())
 			th->soundChannel->setSampleProducer(th);
-		s->soundTransform = soundtransform;
+		s->soundTransform = soundtransform.getPtr();
+		if (s->soundTransform)
+		{
+			s->soundTransform->incRef();
+			s->soundTransform->addStoredMember();
+		}
 		s->play(startTime);
 		ret = asAtomHandler::fromObjectNoPrimitive(s);
 	}
@@ -1010,9 +1020,31 @@ ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,bufferTime)
 ASFUNCTIONBODY_GETTER_SETTER(SoundLoaderContext,checkPolicyFile)
 
 SoundChannel::SoundChannel(ASWorker* wrk, Class_base* c, uint32_t _buffertimeseconds, _NR<StreamCache> _stream, AudioFormat _format, const SOUNDINFO* _soundinfo, Sound* _sampleproducer, bool _forstreaming)
-	: EventDispatcher(wrk,c),buffertimeseconds(_buffertimeseconds),stream(_stream),sampleproducer(_sampleproducer),starting(true),stopped(true),terminated(true),stopping(false),finished(false),audioDecoder(nullptr),audioStream(nullptr),
-	format(_format),soundinfo(_soundinfo),oldVolume(-1.0),startTime(0),loopstogo(0),streamposition(0),streamdatafinished(false),restartafterabort(false),forstreaming(_forstreaming),fromSoundTag(nullptr),
-	leftPeak(1),rightPeak(1),semSampleData(0)
+	:EventDispatcher(wrk,c)
+	,buffertimeseconds(_buffertimeseconds)
+	,stream(_stream)
+	,sampleproducer(_sampleproducer)
+	,starting(true)
+	,stopped(true)
+	,terminated(true)
+	,stopping(false)
+	,finished(false)
+	,audioDecoder(nullptr)
+	,audioStream(nullptr)
+	,format(_format)
+	,soundinfo(_soundinfo)
+	,oldVolume(-1.0)
+	,startTime(0)
+	,loopstogo(0)
+	,streamposition(0)
+	,streamdatafinished(false)
+	,restartafterabort(false)
+	,forstreaming(_forstreaming)
+	,fromSoundTag(nullptr)
+	,soundTransform(nullptr)
+	,leftPeak(1)
+	,rightPeak(1)
+	,semSampleData(0)
 {
 	subtype=SUBTYPE_SOUNDCHANNEL;
 	if (soundinfo)
@@ -1157,7 +1189,34 @@ void SoundChannel::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER(SoundChannel,leftPeak)
 ASFUNCTIONBODY_GETTER(SoundChannel,rightPeak)
-ASFUNCTIONBODY_SETTER_CB(SoundChannel,soundTransform,validateSoundTransform)
+ASFUNCTIONBODY_ATOM(SoundChannel,_setter_soundTransform)
+{
+	if(!asAtomHandler::is<SoundChannel>(obj))
+	{
+		createError<ArgumentError>(wrk,0,"Function applied to wrong object");
+		return;
+	}
+	SoundChannel* th = asAtomHandler::as<SoundChannel>(obj);
+	if(argslen == 0)
+	{
+		createError<ArgumentError>(wrk,1,"Arguments provided in setter");
+		return;
+	}
+	if (asAtomHandler::isNull(args[0]))
+	{
+		createError<TypeError>(wrk,kNullPointerError, "soundTransform");
+		return;
+	}
+	if (asAtomHandler::is<SoundTransform>(args[0]))
+	{
+		if (th->soundTransform)
+			th->soundTransform->removeStoredMember();
+		th->soundTransform = asAtomHandler::as<SoundTransform>(args[0]);
+		th->soundTransform->incRef();
+		th->soundTransform->addStoredMember();
+	}
+}
+
 ASFUNCTIONBODY_ATOM(SoundChannel,_getter_soundTransform)
 {
 	if(!asAtomHandler::is<SoundChannel>(obj))
@@ -1172,9 +1231,12 @@ ASFUNCTIONBODY_ATOM(SoundChannel,_getter_soundTransform)
 		return;
 	}
 	if (!th->soundTransform)
-		th->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
+	{
+		th->soundTransform = Class<SoundTransform>::getInstanceS(wrk);
+		th->soundTransform->addStoredMember();
+	}
 	th->soundTransform->incRef();
-	ret = asAtomHandler::fromObject(th->soundTransform.getPtr());
+	ret = asAtomHandler::fromObject(th->soundTransform);
 }
 
 void SoundChannel::finalize()
@@ -1201,7 +1263,9 @@ void SoundChannel::finalize()
 	restartafterabort=false;
 	forstreaming=false;
 	fromSoundTag=nullptr;
-	soundTransform.reset();
+	if (soundTransform)
+		soundTransform->removeStoredMember();
+	soundTransform=nullptr;
 	leftPeak=1;
 	rightPeak=1;
 	threadAbort();
@@ -1230,7 +1294,9 @@ bool SoundChannel::destruct()
 	restartafterabort=false;
 	forstreaming=false;
 	fromSoundTag=nullptr;
-	soundTransform.reset();
+	if (soundTransform)
+		soundTransform->removeStoredMember();
+	soundTransform=nullptr;
 	leftPeak=1;
 	rightPeak=1;
 	threadAbort();
@@ -1253,16 +1319,9 @@ bool SoundChannel::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
 	if (sampleproducer)
 		ret = sampleproducer->countAllCylicMemberReferences(gcstate) || ret;
+	if (soundTransform)
+		ret = soundTransform->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
-}
-
-void SoundChannel::validateSoundTransform(_NR<SoundTransform> oldValue)
-{
-	if (soundTransform.isNull())
-	{
-		soundTransform = oldValue;
-		createError<TypeError>(getInstanceWorker(),kNullPointerError, "soundTransform");
-	}
 }
 
 ASFUNCTIONBODY_ATOM(SoundChannel,_constructor)
@@ -1577,8 +1636,8 @@ void SoundChannel::jobFence()
 		RELEASE_WRITE(stopped,false);
 		RELEASE_WRITE(terminated,false);
 	}
-	mutex.unlock();
 	getVm(getSystemState())->addDeletableObject(this);
+	mutex.unlock();
 }
 
 void SoundChannel::threadAbort()
@@ -1622,8 +1681,11 @@ void SoundChannel::checkEnvelope()
 			return;
 		leftPeak= number_t(itprev->LeftLevel)*100.0/32768.0;
 		rightPeak= number_t(itprev->RightLevel)*100.0/32768.0;
-		if (soundTransform.isNull())
-			soundTransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(getInstanceWorker()));
+		if (!soundTransform)
+		{
+			soundTransform = Class<SoundTransform>::getInstanceSNoArgs(getInstanceWorker());
+			soundTransform->addStoredMember();
+		}
 		soundTransform->leftToLeft=leftPeak;
 		soundTransform->rightToRight=rightPeak;
 	}

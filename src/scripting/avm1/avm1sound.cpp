@@ -115,7 +115,10 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getVolume)
 	if (th->soundChannel)
 	{
 		if (!th->soundChannel->soundTransform)
-			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
+		{
+			th->soundChannel->soundTransform = Class<SoundTransform>::getInstanceS(wrk);
+			th->soundChannel->soundTransform->addStoredMember();
+		}
 		asAtomHandler::setNumber(ret, th->soundChannel->soundTransform->volume);
 	}
 	else
@@ -131,7 +134,10 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setVolume)
 	if (th->soundChannel)
 	{
 		if (!th->soundChannel->soundTransform)
-			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
+		{
+			th->soundChannel->soundTransform = Class<SoundTransform>::getInstanceS(wrk);
+			th->soundChannel->soundTransform->addStoredMember();
+		}
 		th->soundChannel->soundTransform->volume = volume;
 	}
 	else
@@ -144,8 +150,11 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getPan)
 	if (th->soundChannel)
 	{
 		if (!th->soundChannel->soundTransform)
-			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
-		st = th->soundChannel->soundTransform.getPtr();
+		{
+			th->soundChannel->soundTransform = Class<SoundTransform>::getInstanceS(wrk);
+			th->soundChannel->soundTransform->addStoredMember();
+		}
+		st = th->soundChannel->soundTransform;
 	}
 	else
 		st = wrk->getSystemState()->static_SoundMixer_soundTransform.getPtr();
@@ -165,8 +174,11 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setPan)
 	if (th->soundChannel)
 	{
 		if (!th->soundChannel->soundTransform)
-			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
-		st = th->soundChannel->soundTransform.getPtr();
+		{
+			th->soundChannel->soundTransform = Class<SoundTransform>::getInstanceS(wrk);
+			th->soundChannel->soundTransform->addStoredMember();
+		}
+		st = th->soundChannel->soundTransform;
 	}
 	else
 		st = wrk->getSystemState()->static_SoundMixer_soundTransform.getPtr();
@@ -191,8 +203,11 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,getTransform)
 	if (th->soundChannel)
 	{
 		if (!th->soundChannel->soundTransform)
-			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
-		st = th->soundChannel->soundTransform.getPtr();
+		{
+			th->soundChannel->soundTransform = Class<SoundTransform>::getInstanceS(wrk);
+			th->soundChannel->soundTransform->addStoredMember();
+		}
+		st = th->soundChannel->soundTransform;
 	}
 	else
 		st = wrk->getSystemState()->static_SoundMixer_soundTransform.getPtr();
@@ -229,8 +244,11 @@ ASFUNCTIONBODY_ATOM(AVM1Sound,setTransform)
 	if (th->soundChannel)
 	{
 		if (!th->soundChannel->soundTransform)
-			th->soundChannel->soundTransform = _MR(Class<SoundTransform>::getInstanceS(wrk));
-		st = th->soundChannel->soundTransform.getPtr();
+		{
+			th->soundChannel->soundTransform = Class<SoundTransform>::getInstanceS(wrk);
+			th->soundChannel->soundTransform->addStoredMember();
+		}
+		st = th->soundChannel->soundTransform;
 	}
 	else
 		st = wrk->getSystemState()->static_SoundMixer_soundTransform.getPtr();

@@ -146,7 +146,7 @@ FORCE_INLINE void resetLocals(call_context *cc, call_context* saved_cc, const as
 		LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
 		ASObject* o = asAtomHandler::getObject(*i);
 		if (o)
-			o->decRef();
+			o->decRefAndGCCheck();
 	}
 	if (cc->locals[0].uintval != obj.uintval)
 	{

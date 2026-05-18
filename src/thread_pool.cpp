@@ -85,6 +85,7 @@ void ThreadPool::forceStop()
 			{
 				job->threadAborting = true;
 				job->threadAbort();
+				job->jobFence();
 			}
 
 			SDL_WaitThread(thread, nullptr);
@@ -109,6 +110,58 @@ void ThreadPool::waitAll()
 	additionalThreads.clear();
 }
 
+void ThreadPool::forceStopWorker(ASWorker* wrk)
+{
+	//Signal an event for all the threads
+	for (size_t i = 0; i < threadPool.size(); ++i)
+		num_jobs.signal();
+
+	{
+		Locker l(mutex);
+		//Now abort any job that is still executing and was started by wrk
+		for (auto thread : threadPool)
+		{
+			if (thread.job != nullptr && thread.job->fromWorker == wrk)
+			{
+				thread.job->threadAborting = true;
+				thread.job->threadAbort();
+			}
+		}
+		//Fence all the non executed jobs started by wrk
+		auto it = jobs.begin();
+		while (it != jobs.end())
+		{
+			auto job = *it;
+			if (job->fromWorker == wrk)
+			{
+				job->jobFence();
+				it = jobs.erase(it);
+			}
+			else
+				it++;
+		}
+	}
+
+	auto ita = additionalThreads.begin();
+	while (ita != additionalThreads.end())
+	{
+		auto thread = (*ita).first;
+		auto job = (*ita).second;
+
+		if (job != nullptr && job->fromWorker == wrk)
+		{
+			job->threadAborting = true;
+			job->threadAbort();
+			job->jobFence();
+			SDL_WaitThread(thread, nullptr);
+			ita = additionalThreads.erase(ita);
+		}
+		else
+			ita++;
+	}
+
+}
+
 ThreadPool::~ThreadPool()
 {
 	forceStop();
@@ -131,6 +184,8 @@ int ThreadPool::job_worker(void *d)
 		if(thread->pool->stopFlag)
 			return 0;
 		Locker l(thread->pool->mutex);
+		if (thread->pool->jobs.empty())
+			return 0;
 		IThreadJob* myJob = thread->pool->jobs.front();
 		thread->pool->jobs.pop_front();
 		thread->job = myJob;

@@ -235,18 +235,31 @@ SystemState::SystemState
 	Optional<ILogger&> _logger,
 	bool _runSingleThreaded,
 	size_t threads
-) :
-	timers(this),
-	eventLoop(_eventLoop),
-	time
+)
+	:timers(this)
+	,eventLoop(_eventLoop)
+	,time
 	(
 		_time != nullptr ? _time :
 		eventLoop != nullptr ? eventLoop->getTime() :
 		new Time()
-	),
-	logger(_logger),
-	terminated(0),renderRate(0),error(false),shutdown(false),firsttick(true),localstorageallowed(false),influshing(false),inMouseEvent(false),inWindowMove(false),hasExitCode(false),innerGotoCount(0),
-	renderThread(nullptr),inputThread(nullptr),engineData(nullptr),dumpedSWFPathAvailable(0)
+	)
+	,logger(_logger)
+	,terminated(0)
+	,renderRate(0)
+	,error(false)
+	,shutdown(false)
+	,firsttick(true)
+	,localstorageallowed(false)
+	,influshing(false)
+	,inMouseEvent(false)
+	,inWindowMove(false)
+	,hasExitCode(false)
+	,innerGotoCount(0)
+	,renderThread(nullptr)
+	,inputThread(nullptr)
+	,engineData(nullptr)
+	,dumpedSWFPathAvailable(0)
 	,vmVersion(VMNONE)
 	,childPid(0)
 	,parameters(NullRef)
@@ -255,26 +268,48 @@ SystemState::SystemState
 	,lastUsedNamespaceId(0x7fffffff)
 	,framePhase(FramePhase::IDLE)
 	,instanceCounter(0)
-	,showProfilingData(false),allowFullscreen(false),flashMode(mode),swffilesize(fileSize),avm1global(nullptr),
-	currentVm(nullptr),builtinClasses(nullptr),useInterpreter(true),useFastInterpreter(false),useJit(false),
-	ignoreUnhandledExceptions(false),runSingleThreaded(_runSingleThreaded),
-	useNewInvalidBounds(false),
-	exitOnError(ERROR_NONE),
-	systemDomain(nullptr),worker(nullptr),workerDomain(nullptr),
-	highquality(1),
-	singleworker(true),
-	downloadManager(nullptr),extScriptObject(nullptr),scaleMode(SHOW_ALL),avm1FocusRectLinestyle(0xff),
-	unaccountedMemory(nullptr),tagsMemory(nullptr),stringMemory(nullptr),textTokenMemory(nullptr),shapeTokenMemory(nullptr),morphShapeTokenMemory(nullptr),bitmapTokenMemory(nullptr),spriteTokenMemory(nullptr),
-	static_SoundMixer_bufferTime(5),
-	static_Multitouch_inputMode("gesture"),
-	static_XML_ignoreComments(true),
-	static_XML_ignoreProcessingInstructions(true),
-	static_XML_ignoreWhitespace(true),
-	static_XML_prettyIndent(2),
-	static_XML_prettyPrinting(true),
-	static_AVM1XMLDocument_ignoreWhite(false),
-	isinitialized(false),
-	use_testrunner_date(false)
+	,showProfilingData(false)
+	,allowFullscreen(false)
+	,flashMode(mode)
+	,swffilesize(fileSize)
+	,avm1global(nullptr)
+	,currentVm(nullptr)
+	,builtinClasses(nullptr)
+	,builtinClassesUninitialized(nullptr)
+	,useInterpreter(true)
+	,useFastInterpreter(false)
+	,useJit(false)
+	,ignoreUnhandledExceptions(false)
+	,runSingleThreaded(_runSingleThreaded)
+	,useNewInvalidBounds(false)
+	,exitOnError(ERROR_NONE)
+	,systemDomain(nullptr)
+	,worker(nullptr)
+	,workerDomain(nullptr)
+	,highquality(1)
+	,singleworker(true)
+	,downloadManager(nullptr)
+	,extScriptObject(nullptr)
+	,scaleMode(SHOW_ALL)
+	,avm1FocusRectLinestyle(0xff)
+	,unaccountedMemory(nullptr)
+	,tagsMemory(nullptr)
+	,stringMemory(nullptr)
+	,textTokenMemory(nullptr)
+	,shapeTokenMemory(nullptr)
+	,morphShapeTokenMemory(nullptr)
+	,bitmapTokenMemory(nullptr)
+	,spriteTokenMemory(nullptr)
+	,static_SoundMixer_bufferTime(5)
+	,static_Multitouch_inputMode("gesture")
+	,static_XML_ignoreComments(true)
+	,static_XML_ignoreProcessingInstructions(true)
+	,static_XML_ignoreWhitespace(true)
+	,static_XML_prettyIndent(2)
+	,static_XML_prettyPrinting(true)
+	,static_AVM1XMLDocument_ignoreWhite(false)
+	,isinitialized(false)
+	,use_testrunner_date(false)
 {
 	//Forge the builtin strings
 	tiny_string sempty;
@@ -318,6 +353,8 @@ SystemState::SystemState
 
 	builtinClasses = new Class_base*[asClassCount];
 	memset(builtinClasses,0,asClassCount*sizeof(Class_base*));
+	builtinClassesUninitialized = new Class_base*[asClassCount];
+	memset(builtinClassesUninitialized,0,asClassCount*sizeof(Class_base*));
 
 	//Untangle the messy relationship between class objects and the Class class
 	Class_object* classObject = Class_object::getClass(this);
@@ -325,7 +362,6 @@ SystemState::SystemState
 	worker = new (unaccountedMemory) ASWorker(this);
 	worker->setRefConstant();
 	setTLSWorker(worker); // needed for 32bit class initialization
-	Class<ASWorker>::getClass(this)->setupDeclaredTraits(worker);
 	worker->setClass(Class<ASWorker>::getClass(this));
 	worker->constructionComplete();
 	worker->setConstructIndicator();
@@ -348,12 +384,11 @@ SystemState::SystemState
 
 	//Getting the Object class object will set the classdef to the Class_object
 	//like any other class. This happens inside Class_base constructor
-	_R<Class_base> asobjectClass = Class<ASObject>::getRef(this);
+	Class_base* asobjectClass = Class<ASObject>::getClass(this);
 
 	//The only bit remaining is setting the Object class as the super class for Class
 	classObject->setSuper(asobjectClass);
-	classObject->decRef();
-	objClassRef = asobjectClass.getPtr();
+	objClassRef = asobjectClass;
 
 	trueRef=Class<Boolean>::getInstanceS(this->worker,true);
 	trueRef->setRefConstant();
@@ -741,6 +776,8 @@ SystemState::~SystemState()
 		delete mainClip;
 	delete[] builtinClasses;
 	builtinClasses=nullptr;
+	delete[] builtinClassesUninitialized;
+	builtinClassesUninitialized=nullptr;
 	setTLSSys(nullptr);
 #ifndef NDEBUG
 	for (auto it = memcheckset.begin(); it != memcheckset.end(); it++)

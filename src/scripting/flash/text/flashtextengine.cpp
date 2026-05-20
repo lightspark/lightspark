@@ -120,7 +120,7 @@ void ElementFormat::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->isReusable=true;
 	c->setVariableAtomByQName("GRAPHIC_ELEMENT",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)0xFDEF),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(_clone,0,Class<ElementFormat>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(_clone,0,Class<ElementFormat>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,alignmentBaseline,ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,alpha,Number);
@@ -646,8 +646,8 @@ void TextBlock::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("createTextLine","",c->getSystemState()->getBuiltinFunction(createTextLine,0,Class<TextLine>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("recreateTextLine","",c->getSystemState()->getBuiltinFunction(recreateTextLine,0,Class<TextLine>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createTextLine","",c->getSystemState()->getBuiltinFunction(createTextLine,0,Class<TextLine>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("recreateTextLine","",c->getSystemState()->getBuiltinFunction(recreateTextLine,0,Class<TextLine>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("releaseLines","",c->getSystemState()->getBuiltinFunction(releaseLines),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, applyNonLinearFontScaling, Boolean);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, baselineFontDescription, FontDescription);
@@ -1213,13 +1213,13 @@ void TextLine::sinit(Class_base* c)
 	CLASS_SETUP_NO_CONSTRUCTOR(c, DisplayObjectContainer, CLASS_FINAL | CLASS_SEALED);
 	c->isReusable=true;
 	c->setVariableAtomByQName("MAX_LINE_WIDTH",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)MAX_LINE_WIDTH),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("getBaselinePosition","",c->getSystemState()->getBuiltinFunction(getBaselinePosition,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getBaselinePosition","",c->getSystemState()->getBuiltinFunction(getBaselinePosition,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("flushAtomData","",c->getSystemState()->getBuiltinFunction(flushAtomData),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("descent","",c->getSystemState()->getBuiltinFunction(getDescent,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("ascent","",c->getSystemState()->getBuiltinFunction(getAscent,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textWidth","",c->getSystemState()->getBuiltinFunction(getTextWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("textHeight","",c->getSystemState()->getBuiltinFunction(getTextHeight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("unjustifiedTextWidth","",c->getSystemState()->getBuiltinFunction(getUnjustifiedTextWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("descent","",c->getSystemState()->getBuiltinFunction(getDescent,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("ascent","",c->getSystemState()->getBuiltinFunction(getAscent,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textWidth","",c->getSystemState()->getBuiltinFunction(getTextWidth,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("textHeight","",c->getSystemState()->getBuiltinFunction(getTextHeight,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("unjustifiedTextWidth","",c->getSystemState()->getBuiltinFunction(getUnjustifiedTextWidth,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 
 	// setting these is not allowed in textline
 	c->setDeclaredMethodByQName("contextMenu","",c->getSystemState()->getBuiltinFunction(setterNotAllowed),SETTER_METHOD,true);

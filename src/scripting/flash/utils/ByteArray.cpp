@@ -101,16 +101,16 @@ void ByteArray::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_getLength,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_getLength,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_setLength),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("bytesAvailable","",c->getSystemState()->getBuiltinFunction(_getBytesAvailable,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(_getPosition,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bytesAvailable","",c->getSystemState()->getBuiltinFunction(_getBytesAvailable,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(_getPosition,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(_setPosition),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("endian","",c->getSystemState()->getBuiltinFunction(_getEndian,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("endian","",c->getSystemState()->getBuiltinFunction(_getEndian,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("endian","",c->getSystemState()->getBuiltinFunction(_setEndian),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("objectEncoding","",c->getSystemState()->getBuiltinFunction(_getObjectEncoding,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("objectEncoding","",c->getSystemState()->getBuiltinFunction(_getObjectEncoding,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("objectEncoding","",c->getSystemState()->getBuiltinFunction(_setObjectEncoding),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("defaultObjectEncoding","",c->getSystemState()->getBuiltinFunction(_getDefaultObjectEncoding,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("defaultObjectEncoding","",c->getSystemState()->getBuiltinFunction(_getDefaultObjectEncoding,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("defaultObjectEncoding","",c->getSystemState()->getBuiltinFunction(_setDefaultObjectEncoding),SETTER_METHOD,false);
 
 	c->getSystemState()->staticByteArrayDefaultObjectEncoding = OBJECT_ENCODING::DEFAULT;
@@ -119,20 +119,20 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("uncompress","",c->getSystemState()->getBuiltinFunction(_uncompress),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("deflate","",c->getSystemState()->getBuiltinFunction(_deflate),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("inflate","",c->getSystemState()->getBuiltinFunction(_inflate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readBoolean","",c->getSystemState()->getBuiltinFunction(readBoolean,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readBoolean","",c->getSystemState()->getBuiltinFunction(readBoolean,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("readBytes","",c->getSystemState()->getBuiltinFunction(readBytes),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readByte","",c->getSystemState()->getBuiltinFunction(readByte,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readDouble","",c->getSystemState()->getBuiltinFunction(readDouble,0,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readFloat","",c->getSystemState()->getBuiltinFunction(readFloat,0,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readInt","",c->getSystemState()->getBuiltinFunction(readInt,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readMultiByte","",c->getSystemState()->getBuiltinFunction(readMultiByte,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readShort","",c->getSystemState()->getBuiltinFunction(readShort,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUnsignedByte","",c->getSystemState()->getBuiltinFunction(readUnsignedByte,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUnsignedInt","",c->getSystemState()->getBuiltinFunction(readUnsignedInt,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUnsignedShort","",c->getSystemState()->getBuiltinFunction(readUnsignedShort,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readObject","",c->getSystemState()->getBuiltinFunction(readObject,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUTF","",c->getSystemState()->getBuiltinFunction(readUTF,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readUTFBytes","",c->getSystemState()->getBuiltinFunction(readUTFBytes,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readByte","",c->getSystemState()->getBuiltinFunction(readByte,0,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readDouble","",c->getSystemState()->getBuiltinFunction(readDouble,0,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readFloat","",c->getSystemState()->getBuiltinFunction(readFloat,0,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readInt","",c->getSystemState()->getBuiltinFunction(readInt,0,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readMultiByte","",c->getSystemState()->getBuiltinFunction(readMultiByte,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readShort","",c->getSystemState()->getBuiltinFunction(readShort,0,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUnsignedByte","",c->getSystemState()->getBuiltinFunction(readUnsignedByte,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUnsignedInt","",c->getSystemState()->getBuiltinFunction(readUnsignedInt,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUnsignedShort","",c->getSystemState()->getBuiltinFunction(readUnsignedShort,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readObject","",c->getSystemState()->getBuiltinFunction(readObject,0,Class<ASObject>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUTF","",c->getSystemState()->getBuiltinFunction(readUTF,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readUTFBytes","",c->getSystemState()->getBuiltinFunction(readUTFBytes,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeBoolean","",c->getSystemState()->getBuiltinFunction(writeBoolean),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeUTF","",c->getSystemState()->getBuiltinFunction(writeUTF),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("writeUTFBytes","",c->getSystemState()->getBuiltinFunction(writeUTFBytes),NORMAL_METHOD,true);
@@ -147,8 +147,8 @@ void ByteArray::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("writeShort","",c->getSystemState()->getBuiltinFunction(writeShort),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(ByteArray::_toString),DYNAMIC_TRAIT);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,shareable,Boolean);
-	c->setDeclaredMethodByQName("atomicCompareAndSwapIntAt","",c->getSystemState()->getBuiltinFunction(atomicCompareAndSwapIntAt,3,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("atomicCompareAndSwapLength","",c->getSystemState()->getBuiltinFunction(atomicCompareAndSwapLength,2,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("atomicCompareAndSwapIntAt","",c->getSystemState()->getBuiltinFunction(atomicCompareAndSwapIntAt,3,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("atomicCompareAndSwapLength","",c->getSystemState()->getBuiltinFunction(atomicCompareAndSwapLength,2,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->prototype->setVariableByQName("toJSON",AS3,c->getSystemState()->getBuiltinFunction(_toJSON),DYNAMIC_TRAIT);
 
 	c->addImplementedInterface(InterfaceClass<IDataInput>::getClass(c->getSystemState()));

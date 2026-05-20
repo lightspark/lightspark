@@ -97,9 +97,9 @@ Scene::Scene(ASWorker* wrk, Class_base* c, const Scene_data& data, uint32_t _num
 void Scene::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("labels","",c->getSystemState()->getBuiltinFunction(_getLabels,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("name","",c->getSystemState()->getBuiltinFunction(_getName,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("numFrames","",c->getSystemState()->getBuiltinFunction(_getNumFrames,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("labels","",c->getSystemState()->getBuiltinFunction(_getLabels,0,Class<Array>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("name","",c->getSystemState()->getBuiltinFunction(_getName,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("numFrames","",c->getSystemState()->getBuiltinFunction(_getNumFrames,0,Class<Integer>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 }
 
 ASFUNCTIONBODY_ATOM(Scene,_getLabels)

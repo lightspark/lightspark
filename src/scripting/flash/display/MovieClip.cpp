@@ -45,15 +45,15 @@ void MovieClip::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Sprite, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("currentFrame","",c->getSystemState()->getBuiltinFunction(_getCurrentFrame,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("totalFrames","",c->getSystemState()->getBuiltinFunction(_getTotalFrames,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("framesLoaded","",c->getSystemState()->getBuiltinFunction(_getFramesLoaded,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentFrameLabel","",c->getSystemState()->getBuiltinFunction(_getCurrentFrameLabel,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentLabel","",c->getSystemState()->getBuiltinFunction(_getCurrentLabel,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentLabels","",c->getSystemState()->getBuiltinFunction(_getCurrentLabels,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scenes","",c->getSystemState()->getBuiltinFunction(_getScenes,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("currentScene","",c->getSystemState()->getBuiltinFunction(_getCurrentScene,0,Class<Scene>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("isPlaying","",c->getSystemState()->getBuiltinFunction(_getIsPlaying,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentFrame","",c->getSystemState()->getBuiltinFunction(_getCurrentFrame,0,Class<Integer>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("totalFrames","",c->getSystemState()->getBuiltinFunction(_getTotalFrames,0,Class<Integer>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("framesLoaded","",c->getSystemState()->getBuiltinFunction(_getFramesLoaded,0,Class<Integer>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentFrameLabel","",c->getSystemState()->getBuiltinFunction(_getCurrentFrameLabel,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentLabel","",c->getSystemState()->getBuiltinFunction(_getCurrentLabel,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentLabels","",c->getSystemState()->getBuiltinFunction(_getCurrentLabels,0,Class<Array>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scenes","",c->getSystemState()->getBuiltinFunction(_getScenes,0,Class<Array>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentScene","",c->getSystemState()->getBuiltinFunction(_getCurrentScene,0,Class<Scene>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("isPlaying","",c->getSystemState()->getBuiltinFunction(_getIsPlaying,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stop","",c->getSystemState()->getBuiltinFunction(stop),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("play","",c->getSystemState()->getBuiltinFunction(play),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("gotoAndStop","",c->getSystemState()->getBuiltinFunction(gotoAndStop),NORMAL_METHOD,true);
@@ -815,7 +815,7 @@ void MovieClip::AVM1SetupMethods(Class_base* c)
 	c->prototype->setDeclaredMethodByQName("prevFrame","",c->getSystemState()->getBuiltinFunction(prevFrame),NORMAL_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("nextFrame","",c->getSystemState()->getBuiltinFunction(nextFrame),NORMAL_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("createTextField","",c->getSystemState()->getBuiltinFunction(AVM1CreateTextField),NORMAL_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(InteractiveObject::_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(InteractiveObject::_getMouseEnabled,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(InteractiveObject::_setMouseEnabled),SETTER_METHOD,false,false);
 }
 

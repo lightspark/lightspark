@@ -30,26 +30,26 @@ void AVM1Date::sinit(Class_base* c)
 	CLASS_SETUP_CONSTRUCTOR_7_PARAMETER(c, ASObject, _constructor, 7, CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_FINAL);
 	c->isReusable = true;
 
-	c->prototype->setVariableByQName("getDate","",c->getSystemState()->getBuiltinFunction(getDate,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getDay","",c->getSystemState()->getBuiltinFunction(getDay,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getFullYear","",c->getSystemState()->getBuiltinFunction(getFullYear,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getHours","",c->getSystemState()->getBuiltinFunction(getHours,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getMilliseconds","",c->getSystemState()->getBuiltinFunction(getMilliseconds,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getMinutes","",c->getSystemState()->getBuiltinFunction(getMinutes,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getMonth","",c->getSystemState()->getBuiltinFunction(getMonth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getSeconds","",c->getSystemState()->getBuiltinFunction(getSeconds,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getTime","",c->getSystemState()->getBuiltinFunction(getTime,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getTimezoneOffset","",c->getSystemState()->getBuiltinFunction(getTimezoneOffset,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getUTCDate","",c->getSystemState()->getBuiltinFunction(getUTCDate,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getUTCDay","",c->getSystemState()->getBuiltinFunction(getUTCDay,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getUTCFullYear","",c->getSystemState()->getBuiltinFunction(getUTCFullYear,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getUTCHours","",c->getSystemState()->getBuiltinFunction(getUTCHours,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getUTCMilliseconds","",c->getSystemState()->getBuiltinFunction(getUTCMilliseconds,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getUTCMinutes","",c->getSystemState()->getBuiltinFunction(getUTCMinutes,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getUTCMonth","",c->getSystemState()->getBuiltinFunction(getUTCMonth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getUTCSeconds","",c->getSystemState()->getBuiltinFunction(getUTCSeconds,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getUTCYear","",c->getSystemState()->getBuiltinFunction(AVM1_getUTCYear,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("getYear","",c->getSystemState()->getBuiltinFunction(AVM1_getYear,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getDate","",c->getSystemState()->getBuiltinFunction(getDate,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getDay","",c->getSystemState()->getBuiltinFunction(getDay,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getFullYear","",c->getSystemState()->getBuiltinFunction(getFullYear,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getHours","",c->getSystemState()->getBuiltinFunction(getHours,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getMilliseconds","",c->getSystemState()->getBuiltinFunction(getMilliseconds,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getMinutes","",c->getSystemState()->getBuiltinFunction(getMinutes,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getMonth","",c->getSystemState()->getBuiltinFunction(getMonth,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getSeconds","",c->getSystemState()->getBuiltinFunction(getSeconds,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getTime","",c->getSystemState()->getBuiltinFunction(getTime,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getTimezoneOffset","",c->getSystemState()->getBuiltinFunction(getTimezoneOffset,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getUTCDate","",c->getSystemState()->getBuiltinFunction(getUTCDate,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getUTCDay","",c->getSystemState()->getBuiltinFunction(getUTCDay,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getUTCFullYear","",c->getSystemState()->getBuiltinFunction(getUTCFullYear,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getUTCHours","",c->getSystemState()->getBuiltinFunction(getUTCHours,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getUTCMilliseconds","",c->getSystemState()->getBuiltinFunction(getUTCMilliseconds,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getUTCMinutes","",c->getSystemState()->getBuiltinFunction(getUTCMinutes,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getUTCMonth","",c->getSystemState()->getBuiltinFunction(getUTCMonth,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getUTCSeconds","",c->getSystemState()->getBuiltinFunction(getUTCSeconds,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getUTCYear","",c->getSystemState()->getBuiltinFunction(AVM1_getUTCYear,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("getYear","",c->getSystemState()->getBuiltinFunction(AVM1_getYear,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("setDate","",c->getSystemState()->getBuiltinFunction(setDate),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("setFullYear","",c->getSystemState()->getBuiltinFunction(setFullYear,3),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("setHours","",c->getSystemState()->getBuiltinFunction(setHours,4),CONSTANT_TRAIT);
@@ -67,9 +67,9 @@ void AVM1Date::sinit(Class_base* c)
 	c->prototype->setVariableByQName("setUTCSeconds","",c->getSystemState()->getBuiltinFunction(setUTCSeconds,2),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("setUTCYear","",c->getSystemState()->getBuiltinFunction(AVM1_setUTCYear,3),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("setYear","",c->getSystemState()->getBuiltinFunction(AVM1_setYear,3),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("UTC","",c->getSystemState()->getBuiltinFunction(UTC,7,Class<Number>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(valueOf,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("UTC","",c->getSystemState()->getBuiltinFunction(UTC,7,Class<Number>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(valueOf,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_getYear)

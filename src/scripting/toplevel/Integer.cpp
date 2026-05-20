@@ -250,16 +250,16 @@ void Integer::sinit(Class_base* c)
 	c->isReusable = true;
 	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(c->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),asAtomHandler::fromInt(numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(c->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),asAtomHandler::fromInt(numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toFixed",AS3,c->getSystemState()->getBuiltinFunction(_toFixed,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toExponential",AS3,c->getSystemState()->getBuiltinFunction(_toExponential,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toPrecision",AS3,c->getSystemState()->getBuiltinFunction(_toPrecision,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(_valueOf,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toExponential","",c->getSystemState()->getBuiltinFunction(Integer::_toExponential,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toFixed","",c->getSystemState()->getBuiltinFunction(Integer::_toFixed,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toPrecision","",c->getSystemState()->getBuiltinFunction(Integer::_toPrecision,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(Integer::_toString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(_valueOf,1,Class<Integer>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toFixed",AS3,c->getSystemState()->getBuiltinFunction(_toFixed,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toExponential",AS3,c->getSystemState()->getBuiltinFunction(_toExponential,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toPrecision",AS3,c->getSystemState()->getBuiltinFunction(_toPrecision,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(_valueOf,0,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toExponential","",c->getSystemState()->getBuiltinFunction(Integer::_toExponential,1,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toFixed","",c->getSystemState()->getBuiltinFunction(Integer::_toFixed,1,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toPrecision","",c->getSystemState()->getBuiltinFunction(Integer::_toPrecision,1,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(Integer::_toString,1,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(_valueOf,1,Class<Integer>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 }
 
 void Integer::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

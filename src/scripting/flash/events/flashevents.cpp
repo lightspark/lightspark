@@ -324,7 +324,7 @@ void ProgressEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("STANDARD_OUTPUT_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardOutputData"),DECLARED_TRAIT);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,bytesLoaded,Number);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,bytesTotal,Number);
-	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(ProgressEvent,bytesLoaded)
@@ -612,7 +612,7 @@ void NativeWindowBoundsEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("MOVING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"moving"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("RESIZE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"resize"),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("RESIZING",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"resizing"),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	
 	REGISTER_GETTER_RESULTTYPE(c,afterBounds,Rectangle);
 	REGISTER_GETTER_RESULTTYPE(c,beforeBounds,Rectangle);
@@ -754,9 +754,9 @@ void EventDispatcher::sinit(Class_base* c)
 	c->addImplementedInterface(InterfaceClass<IEventDispatcher>::getClass(c->getSystemState()));
 
 	c->setDeclaredMethodByQName("addEventListener","",c->getSystemState()->getBuiltinFunction(addEventListener),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("hasEventListener","",c->getSystemState()->getBuiltinFunction(_hasEventListener,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hasEventListener","",c->getSystemState()->getBuiltinFunction(_hasEventListener,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeEventListener","",c->getSystemState()->getBuiltinFunction(removeEventListener),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("dispatchEvent","",c->getSystemState()->getBuiltinFunction(dispatchEvent,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("dispatchEvent","",c->getSystemState()->getBuiltinFunction(dispatchEvent,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 
 	IEventDispatcher::linkTraits(c);
 }
@@ -1714,7 +1714,7 @@ void SampleDataEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, Event, CLASS_SEALED);
 	c->setVariableAtomByQName("SAMPLE_DATA",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"sampleData"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, data,ByteArray);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, position,Number);

@@ -140,15 +140,7 @@ void ASWorker::finalize()
 	if (inFinalize)
 		return;
 	inFinalize=true;
-	for (auto it = avm1ClassConstructorsCaseSensitive.begin(); it != avm1ClassConstructorsCaseSensitive.end(); it++)
-	{
-		it->second->removeStoredMember();
-	}
 	avm1ClassConstructorsCaseSensitive.clear();
-	for (auto it = avm1ClassConstructorsCaseInsensitive.begin(); it != avm1ClassConstructorsCaseInsensitive.end(); it++)
-	{
-		it->second->removeStoredMember();
-	}
 	avm1ClassConstructorsCaseInsensitive.clear();
 	if (!this->preparedforshutdown)
 		this->prepareShutdown();
@@ -306,17 +298,17 @@ Prototype* ASWorker::getClassPrototype(const Class_base* cls)
 void ASWorker::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructorNotInstantiatable, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("current","",c->getSystemState()->getBuiltinFunction(_getCurrent,0,Class<ASWorker>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("getSharedProperty","",c->getSystemState()->getBuiltinFunction(getSharedProperty,1,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("isSupported","",c->getSystemState()->getBuiltinFunction(isSupported,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("current","",c->getSystemState()->getBuiltinFunction(_getCurrent,0,Class<ASWorker>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("getSharedProperty","",c->getSystemState()->getBuiltinFunction(getSharedProperty,1,Class<ASObject>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isSupported","",c->getSystemState()->getBuiltinFunction(isSupported,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false);
 	REGISTER_GETTER_RESULTTYPE(c, isPrimordial,Boolean);
 	REGISTER_GETTER_RESULTTYPE(c, state,ASString);
 	c->setDeclaredMethodByQName("addEventListener","",c->getSystemState()->getBuiltinFunction(_addEventListener),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createMessageChannel","",c->getSystemState()->getBuiltinFunction(createMessageChannel,1,Class<MessageChannel>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createMessageChannel","",c->getSystemState()->getBuiltinFunction(createMessageChannel,1,Class<MessageChannel>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeEventListener","",c->getSystemState()->getBuiltinFunction(_removeEventListener),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setSharedProperty","",c->getSystemState()->getBuiltinFunction(setSharedProperty),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("start","",c->getSystemState()->getBuiltinFunction(start),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("terminate","",c->getSystemState()->getBuiltinFunction(terminate,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("terminate","",c->getSystemState()->getBuiltinFunction(terminate,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 }
 
 void ASWorker::fillStackTrace(StackTraceList& strace)
@@ -400,16 +392,12 @@ tiny_string ASWorker::getStackTraceString(SystemState* sys,const StackTraceList&
 void ASWorker::AVM1registerTagClass(uint32_t nameID, IFunction* theClassConstructor)
 {
 	unordered_map<uint32_t,IFunction*>* m = AVM1isCaseSensitive() ? &avm1ClassConstructorsCaseSensitive :&avm1ClassConstructorsCaseInsensitive;
-	auto it = m->find(nameID);
-	if (it != m->end())
-	{
-		it->second->removeStoredMember();
-		m->erase(it);
-	}
+	m->erase(nameID);
 	if (theClassConstructor)
 	{
-		theClassConstructor->incRef();
-		theClassConstructor->addStoredMember();
+		if (theClassConstructor->is<AVM1Function>())
+			theClassConstructor->as<AVM1Function>()->getClip()->setRefConstant();
+		theClassConstructor->setRefConstant();
 		m->insert(make_pair(nameID,theClassConstructor));
 	}
 }

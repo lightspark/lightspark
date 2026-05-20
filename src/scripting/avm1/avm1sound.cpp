@@ -45,11 +45,11 @@ void AVM1Sound::sinit(Class_base* c)
 	c->prototype->setVariableByQName("setPan","",c->getSystemState()->getBuiltinFunction(setPan),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("getTransform","",c->getSystemState()->getBuiltinFunction(getTransform),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("setTransform","",c->getSystemState()->getBuiltinFunction(setTransform),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("getDuration","",c->getSystemState()->getBuiltinFunction(AVM1_duration,0,Class<Number>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("getDuration","",c->getSystemState()->getBuiltinFunction(AVM1_duration,0,Class<Number>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("loadSound","",c->getSystemState()->getBuiltinFunction(loadSound),DYNAMIC_TRAIT);
-	c->prototype->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(getPosition,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(getPosition,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(AVM1_IgnoreSetter),SETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("duration","",c->getSystemState()->getBuiltinFunction(AVM1_duration,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("duration","",c->getSystemState()->getBuiltinFunction(AVM1_duration,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("duration","",c->getSystemState()->getBuiltinFunction(AVM1_IgnoreSetter),SETTER_METHOD,false,false);
 
 }

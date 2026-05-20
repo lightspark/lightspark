@@ -214,7 +214,7 @@ ASFUNCTIONBODY_GETTER(c,name) \
 
 /* registers getter/setter with Class_base. To be used in ::sinit()-functions */
 #define REGISTER_GETTER_RESULTTYPE(c,name,cls) \
-	c->setDeclaredMethodByQName(#name,"",c->getSystemState()->getBuiltinFunction(_getter_##name,0,Class<cls>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true)
+	c->setDeclaredMethodByQName(#name,"",c->getSystemState()->getBuiltinFunction(_getter_##name,0,Class<cls>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true)
 
 
 #define REGISTER_GETTER_SETTER_RESULTTYPE(c,name,cls) \
@@ -238,7 +238,7 @@ ASFUNCTIONBODY_GETTER(c,name) \
 	c->setDeclaredMethodByQName(#name,"",c->getSystemState()->getBuiltinFunction(_setter_##name),SETTER_METHOD,false)
 
 #define REGISTER_GETTER_STATIC_RESULTTYPE(c,name,cls) \
-	c->setDeclaredMethodByQName(#name,"",c->getSystemState()->getBuiltinFunction(_getter_##name,0,Class<cls>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false)
+	c->setDeclaredMethodByQName(#name,"",c->getSystemState()->getBuiltinFunction(_getter_##name,0,Class<cls>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false)
 
 #define REGISTER_GETTER_SETTER_STATIC(c,name) \
 	REGISTER_GETTER_STATIC(c,name); \
@@ -253,10 +253,10 @@ ASFUNCTIONBODY_GETTER(c,name) \
 #define CLASS_SEALED 2
 
 #define CLASS_GETREF(c,name) \
-Class<name>::getRef(c->getSystemState()).getPtr()
+Class<name>::getClass(c->getSystemState())
 
 #define CLASS_SETUP_NO_CONSTRUCTOR(c, superClass, attributes) \
-	c->setSuper(Class<superClass>::getRef(c->getSystemState())); \
+	c->setSuper(Class<superClass>::getClass(c->getSystemState())); \
 	c->setConstructor(nullptr); \
 	c->isFinal = ((attributes) & CLASS_FINAL) != 0;	\
 	c->isSealed = ((attributes) & CLASS_SEALED) != 0
@@ -499,7 +499,7 @@ public:
 	Prototype* getPrototype(ASWorker* wrk) const;
 	ASFUNCTION_ATOM(_getter_prototype);
 	ASPROPERTY_GETTER(_NR<ObjectConstructor>,constructorprop);
-	_NR<Class_base> super;
+	Class_base* super;
 	//We need to know what is the context we are referring to
 	ABCContext* context;
 	const QName class_name;
@@ -559,7 +559,7 @@ public:
 	 */
 	bool coerce(ASWorker* wrk, asAtom& o) override;
 	
-	void setSuper(_R<Class_base> super_);
+	void setSuper(Class_base* super_);
 	inline const variable* findBorrowedGettable(const multiname& name, uint32_t* nsRealId = nullptr) const
 	{
 		return ASObject::findGettableImplConst(getInstanceWorker(), borrowedVariables,name,nsRealId);

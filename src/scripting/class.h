@@ -210,7 +210,23 @@ public:
 		ret->setConstructIndicator();
 		return ret;
 	}
-
+	inline static Class<T>* getClassUninitialized(SystemState* sys)
+	{
+		uint32_t classId=ClassName<T>::id;
+		Class<T>* ret=nullptr;
+		Class_base** retAddr= &sys->builtinClassesUninitialized[classId];
+		if(*retAddr==nullptr)
+		{
+			//Create the class
+			QName name(sys->getUniqueStringId(ClassName<T>::name),sys->getUniqueStringId(ClassName<T>::ns));
+			MemoryAccount* m = sys->allocateMemoryAccount(ClassName<T>::name);
+			ret=new (m) Class<T>(name, ClassName<T>::id, m);
+			*retAddr=ret;
+		}
+		else
+			ret=static_cast<Class<T>*>(*retAddr);
+		return ret;
+	}
 	inline static Class<T>* getClass(SystemState* sys)
 	{
 		uint32_t classId=ClassName<T>::id;
@@ -218,17 +234,13 @@ public:
 		Class_base** retAddr= &sys->builtinClasses[classId];
 		if(*retAddr==nullptr)
 		{
-			//Create the class
-			QName name(sys->getUniqueStringId(ClassName<T>::name),sys->getUniqueStringId(ClassName<T>::ns));
-			MemoryAccount* m = sys->allocateMemoryAccount(ClassName<T>::name);
-			ret=new (m) Class<T>(name, ClassName<T>::id, m);
+			ret = getClassUninitialized(sys);
 			ret->setWorker(sys->worker);
 			ret->setSystemState(sys);
 			ret->incRef();
-			*retAddr=ret;
 			ret->prototype = _MNR(new_objectPrototype(sys->worker));
+			*retAddr=ret;
 			T::sinit(ret);
-
 			ret->initStandardProps();
 			if (ClassName<T>::isAVM1)
 				ret->AVM1initPrototype();
@@ -346,6 +358,7 @@ public:
 		return ret;
 	}
 
+	static Class<ASObject>* getClassUninitialized(SystemState* sys);
 	static Class<ASObject>* getClass(SystemState* sys);
 	static _R<Class<ASObject>> getRef(SystemState* sys)
 	{

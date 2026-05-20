@@ -51,7 +51,7 @@ void StatusEvent::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, Event, _constructor, CLASS_SEALED);
 	c->setVariableAtomByQName("STATUS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"status"),DECLARED_TRAIT);
-	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, code, ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, level, ASString);
 }

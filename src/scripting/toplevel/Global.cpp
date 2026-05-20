@@ -30,7 +30,7 @@ Global::Global(ASWorker* wrk, Class_base* cb, ABCContext* c, int s, bool avm1):A
 
 void Global::sinit(Class_base* c)
 {
-	c->setSuper(Class<ASObject>::getRef(c->getSystemState()));
+	c->setSuper(Class<ASObject>::getClass(c->getSystemState()));
 }
 
 void Global::getVariableByMultinameOpportunistic(asAtom& ret, const multiname& name,ASWorker* wrk)

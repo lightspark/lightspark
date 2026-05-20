@@ -48,33 +48,33 @@ using namespace lightspark;
 void Stage::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("allowFullScreen","",c->getSystemState()->getBuiltinFunction(_getAllowFullScreen,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("allowFullScreenInteractive","",c->getSystemState()->getBuiltinFunction(_getAllowFullScreenInteractive,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("colorCorrectionSupport","",c->getSystemState()->getBuiltinFunction(_getColorCorrectionSupport,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fullScreenHeight","",c->getSystemState()->getBuiltinFunction(_getStageHeight,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fullScreenWidth","",c->getSystemState()->getBuiltinFunction(_getStageWidth,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageWidth","",c->getSystemState()->getBuiltinFunction(_getStageWidth,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("allowFullScreen","",c->getSystemState()->getBuiltinFunction(_getAllowFullScreen,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("allowFullScreenInteractive","",c->getSystemState()->getBuiltinFunction(_getAllowFullScreenInteractive,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("colorCorrectionSupport","",c->getSystemState()->getBuiltinFunction(_getColorCorrectionSupport,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullScreenHeight","",c->getSystemState()->getBuiltinFunction(_getStageHeight,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fullScreenWidth","",c->getSystemState()->getBuiltinFunction(_getStageWidth,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageWidth","",c->getSystemState()->getBuiltinFunction(_getStageWidth,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageWidth","",c->getSystemState()->getBuiltinFunction(_setStageWidth),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageHeight","",c->getSystemState()->getBuiltinFunction(_getStageHeight,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageHeight","",c->getSystemState()->getBuiltinFunction(_getStageHeight,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stageHeight","",c->getSystemState()->getBuiltinFunction(_setStageHeight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_getStageWidth,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_getStageWidth,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_getStageHeight),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("scaleMode","",c->getSystemState()->getBuiltinFunction(_getScaleMode,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("scaleMode","",c->getSystemState()->getBuiltinFunction(_getScaleMode,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("scaleMode","",c->getSystemState()->getBuiltinFunction(_setScaleMode),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("loaderInfo","",c->getSystemState()->getBuiltinFunction(_getLoaderInfo,0,Class<LoaderInfo>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("stageVideos","",c->getSystemState()->getBuiltinFunction(_getStageVideos,0,Class<Vector>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("focus","",c->getSystemState()->getBuiltinFunction(_getFocus,0,Class<InteractiveObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("loaderInfo","",c->getSystemState()->getBuiltinFunction(_getLoaderInfo,0,Class<LoaderInfo>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("stageVideos","",c->getSystemState()->getBuiltinFunction(_getStageVideos,0,Class<Vector>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("focus","",c->getSystemState()->getBuiltinFunction(_getFocus,0,Class<InteractiveObject>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("focus","",c->getSystemState()->getBuiltinFunction(_setFocus),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("frameRate","",c->getSystemState()->getBuiltinFunction(_getFrameRate,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("frameRate","",c->getSystemState()->getBuiltinFunction(_getFrameRate,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("frameRate","",c->getSystemState()->getBuiltinFunction(_setFrameRate),SETTER_METHOD,true);
 
 	// override the setter from DisplayObjectContainer
 	c->setDeclaredMethodByQName("tabChildren","",c->getSystemState()->getBuiltinFunction(_setTabChildren),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("wmodeGPU","",c->getSystemState()->getBuiltinFunction(_getWmodeGPU,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("wmodeGPU","",c->getSystemState()->getBuiltinFunction(_getWmodeGPU,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("invalidate","",c->getSystemState()->getBuiltinFunction(_invalidate),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("color","",c->getSystemState()->getBuiltinFunction(_getColor,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("color","",c->getSystemState()->getBuiltinFunction(_getColor,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("color","",c->getSystemState()->getBuiltinFunction(_setColor),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("isFocusInaccessible","",c->getSystemState()->getBuiltinFunction(_isFocusInaccessible,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isFocusInaccessible","",c->getSystemState()->getBuiltinFunction(_isFocusInaccessible,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 
 	// override setter for DisplayObject properties that are not settable on Stage
 	c->setDeclaredMethodByQName("accessibilityProperties","",c->getSystemState()->getBuiltinFunction(property_unsettable),SETTER_METHOD,true);

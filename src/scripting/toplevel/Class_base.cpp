@@ -221,6 +221,7 @@ Class_base::Class_base(const QName& name, uint32_t _classID, MemoryAccount* m)
 	,qualifiedClassnameID(UINT32_MAX)
 	,global(nullptr)
 	,borrowedVariables(true)
+	,super(nullptr)
 	,context(nullptr)
 	,class_name(name)
 	,memoryAccount(m)
@@ -244,6 +245,7 @@ Class_base::Class_base(const Class_object* c)
 	,qualifiedClassnameID(UINT32_MAX)
 	,global(nullptr)
 	,borrowedVariables(true)
+	,super(nullptr)
 	,context(nullptr)
 	,class_name(BUILTIN_STRINGS::STRING_CLASS,BUILTIN_STRINGS::EMPTY)
 	,memoryAccount(nullptr)
@@ -370,11 +372,13 @@ bool Class_base::coerce(ASWorker* wrk, asAtom& o)
 	return false;
 }
 
-void Class_base::setSuper(_R<Class_base> super_)
+void Class_base::setSuper(Class_base* super_)
 {
+	assert(super_ != this);
+	assert(super_->getConstant());
 	assert(!super);
 	super = super_;
-	copyBorrowedTraits(super.getPtr());
+	copyBorrowedTraits(super);
 }
 
 void Class_base::addConstructorGetter()
@@ -537,7 +541,7 @@ void Class_base::handleConstruction(asAtom& target, asAtom* args, unsigned int a
 void Class_base::finalize()
 {
 	borrowedVariables.destroyContents();
-	super.reset();
+	super = nullptr;
 	prototype.reset();
 	interfaces_added.clear();
 	protected_ns = nsNameAndKind(getSystemState(),"",NAMESPACE);
@@ -822,12 +826,12 @@ void Class_base::describeInstance(pugi::xml_node& root, bool istemplate, bool fo
 
 	describeConstructor(root);
 	// extendsClass
-	const Class_base* c=super.getPtr();
+	const Class_base* c=super;
 	while(c)
 	{
 		pugi::xml_node node=root.append_child("extendsClass");
 		node.append_attribute("type").set_value(c->getQualifiedClassName(true).raw_buf());
-		c=c->super.getPtr();
+		c=c->super;
 		if (istemplate)
 			break;
 	}
@@ -848,7 +852,7 @@ void Class_base::describeInstance(pugi::xml_node& root, bool istemplate, bool fo
 			pugi::xml_node node=root.append_child("implementsInterface");
 			node.append_attribute("type").set_value((*it)->getQualifiedClassName(true).raw_buf());
 		}
-		c=c->super.getPtr();
+		c=c->super;
 	}
 
 	// variables, methods, accessors
@@ -859,7 +863,7 @@ void Class_base::describeInstance(pugi::xml_node& root, bool istemplate, bool fo
 	{
 		c->describeTraits(root, c->context->instances[c->class_index].traits,propnames,bfirst,forinstance,forfactory);
 		bfirst = false;
-		c=c->super.getPtr();
+		c=c->super;
 		if (istemplate)
 			break;
 	}
@@ -870,7 +874,7 @@ void Class_base::describeInstance(pugi::xml_node& root, bool istemplate, bool fo
 		{
 			describeVariables(root,c,propnames,forinstance || !bfirst ? c->borrowedVariables : c->Variables,istemplate,forinstance, forJSON);
 			bfirst = false;
-			c = c->super.getPtr();
+			c = c->super;
 		}
 	}
 
@@ -1232,7 +1236,7 @@ void Class_base::describeMetadata(pugi::xml_node& root, const traits_info& trait
 
 void Class_base::initializeProtectedNamespace(uint32_t nameId, const namespace_info& ns, ApplicationDomain *appdomain)
 {
-	Class_inherit* cur=dynamic_cast<Class_inherit*>(super.getPtr());
+	Class_inherit* cur=dynamic_cast<Class_inherit*>(super);
 	nsNameAndKind* baseNs=NULL;
 	while(cur)
 	{
@@ -1241,7 +1245,7 @@ void Class_base::initializeProtectedNamespace(uint32_t nameId, const namespace_i
 			baseNs=&cur->protected_ns;
 			break;
 		}
-		cur=dynamic_cast<Class_inherit*>(cur->super.getPtr());
+		cur=dynamic_cast<Class_inherit*>(cur->super);
 	}
 	if(baseNs==NULL)
 		protected_ns=nsNameAndKind(getSystemState(),nameId,(NS_KIND)(int)ns.kind,appdomain);
@@ -1298,7 +1302,7 @@ bool Class_base::checkExistingFunction(const multiname &name)
 		}
 		ASATOM_DECREF(otmp);
 	}
-	if (!super.isNull())
+	if (super)
 		return super->checkExistingFunction(name);
 	return false;
 }

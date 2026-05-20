@@ -66,11 +66,11 @@ void Timer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("currentCount","",c->getSystemState()->getBuiltinFunction(_getCurrentCount,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("repeatCount","",c->getSystemState()->getBuiltinFunction(_getRepeatCount,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("currentCount","",c->getSystemState()->getBuiltinFunction(_getCurrentCount,0,Class<Integer>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("repeatCount","",c->getSystemState()->getBuiltinFunction(_getRepeatCount,0,Class<Integer>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("repeatCount","",c->getSystemState()->getBuiltinFunction(_setRepeatCount),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("running","",c->getSystemState()->getBuiltinFunction(_getRunning,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("delay","",c->getSystemState()->getBuiltinFunction(_getDelay,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("running","",c->getSystemState()->getBuiltinFunction(_getRunning,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("delay","",c->getSystemState()->getBuiltinFunction(_getDelay,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("delay","",c->getSystemState()->getBuiltinFunction(_setDelay),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("start","",c->getSystemState()->getBuiltinFunction(start),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("reset","",c->getSystemState()->getBuiltinFunction(reset),NORMAL_METHOD,true);

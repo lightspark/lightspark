@@ -38,13 +38,13 @@ void Vector::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("length",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(getLength,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("length",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(setLength,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(getLength,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(setLength,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("toString",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(_toString),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("toString",nsNameAndKind(c->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),c->getSystemState()->getBuiltinFunction(_toString),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("fixed",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(getFixed,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("fixed",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(setFixed,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("concat",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(_concat,0,Class<Vector>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("fixed",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(getFixed,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("fixed",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(setFixed,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("concat",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(_concat,0,Class<Vector>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("concat",nsNameAndKind(c->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),c->getSystemState()->getBuiltinFunction(_concat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("every",nsNameAndKind(),c->getSystemState()->getBuiltinFunction(every),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("every",nsNameAndKind(c->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),c->getSystemState()->getBuiltinFunction(every),NORMAL_METHOD,true);

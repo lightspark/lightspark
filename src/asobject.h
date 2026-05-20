@@ -442,6 +442,7 @@ public:
 	bool isResolved:1;
 	bool isenumerable:1;
 	bool issealed:1;
+	bool isfinal:1;
 	bool nameIsInteger:1;
 	bool varIsRefCounted:1;
 	bool isStatic:1; // indicates if this variable is a member of a static ASObject
@@ -460,6 +461,7 @@ public:
 		,isResolved(false)
 		,isenumerable(true)
 		,issealed(false)
+		,isfinal(false)
 		,nameIsInteger(_nameIsInteger)
 		,varIsRefCounted(false)
 		,isStatic(_isStatic)
@@ -1213,7 +1215,7 @@ public:
 	//NOTE: the isBorrowed flag is used to distinguish methods/setters/getters that are inside a class but on behalf of the instances
 	void setDeclaredMethodByQName(const tiny_string& name, const tiny_string& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true,uint8_t min_swfversion=0);
 	void setDeclaredMethodByQName(const tiny_string& name, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true, uint8_t min_swfversion=0);
-	void setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true, uint8_t min_swfversion=0, bool forPrototype=false);
+	void setDeclaredMethodByQName(uint32_t nameId, const nsNameAndKind& ns, ASObject* o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true, uint8_t min_swfversion=0, bool forPrototype=false, bool isFinal=false);
 	void setDeclaredMethodAtomByQName(const tiny_string& name, const tiny_string& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodAtomByQName(const tiny_string& name, const nsNameAndKind& ns, asAtom o, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);
 	void setDeclaredMethodAtomByQName(uint32_t nameId, const nsNameAndKind& ns, asAtom f, METHOD_TYPE type, bool isBorrowed, bool isEnumerable = true);

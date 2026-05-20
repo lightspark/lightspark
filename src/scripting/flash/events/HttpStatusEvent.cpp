@@ -46,7 +46,7 @@ void HTTPStatusEvent::sinit(Class_base* c)
 	// Value is undefined and not "httpResponseStatus" like stated in documentation
 	c->setVariableAtomByQName("HTTP_RESPONSE_STATUS",nsNameAndKind(),asAtomHandler::undefinedAtom,DECLARED_TRAIT);
 
-	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,redirected,Boolean);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,responseHeaders,Array);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,responseURL,ASString);

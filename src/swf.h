@@ -402,6 +402,7 @@ public:
 
 	//This is an array of fixed size, we can avoid using std::vector
 	Class_base** builtinClasses;
+	Class_base** builtinClassesUninitialized; // array of classes not yet initialized, needed for access in <class>::sinit()
 
 	//Flags for command line options
 	bool useInterpreter;

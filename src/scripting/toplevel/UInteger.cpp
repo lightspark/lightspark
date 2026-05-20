@@ -185,16 +185,16 @@ void UInteger::sinit(Class_base* c)
 	c->isReusable = true;
 	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)0xFFFFFFFF),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)0),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toFixed",AS3,c->getSystemState()->getBuiltinFunction(_toFixed,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toExponential",AS3,c->getSystemState()->getBuiltinFunction(_toExponential,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toPrecision",AS3,c->getSystemState()->getBuiltinFunction(_toPrecision,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(_valueOf,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toExponential","",c->getSystemState()->getBuiltinFunction(_toExponential,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toFixed","",c->getSystemState()->getBuiltinFunction(_toFixed,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toPrecision","",c->getSystemState()->getBuiltinFunction(_toPrecision,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(_valueOf,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toFixed",AS3,c->getSystemState()->getBuiltinFunction(_toFixed,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toExponential",AS3,c->getSystemState()->getBuiltinFunction(_toExponential,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toPrecision",AS3,c->getSystemState()->getBuiltinFunction(_toPrecision,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(_valueOf,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toExponential","",c->getSystemState()->getBuiltinFunction(_toExponential,1,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toFixed","",c->getSystemState()->getBuiltinFunction(_toFixed,1,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toPrecision","",c->getSystemState()->getBuiltinFunction(_toPrecision,1,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,1,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(_valueOf,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(UInteger,_toString)

@@ -147,10 +147,10 @@ ASFUNCTIONBODY_ATOM(lightspark,getQualifiedSuperclassName)
 	{
 		c = asAtomHandler::getClass(args[0],wrk->getSystemState());
 		assert_and_throw(c);
-		c=c->super.getPtr();
+		c=c->super;
 	}
 	else
-		c=asAtomHandler::as<Class_base>(args[0])->super.getPtr();
+		c=asAtomHandler::as<Class_base>(args[0])->super;
 
 	if (!c)
 		asAtomHandler::setNull(ret);

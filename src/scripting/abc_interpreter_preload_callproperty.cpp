@@ -85,7 +85,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 		if (needSuper)
 		{
 			if (state.function->inClass)
-				cls = state.function->inClass->super.getPtr();
+				cls = state.function->inClass->super;
 			else if (typestack.size() >= operationcount && typestack[typestack.size()-operationcount].obj)
 				cls = typestack[typestack.size()-operationcount].obj;
 		}
@@ -138,7 +138,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 			{
 				cls = state.operandlist[state.operandlist.size()-operationcount].objtype;
 				if (needSuper)
-					cls = cls->as<Class_base>()->super.getPtr();
+					cls = cls->as<Class_base>()->super;
 				v=cls->findVariableByMultiname(*name,cls->as<Class_base>(),nullptr,nullptr,false,state.worker);
 				if (v && !v->isSyntheticFunctionVar())
 					v=nullptr;

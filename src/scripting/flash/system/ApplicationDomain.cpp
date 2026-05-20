@@ -41,12 +41,12 @@ void ApplicationDomain::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	//Static
-	c->setDeclaredMethodByQName("currentDomain","",c->getSystemState()->getBuiltinFunction(_getCurrentDomain,0,Class<ApplicationDomain>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",c->getSystemState()->getBuiltinFunction(_getMinDomainMemoryLength,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("currentDomain","",c->getSystemState()->getBuiltinFunction(_getCurrentDomain,0,Class<ApplicationDomain>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("MIN_DOMAIN_MEMORY_LENGTH","",c->getSystemState()->getBuiltinFunction(_getMinDomainMemoryLength,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false);
 	//Instance
-	c->setDeclaredMethodByQName("hasDefinition","",c->getSystemState()->getBuiltinFunction(hasDefinition,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getDefinition","",c->getSystemState()->getBuiltinFunction(getDefinition,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getQualifiedDefinitionNames","",c->getSystemState()->getBuiltinFunction(getQualifiedDefinitionNames,0,Class<Vector>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hasDefinition","",c->getSystemState()->getBuiltinFunction(hasDefinition,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getDefinition","",c->getSystemState()->getBuiltinFunction(getDefinition,0,Class<ASObject>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getQualifiedDefinitionNames","",c->getSystemState()->getBuiltinFunction(getQualifiedDefinitionNames,0,Class<Vector>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,domainMemory,ByteArray);
 	REGISTER_GETTER_RESULTTYPE(c,parentDomain,ApplicationDomain);
 }
@@ -107,9 +107,9 @@ void ApplicationDomain::addSuperClassNotFilled(Class_base *cls)
 	auto i = classesBeingDefined.cbegin();
 	while (i != classesBeingDefined.cend())
 	{
-		if(i->second == cls->super.getPtr())
+		if(i->second == cls->super)
 		{
-			classesSuperNotFilled.insert(make_pair(cls,cls->super.getPtr()));
+			classesSuperNotFilled.insert(make_pair(cls,cls->super));
 			break;
 		}
 		i++;
@@ -136,7 +136,7 @@ bool ApplicationDomain::newClassRecursiveLink(Class_base* target, Class_base* c)
 {
 	if(c->super)
 	{
-		if (!newClassRecursiveLink(target, c->super.getPtr()))
+		if (!newClassRecursiveLink(target, c->super))
 			return false;
 	}
 	bool bAllDefined = false;
@@ -158,12 +158,12 @@ void ApplicationDomain::copyBorrowedTraitsFromSuper(Class_base *cls)
 	if (!cls)
 		return;
 	bool super_initialized=true;
-	bool cls_initialized=cls->super.isNull() || classesSuperNotFilled.empty();
+	bool cls_initialized=!cls->super || classesSuperNotFilled.empty();
 	if (cls->super)
 	{
 		for (auto itsup = classesSuperNotFilled.begin();itsup != classesSuperNotFilled.end(); itsup++)
 		{
-			if(itsup->second == cls->super.getPtr())
+			if(itsup->second == cls->super)
 			{
 				super_initialized=false;
 				break;
@@ -184,7 +184,7 @@ void ApplicationDomain::copyBorrowedTraitsFromSuper(Class_base *cls)
 			else
 			{
 				// cls->super was not yet initialized, make sure all classes that have cls as super get borrowed traits from cls->super
-				it->second = cls->super.getPtr();
+				it->second = cls->super;
 				it++;
 			}
 		}

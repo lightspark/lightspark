@@ -48,8 +48,8 @@ void IFunction::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("call",AS3,c->getSystemState()->getBuiltinFunction(IFunction::_call,1),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("apply","",c->getSystemState()->getBuiltinFunction(IFunction::apply,2),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("apply",AS3,c->getSystemState()->getBuiltinFunction(IFunction::apply,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(IFunction::_length,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(IFunction::_length,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(IFunction::_length,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(IFunction::_length,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(IFunction::_toString),NORMAL_METHOD,false);
 }
 

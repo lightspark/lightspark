@@ -72,29 +72,29 @@ void XMLNode::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("attributes","",c->getSystemState()->getBuiltinFunction(get_attributes,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("attributes","",c->getSystemState()->getBuiltinFunction(get_attributes,0,Class<ASObject>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("attributes","",c->getSystemState()->getBuiltinFunction(set_attributes),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("childNodes","",c->getSystemState()->getBuiltinFunction(XMLNode::childNodes,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("firstChild","",c->getSystemState()->getBuiltinFunction(XMLNode::firstChild,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("lastChild","",c->getSystemState()->getBuiltinFunction(lastChild,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("nextSibling","",c->getSystemState()->getBuiltinFunction(nextSibling,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("nodeType","",c->getSystemState()->getBuiltinFunction(_getNodeType,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("nodeName","",c->getSystemState()->getBuiltinFunction(_getNodeName,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("childNodes","",c->getSystemState()->getBuiltinFunction(XMLNode::childNodes,0,Class<Array>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("firstChild","",c->getSystemState()->getBuiltinFunction(XMLNode::firstChild,0,Class<XMLNode>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("lastChild","",c->getSystemState()->getBuiltinFunction(lastChild,0,Class<XMLNode>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nextSibling","",c->getSystemState()->getBuiltinFunction(nextSibling,0,Class<XMLNode>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nodeType","",c->getSystemState()->getBuiltinFunction(_getNodeType,0,Class<Integer>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nodeName","",c->getSystemState()->getBuiltinFunction(_getNodeName,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("nodeName","",c->getSystemState()->getBuiltinFunction(_setNodeName),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("nodeValue","",c->getSystemState()->getBuiltinFunction(_getNodeValue,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("parentNode","",c->getSystemState()->getBuiltinFunction(parentNode,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("previousSibling","",c->getSystemState()->getBuiltinFunction(previousSibling,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("localName","",c->getSystemState()->getBuiltinFunction(_getLocalName,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nodeValue","",c->getSystemState()->getBuiltinFunction(_getNodeValue,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("parentNode","",c->getSystemState()->getBuiltinFunction(parentNode,0,Class<XMLNode>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("previousSibling","",c->getSystemState()->getBuiltinFunction(previousSibling,0,Class<XMLNode>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("localName","",c->getSystemState()->getBuiltinFunction(_getLocalName,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("appendChild","",c->getSystemState()->getBuiltinFunction(appendChild),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("cloneNode","",c->getSystemState()->getBuiltinFunction(cloneNode,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeNode","",c->getSystemState()->getBuiltinFunction(removeNode,0,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("hasChildNodes","",c->getSystemState()->getBuiltinFunction(hasChildNodes,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("cloneNode","",c->getSystemState()->getBuiltinFunction(cloneNode,0,Class<XMLNode>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeNode","",c->getSystemState()->getBuiltinFunction(removeNode,0,Class<XMLNode>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("hasChildNodes","",c->getSystemState()->getBuiltinFunction(hasChildNodes,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("insertBefore","",c->getSystemState()->getBuiltinFunction(insertBefore,2),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("prefix","",c->getSystemState()->getBuiltinFunction(prefix,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("namespaceURI","",c->getSystemState()->getBuiltinFunction(namespaceURI,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("getNamespaceForPrefix","",c->getSystemState()->getBuiltinFunction(getNamespaceForPrefix,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getPrefixForNamespace","",c->getSystemState()->getBuiltinFunction(getPrefixForNamespace,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("prefix","",c->getSystemState()->getBuiltinFunction(prefix,0,Class<ASObject>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("namespaceURI","",c->getSystemState()->getBuiltinFunction(namespaceURI,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getNamespaceForPrefix","",c->getSystemState()->getBuiltinFunction(getNamespaceForPrefix,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getPrefixForNamespace","",c->getSystemState()->getBuiltinFunction(getPrefixForNamespace,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 }
 
 void XMLNode::finalize()
@@ -844,12 +844,12 @@ void XMLDocument::sinit(Class_base* c)
 	CLASS_SETUP(c, XMLNode, _constructor, CLASS_SEALED);
 	c->isReusable=true;
 	c->setDeclaredMethodByQName("parseXML","",c->getSystemState()->getBuiltinFunction(parseXML),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createElement","",c->getSystemState()->getBuiltinFunction(createElement,1,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("createTextNode","",c->getSystemState()->getBuiltinFunction(createTextNode,1,Class<XMLNode>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("idMap","",c->getSystemState()->getBuiltinFunction(_idmap,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("docTypeDecl","",c->getSystemState()->getBuiltinFunction(_docTypeDecl,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("xmlDecl","",c->getSystemState()->getBuiltinFunction(_xmlDecl,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createElement","",c->getSystemState()->getBuiltinFunction(createElement,1,Class<XMLNode>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("createTextNode","",c->getSystemState()->getBuiltinFunction(createTextNode,1,Class<XMLNode>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("idMap","",c->getSystemState()->getBuiltinFunction(_idmap,0,Class<ASObject>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("docTypeDecl","",c->getSystemState()->getBuiltinFunction(_docTypeDecl,0,Class<ASObject>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("xmlDecl","",c->getSystemState()->getBuiltinFunction(_xmlDecl,0,Class<ASObject>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, ignoreWhite,Boolean);
 }
 

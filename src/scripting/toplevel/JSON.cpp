@@ -33,8 +33,8 @@ JSON::JSON(ASWorker* wrk,Class_base* c):ASObject(wrk,c)
 void JSON::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
-	c->setDeclaredMethodByQName("parse","",c->getSystemState()->getBuiltinFunction(_parse,2,Class<ASObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("stringify","",c->getSystemState()->getBuiltinFunction(_stringify,3,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("parse","",c->getSystemState()->getBuiltinFunction(_parse,2,Class<ASObject>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("stringify","",c->getSystemState()->getBuiltinFunction(_stringify,3,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false);
 }
 void JSON::buildTraits(ASObject* o)
 {

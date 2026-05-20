@@ -35,22 +35,22 @@ void AVM1Point::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 
-	c->prototype->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(AVM1_getX,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(AVM1_getY,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_getlength,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(AVM1_getX,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(AVM1_getY,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_getlength,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(AVM1_setX),SETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(AVM1_setY),SETTER_METHOD,false,false);
 
-	c->prototype->setVariableByQName("interpolate","",c->getSystemState()->getBuiltinFunction(AVM1_interpolate,3,Class<AVM1Point>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("distance","",c->getSystemState()->getBuiltinFunction(AVM1_distance,2,Class<AVM1Point>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("add","",c->getSystemState()->getBuiltinFunction(add,1,Class<Point>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("subtract","",c->getSystemState()->getBuiltinFunction(subtract,1,Class<Point>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<Point>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("equals","",c->getSystemState()->getBuiltinFunction(equals,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("interpolate","",c->getSystemState()->getBuiltinFunction(AVM1_interpolate,3,Class<AVM1Point>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("distance","",c->getSystemState()->getBuiltinFunction(AVM1_distance,2,Class<AVM1Point>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("add","",c->getSystemState()->getBuiltinFunction(add,1,Class<Point>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("subtract","",c->getSystemState()->getBuiltinFunction(subtract,1,Class<Point>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<Point>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("equals","",c->getSystemState()->getBuiltinFunction(equals,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("normalize","",c->getSystemState()->getBuiltinFunction(AVM1_normalize),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("offset","",c->getSystemState()->getBuiltinFunction(AVM1_offset),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("polar","",c->getSystemState()->getBuiltinFunction(AVM1_polar,2,Class<Point>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(AVM1_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("polar","",c->getSystemState()->getBuiltinFunction(AVM1_polar,2,Class<Point>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(AVM1_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 }
 
 void AVM1Point::finalize()

@@ -91,51 +91,51 @@ void ASString::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("split",AS3,c->getSystemState()->getBuiltinFunction(split,2,Class<Array>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("substr",AS3,c->getSystemState()->getBuiltinFunction(substr,2,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("substring",AS3,c->getSystemState()->getBuiltinFunction(substring,2,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("replace",AS3,c->getSystemState()->getBuiltinFunction(replace,2,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("concat",AS3,c->getSystemState()->getBuiltinFunction(concat,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("match",AS3,c->getSystemState()->getBuiltinFunction(match,1,Class<Array>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("search",AS3,c->getSystemState()->getBuiltinFunction(search,1,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("indexOf",AS3,c->getSystemState()->getBuiltinFunction(indexOf,2,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("lastIndexOf",AS3,c->getSystemState()->getBuiltinFunction(lastIndexOf,2,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("charCodeAt",AS3,c->getSystemState()->getBuiltinFunction(charCodeAt,0,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("charAt",AS3,c->getSystemState()->getBuiltinFunction(charAt,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("slice",AS3,c->getSystemState()->getBuiltinFunction(slice,2,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toLocaleLowerCase",AS3,c->getSystemState()->getBuiltinFunction(toLowerCase,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toLocaleUpperCase",AS3,c->getSystemState()->getBuiltinFunction(toUpperCase,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toLowerCase",AS3,c->getSystemState()->getBuiltinFunction(toLowerCase,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toUpperCase",AS3,c->getSystemState()->getBuiltinFunction(toUpperCase,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("localeCompare",AS3,c->getSystemState()->getBuiltinFunction(localeCompare,1,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("split",AS3,c->getSystemState()->getBuiltinFunction(split,2,Class<Array>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("substr",AS3,c->getSystemState()->getBuiltinFunction(substr,2,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("substring",AS3,c->getSystemState()->getBuiltinFunction(substring,2,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("replace",AS3,c->getSystemState()->getBuiltinFunction(replace,2,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("concat",AS3,c->getSystemState()->getBuiltinFunction(concat,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("match",AS3,c->getSystemState()->getBuiltinFunction(match,1,Class<Array>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("search",AS3,c->getSystemState()->getBuiltinFunction(search,1,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("indexOf",AS3,c->getSystemState()->getBuiltinFunction(indexOf,2,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("lastIndexOf",AS3,c->getSystemState()->getBuiltinFunction(lastIndexOf,2,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("charCodeAt",AS3,c->getSystemState()->getBuiltinFunction(charCodeAt,0,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("charAt",AS3,c->getSystemState()->getBuiltinFunction(charAt,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("slice",AS3,c->getSystemState()->getBuiltinFunction(slice,2,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLocaleLowerCase",AS3,c->getSystemState()->getBuiltinFunction(toLowerCase,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLocaleUpperCase",AS3,c->getSystemState()->getBuiltinFunction(toUpperCase,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toLowerCase",AS3,c->getSystemState()->getBuiltinFunction(toLowerCase,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toUpperCase",AS3,c->getSystemState()->getBuiltinFunction(toUpperCase,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("localeCompare",AS3,c->getSystemState()->getBuiltinFunction(localeCompare,1,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	// According to specs fromCharCode belongs to AS3 namespace,
 	// but also empty namespace is seen in the wild and should be
 	// supported.
-	c->setDeclaredMethodByQName("fromCharCode",AS3,c->getSystemState()->getBuiltinFunction(fromCharCode,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("fromCharCode","",c->getSystemState()->getBuiltinFunction(fromCharCode,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_getLength,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("fromCharCode",AS3,c->getSystemState()->getBuiltinFunction(fromCharCode,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("fromCharCode","",c->getSystemState()->getBuiltinFunction(fromCharCode,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_getLength,0,Class<Integer>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 
-	c->prototype->setVariableByQName("split","",c->getSystemState()->getBuiltinFunction(split,2,Class<Array>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("substr","",c->getSystemState()->getBuiltinFunction(substr,2,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("substring","",c->getSystemState()->getBuiltinFunction(substring,2,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("replace","",c->getSystemState()->getBuiltinFunction(replace,2,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("concat","",c->getSystemState()->getBuiltinFunction(concat,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("match","",c->getSystemState()->getBuiltinFunction(match,1,Class<Array>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("search","",c->getSystemState()->getBuiltinFunction(search,1,Class<Integer>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("indexOf","",c->getSystemState()->getBuiltinFunction(indexOf,2,Class<Integer>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("lastIndexOf","",c->getSystemState()->getBuiltinFunction(lastIndexOf,2,Class<Integer>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("charCodeAt","",c->getSystemState()->getBuiltinFunction(charCodeAt,0,Class<Number>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("charAt","",c->getSystemState()->getBuiltinFunction(charAt,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("slice","",c->getSystemState()->getBuiltinFunction(slice,2,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toLocaleLowerCase","",c->getSystemState()->getBuiltinFunction(toLowerCase,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toLocaleUpperCase","",c->getSystemState()->getBuiltinFunction(toUpperCase,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toLowerCase","",c->getSystemState()->getBuiltinFunction(toLowerCase,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toUpperCase","",c->getSystemState()->getBuiltinFunction(toUpperCase,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("localeCompare","",c->getSystemState()->getBuiltinFunction(localeCompare_prototype,1,Class<Integer>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("split","",c->getSystemState()->getBuiltinFunction(split,2,Class<Array>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("substr","",c->getSystemState()->getBuiltinFunction(substr,2,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("substring","",c->getSystemState()->getBuiltinFunction(substring,2,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("replace","",c->getSystemState()->getBuiltinFunction(replace,2,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("concat","",c->getSystemState()->getBuiltinFunction(concat,0,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("match","",c->getSystemState()->getBuiltinFunction(match,1,Class<Array>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("search","",c->getSystemState()->getBuiltinFunction(search,1,Class<Integer>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("indexOf","",c->getSystemState()->getBuiltinFunction(indexOf,2,Class<Integer>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("lastIndexOf","",c->getSystemState()->getBuiltinFunction(lastIndexOf,2,Class<Integer>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("charCodeAt","",c->getSystemState()->getBuiltinFunction(charCodeAt,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("charAt","",c->getSystemState()->getBuiltinFunction(charAt,1,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("slice","",c->getSystemState()->getBuiltinFunction(slice,2,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toLocaleLowerCase","",c->getSystemState()->getBuiltinFunction(toLowerCase,0,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toLocaleUpperCase","",c->getSystemState()->getBuiltinFunction(toUpperCase,0,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toLowerCase","",c->getSystemState()->getBuiltinFunction(toLowerCase,0,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toUpperCase","",c->getSystemState()->getBuiltinFunction(toUpperCase,0,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("localeCompare","",c->getSystemState()->getBuiltinFunction(localeCompare_prototype,1,Class<Integer>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(ASString,search)

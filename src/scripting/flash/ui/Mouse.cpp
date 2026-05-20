@@ -35,10 +35,10 @@ void Mouse::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructorNotInstantiatable, CLASS_FINAL | CLASS_SEALED);
 	c->setDeclaredMethodByQName("hide","",c->getSystemState()->getBuiltinFunction(hide),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("show","",c->getSystemState()->getBuiltinFunction(show),NORMAL_METHOD,false);
-	c->setDeclaredMethodByQName("cursor","",c->getSystemState()->getBuiltinFunction(getCursor,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("cursor","",c->getSystemState()->getBuiltinFunction(getCursor,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("cursor","",c->getSystemState()->getBuiltinFunction(setCursor),SETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsCursor","",c->getSystemState()->getBuiltinFunction(getSupportsCursor,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
-	c->setDeclaredMethodByQName("supportsNativeCursor","",c->getSystemState()->getBuiltinFunction(getSupportsNativeCursor,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsCursor","",c->getSystemState()->getBuiltinFunction(getSupportsCursor,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false);
+	c->setDeclaredMethodByQName("supportsNativeCursor","",c->getSystemState()->getBuiltinFunction(getSupportsNativeCursor,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false);
 	c->setDeclaredMethodByQName("registerCursor","",c->getSystemState()->getBuiltinFunction(registerCursor),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("unregisterCursor","",c->getSystemState()->getBuiltinFunction(unregisterCursor),NORMAL_METHOD,false);
 }

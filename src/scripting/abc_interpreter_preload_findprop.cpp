@@ -82,7 +82,7 @@ bool preload_findprop(preloadstate& state,memorystream& code,uint32_t t,bool rew
 						break;
 					if (!c->isSealed)
 						break;
-					c = c->super.getPtr();
+					c = c->super;
 				}
 				while (c);
 				if (v)

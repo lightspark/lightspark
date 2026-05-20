@@ -188,9 +188,9 @@ void ASError::errorGenerator(ASError* obj, asAtom* args, const unsigned int args
 void ASError::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("getStackTrace","",c->getSystemState()->getBuiltinFunction(_getStackTrace,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getStackTrace","",c->getSystemState()->getBuiltinFunction(_getStackTrace,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	REGISTER_GETTER_RESULTTYPE(c, errorID,Integer);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, message, ASString);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, name, ASString);

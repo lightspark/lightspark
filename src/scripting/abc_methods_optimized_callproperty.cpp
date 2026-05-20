@@ -134,8 +134,8 @@ FORCE_INLINE void callprop_intern(call_context* context,asAtom& ret,asAtom& obj,
 	if(asAtomHandler::isInvalid(o) && asAtomHandler::is<Class_base>(obj))
 	{
 		// check super classes
-		_NR<Class_base> tmpcls = asAtomHandler::as<Class_base>(obj)->super;
-		while (tmpcls && !tmpcls.isNull())
+		Class_base* tmpcls = asAtomHandler::as<Class_base>(obj)->super;
+		while (tmpcls)
 		{
 			tmpcls->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION(SKIP_IMPL),context->worker);
 			if(asAtomHandler::isValid(o))

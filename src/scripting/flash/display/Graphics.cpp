@@ -62,7 +62,7 @@ void Graphics::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("beginGradientFill","",c->getSystemState()->getBuiltinFunction(beginGradientFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("beginBitmapFill","",c->getSystemState()->getBuiltinFunction(beginBitmapFill),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("endFill","",c->getSystemState()->getBuiltinFunction(endFill),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("readGraphicsData","",c->getSystemState()->getBuiltinFunction(readGraphicsData,1,Class<Vector>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("readGraphicsData","",c->getSystemState()->getBuiltinFunction(readGraphicsData,1,Class<Vector>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	
 }
 

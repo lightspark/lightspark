@@ -33,51 +33,51 @@ void Rectangle::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
 	
-	c->setDeclaredMethodByQName("left","",c->getSystemState()->getBuiltinFunction(_getLeft,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("left","",c->getSystemState()->getBuiltinFunction(_getLeft,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("left","",c->getSystemState()->getBuiltinFunction(_setLeft),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(_getLeft,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(_getLeft,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(_setX),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("right","",c->getSystemState()->getBuiltinFunction(_getRight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("right","",c->getSystemState()->getBuiltinFunction(_getRight,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("right","",c->getSystemState()->getBuiltinFunction(_setRight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_getWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_getWidth,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_setWidth),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("top","",c->getSystemState()->getBuiltinFunction(_getTop,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("top","",c->getSystemState()->getBuiltinFunction(_getTop,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("top","",c->getSystemState()->getBuiltinFunction(_setTop),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(_getTop,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(_getTop,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(_setY),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("bottom","",c->getSystemState()->getBuiltinFunction(_getBottom,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bottom","",c->getSystemState()->getBuiltinFunction(_getBottom,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bottom","",c->getSystemState()->getBuiltinFunction(_setBottom),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_getHeight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_getHeight,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_setHeight),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("bottomRight","",c->getSystemState()->getBuiltinFunction(_getBottomRight,0,Class<Point>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("bottomRight","",c->getSystemState()->getBuiltinFunction(_getBottomRight,0,Class<Point>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bottomRight","",c->getSystemState()->getBuiltinFunction(_setBottomRight),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("size","",c->getSystemState()->getBuiltinFunction(_getSize,0,Class<Point>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("size","",c->getSystemState()->getBuiltinFunction(_getSize,0,Class<Point>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("size","",c->getSystemState()->getBuiltinFunction(_setSize),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("topLeft","",c->getSystemState()->getBuiltinFunction(_getTopLeft,0,Class<Point>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("topLeft","",c->getSystemState()->getBuiltinFunction(_getTopLeft,0,Class<Point>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("topLeft","",c->getSystemState()->getBuiltinFunction(_setTopLeft),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("contains","",c->getSystemState()->getBuiltinFunction(contains,2,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("containsPoint","",c->getSystemState()->getBuiltinFunction(containsPoint,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("containsRect","",c->getSystemState()->getBuiltinFunction(containsRect,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("equals","",c->getSystemState()->getBuiltinFunction(equals,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<Rectangle>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("contains","",c->getSystemState()->getBuiltinFunction(contains,2,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("containsPoint","",c->getSystemState()->getBuiltinFunction(containsPoint,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("containsRect","",c->getSystemState()->getBuiltinFunction(containsRect,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("equals","",c->getSystemState()->getBuiltinFunction(equals,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("inflate","",c->getSystemState()->getBuiltinFunction(inflate),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("inflatePoint","",c->getSystemState()->getBuiltinFunction(inflatePoint),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("intersection","",c->getSystemState()->getBuiltinFunction(intersection,1,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("intersects","",c->getSystemState()->getBuiltinFunction(intersects,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("isEmpty","",c->getSystemState()->getBuiltinFunction(isEmpty,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("intersection","",c->getSystemState()->getBuiltinFunction(intersection,1,Class<Rectangle>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("intersects","",c->getSystemState()->getBuiltinFunction(intersects,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("isEmpty","",c->getSystemState()->getBuiltinFunction(isEmpty,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("offset","",c->getSystemState()->getBuiltinFunction(offset),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("offsetPoint","",c->getSystemState()->getBuiltinFunction(offsetPoint),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setEmpty","",c->getSystemState()->getBuiltinFunction(setEmpty),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("union","",c->getSystemState()->getBuiltinFunction(_union,1,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("union","",c->getSystemState()->getBuiltinFunction(_union,1,Class<Rectangle>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setTo","",c->getSystemState()->getBuiltinFunction(setTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyFrom","",c->getSystemState()->getBuiltinFunction(copyFrom),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 }
 
 const RECT Rectangle::getRect() const

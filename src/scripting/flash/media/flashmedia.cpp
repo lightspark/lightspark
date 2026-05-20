@@ -50,17 +50,17 @@ void SoundTransform::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("pan","",c->getSystemState()->getBuiltinFunction(_get_pan,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("pan","",c->getSystemState()->getBuiltinFunction(_get_pan,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("pan","",c->getSystemState()->getBuiltinFunction(_set_pan),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("volume","",c->getSystemState()->getBuiltinFunction(_get_volume,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("volume","",c->getSystemState()->getBuiltinFunction(_get_volume,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("volume","",c->getSystemState()->getBuiltinFunction(_set_volume),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("leftToLeft","",c->getSystemState()->getBuiltinFunction(_get_leftToLeft,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("leftToLeft","",c->getSystemState()->getBuiltinFunction(_get_leftToLeft,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("leftToLeft","",c->getSystemState()->getBuiltinFunction(_set_leftToLeft),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("leftToRight","",c->getSystemState()->getBuiltinFunction(_get_leftToRight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("leftToRight","",c->getSystemState()->getBuiltinFunction(_get_leftToRight,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("leftToRight","",c->getSystemState()->getBuiltinFunction(_set_leftToRight),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("rightToLeft","",c->getSystemState()->getBuiltinFunction(_get_rightToLeft,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rightToLeft","",c->getSystemState()->getBuiltinFunction(_get_rightToLeft,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rightToLeft","",c->getSystemState()->getBuiltinFunction(_set_rightToLeft),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("rightToRight","",c->getSystemState()->getBuiltinFunction(_get_rightToRight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("rightToRight","",c->getSystemState()->getBuiltinFunction(_get_rightToRight,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rightToRight","",c->getSystemState()->getBuiltinFunction(_set_rightToRight),SETTER_METHOD,true);
 }
 
@@ -569,9 +569,9 @@ void Sound::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("play","",c->getSystemState()->getBuiltinFunction(play,0,Class<SoundChannel>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("play","",c->getSystemState()->getBuiltinFunction(play,0,Class<SoundChannel>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("extract","",c->getSystemState()->getBuiltinFunction(extract,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("extract","",c->getSystemState()->getBuiltinFunction(extract,0,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("loadCompressedDataFromByteArray","",c->getSystemState()->getBuiltinFunction(loadCompressedDataFromByteArray),NORMAL_METHOD,true);
 	REGISTER_GETTER_RESULTTYPE(c,bytesLoaded,UInteger);
 	REGISTER_GETTER_RESULTTYPE(c,bytesTotal,UInteger);
@@ -1180,7 +1180,7 @@ void SoundChannel::sinit(Class_base* c)
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable=true;
 	c->setDeclaredMethodByQName("stop","",c->getSystemState()->getBuiltinFunction(stop),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(getPosition,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(getPosition,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 
 	REGISTER_GETTER_RESULTTYPE(c,leftPeak,Number);
 	REGISTER_GETTER_RESULTTYPE(c,rightPeak,Number);

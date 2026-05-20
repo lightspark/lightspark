@@ -127,7 +127,7 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 				{
 					v = cls->findVariableByMultiname(*name,cls,nullptr,&isborrowed,false,state.worker);
 					if (!v)
-						cls = cls->super.getPtr();
+						cls = cls->super;
 				}
 				while (!v && cls && cls->isSealed);
 			}

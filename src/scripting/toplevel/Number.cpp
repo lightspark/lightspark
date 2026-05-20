@@ -687,17 +687,17 @@ void Number::sinit(Class_base* c)
 	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtomHandler::fromNumber(numeric_limits<double>::max()),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtomHandler::fromNumber(numeric_limits<double>::min()),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("NaN",nsNameAndKind(),asAtomHandler::fromNumber(numeric_limits<double>::quiet_NaN()),CONSTANT_TRAIT);
-	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toFixed",AS3,c->getSystemState()->getBuiltinFunction(toFixed,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toExponential",AS3,c->getSystemState()->getBuiltinFunction(toExponential,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("toPrecision",AS3,c->getSystemState()->getBuiltinFunction(toPrecision,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(_valueOf,0,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(Number::_toString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toLocaleString","",c->getSystemState()->getBuiltinFunction(Number::_toLocaleString,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toFixed","",c->getSystemState()->getBuiltinFunction(Number::toFixed,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toExponential","",c->getSystemState()->getBuiltinFunction(Number::toExponential,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("toPrecision","",c->getSystemState()->getBuiltinFunction(Number::toPrecision,1,Class<ASString>::getRef(c->getSystemState()).getPtr()),CONSTANT_TRAIT);
-	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(_valueOf,0,Class<Number>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toFixed",AS3,c->getSystemState()->getBuiltinFunction(toFixed,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toExponential",AS3,c->getSystemState()->getBuiltinFunction(toExponential,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("toPrecision",AS3,c->getSystemState()->getBuiltinFunction(toPrecision,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(_valueOf,0,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(Number::_toString,1,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toLocaleString","",c->getSystemState()->getBuiltinFunction(Number::_toLocaleString,1,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toFixed","",c->getSystemState()->getBuiltinFunction(Number::toFixed,1,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toExponential","",c->getSystemState()->getBuiltinFunction(Number::toExponential,1,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("toPrecision","",c->getSystemState()->getBuiltinFunction(Number::toPrecision,1,Class<ASString>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
+	c->prototype->setVariableByQName("valueOf","",c->getSystemState()->getBuiltinFunction(_valueOf,0,Class<Number>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 
 	c->setVariableAtomByQName("E",nsNameAndKind(),asAtomHandler::fromNumber(2.71828182845905),CONSTANT_TRAIT,false);
 	c->setVariableAtomByQName("LN10",nsNameAndKind(),asAtomHandler::fromNumber(2.302585092994046),CONSTANT_TRAIT,false);
@@ -708,24 +708,24 @@ void Number::sinit(Class_base* c)
 	c->setVariableAtomByQName("SQRT1_2",nsNameAndKind(),asAtomHandler::fromNumber(0.7071067811865476),CONSTANT_TRAIT,false);
 	c->setVariableAtomByQName("SQRT2",nsNameAndKind(),asAtomHandler::fromNumber(1.4142135623730951),CONSTANT_TRAIT,false);
 
-	c->setDeclaredMethodByQName("abs","",c->getSystemState()->getBuiltinFunction(Math::abs,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("acos","",c->getSystemState()->getBuiltinFunction(Math::acos,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("asin","",c->getSystemState()->getBuiltinFunction(Math::asin,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("atan","",c->getSystemState()->getBuiltinFunction(Math::atan,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("atan2","",c->getSystemState()->getBuiltinFunction(Math::atan2,2,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("ceil","",c->getSystemState()->getBuiltinFunction(Math::ceil,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("cos","",c->getSystemState()->getBuiltinFunction(Math::cos,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("exp","",c->getSystemState()->getBuiltinFunction(Math::exp,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("floor","",c->getSystemState()->getBuiltinFunction(Math::floor,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("log","",c->getSystemState()->getBuiltinFunction(Math::log,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("max","",c->getSystemState()->getBuiltinFunction(Math::_max,2,Class<Number>::getRef(c->getSystemState()).getPtr(),Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("min","",c->getSystemState()->getBuiltinFunction(Math::_min,2,Class<Number>::getRef(c->getSystemState()).getPtr(),Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("pow","",c->getSystemState()->getBuiltinFunction(Math::pow,2,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("random","",c->getSystemState()->getBuiltinFunction(Math::random,0,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("round","",c->getSystemState()->getBuiltinFunction(Math::round,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("sin","",c->getSystemState()->getBuiltinFunction(Math::sin,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("sqrt","",c->getSystemState()->getBuiltinFunction(Math::sqrt,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
-	c->setDeclaredMethodByQName("tan","",c->getSystemState()->getBuiltinFunction(Math::tan,1,Class<Number>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("abs","",c->getSystemState()->getBuiltinFunction(Math::abs,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("acos","",c->getSystemState()->getBuiltinFunction(Math::acos,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("asin","",c->getSystemState()->getBuiltinFunction(Math::asin,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("atan","",c->getSystemState()->getBuiltinFunction(Math::atan,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("atan2","",c->getSystemState()->getBuiltinFunction(Math::atan2,2,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("ceil","",c->getSystemState()->getBuiltinFunction(Math::ceil,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("cos","",c->getSystemState()->getBuiltinFunction(Math::cos,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("exp","",c->getSystemState()->getBuiltinFunction(Math::exp,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("floor","",c->getSystemState()->getBuiltinFunction(Math::floor,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("log","",c->getSystemState()->getBuiltinFunction(Math::log,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("max","",c->getSystemState()->getBuiltinFunction(Math::_max,2,Class<Number>::getClassUninitialized(c->getSystemState()),Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("min","",c->getSystemState()->getBuiltinFunction(Math::_min,2,Class<Number>::getClassUninitialized(c->getSystemState()),Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("pow","",c->getSystemState()->getBuiltinFunction(Math::pow,2,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("random","",c->getSystemState()->getBuiltinFunction(Math::random,0,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("round","",c->getSystemState()->getBuiltinFunction(Math::round,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("sin","",c->getSystemState()->getBuiltinFunction(Math::sin,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("sqrt","",c->getSystemState()->getBuiltinFunction(Math::sqrt,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
+	c->setDeclaredMethodByQName("tan","",c->getSystemState()->getBuiltinFunction(Math::tan,1,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false,false);
 }
 
 string Number::toDebugString() const

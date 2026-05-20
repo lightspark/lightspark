@@ -2285,7 +2285,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 								pr = pr->getprop_prototype();
 							}
 						}
-						if (!asAtomHandler::isValid(func))
+						if (!asAtomHandler::isValid(func) && scriptobject.uintval != super.uintval)
 						{
 							scrobj->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::NONE,wrk);
 							if (!asAtomHandler::isValid(func) && scrobj->is<Class_base>())

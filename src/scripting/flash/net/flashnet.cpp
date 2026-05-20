@@ -57,15 +57,15 @@ void URLRequest::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->isReusable=true;
 	c->setDeclaredMethodByQName("url","",c->getSystemState()->getBuiltinFunction(_setURL),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("url","",c->getSystemState()->getBuiltinFunction(_getURL,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("url","",c->getSystemState()->getBuiltinFunction(_getURL,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("method","",c->getSystemState()->getBuiltinFunction(_setMethod),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("method","",c->getSystemState()->getBuiltinFunction(_getMethod,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("method","",c->getSystemState()->getBuiltinFunction(_getMethod,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_setData),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_getData,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_getData,0,Class<ASObject>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("digest","",c->getSystemState()->getBuiltinFunction(_setDigest),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("digest","",c->getSystemState()->getBuiltinFunction(_getDigest,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("digest","",c->getSystemState()->getBuiltinFunction(_getDigest,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("requestHeaders","",c->getSystemState()->getBuiltinFunction(_setRequestHeaders),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("requestHeaders","",c->getSystemState()->getBuiltinFunction(_getRequestHeaders,0,Class<Array>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("requestHeaders","",c->getSystemState()->getBuiltinFunction(_getRequestHeaders,0,Class<Array>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,contentType,ASString);
 }
 
@@ -552,8 +552,8 @@ void URLLoader::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
 	c->isReusable=true;
-	c->setDeclaredMethodByQName("dataFormat","",c->getSystemState()->getBuiltinFunction(_getDataFormat,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_getData,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("dataFormat","",c->getSystemState()->getBuiltinFunction(_getDataFormat,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_getData,0,Class<ASObject>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("data","",c->getSystemState()->getBuiltinFunction(_setData),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("dataFormat","",c->getSystemState()->getBuiltinFunction(_setDataFormat),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("load","",c->getSystemState()->getBuiltinFunction(load),NORMAL_METHOD,true);
@@ -764,7 +764,7 @@ void SharedObject::prepareShutdown()
 void SharedObject::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
-	c->setDeclaredMethodByQName("getLocal","",c->getSystemState()->getBuiltinFunction(getLocal,1,Class<SharedObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,false);
+	c->setDeclaredMethodByQName("getLocal","",c->getSystemState()->getBuiltinFunction(getLocal,1,Class<SharedObject>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("getRemote","",c->getSystemState()->getBuiltinFunction(getRemote),NORMAL_METHOD,false);
 	c->setDeclaredMethodByQName("flush","",c->getSystemState()->getBuiltinFunction(flush),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("clear","",c->getSystemState()->getBuiltinFunction(clear),NORMAL_METHOD,true);

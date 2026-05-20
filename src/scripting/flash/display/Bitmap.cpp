@@ -285,7 +285,8 @@ void Bitmap::requestInvalidation(InvalidateQueue *q, bool forceTextureRefresh)
 
 IDrawable *Bitmap::invalidate(bool smoothing)
 {
-	bitmapcontainer->flushRenderCalls(getSystemState()->getRenderThread(),nullptr,false);
+	if (bitmapcontainer)
+		bitmapcontainer->flushRenderCalls(getSystemState()->getRenderThread(),nullptr,false);
 	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);
 }
 

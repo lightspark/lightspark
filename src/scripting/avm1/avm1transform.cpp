@@ -44,13 +44,13 @@ void AVM1Transform::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject,_constructor, CLASS_DYNAMIC_NOT_FINAL);
 
-	c->prototype->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(AVM1_getColorTransform,0,Class<AVM1ColorTransform>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(AVM1_getColorTransform,0,Class<AVM1ColorTransform>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(_setColorTransform),SETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("matrix","",c->getSystemState()->getBuiltinFunction(_setMatrix),SETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("matrix","",c->getSystemState()->getBuiltinFunction(_getMatrix,0,Class<Matrix>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("concatenatedMatrix","",c->getSystemState()->getBuiltinFunction(_getConcatenatedMatrix,0,Class<Matrix>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("pixelBounds","",c->getSystemState()->getBuiltinFunction(_getPixelBounds,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("concatenatedColorTransform","",c->getSystemState()->getBuiltinFunction(_getConcatenatedColorTransform,0,Class<ColorTransform>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("matrix","",c->getSystemState()->getBuiltinFunction(_getMatrix,0,Class<Matrix>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("concatenatedMatrix","",c->getSystemState()->getBuiltinFunction(_getConcatenatedMatrix,0,Class<Matrix>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("pixelBounds","",c->getSystemState()->getBuiltinFunction(_getPixelBounds,0,Class<Rectangle>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("concatenatedColorTransform","",c->getSystemState()->getBuiltinFunction(_getConcatenatedColorTransform,0,Class<ColorTransform>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Transform,_constructor)

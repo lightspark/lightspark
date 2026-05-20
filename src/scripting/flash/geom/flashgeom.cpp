@@ -50,30 +50,30 @@ void ColorTransform::sinit(Class_base* c)
 	c->isReusable = true;
 
 	// properties
-	c->setDeclaredMethodByQName("color","",c->getSystemState()->getBuiltinFunction(getColor,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("color","",c->getSystemState()->getBuiltinFunction(getColor,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("color","",c->getSystemState()->getBuiltinFunction(setColor),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("redMultiplier","",c->getSystemState()->getBuiltinFunction(getRedMultiplier,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("redMultiplier","",c->getSystemState()->getBuiltinFunction(getRedMultiplier,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("redMultiplier","",c->getSystemState()->getBuiltinFunction(setRedMultiplier),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("greenMultiplier","",c->getSystemState()->getBuiltinFunction(getGreenMultiplier,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("greenMultiplier","",c->getSystemState()->getBuiltinFunction(getGreenMultiplier,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("greenMultiplier","",c->getSystemState()->getBuiltinFunction(setGreenMultiplier),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("blueMultiplier","",c->getSystemState()->getBuiltinFunction(getBlueMultiplier,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blueMultiplier","",c->getSystemState()->getBuiltinFunction(getBlueMultiplier,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("blueMultiplier","",c->getSystemState()->getBuiltinFunction(setBlueMultiplier),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("alphaMultiplier","",c->getSystemState()->getBuiltinFunction(getAlphaMultiplier,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alphaMultiplier","",c->getSystemState()->getBuiltinFunction(getAlphaMultiplier,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("alphaMultiplier","",c->getSystemState()->getBuiltinFunction(setAlphaMultiplier),SETTER_METHOD,true);
 
-	c->setDeclaredMethodByQName("redOffset","",c->getSystemState()->getBuiltinFunction(getRedOffset,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("redOffset","",c->getSystemState()->getBuiltinFunction(getRedOffset,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("redOffset","",c->getSystemState()->getBuiltinFunction(setRedOffset),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("greenOffset","",c->getSystemState()->getBuiltinFunction(getGreenOffset,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("greenOffset","",c->getSystemState()->getBuiltinFunction(getGreenOffset,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("greenOffset","",c->getSystemState()->getBuiltinFunction(setGreenOffset),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("blueOffset","",c->getSystemState()->getBuiltinFunction(getBlueOffset,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("blueOffset","",c->getSystemState()->getBuiltinFunction(getBlueOffset,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("blueOffset","",c->getSystemState()->getBuiltinFunction(setBlueOffset),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("alphaOffset","",c->getSystemState()->getBuiltinFunction(getAlphaOffset,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("alphaOffset","",c->getSystemState()->getBuiltinFunction(getAlphaOffset,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("alphaOffset","",c->getSystemState()->getBuiltinFunction(setAlphaOffset),SETTER_METHOD,true);
 
 	// methods
 	c->setDeclaredMethodByQName("concat","",c->getSystemState()->getBuiltinFunction(concat),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 }
 
 bool ColorTransform::destruct()
@@ -329,14 +329,14 @@ void Transform::sinit(Class_base* c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(_getColorTransform,0,Class<ColorTransform>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(_getColorTransform,0,Class<ColorTransform>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("colorTransform","",c->getSystemState()->getBuiltinFunction(_setColorTransform),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("matrix","",c->getSystemState()->getBuiltinFunction(_setMatrix),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("matrix","",c->getSystemState()->getBuiltinFunction(_getMatrix,0,Class<Matrix>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("concatenatedMatrix","",c->getSystemState()->getBuiltinFunction(_getConcatenatedMatrix,0,Class<Matrix>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("pixelBounds","",c->getSystemState()->getBuiltinFunction(_getPixelBounds,0,Class<Rectangle>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("getRelativeMatrix3D","",c->getSystemState()->getBuiltinFunction(getRelativeMatrix3D,1,Class<Matrix3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("concatenatedColorTransform","",c->getSystemState()->getBuiltinFunction(_getConcatenatedColorTransform,0,Class<ColorTransform>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("matrix","",c->getSystemState()->getBuiltinFunction(_getMatrix,0,Class<Matrix>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("concatenatedMatrix","",c->getSystemState()->getBuiltinFunction(_getConcatenatedMatrix,0,Class<Matrix>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("pixelBounds","",c->getSystemState()->getBuiltinFunction(_getPixelBounds,0,Class<Rectangle>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getRelativeMatrix3D","",c->getSystemState()->getBuiltinFunction(getRelativeMatrix3D,1,Class<Matrix3D>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("concatenatedColorTransform","",c->getSystemState()->getBuiltinFunction(_getConcatenatedColorTransform,0,Class<ColorTransform>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, perspectiveProjection, PerspectiveProjection);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, matrix3D, Matrix3D);
@@ -487,12 +487,12 @@ void Matrix::sinit(Class_base* c)
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable=true;
 	//Properties
-	c->setDeclaredMethodByQName("a","",c->getSystemState()->getBuiltinFunction(_get_a,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("b","",c->getSystemState()->getBuiltinFunction(_get_b,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("c","",c->getSystemState()->getBuiltinFunction(_get_c,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("d","",c->getSystemState()->getBuiltinFunction(_get_d,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("tx","",c->getSystemState()->getBuiltinFunction(_get_tx,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("ty","",c->getSystemState()->getBuiltinFunction(_get_ty,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("a","",c->getSystemState()->getBuiltinFunction(_get_a,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("b","",c->getSystemState()->getBuiltinFunction(_get_b,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("c","",c->getSystemState()->getBuiltinFunction(_get_c,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("d","",c->getSystemState()->getBuiltinFunction(_get_d,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("tx","",c->getSystemState()->getBuiltinFunction(_get_tx,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("ty","",c->getSystemState()->getBuiltinFunction(_get_ty,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	
 	c->setDeclaredMethodByQName("a","",c->getSystemState()->getBuiltinFunction(_set_a),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("b","",c->getSystemState()->getBuiltinFunction(_set_b),SETTER_METHOD,true);
@@ -502,20 +502,20 @@ void Matrix::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("ty","",c->getSystemState()->getBuiltinFunction(_set_ty),SETTER_METHOD,true);
 	
 	//Methods 
-	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<Matrix>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<Matrix>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("concat","",c->getSystemState()->getBuiltinFunction(concat),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyFrom","",c->getSystemState()->getBuiltinFunction(copyFrom),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createBox","",c->getSystemState()->getBuiltinFunction(createBox),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("createGradientBox","",c->getSystemState()->getBuiltinFunction(createGradientBox),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("deltaTransformPoint","",c->getSystemState()->getBuiltinFunction(deltaTransformPoint,1,Class<Point>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("deltaTransformPoint","",c->getSystemState()->getBuiltinFunction(deltaTransformPoint,1,Class<Point>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("identity","",c->getSystemState()->getBuiltinFunction(identity),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("invert","",c->getSystemState()->getBuiltinFunction(invert),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("rotate","",c->getSystemState()->getBuiltinFunction(rotate),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("scale","",c->getSystemState()->getBuiltinFunction(scale),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setTo","",c->getSystemState()->getBuiltinFunction(setTo),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("transformPoint","",c->getSystemState()->getBuiltinFunction(transformPoint,1,Class<Point>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("transformPoint","",c->getSystemState()->getBuiltinFunction(transformPoint,1,Class<Point>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("translate","",c->getSystemState()->getBuiltinFunction(translate),NORMAL_METHOD,true);
-	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,_constructor)

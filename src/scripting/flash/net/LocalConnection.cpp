@@ -44,7 +44,7 @@ void LocalConnection::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("send","",c->getSystemState()->getBuiltinFunction(send),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("close","",c->getSystemState()->getBuiltinFunction(close),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("domain","",c->getSystemState()->getBuiltinFunction(domain,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("domain","",c->getSystemState()->getBuiltinFunction(domain,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("isSupported","",c->getSystemState()->getBuiltinFunction(isSupported),GETTER_METHOD,false);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c,client,ASObject);
 }

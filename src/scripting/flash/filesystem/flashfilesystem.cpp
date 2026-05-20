@@ -41,18 +41,18 @@ FileStream::FileStream(ASWorker* wrk,Class_base* c):
 void FileStream::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
-	c->setDeclaredMethodByQName("endian","",c->getSystemState()->getBuiltinFunction(_getEndian,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("endian","",c->getSystemState()->getBuiltinFunction(_getEndian,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("endian","",c->getSystemState()->getBuiltinFunction(_setEndian),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("open", "", c->getSystemState()->getBuiltinFunction(open), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("close", "", c->getSystemState()->getBuiltinFunction(close), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("readBytes", "", c->getSystemState()->getBuiltinFunction(readBytes), NORMAL_METHOD, true);
-	c->setDeclaredMethodByQName("readUTF", "", c->getSystemState()->getBuiltinFunction(readUTF,0,Class<ASString>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
-	c->setDeclaredMethodByQName("readByte", "", c->getSystemState()->getBuiltinFunction(readByte,0,Class<Integer>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
-	c->setDeclaredMethodByQName("readUnsignedByte", "", c->getSystemState()->getBuiltinFunction(readUnsignedByte,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
-	c->setDeclaredMethodByQName("readShort", "", c->getSystemState()->getBuiltinFunction(readShort,0,Class<Integer>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
-	c->setDeclaredMethodByQName("readUnsignedShort", "", c->getSystemState()->getBuiltinFunction(readUnsignedShort,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
-	c->setDeclaredMethodByQName("readInt", "", c->getSystemState()->getBuiltinFunction(readInt,0,Class<Integer>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
-	c->setDeclaredMethodByQName("readUnsignedInt", "", c->getSystemState()->getBuiltinFunction(readUnsignedInt,0,Class<UInteger>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readUTF", "", c->getSystemState()->getBuiltinFunction(readUTF,0,Class<ASString>::getClassUninitialized(c->getSystemState())), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readByte", "", c->getSystemState()->getBuiltinFunction(readByte,0,Class<Integer>::getClassUninitialized(c->getSystemState())), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readUnsignedByte", "", c->getSystemState()->getBuiltinFunction(readUnsignedByte,0,Class<UInteger>::getClassUninitialized(c->getSystemState())), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readShort", "", c->getSystemState()->getBuiltinFunction(readShort,0,Class<Integer>::getClassUninitialized(c->getSystemState())), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readUnsignedShort", "", c->getSystemState()->getBuiltinFunction(readUnsignedShort,0,Class<UInteger>::getClassUninitialized(c->getSystemState())), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readInt", "", c->getSystemState()->getBuiltinFunction(readInt,0,Class<Integer>::getClassUninitialized(c->getSystemState())), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("readUnsignedInt", "", c->getSystemState()->getBuiltinFunction(readUnsignedInt,0,Class<UInteger>::getClassUninitialized(c->getSystemState())), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("writeBytes", "", c->getSystemState()->getBuiltinFunction(writeBytes), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("writeUTF", "", c->getSystemState()->getBuiltinFunction(writeUTF), NORMAL_METHOD, true);
 	REGISTER_GETTER_RESULTTYPE(c,bytesAvailable,UInteger);
@@ -397,12 +397,12 @@ void ASFile::sinit(Class_base* c)
 	REGISTER_GETTER_RESULTTYPE(c,isDirectory,Boolean);
 	REGISTER_GETTER_STATIC_RESULTTYPE(c,applicationDirectory,ASFile);
 	REGISTER_GETTER_STATIC_RESULTTYPE(c,applicationStorageDirectory,ASFile);
-	c->setDeclaredMethodByQName("resolvePath", "", c->getSystemState()->getBuiltinFunction(resolvePath,1,Class<ASFile>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("resolvePath", "", c->getSystemState()->getBuiltinFunction(resolvePath,1,Class<ASFile>::getClassUninitialized(c->getSystemState())), NORMAL_METHOD, true);
 	c->setDeclaredMethodByQName("createDirectory", "", c->getSystemState()->getBuiltinFunction(createDirectory), NORMAL_METHOD, true);
-	c->setDeclaredMethodByQName("getDirectoryListing", "", c->getSystemState()->getBuiltinFunction(getDirectoryListing,0,Class<Array>::getRef(c->getSystemState()).getPtr()), NORMAL_METHOD, true);
-	c->setDeclaredMethodByQName("url","",c->getSystemState()->getBuiltinFunction(_getURL,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getDirectoryListing", "", c->getSystemState()->getBuiltinFunction(getDirectoryListing,0,Class<Array>::getClassUninitialized(c->getSystemState())), NORMAL_METHOD, true);
+	c->setDeclaredMethodByQName("url","",c->getSystemState()->getBuiltinFunction(_getURL,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("url","",c->getSystemState()->getBuiltinFunction(_setURL),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("nativePath","",c->getSystemState()->getBuiltinFunction(_getNativePath,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("nativePath","",c->getSystemState()->getBuiltinFunction(_getNativePath,0,Class<ASString>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("nativePath","",c->getSystemState()->getBuiltinFunction(_setNativePath),SETTER_METHOD,true);
 }
 ASFUNCTIONBODY_GETTER(ASFile, exists)

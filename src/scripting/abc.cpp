@@ -1124,7 +1124,7 @@ void ABCVm::tryHandleEvent(F&& beforeCB, F2&& afterCB, eventType&& e)
 				/* do not allow any more event to be enqueued */
 				m_sys->setShutdownFlag();
 			}
-			m_sys->setError(ASWorker::getStackTraceString(m_sys,stacktrace,e));
+			m_sys->setError(ASWorker::getStackTraceString(m_sys,stacktrace,e,true));
 		}
 		e->decRef();
 		if (!m_sys->isShuttingDown())
@@ -2466,8 +2466,7 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 					ASObject* superclass=applicationDomain->getVariableByMultinameOpportunistic(mnsuper,applicationDomain->getInstanceWorker());
 					if(superclass && superclass->is<Class_base>() && !superclass->is<Class_inherit>())
 					{
-						superclass->incRef();
-						c->setSuper(_MR(superclass->as<Class_base>()));
+						c->setSuper(superclass->as<Class_base>());
 					}
 				}
 				applicationDomain->classesBeingDefined.insert(make_pair(mname, c));
@@ -2532,12 +2531,13 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 					f->setRefConstant();
 				f->addToScope(scope_entry(asAtomHandler::fromObject(obj),false));
 			}
+			bool isfinal = t->kind&traits_info::Final;
 			if(kind == traits_info::Getter)
-				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,GETTER_METHOD,isBorrowed,isenumerable);
+				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,GETTER_METHOD,isBorrowed,isenumerable,0,false,isfinal);
 			else if(kind == traits_info::Setter)
-				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,SETTER_METHOD,isBorrowed,false);
+				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,SETTER_METHOD,isBorrowed,false,0,false,isfinal);
 			else if(kind == traits_info::Method)
-				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,NORMAL_METHOD,isBorrowed,false);
+				obj->setDeclaredMethodByQName(mname->name_s_id,mname->ns[0],f,NORMAL_METHOD,isBorrowed,false,0,false,isfinal);
 			break;
 		}
 		case traits_info::Const:

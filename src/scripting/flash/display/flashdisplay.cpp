@@ -153,13 +153,13 @@ void Sprite::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, DisplayObjectContainer, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("graphics","",c->getSystemState()->getBuiltinFunction(_getGraphics,0,Class<Graphics>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("graphics","",c->getSystemState()->getBuiltinFunction(_getGraphics,0,Class<Graphics>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("startDrag","",c->getSystemState()->getBuiltinFunction(_startDrag),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("stopDrag","",c->getSystemState()->getBuiltinFunction(_stopDrag),NORMAL_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, buttonMode,Boolean);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, hitArea,Sprite);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, useHandCursor,Boolean);
-	c->setDeclaredMethodByQName("soundTransform","",c->getSystemState()->getBuiltinFunction(getSoundTransform,0,Class<SoundTransform>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("soundTransform","",c->getSystemState()->getBuiltinFunction(getSoundTransform,0,Class<SoundTransform>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("soundTransform","",c->getSystemState()->getBuiltinFunction(setSoundTransform),SETTER_METHOD,true);
 }
 
@@ -753,21 +753,21 @@ void DisplayObjectContainer::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, InteractiveObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("numChildren","",c->getSystemState()->getBuiltinFunction(_getNumChildren,0,Class<Integer>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("getChildIndex","",c->getSystemState()->getBuiltinFunction(_getChildIndex,1,Class<Integer>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("numChildren","",c->getSystemState()->getBuiltinFunction(_getNumChildren,0,Class<Integer>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("getChildIndex","",c->getSystemState()->getBuiltinFunction(_getChildIndex,1,Class<Integer>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("setChildIndex","",c->getSystemState()->getBuiltinFunction(_setChildIndex),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getChildAt","",c->getSystemState()->getBuiltinFunction(getChildAt,1,Class<DisplayObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getChildByName","",c->getSystemState()->getBuiltinFunction(getChildByName,1,Class<DisplayObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("getObjectsUnderPoint","",c->getSystemState()->getBuiltinFunction(getObjectsUnderPoint,1,Class<Array>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("addChild","",c->getSystemState()->getBuiltinFunction(addChild,1,Class<DisplayObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeChild","",c->getSystemState()->getBuiltinFunction(removeChild,1,Class<DisplayObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeChildAt","",c->getSystemState()->getBuiltinFunction(removeChildAt,1,Class<DisplayObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getChildAt","",c->getSystemState()->getBuiltinFunction(getChildAt,1,Class<DisplayObject>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getChildByName","",c->getSystemState()->getBuiltinFunction(getChildByName,1,Class<DisplayObject>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("getObjectsUnderPoint","",c->getSystemState()->getBuiltinFunction(getObjectsUnderPoint,1,Class<Array>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addChild","",c->getSystemState()->getBuiltinFunction(addChild,1,Class<DisplayObject>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeChild","",c->getSystemState()->getBuiltinFunction(removeChild,1,Class<DisplayObject>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("removeChildAt","",c->getSystemState()->getBuiltinFunction(removeChildAt,1,Class<DisplayObject>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("removeChildren","",c->getSystemState()->getBuiltinFunction(removeChildren),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("addChildAt","",c->getSystemState()->getBuiltinFunction(addChildAt,2,Class<DisplayObject>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("addChildAt","",c->getSystemState()->getBuiltinFunction(addChildAt,2,Class<DisplayObject>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapChildren","",c->getSystemState()->getBuiltinFunction(swapChildren),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("swapChildrenAt","",c->getSystemState()->getBuiltinFunction(swapChildrenAt),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("contains","",c->getSystemState()->getBuiltinFunction(contains,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("mouseChildren","",c->getSystemState()->getBuiltinFunction(_setMouseChildren,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),SETTER_METHOD,true);
+	c->setDeclaredMethodByQName("contains","",c->getSystemState()->getBuiltinFunction(contains,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("mouseChildren","",c->getSystemState()->getBuiltinFunction(_setMouseChildren,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("mouseChildren","",c->getSystemState()->getBuiltinFunction(_getMouseChildren),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("stopAllMovieClips","",c->getSystemState()->getBuiltinFunction(stopAllMovieClips),NORMAL_METHOD,true);
 
@@ -1339,9 +1339,9 @@ void InteractiveObject::sinit(Class_base* c)
 	CLASS_SETUP(c, DisplayObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
 	c->setDeclaredMethodByQName("mouseEnabled","",c->getSystemState()->getBuiltinFunction(_setMouseEnabled),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("mouseEnabled","",c->getSystemState()->getBuiltinFunction(_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("mouseEnabled","",c->getSystemState()->getBuiltinFunction(_getMouseEnabled,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("doubleClickEnabled","",c->getSystemState()->getBuiltinFunction(_setDoubleClickEnabled),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("doubleClickEnabled","",c->getSystemState()->getBuiltinFunction(_getDoubleClickEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("doubleClickEnabled","",c->getSystemState()->getBuiltinFunction(_getDoubleClickEnabled,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, accessibilityImplementation,AccessibilityImplementation);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, contextMenu,ASObject);
 	REGISTER_GETTER_SETTER_RESULTTYPE(c, tabEnabled,Boolean);
@@ -1353,10 +1353,10 @@ void InteractiveObject::AVM1SetupMethods(Class_base* c)
 {
 	DisplayObject::AVM1SetupMethods(c);
 	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_setter_tabEnabled),SETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_getter_tabEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("tabEnabled","",c->getSystemState()->getBuiltinFunction(_getter_tabEnabled,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_setTabIndex),SETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_getTabIndex,0,Class<ASObject>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_getMouseEnabled,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_getTabIndex,0,Class<ASObject>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_getMouseEnabled,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_setMouseEnabled),SETTER_METHOD,false,false);
 }
 

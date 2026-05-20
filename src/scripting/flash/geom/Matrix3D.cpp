@@ -194,10 +194,10 @@ void Matrix3D::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<Matrix3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("recompose","",c->getSystemState()->getBuiltinFunction(recompose,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("decompose","",c->getSystemState()->getBuiltinFunction(decompose,0,Class<Vector>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("deltaTransformVector","",c->getSystemState()->getBuiltinFunction(deltaTransformVector,1,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<Matrix3D>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("recompose","",c->getSystemState()->getBuiltinFunction(recompose,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("decompose","",c->getSystemState()->getBuiltinFunction(decompose,0,Class<Vector>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("deltaTransformVector","",c->getSystemState()->getBuiltinFunction(deltaTransformVector,1,Class<Vector3D>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("transformVectors","",c->getSystemState()->getBuiltinFunction(transformVectors),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prepend","",c->getSystemState()->getBuiltinFunction(prepend),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("prependRotation","",c->getSystemState()->getBuiltinFunction(prependRotation),NORMAL_METHOD,true);
@@ -216,13 +216,13 @@ void Matrix3D::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("copyRawDataFrom","",c->getSystemState()->getBuiltinFunction(copyRawDataFrom),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("copyRawDataTo","",c->getSystemState()->getBuiltinFunction(copyRawDataTo),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("identity","",c->getSystemState()->getBuiltinFunction(_identity),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("invert","",c->getSystemState()->getBuiltinFunction(invert,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("rawData","",c->getSystemState()->getBuiltinFunction(_get_rawData,0,Class<Vector>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("invert","",c->getSystemState()->getBuiltinFunction(invert,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("rawData","",c->getSystemState()->getBuiltinFunction(_get_rawData,0,Class<Vector>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("rawData","",c->getSystemState()->getBuiltinFunction(_set_rawData),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("determinant","",c->getSystemState()->getBuiltinFunction(_get_determinant,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("determinant","",c->getSystemState()->getBuiltinFunction(_get_determinant,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(_set_position),SETTER_METHOD,true);
-	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(_get_position,0,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,true);
-	c->setDeclaredMethodByQName("transformVector","",c->getSystemState()->getBuiltinFunction(transformVector,2,Class<Vector3D>::getRef(c->getSystemState()).getPtr()),NORMAL_METHOD,true);
+	c->setDeclaredMethodByQName("position","",c->getSystemState()->getBuiltinFunction(_get_position,0,Class<Vector3D>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
+	c->setDeclaredMethodByQName("transformVector","",c->getSystemState()->getBuiltinFunction(transformVector,2,Class<Vector3D>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 }
 
 bool Matrix3D::destruct()

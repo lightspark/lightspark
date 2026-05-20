@@ -344,7 +344,7 @@ void lightspark::lookupAndLink(Class_base* c, const tiny_string& name, const tin
 		var=cur->borrowedVariables.findObjVar(c->getSystemState()->getUniqueStringId(name),nsNameAndKind(),NO_CREATE_TRAIT,DECLARED_TRAIT);
 		if(var)
 			break;
-		cur=cur->super.getPtr();
+		cur=cur->super;
 	}
 	assert_and_throw(var);
 	if(var->isValidVar())
@@ -378,7 +378,7 @@ void lightspark::lookupAndLink(Class_base* c, uint32_t nameID, uint32_t interfac
 		var=cur->borrowedVariables.findObjVar(nameID,nsNameAndKind(),NO_CREATE_TRAIT,DECLARED_TRAIT);
 		if(var)
 			break;
-		cur=cur->super.getPtr();
+		cur=cur->super;
 	}
 	assert_and_throw(var);
 	if(var->isValidVar())
@@ -491,6 +491,24 @@ void Class<ASObject>::getInstance(ASWorker* worker, asAtom& ret, bool construct,
 	if(construct)
 		handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed(),callSyntheticConstructor);
 }
+Class<ASObject>* Class<ASObject>::getClassUninitialized(SystemState* sys)
+{
+	uint32_t classId=ClassName<ASObject>::id;
+	Class<ASObject>* ret=nullptr;
+	SystemState* s = sys == nullptr ? getSys() : sys;
+	Class_base** retAddr=&s->builtinClassesUninitialized[classId];
+	if(*retAddr==nullptr)
+	{
+		//Create the class
+		QName name(sys->getUniqueStringId(ClassName<ASObject>::name),sys->getUniqueStringId(ClassName<ASObject>::ns));
+		MemoryAccount* m = sys->allocateMemoryAccount(ClassName<ASObject>::name);
+		ret=new (m) Class<ASObject>(name, ClassName<ASObject>::id, m);
+		*retAddr=ret;
+	}
+	else
+		ret=static_cast<Class<ASObject>*>(*retAddr);
+	return ret;
+}
 Class<ASObject>* Class<ASObject>::getClass(SystemState* sys)
 {
 	uint32_t classId=ClassName<ASObject>::id;
@@ -500,9 +518,7 @@ Class<ASObject>* Class<ASObject>::getClass(SystemState* sys)
 	if(*retAddr==nullptr)
 	{
 		//Create the class
-		QName name(s->getUniqueStringId(ClassName<ASObject>::name),s->getUniqueStringId(ClassName<ASObject>::ns));
-		MemoryAccount* m = s->allocateMemoryAccount(ClassName<ASObject>::name);
-		ret=new (m) Class<ASObject>(name, ClassName<ASObject>::id, m);
+		ret = getClassUninitialized(sys);
 		ret->setWorker(s->worker);
 		ret->setSystemState(s);
 		ret->incRef();

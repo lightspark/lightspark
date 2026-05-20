@@ -2210,7 +2210,7 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 #ifdef ENABLE_OPTIMIZATION
 				if (function->inClass && t==0) // class method with 0 params
 				{
-					if (function->inClass->super.getPtr() == Class<ASObject>::getClass(function->getSystemState()) // super class is ASObject, so constructsuper can be skipped
+					if (function->inClass->super == Class<ASObject>::getClass(function->getSystemState()) // super class is ASObject, so constructsuper can be skipped
 							&& !state.operandlist.empty())
 					{
 						state.preloadedcode.pop_back();

@@ -860,7 +860,7 @@ Class<IFunction>* Class<IFunction>::getClass(SystemState* sys)
 		//so the Class<ASObject> we obtain will not have any
 		//declared methods yet! Therefore, set super will not copy
 		//up any borrowed traits from there. We do that by ourself.
-		ret->setSuper(Class<ASObject>::getRef(s));
+		ret->setSuper(Class<ASObject>::getClass(s));
 		//The prototype for Function seems to be a function object. Use the special FunctionPrototype
 		ret->prototype = _MNR(new_functionPrototype(sys->worker,ret, ret->super->prototype));
 		ret->prototype->getObj()->setVariableByQName("constructor","",ret,DECLARED_TRAIT,false);

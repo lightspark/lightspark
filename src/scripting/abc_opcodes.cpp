@@ -407,8 +407,8 @@ void ABCVm::callPropIntern(call_context *th, int n, int m, bool keepReturn, bool
 	if(asAtomHandler::isInvalid(o) && asAtomHandler::is<Class_base>(obj))
 	{
 		// check super classes
-		_NR<Class_base> tmpcls = asAtomHandler::as<Class_base>(obj)->super;
-		while (tmpcls && !tmpcls.isNull())
+		Class_base* tmpcls = asAtomHandler::as<Class_base>(obj)->super;
+		while (tmpcls)
 		{
 			tmpcls->getVariableByMultiname(o,*name, GET_VARIABLE_OPTION::SKIP_IMPL,th->worker);
 			if(asAtomHandler::isValid(o))
@@ -1594,7 +1594,7 @@ void ABCVm::setSuper(call_context* th, int n)
 	assert_and_throw(obj->getClass()->isSubClass(th->function->inClass));
 
 	bool alreadyset=false;
-	obj->setVariableByMultiname_intern(*name,*value,CONST_NOT_ALLOWED,th->function->inClass->super.getPtr(),&alreadyset,th->worker);
+	obj->setVariableByMultiname_intern(*name,*value,CONST_NOT_ALLOWED,th->function->inClass->super,&alreadyset,th->worker);
 	if (alreadyset)
 		ASATOM_DECREF_POINTER(value);
 	name->resetNameIfObject();
@@ -1626,10 +1626,10 @@ void ABCVm::getSuper(call_context* th, int n)
 	}
 
 	Class_base* cls = nullptr;
-	if (th->function->inClass && !th->function->inClass->super.isNull())
-		cls = th->function->inClass->super.getPtr();
-	else if (obj->getClass() && !obj->getClass()->super.isNull())
-		cls = obj->getClass()->super.getPtr();
+	if (th->function->inClass && th->function->inClass->super)
+		cls = th->function->inClass->super;
+	else if (obj->getClass() && obj->getClass()->super)
+		cls = obj->getClass()->super;
 	assert_and_throw(cls);
 
 	asAtom ret=asAtomHandler::invalidAtom;
@@ -2150,7 +2150,7 @@ void ABCVm::callSuper(call_context* th, int n, int m, method_info** called_mi, b
 		assert_and_throw(th->function->inClass->super);
 		assert_and_throw(obj->getClass());
 		assert_and_throw(obj->getClass()->isSubClass(th->function->inClass));
-		obj->getVariableByMultinameIntern(f,*name,th->function->inClass->super.getPtr(),GET_VARIABLE_OPTION::NONE, th->worker);
+		obj->getVariableByMultinameIntern(f,*name,th->function->inClass->super,GET_VARIABLE_OPTION::NONE, th->worker);
 	}
 	name->resetNameIfObject();
 	if(asAtomHandler::isValid(f))
@@ -2724,12 +2724,12 @@ void ABCVm::newClass(call_context* th, int n)
 		if (base->is<Class_inherit>())
 			base->as<Class_inherit>()->checkScriptInit();
 		assert(!base->isFinal);
-		if (ret->super.isNull())
-			ret->setSuper(_MR(base));
-		else if (base != ret->super.getPtr())
+		if (!ret->super)
+			ret->setSuper(base);
+		else if (base != ret->super)
 		{
 			LOG(LOG_ERROR,"resetting super class from "<<ret->super->toDebugString() <<" to "<< base->toDebugString());
-			ret->setSuper(_MR(base));
+			ret->setSuper(base);
 		}
 		th->mi->context->applicationDomain->addSuperClassNotFilled(ret);
 	}
@@ -2872,7 +2872,7 @@ void ABCVm::newClass(call_context* th, int n)
 	th->mi->context->applicationDomain->copyBorrowedTraitsFromSuper(ret);
 	
 	//If the class is not an interface itself and has no super class, link the traits here (if it has a super class, the traits are linked in copyBorrowedTraitsFromSuper
-	if(ret->super.isNull() && !th->mi->context->instances[n].isInterface())
+	if(!ret->super && !th->mi->context->instances[n].isInterface())
 	{
 		//Link all the interfaces for this class and all the bases
 		if (!th->mi->context->applicationDomain->newClassRecursiveLink(ret, ret))

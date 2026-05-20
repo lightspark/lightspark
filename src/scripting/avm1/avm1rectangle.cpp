@@ -39,49 +39,49 @@ void AVM1Rectangle::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 
-	c->prototype->setDeclaredMethodByQName("left","",c->getSystemState()->getBuiltinFunction(AVM1_getLeft,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("left","",c->getSystemState()->getBuiltinFunction(AVM1_getLeft,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("left","",c->getSystemState()->getBuiltinFunction(AVM1_setLeft),SETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(AVM1_getLeft,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(AVM1_getLeft,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(AVM1_setX),SETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("right","",c->getSystemState()->getBuiltinFunction(AVM1_getRight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("right","",c->getSystemState()->getBuiltinFunction(AVM1_getRight,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("right","",c->getSystemState()->getBuiltinFunction(AVM1_setRight),SETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(AVM1_getWidth,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(AVM1_getWidth,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(AVM1_setWidth),SETTER_METHOD,false,false);
 
-	c->prototype->setDeclaredMethodByQName("top","",c->getSystemState()->getBuiltinFunction(AVM1_getTop,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("top","",c->getSystemState()->getBuiltinFunction(AVM1_getTop,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("top","",c->getSystemState()->getBuiltinFunction(AVM1_setTop),SETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(AVM1_getTop,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(AVM1_getTop,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("y","",c->getSystemState()->getBuiltinFunction(AVM1_setY),SETTER_METHOD,false,false);
 
-	c->prototype->setDeclaredMethodByQName("bottom","",c->getSystemState()->getBuiltinFunction(AVM1_getBottom,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("bottom","",c->getSystemState()->getBuiltinFunction(AVM1_getBottom,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("bottom","",c->getSystemState()->getBuiltinFunction(AVM1_setBottom),SETTER_METHOD,false,false);
-	c->prototype->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(AVM1_getHeight,0,Class<Number>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(AVM1_getHeight,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(AVM1_setHeight),SETTER_METHOD,false,false);
 
-	c->prototype->setDeclaredMethodByQName("bottomRight","",c->getSystemState()->getBuiltinFunction(AVM1_getBottomRight,0,Class<Point>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("bottomRight","",c->getSystemState()->getBuiltinFunction(AVM1_getBottomRight,0,Class<Point>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("bottomRight","",c->getSystemState()->getBuiltinFunction(AVM1_setBottomRight),SETTER_METHOD,false,false);
 
-	c->prototype->setDeclaredMethodByQName("size","",c->getSystemState()->getBuiltinFunction(AVM1_getSize,0,Class<Point>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("size","",c->getSystemState()->getBuiltinFunction(AVM1_getSize,0,Class<Point>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("size","",c->getSystemState()->getBuiltinFunction(AVM1_setSize),SETTER_METHOD,false,false);
 
-	c->prototype->setDeclaredMethodByQName("topLeft","",c->getSystemState()->getBuiltinFunction(AVM1_getTopLeft,0,Class<Point>::getRef(c->getSystemState()).getPtr()),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("topLeft","",c->getSystemState()->getBuiltinFunction(AVM1_getTopLeft,0,Class<Point>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("topLeft","",c->getSystemState()->getBuiltinFunction(AVM1_setTopLeft),SETTER_METHOD,false,false);
 
-	c->prototype->setVariableByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<AVM1Rectangle>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("contains","",c->getSystemState()->getBuiltinFunction(AVM1_contains,2,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("containsPoint","",c->getSystemState()->getBuiltinFunction(AVM1_containsPoint,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("containsRectangle","",c->getSystemState()->getBuiltinFunction(AVM1_containsRectangle,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("equals","",c->getSystemState()->getBuiltinFunction(equals,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("clone","",c->getSystemState()->getBuiltinFunction(clone,0,Class<AVM1Rectangle>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("contains","",c->getSystemState()->getBuiltinFunction(AVM1_contains,2,Class<Boolean>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("containsPoint","",c->getSystemState()->getBuiltinFunction(AVM1_containsPoint,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("containsRectangle","",c->getSystemState()->getBuiltinFunction(AVM1_containsRectangle,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("equals","",c->getSystemState()->getBuiltinFunction(equals,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("inflate","",c->getSystemState()->getBuiltinFunction(AVM1_inflate),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("inflatePoint","",c->getSystemState()->getBuiltinFunction(AVM1_inflatePoint),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("intersection","",c->getSystemState()->getBuiltinFunction(AVM1_intersection,1,Class<AVM1Rectangle>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("intersects","",c->getSystemState()->getBuiltinFunction(AVM1_intersects,1,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("isEmpty","",c->getSystemState()->getBuiltinFunction(AVM1_isEmpty,0,Class<Boolean>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("intersection","",c->getSystemState()->getBuiltinFunction(AVM1_intersection,1,Class<AVM1Rectangle>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("intersects","",c->getSystemState()->getBuiltinFunction(AVM1_intersects,1,Class<Boolean>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("isEmpty","",c->getSystemState()->getBuiltinFunction(AVM1_isEmpty,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("offset","",c->getSystemState()->getBuiltinFunction(AVM1_offset),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("offsetPoint","",c->getSystemState()->getBuiltinFunction(AVM1_offsetPoint),DYNAMIC_TRAIT);
 	c->prototype->setVariableByQName("setEmpty","",c->getSystemState()->getBuiltinFunction(AVM1_setEmpty),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("union","",c->getSystemState()->getBuiltinFunction(AVM1_union,1,Class<AVM1Rectangle>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
-	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(AVM1_toString,0,Class<ASString>::getRef(c->getSystemState()).getPtr()),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("union","",c->getSystemState()->getBuiltinFunction(AVM1_union,1,Class<AVM1Rectangle>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
+	c->prototype->setVariableByQName("toString","",c->getSystemState()->getBuiltinFunction(AVM1_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 
 }
 

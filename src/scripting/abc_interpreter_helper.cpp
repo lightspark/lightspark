@@ -2166,7 +2166,7 @@ bool getLexFindClass(preloadstate& state, multiname* name, bool checkfuncscope,s
 		typestack.push_back(typestackentry(nullptr,false));
 		return true;
 	}
-	else if (state.function->inClass && state.function->inClass->super.isNull()) //TODO slot access for derived classes
+	else if (state.function->inClass && !state.function->inClass->super) //TODO slot access for derived classes
 	{
 		uint32_t slotid = state.function->inClass->findInstanceSlotByMultiname(name);
 		if (slotid != UINT32_MAX)

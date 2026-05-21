@@ -156,6 +156,21 @@ public:
 	}
 };
 
+TRY_TO_VALUE_BODY(_GC<AVM1Object>)
+{
+	return !value.isNullOrUndefined() &&
+	(
+		!isStrict ||
+		!value.isPrimitive()
+	) ? value.toObject(act).asOpt() : nullOpt;
+}
+
+GET_DEFAULT_VALUE_BODY(_GC<AVM1Object>)
+{
+	auto& ctx = act.getGcCtx();
+	return NEW_GC_PTR(ctx, AVM1Object(ctx, NullRef));
+}
+
 TRY_TO_VALUE_BODY(number_t)
 {
 	if (isStrict && !value.is<number_t>())
@@ -330,46 +345,311 @@ public:
 	isStrict(false) {}
 
 	bool isValid() const { return valid; }
+	Span<const AVM1Value> getArgs() const { return args; }
 
-	template<typename T = AVM1Value>
-	T unpack()
+	Optional<const AVM1Value&> operator[](size_t i) const
 	{
-		return unpack<T>(ArgConv<T>::getDefaultValue(act));
+		if (i >= args.getSize())
+			return {};
+		return makeOptionalRef(args[i]);
+	}
+
+	AVM1ArgUnpacker& withStrict()
+	{
+		isStrict = true;
+		return *this;
+	}
+
+	AVM1ArgUnpacker& withUnstrict()
+	{
+		isStrict = false;
+		return *this;
+	}
+
+	AVM1ArgUnpacker& next(size_t i)
+	{
+		pos = std::min(pos + i, args.size());
+		return *this;
+	}
+
+	AVM1ArgUnpacker& prev(size_t i)
+	{
+		pos = std::max<ssize_t>(pos - i, 0);
+		return *this;
 	}
 
 	template<typename T = AVM1Value>
+	T unpack() { return unpackAt<T>(pos++); }
+
+	template<typename T = AVM1Value, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
 	T unpack(const T& defaultVal)
 	{
-		if (!valid || pos >= args.size())
+		return unpackAt<T>(pos++, defaultVal);
+	}
+
+	template<typename T = AVM1Value, typename F, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
+	T unpack(const F&& func)
+	{
+		return unpackAt<T>(pos++, func);
+	}
+
+	template<typename T = AVM1Value>
+	T unpackAt(size_t i)
+	{
+		return unpackAt<T>(i, [&]
+		{
+			return ArgConv<T>::getDefaultValue(act);
+		});
+	}
+
+	template<typename T = AVM1Value, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
+	T unpackAt(size_t i, const T& defaultVal)
+	{
+		if (!valid || i >= args.size())
 		{
 			valid = false;
 			return defaultVal;
 		}
 
-		return ArgConv<T>::toValue(act, args[pos++], isStrict);
+		return ArgConv<T>::toValue(act, args[i], isStrict);
+	}
+
+	template<typename T = AVM1Value, typename F, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
+	T unpackAt(size_t i, const F&& func)
+	{
+		if (!valid || i >= args.size())
+		{
+			valid = false;
+			return func();
+		}
+
+		return ArgConv<T>::toValue(act, args[i], isStrict);
+	}
+
+	template<typename T = AVM1Value, typename F>
+	T unpackIf(const F&& func)
+	{
+		return unpackAtIf<T>(pos++, func);
+	}
+
+	template<typename T = AVM1Value, typename F, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
+	T unpackIf(const F&& func, const T& defaultVal)
+	{
+		return unpackAtIf<T>(pos++, func, defaultVal);
+	}
+
+	template<typename T = AVM1Value, typename F, typename F2, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
+	T unpackIf(const F&& func, const F2&& defaultFunc)
+	{
+		return unpackAtIf<T>(pos++, func, defaultFunc);
+	}
+
+	template<typename T = AVM1Value, typename F>
+	T unpackAtIf(size_t i, const F&& func)
+	{
+		return tryUnpackAtIf<T>(i, func, [&]
+		{
+			return ArgConv<T>::getDefaultValue(act);
+		});
+	}
+
+	template<typename T = AVM1Value, typename F, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
+	T unpackAtIf(size_t i, const F&& func, const T& defaultVal)
+	{
+		if (!valid || i >= args.size() || !func(args[i]))
+		{
+			valid = false;
+			return defaultVal;
+		}
+
+		return ArgConv<T>::toValue(act, args[i], isStrict);
+	}
+
+	template<typename T = AVM1Value, typename F, typename F2, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
+	T unpackAtIf(size_t i, const F&& func, const F2&& func2)
+	{
+		if (!valid || i >= args.size() || !func(args[i]))
+		{
+			valid = false;
+			return func2();
+		}
+
+		return ArgConv<T>::toValue(act, args[i], isStrict);
 	}
 
 	template<typename T = AVM1Value>
-	Optional<T> tryUnpack()
+	T unpackIfDefined()
 	{
-		if (!valid || pos >= args.size())
+		return unpackIf<T>([&](const AVM1Value& value)
+		{
+			return !value.is<UndefinedVal>();
+		});
+	}
+
+	template<typename T = AVM1Value, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
+	T unpackIfDefined(const T& defaultVal)
+	{
+		return unpackIf<T>([&](const AVM1Value& value)
+		{
+			return !value.is<UndefinedVal>();
+		}, defaultVal);
+	}
+
+	template<typename T = AVM1Value, typename F, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
+	T unpackIfDefined(const F&& func)
+	{
+		return unpackIf<T>([&](const AVM1Value& value)
+		{
+			return !value.is<UndefinedVal>();
+		}, func);
+	}
+
+	template<typename T = AVM1Value>
+	Optional<T> tryUnpack() { return tryUnpackAt<T>(pos++); }
+
+	template<typename T = AVM1Value>
+	Optional<T> tryUnpackAt(size_t i)
+	{
+		if (!valid || i >= args.size())
 			return {};
-		return ArgConv<T>::tryToValue(act, args[pos++], isStrict);
+		return ArgConv<T>::tryToValue(act, args[i], isStrict);
+	}
+
+	template<typename T = AVM1Value, typename F>
+	Optional<T> tryUnpackIf(const F&& func)
+	{
+		return tryUnpackAtIf<T>(pos++, func);
+	}
+
+	template<typename T = AVM1Value, typename F>
+	Optional<T> tryUnpackAtIf(size_t i, const F&& func)
+	{
+		if (!valid || i >= args.size() || !func(args[i]))
+			return {};
+		return ArgConv<T>::tryToValue(act, args[i], isStrict);
+	}
+
+	template<typename T = AVM1Value>
+	Optional<T> tryUnpackIfDefined()
+	{
+		return tryUnpackIf<T>([&](const AVM1Value& value)
+		{
+			return !value.is<UndefinedVal>();
+		});
 	}
 
 	template<typename T = AVM1Value>
 	AVM1ArgUnpacker& operator()(T& value)
 	{
-		return *this(value, ArgConv<T>::getDefaultValue(act));
+		return *this(value, [&]
+		{
+			return ArgConv<T>::getDefaultValue(act)
+		});
 	}
 
-	template<typename T = AVM1Value>
+	template<typename T = AVM1Value, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
 	AVM1ArgUnpacker& operator()(T& value, const T& defaultVal)
 	{
 		value = unpack<T>(defaultVal);
 		return *this;
 	}
+
+	template<typename T = AVM1Value, typename F, EnableIf
+	<
+		!IsOptional<T>::value,
+		bool
+	> = false>
+	AVM1ArgUnpacker& operator()(T& value, const F&& func)
+	{
+		value = unpack<T>(func);
+		return *this;
+	}
 };
+
+template<typename T>
+Optional<T> AVM1ArgUnpacker::unpack<Optional<T>>()
+{
+	return tryUnpack<T>();
+}
+
+template<typename T>
+Optional<T> AVM1ArgUnpacker::unpackAt<Optional<T>>(size_t i)
+{
+	return tryUnpackAt<T>(i);
+}
+
+template<typename T, typename F>
+Optional<T> AVM1ArgUnpacker::unpackIf<Optional<T>, F>(const F&& func)
+{
+	return tryUnpackIf<T>(func);
+}
+
+template<typename T, typename F>
+Optional<T> AVM1ArgUnpacker::unpackAtIf<Optional<T>, F>
+(
+	size_t i,
+	const F&& func
+)
+{
+	return tryUnpackAtIf<T>(i, func);
+}
+
+template<typename T>
+Optional<T> AVM1ArgUnpacker::unpackIfDefined<Optional<T>>()
+{
+	return tryUnpackIfDefined<T>(func);
+}
+
+template<typename T>
+AVM1ArgUnpacker& AVM1ArgUnpacker::operator()<Optional<T>>(Optional<T>& value)
+{
+	value = tryUnpack<T>();
+	return *this;
+}
 
 }
 #endif /* SCRIPTING_AVM1_ARG_UNPACK_H */

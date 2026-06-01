@@ -58,6 +58,7 @@ private:
 	// The frame that this clip was placed on.
 	uint16_t placeFrame;
 	uint16_t depth;
+	uint16_t clipDepth;
 	uint16_t ratio;
 
 	tiny_string name;
@@ -69,6 +70,7 @@ private:
 	number_t scaleZ;
 	number_t skew;
 	AS_BLENDMODE blendMode;
+	Optional<RGBA> opaqueBackground;
 
 	// If `true`, this `DisplayObject` is the root of a loaded file
 	// (either an SWF, or an image).
@@ -153,7 +155,11 @@ protected:
 
 	virtual void afterSetLegacyMatrix() {}
 public:
-	DisplayObject();
+	DisplayObject
+	(
+		SystemState* _sys,
+		Optional<const tiny_string&> _name = {}
+	);
 
 	void geometryChanged();
 	virtual Optional<RectF> boundsRect(bool visibleOnly)
@@ -329,6 +335,8 @@ public:
 	number_t getRotation() const { return rotation; }
 	uint16_t getDepth() { return depth; }
 	uint16_t getClipDepth() const { return clipDepth; }
+	const tiny_string& getName() const { return name; }
+	void setName(const tiny_string& _name) { name = _name; }
 	number_t getMaxFilterBorder() const { return maxFilterBorder; }
 	RootMovieClip* getAVM2Root() const;
 	Stage* getAVM2Stage() const;
@@ -358,8 +366,9 @@ public:
 	void setScaleZ(number_t val);
 	void setVisible(bool v);
 	// Nominal width and heigt are the size before scaling and rotation
-	number_t getNominalWidth();
-	number_t getNominalHeight();
+	Vector2f getNominalSize();
+	number_t getNominalWidth() { return getNominalSize().x; }
+	number_t getNominalHeight() { return getNominalSize().y; }
 	DisplayObject* getMask() const { return mask; }
 	DisplayObject* getClipMask() const { return clipMask; }
 	bool inMask() const;

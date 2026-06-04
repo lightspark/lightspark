@@ -1,6 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
+    Copyright (C) 2012-2013  Alessandro Pignotti (a.pignotti@sssup.it)
     Copyright (C) 2026  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
@@ -767,6 +768,35 @@ bool DisplayObject::isVisible() const
 	return visible && parent != nullptr && parent->isVisible();
 }
 
+void DisplayObject::setAlpha(number_t alpha)
+{
+	if (!needsActionScript3()) // AVM1 uses alpha values from 0-100
+		alpha /= 100.0;
+
+	/* The stored value is not clipped, _getAlpha will return the
+	 * stored value even if it is outside the [0, 1] range. */
+	if (colorTransform.alphaMultiplier != alpha)
+		return;
+
+	colorTransform.alphaMultiplier = alpha;
+	hasChanged = true;
+	if (isOnStage())
+		requestInvalidation(sys, false);
+	else
+		requestInvalidationFilterParent();
+}
+
+number_t DisplayObject::getAlpha() const
+{
+	return
+	(
+		needsActionScript3() ?
+		colorTransform.alphaMultiplier :
+		// AVM1 uses alpha values from 0-100
+		colorTransform.alphaMultiplier * 100
+	);
+}
+
 void DisplayObject::setScaleX(number_t val)
 {
 	if (std::isnan(val) || scale.x == val)
@@ -877,53 +907,34 @@ void DisplayObject::setZ(number_t val)
 	markAsChanged();
 }
 
-void DisplayObject::setParent(DisplayObjectContainer *p, bool fordestruction)
+void DisplayObject::setParent(DisplayObject* p, bool forDestruction)
 {
+	if (parent == p)
+		return;
+
 	Locker locker(spinlock);
-	if(parent!=p)
+	if (parent != nullptr && forDestruction)
+		parent->removeChildName(this);
+
+	if (p != nullptr)
 	{
-		if (parent)
-		{
-			if (fordestruction)
-				parent->removeChildName(this);
-			parent->removeStoredMember();
-		}
-		if (p)
-		{
-			// mark old parent as dirty
-			geometryChanged();
-			getSystemState()->removeFromResetParentList(this);
-			getSystemState()->stage->removeHiddenObject(this);
-			p->incRef();
-			p->addStoredMember();
-		}
-		parent=p;
-		hasChanged=true;
+		// mark old parent as dirty
 		geometryChanged();
-		if(onStage && (!fordestruction && !getSystemState()->isShuttingDown()))
-			requestInvalidation(getSystemState());
+		sys->removeFromResetParentList(this);
+		sys->stage->removeHiddenObject(this);
 	}
+
+	parent = p;
+	hasChanged = true;
+	geometryChanged();
+
+	if (isOnStage() && !forDestruction && !sys->isShuttingDown())
+		requestInvalidation(sys);
 }
 
-void DisplayObject::setScalingGrid()
+Vector2f DisplayObject::computeSize()
 {
-	RECT* r = loadedFrom->ScalingGridsLookup(this->getTagID());
-	if (r)
-	{
-		this->scalingGrid = _MR(Class<Rectangle>::getInstanceS(getInstanceWorker()));
-		this->scalingGrid->x=-r->Xmin/TWIPS_FACTOR;
-		this->scalingGrid->y=-r->Ymin/TWIPS_FACTOR;
-		this->scalingGrid->width=(r->Xmax+r->Xmin)/TWIPS_FACTOR;
-		this->scalingGrid->height=(r->Ymax+r->Ymin)/TWIPS_FACTOR;
-	}
-}
-
-number_t DisplayObject::computeHeight()
-{
-	number_t x1,x2,y1,y2;
-	bool ret=getBounds(x1,x2,y1,y2,getMatrix(false));
-
-	return (ret)?(y2-y1):0;
+	return getBounds(getMatrix(false)).valueOr(RectF {}).size();
 }
 
 void DisplayObject::geometryChanged()
@@ -940,43 +951,95 @@ void DisplayObject::geometryChanged()
 	}
 }
 
-number_t DisplayObject::computeWidth()
+RootMovieClip* DisplayObject::getAVM2Root()
 {
-	number_t x1,x2,y1,y2;
-	bool ret=getBounds(x1,x2,y1,y2,getMatrix(false));
-
-	return (ret)?(x2-x1):0;
+	return parent != nullptr ? parent->getAVM2Root() : nullptr;
 }
 
-int DisplayObject::getRawDepth()
+Stage* DisplayObject::getAVM2Stage()
 {
-	return (parent != nullptr) ? parent->findLegacyChildDepth(this) : 0;
+	return parent != nullptr ? parent->getAVM2Stage() : nullptr;
 }
 
-int DisplayObject::getDepth()
+number_t DisplayObject::getWidth() const
 {
-	return getRawDepth() + 16384;
+	return computeWidth() / TWIPS_FACTOR;
 }
 
-int DisplayObject::getClipDepth() const
+void DisplayObject::setWidth(number_t width)
 {
-	return ClipDepth ? ClipDepth + 16384 : 0;
+	if (std::isnan(width))
+		return;
+	if (std::isinf(width) && needsActionScript3())
+		width = 0;
+	width *= TWIPS_FACTOR;
+
+	auto size = boundsRect(false).valueOr(RectF {}).size();
+	auto aspectRatio = size.y / size.x;
+
+	Vector2f targetScale;
+	if (size.x != 0)
+		targetScale = Vector2f(width, width) / size;
+
+	auto prevScale = scale
+	auto _rotation = rotation * (M_PI / 180.0);
+	auto cos = std::abs(std::cos(_rotation));
+	auto sin = std::abs(std::sin(_rotation));
+
+	Vector2f newScale
+	(
+		// x.
+		aspectRatio * (cos * targetScale.x + sin * targetScale.y) /
+		((cos + aspectRatio * sin) * (aspectRatio * cos + sin)),
+		// y.
+		(sin * prevScale.x + aspectRatio * cos * prevScale.y) /
+		(aspectRatio * cos + sin)
+	);
+
+	if (useLegacyMatrix)
+		useLegacyMatrix = false;
+	setScaleX(std::isfinite(newScale.x) ? newScale.x : 0);
+	setScaleY(std::isfinite(newScale.y) ? newScale.y : 0);
 }
 
-RootMovieClip* DisplayObject::getRoot()
+number_t DisplayObject::getHeight() const
 {
-	if(!parent)
-		return nullptr;
-
-	return parent->getRoot();
+	return computeHeight() / TWIPS_FACTOR;
 }
 
-_NR<Stage> DisplayObject::getStage()
+void DisplayObject::setHeight(number_t height)
 {
-	if(!parent)
-		return NullRef;
+	if (std::isnan(height))
+		return;
+	if (std::isinf(height) && needsActionScript3())
+		height = 0;
+	height *= TWIPS_FACTOR;
 
-	return parent->getStage();
+	auto size = boundsRect(false).valueOr(RectF {}).size();
+	auto aspectRatio = size.y / size.x;
+
+	Vector2f targetScale;
+	if (size.y != 0)
+		targetScale = Vector2f(height, height) / size;
+
+	auto prevScale = scale
+	auto _rotation = rotation * (M_PI / 180.0);
+	auto cos = std::abs(std::cos(_rotation));
+	auto sin = std::abs(std::sin(_rotation));
+
+	Vector2f newScale
+	(
+		// x.
+		(aspectRatio * cos * prevScale.x + sin * prevScale.y) /
+		(aspectRatio * cos + sin),
+		// y.
+		aspectRatio * (sin * targetScale.x + cos * targetScale.y) /
+		((cos + aspectRatio * sin) * (aspectRatio * cos + sin))
+	);
+	if (useLegacyMatrix)
+		useLegacyMatrix = false;
+	setScaleX(std::isfinite(newScale.x) ? newScale.x : 0);
+	setScaleY(std::isfinite(newScale.y) ? newScale.y : 0);
 }
 
 Vector2f DisplayObject::getLocalMousePos()
@@ -1159,27 +1222,36 @@ void DisplayObject::afterConstruction(bool _explicit)
 //		requestInvalidation(getSystemState());
 }
 
-void DisplayObject::applyFilters(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley)
+void DisplayObject::applyFilters
+(
+	BitmapContainer* target,
+	BitmapContainer* source,
+	const RECT& sourceRect,
+	const Vector2f& pos,
+	const Vector2f& scale
+)
 {
-	if (filters)
+	for (const auto& filter : filters)
 	{
-		for (uint32_t i = 0; i < filters->size(); i++)
-		{
-			asAtom f = asAtomHandler::invalidAtom;
-			filters->at_nocheck(f,i);
-			if (asAtomHandler::is<BitmapFilter>(f))
-				asAtomHandler::as<BitmapFilter>(f)->applyFilter(target, source, sourceRect, xpos, ypos, scalex, scaley, this);
-		}
+		filter.applyFilter
+		(
+			target,
+			source,
+			sourceRect,
+			pos,
+			scale,
+			this
+		);
 	}
 }
 
 void DisplayObject::setNeedsTextureRecalculation(bool skippable)
 {
-	textureRecalculationSkippable=skippable;
-	needsTextureRecalculation=true;
+	textureRecalculationSkippable = skippable;
+	needsTextureRecalculation = true;
 	if (!cachedSurface->isChunkOwner)
-		cachedSurface->tex=nullptr;
-	cachedSurface->isChunkOwner=true;
+		cachedSurface->tex = nullptr;
+	cachedSurface->isChunkOwner = true;
 }
 
 string DisplayObject::toDebugString() const
@@ -1193,46 +1265,66 @@ string DisplayObject::toDebugString() const
 		res += " onstage";
 	return res;
 }
+
 IDrawable* DisplayObject::getFilterDrawable(bool smoothing)
 {
 	if (!hasFilters())
 		return nullptr;
 	number_t x,y;
 	number_t width,height;
-	number_t bxmin,bxmax,bymin,bymax;
-	if(!boundsRect(bxmin,bxmax,bymin,bymax,false))
+
+	auto _bounds = boundsRect(false);
+	if (!_bounds.hasValue())
 	{
 		//No contents, nothing to do
 		return nullptr;
 	}
+
 	MATRIX matrix = getMatrix();
 
 	bool isMask=false;
 	MATRIX m;
-	m.scale(matrix.getScaleX(),matrix.getScaleY());
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
+	m.scale(matrix.getScaleX(), matrix.getScaleY());
+	auto bounds = computeBoundsForTransformedRect(*_bounds, m);
+	auto size = bounds.size();
 
-	if (isnan(width) || isnan(height))
+	if (isnan(size.x) || isnan(size.y))
 	{
 		// on stage with invalid concatenatedMatrix. Create a trash initial texture
-		width = 1;
-		height = 1;
+		size = Vector2f(1, 1);
 	}
-	if (width >= 8192 || height >= 8192 || (width * height) >= 16777216)
+
+	if (size >= Vector2f(8192, 8192) || (size.x * size.y) >= 16777216)
 		return nullptr;
 
-	if(width==0 || height==0)
+	if (size == Vector2f())
 		return nullptr;
-	ColorTransformBase ct = this->colorTransform;
-	this->resetNeedsTextureRecalculation();
-	return new RefreshableDrawable(x, y, ceil(width), ceil(height)
-				, matrix.getScaleX(), matrix.getScaleY()
-				, isMask, cacheAsBitmap
-				, this->getScaleFactor(), getConcatenatedAlpha()
-				, ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+
+	resetNeedsTextureRecalculation();
+	return new RefreshableDrawable
+	(
+		bounds.min.x,
+		bounds.min.y,
+		ceil(size.x),
+		ceil(size.y),
+		matrix.getScaleX(),
+		matrix.getScaleY(),
+		isMask,
+		cacheAsBitmap,
+		getScaleFactor(),
+		getConcatenatedAlpha(),
+		colorTransform,
+		(
+			smoothing ?
+			SMOOTH_MODE::SMOOTH_ANTIALIAS :
+			SMOOTH_MODE::SMOOTH_NONE
+		),
+		getBlendMode(),
+		matrix
+	);
 }
 
-bool DisplayObject::findParent(DisplayObject *d) const
+bool DisplayObject::findParent(DisplayObject* d) const
 {
 	if (this == d)
 		return true;
@@ -1244,7 +1336,7 @@ bool DisplayObject::findParent(DisplayObject *d) const
 int DisplayObject::getParentDepth() const
 {
 	int i;
-	DisplayObjectContainer* p;
+	DisplayObject* p;
 	for (i = 0, p = parent; p != nullptr; p = p->parent, ++i);
 	return i;
 }
@@ -1254,17 +1346,17 @@ int DisplayObject::findParentDepth(DisplayObject* d) const
 	if (this != d)
 	{
 		int i;
-		DisplayObjectContainer* p;
+		DisplayObject* p;
 		for (i = 0, p = parent; p != nullptr && p != d; p = p->parent, ++i);
 		return i;
 	}
 	return -1;
 }
 
-DisplayObjectContainer* DisplayObject::getAncestor(int depth) const
+DisplayObject* DisplayObject::getAncestor(int depth) const
 {
 	if (depth < 0)
-		return (DisplayObjectContainer*)this;
+		return this;
 	if (!depth)
 		return parent;
 	if (parent == nullptr)
@@ -1272,21 +1364,22 @@ DisplayObjectContainer* DisplayObject::getAncestor(int depth) const
 	return parent->getAncestor(--depth);
 }
 
-DisplayObjectContainer* DisplayObject::findCommonAncestor(DisplayObject* d, int& depth, bool init) const
+DisplayObject* DisplayObject::findCommonAncestor(DisplayObject* d, int& depth, bool init) const
 {
-	const DisplayObject* a = this;
-	const DisplayObject* b = d;
+	const auto a = this;
+	const auto b = d;
 	if (init)
 	{
 		depth = 0;
 		if ((a->getParentDepth() - b->getParentDepth()) < 0)
 			std::swap(a, b);
 	}
+
 	if (a->parent == nullptr || b == nullptr)
-		return a->parent == nullptr ? (DisplayObjectContainer*)a : nullptr;
+		return a->parent == nullptr ? a : nullptr;
 	if (b->findParent(a->parent))
 		return a->parent;
-	return a->parent->findCommonAncestor((DisplayObject*)b, ++depth, false);
+	return a->parent->findCommonAncestor(b, ++depth, false);
 }
 
 // Compute the minimal, axis aligned bounding box in global
@@ -1316,25 +1409,18 @@ DisplayObject* DisplayObject::getAVM1Stage() const
 
 	if (parent->is<Loader>() || parent->is<Stage>())
 		return parent;
-	return parent->AVM1getStage();
+	return parent->getAVM1Stage();
 }
 
 DisplayObject* DisplayObject::getAVM1Root()
 {
-	if (this->needsActionScript3())
-		return getSystemState()->mainClip;
-	if (parent && parent->needsActionScript3())
+	if (needsActionScript3())
+		return sys->mainClip;
+	if (parent != nullptr && parent->needsActionScript3())
 		return this;
-	if (this->is<RootMovieClip>())
+	if (is<RootMovieClip>())
 		return this;
-	multiname m(nullptr);
-	m.name_type=multiname::NAME_STRING;
-	m.name_s_id=BUILTIN_STRINGS::STRING_LOCKROOT;
-	m.isAttribute = false;
-	asAtom l= asAtomHandler::undefinedAtom;
-	getVariableByMultiname(l,m,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
-	bool lockroot = asAtomHandler::AVM1toBool(l,getInstanceWorker(),loadedFrom->version);
-	if (!lockroot && parent)
-		return parent->AVM1getRoot();
-	return getSystemState()->mainClip;
+	if (!lockRoot && parent != nullptr)
+		return parent->getAVM1Root();
+	return sys->mainClip;
 }

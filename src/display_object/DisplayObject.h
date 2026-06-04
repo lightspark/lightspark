@@ -1,6 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
+    Copyright (C) 2012-2013  Alessandro Pignotti (a.pignotti@sssup.it)
     Copyright (C) 2026  mr b0nk 500 (b0nk@b0nk.xyz)
 
     This program is free software: you can redistribute it and/or modify
@@ -25,6 +26,7 @@
 #include <utility>
 #include <vector>
 
+#include "backends/colortransformbase.h"
 #include "backends/geometry.h"
 #include "exceptions.h"
 #include "smartrefs.h"
@@ -95,6 +97,7 @@ private:
 	size_t broadcastEventListenerCount;
 	RectF scalingGrid;
 	RectF scrollRect;
+	ColorTransformBase colorTransform;
 	MATRIX currentRenderMatrix;
 
 	// Whether this `DisplayObject` has been removed from the display
@@ -229,7 +232,8 @@ public:
 
 	bool findParent(DisplayObject* d) const;
 	void setParent(DisplayObject* p, bool forDestruction);
-	void setScalingGrid();
+	const RectF& getScalingGrid() const { return scalingGrid; }
+	void setScalingGrid(const RectF& rect) { scalingGrid = rect; }
 	virtual void markAsChanged();
 	MATRIX getMatrix(bool includeRotation = true) const;
 	bool isInInitFrame() const { return inInitFrame; }
@@ -337,6 +341,8 @@ public:
 	uint16_t getClipDepth() const { return clipDepth; }
 	const tiny_string& getName() const { return name; }
 	void setName(const tiny_string& _name) { name = _name; }
+	const ColorTransformBase& getColorTransform() const { return colorTransform; }
+	void setColorTransform(const ColorTransformBase& ct) { colorTransform = ct; }
 	number_t getMaxFilterBorder() const { return maxFilterBorder; }
 	RootMovieClip* getAVM2Root() const;
 	Stage* getAVM2Stage() const;
@@ -376,6 +382,13 @@ public:
 	void addBroadcastEventListener();
 	void removeBroadcastEventListener();
 	bool hasBroadcastListeners() const { return broadcastEventListenerCount; }
+
+	number_t getAlpha() const;
+	void setAlpha(number_t alpha);
+	number_t getWidth() const;
+	void setWidth(number_t width);
+	number_t getHeight() const;
+	void setHeight(number_t height);
 };
 
 }

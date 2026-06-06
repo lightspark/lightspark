@@ -33,6 +33,8 @@
 #include "swftypes.h"
 #include "tiny_string.h"
 
+// Based on Ruffle's `avm1::display_object::DisplayObject`.
+
 namespace lightspark
 {
 
@@ -53,11 +55,104 @@ class Stage;
 
 class DisplayObject
 {
+public:
+	// Bit flags used by `DisplayObject`.
+	enum class Flags : uint16_t
+	{
+		// Whether the `DisplayObject` has been removed from the display
+		// list.
+		//
+		// This is needed in AVM1 to remove any queued actions from
+		// removed `MovieClip`s.
+		RemovedByAVM1 = 1 << 0,
+
+		// Whether the `DisplayObject` is visible (i.e. the `_visible`
+		// property).
+		Visible = 1 << 1,
+
+		// Whether the `DisplayObject` has cached `_[xy]scale`, and
+		// `_rotation`.
+		ScaleAndRotationCached = 1 << 2,
+
+		// Whether the `DisplayObject` has been transformed by
+		// ActionScript.
+		//
+		// When this flag is set, any changes from `RemoveObject` tags
+		// are ignored.
+		TransformedByActionScript = 1 << 3,
+		
+		// Whether the `DisplayObject` was placed into a container by
+		// ActionScript.
+		//
+		// When this flag is set, any changes from `RemoveObject` tags
+		// are ignored.
+		PlacedByActionScript = 1 << 4,
+
+		// Whether the `DisplayObject` was timeline created, i.e. created
+		// by an SWF tag.
+		//
+		// When this flag is set, all attempts to change the
+		// `DisplayObject`'s name from AVM2 throw an exception.
+		CreatedByTimeline = 1 << 5,
+
+		// Whether the `DisplayObject` is a root, i.e. the top most
+		// `DisplayObject` of a loaded SWF, or `Bitmap`.
+		//
+		// This is used by `MovieClip.getBytesLoaded()` in AVM1, and
+		// `DisplayObject.root` in AVM2.
+		IsRoot = 1 << 6,
+
+		// Whether the `DisplayObject` has `_lockroot` set, in which
+		// case, it becomes the `_root` of itself, and any of it's
+		// children.
+		LockRoot = 1 << 7,
+
+		// Whether the `DisplayObject` will be cached into a bitmap.
+		CacheAsBitmap = 1 << 8,
+
+		// Whether the `DisplayObject` has a scroll rect applied.
+		HasScrollRect = 1 << 9,
+
+		// Whether the `DisplayObject` has an explicit name.
+		HasExplicitName = 1 << 10,
+
+		// When this flag is set, the `DisplayObject`, and it's children
+		// will skip the next call to `enterFrame()`.
+		// This is true for `DisplayObject`s that are created from
+		// ActionScript, which have been observed to lag behind ``
+		// `DisplayObject`s that are timeline created (even if they're
+		// both placed on the same frame).
+		SkipFrame = 1 << 11,
+
+		// Whether the `DisplayObject` has already called
+		// `invalidateCachedBitmap()` for this frame.
+		CacheInvalidated = 1 << 12,
+
+		// Whether the AVM1 `DisplayObject` is pending removal (it'll be
+		// removed on the next frame).
+		AVM1PendingRemoval = 1 << 13,
+
+		// Whether the `DisplayObject` has `matrix3D`.
+		HasMatrix3D = 1 << 14,
+
+		// Whether the `DisplayObject` was placed by the timeline on a
+		// `MovieClip` before the clip had it's AVM2 object constructed
+		// These kinds of `DisplayObject`s are only constructed by
+		// `Sprite.constructChildren()`, which is usually when `super()`
+		// is called in a `Sprite` subclass. However, if `super()` (and
+		// therefore `Sprite.constructChildren()`) isn't called, the clip
+		// won't be created/constructed. So we mark all clips that were
+		// timeline placed on a load frame with this flag to ensure that
+		// `MovieClip::initFrame()` doesn't construct them (they need to
+		// be constructed manually by `Sprite.constructChildren()`).
+		ManualFrameConstruction = 1 << 15,
+	};
 private:
+	
 	SystemState* sys;
 	DisplayObject* parent;
 
-	// The frame that this clip was placed on.
+	// The frame that this `DisplayObject` was placed on.
 	uint16_t placeFrame;
 	uint16_t depth;
 	uint16_t clipDepth;
@@ -65,64 +160,70 @@ private:
 
 	tiny_string name;
 
+	// The transform of this `DisplayObject`.
+	// (Split into separate members for easier access).
 	MATRIX matrix;
-	number_t tz;
+	ColorTransform colorTransform;
+	PerspectiveProjection perspectiveProjection;
+
+	// The cached transform properties `_{[xy]scale,rotation}`.
+	// These are very expensive to calculate, so they're calculated, and
+	// cached when scripts request any of these properties.
 	number_t rotation;
 	Vector2f scale;
-	number_t scaleZ;
 	number_t skew;
-	AS_BLENDMODE blendMode;
-	Optional<RGBA> opaqueBackground;
 
-	// If `true`, this `DisplayObject` is the root of a loaded file
-	// (either an SWF, or an image).
-	bool isLoadedRoot;
-	bool inInitFrame;
-	bool filterListHasChanged;
-	bool hasMatrix3D;
-	// The number of `DisplayObject`s that use us as a mask.
-	size_t maskCount;
+	// The sound transform of sounds playing from this `DisplayObject`.
+	SoundTransform* soundTransform;
+
+	// The `DisplayObject` that we're being masked by.
+	DisplayObject* mask;
+
+	// The `DisplayObject` that we're currently masking.
+	DisplayObject* maskee;
+
+	// The blend mode used when rendering this `DisplayObject`.
+	//
+	// NOTE: Values other than the default `BLENDMODE_NORMAL` will cause
+	// the `DisplayObject` to act as if `cacheAsBitmap` was set.
+	AS_BLENDMODE blendMode;
+
+	// The opaque background colour of this `DisplayObject`.
+	// The bounding box of the `DisplayObject` will be filled with the
+	// supplied colour.
+	//
+	// NOTE: This also causes the `DisplayObject` to act as if
+	// `cacheAsBitmap` was set.
+	Optional<RGB> opaqueBackground;
+
+	// Bit flags for various `DisplayObject` properites.
+	Flags flags;
+
+	// The internal scroll rect used for rendering, as well as methods
+	// like `localToGlobal()`.
+	// This is updated from `preRender()`.
+	Optional<Rect<Twips>> scrollRect;
+
+	// The next scroll rect, which'll be copied to `scrollRect` from
+	// `preRender()`.
+	// This is used by `DisplayObject.scrollRect`'s getter, which sees
+	// any changes made to it immediately (without needing to wait for
+	// the renderer).
+	Rect<Twips> nextScrollRect;
+
+	// The rectangle used for 9 slice scaling
+	// (`DisplayObject.scale9grid`).
+	Rect<Twips> scalingGrid;
 
 	std::vector<FILTER> filters;
-	number_t maxFilterBorder;
 
 	/* cachedSurface may only be read/written from within the render thread
 	 * It is the cached version of the object for fast draw on the Stage
 	 */
 	_R<CachedSurface> cachedSurface;
-	bool useLegacyMatrix;
 	bool needsTextureRecalculation;
 	bool textureRecalculationSkippable;
 
-	size_t broadcastEventListenerCount;
-	RectF scalingGrid;
-	RectF scrollRect;
-	ColorTransformBase colorTransform;
-	MATRIX currentRenderMatrix;
-
-	// Whether this `DisplayObject` has been removed from the display
-	// list.
-	// This is needed in AVM1 to remove any queued actions from removed
-	// `MovieClip`s.
-	bool removedByAVM1;
-	bool visible;
-	bool transformedByActionScript;
-	bool placedByActionScript;
-	// If set, skip the next call to `enterFrame()`.
-	bool skipFrame;
-	// this is reset after the drawjob is done to ensure a changed DisplayObject is only rendered once
-	bool hasChanged;
-	// this is set to true for DisplayObjects that are placed from a tag
-	bool legacy;
-	bool markedForLegacyDeletion;
-	bool cacheAsBitmap;
-	bool lockRoot;
-
-	/**
-		The object that masks us, if any
-	*/
-	DisplayObject* mask;
-	DisplayObject* clipMask;
 	DisplayObject* invalidateQueueNext;
 protected:
 	mutable Mutex spinlock;
@@ -130,10 +231,6 @@ protected:
 	virtual ~DisplayObject() {}
 	RectF computeBoundsForTransformedRect(const RectF& rect, const MATRIX& m) const;
 
-	/*
-	 * Assume the lock is held and the matrix will not change
-	 */
-	void extractValuesFromMatrix();
 	Vector2f computeSize();
 	number_t computeWidth() { return computeSize().x; }
 	number_t computeHeight() { return computeSize().y; }
@@ -155,8 +252,6 @@ protected:
 			"Derived class must implement this!"
 		);
 	}
-
-	virtual void afterSetLegacyMatrix() {}
 public:
 	DisplayObject
 	(

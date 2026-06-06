@@ -745,6 +745,8 @@ void MovieClip::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 
 void MovieClip::AVM1AfterAdvance()
 {
+	if (!state.frameadvanced)
+		return;
 	state.frameadvanced=false;
 	state.last_FP=state.FP;
 	state.explicit_FP=false;
@@ -1268,13 +1270,18 @@ void MovieClip::AVM1HandleConstruction(bool forInitAction)
 		asAtom pr = constr->getprop_prototypeAtom();
 		if (!asAtomHandler::isObject(pr))
 			pr = constr->prototype;
-		setprop_prototype(pr);
 		setprop_prototype(pr, BUILTIN_STRINGS::STRING_PROTO);
 		asAtom ret = asAtomHandler::invalidAtom;
 		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
 		constr->call(&ret,&obj,nullptr,0);
 		AVM1registerPrototypeListeners();
 	}
+	else
+	{
+		asAtom proto = asAtomHandler::fromObject(this->getClass()->prototype->getObj());
+		setprop_prototype(proto,BUILTIN_STRINGS::STRING_PROTO);
+	}
+
 	if (this != getSystemState()->mainClip)
 		afterConstruction();
 }
@@ -1582,6 +1589,7 @@ void MovieClip::beforeConstruction(bool _explicit)
 	}
 	Sprite::beforeConstruction(_explicit);
 }
+
 void MovieClip::afterConstruction(bool _explicit)
 {
 	if (needsActionScript3())

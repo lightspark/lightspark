@@ -86,7 +86,7 @@ bool AVM1MovieClip::countCylicMemberReferences(garbagecollectorstate& gcstate)
 
 void AVM1MovieClip::sinit(Class_base* c)
 {
-	MovieClip::sinit(c);
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	MovieClip::AVM1SetupMethods(c);
 	c->prototype->setDeclaredMethodByQName("_totalframes","",c->getSystemState()->getBuiltinFunction(_getTotalFrames),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("_currentframe","",c->getSystemState()->getBuiltinFunction(_getCurrentFrame),GETTER_METHOD,false,false);
@@ -206,6 +206,12 @@ ASObject* AVM1SimpleButton::AVM1getClassPrototypeObject() const
 	if (this->loadedFrom->version < 7)
 		return nullptr;
 	return SimpleButton::AVM1getClassPrototypeObject();
+}
+void AVM1SimpleButton::afterConstruction(bool _explicit)
+{
+	asAtom proto = asAtomHandler::fromObject(this->getClass()->prototype->getObj());
+	setprop_prototype(proto,BUILTIN_STRINGS::STRING_PROTO);
+	SimpleButton::afterConstruction(_explicit);
 }
 
 void AVM1SimpleButton::sinit(Class_base* c)

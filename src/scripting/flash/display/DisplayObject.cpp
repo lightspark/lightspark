@@ -2320,7 +2320,9 @@ void DisplayObject::executeFrameScript()
 
 bool DisplayObject::needsActionScript3() const
 {
-	return !this->loadedFrom || this->loadedFrom->usesActionScript3;
+	if (this->loadedFrom)
+		return this->loadedFrom->usesActionScript3;
+	return EventDispatcher::needsActionScript3();
 }
 
 void DisplayObject::constructionComplete(bool _explicit, bool forInitAction)
@@ -3075,12 +3077,6 @@ bool DisplayObject::AVM1setLocalByMultiname
 	// 2. Internal properties, such as `_x`, and `_y`.
 	else if (hasPropertyName(s))
 		setPropertyByName(s, value, wrk);
-	// 3. Prototype.
-	else if (hasprop_prototype())
-	{
-		auto proto = getprop_prototype();
-		alreadySet = proto->AVM1setLocalByMultiname(name, value, allowConst, wrk);
-	}
 	else
 	{
 		EventDispatcher::setVariableByMultiname
@@ -3574,12 +3570,11 @@ ASFUNCTIONBODY_ATOM(DisplayObject,AVM1_getBounds)
 		asAtom t = args[0];
 		if (!asAtomHandler::is<DisplayObject>(t))
 		{
-			tiny_string path = asAtomHandler::toString(args[0],wrk).lowercase();
+			tiny_string path = asAtomHandler::AVM1toString(args[0],wrk).lowercase();
 			DisplayObject* d = th->AVM1GetClipFromPath(path);
 			if (!d)
 			{
-				LOG(LOG_ERROR,"AVM1_getBounds:path not found:"<<asAtomHandler::toDebugString(args[0])<<" on "<<th->toDebugString());
-				ASATOM_DECREF(t);
+				LOG(LOG_ERROR,"AVM1_getBounds:path not found:"<<path<<" on "<<th->toDebugString());
 				return;
 			}
 			target = d;
@@ -3679,6 +3674,9 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 
 	c->destroyContents();
 	c->borrowedVariables.destroyContents();
+	asAtom objcls = asAtomHandler::fromObject(Class<ASObject>::getRef(c->getSystemState())->prototype->getObj());
+	c->setprop_prototype(objcls,BUILTIN_STRINGS::STRING_PROTO);
+
 	c->prototype->setDeclaredMethodByQName("scrollRect","",c->getSystemState()->getBuiltinFunction(_getter_scrollRect),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("scrollRect","",c->getSystemState()->getBuiltinFunction(_setter_scrollRect),SETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("hitTest","",c->getSystemState()->getBuiltinFunction(AVM1_hitTest),NORMAL_METHOD,false,false);

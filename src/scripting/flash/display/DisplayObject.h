@@ -301,7 +301,7 @@ public:
 	virtual void declareFrame(bool implicit) {}
 	virtual void initFrame();
 	virtual void executeFrameScript();
-	virtual bool needsActionScript3() const;
+	bool needsActionScript3() const override;
 	virtual void handleMouseCursor(bool rollover) {}
 	virtual bool allowAsMask() const { return true; }
 	Vector2f getLocalMousePos();
@@ -324,7 +324,6 @@ public:
 	void addBroadcastEventListener();
 	void removeBroadcastEventListener();
 	bool hasBroadcastListeners() const { return broadcastEventListenerCount; }
-
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_getVisible);
 	ASFUNCTION_ATOM(_setVisible);

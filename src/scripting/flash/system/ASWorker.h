@@ -124,7 +124,7 @@ public:
 	{
 		return AVM1callStack.empty() ? UINT8_MAX : AVM1callStack.back()->swfversion;
 	}
-	bool needsActionScript3() const
+	bool needsActionScript3() const override
 	{
 		return AVM1getSwfVersion()==UINT8_MAX;
 	}

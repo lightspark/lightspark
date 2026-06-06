@@ -58,6 +58,17 @@ using namespace lightspark;
 
 void Class<IFunction>::generator(ASWorker* wrk, asAtom& ret,asAtom* args, const unsigned int argslen)
 {
+	if (!wrk->needsActionScript3())
+	{
+		if (argslen)
+		{
+			ret = args[0];
+			ASATOM_INCREF(ret);
+		}
+		else
+			ret = asAtomHandler::fromObject(new_functionObject(asAtomHandler::invalidAtom,wrk));
+		return;
+	}
 	if (argslen > 0)
 		createError<EvalError>(wrk,kFunctionConstructorError);
 	ret = asAtomHandler::fromObject(getNopFunction());
@@ -143,7 +154,7 @@ FORCE_INLINE void resetLocals(call_context *cc, call_context* saved_cc, const as
 {
 	for(asAtom* i=cc->lastlocal-1;i>cc->locals ;--i)
 	{
-		LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i));
+		LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i)<<" "<<(i-cc->locals));
 		ASObject* o = asAtomHandler::getObject(*i);
 		if (o)
 			o->decRefAndGCCheck();
@@ -1629,129 +1640,55 @@ GET_VARIABLE_RESULT Function_object::getVariableByMultiname(asAtom& ret, const m
 
 AVM1Super_object::AVM1Super_object(ASWorker* wrk, Class_base* c, ASObject* obj, ASObject* _super) : ASObject(wrk,c,T_OBJECT,SUBTYPE_AVM1SUPEROBJECT),baseobject(obj),super(_super)
 {
-	prototype=nullptr;
-	if (super && !super->is<Class_base>())
-		prototype = super->getprop_prototype();
-	if (prototype)
-	{
-		prototype->incRef();
-		prototype->addStoredMember();
-	}
-}
-
-bool AVM1Super_object::checkPrototype(asAtom& ret, const multiname& name)
-{
-	if (name.name_type == multiname::NAME_STRING && (name.name_s_id==BUILTIN_STRINGS::STRING_PROTO || name.name_s_id==BUILTIN_STRINGS::PROTOTYPE))
-	{
-		ret = asAtomHandler::undefinedAtom;
-		if (prototype)
-		{
-			ASObject* pr = prototype->getprop_prototype();
-			if (!pr)
-				pr = Class<ASObject>::getRef(getSystemState()).getPtr()->prototype->getObj();
-			pr->incRef();
-			ret = asAtomHandler::fromObjectNoPrimitive(pr);
-		}
-		return true;
-	}
-	return false;
 }
 
 GET_VARIABLE_RESULT AVM1Super_object::getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk)
 {
-	if (checkPrototype(ret,name))
-		return GETVAR_NORMAL;
-	ret = asAtomHandler::invalidAtom;
-	return baseobject->getVariableByMultinameIntern(ret,name,this->getClass(),opt,wrk);
+	return super->getVariableByMultiname(ret,name,opt,wrk);
 }
 
 GET_VARIABLE_RESULT AVM1Super_object::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath)
 {
-	if (checkPrototype(ret,name))
-		return GETVAR_NORMAL;
-	ret = asAtomHandler::invalidAtom;
-	return baseobject->AVM1getVariableByMultiname(ret, name,opt, wrk, isSlashPath);
+	return super->AVM1getVariableByMultiname(ret, name,opt, wrk, isSlashPath);
 }
 bool AVM1Super_object::AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk)
 {
-	if (name.name_type == multiname::NAME_STRING && (name.name_s_id==BUILTIN_STRINGS::STRING_PROTO || name.name_s_id==BUILTIN_STRINGS::PROTOTYPE))
-	{
-		ASObject* pr = asAtomHandler::getObject(value);
-		bool alreadyset = false;
-		if (pr)
-		{
-			alreadyset = pr==prototype;
-			if (!alreadyset)
-			{
-				if (prototype)
-					prototype->decRef();
-				prototype = pr;
-				prototype->incRef();
-			}
-
-		}
-		else
-		{
-			if (prototype)
-				prototype->decRef();
-			prototype=nullptr;
-		}
-		return alreadyset;
-	}
-	else
-		return baseobject->AVM1setVariableByMultiname(name, value, allowConst, wrk);
+	return super->AVM1setVariableByMultiname(name, value, allowConst, wrk);
 }
 
 bool AVM1Super_object::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
-	return baseobject->deleteVariableByMultiname(name,wrk);
+	return super->deleteVariableByMultiname(name,wrk);
 }
 ASObject* AVM1Super_object::getprop_prototype()
 {
-	return prototype;
+	return super->getprop_prototype();
 }
 
 asAtom AVM1Super_object::getprop_prototypeAtom()
 {
-	asAtom ret = asAtomHandler::undefinedAtom;
-	ASObject* pr = prototype;
-	if (pr)
-		ret = asAtomHandler::fromObjectNoPrimitive(pr);
-	return ret;
+	return super->getprop_prototypeAtom();
 }
 
 void AVM1Super_object::finalize()
 {
-	if (prototype)
-		prototype->removeStoredMember();
-	prototype = nullptr;
 	ASObject::finalize();
 }
 bool AVM1Super_object::destruct()
 {
-	if (prototype)
-		prototype->removeStoredMember();
-	prototype = nullptr;
 	return ASObject::destruct();
 }
 void AVM1Super_object::prepareShutdown()
 {
-	if (prototype)
-		prototype->prepareShutdown();
 	ASObject::prepareShutdown();
 }
 bool AVM1Super_object::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
-	if (prototype)
-		ret = prototype->countAllCylicMemberReferences(gcstate) || ret;
 	return ret;
-
 }
 
 ASObject* AVM1Super_object::getBaseObject() const
 {
-	if (baseobject->is<AVM1Super_object>())
-		return baseobject->as<AVM1Super_object>()->getBaseObject();
 	return baseobject;
 }

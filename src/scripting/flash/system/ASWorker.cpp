@@ -410,7 +410,7 @@ AVM1Function* ASWorker::AVM1getClassConstructor(DisplayObject* d)
 		if (t)
 			nameID =t->nameID;
 	}
-	unordered_map<uint32_t,IFunction*>* m = AVM1isCaseSensitive() ? &avm1ClassConstructorsCaseSensitive :&avm1ClassConstructorsCaseInsensitive;
+	unordered_map<uint32_t,IFunction*>* m = d->loadedFrom->version >= 7 ? &avm1ClassConstructorsCaseSensitive :&avm1ClassConstructorsCaseInsensitive;
 	auto it = m->find(nameID);
 	return it != m->end() && it->second->is<AVM1Function>() ? it->second->as<AVM1Function>() : nullptr;
 }

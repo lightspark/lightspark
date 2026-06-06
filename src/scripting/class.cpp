@@ -111,7 +111,14 @@ asAtom lightspark::new_AVM1SuperObject(asAtom o,ASObject* super, ASWorker* wrk)
 	Class_base* c=Class<ASObject>::getClass(wrk->getSystemState());
 	ASObject* baseobject = asAtomHandler::getObject(o);
 	if (baseobject)
-		return asAtomHandler::fromObjectNoPrimitive(new (c->memoryAccount) AVM1Super_object(wrk->getInstanceWorker(), c, baseobject,super));
+	{
+		assert(super);
+		ASObject* ret = new (c->memoryAccount) AVM1Super_object(wrk->getInstanceWorker(), c, baseobject,super);
+		ret->setIsInitialized();
+		ret->constructionComplete();
+		ret->setConstructIndicator();
+		return asAtomHandler::fromObjectNoPrimitive(ret);
+	}
 	else
 		return asAtomHandler::undefinedAtom;
 }

@@ -215,7 +215,7 @@ ASFUNCTIONBODY_ATOM(Number,generator)
 
 tiny_string Number::toString() const
 {
-	if (getInstanceWorker()->needsActionScript3())
+	if (needsActionScript3())
 		return Number::toString(isfloat ? dval : ival);
 	else
 		return Number::AVM1toString(isfloat ? dval : ival,10);
@@ -634,7 +634,6 @@ tiny_string Number::toString(number_t value, DTOSTRMODE mode, int32_t precision)
 		while (*t) { *s++ = *t++; }
 	}
 
-	int32_t len = (int32_t)(s-buffer);
 	*s = 0;
 	s = sentinel;
 	
@@ -642,7 +641,6 @@ tiny_string Number::toString(number_t value, DTOSTRMODE mode, int32_t precision)
 	
 	if (sentinel[0] == '0' && sentinel[1] != '.') {
 		s = sentinel + 1;
-		len--;
 	}
 	if (negative)
 		*--s = '-';

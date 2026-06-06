@@ -181,7 +181,7 @@ tiny_string ASObject::toString()
 			asAtom ret = asAtomHandler::fromObject(this);
 			tiny_string s;
 			bool isrefcounted;
-			if (toPrimitive(ret,isrefcounted,getInstanceWorker()->needsActionScript3() ? STRING_HINT : NO_HINT))
+			if (toPrimitive(ret,isrefcounted,needsActionScript3() ? STRING_HINT : NO_HINT))
 				s=asAtomHandler::toString(ret,getInstanceWorker());
 			if (isrefcounted)
 				ASATOM_DECREF(ret);
@@ -423,7 +423,7 @@ number_t ASObject::toNumberForComparison()
 /* Implements ECMA's ToPrimitive (9.1) and [[DefaultValue]] (8.6.2.6) */
 bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint)
 {
-	if (!getInstanceWorker()->needsActionScript3())
+	if (!needsActionScript3())
 	{
 		bool fromValueOf;
 		return AVM1toPrimitive(ret,isrefcounted,fromValueOf,hint != NO_HINT);
@@ -483,7 +483,7 @@ bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint)
 			return false;
 		ASATOM_DECREF(ret);
 	}
-	if (getInstanceWorker()->needsActionScript3())
+	if (needsActionScript3())
 		createError<TypeError>(getInstanceWorker(),kConvertToPrimitiveError,this->getClassName());
 	else
 	{
@@ -505,7 +505,7 @@ bool ASObject::toPrimitive(asAtom& ret, bool& isrefcounted, TP_HINT hint)
 
 bool ASObject::AVM1toPrimitive(asAtom& ret, bool& isrefcounted, bool& fromValueOf, bool fromAVM1Add2)
 {
-	assert(!getInstanceWorker()->needsActionScript3());
+	assert(!needsActionScript3());
 	fromValueOf=false;
 	isrefcounted=false;
 	if(isPrimitive())
@@ -642,26 +642,31 @@ void ASObject::call_valueOf(asAtom& ret)
 	valueOfName.isAttribute = false;
 
 	asAtom o=asAtomHandler::invalidAtom;
-	if(!getInstanceWorker()->needsActionScript3())
+	if(!needsActionScript3())
 	{
-		// AVM1 object has overwritten it's own prototype
-		ASObject* pr = this->getprop_prototype();
-		if (pr)
-			pr->getVariableByMultiname(o,valueOfName,SKIP_IMPL,getInstanceWorker());
-
 		// NOTE: Special case for `_global`, since it doesn't have a
 		// prototype, and returns `undefined` instead.
-		if (is<Global>() || (hasprop_prototype() && pr == nullptr))
+		if (is<Global>())
 		{
 			ret = asAtomHandler::undefinedAtom;
 			return;
 		}
+		getVariableByMultiname(o,valueOfName,GET_VARIABLE_OPTION( DONT_CALL_GETTER|DONT_CHECK_CLASS|DONT_CHECK_PROTOTYPE),getInstanceWorker());
+		// AVM1 object has overwritten it's own prototype
+		ASObject* pr = this->getprop_prototype();
+		if (hasprop_proto() && pr == nullptr)
+		{
+			ret = asAtomHandler::undefinedAtom;
+			return;
+		}
+		if (pr && asAtomHandler::isInvalid(o))
+			pr->getVariableByMultiname(o,valueOfName,SKIP_IMPL,getInstanceWorker());
 	}
 	if (asAtomHandler::isInvalid(o))
 		getVariableByMultiname(o,valueOfName,SKIP_IMPL,getInstanceWorker());
 	if (!asAtomHandler::isFunction(o))
 	{
-		if (getInstanceWorker()->needsActionScript3())
+		if (needsActionScript3())
 			createError<TypeError>(getInstanceWorker(),kCallOfNonFunctionError, valueOfName.normalizedNameUnresolved(getSystemState()));
 		ret = asAtomHandler::undefinedAtom;
 	}
@@ -697,16 +702,21 @@ void ASObject::call_toString(asAtom &ret)
 	toStringName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE);
 	toStringName.isAttribute = false;
 	asAtom o=asAtomHandler::invalidAtom;
-	if(!getInstanceWorker()->needsActionScript3())
+	if(!needsActionScript3())
 	{
-		// AVM1 object has overwritten it's own prototype
-		ASObject* pr = this->getprop_prototype();
-		if (pr)
-			pr->getVariableByMultiname(o,toStringName,SKIP_IMPL,getInstanceWorker());
-
 		// NOTE: Special case for `_global`, since it doesn't have a
 		// prototype, and returns `undefined` instead.
-		if (is<Global>() || (hasprop_prototype() && pr == nullptr))
+		if (is<Global>())
+		{
+			ret = asAtomHandler::undefinedAtom;
+			return;
+		}
+		getVariableByMultiname(o,toStringName,GET_VARIABLE_OPTION( DONT_CALL_GETTER|DONT_CHECK_CLASS|DONT_CHECK_PROTOTYPE),getInstanceWorker());
+		// AVM1 object has overwritten it's own prototype
+		ASObject* pr = this->getprop_prototype();
+		if (pr && asAtomHandler::isInvalid(o))
+			pr->getVariableByMultiname(o,toStringName,SKIP_IMPL,getInstanceWorker());
+		if (hasprop_proto() && pr == nullptr)
 		{
 			ret = asAtomHandler::undefinedAtom;
 			return;
@@ -716,7 +726,7 @@ void ASObject::call_toString(asAtom &ret)
 		getVariableByMultiname(o,toStringName,SKIP_IMPL,getInstanceWorker());
 	if (!asAtomHandler::isFunction(o))
 	{
-		if (getInstanceWorker()->needsActionScript3())
+		if (needsActionScript3())
 			createError<TypeError>(getInstanceWorker(), kCallOfNonFunctionError, toStringName.normalizedNameUnresolved(getSystemState()));
 	}
 	else
@@ -2004,7 +2014,7 @@ GET_VARIABLE_RESULT ASObject::getVariableByMultinameIntern(asAtom &ret, const mu
 		{
 			obj= ASObject::findGettableImpl(getInstanceWorker(), cls->borrowedVariables,name,&nsRealId);
 			if(!obj
-					&& (getInstanceWorker()->needsActionScript3() || ((opt & DONT_CHECK_PROTOTYPE) == 0))
+					&& (needsActionScript3() || ((opt & DONT_CHECK_PROTOTYPE) == 0))
 					&& name.hasEmptyNS)
 			{
 				//Check prototype chain
@@ -2163,6 +2173,10 @@ void ASObject::setRefConstant()
 	resetRefCount();
 	resetStoredMemberCount();
 	resetStoredMemberCountStatic();
+	if (this->is<Class_base>()
+		&& this->as<Class_base>()->prototype
+		&& this->as<Class_base>()->prototype->getObj())
+		this->as<Class_base>()->prototype->getObj()->setRefConstant();
 	setConstant();
 }
 
@@ -2222,7 +2236,7 @@ std::pair<asAtom, GET_VARIABLE_RESULT> ASObject::AVM1searchPrototypeByMultiname
 GET_VARIABLE_RESULT ASObject::AVM1getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk, bool isSlashPath)
 {
 	if (name.name_type == multiname::NAME_STRING &&
-			(name.name_s_id == BUILTIN_STRINGS::STRING_PROTO || name.name_s_id == BUILTIN_STRINGS::PROTOTYPE))
+		name.name_s_id == BUILTIN_STRINGS::PROTOTYPE)
 	{
 		ASObject* o = nullptr;
 		o = getprop_prototype();
@@ -2355,6 +2369,15 @@ bool ASObject::AVM1checkWatcher(multiname& name, asAtom& value, ASWorker* wrk)
 		value = newval;
 	}
 	return false;
+}
+
+bool ASObject::needsActionScript3() const
+{
+	if (avm1ConstructorFunction)
+		return false;
+	if (getInstanceWorker())
+		return getInstanceWorker()->needsActionScript3();
+	return true;
 }
 void variables_map::dumpVariables()
 {
@@ -2648,6 +2671,7 @@ ASObject::ASObject(ASWorker* wrk, Class_base* c, SWFOBJECT_TYPE t, CLASS_SUBTYPE
 	,worker(wrk)
 	,gcNext(nullptr)
 	,gcPrev(nullptr)
+	,avm1ConstructorFunction(nullptr)
 	,stringId(UINT32_MAX)
 	,storedmembercount(0)
 	,storedmembercountstatic(0)
@@ -2685,6 +2709,7 @@ ASObject::ASObject(const ASObject& o)
 	,worker(o.worker)
 	,gcNext(nullptr)
 	,gcPrev(nullptr)
+	,avm1ConstructorFunction(nullptr)
 	,stringId(o.stringId)
 	,storedmembercount(0)
 	,storedmembercountstatic(0)
@@ -2718,6 +2743,7 @@ ASObject::ASObject(MemoryAccount* m)
 	,worker(nullptr)
 	,gcNext(nullptr)
 	,gcPrev(nullptr)
+	,avm1ConstructorFunction(nullptr)
 	,stringId(UINT32_MAX)
 	,storedmembercount(0)
 	,storedmembercountstatic(0)
@@ -3843,28 +3869,30 @@ bool ASObject::hasprop_prototype()
 {
 	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
-	if (var != nullptr)
-		return var->isValidVar();
-	if (!sys->mainClip->needsActionScript3())
-	{
-		var = Variables.findObjVar
+	if (!needsActionScript3())
+		return hasprop_proto();
+	return (var && var->isValidVar());
+}
+bool ASObject::hasprop_proto()
+{
+	variable* var = Variables.findObjVar
 		(
 			BUILTIN_STRINGS::STRING_PROTO,
 			nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,
 			(DECLARED_TRAIT|DYNAMIC_TRAIT)
 		);
-	}
 	return (var && var->isValidVar());
 }
 
 ASObject* ASObject::getprop_prototype()
 {
-	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
+	variable* var=nullptr;
+	var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if (var)
 		return var->getObjectVar();
-	if (!getSystemState()->mainClip->needsActionScript3())
+	if (!needsActionScript3())
 		var=Variables.findObjVar(BUILTIN_STRINGS::STRING_PROTO,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if (var != nullptr)
@@ -3874,7 +3902,8 @@ ASObject* ASObject::getprop_prototype()
 
 asAtom ASObject::getprop_prototypeAtom()
 {
-	variable* var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
+	variable* var = nullptr;
+	var=Variables.findObjVar(BUILTIN_STRINGS::PROTOTYPE,nsNameAndKind(BUILTIN_NAMESPACES::EMPTY_NS),
 			NO_CREATE_TRAIT,(DECLARED_TRAIT|DYNAMIC_TRAIT));
 	if (var)
 		return var->getVar();
@@ -4747,10 +4776,18 @@ tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk, bool for
 			}
 			else if (obj->is<Class_base>())
 				return "[type Function]";
+			else if (obj->is<AVM1Super_object>())
+			{
+				ASObject* super = obj->as<AVM1Super_object>()->getSuperObject();
+				if (super ==Class<ASObject>::getRef(obj->getSystemState()).getPtr())
+					return "[type Object]";
+				obj = obj->as<AVM1Super_object>()->getBaseObject();
+			}
 
 			tiny_string ret = "[type Object]";
 			asAtom atom = asAtomHandler::invalidAtom;
-			obj->call_toString(atom);
+			if (!obj->is<Function_object>())
+				obj->call_toString(atom);
 
 			if (isString(atom))
 				ret = toString(atom, wrk, true);

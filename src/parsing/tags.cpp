@@ -3423,6 +3423,7 @@ void AVM1InitActionTag::execute(RootMovieClip *root) const
 	clip->state.last_FP=0; // avoid declaring the first frame
 	clip->constructionComplete(true,true);
 	clip->afterConstruction(true);
+	clip->setRefConstant();
 	root->insertLegacyChildAt(LEGACY_DEPTH_START,clip);
 	LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<clip->state.FP<<" initActions "<< clip->toDebugString());
 	ACTIONRECORD::executeActions(clip,clip->getAVM1Context(),actions,startactionpos,nullptr,true);

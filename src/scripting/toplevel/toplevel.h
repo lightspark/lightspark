@@ -163,8 +163,6 @@ class AVM1Super_object : public ASObject
 private:
 	ASObject* baseobject;
 	ASObject* super;
-	ASObject* prototype;
-	bool checkPrototype(asAtom& ret, const multiname& name);
 public:
 	AVM1Super_object(ASWorker* wrk, Class_base* c, ASObject* obj,ASObject* _super);
 	GET_VARIABLE_RESULT getVariableByMultiname(asAtom& ret, const multiname& name, GET_VARIABLE_OPTION opt, ASWorker* wrk) override;
@@ -180,7 +178,6 @@ public:
 	ASObject* getBaseObject() const;
 	asAtom getThisAtom() override { return asAtomHandler::fromObject(getBaseObject()); }
 };
-
 
 #ifdef PROFILING_SUPPORT
 extern void addFunctionCall(Class_base* cls, uint32_t functionname, uint64_t duration, bool builtin);
@@ -479,7 +476,7 @@ public:
 		c->handleConstruction(obj,nullptr,0,true);
 		return ret;
 	}
-	static AVM1Function* getAVM1Function(ASWorker* wrk,DisplayObject* clip, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<uint8_t>& actions, AVM1Scope* scope, std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)
+	static AVM1Function* getAVM1Function(ASWorker* wrk,DisplayObject* clip, AVM1context* ctx,std::vector<uint32_t>& params, std::vector<uint8_t>& actions, AVM1Scope* scope, std::vector<uint8_t> paramregisternumbers=std::vector<uint8_t>(), bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=false, bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false, bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false)
 	{
 		Class<IFunction>* c=Class<IFunction>::getClass(wrk->getSystemState());
 		AVM1Function*  ret =new (c->memoryAccount) AVM1Function(wrk,c, clip,ctx, params,actions,scope,paramregisternumbers,preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal);

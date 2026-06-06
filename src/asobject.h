@@ -913,6 +913,7 @@ private:
 	ASObject* gcNext;
 	ASObject* gcPrev;
 	std::map<uint32_t,pair<IFunction*,asAtom>> avm1watcherlist;
+	AVM1Function* avm1ConstructorFunction; // keeps track of the AVM1 constructor this object was constructed from
 protected:
 	ASObject(MemoryAccount* m);
 
@@ -978,6 +979,7 @@ protected:
 		ownedObjects.clear();
 		if (!avm1watcherlist.empty())
 			AVM1clearWatcherList();
+		avm1ConstructorFunction=nullptr;
 		if (proxyMultiName)
 		{
 			delete proxyMultiName;
@@ -1130,6 +1132,15 @@ public:
 	virtual bool AVM1setLocalByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
 	virtual bool AVM1setVariableByMultiname(multiname& name, asAtom& value, CONST_ALLOWED_FLAG allowConst, ASWorker* wrk);
 	bool AVM1checkWatcher(multiname& name, asAtom& value, ASWorker* wrk);
+	void AVM1setConstructorFunction(AVM1Function* f)
+	{
+		avm1ConstructorFunction=f;
+	}
+	AVM1Function* AVM1getConstructorFunction() const
+	{
+		return avm1ConstructorFunction;
+	}
+	virtual bool needsActionScript3() const;
 
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.
@@ -1354,6 +1365,7 @@ public:
 
 	/* helpers for the dynamic property 'prototype' */
 	bool hasprop_prototype();
+	bool hasprop_proto();
 	virtual ASObject* getprop_prototype();
 	virtual asAtom getprop_prototypeAtom();
 	void setprop_prototype(asAtom& prototype, uint32_t nameID=BUILTIN_STRINGS::PROTOTYPE);

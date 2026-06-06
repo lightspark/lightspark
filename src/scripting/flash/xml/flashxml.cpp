@@ -364,14 +364,14 @@ void XMLNode::fillChildren()
 	if (!children)
 	{
 		assert(childcount==0);
-		children =  getInstanceWorker()->needsActionScript3() ? Class<Array>::getInstanceSNoArgs(getInstanceWorker()) : Class<AVM1Array>::getInstanceSNoArgs(getInstanceWorker());
+		children =  needsActionScript3() ? Class<Array>::getInstanceSNoArgs(getInstanceWorker()) : Class<AVM1Array>::getInstanceSNoArgs(getInstanceWorker());
 		children->addStoredMember();
 		auto range = node.children();
 		for(auto it = range.begin();it!=range.end();++it)
 		{
 			if(it->type()==pugi::node_declaration || it->type()==pugi::node_comment || it->type()==pugi::node_doctype)
 				continue;
-			children->push(asAtomHandler::fromObject(getInstanceWorker()->needsActionScript3() ? Class<XMLNode>::getInstanceS(getInstanceWorker(), *it,this) : Class<AVM1XMLNode>::getInstanceS(getInstanceWorker(), *it,this)));
+			children->push(asAtomHandler::fromObject(needsActionScript3() ? Class<XMLNode>::getInstanceS(getInstanceWorker(), *it,this) : Class<AVM1XMLNode>::getInstanceS(getInstanceWorker(), *it,this)));
 			childcount++;
 		}
 	}
@@ -400,7 +400,7 @@ void XMLNode::reloadChildren()
 		{
 			if(it->type()==pugi::node_declaration || it->type()==pugi::node_comment)
 				continue;
-			children->push(asAtomHandler::fromObject(getInstanceWorker()->needsActionScript3() ? Class<XMLNode>::getInstanceS(getInstanceWorker(), *it,this) : Class<AVM1XMLNode>::getInstanceS(getInstanceWorker(), *it,this)));
+			children->push(asAtomHandler::fromObject(needsActionScript3() ? Class<XMLNode>::getInstanceS(getInstanceWorker(), *it,this) : Class<AVM1XMLNode>::getInstanceS(getInstanceWorker(), *it,this)));
 			childcount++;
 		}
 	}

@@ -59,32 +59,35 @@ protected:
 		// no cloning needed in AVM1
 		return nullptr;
 	}
-	asAtom computeSuper(asAtom obj);
 	void checkInternalException();
-	uint32_t getSWFVersion();
+	uint32_t getSWFVersion() const;
 public:
+	asAtom computeSuper();
+	asAtom constructObject(asAtom* args, uint32_t num_args, AVM1Function* caller); // creates a new Object using this function as constructor
+	void setupPrototype(asAtom value);
+	void setupDefineFunctionPrototype(bool hasname);
 	void finalize() override;
 	bool destruct() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller = nullptr, bool isInternalCall=false)
 	{
-		if (needsSuper() || getSWFVersion() < 7)
+		if (needsSuper())
 		{
-			asAtom newsuper = computeSuper(obj ? *obj : asAtomHandler::nullAtom );
+			asAtom newsuper = computeSuper();
 			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,&newsuper,isInternalCall);
 		}
 		else
 			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,nullptr,isInternalCall);
 		if (isInternalCall)
 			checkInternalException();
- 	}
+	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target, ASWorker* wrk) override
 	{
 		asAtom obj = target;
-		if (needsSuper() || getSWFVersion() < 7)
+		if (needsSuper())
 		{
-			asAtom newsuper = computeSuper(target);
+			asAtom newsuper = computeSuper();
 			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,&newsuper,true);
 		}
 		else
@@ -115,7 +118,7 @@ public:
 	}
 	FORCE_INLINE bool needsSuper() const
 	{
-		return !suppressSuper;
+		return !suppressSuper || getSWFVersion() < 7;
 	}
 	FORCE_INLINE asAtom getSuper() const
 	{
@@ -129,16 +132,8 @@ public:
 		implementedinterfaces.push_back(iface);
 	}
 	bool implementsInterface(asAtom& iface);
-	FORCE_INLINE void setAVM1Class(ASObject* cls)
-	{
-		avm1Class = cls;
-	}
-	FORCE_INLINE ASObject* getAVM1Class() const
-	{
-		return avm1Class;
-	}
 	void gcCounterReset() override;
-
+	std::string toDebugString() const override;
 };
 
 }

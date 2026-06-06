@@ -943,7 +943,7 @@ number_t Date::getMsSinceEpoch()
 tiny_string Date::toString()
 {
 	assert_and_throw(implEnable);
-	if (getInstanceWorker()->needsActionScript3())
+	if (needsActionScript3())
 		return toString_priv(false, "%a %b %_e %H:%M:%S GMT%z");
 	else
 		return toString_priv(false, "%a %b %-e %H:%M:%S GMT%z");

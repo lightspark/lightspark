@@ -200,8 +200,8 @@ void BitmapData::notifyUsers()
 
 bool BitmapData::checkDisposed(asAtom& ret)
 {
-	ret = getInstanceWorker()->needsActionScript3() ? asAtomHandler::undefinedAtom : asAtomHandler::fromInt(-1);
-	if(pixels.isNull() || (getInstanceWorker()->needsActionScript3() && !this->isConstructed()))
+	ret = needsActionScript3() ? asAtomHandler::undefinedAtom : asAtomHandler::fromInt(-1);
+	if(pixels.isNull() || (needsActionScript3() && !this->isConstructed()))
 	{
 		createError<ArgumentError>(getInstanceWorker(),kInvalidBitmapData);
 		return true;
@@ -1292,7 +1292,6 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 	th->pixels->clipRect(inrect, rect);
 	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 
-	unsigned int i = 0;
 	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
 	{
 		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
@@ -1316,7 +1315,6 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 			pixel = (a<<24) | (r<<16) | (g<<8) | b;
 
 			th->pixels->setPixel(x, y, pixel, th->transparent,false);
-			i++;
 		}
 	}
 	th->notifyUsers();

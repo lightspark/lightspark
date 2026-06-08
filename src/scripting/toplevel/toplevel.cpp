@@ -1669,26 +1669,3 @@ asAtom AVM1Super_object::getprop_prototypeAtom()
 {
 	return super->getprop_prototypeAtom();
 }
-
-void AVM1Super_object::finalize()
-{
-	ASObject::finalize();
-}
-bool AVM1Super_object::destruct()
-{
-	return ASObject::destruct();
-}
-void AVM1Super_object::prepareShutdown()
-{
-	ASObject::prepareShutdown();
-}
-bool AVM1Super_object::countCylicMemberReferences(garbagecollectorstate& gcstate)
-{
-	bool ret = ASObject::countCylicMemberReferences(gcstate);
-	return ret;
-}
-
-ASObject* AVM1Super_object::getBaseObject() const
-{
-	return baseobject;
-}

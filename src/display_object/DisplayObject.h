@@ -38,6 +38,7 @@
 namespace lightspark
 {
 
+class ASObject;
 class BitmapContainer;
 struct BitmapContainerRenderData;
 class CachedSurface;
@@ -80,7 +81,7 @@ public:
 		// When this flag is set, any changes from `RemoveObject` tags
 		// are ignored.
 		TransformedByActionScript = 1 << 3,
-		
+
 		// Whether the `DisplayObject` was placed into a container by
 		// ActionScript.
 		//
@@ -125,8 +126,8 @@ public:
 		SkipFrame = 1 << 11,
 
 		// Whether the `DisplayObject` has already called
-		// `invalidateCachedBitmap()` for this frame.
-		CacheInvalidated = 1 << 12,
+		// `markAsChanged()` for this frame.
+		HasChanged = 1 << 12,
 
 		// Whether the AVM1 `DisplayObject` is pending removal (it'll be
 		// removed on the next frame).
@@ -148,7 +149,8 @@ public:
 		ManualFrameConstruction = 1 << 15,
 	};
 private:
-	
+	using Proj = PerspectiveProjection;
+
 	SystemState* sys;
 	DisplayObject* parent;
 
@@ -164,7 +166,7 @@ private:
 	// (Split into separate members for easier access).
 	MATRIX matrix;
 	ColorTransform colorTransform;
-	PerspectiveProjection perspectiveProjection;
+	Optional<Proj> perspectiveProjection;
 
 	// The cached transform properties `_{[xy]scale,rotation}`.
 	// These are very expensive to calculate, so they're calculated, and
@@ -187,6 +189,8 @@ private:
 	// NOTE: Values other than the default `BLENDMODE_NORMAL` will cause
 	// the `DisplayObject` to act as if `cacheAsBitmap` was set.
 	AS_BLENDMODE blendMode;
+
+	_NR<ASObject> metaData;
 
 	// The opaque background colour of this `DisplayObject`.
 	// The bounding box of the `DisplayObject` will be filled with the
@@ -259,8 +263,264 @@ public:
 		Optional<const tiny_string&> _name = {}
 	);
 
+	bool hasFlag(const Flags& flag) const { return flags & flag; }
+	void setFlag(const Flags& flag, bool val)
+	{
+		if (val)
+			flags |= flag;
+		else
+			flags &= ~flag;
+	}
+
+	// Reset all properties that'd be adjusted by a movie load.
+	void resetForMovieLoad();
+
+	uint16_t getDepth() const { return depth; }
+	void setDepth(uint16_t _depth) { depth = _depth; }
+	uint16_t getPlaceFrame() const { return placeFrame; }
+	void setPlaceFrame(uint16_t frame) { placeFrame = frame; }
+	Transform getTransform(bool applyMatrix = true) const;
+	const MATRIX& getMatrix() const { return matrix; }
+	void setMatrix(const MATRIX& mtx);
+	const ColorTransform& getColorTransform() const { return colorTransform; }
+	void setColorTransform(const ColorTransform& ct) { colorTransform = ct; }
+	Optional<const Proj&> getPerspectiveProjection() const
+	{
+		return perspectiveProjection.asRef();
+	}
+
+	void setPerspectiveProjection(const Optional<Proj>& proj)
+	{
+		perspectiveProjection = proj;
+	}
+
+	const Twips& getX() const { return matrix.tx; }
+	bool setX(const Twips& _x);
+	const Twips& getY() const { return matrix.ty; }
+	bool setY(const Twips& _y);
+	Vector2Twips getXY() const { return Vector2Twips(getX(), getY()); }
+
+	// Caches the scale, and rotation factors of the `DisplayObject`, if
+	// necessary.
+	// Calculating these requires expensive trig ops, so we only do it
+	// if `_[xy]scale`, or `_rotation` are accessed.
+	void cacheScaleAndRotation();
+
+	number_t getRotaion() const
+	{
+		cacheScaleAndRotation();
+		return rotation;
+	}
+
+	bool setRotation(number_t angle);
+
+	number_t getScaleX() const
+	{
+		cacheScaleAndRotation();
+		return scale.x;
+	}
+
+	bool setScaleX(number_t val);
+
+	number_t getScaleY() const
+	{
+		cacheScaleAndRotation();
+		return scale.y;
+	}
+
+	bool setScaleY(number_t val);
+	const tiny_string& getName() const { return name; }
+	void setName(const tiny_string& _name) { name = _name; }
+	const std::vector<Filter>& getFilters() const { return filters; }
+	bool setFilters(const Span<Filter>& _filters);
+	number_t getAlpha() const { return colorTransform.aMult; }
+	void setAlpha(number_t alpha);
+	number_t getWidth() const;
+	void setWidth(number_t width);
+	number_t getHeight() const;
+	void setHeight(number_t height);
+	uint16_t getClipDepth() const { return clipDepth; }
+	void setClipDepth(uint16_t _depth) { clipDepth = _depth; }
+	SystemState* getSys() const { return sys; }
+	DisplayObject* getParent() const { return parent; }
+	void setParent(DisplayObject* _parent);
+
+	// You should almost always use `setParent()` instead, since that
+	// properly handles orphan clips/hidden objects.
+	void setParentIgnoringOprhans(DisplayObject* _parent)
+	{
+		parent = _parent;
+	}
+
+	const SoundTransform& getSoundTransform() const
+	{
+		return soundTransform;
+	}
+
+	void setSoundTransform(const SoundTransform& xform)
+	{
+		soundTransform = xform;
+	}
+
+	AS_BLENDMODE getBlendMode() const { return blendMode; }
+	void setBlendMode(const AS_BLENDMODE& _blendMode);
+	Optional<const RGB&> getOpaqueBackground() const
+	{
+		return opaqueBackground.asRef();
+	}
+
+	void setBlendMode(const Optional<RGB>& colour);
+	DisplayObject* getMask() const { return mask; }
+	void setMask(DisplayObject* _mask);
+	DisplayObject* getMaskee() const { return maskee; }
+	void setMaskee(DisplayObject* _maskee) { maskee = _maskee; }
+	_NR<ASObject> getMetaData() const { return metaData; }
+	void setMetaData(_NR<ASObject> obj) { metaData = obj; }
+
+	#define FLAG_GETTER_NAME_DECL(name, flag) bool name() const
+	#define FLAG_GETTER_PREFIX_DECL(prefix, flag) \
+		FLAG_GETTER_NAME_DECL(prefix##flag, flag)
+	#define FLAG_GETTER_SUFFIX_DECL(suffix, flag) \
+		FLAG_GETTER_NAME_DECL(get##suffix, flag)
+	#define FLAG_GETTER_DECL(flag) FLAG_GETTER_PREFIX_DECL(get, flag)
+
+	#define FLAG_SETTER_SUFFIX_DECL(suffix, flag) \
+		void set##suffix(bool value)
+	#define FLAG_SETTER_DECL(flag) FLAG_SETTER_SUFFIX_DECL(flag, flag)
+
+	#define FLAG_GETTER_SETTER_NAME_DECL(name, flag) \
+		FLAG_GETTER_NAME_DECL(name, flag); \
+		FLAG_SETTER_DECL(flag)
+
+	#define FLAG_GETTER_SETTER_PREFIX_DECL(prefix, flag) \
+		FLAG_GETTER_SETTER_NAME_DECL(prefix##flag, flag)
+
+	#define FLAG_GETTER_SETTER_SUFFIX_DECL(suffix, flag) \
+		FLAG_GETTER_SUFFIX_DECL(suffix, flag); \
+		FLAG_SETTER_SUFFIX_DECL(suffix, flag)
+
+	#define FLAG_GETTER_SETTER_DECL(flag) \
+		FLAG_GETTER_SETTER_PREFIX_DECL(get, flag)
+
+	#define FLAG_GETTER_NAME(name, flag) \
+		bool name() const { return hasFlag(Flags::flag); }
+	#define FLAG_GETTER_PREFIX(prefix, flag) \
+		FLAG_GETTER_NAME(prefix##flag, flag)
+	#define FLAG_GETTER_SUFFIX(suffix, flag) \
+		FLAG_GETTER_NAME(get##suffix, flag)
+	#define FLAG_GETTER(flag) FLAG_GETTER_PREFIX(get, flag)
+
+	#define FLAG_SETTER_SUFFIX(suffix, flag) \
+		void set##suffix(bool value) { setFlag(Flags::flag, value); }
+	#define FLAG_SETTER(flag) FLAG_SETTER_SUFFIX(flag, flag)
+
+	#define FLAG_GETTER_SETTER_NAME(name, flag) \
+		FLAG_GETTER_NAME(name, flag); \
+		FLAG_SETTER(flag)
+
+	#define FLAG_GETTER_SETTER_PREFIX(prefix, flag) \
+		FLAG_GETTER_SETTER_NAME(prefix##flag, flag)
+
+	#define FLAG_GETTER_SETTER_SUFFIX(suffix, flag) \
+		FLAG_GETTER_SUFFIX(suffix, flag); \
+		FLAG_SETTER_SUFFIX(suffix, flag)
+
+	#define FLAG_GETTER_SETTER(flag) \
+		FLAG_GETTER_SETTER_PREFIX(get, flag)
+
+	FLAG_GETTER_SETTER_NAME(isAVM1Removed, RemovedByAVM1);
+	FLAG_GETTER_SETTER_PREFIX(is, AVM1PendingRemoval);
+	FLAG_GETTER_SETTER(SkipFrame);
+	FLAG_GETTER_SETTER(ScaleAndRotationCached);
+	FLAG_GETTER_PREFIX(is, Visible);
+
+	bool setVisible(bool value)
+	{
+		bool changed = isVisible() != value;
+		setFlag(Flags::Visible, value);
+		return changed;
+	}
+
+	FLAG_GETTER_SETTER_NAME(isRoot, IsRoot);
+	FLAG_GETTER_SETTER(TransformedByActionScript);
+	FLAG_GETTER_SETTER(PlacedByActionScript);
+	FLAG_GETTER_SETTER(ManualFrameConstruction);
+	FLAG_GETTER_SETTER(LockRoot);
+	FLAG_GETTER_SUFFIX(CachedBitmapPreference, CacheAsBitmap);
+	FLAG_SETTER_SUFFIX_DECL(CachedBitmapPreference, CacheAsBitmap);
+	FLAG_GETTER_SETTER_PREFIX(is, CreatedByTimeline);
+	FLAG_GETTER_SETTER(HasScrollRect);
+	FLAG_GETTER_SETTER(HasExplicitName);
+	FLAG_GETTER_SETTER(HasMatrix3D);
+
+	#undef FLAG_GETTER_NAME_DECL
+	#undef FLAG_GETTER_PREFIX_DECL
+	#undef FLAG_GETTER_SUFFIX_DECL
+	#undef FLAG_GETTER_DECL
+	#undef FLAG_SETTER_SUFFIX_DECL
+	#undef FLAG_SETTER_DECL
+	#undef FLAG_GETTER_SETTER_NAME_DECL
+	#undef FLAG_GETTER_SETTER_PREFIX_DECL
+	#undef FLAG_GETTER_SETTER_SUFFIX_DECL
+	#undef FLAG_GETTER_SETTER_DECL
+	#undef FLAG_GETTER_NAME
+	#undef FLAG_GETTER_PREFIX
+	#undef FLAG_GETTER_SUFFIX
+	#undef FLAG_GETTER
+	#undef FLAG_SETTER_SUFFIX
+	#undef FLAG_SETTER
+	#undef FLAG_GETTER_SETTER_NAME
+	#undef FLAG_GETTER_SETTER_PREFIX
+	#undef FLAG_GETTER_SETTER_SUFFIX
+	#undef FLAG_GETTER_SETTER
+
+	virtual bool markAsChanged();
+	void resetHasChanged() { setFlag(Flags::HasChanged, false); }
 	void geometryChanged();
-	virtual Optional<RectF> boundsRect(bool visibleOnly)
+
+	_R<CachedSurface> getCachedSurface() const
+	{
+		return cachedSurface;
+	}
+
+	_R<CachedSurface> getCachedSurface()
+	{
+		return cachedSurface;
+	}
+
+	/**
+	 * Generate a new IDrawable instance for this object
+	 * @param target The topmost object in the hierarchy that is being drawn. Such object
+	 * _must_ be on the parent chain of this
+	 * @param initialMatrix A matrix that will be prepended to all transformations
+	 */
+	virtual IDrawable* invalidate(bool smoothing);
+	virtual void invalidateForRenderToBitmap
+	(
+		BitmapContainerRenderData& container,
+		bool smoothing
+	);
+
+	virtual void requestInvalidation
+	(
+		InvalidateQueue* q,
+		bool forceTextureRefresh = false
+	);
+
+	void updateCachedSurface(IDrawable* d);
+	virtual void refreshSurfaceState();
+	void setupSurfaceState(IDrawable* d);
+
+	bool isOnStage() const;
+
+	RootMovieClip* getAVM2Root() const;
+	Stage* getAVM2Stage() const;
+	DisplayObject& getAVM1Root(bool noLock = false) const;
+	DisplayObject& getAVM1Stage() const;
+	void setLegacyMatrix(const MATRIX& m);
+	void setFilter(const FILTER& filter);
+
+	virtual Optional<Rect<Twips>> boundsRect(bool visibleOnly)
 	{
 		throw RunTimeException
 		(
@@ -269,21 +529,15 @@ public:
 		);
 	}
 
-	virtual Optional<RectF> boundsRectWithoutChildren(bool visibleOnly)
+	virtual Optional<Rect<Twips>> boundsRectWithoutChildren(bool visibleOnly)
 	{
 		return boundsRect(visibleOnly);
 	}
 
+	virtual Rect<Twips> boundsRectWithTransform(const MATRIX& mtx);
+
 	Optional<RectF> boundsRectGlobal(bool fromCurrentRendering = true);
-	void setMatrix(const MATRIX& m);
-	void setMatrix3D(const Matrix3D* m);
-	void updatedRect(); // scrollrect was changed
-	void setMask(DisplayObject* m);
-	void setClipMask(DisplayObject* m);
-	void setBlendMode(const AS_BLENDMODE& _blendMode);
-	AS_BLENDMODE getBlendMode() const { return blendMode; }
 	static bool isShaderBlendMode(const AS_BLENDMODE& mode);
-	void setNameOnParent();
 	void applyFilters
 	(
 		BitmapContainer* target,
@@ -309,13 +563,9 @@ public:
 		return textureRecalculationSkippable;
 	}
 
-	_R<CachedSurface> getCachedSurface() const { return cachedSurface; }
-	bool needsCacheAsBitmap() const;
-	bool hasFilters() const;
+	bool hasFilters() const { return !filters.empty(); }
 	void requestInvalidationFilterParent(InvalidateQueue* q = nullptr);
 	virtual void requestInvalidationIncludingChildren(InvalidateQueue* q);
-	SystemState* getSys() const { return sys; }
-	DisplayObject* getParent() const { return parent; }
 	uint16_t getParentDepth() const;
 	uint16_t findParentDepth(DisplayObject* d) const;
 	DisplayObject* getAncestor(uint16_t depth) const;
@@ -326,38 +576,17 @@ public:
 	) const;
 
 	bool findParent(DisplayObject* d) const;
-	void setParent(DisplayObject* p, bool forDestruction);
 	const RectF& getScalingGrid() const { return scalingGrid; }
 	void setScalingGrid(const RectF& rect) { scalingGrid = rect; }
-	virtual void markAsChanged();
-	MATRIX getMatrix(bool includeRotation = true) const;
 	bool isInInitFrame() const { return inInitFrame; }
-	/**
-	 * Generate a new IDrawable instance for this object
-	 * @param target The topmost object in the hierarchy that is being drawn. Such object
-	 * _must_ be on the parent chain of this
-	 * @param initialMatrix A matrix that will be prepended to all transformations
-	 */
-	virtual IDrawable* invalidate(bool smoothing);
-	virtual void invalidateForRenderToBitmap
-	(
-		BitmapContainerRenderData* container,
-		bool smoothing
-	);
-
-	virtual void requestInvalidation
-	(
-		InvalidateQueue* q,
-		bool forceTextureRefresh = false
-	);
-
-	void updateCachedSurface(IDrawable* d);
 	MATRIX getConcatenatedMatrix
 	(
 		bool includeRoot = false,
 		bool fromCurrentRendering = true
 	) const;
 
+	MATRIX localToGlobalMatrix(bool fromCurrentRendering = true) const;
+	MATRIX globalToLocalMatrix(bool fromCurrentRendering = true) const;
 	Vector2f localToGlobal(const Vector2f& point, bool fromCurrentRendering = true) const;
 	Vector2f globalToLocal(const Vector2f& point, bool fromCurrentRendering = true) const;
 	number_t getConcatenatedAlpha() const;
@@ -383,71 +612,15 @@ public:
 		bool interactiveObjectsOnly
 	);
 
-	void setAVM1Removed(bool removed) { removedByAVM1 = removed; }
-	bool isAVM1Removed() const { return removedByAVM1; }
-	bool isOnStage() const;
-	bool isMask() const { return isMaskCount; }
-	// checks for visibility depending on parent visibility
-	bool isVisible() const;
-	bool isLoadedRootObject() const { return isLoadedRoot; }
-	bool isTransformedByActionScript() const
-	{
-		return transformedByActionScript;
-	}
-
-	bool isPlacedByActionScript() const
-	{
-		return placedByActionScript;
-	}
-
-	bool getSkipFrame() const { return skipFrame; }
-	bool getHasChanged() const { return hasChanged; }
-	bool isLegacy() const { return legacy; }
 	bool isMarkedForLegacyDeletion() const
 	{
 		return markedForLegacyDeletion;
 	}
 
-	void getLockRoot() const { return lockRoot; }
-
-	void setTransformedByActionScript(bool)
-	{
-		transformedByActionScript = flag;
-	}
-
-	void setPlacedByActionScript(bool flag)
-	{
-		placedByActionScript = flag;
-	}
-
-	void setSkipFrame(bool _skipFrame) { skipFrame = _skipFrame; }
-	void setLegacy(bool _legacy) { legacy = _legacy; }
 	void setMarkedForLegacyDeletion(bool flag)
 	{
 		markedForLegacyDeletion = flag;
 	}
-
-
-	void setCacheAsBitmap(bool _cacheAsBitmap);
-	void setLockRoot(bool _lockRoot) { lockRoot = _lockRoot; }
-	number_t clippedAlpha() const;
-	number_t getRotation() const { return rotation; }
-	uint16_t getDepth() { return depth; }
-	uint16_t getClipDepth() const { return clipDepth; }
-	const tiny_string& getName() const { return name; }
-	void setName(const tiny_string& _name) { name = _name; }
-	const ColorTransformBase& getColorTransform() const { return colorTransform; }
-	void setColorTransform(const ColorTransformBase& ct) { colorTransform = ct; }
-	number_t getMaxFilterBorder() const { return maxFilterBorder; }
-	RootMovieClip* getAVM2Root() const;
-	Stage* getAVM2Stage() const;
-	DisplayObject& getAVM1Root(bool noLock = false) const;
-	DisplayObject& getAVM1Stage() const;
-	void setLegacyMatrix(const MATRIX& m);
-	void setFilters(const FILTERLIST& filterList);
-	void setFilter(const FILTER& filter);
-	virtual void refreshSurfaceState();
-	void setupSurfaceState(IDrawable* d);
 
 	virtual void enterFrame(bool implicit) {}
 	virtual void advanceFrame(bool implicit) {}
@@ -455,35 +628,17 @@ public:
 	virtual void initFrame();
 	virtual void executeFrameScript();
 	virtual bool needsActionScript3() const;
+	bool isAS3() const { return needsActionScript3(); }
 	virtual void handleMouseCursor(bool rollover) {}
 	virtual bool allowAsMask() const { return true; }
 	Vector2f getLocalMousePos();
-	Vector2f getXY();
-	void setX(number_t x);
-	void setY(number_t y);
-	void setZ(number_t z);
-	void setScaleX(number_t val);
-	void setScaleY(number_t val);
-	void setScaleZ(number_t val);
-	void setVisible(bool v);
 	// Nominal width and heigt are the size before scaling and rotation
 	Vector2f getNominalSize();
 	number_t getNominalWidth() { return getNominalSize().x; }
 	number_t getNominalHeight() { return getNominalSize().y; }
-	DisplayObject* getMask() const { return mask; }
-	DisplayObject* getClipMask() const { return clipMask; }
-	bool inMask() const;
-	bool belongsToMask() const;
 	void addBroadcastEventListener();
 	void removeBroadcastEventListener();
 	bool hasBroadcastListeners() const { return broadcastEventListenerCount; }
-
-	number_t getAlpha() const;
-	void setAlpha(number_t alpha);
-	number_t getWidth() const;
-	void setWidth(number_t width);
-	number_t getHeight() const;
-	void setHeight(number_t height);
 };
 
 }

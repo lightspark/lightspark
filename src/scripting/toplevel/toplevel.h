@@ -157,7 +157,7 @@ public:
 };
 
 // special object if AVM1 ActionGetVariable "super" is used
-// it is just a wrapper around the original object with the prototype of its superclass as prototype
+// it is just a wrapper around the superclass and the original object
 class AVM1Super_object : public ASObject
 {
 private:
@@ -171,11 +171,15 @@ public:
 	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk) override;
 	ASObject* getprop_prototype() override;
 	asAtom getprop_prototypeAtom() override;
-	void finalize() override;
-	bool destruct() override;
-	void prepareShutdown() override;
-	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
-	ASObject* getBaseObject() const;
+	ASObject* getBaseObject() const
+	{
+		return baseobject;
+	}
+	ASObject* getSuperObject() const
+	{
+		return super;
+	}
+
 	asAtom getThisAtom() override { return asAtomHandler::fromObject(getBaseObject()); }
 };
 

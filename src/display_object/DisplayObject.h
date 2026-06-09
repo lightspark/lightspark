@@ -23,11 +23,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <utility>
 #include <vector>
 
 #include "backends/colortransformbase.h"
 #include "backends/geometry.h"
+#include "gc/ptr.h"
 #include "exceptions.h"
 #include "smartrefs.h"
 #include "swftypes.h"
@@ -38,6 +40,9 @@
 namespace lightspark
 {
 
+union asAtom;
+class AVM1Value;
+class AVM1Object;
 class ASObject;
 class BitmapContainer;
 struct BitmapContainerRenderData;
@@ -179,7 +184,7 @@ private:
 	SoundTransform* soundTransform;
 
 	// The `DisplayObject` that we're being masked by.
-	DisplayObject* mask;
+	DisplayObject* masker;
 
 	// The `DisplayObject` that we're currently masking.
 	DisplayObject* maskee;
@@ -227,8 +232,7 @@ private:
 	_R<CachedSurface> cachedSurface;
 	bool needsTextureRecalculation;
 	bool textureRecalculationSkippable;
-
-	DisplayObject* invalidateQueueNext;
+	bool markedForTimelineDeletion;
 protected:
 	mutable Mutex spinlock;
 
@@ -289,15 +293,11 @@ public:
 		return perspectiveProjection.asRef();
 	}
 
-	void setPerspectiveProjection(const Optional<Proj>& proj)
-	{
-		perspectiveProjection = proj;
-	}
-
+	void setPerspectiveProjection(const Optional<Proj>& proj);
 	const Twips& getX() const { return matrix.tx; }
-	bool setX(const Twips& _x);
+	void setX(const Twips& _x);
 	const Twips& getY() const { return matrix.ty; }
-	bool setY(const Twips& _y);
+	void setY(const Twips& _y);
 	Vector2Twips getXY() const { return Vector2Twips(getX(), getY()); }
 
 	// Caches the scale, and rotation factors of the `DisplayObject`, if
@@ -306,29 +306,14 @@ public:
 	// if `_[xy]scale`, or `_rotation` are accessed.
 	void cacheScaleAndRotation();
 
-	number_t getRotaion() const
-	{
-		cacheScaleAndRotation();
-		return rotation;
-	}
-
-	bool setRotation(number_t angle);
-
+	number_t getRotaion() const;
+	void setRotation(number_t angle);
 	number_t getScaleX() const
-	{
-		cacheScaleAndRotation();
-		return scale.x;
-	}
-
-	bool setScaleX(number_t val);
-
-	number_t getScaleY() const
-	{
-		cacheScaleAndRotation();
-		return scale.y;
-	}
-
-	bool setScaleY(number_t val);
+	void setScaleX(number_t val);
+	number_t getScaleY() const;
+	void setScaleY(number_t val);
+	uint16_t getRatio() const { return ratio; }
+	void setRatio(uint16_t _ratio);
 	const tiny_string& getName() const { return name; }
 	void setName(const tiny_string& _name) { name = _name; }
 	const std::vector<Filter>& getFilters() const { return filters; }
@@ -369,13 +354,31 @@ public:
 		return opaqueBackground.asRef();
 	}
 
-	void setBlendMode(const Optional<RGB>& colour);
-	DisplayObject* getMask() const { return mask; }
-	void setMask(DisplayObject* _mask);
+	void setOpaqueBackground(const Optional<RGB>& colour);
+	DisplayObject* getMasker() const { return masker; }
+	void setMasker(DisplayObject* mask);
 	DisplayObject* getMaskee() const { return maskee; }
-	void setMaskee(DisplayObject* _maskee) { maskee = _maskee; }
+	void setMaskee(DisplayObject* mask);
 	_NR<ASObject> getMetaData() const { return metaData; }
 	void setMetaData(_NR<ASObject> obj) { metaData = obj; }
+
+	// High level function for setting the mask. This sets both the
+	// masker, and maskee.
+	//
+	// This is equivalent to setting the mask from AVM.
+	void setMask(DisplayObject* mask);
+
+	Optional<const Rect<Twips>&> getScrollRect() const
+	{
+		return scrollRect.asRef();
+	}
+
+	const Rect<Twips>& getNextScrollRect() const
+	{
+		return nextScrollRect;
+	}
+
+	void setNextScrollRect(const Rect<Twips>& rect);
 
 	#define FLAG_GETTER_NAME_DECL(name, flag) bool name() const
 	#define FLAG_GETTER_PREFIX_DECL(prefix, flag) \
@@ -515,8 +518,10 @@ public:
 
 	RootMovieClip* getAVM2Root() const;
 	Stage* getAVM2Stage() const;
+	DisplayObject* getAVM2Parent() const;
 	DisplayObject& getAVM1Root(bool noLock = false) const;
 	DisplayObject& getAVM1Stage() const;
+	DisplayObject* getAVM1Parent() const;
 	void setLegacyMatrix(const MATRIX& m);
 	void setFilter(const FILTER& filter);
 
@@ -596,11 +601,11 @@ public:
 	virtual void checkRatio(uint16_t ratio, bool inskipping) {}
 
 	tiny_string getPath(bool dotNotation = true);
-	virtual void afterLegacyInsert();
-	virtual void afterLegacyDelete(bool inskipping) {}
+	virtual void afterTimelineCreation() {}
+	virtual void afterTimelineDeletion(bool inskipping) {}
 	virtual uint32_t getTagID() const { return UINT32_MAX; }
 	virtual LoaderInfo* getLoaderInfo() const { return nullptr; }
-	virtual SWFMovie* getMovie() const { return nullptr; }
+	virtual const SWFMovie& getMovie() const = 0;
 
 	Optional<RectF> getBounds(const MATRIX& m, bool visibleOnly = false);
 	bool hitTestMask(const Vector2f& globalPoint, HIT_TYPE type);
@@ -612,20 +617,33 @@ public:
 		bool interactiveObjectsOnly
 	);
 
-	bool isMarkedForLegacyDeletion() const
+	bool hitTestBounds(const Vector2Twips& point) const
 	{
-		return markedForLegacyDeletion;
+		return boundsRectGlobal(false).contains(point);
 	}
 
-	void setMarkedForLegacyDeletion(bool flag)
+	bool hitTestObject(const DisplayObject& obj) const
 	{
-		markedForLegacyDeletion = flag;
+		auto a = boundsRectGlobal(false);
+		auto b = obj.boundsRectGlobal(false);
+		return a.intersects(b);
+	}
+
+	bool isMarkedForTimelineDeletion() const
+	{
+		return markedForTimelineDeletion;
+	}
+
+	void setMarkedForTimelineDeletion(bool flag)
+	{
+		markedForTimelineDeletion = flag;
 	}
 
 	virtual void enterFrame(bool implicit) {}
 	virtual void advanceFrame(bool implicit) {}
 	virtual void declareFrame(bool implicit) {}
 	virtual void initFrame();
+	virtual void afterInitFrame();
 	virtual void executeFrameScript();
 	virtual bool needsActionScript3() const;
 	bool isAS3() const { return needsActionScript3(); }
@@ -639,6 +657,43 @@ public:
 	void addBroadcastEventListener();
 	void removeBroadcastEventListener();
 	bool hasBroadcastListeners() const { return broadcastEventListenerCount; }
+
+	void preRender();
+	void avm1Unload();
+	Span<const AVM1VarBinding> getAVM1VarBindings() const
+	{
+		return {};
+	}
+
+	Span<AVM1VarBinding> getAVM1VarBindings()
+	{
+		return {};
+	}
+
+	virtual _NGC<AVM1Object> tryToAVM1Object() const { return NullGc; }
+	AVM1Value toAVM1ValueOrUndef() const;
+	_GC<AVM1Object> toAVM1Object() const;
+
+	virtual _NR<ASObject> toASObject() const { return NullRef; }
+	asAtom toASAtomOrNull() const;
+	uint8_t getSwfVersion() const { return getMovie().getVersion(); }
+
+	// Get a named property from the AVM1 object.
+	//
+	// This is required because some `Boolean` properties in AVM1 can
+	// actually hold any value.
+	bool getAVM1BoolProp
+	(
+		const tiny_string& name,
+		std::function<void(SystemState*)> _default
+	) const;
+
+	void setAVM1Prop(const tiny_string& name, const AVM1Value& value);
+
+	template<typename T>
+	bool is() const;
+	template<typename T>
+	T* as() const;
 };
 
 }

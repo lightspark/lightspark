@@ -923,7 +923,6 @@ ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_intersects)
 		}
 		else
 		{
-			int varcount=0;
 			ASObject* o = asAtomHandler::getObjectNoCheck(args[0]);
 			multiname m(nullptr);
 			m.name_type=multiname::NAME_STRING;
@@ -934,7 +933,6 @@ ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_intersects)
 				o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 				cx = asAtomHandler::AVM1toNumber(a,wrk->AVM1getSwfVersion());
 				ASATOM_DECREF(a);
-				varcount++;
 			}
 			m.name_s_id=wrk->getSystemState()->getUniqueStringId("y");
 			if (o->hasPropertyByMultiname(m,true,false,wrk))
@@ -943,7 +941,6 @@ ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_intersects)
 				o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 				cy = asAtomHandler::AVM1toNumber(a,wrk->AVM1getSwfVersion());
 				ASATOM_DECREF(a);
-				varcount++;
 			}
 			m.name_s_id=wrk->getSystemState()->getUniqueStringId("width");
 			if (o->hasPropertyByMultiname(m,true,false,wrk))
@@ -952,7 +949,6 @@ ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_intersects)
 				o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 				cw = asAtomHandler::AVM1toNumber(a,wrk->AVM1getSwfVersion());
 				ASATOM_DECREF(a);
-				varcount++;
 			}
 			m.name_s_id=wrk->getSystemState()->getUniqueStringId("height");
 			if (o->hasPropertyByMultiname(m,true,false,wrk))
@@ -961,7 +957,6 @@ ASFUNCTIONBODY_ATOM(AVM1Rectangle,AVM1_intersects)
 				o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 				ch = asAtomHandler::AVM1toNumber(a,wrk->AVM1getSwfVersion());
 				ASATOM_DECREF(a);
-				varcount++;
 			}
 		}
 	}

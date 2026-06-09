@@ -34,8 +34,8 @@ namespace lightspark
 class Timer: public EventDispatcher, public ITickJob
 {
 private:
-	void tick();
-	void tickFence();
+	void tick() override;
+	void tickFence() override;
 protected:
 	bool running;
 	uint32_t delay;

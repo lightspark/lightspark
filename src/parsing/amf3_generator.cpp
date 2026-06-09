@@ -591,7 +591,7 @@ asAtom Amf3Deserializer::parseObject(std::vector<tiny_string>& stringMap,
 		name.ns.push_back(nsNameAndKind(input->getSystemState(),"",NAMESPACE));
 		name.isAttribute=false;
 		asAtomHandler::getObject(ret)->setVariableByMultiname_intern(name,value,CONST_ALLOWED,traits.type,nullptr,input->getInstanceWorker());
-		if (input->getInstanceWorker()->currentCallContext->exceptionthrown)
+		if (input->getInstanceWorker()->currentCallContext && input->getInstanceWorker()->currentCallContext->exceptionthrown)
 		{
 			// exception thrown during setter call
 			// adobe seems to just trace the error and continue;

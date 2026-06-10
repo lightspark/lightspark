@@ -181,7 +181,7 @@ private:
 	number_t skew;
 
 	// The sound transform of sounds playing from this `DisplayObject`.
-	SoundTransform* soundTransform;
+	SoundTransform soundTransform;
 
 	// The `DisplayObject` that we're being masked by.
 	DisplayObject* masker;
@@ -233,33 +233,19 @@ private:
 	bool needsTextureRecalculation;
 	bool textureRecalculationSkippable;
 	bool markedForTimelineDeletion;
+
+	void fireAddedEvents();
+	void setOnParentField();
 protected:
+	size_t broadcastEventListenerCount;
 	mutable Mutex spinlock;
 
 	virtual ~DisplayObject() {}
 	RectF computeBoundsForTransformedRect(const RectF& rect, const MATRIX& m) const;
 
-	Vector2f computeSize();
-	number_t computeWidth() { return computeSize().x; }
-	number_t computeHeight() { return computeSize().y; }
 	bool skipRender() const;
 
 	bool defaultRender(RenderContext& ctxt);
-
-	virtual DisplayObject* hitTestImpl
-	(
-		const Vector2f& globalPoint,
-		const Vector2f& localPoint,
-		HIT_TYPE type,
-		bool interactiveObjectsOnly
-	)
-	{
-		throw RunTimeException
-		(
-			"DisplayObject::hitTestImpl: "
-			"Derived class must implement this!"
-		);
-	}
 public:
 	DisplayObject
 	(
@@ -313,13 +299,14 @@ public:
 	number_t getScaleY() const;
 	void setScaleY(number_t val);
 	uint16_t getRatio() const { return ratio; }
-	void setRatio(uint16_t _ratio);
+	void setRatio(uint16_t _ratio bool inskipping);
 	const tiny_string& getName() const { return name; }
 	void setName(const tiny_string& _name) { name = _name; }
 	const std::vector<Filter>& getFilters() const { return filters; }
 	bool setFilters(const Span<Filter>& _filters);
 	number_t getAlpha() const { return colorTransform.aMult; }
 	void setAlpha(number_t alpha);
+	Vector2Twips getSize();
 	number_t getWidth() const;
 	void setWidth(number_t width);
 	number_t getHeight() const;
@@ -356,9 +343,9 @@ public:
 
 	void setOpaqueBackground(const Optional<RGB>& colour);
 	DisplayObject* getMasker() const { return masker; }
-	void setMasker(DisplayObject* mask);
+	void setMasker(DisplayObject* mask, bool removeOldLink = true);
 	DisplayObject* getMaskee() const { return maskee; }
-	void setMaskee(DisplayObject* mask);
+	void setMaskee(DisplayObject* mask, bool removeOldLink = true);
 	_NR<ASObject> getMetaData() const { return metaData; }
 	void setMetaData(_NR<ASObject> obj) { metaData = obj; }
 
@@ -436,14 +423,7 @@ public:
 	FLAG_GETTER_SETTER(SkipFrame);
 	FLAG_GETTER_SETTER(ScaleAndRotationCached);
 	FLAG_GETTER_PREFIX(is, Visible);
-
-	bool setVisible(bool value)
-	{
-		bool changed = isVisible() != value;
-		setFlag(Flags::Visible, value);
-		return changed;
-	}
-
+	FLAG_SETTER_DECL(Visible);
 	FLAG_GETTER_SETTER_NAME(isRoot, IsRoot);
 	FLAG_GETTER_SETTER(TransformedByActionScript);
 	FLAG_GETTER_SETTER(PlacedByActionScript);
@@ -525,23 +505,43 @@ public:
 	void setLegacyMatrix(const MATRIX& m);
 	void setFilter(const FILTER& filter);
 
-	virtual Optional<Rect<Twips>> boundsRect(bool visibleOnly)
+	virtual Optional<Rect<Twips>> tryBoundsRect(bool visibleOnly)
 	{
 		throw RunTimeException
 		(
-			"DisplayObject::boundsRect: "
+			"DisplayObject::tryBoundsRect: "
 			"Derived class must implement this!"
 		);
 	}
 
-	virtual Optional<Rect<Twips>> boundsRectWithoutChildren(bool visibleOnly)
+	Rect<Twips> boundsRect(bool visibleOnly)
 	{
-		return boundsRect(visibleOnly);
+		return tryBoundsRect(visibleOnly).valueOr(Rect<Twips> {});
+	}
+
+	virtual Optional<Rect<Twips>> tryBoundsRectWithoutChildren(bool visibleOnly)
+	{
+		return tryBoundsRect(visibleOnly);
+	}
+
+	Rect<Twips> boundsRectWithoutChildren(bool visibleOnly)
+	{
+		return tryBoundsRectWithoutChildren
+		(
+			visibleOnly
+		).valueOr(Rect<Twips> {});
 	}
 
 	virtual Rect<Twips> boundsRectWithTransform(const MATRIX& mtx);
+	Optional<Rect<Twips>> tryBoundsRectGlobal(bool fromCurrentRendering = true);
+	Rect<Twips> boundsRectGlobal(bool fromCurrentRendering = true)
+	{
+		return tryBoundsRectGlobal
+		(
+			fromCurrentRendering
+		).valueOr(Rect<Twips> {});
+	}
 
-	Optional<RectF> boundsRectGlobal(bool fromCurrentRendering = true);
 	static bool isShaderBlendMode(const AS_BLENDMODE& mode);
 	void applyFilters
 	(
@@ -581,8 +581,8 @@ public:
 	) const;
 
 	bool findParent(DisplayObject* d) const;
-	const RectF& getScalingGrid() const { return scalingGrid; }
-	void setScalingGrid(const RectF& rect) { scalingGrid = rect; }
+	const Rect<Twips>& getScalingGrid() const { return scalingGrid; }
+	void setScalingGrid(const Rect<Twips>& rect) { scalingGrid = rect; }
 	bool isInInitFrame() const { return inInitFrame; }
 	MATRIX getConcatenatedMatrix
 	(
@@ -592,8 +592,18 @@ public:
 
 	MATRIX localToGlobalMatrix(bool fromCurrentRendering = true) const;
 	MATRIX globalToLocalMatrix(bool fromCurrentRendering = true) const;
-	Vector2f localToGlobal(const Vector2f& point, bool fromCurrentRendering = true) const;
-	Vector2f globalToLocal(const Vector2f& point, bool fromCurrentRendering = true) const;
+	Vector2Twips localToGlobal
+	(
+		const Vector2Twips& point,
+		bool fromCurrentRendering = true
+	) const;
+
+	Vector2Twips globalToLocal
+	(
+		const Vector2Twips& point,
+		bool fromCurrentRendering = true
+	) const;
+
 	number_t getConcatenatedAlpha() const;
 	virtual number_t getScaleFactor() const;
 
@@ -607,14 +617,17 @@ public:
 	virtual LoaderInfo* getLoaderInfo() const { return nullptr; }
 	virtual const SWFMovie& getMovie() const = 0;
 
-	Optional<RectF> getBounds(const MATRIX& m, bool visibleOnly = false);
-	bool hitTestMask(const Vector2f& globalPoint, HIT_TYPE type);
-	DisplayObject* hitTest
+	Optional<Rect<Twips>> tryGetBounds(const MATRIX& m, bool visibleOnly = false);
+	Rect<Twips> getBounds(const MATRIX& m, bool visibleOnly = false)
+	{
+		return tryGetBounds(m, visibleOnly).valueOr(Rect<Twips> {});
+	}
+
+	virtual bool hitTestShape
 	(
-		const Vector2f& globalPoint,
-		const Vector2f& localPoint,
-		HIT_TYPE type,
-		bool interactiveObjectsOnly
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		const HitTestFlags& flags
 	);
 
 	bool hitTestBounds(const Vector2Twips& point) const
@@ -642,10 +655,10 @@ public:
 	virtual void enterFrame(bool implicit) {}
 	virtual void advanceFrame(bool implicit) {}
 	virtual void declareFrame(bool implicit) {}
-	virtual void initFrame();
+	virtual void initFrame() {}
 	virtual void afterInitFrame();
-	virtual void executeFrameScript();
-	virtual bool needsActionScript3() const;
+	virtual void executeFrameScript() {}
+	bool needsActionScript3() const { return getMovie().isAS3(); }
 	bool isAS3() const { return needsActionScript3(); }
 	virtual void handleMouseCursor(bool rollover) {}
 	virtual bool allowAsMask() const { return true; }

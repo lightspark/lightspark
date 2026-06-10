@@ -30,22 +30,12 @@
 
 using namespace lightspark;
 
-Vector2f DisplayObject::getXY()
+Optional<Rect<Twips>> DisplayObject::tryGetBounds(const MATRIX& m, bool visibleOnly)
 {
-	auto mtx = getMatrix();
-	return Vector2f
-	(
-		mtx.getTranslateX(),
-		mtx.getTranslateY()
-	) / TWIPS_FACTOR;
-}
-
-Optional<RectF> DisplayObject::getBounds(const MATRIX& m, bool visibleOnly)
-{
-	if (!legacy)
+	if (!isCreatedByTimeline())
 		return {};
 
-	return boundsRect(visibleOnly).transform([&](const auto& rect)
+	return tryBoundsRect(visibleOnly).transform([&](const auto& rect)
 	{
 		auto ret = std::minmax
 		({
@@ -54,34 +44,13 @@ Optional<RectF> DisplayObject::getBounds(const MATRIX& m, bool visibleOnly)
 			m.multiply2D(rect.bl()),
 			m.multiply2D(rect.br())
 		});
-		return makeOptional(RectF { ret.first, ret.second });
+		return makeOptional(Rect<Twips> { ret.first, ret.second });
 	});
 }
 
 Vector2f DisplayObject::getNominalSize()
 {
-	return boundsRect(false).transformOr(Vector2f(), [&](const auto& rect)
-	{
-		return rect.size() / TWIPS_FACTOR;
-	});
-}
-
-bool DisplayObject::inMask() const
-{
-	if (mask != nullptr || getClipDepth())
-		return true;
-	if (parent != nullptr)
-		return parent->inMask();
-	return false;
-}
-
-bool DisplayObject::belongsToMask() const
-{
-	if (maskCount)
-		return true;
-	if (parent != nullptr)
-		return parent->belongsToMask();
-	return false;
+	return boundsRect(false).size();
 }
 
 void DisplayObject::addBroadcastEventListener()
@@ -109,39 +78,25 @@ depth(0),
 clipDepth(0),
 ratio(0),
 name(*_name.orElse([&] { return _sys->getNextInstanceName() }),
-tz(0),
 rotation(0),
 scale(1, 1),
-scaleZ(1),
+skew(0),
+masker(nullptr),
+maskee(nullptr),
 blendMode(BLENDMODE_NORMAL),
-isLoadedRoot(false),
+flags(Flags::Visible),
 inInitFrame(false),
-filterlistHasChanged(false),
-hasMatrix3D(false),
-maskCount(0),
-maxFilterBorder(0),
 cachedSurface(new CachedSurface()),
-useLegacyMatrix(true),
 needsTextureRecalculation(true),
 textureRecalculationSkippable(false),
-broadcastEventListenerCount(0),
-removedByAVM1(false),
-visible(true),
-transformedByActionScript(false),
-placedByActionScript(false),
-skipFrame(false),
-hasChanged(true),
-legacy(false),
 markedForLegacyDeletion(false),
-cacheAsBitmap(false),
-lockRoot(false),
-mask(nullptr),
-clipMask(nullptr),
-invalidateQueueNext(nullptr) {}
+broadcastEventListenerCount(0)
+{
+}
 
 void DisplayObject::markAsChanged()
 {
-	hasChanged = true;
+	setFlag(Flags::HasChanged, true);
 	if (isOnStage())
 		requestInvalidation(sys);
 	else
@@ -157,7 +112,7 @@ bool DisplayObject::needsCacheAsBitmap() const
 {
 	return
 	(
-		cacheAsBitmap ||
+		getCachedBitmapPreference() ||
 		blendMode == BLENDMODE_MULTIPLY ||
 		blendMode == BLENDMODE_ADD ||
 		blendMode == BLENDMODE_SCREEN ||
@@ -171,14 +126,9 @@ bool DisplayObject::needsCacheAsBitmap() const
 	);
 }
 
-bool DisplayObject::hasFilters() const
-{
-	return !filters.empty();
-}
-
 void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 {
-	if (mask == this)
+	if (masker == this)
 		return;
 
 	auto needsRefresh = [&](DisplayObject* obj)
@@ -190,9 +140,9 @@ void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 			(
 				obj->hasFilters() ||
 				obj->inMask() ||
-				isShaderBlendMode(obj->getBlendMode())
+				isShaderBlendMode(obj->blendMode)
 			)
-		) || !obj->scalingGrid.isNull();
+		) || !obj->scalingGrid.isValid();
 	};
 
 	if (needsRefresh(this))
@@ -215,120 +165,25 @@ void DisplayObject::requestInvalidationFilterParent(InvalidateQueue* q)
 
 void DisplayObject::requestInvalidationIncludingChildren(InvalidateQueue* q)
 {
-	hasChanged = true;
+	setFlag(Flags::HasChanged, true);
 	if (q == nullptr)
 		return;
 
 	q->addToInvalidateQueue(this);
-	if (mask != nullptr)
-		mask->requestInvalidationIncludingChildren(q);
-}
-ASFUNCTIONBODY_ATOM(DisplayObject,_getter_cacheAsBitmap)
-{
-	if(!asAtomHandler::is<DisplayObject>(obj))
-	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError,"Function applied to wrong object");
-		return;
-	}
-	if(argslen != 0)
-	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError,"Arguments provided in getter");
-		return;
-	}
-	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	ret = asAtomHandler::fromBool(th->cacheAsBitmap);
-}
-ASFUNCTIONBODY_ATOM(DisplayObject,_setter_cacheAsBitmap)
-{
-	if(!asAtomHandler::is<DisplayObject>(obj))
-	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError,"Function applied to wrong object");
-		return;
-	}
-	if(argslen != 1)
-	{
-		createError<ArgumentError>(wrk,kInvalidArgumentError,"Arguments provided in getter");
-		return;
-	}
-	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	if (th->cacheAsBitmap != asAtomHandler::toInt(args[0]))
-	{
-		th->hasChanged=true;
-		th->cacheAsBitmap = asAtomHandler::toInt(args[0]);
-		th->requestInvalidation(wrk->getSystemState());
-	}
+	if (masker != nullptr)
+		masker->requestInvalidationIncludingChildren(q);
 }
 
-void DisplayObject::setMatrix(const MATRIX& m)
+void DisplayObject::setMatrix(const MATRIX& mtx)
 {
 	Locker locker(spinlock);
-	if (getMatrix() == m)
+	if (matrix == mtx)
 		return;
 
-	matrix = m;
-	extractValuesFromMatrix();
+	matrix = mtx;
+	setScaleAndRotationCached(false);
 	geometryChanged();
 	markAsChanged();
-}
-
-void DisplayObject::setMatrix3D(const Matrix3D* m)
-{
-	if (m == nullptr)
-		return;
-
-	Locker locker(spinlock);
-	hasMatrix3D=true;
-	float rawdata[16];
-	m->getRawDataAsFloat(rawdata);
-	matrix.x0 = rawdata[12] * TWIPS_FACTOR;
-	matrix.y0 = rawdata[13] * TWIPS_FACTOR;
-	tz = rawdata[14];
-	scale = Vector2f(rawdata[0], rawdata[5]);
-	scaleZ = rawdata[10];
-	LOG
-	(
-		LOG_NOT_IMPLEMENTED,
-		"Not all values of Matrix3D are handled in DisplayObject"
-	);
-	geometryChanged();
-	markAsChanged();
-}
-
-void DisplayObject::setLegacyMatrix(const MATRIX& m)
-{
-	if (!useLegacyMatrix)
-		return;
-
-	Locker locker(spinlock);
-	bool isDifferent =
-	(
-		m.getTranslateX() != matrix.x0 ||
-		m.getTranslateY() != matrix.y0 ||
-		m.getScaleX() != scale.x ||
-		m.getScaleY() != scale.y ||
-		m.getRotation() != rotation
-	);
-
-	if (!isDifferent)
-		return;
-
-	matrix = m;
-	extractValuesFromMatrix();
-	geometryChanged();
-	afterSetLegacyMatrix();
-	markAsChanged();
-}
-
-void DisplayObject::setFilters(const FILTERLIST& filterlist)
-{
-	auto span = Span(filterlist.Filters, filterlist.NumberOfFilters);
-	filterListHasChanged = hasSameFilters(span);
-	filters = { span.begin(), span.end() };
-
-	hasChanged = true;
-	setNeedsTextureRecalculation();
-	requestInvalidation(sys);
-	updateFilterBorder();
 }
 
 void DisplayObject::setFilter(const FILTER& filter)
@@ -352,17 +207,17 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 	#ifndef NDEBUG
 	state->src = this; // keep track of the DisplayObject when debugging
 	#endif
-	if (mask != nullptr)
-		state->mask = mask->getCachedSurface();
+	if (masker != nullptr)
+		state->mask = masker->getCachedSurface();
 	else
 		state->mask.reset();
 
-	state->clipdepth = getClipDepth();
-	state->depth = getDepth();
-	state->isMask = maskCount || getClipDepth();
+	state->clipdepth = clipDepth;
+	state->depth = depth;
+	state->isMask = maskee != nullptr || clipDepth;
 	state->visible = visible;
 
-	state->alpha = clippedAlpha();
+	state->alpha = getAlpha();
 	state->allowAsMask = allowAsMask();
 	state->maxfilterborder = getMaxFilterBorder();
 
@@ -388,49 +243,76 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		}
 	}
 
-	state->bounds = boundsRectWithoutChildren(false).valueOr(state->bounds);
+	state->bounds = tryBoundsRectWithoutChildren(false).valueOr(state->bounds);
 	state->scrollRect = scrollRect;
 
 	if (is<RootMovieClip>())
 	{
 		state->renderWithNanoVG = true;
 		state->opaqueBackground = as<RootMovieClip>()->getBackground();
-		state->bounds = boundsRect(false).valueOr(state->bounds);
+		state->bounds = tryBoundsRect(false).valueOr(state->bounds);
 	}
 	else
-		state->opaqueBackground = opaqueBackground();
+		state->opaqueBackground = opaqueBackground;
 	currentrendermatrix = state->matrix;
 }
 
-void DisplayObject::setMask(DisplayObject* m)
+void DisplayObject::setMasker(DisplayObject* mask, bool removeOldLink)
 {
-	bool mustInvalidate = mask != m ||
+	if (!removeOldLink)
+	{
+		masker = mask;
+		return;
+	}
+
+	if (masker != nullptr)
+		masker->setMaskee(nullptr, false);
+
+	bool mustInvalidate = masker != mask ||
 	(
-		m != nullptr &&
-		m->hasChanged
+		mask != nullptr &&
+		mask->getHasChanged()
 	);
 
-	if (mask != nullptr)
-	{
-		//Remove previous mask
-		assert(mask->maskCount--);
-		mask = nullptr;
-	}
-
-	mask = m;
-	if (mask != nullptr)
-	{
-		//Use new mask
-		mask->ismaskCount++;
-	}
+	masker = mask;
 
 	if (mustInvalidate)
 		markAsChanged();
 }
 
-void DisplayObject::setClipMask(DisplayObject* m)
+void DisplayObject::setMaskee(DisplayObject* mask, bool removeOldLink)
 {
-	clipMask = m;
+	if (!removeOldLink)
+	{
+		maskee = mask;
+		return;
+	}
+
+	if (maskee != nullptr)
+		maskee->setMasker(nullptr, false);
+
+	bool mustInvalidate = maskee != mask ||
+	(
+		mask != nullptr &&
+		mask->getHasChanged()
+	);
+
+	maskee = mask;
+
+	if (mustInvalidate)
+		markAsChanged();
+}
+
+void DisplayObject::setMask(DisplayObject* mask)
+{
+	setClipDepth(0);
+	setMasker(mask);
+
+	if (mask != nullptr)
+	{
+		mask->setClipDepth(0);
+		mask->setMaskee(this);
+	}
 }
 
 void DisplayObject::setBlendMode(const AS_BLENDMODE& _blendMode)
@@ -454,15 +336,15 @@ bool DisplayObject::isShaderBlendMode(AS_BLENDMODE bl)
 	);
 }
 
-MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot, bool fromcurrentrendering) const
+MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot, bool fromCurrentRendering) const
 {
 	auto _getMatrix = [&]
 	{
 		return
 		(
-			!fromcurrentrendering ?
+			!fromCurrentRendering ?
 			getMatrix() :
-			currentrendermatrix
+			currentRenderMatrix
 		);
 	};
 
@@ -471,18 +353,8 @@ MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot, bool fromcurrentre
 	return parent->getConcatenatedMatrix
 	(
 		includeRoot,
-		fromcurrentrendering
+		fromCurrentRendering
 	).multiplyMatrix(_getMatrix());
-}
-
-/* Return alpha value between 0 and 1. (The stored alpha value is not
- * necessary bounded.) */
-float DisplayObject::clippedAlpha() const
-{
-	auto a = this->colorTransform.alphaMultiplier;
-	if (colorTransform.alphaOffset != 0)
-		a += this->colorTransform.alphaOffset / 256.0;
-	return dclamp(a, 0, 1);
 }
 
 float DisplayObject::getConcatenatedAlpha() const
@@ -522,49 +394,23 @@ tiny_string DisplayObject::getPath(bool dotNotation)
 	return path;
 }
 
-void DisplayObject::afterLegacyInsert()
+void DisplayObject::afterTimelineCreation()
 {
-}
-
-MATRIX DisplayObject::getMatrix(bool includeRotation) const
-{
-	Locker locker(spinlock);
-	//Start from the residual matrix and construct the whole one
-	MATRIX ret = matrix;
-	ret.scale(sx,sy);
-	if (includeRotation && !std::isnan(rotation))
-		ret.rotate(rotation*M_PI/180.0);
-	ret.translate(tx,ty);
-	return ret;
-}
-
-void DisplayObject::extractValuesFromMatrix()
-{
-	//Extract the base components from the matrix and leave in
-	//it only the residual components
-	scale = Vector2f
-	(
-		matrix.getScaleX(),
-		matrix.getScaleY()
-	);
-	rotation = matrix.getRotation();
-	//Deapply translation
-	matrix.translate(-matrix.x0, matrix.y0);
-	//Deapply rotation
-	matrix.rotate(-rotation * M_PI / 180.0);
-	//Deapply scaling
-	matrix.scale(1 / scale.x, 1 / scale.y);
 }
 
 bool DisplayObject::skipRender() const
 {
-	return !isMask() && !ClipDepth && (visible==false || clippedAlpha()==0.0);
+	return maskee == nullptr && clipDepth &&
+	(
+		!isVisible() ||
+		!getAlpha()
+	);
 }
 
 bool DisplayObject::defaultRender(RenderContext& ctxt)
 {
-	const Transform2D& t = ctxt.transformStack().transform();
-	const CachedSurface* surface=ctxt.getCachedSurface(this);
+	const auto& t = ctxt.transformStack().transform();
+	const auto* surface = ctxt.getCachedSurface(this);
 	/* surface is only modified from within the render thread
 	 * so we need no locking here */
 	bool canRender =
@@ -586,8 +432,6 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	ctxt.lsglLoadIdentity();
 	ColorTransformBase ct = t.colorTransform;
 	MATRIX m = t.matrix;
-	m.x0 /= TWIPS_FACTOR;
-	m.y0 /= TWIPS_FACTOR;
 	ctxt.renderTextured
 	(
 		*surface->tex,
@@ -605,14 +449,14 @@ bool DisplayObject::defaultRender(RenderContext& ctxt)
 	return false;
 }
 
-RectF DisplayObject::computeBoundsForTransformedRect
+Rect<Twips> DisplayObject::computeBoundsForTransformedRect
 (
 	const RectF& rect,
 	const MATRIX& m
 ) const
 {
 	//As the transformation is arbitrary we have to check all the four vertices
-	std::array<Vector2f, 4> coords =
+	std::array<Vector2Twips, 4> coords =
 	{
 		m.multiply2D(rect.tl()),
 		m.multiply2D(rect.bl()),
@@ -620,7 +464,7 @@ RectF DisplayObject::computeBoundsForTransformedRect
 		m.multiply2D(rect.tr()),
 	}
 	//Now find out the minimum and maximum that represent the complete bounding rect
-	RectF ret { coords[3], coords[3] };
+	Rect<Twips> ret { coords[3], coords[3] };
 	for (size_t i = 0; i < coords.size() - 1; ++i)
 		ret = ret._union(RectF { coords[i], coords[i] });
 	return ret;
@@ -638,9 +482,9 @@ void DisplayObject::invalidateForRenderToBitmap
 	bool smoothing
 )
 {
-	if (mask != nullptr)
-		mask->invalidateForRenderToBitmap(container, smoothing);
-	IDrawable* d = this->invalidate(smoothing);
+	if (masker != nullptr)
+		masker->invalidateForRenderToBitmap(container, smoothing);
+	IDrawable* d = invalidate(smoothing);
 	if (d == nullptr)
 		return;
 
@@ -664,13 +508,14 @@ void DisplayObject::invalidateForRenderToBitmap
 void DisplayObject::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
 {
 	//Let's invalidate also the mask
-	bool needsInvalidation = mask != nullptr && mask != this &&
+	bool needsInvalidation = masker != nullptr && masker != this &&
 	(
-		mask->hasChanged ||
+		mask->getHasChanged() ||
 		forceTextureRefresh
 	);
+
 	if (needsInvalidation)
-		mask->requestInvalidation(q, forceTextureRefresh);
+		masker->requestInvalidation(q, forceTextureRefresh);
 }
 
 void DisplayObject::updateCachedSurface(IDrawable* d)
@@ -682,241 +527,168 @@ void DisplayObject::updateCachedSurface(IDrawable* d)
 	cachedSurface->wasUpdated=true;
 }
 
-//TODO: Fix precision issues, Adobe seems to do the matrix mult with twips and rounds the results,
-//this way they have less pb with precision.
-Vector2f DisplayObject::localToGlobal(const Vector2f& point, bool fromcurrentrendering) const
+MATRIX DisplayObject::localToGlobalMatrix(bool fromCurrentRendering) const
 {
-	return getConcatenatedMatrix
-	(
-		true,
-		fromcurrentrendering
-	).multiply2D(point);
-}
-
-//TODO: Fix precision issues
-Vector2f DisplayObject::globalToLocal(const Vector2f& point, bool fromcurrentrendering) const
-{
-	return getConcatenatedMatrix
-	(
-		true,
-		fromcurrentrendering
-	).getInverted().multiply2D(point);
-}
-
-void DisplayObject::setOnStage(bool staged, bool force,bool inskipping)
-{
-	bool changed = false;
-	//TODO: When removing from stage released the cachedTex
-	if(staged!=onStage)
+	MATRIX mtx;
+	(void)scrollRect.andThen([&](const auto& rect)
 	{
-		//Our stage condition changed, send event
-		onStage=staged;
-		if(staged==true)
-		{
-			hasChanged=true;
-			requestInvalidation(getSystemState());
-		}
-		if(getVm(getSystemState())==nullptr)
-			return;
-		changed = true;
-		this->requestInvalidationFilterParent();
-	}
-	if (force || changed)
-	{
-		/*NOTE: By tests we can assert that added/addedToStage is dispatched
-		  immediately when addChild is called. On the other hand setOnStage may
-		  be also called outside of the VM thread (for example by Loader::execute)
-		  so we have to check isVmThread and act accordingly. If in the future
-		  asynchronous uses of setOnStage are removed the code can be simplified
-		  by removing the !isVmThread case.
-		*/
-		if(onStage==true)
-		{
-			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
-			// root clips are added to stage after the builtin MovieClip is constructed, but before the constructor call is completed.
-			// So the EventListeners for "addedToStage" may not be registered yet and we can't execute the event directly
-			if (!this->is<RootMovieClip>())
-			{
-				if(isVmThread())
-					ABCVm::publicHandleEvent(this,e);
-				else
-				{
-					this->incRef();
-					getVm(getSystemState())->addEvent(_MR(this),e);
-				}
-			}
-		}
-		else if(onStage==false)
-		{
-			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"removedFromStage"));
-			if(isVmThread())
-				ABCVm::publicHandleEvent(this,e);
-			else
-			{
-				this->incRef();
-				getVm(getSystemState())->addEvent(_MR(this),e);
-			}
-			if (this->is<InteractiveObject>() && getSystemState()->getEngineData())
-				getSystemState()->getEngineData()->InteractiveObjectRemovedFromStage();
-			getSystemState()->stage->AVM1RemoveDisplayObject(this);
-		}
-	}
+		mtx.translate(-rect.min);
+		return makeOptional(rect);
+	});
+
+	return getConcatenatedMatrix(true, fromCurrentRendering) * mtx;
 }
 
-bool DisplayObject::isVisible() const
+MATRIX DisplayObject::globalToLocalMatrix(bool fromCurrentRendering) const
 {
-	return visible && parent != nullptr && parent->isVisible();
+	return localToGlobalMatrix(fromCurrentRendering).getInverted();
+}
+
+Vector2Twips DisplayObject::localToGlobal
+(
+	const Vector2Twips& point,
+	bool fromRurrentRendering
+) const
+{
+	return localToGlobalMatrix(fromCurrentRendering) * point;
+}
+
+Vector2Twips DisplayObject::globalToLocal
+(
+	const Vector2Twips& point,
+	bool fromCurrentRendering = true
+) const
+{
+	return globalToLocalMatrix(fromCurrentRendering) * point;
 }
 
 void DisplayObject::setAlpha(number_t alpha)
 {
-	if (!needsActionScript3()) // AVM1 uses alpha values from 0-100
-		alpha /= 100.0;
-
 	/* The stored value is not clipped, _getAlpha will return the
 	 * stored value even if it is outside the [0, 1] range. */
-	if (colorTransform.alphaMultiplier != alpha)
+	if (colorTransform.aMult == alpha)
 		return;
 
-	colorTransform.alphaMultiplier = alpha;
-	hasChanged = true;
-	if (isOnStage())
-		requestInvalidation(sys, false);
-	else
-		requestInvalidationFilterParent();
-}
-
-number_t DisplayObject::getAlpha() const
-{
-	return
-	(
-		needsActionScript3() ?
-		colorTransform.alphaMultiplier :
-		// AVM1 uses alpha values from 0-100
-		colorTransform.alphaMultiplier * 100
-	);
+	setTransformedByActionScript(true);
+	colorTransform.aMult = alpha;
+	markAsChanged();
 }
 
 void DisplayObject::setScaleX(number_t val)
 {
-	if (std::isnan(val) || scale.x == val)
+	if (scale.x == val)
 		return;
 
-	//Apply the difference
+	setTransformedByActionScript(true);
+	cacheScaleAndRotation();
 	scale.x = val;
-	hasChanged = true;
+
+	// NOTE: In to match Flash Player's behaviour, `scaleX`/`_xscale`
+	// is allowed to return `NaN`, but we treat it as `0` for the
+	// purposes of updating the matrix.
+	auto value = val / 100.0;
+	if (std::isnan(value))
+		value = 0;
+
+	// NOTE: In a similar fashion, `{,_}rotation` can return also `NaN`,
+	// but we treat it as `0` when updating the matrix.
+	auto _rotation = rotation * (M_PI / 180.0);
+	if (std::isnan(_rotation))
+		_rotation = 0;
+
+	//Apply the difference
+	auto cos = std::cos(_rotation);
+	auto sin = std::sin(_rotation);
+	matrix.a = cos * value;
+	matrix.b = sin * value;
+
+	setFlag(Flags::HasChanged, true);
 	geometryChanged();
 	markAsChanged();
 }
 
 void DisplayObject::setScaleY(number_t val)
 {
-	if (std::isnan(val) || scale.y == val)
+	if (scale.y == val)
 		return;
 
-	//Apply the difference
+	setTransformedByActionScript(true);
+	cacheScaleAndRotation();
 	scale.y = val;
-	hasChanged = true;
-	geometryChanged();
-	markAsChanged();
-}
 
-void DisplayObject::setScaleZ(number_t val)
-{
-	if (std::isnan(val) || scaleZ == val)
-		return;
+	// NOTE: In to match Flash Player's behaviour, `scaleY`/`_yscale`
+	// is allowed to return `NaN`, but we treat it as `0` for the
+	// purposes of updating the matrix.
+	auto value = val / 100.0;
+	if (std::isnan(value))
+		value = 0;
+
+	// NOTE: In a similar fashion, `{,_}rotation` can return also `NaN`,
+	// but we treat it as `0` when updating the matrix.
+	auto _rotation = rotation * (M_PI / 180.0);
+	if (std::isnan(_rotation))
+		_rotation = 0;
 
 	//Apply the difference
-	scaleZ = val;
-	hasChanged = true;
+	auto cos = std::cos(_rotation);
+	auto sin = std::sin(_rotation);
+	matrix.c = -sin * value;
+	matrix.d = cos * value;
+
+	setFlag(Flags::HasChanged, true);
 	geometryChanged();
 	markAsChanged();
 }
 
-void DisplayObject::setVisible(bool v)
+void DisplayObject::setVisible(bool value)
 {
-	visible = v;
-	if (onStage)
-		requestInvalidation(sys);
-	else
-		requestInvalidationFilterParent();
+	bool changed = isVisible() != value;
+	setFlag(Flags::Visible, value);
+
+	if (changed)
+		markAsChanged();
+
+	// NOTE: A `DisplayObject`s focus is dropped when it's made invisible.
+	auto intrObj = as<InteractiveObject>();
+	if (!value && intrObj != nullptr)
+		intrObj->dropFocus();
 }
 
-void DisplayObject::setX(number_t val)
+void DisplayObject::setX(const Twips& x)
 {
-	//Stop using the legacy matrix
-	if (useLegacyMatrix)
-		useLegacyMatrix = false;
-
-	if (std::isnan(val) && !needsActionScript3())
-		return;
-	else if (std::isnan(val))
-		val = 0;
-
-	if (matrix.x0 == val * 20)
+	if (matrix.tx == x)
 		return;
 
 	//Apply translation, it's trivial
-	matrix.x0 = val * 20;
-	hasChanged = true;
+	matrix.tx = x;
+
+	setTransformedByActionScript(true);
+	setFlag(Flags::HasChanged, true);
 	geometryChanged();
 	markAsChanged();
 }
 
-void DisplayObject::setY(number_t val)
+void DisplayObject::setY(const Twips& y)
 {
-	//Stop using the legacy matrix
-	if (useLegacyMatrix)
-		useLegacyMatrix = false;
-
-	if (std::isnan(val) && !needsActionScript3())
-		return;
-	else if (std::isnan(val))
-		val = 0;
-
-	if (matrix.y0 == val * 20)
+	if (matrix.ty == y)
 		return;
 
 	//Apply translation, it's trivial
-	matrix.y0 = val * 20;
-	hasChanged = true;
+	matrix.ty = y;
+
+	setTransformedByActionScript(true);
+	setFlag(Flags::HasChanged, true);
 	geometryChanged();
 	markAsChanged();
 }
 
-void DisplayObject::setZ(number_t val)
+void DisplayObject::setParent(DisplayObject* _parent)
 {
-	LOG(LOG_NOT_IMPLEMENTED,"setting DisplayObject.z has no effect");
-
-	//Stop using the legacy matrix
-	if (useLegacyMatrix)
-		useLegacyMatrix = false;
-
-	if (std::isnan(val) && !needsActionScript3())
-		return;
-	else if (std::isnan(val))
-		val = 0;
-
-	if (tz == val * 20)
+	if (parent == _parent)
 		return;
 
-	//Apply translation, it's trivial
-	tz = val * 20;
-	hasChanged = true;
-	geometryChanged();
-	markAsChanged();
-}
-
-void DisplayObject::setParent(DisplayObject* p, bool forDestruction)
-{
-	if (parent == p)
-		return;
-
-	Locker locker(spinlock);
-	if (parent != nullptr && forDestruction)
-		parent->removeChildName(this);
-
-	if (p != nullptr)
+	bool hadParent = parent != nullptr;
+	if (_parent != nullptr)
 	{
 		// mark old parent as dirty
 		geometryChanged();
@@ -924,31 +696,35 @@ void DisplayObject::setParent(DisplayObject* p, bool forDestruction)
 		sys->stage->removeHiddenObject(this);
 	}
 
-	parent = p;
-	hasChanged = true;
+	parent = _parent;
+	setFlag(Flags::HasChanged, true);
 	geometryChanged();
 
-	if (isOnStage() && !forDestruction && !sys->isShuttingDown())
+	if (isOnStage() && !sys->isShuttingDown())
 		requestInvalidation(sys);
+
+	if (!hadParent || parent != nullptr)
+		return;
+
+	auto intrObj = as<InteractiveObject>();
+	if (intrObj != nullptr)
+		intrObj->dropFocus();
+	onParentRemoved();
 }
 
-Vector2f DisplayObject::computeSize()
+Vector2Twips DisplayObject:getSize()
 {
-	return getBounds(getMatrix(false)).valueOr(RectF {}).size();
+	return getBounds(matrix).size();
 }
 
 void DisplayObject::geometryChanged()
 {
-	if (this->is<DisplayObjectContainer>())
-	{
-		this->as<DisplayObjectContainer>()->markBoundsRectDirtyChildren();
-	}
-	DisplayObjectContainer* p = this->getParent();
-	while (p)
-	{
-		p->markBoundsRectDirty();
-		p=p->getParent();
-	}
+	auto container = as<DisplayObjectContainer>();
+	if (container != nullptr)
+		container->markBoundsRectDirtyChildren();
+
+	if (parent != nullptr)
+		parent->geometryChanged();
 }
 
 RootMovieClip* DisplayObject::getAVM2Root()
@@ -963,25 +739,25 @@ Stage* DisplayObject::getAVM2Stage()
 
 number_t DisplayObject::getWidth() const
 {
-	return computeWidth() / TWIPS_FACTOR;
+	return getSize().x.toPx();
 }
 
 void DisplayObject::setWidth(number_t width)
 {
 	if (std::isnan(width))
 		return;
-	if (std::isinf(width) && needsActionScript3())
-		width = 0;
-	width *= TWIPS_FACTOR;
 
-	auto size = boundsRect(false).valueOr(RectF {}).size();
+	if (std::isinf(width) && isAS3())
+		width = 0;
+
+	auto size = boundsRect(false).size().toPx();
 	auto aspectRatio = size.y / size.x;
 
 	Vector2f targetScale;
 	if (size.x != 0)
 		targetScale = Vector2f(width, width) / size;
 
-	auto prevScale = scale
+	auto prevScale = scale * 100;
 	auto _rotation = rotation * (M_PI / 180.0);
 	auto cos = std::abs(std::cos(_rotation));
 	auto sin = std::abs(std::sin(_rotation));
@@ -996,33 +772,28 @@ void DisplayObject::setWidth(number_t width)
 		(aspectRatio * cos + sin)
 	);
 
-	if (useLegacyMatrix)
-		useLegacyMatrix = false;
-	setScaleX(std::isfinite(newScale.x) ? newScale.x : 0);
-	setScaleY(std::isfinite(newScale.y) ? newScale.y : 0);
+	setScaleX(std::isfinite(newScale.x) ? newScale.x / 100.0 : 0);
+	setScaleY(std::isfinite(newScale.y) ? newScale.y / 100.0 : 0);
 }
 
 number_t DisplayObject::getHeight() const
 {
-	return computeHeight() / TWIPS_FACTOR;
+	return getSize().y.toPx();
 }
 
 void DisplayObject::setHeight(number_t height)
 {
-	if (std::isnan(height))
-		return;
-	if (std::isinf(height) && needsActionScript3())
-		height = 0;
-	height *= TWIPS_FACTOR;
+	if (std::isinf(width) && isAS3())
+		width = 0;
 
-	auto size = boundsRect(false).valueOr(RectF {}).size();
+	auto size = boundsRect(false).size().toPx();
 	auto aspectRatio = size.y / size.x;
 
 	Vector2f targetScale;
 	if (size.y != 0)
 		targetScale = Vector2f(height, height) / size;
 
-	auto prevScale = scale
+	auto prevScale = scale * 100;
 	auto _rotation = rotation * (M_PI / 180.0);
 	auto cos = std::abs(std::cos(_rotation));
 	auto sin = std::abs(std::sin(_rotation));
@@ -1036,190 +807,135 @@ void DisplayObject::setHeight(number_t height)
 		aspectRatio * (sin * targetScale.x + cos * targetScale.y) /
 		((cos + aspectRatio * sin) * (aspectRatio * cos + sin))
 	);
-	if (useLegacyMatrix)
-		useLegacyMatrix = false;
-	setScaleX(std::isfinite(newScale.x) ? newScale.x : 0);
-	setScaleY(std::isfinite(newScale.y) ? newScale.y : 0);
+
+	setScaleX(std::isfinite(newScale.x) ? newScale.x / 100.0 : 0);
+	setScaleY(std::isfinite(newScale.y) ? newScale.y / 100.0 : 0);
 }
 
-Vector2f DisplayObject::getLocalMousePos()
+void DisplayObject::setRatio(uint16_t _ratio, bool inskipping)
 {
-	return getConcatenatedMatrix().getInverted().multiply2D
-	(
-		sys->getInputThread()->getMousePos() *
-		TWIPS_FACTOR
-	) / TWIPS_FACTOR;
+	ratio = _ratio;
+	setFlag(Flags::HasChanged, true);
+	checkRatio(_ratio, inskipping);
 }
 
-bool DisplayObject::hitTestMask(const Vector2f& globalPoint, HIT_TYPE type)
+Vector2Twips DisplayObject::getLocalMousePos()
 {
-	const auto* mask = mask != nullptr ? mask : clipMask;
-	if (mask == nullptr)
-		return true;
-	//Compute the coordinates local to the mask
-	const MATRIX& maskMatrix = mask->getConcatenatedMatrix(false, false);
-	if (!maskMatrix.isInvertible())
-	{
-		//If the matrix is not invertible the mask as collapsed to zero size
-		//If the mask is zero sized then the object is not visible
-		return false;
-	}
-
-	const auto maskPoint = maskMatrix.getInverted().multiply2D(globalPoint);
-	return mask->hitTest
-	(
-		globalPoint,
-		maskPoint,
-		GENERIC_HIT_INVISIBLE,
-		false
-	) != nullptr;
+	auto mousePos = sys->getInputThread()->getMousePos();
+	return localToGlobalMatrix() * mousePos.toPx();
 }
 
-DisplayObject* DisplayObject::hitTest
+bool DisplayObject::hitTestShape
 (
-	const Vector2f& globalPoint,
-	const Vector2f& localPoint,
-	HIT_TYPE type,
-	bool interactiveObjectsOnly
+	const Vector2Twips& globalPoint,
+	const Vector2Twips& localPoint,
+	const HitTestFlags& flags
 )
 {
-	bool canTest =
+	const bool skipInvis = flags & HitTestFlags::SkipInvisible;
+	// Default to using the bounding box.
+	return (!skipInvis || isVisible()) && hitTestBounds(globalPoint);
+}
+
+// Based on Ruffle's `TDisplayObject::on_construction_complete()`.
+void DisplayObject::afterInitFrame()
+{
+	auto placedByAS = getPlacedByActionScript();
+	fireAddedEvents();
+
+	// Use the value of `placedByActionScript` from before we fired any
+	// events, since said events might create new clips inside them,
+	// causing `placedByActionScript` to be set.
+	if (!placedByAS)
+		setOnParentField();
+}
+
+void DisplayObject::fireAddedEvents()
+{
+	if (!isAS3() || getPlacedByActionScript())
+		return;
+
+	// NOTE: Children that're added to buttons by the timeline don't
+	// fire events.
+	if (parent != nullptr && parent->is<SimpleButton>())
+		return;
+	/*
+	 * Legacy objects have their display list properties set on creation, but
+	 * the related events must only be sent after the constructor is sent.
+	 * This is from "Order of Operations".
+	 */
+	auto e = _MR(Class<Event>::getInstanceS(sys->worker, "added", true));
+	ABCVm::publicHandleEvent(this, e);
+
+	if (getAVM2Stage() != nullptr)
+	{
+		e = _MR(Class<Event>::getInstanceS(sys->worker, "addedToStage"));
+		ABCVm::publicHandleEvent(this, e);
+	}
+}
+
+void DisplayObject::setOnParentField()
+{
+	bool canSet =
 	(
-		visible ||
-		type == GENERIC_HIT_INVISIBLE
-	) && isMask() && getClipDepth();
-	if (canTest)
-		return nullptr;
-
-	//First check if there is any mask on this object, if so the point must be inside the mask to go on
-	switch (type)
-	{
-		case GENERIC_HIT_EXCLUDE_CHILDREN:
-			break;
-		case GENERIC_HIT_INVISIBLE:
-			if (mask != nullptr && !hitTestMask(globalPoint, type))
-				return nullptr;
-			break;
-		default:
-			if (!hitTestMask(globalPoint, type))
-				return nullptr;
-			break;
-	}
-	return hitTestImpl
-	(
-		globalPoint,
-		localPoint,
-		type,
-		interactiveObjectsOnly
-	);
-}
-
-/* Display objects have no children in general,
- * so we skip to calling the constructor, if necessary.
- * This is called in vm's thread context */
-void DisplayObject::initFrame()
-{
-	if(!inInitFrame && !isConstructed() && getClass() && needsActionScript3())
-	{
-		inInitFrame=true;
-		handleConstruction();
-		if (this->is<RootMovieClip>())
-		{
-			// events are handled in RootMovieClip::afterConstruction
-			inInitFrame=false;
-			return;
-		}
-		/*
-		 * Legacy objects have their display list properties set on creation, but
-		 * the related events must only be sent after the constructor is sent.
-		 * This is from "Order of Operations".
-		 */
-		if(parent)
-		{
-			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"added",true));
-			ABCVm::publicHandleEvent(this,e);
-		}
-		if(onStage)
-		{
-			_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"addedToStage"));
-			ABCVm::publicHandleEvent(this,e);
-		}
-		inInitFrame=false;
-	}
-}
-
-void DisplayObject::executeFrameScript()
-{
-}
-
-bool DisplayObject::needsActionScript3() const
-{
-	return !this->loadedFrom || this->loadedFrom->usesActionScript3;
-}
-
-void DisplayObject::constructionComplete(bool _explicit, bool forInitAction)
-{
-	RELEASE_WRITE(constructed,true);
-	if (getParent())
-		setNameOnParent();
-	if (!placedByActionScript && needsActionScript3() && getParent() != nullptr)
-	{
-		_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"added",true));
-		if (isVmThread())
-			ABCVm::publicHandleEvent(this, e);
-		else
-		{
-			incRef();
-			getVm(getSystemState())->addEvent(_MR(this), e);
-		}
-		if (isOnStage())
-			setOnStage(true, true);
-	}
-}
-void DisplayObject::setNameOnParent()
-{
-	if( this->name != BUILTIN_STRINGS::EMPTY
-		&& !this->hasDefaultName
-		&& this->name != UINT32_MAX
+		hasExplicitName() &&
+		parent != nullptr &&
+		!parent->toASObject().isNull() &&
+		!toASObject().isNull() &&
+		!name.empty()
 	)
+
+	if (!canSet)
+		return;
+
+	auto parentObj = parent->toASObject();
+	auto childObj = toASObject();
+	auto wrk = childObj->getInstanceWorker();
+
+	multiname objName(nullptr);
+	objName.name_type = multiname::NAME_STRING;
+	objName.name_s_id = name;
+	objName.ns.emplace_back(sys, BUILTIN_STRINGS::EMPTY, NAMESPACE);
+	asAtom val = asAtomHandler::invalidAtom;
+	parentObj->getVariableByMultiname
+	(
+		val,
+		objName,
+		GET_VARIABLE_OPTION::DONT_CALL_GETTER,
+		wrk
+	);
+
+	auto obj = asAtomHandler::tryAs<ASDisplayObject>(val);
+	auto _obj = obj != nullptr ? obj->getBase() : nullptr;
+
+	bool isDifferent = _obj != this &&
+	(
+		_obj == nullptr ||
+		_obj->parent == nullptr ||
+		_obj->depth >= depth
+	);
+
+	if (!isDifferent)
 	{
-		multiname objName(nullptr);
-		objName.name_type=multiname::NAME_STRING;
-		objName.name_s_id=this->name;
-		objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-		asAtom obj = asAtomHandler::invalidAtom;
-		getParent()->getVariableByMultiname(obj,objName,GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
-		if (asAtomHandler::getObject(obj) != this
-				&& (!asAtomHandler::is<DisplayObject>(obj)
-				|| !asAtomHandler::as<DisplayObject>(obj)->getParent()
-				|| asAtomHandler::as<DisplayObject>(obj)->getDepth() >= this->getDepth()))
-		{
-			if (asAtomHandler::isValid(obj))
-			{
-				ASATOM_DECREF(obj);
-				getParent()->deleteVariableByMultiname(objName,loadedFrom->getInstanceWorker());
-			}
-			this->incRef();
-			asAtom v = asAtomHandler::fromObject(this);
-			getParent()->setVariableByMultiname(objName,v,CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
-		}
-		else
-			ASATOM_DECREF(obj);
+		ASATOM_DECREF(obj);
+		return;
 	}
-}
-void DisplayObject::beforeConstruction(bool _explicit)
-{
-	skipFrame |= needsActionScript3() && _explicit;
-	placedByActionScript |= _explicit;
-	if (needsActionScript3() && getParent() == nullptr && this != getSystemState()->mainClip)
-		getSystemState()->stage->addHiddenObject(this);
-}
-void DisplayObject::afterConstruction(bool _explicit)
-{
-//	hasChanged=true;
-//	needsTextureRecalculation=true;
-//	if(onStage)
-//		requestInvalidation(getSystemState());
+
+	if (asAtomHandler::isValid(obj))
+	{
+		ASATOM_DECREF(obj);
+		parentObj->deleteVariableByMultiname(objName, wrk);
+	}
+
+	childObj->incRef();
+	parentObj->setVariableByMultiname
+	(
+		objName,
+		asAtomHandler::fromObject(childObj),
+		CONST_NOT_ALLOWED,
+		nullptr,
+		wrk
+	);
 }
 
 void DisplayObject::applyFilters

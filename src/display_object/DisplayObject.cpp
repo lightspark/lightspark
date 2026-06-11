@@ -68,9 +68,11 @@ void DisplayObject::removeBroadcastEventListener()
 
 DisplayObject::DisplayObject
 (
+	const Type& _type,
 	SystemState _sys,
 	Optional<const tiny_string&> _name
 ) :
+type(_type),
 sys(_sys),
 parent(nullptr),
 placeFrame(0),
@@ -186,14 +188,25 @@ void DisplayObject::setMatrix(const MATRIX& mtx)
 	markAsChanged();
 }
 
-void DisplayObject::setFilter(const FILTER& filter)
+void DisplayObject::setFilters(const Span<Filter>& _filters)
 {
-	filterListHasChanged = hasSameFilters(makeSpan({ filter }));
+	if (hasSameFilters(_filters))
+		return;
+	filters = { _filters.begin(), _filters.end() };
+
+	setFlag(Flags::HasChanged, true);
+	setNeedsTextureRecalculation();
+	requestInvalidation(sys);
+}
+
+void DisplayObject::setFilter(const Filter& filter)
+{
+	if (hasSameFilters(makeSpan({ filter })))
+		return;
 	filters = { filter };
 
-	hasChanged = true;
+	setFlag(Flags::HasChanged, true);
 	requestInvalidation(sys);
-	updateFilterBorder();
 }
 
 void DisplayObject::refreshSurfaceState()
@@ -257,6 +270,16 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 	currentrendermatrix = state->matrix;
 }
 
+void DisplayObject::setOpaqueBackground(const Optional<RGB>& colour)
+{
+	if (opaqueBackground == colour)
+		return;
+
+	opaqueBackground = colour;
+	setFlag(Flags::HasChanged, true);
+	requestInvalidation(sys);
+}
+
 void DisplayObject::setMasker(DisplayObject* mask, bool removeOldLink)
 {
 	if (!removeOldLink)
@@ -315,6 +338,14 @@ void DisplayObject::setMask(DisplayObject* mask)
 	}
 }
 
+void DisplayObject::setNextScrollRect(const Rect<Twips>& rect)
+{
+	if (nextScrollRect == rect)
+		return;
+	nextScrollRect = rect;
+	markAsChanged();
+}
+
 void DisplayObject::setBlendMode(const AS_BLENDMODE& _blendMode)
 {
 	blendMode =
@@ -357,16 +388,6 @@ MATRIX DisplayObject::getConcatenatedMatrix(bool includeRoot, bool fromCurrentRe
 	).multiplyMatrix(_getMatrix());
 }
 
-float DisplayObject::getConcatenatedAlpha() const
-{
-	return
-	(
-		parent != nullptr ?
-		parent->getConcatenatedAlpha() * clippedAlpha() :
-		clippedAlpha()
-	);
-}
-
 float DisplayObject::getScaleFactor() const
 {
 	return 1.0;
@@ -392,10 +413,6 @@ tiny_string DisplayObject::getPath(bool dotNotation)
 	if (!name.empty())
 		path += name;
 	return path;
-}
-
-void DisplayObject::afterTimelineCreation()
-{
 }
 
 bool DisplayObject::skipRender() const
@@ -574,6 +591,58 @@ void DisplayObject::setAlpha(number_t alpha)
 	markAsChanged();
 }
 
+void DisplayObject::cacheScaleAndRotation()
+{
+	if (getScaleAndRotationCached())
+		return;
+
+	number_t a = matrix.a;
+	number_t b = matrix.b;
+	number_t c = matrix.c;
+	number_t d = matrix.d;
+	auto rotationX = std::atan2(b, a);
+	auto rotationY = std::atan2(-c, d);
+
+	rotation = rotationX * (180.0 / M_PI);
+	scale = Vector2f
+	(
+		std::sqrt(a * a + b * b),
+		std::sqrt(c * c + d * d)
+	) * 100;
+	skew = rotationY - rotationX;
+}
+
+void DisplayObject::setRotation(number_t angle)
+{
+	if (rotation == angle)
+		return;
+
+	setTransformedByActionScript(true);
+	cacheScaleAndRotation();
+	rotation = angle;
+
+	if (std::isnan(angle))
+		return;
+
+	angle *= (M_PI / 180.0);
+	Vector2f cos(std::cos(angle), std::cos(angle + skew));
+	Vector2f sin(std::sin(angle), -std::sin(angle + skew));
+	auto _scale = scale / 100;
+	auto ad = scale * cos;
+	auto bc = scale * sin;
+
+	matrix.a = ad.x;
+	matrix.b = bc.x;
+	matrix.c = bc.y;
+	matrix.d = ad.y;
+
+	setScaleAndRotationCached();
+	setFlag(Flags::HasChanged, true);
+	geometryChanged();
+	if (isOnStage())
+		requestInvalidation(sys);
+}
+
 void DisplayObject::setScaleX(number_t val)
 {
 	if (scale.x == val)
@@ -640,6 +709,16 @@ void DisplayObject::setScaleY(number_t val)
 	markAsChanged();
 }
 
+void DisplayObject::setScaleAndRotationCached()
+{
+	// NOTE: `ScaleAndRotationCached` should only be set in SWF 5, and
+	// later. In other words, the `DisplayObject`'s scale, and rotation
+	// always get recalculated from the matrix in SWF 4, and earlier.
+	if (getSwfVersion() < 5)
+		return;
+	setScaleAndRotationCached(true);
+}
+
 void DisplayObject::setVisible(bool value)
 {
 	bool changed = isVisible() != value;
@@ -652,6 +731,15 @@ void DisplayObject::setVisible(bool value)
 	auto intrObj = as<InteractiveObject>();
 	if (!value && intrObj != nullptr)
 		intrObj->dropFocus();
+}
+
+using Proj = PerspectiveProjection;
+void DisplayObject::setPerspectiveProjection(const Optional<Proj>& proj)
+{
+	if (perspectiveProjection == proj)
+		return;
+	perspectiveProjection = proj;
+	setFlag(Flags::HasChanged, true);
 }
 
 void DisplayObject::setX(const Twips& x)
@@ -986,8 +1074,6 @@ IDrawable* DisplayObject::getFilterDrawable(bool smoothing)
 {
 	if (!hasFilters())
 		return nullptr;
-	number_t x,y;
-	number_t width,height;
 
 	auto _bounds = boundsRect(false);
 	if (!_bounds.hasValue())
@@ -1059,14 +1145,12 @@ int DisplayObject::getParentDepth() const
 
 int DisplayObject::findParentDepth(DisplayObject* d) const
 {
-	if (this != d)
-	{
-		int i;
-		DisplayObject* p;
-		for (i = 0, p = parent; p != nullptr && p != d; p = p->parent, ++i);
-		return i;
-	}
-	return -1;
+	if (this == d)
+		return -1;
+	int i;
+	DisplayObject* p;
+	for (i = 0, p = parent; p != nullptr && p != d; p = p->parent, ++i);
+	return i;
 }
 
 DisplayObject* DisplayObject::getAncestor(int depth) const
@@ -1098,45 +1182,179 @@ DisplayObject* DisplayObject::findCommonAncestor(DisplayObject* d, int& depth, b
 	return a->parent->findCommonAncestor(b, ++depth, false);
 }
 
+Rect<Twips> boundsRectWithTransform(const MATRIX& mtx)
+{
+	if (!scrollRect.hasValue())
+		return boundsRectWithTransformImpl(mtx);
+	// NOTE: Scroll rects completely override a `DisplayObject`'s bounds,
+	// and can even be bigger than the actual content.
+	return mtx * Rect<Twips> { Vector2Twips(), scrollRect->size() };
+}
+
 // Compute the minimal, axis aligned bounding box in global
 // coordinates
-Optional<RectF> DisplayObject::boundsRectGlobal(bool fromCurrentRendering)
+Optional<Rect<Twips>> DisplayObject::tryBoundsRectGlobal(bool fromCurrentRendering)
 {
-	return boundsRect(false).andThen([&](const auto& rect)
+	return tryBoundsRect(false).andThen([&](const auto& rect)
 	{
-		auto m = getConcatenatedMatrix(true, fromcurrentrendering);
+		auto m = localToGlobalMatrix(fromCurrentRendering);
 		// check all four corners to get the bounding box taking rotation into account
-		auto tmp = m.multiply2D(rect.tl());
+		auto tmp = m * rect.tl();
 		auto ret = rect._union(RectF { tmp, tmp });
 
-		tmp = m.multiply2D(rect.tr());
-		ret = rect._union(RectF { tmp, tmp });
-		tmp = m.multiply2D(rect.bl());
-		ret = rect._union(RectF { tmp, tmp });
-		tmp = m.multiply2D(rect.br());
-		ret = rect._union(RectF { tmp, tmp });
+		tmp = m * rect.tr();
+		ret = ret._union(RectF { tmp, tmp });
+		tmp = m * rect.bl();
+		ret = ret._union(RectF { tmp, tmp });
+		tmp = m * rect.br();
+		return makeOptional(ret._union(RectF { tmp, tmp }));
 	});
 }
 
-DisplayObject* DisplayObject::getAVM1Stage() const
+void DisplayObject::preRender()
+{
+	resetHasChanged();
+	scrollRect = nextScrollRect.filter(getHasScrollRect());
+}
+
+void DisplayObject::avm1Unload()
+{
+	if (maskee != nullptr)
+		maskee->setMasker(nullptr);
+	if (masker != nullptr)
+		masker->setMaskee(nullptr);
+
+	// Unregister any variable bindings, and put them on the unbound list.
+	AVM1VarBinding::unregisterBindings(*this);
+	setRemovedByAVM1(true);
+}
+
+DisplayObject* DisplayObject::getAVM2Root() const
+{
+	if (isRoot() || (parent != nullptr && !parent->isAS3()))
+		return this;
+	return parent != nullptr ? parent->getAVM2Root() : nullptr;
+}
+
+Stage* DisplayObject::getAVM2Stage() const
+{
+	if (is<Stage>())
+		return as<Stage>();
+	return parent != nullptr ? parent->getAVM2Stage() : nullptr;
+}
+
+DisplayObject* DisplayObject::getAVM2Parent() const
+{
+	return
+	(
+		parent != nullptr &&
+		parent->is<DisplayObjectContainer>()
+	) ? parent : nullptr;
+}
+
+asAtom DisplayObject::toASAtomOrNull() const
+{
+	auto obj = toASObject();
+	if (obj.isNull())
+		return asAtomHandler::nullAtom;
+	return asAtomHandler::fromObject(obj.getPtr());
+}
+
+DisplayObject& DisplayObject::getAVM1Stage() const
 {
 	if (parent == nullptr)
-		return const_cast<DisplayObject*>(this);
+		return this;
 
 	if (parent->is<Loader>() || parent->is<Stage>())
 		return parent;
 	return parent->getAVM1Stage();
 }
 
-DisplayObject* DisplayObject::getAVM1Root()
+DisplayObject& DisplayObject::getAVM1Root(bool noLock) const
 {
-	if (needsActionScript3())
-		return sys->mainClip;
-	if (parent != nullptr && parent->needsActionScript3())
-		return this;
-	if (is<RootMovieClip>())
-		return this;
-	if (!lockRoot && parent != nullptr)
-		return parent->getAVM1Root();
-	return sys->mainClip;
+	if (!noLock && getLockRoot())
+		return *this;
+	auto _parent = getAVM1Parent();
+	if (_parent != nullptr && !_parent->isAS3())
+		return _parent->getAVM1Root(noLock);
+	return *this;
+}
+
+DisplayObject* DisplayObject::getAVM1Parent() const
+{
+	return
+	(
+		parent != nullptr &&
+		!parent->is<Stage>() &&
+		!parent->isAS3()
+	) ? parent : nullptr;
+}
+
+AVM1Value DisplayObject::toAVM1ValueOrUndef() const
+{
+	auto obj = tryToAVM1Object();
+	return !obj.isNull() ? AVM1Value(obj) : AVM1Value::undefinedVal;
+}
+
+_GC<AVM1Object> DisplayObject::toAVM1Object(GcContext& ctx) const
+{
+	auto obj = tryToAVM1Object();
+	if (!obj.isNull())
+		return obj;
+	return NEW_GC_PTR(ctx, AVM1Object(ctx, NullRef));
+}
+
+
+bool DisplayObject::getAVM1BoolProp
+(
+	const tiny_string& name,
+	std::function<void(SystemState*)> _default
+) const
+{
+	auto obj = tryToAVM1Object();
+	if (obj.isNull())
+		return false;
+	AVM1Activation act
+	(
+		sys->getAVM1Ctx()
+		"[AVM1 bool prop]",
+		getAVM1Root()
+	);
+
+	try
+	{
+		auto val = obj->getProp(act, name);
+		if (val.isUndefined())
+			return _default(sys);
+		return val.asBool(act.getSwfVersion());
+	}
+	catch (...)
+	{
+		return _default(sys);
+	}
+}
+
+void DisplayObject::setAVM1Prop
+(
+	const tiny_string& name,
+	const AVM1Value& value
+)
+{
+	auto obj = tryToAVM1Object();
+	if (obj.isNull())
+		return false;
+	AVM1Activation act
+	(
+		sys->getAVM1Ctx()
+		"[AVM1 bool prop]",
+		getAVM1Root()
+	);
+
+	try
+	{
+		obj->setProp(act, name, value);
+	}
+	catch (...)
+	{
+	}
 }

@@ -34,6 +34,7 @@
 #include "smartrefs.h"
 #include "swftypes.h"
 #include "tiny_string.h"
+#include "utils/span.h"
 
 // Based on Ruffle's `avm1::display_object::DisplayObject`.
 
@@ -153,9 +154,24 @@ public:
 		// be constructed manually by `Sprite.constructChildren()`).
 		ManualFrameConstruction = 1 << 15,
 	};
+
+	enum class Type
+	{
+		Stage,
+		Bitmap,
+		Button,
+		SimpleButton,
+		TextField,
+		Graphic,
+		MorphShape,
+		MovieClip,
+		Video,
+		Loader,
+	};
 private:
 	using Proj = PerspectiveProjection;
 
+	Type type;
 	SystemState* sys;
 	DisplayObject* parent;
 
@@ -236,6 +252,10 @@ private:
 
 	void fireAddedEvents();
 	void setOnParentField();
+	virtual Rect<Twips> boundsRectWithTransformImpl(const MATRIX& mtx)
+	{
+		return mtx * boundsRectWithoutChildren(false);
+	}
 protected:
 	size_t broadcastEventListenerCount;
 	mutable Mutex spinlock;
@@ -249,6 +269,7 @@ protected:
 public:
 	DisplayObject
 	(
+		const Type& _type,
 		SystemState* _sys,
 		Optional<const tiny_string&> _name = {}
 	);
@@ -263,7 +284,10 @@ public:
 	}
 
 	// Reset all properties that'd be adjusted by a movie load.
-	void resetForMovieLoad();
+	void resetForMovieLoad()
+	{
+		flags = Flags::LockRoot | Flags::Visible;
+	}
 
 	uint16_t getDepth() const { return depth; }
 	void setDepth(uint16_t _depth) { depth = _depth; }
@@ -303,7 +327,7 @@ public:
 	const tiny_string& getName() const { return name; }
 	void setName(const tiny_string& _name) { name = _name; }
 	const std::vector<Filter>& getFilters() const { return filters; }
-	bool setFilters(const Span<Filter>& _filters);
+	void setFilters(const Span<Filter>& _filters);
 	number_t getAlpha() const { return colorTransform.aMult; }
 	void setAlpha(number_t alpha);
 	Vector2Twips getSize();
@@ -422,6 +446,7 @@ public:
 	FLAG_GETTER_SETTER_PREFIX(is, AVM1PendingRemoval);
 	FLAG_GETTER_SETTER(SkipFrame);
 	FLAG_GETTER_SETTER(ScaleAndRotationCached);
+	void setScaleAndRotationCached();
 	FLAG_GETTER_PREFIX(is, Visible);
 	FLAG_SETTER_DECL(Visible);
 	FLAG_GETTER_SETTER_NAME(isRoot, IsRoot);
@@ -496,14 +521,15 @@ public:
 
 	bool isOnStage() const;
 
-	RootMovieClip* getAVM2Root() const;
+	DisplayObject* getAVM2Root() const;
 	Stage* getAVM2Stage() const;
 	DisplayObject* getAVM2Parent() const;
 	DisplayObject& getAVM1Root(bool noLock = false) const;
 	DisplayObject& getAVM1Stage() const;
 	DisplayObject* getAVM1Parent() const;
-	void setLegacyMatrix(const MATRIX& m);
-	void setFilter(const FILTER& filter);
+	void setFilter(const Filter& filter);
+	bool hasSameFilters(const Span<Filter>& _filters) const;
+
 
 	virtual Optional<Rect<Twips>> tryBoundsRect(bool visibleOnly)
 	{
@@ -532,7 +558,7 @@ public:
 		).valueOr(Rect<Twips> {});
 	}
 
-	virtual Rect<Twips> boundsRectWithTransform(const MATRIX& mtx);
+	Rect<Twips> boundsRectWithTransform(const MATRIX& mtx);
 	Optional<Rect<Twips>> tryBoundsRectGlobal(bool fromCurrentRendering = true);
 	Rect<Twips> boundsRectGlobal(bool fromCurrentRendering = true)
 	{
@@ -540,6 +566,17 @@ public:
 		(
 			fromCurrentRendering
 		).valueOr(Rect<Twips> {});
+	}
+
+	Rect<Twips> getWorldBounds() const
+	{
+		auto mtx = localToGlobalMatrix(false);
+		return boundsRectWithTransform(mtx);
+	}
+
+	Rect<Twips> getLocalBounds() const
+	{
+		return boundsRectWithTransform(matrix);
 	}
 
 	static bool isShaderBlendMode(const AS_BLENDMODE& mode);
@@ -632,14 +669,12 @@ public:
 
 	bool hitTestBounds(const Vector2Twips& point) const
 	{
-		return boundsRectGlobal(false).contains(point);
+		return getWorldsBounds().contains(point);
 	}
 
 	bool hitTestObject(const DisplayObject& obj) const
 	{
-		auto a = boundsRectGlobal(false);
-		auto b = obj.boundsRectGlobal(false);
-		return a.intersects(b);
+		return getWorldBounds().intersects(obj.getWorldBounds());
 	}
 
 	bool isMarkedForTimelineDeletion() const
@@ -662,7 +697,7 @@ public:
 	bool isAS3() const { return needsActionScript3(); }
 	virtual void handleMouseCursor(bool rollover) {}
 	virtual bool allowAsMask() const { return true; }
-	Vector2f getLocalMousePos();
+	Vector2Twips getLocalMousePos();
 	// Nominal width and heigt are the size before scaling and rotation
 	Vector2f getNominalSize();
 	number_t getNominalWidth() { return getNominalSize().x; }
@@ -672,20 +707,20 @@ public:
 	bool hasBroadcastListeners() const { return broadcastEventListenerCount; }
 
 	void preRender();
-	void avm1Unload();
-	Span<const AVM1VarBinding> getAVM1VarBindings() const
+	virtual void avm1Unload();
+	virtual Span<const AVM1VarBinding> getAVM1VarBindings() const
 	{
 		return {};
 	}
 
-	Span<AVM1VarBinding> getAVM1VarBindings()
+	virtual Span<AVM1VarBinding> getAVM1VarBindings()
 	{
 		return {};
 	}
 
 	virtual _NGC<AVM1Object> tryToAVM1Object() const { return NullGc; }
 	AVM1Value toAVM1ValueOrUndef() const;
-	_GC<AVM1Object> toAVM1Object() const;
+	_GC<AVM1Object> toAVM1Object(GcContext& ctx) const;
 
 	virtual _NR<ASObject> toASObject() const { return NullRef; }
 	asAtom toASAtomOrNull() const;
@@ -706,8 +741,107 @@ public:
 	template<typename T>
 	bool is() const;
 	template<typename T>
-	T* as() const;
+	T* as() const
+	{
+		return is<T>() ? static_cast<T*>(this) : nullptr;
+	}
 };
+
+template<>
+bool DisplayObject::is<Stage>() const
+{
+	return type == Type::Stage;
+}
+
+template<>
+bool DisplayObject::is<Bitmap>() const
+{
+	return type == Type::Bitmap;
+}
+
+template<>
+bool DisplayObject::is<Button>() const
+{
+	return type == Type::Button;
+}
+
+template<>
+bool DisplayObject::is<SimpleButton>() const
+{
+	return type == Type::SimpleButton;
+}
+
+template<>
+bool DisplayObject::is<TextField>() const
+{
+	return type == Type::TextField;
+}
+
+template<>
+bool DisplayObject::is<Graphic>() const
+{
+	return type == Type::Graphic;
+}
+
+template<>
+bool DisplayObject::is<MorphShape>() const
+{
+	return type == Type::MorphShape;
+}
+
+template<>
+bool DisplayObject::is<MovieClip>() const
+{
+	return type == Type::MovieClip;
+}
+
+template<>
+bool DisplayObject::is<Video>() const
+{
+	return type == Type::Video;
+}
+
+template<>
+bool DisplayObject::is<Loader>() const
+{
+	return type == Type::Loader;
+}
+
+template<>
+bool DisplayObject::is<DisplayObjectContainer>() const
+{
+	switch (type)
+	{
+		case Type::Stage:
+		case Type::Button:
+		case Type::MovieClip:
+		case Type::Loader:
+			return true;
+			break;
+		default:
+			return false;
+			break;
+	}
+}
+
+template<>
+bool DisplayObject::is<InteractiveObject>() const
+{
+	switch (type)
+	{
+		case Type::Stage:
+		case Type::Button:
+		case Type::SimpleButton:
+		case Type::TextField:
+		case Type::MovieClip:
+		case Type::Loader:
+			return true;
+			break;
+		default:
+			return false;
+			break;
+	}
+}
 
 }
 #endif /* DISPLAY_OBJECT_DISPLAYOBJECT_H */

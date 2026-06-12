@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2024  mr b0nk 500 (b0nk@b0nk.xyz)
+	Copyright (C) 2026  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -45,7 +46,7 @@ private:
 	size_t eventIndex;
 public:
 	InputInjector() : events(), eventIndex(0) {}
-	InputInjector(InputParser& parser) : events(parser.parse()), eventIndex(0) {}
+	InputInjector(InputParser& parser);
 	bool hasEvents() const { return !events.empty(); }
 	bool endOfInput() const { return eventIndex >= events.size(); }
 	Optional<LSEventStorage> popEvent();

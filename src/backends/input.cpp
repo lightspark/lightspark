@@ -105,16 +105,12 @@ int InputThread::worker(void* d)
 
 bool InputThread::queueEvent(const LSEvent& event)
 {
-	using FocusType = LSWindowFocusEvent::FocusType;
 	using MouseType = LSMouseEvent::MouseType;
 
 	bool queueable = event.visit(makeVisitor
 	(
 		[&](const LSWindowEvent&) { return false; },
-		[&](const LSWindowFocusEvent& focus)
-		{
-			return focus.focusType != FocusType::Mouse || focus.focused;
-		},
+		[&](const LSWindowFocusEvent&){ return true; },
 		[](const LSQuitEvent&) { return false; },
 		[](const LSEvent&) { return true; }
 	));
@@ -279,6 +275,7 @@ int InputThread::handleEvent(const LSEvent& event)
 			}
 			return false;
 		},
+
 		[&](const LSEvent&) { return false; }
 	));
 }
@@ -487,6 +484,9 @@ void InputThread::handleMouseLeave()
 	{
 		m_sys->currentVm->addIdleEvent(currentMouseOver,
 									   _MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOut",-1,-1)));
+		m_sys->currentVm->addIdleEvent(currentMouseOver,
+									   _MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",-1,-1)));
+
 	}
 	_NR<Stage> stage = _MR(m_sys->stage);
 	m_sys->currentVm->addIdleEvent(stage,

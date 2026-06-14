@@ -50,10 +50,9 @@ class ASObject;
 class AVM1Object;
 class AVM1Value;
 class CachedSurface;
-class DictionaryTag;
+class DefineSpriteTag;
 class Filter;
 class FrameContainer;
-class IFunction;
 class InvalidateQueue;
 class LoaderInfo;
 class Matrix3D;
@@ -81,10 +80,10 @@ public TokenContainer
 		PostTimelineCreated = 1 << 6,
 	};
 private:
-	std::map<uint32_t, _R<IFunction>> frameScripts;
+	std::map<uint32_t, _R<ASObject>> frameScripts;
 	std::vector<DisplayObject&> removedFrameScripts;
 	std::vector<AVM1VarBinding> avm1VarBindings;
-	DictionaryTag* tag;
+	DefineSpriteTag* tag;
 
 	uint64_t tagStreamPos;
 
@@ -92,6 +91,7 @@ private:
 	DisplayObject* hitArea;
 	Graphics* graphics;
 
+	uint16_t totalFrames;
 	uint32_t lastFrameScriptExecuted;
 	uint32_t lastRatio;
 	bool inExecuteFramescript;
@@ -114,18 +114,38 @@ public:
 	void afterConstruction(bool _explicit = false) override;
 	RunState state;
 	list<AVM1MovieClipLoader*> avm1loaderlist;
+
 	uint32_t getFrameCount();
 	FrameContainer* getFrameContainer() const { return frameContainer; }
-	MovieClip(ASWorker* wrk,Class_base* c);
-	MovieClip(ASWorker* wrk,Class_base* c, FrameContainer* f, uint32_t defineSpriteTagID);
-	bool destruct() override;
-	void finalize() override;
-	void prepareShutdown() override;
-	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+	MovieClip
+	(
+		SystemState* sys,
+		FrameContainer* f,
+		DefineSpriteTag* _tag,
+		Optional<const tiny_string&> name = {},
+	);
+
+	MovieClip
+	(
+		SystemState* sys,
+		Optional<const tiny_string&> name = {}
+	) : MovieClip(sys, nullptr, nullptr, name) {}
+
+	bool hasClipFlag(const ClipFlags& flag) const
+	{
+		return clipFlags & flag;
+	}
+
+	void setClipFlag(const ClipFlags& flag, bool val)
+	{
+		if (val)
+			clipFlags |= flag;
+		else
+			clipFlags &= ~flag;
+	}
+
 	void setPlaying();
 	void setStopped();
-	void gotoAnd(asAtom *args, const unsigned int argslen, bool stop);
-	static void sinit(Class_base* c);
 	/*
 	 * returns true if all frames of this MovieClip are loaded
 	 * this is overwritten in RootMovieClip, because that one is
@@ -133,28 +153,32 @@ public:
 	 */
 	virtual bool hasFinishedLoading() { return true; }
 
-	void AVM1SetForInitAction() { forAVM1InitAction = true; }
-	bool AVM1GetForInitAction() const { return forAVM1InitAction; }
-	ASFUNCTION_ATOM(_constructor);
-	ASFUNCTION_ATOM(swapDepths);
-	ASFUNCTION_ATOM(addFrameScript);
-	ASFUNCTION_ATOM(stop);
-	ASFUNCTION_ATOM(play);
-	ASFUNCTION_ATOM(gotoAndStop);
-	ASFUNCTION_ATOM(gotoAndPlay);
-	ASFUNCTION_ATOM(prevFrame);
-	ASFUNCTION_ATOM(nextFrame);
-	ASFUNCTION_ATOM(prevScene);
-	ASFUNCTION_ATOM(nextScene);
-	ASFUNCTION_ATOM(_getCurrentFrame);
-	ASFUNCTION_ATOM(_getCurrentFrameLabel);
-	ASFUNCTION_ATOM(_getCurrentLabel);
-	ASFUNCTION_ATOM(_getCurrentLabels);
-	ASFUNCTION_ATOM(_getTotalFrames);
-	ASFUNCTION_ATOM(_getFramesLoaded);
-	ASFUNCTION_ATOM(_getScenes);
-	ASFUNCTION_ATOM(_getCurrentScene);
-	ASFUNCTION_ATOM(_getIsPlaying);
+	void setForAVM1InitAction()
+	{
+		setClipFlag(ClipFlags::ForAVM1InitAction, true);
+	}
+
+	bool getForAVM1InitAction() const
+	{
+		return hasClipFlag(ClipFlags::ForAVM1InitAction);
+	}
+
+	void addFrameScript(uint16_t frame, _NR<ASObject> func);
+
+	void prevFrame();
+	void nextFrame();
+	void prevScene();
+	void nextScene();
+
+	uint16_t getCurrentFrame() const { return state.FP; }
+	Optional<tiny_string> getCurrentFrameLabel() const;
+	Optional<tiny_string> getCurrentLabel() const;
+	std::vector<tiny_string> getCurrentLabels() const;
+	uint16_t getTotalFrames() const { return totalFrames; }
+	uint16_t getFramesLoaded() const;
+	Span<const Scene> getScenes() const;
+	Scene* getCurrentScene() const;
+	bool getIsPlaying() const { return !state.stop_FP; }
 
 	void enterFrame(bool implicit) override;
 	void advanceFrame(bool implicit) override;
@@ -166,7 +190,7 @@ public:
 	void afterLegacyInsert() override;
 	void afterLegacyDelete(bool inskipping) override;
 
-	uint32_t getTagID() const override { return fromDefineSpriteTag; }
+	uint32_t getTagID() const override;
 	void setupActions(const CLIPACTIONS& clipactions);
 	void updateVariableBindings();
 

@@ -1100,7 +1100,7 @@ ASFUNCTIONBODY_ATOM(FullScreenEvent,_constructor)
 }
 
 KeyboardEvent::KeyboardEvent(ASWorker* wrk, Class_base* c, tiny_string _type, const AS3KeyCode& _charCode, const AS3KeyCode& _keyCode, const LSModifier& _modifiers)
-  : Event(wrk,c, _type,false,false,SUBTYPE_KEYBOARD_EVENT), modifiers(_modifiers), charCode(_charCode), keyCode(_keyCode), keyLocation(0)
+  : Event(wrk,c, _type,true,false,SUBTYPE_KEYBOARD_EVENT), modifiers(_modifiers), charCode(_charCode), keyCode(_keyCode), keyLocation(0)
 {
 }
 

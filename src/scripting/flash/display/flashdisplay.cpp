@@ -1358,6 +1358,8 @@ void InteractiveObject::AVM1SetupMethods(Class_base* c)
 	c->prototype->setDeclaredMethodByQName("tabIndex","",c->getSystemState()->getBuiltinFunction(AVM1_getTabIndex,0,Class<ASObject>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_getMouseEnabled,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("enabled","",c->getSystemState()->getBuiltinFunction(_setMouseEnabled),SETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("contextMenu","",c->getSystemState()->getBuiltinFunction(_getter_contextMenu),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("contextMenu","",c->getSystemState()->getBuiltinFunction(_setter_contextMenu),SETTER_METHOD,false,false);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(InteractiveObject, accessibilityImplementation)
@@ -1479,7 +1481,7 @@ bool DisplayObjectContainer::fillTabStopsAutomatic(std::map<int32_t, DisplayObje
 			&& !o->as<Sprite>()->buttonMode
 			&& !asAtomHandler::AVM1toBool(o->tabEnabled,getInstanceWorker(),loadedFrom->version))
 			tabenabled=false;
-		if (!o->isFocusable())
+		if (!o->isFocusable(false))
 			tabenabled=false;
 		if (!o->is<DisplayObjectContainer>()
 			&& !asAtomHandler::AVM1toBool(o->tabEnabled,getInstanceWorker(),loadedFrom->version))

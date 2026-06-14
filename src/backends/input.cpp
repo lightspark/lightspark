@@ -433,7 +433,7 @@ void InputThread::handleMouseMove(const LSMouseMoveEvent& event)
 		Vector2f local = currentMouseOver->globalToLocal(event.stagePos*TWIPS_FACTOR)/TWIPS_FACTOR;
 		m_sys->currentVm->addIdleEvent(currentMouseOver,
 			_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"mouseOut",local.x,local.y,true,event.modifiers,event.pressed,selected)));
-		if (selected.isNull())
+		if (selected.isNull() || selected->is<Stage>())
 			m_sys->currentVm->addIdleEvent(currentMouseOver,_MR(Class<MouseEvent>::getInstanceS(m_sys->worker,"rollOut",local.x,local.y,true,event.modifiers,event.pressed,selected)));
 		currentMouseOver.reset();
 	}

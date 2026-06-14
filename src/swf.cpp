@@ -221,7 +221,8 @@ static const char* builtinStrings[] = {"any", "void", "prototype", "Function", "
 									   "add","alpha","darken","difference","erase","hardlight","invert","layer","lighten","multiply","overlay","screen","subtract",
 									   "text","null","true","false","global","init","onSetFocus","onResize","movieclip","caller","callee","arguments",
 									   "onUnload","onStatus","level","_lockroot",
-									   "watch","unwatch","Times New Roman"
+									   "watch","unwatch","Times New Roman",
+									   "onKeyDown","onKeyUp"
 									  };
 
 extern uint32_t asClassCount;

@@ -51,150 +51,6 @@ void SimpleButton::sinit(Class_base* c)
 	c->setDeclaredMethodByQName("useHandCursor","",c->getSystemState()->getBuiltinFunction(_setUseHandCursor),SETTER_METHOD,true);
 }
 
-void SimpleButton::afterLegacyInsert()
-{
-	if (!needsActionScript3())
-	{
-		getSystemState()->stage->AVM1AddKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
-		AVM1addOneMouseEventListener();
-	}
-	if (lastParent)
-		lastParent->removeStoredMember();
-	// keep track of the DisplayObjectContainer this was added to
-	// this is needed to handle AVM1 mouse events, as they might be executed after this button was removed from stage
-	lastParent = getParent();
-	if (lastParent)
-	{
-		lastParent->incRef();
-		lastParent->addStoredMember();
-	}
-	DisplayObjectContainer::afterLegacyInsert();
-}
-
-bool SimpleButton::AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e)
-{
-	if (this->loadedFrom->usesActionScript3)
-		return false;
-	if (!dispatcher->is<DisplayObject>())
-		return false;
-	oldstate = currentState;
-	bool CondIdleToOverDown = false;
-	bool CondOutDownToIdle = false;
-	bool CondOutDownToOverDown = false;
-	bool CondOverDownToOutDown = false;
-	bool CondOverDownToOverUp = false;
-	bool CondOverUpToIdle = false;
-	bool CondIdleToOverUp = false;
-	bool CondOverDownToIdle = false;
-
-	if(e->type == "mouseDown")
-	{
-		if(dispatcher==this)
-		{
-			currentState = STATE_DOWN;
-			reflectState(oldstate);
-		}
-		else
-		{
-			number_t xmin, xmax, ymin, ymax;
-			if (this->boundsRectGlobal(xmin, xmax, ymin, ymax))
-			{
-				if (xmin<=e->stageX &&
-						xmax>=e->stageX &&
-						ymin<=e->stageY &&
-						ymax>=e->stageY)
-				{
-					currentState = STATE_DOWN;
-					reflectState(oldstate);
-				}
-			}
-		}
-	}
-	else if(e->type == "mouseUp")
-	{
-		CondOverDownToOverUp = oldstate!=STATE_UP  && dispatcher == this;
-		currentState = STATE_UP;
-		reflectState(oldstate);
-	}
-	else if(e->type == "mouseOver")
-	{
-		CondIdleToOverDown = oldstate == STATE_OUT && e->buttonDown && dispatcher != this;
-		CondOutDownToOverDown = oldstate == STATE_DOWN && e->buttonDown  && dispatcher != this;
-		CondIdleToOverUp = oldstate==STATE_OUT && !e->buttonDown && dispatcher == this;
-		CondOverDownToIdle = oldstate==STATE_DOWN && !e->buttonDown && dispatcher != this;
-		if (dispatcher == this)
-		{
-			currentState = STATE_OVER;
-			reflectState(oldstate);
-		}
-	}
-	else if(e->type == "mouseOut" && dispatcher == this)
-	{
-		CondOverDownToOutDown = oldstate!=STATE_OUT && e->buttonDown;
-		CondOverUpToIdle = (oldstate==STATE_UP || oldstate==STATE_OVER) && !e->buttonDown;
-		if (!e->buttonDown)
-		{
-			currentState = STATE_OUT;
-			reflectState(oldstate);
-		}
-	}
-	else if(e->type == "releaseOutside" && dispatcher == this)
-	{
-		CondOutDownToIdle = oldstate!=STATE_OUT;
-		currentState = STATE_OUT;
-		reflectState(oldstate);
-	}
-	else
-		return false;
-	if (buttontag)
-	{
-		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
-		{
-			if (  (it->CondIdleToOverDown && CondIdleToOverDown)
-				||(it->CondOutDownToIdle && CondOutDownToIdle)
-				||(it->CondOutDownToOverDown && CondOutDownToOverDown)
-				||(it->CondOverDownToOutDown && CondOverDownToOutDown)
-				||(it->CondOverDownToOverUp && CondOverDownToOverUp)
-				||(it->CondOverUpToIdle && CondOverUpToIdle)
-				||(it->CondIdleToOverUp && CondIdleToOverUp)
-				||(it->CondOverDownToIdle && CondOverDownToIdle)
-				)
-			{
-				DisplayObjectContainer* c = lastParent;
-				while (c && !c->is<MovieClip>())
-					c = c->getParent();
-				if (c)
-				{
-					asAtom obj = asAtomHandler::fromObjectNoPrimitive(this->getParent());
-					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->AVM1getCurrentFrameContext(),it->actions,it->startactionpos,nullptr,false,nullptr,&obj);
-				}
-			}
-		}
-	}
-	return AVM1HandleMouseEventStandard(dispatcher,e);
-}
-void SimpleButton::AVM1HandlePressedEvent(ASObject* dispatcher)
-{
-	if (buttontag)
-	{
-		for (auto it = buttontag->condactions.begin(); it != buttontag->condactions.end(); it++)
-		{
-			if ((it->CondOverUpToOverDown && (oldstate==STATE_UP || oldstate==STATE_OVER || oldstate==STATE_OUT) && currentState==STATE_DOWN)
-				)
-			{
-				DisplayObjectContainer* c = lastParent;
-				while (c && !c->is<MovieClip>())
-					c = c->getParent();
-				if (c)
-				{
-					asAtom obj = asAtomHandler::fromObjectNoPrimitive(this->getParent());
-					ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->AVM1getCurrentFrameContext(),it->actions,it->startactionpos,nullptr,false,nullptr,&obj);
-				}
-			}
-		}
-	}
-	DisplayObjectContainer::AVM1HandlePressedEvent(dispatcher);
-}
 void SimpleButton::handleMouseCursor(bool rollover)
 {
 	if (rollover)
@@ -208,168 +64,6 @@ void SimpleButton::handleMouseCursor(bool rollover)
 		hasMouse=false;
 	}
 }
-
-bool SimpleButton::AVM1HandleKeyboardEvent(KeyboardEvent *e)
-{
-	bool handled = false;
-	if (getSystemState()->stage->getFocusTarget()== this)
-		handled = DisplayObjectContainer::AVM1HandleKeyboardEvent(e);
-	if (e->type!="keyDown")
-		return handled;
-	if (getSystemState()->stage->getFocusTarget()!= this)
-		return false;
-	for (auto it = this->buttontag->condactions.begin(); it != this->buttontag->condactions.end(); it++)
-	{
-		bool execute=false;
-		AS3KeyCode code = e->getKeyCode();
-		if (e->getModifiers() & LSModifier::Shift)
-		{
-			switch (it->CondKeyPress)
-			{
-				case 33:// !
-					execute = code==AS3KEYCODE_NUMBER_1;break;
-				case 34:// "
-					execute = code==AS3KEYCODE_QUOTE;break;
-				case 35:// #
-					execute = code==AS3KEYCODE_NUMBER_3;break;
-				case 36:// $
-					execute = code==AS3KEYCODE_NUMBER_4;break;
-				case 37:// %
-					execute = code==AS3KEYCODE_NUMBER_5;break;
-				case 38:// &
-					execute = code==AS3KEYCODE_NUMBER_7;break;
-				case 40:// (
-					execute = code==AS3KEYCODE_NUMBER_9;break;
-				case 41:// )
-					execute = code==AS3KEYCODE_NUMBER_0;break;
-				case 42:// *
-					execute = code==AS3KEYCODE_NUMBER_8;break;
-				case 43:// +
-					execute = code==AS3KEYCODE_EQUAL;break;
-				case 58:// :
-					execute = code==AS3KEYCODE_SEMICOLON;break;
-				case 60:// <
-					execute = code==AS3KEYCODE_COMMA;break;
-				case 62:// >
-					execute = code==AS3KEYCODE_PERIOD;break;
-				case 63:// ?
-					execute = code==AS3KEYCODE_SLASH;break;
-				case 64:// @
-					execute = code==AS3KEYCODE_NUMBER_2;break;
-				case 94:// ^
-					execute = code==AS3KEYCODE_NUMBER_6;break;
-				case 95:// _
-					execute = code==AS3KEYCODE_MINUS;break;
-				case 123:// {
-					execute = code==AS3KEYCODE_LEFTBRACKET;break;
-				case 124:// |
-					execute = code==AS3KEYCODE_BACKSLASH;break;
-				case 125:// }
-					execute = code==AS3KEYCODE_RIGHTBRACKET;break;
-				case 126:// ~
-					execute = code==AS3KEYCODE_BACKQUOTE;break;
-				default:// A-Z
-					execute = it->CondKeyPress>=65
-							  && it->CondKeyPress<=90
-							  && (uint32_t)code-(uint32_t)AS3KEYCODE_A==it->CondKeyPress-65;
-					break;
-			}
-		}
-		else
-		{
-			switch (it->CondKeyPress)
-			{
-				case 1:
-					execute = code==AS3KEYCODE_LEFT;break;
-				case 2:
-					execute = code==AS3KEYCODE_RIGHT;break;
-				case 3:
-					execute = code==AS3KEYCODE_HOME;break;
-				case 4:
-					execute = code==AS3KEYCODE_END;break;
-				case 5:
-					execute = code==AS3KEYCODE_INSERT;break;
-				case 6:
-					execute = code==AS3KEYCODE_DELETE;break;
-				case 8:
-					execute = code==AS3KEYCODE_BACKSPACE;break;
-				case 13:
-					execute = code==AS3KEYCODE_ENTER;break;
-				case 14:
-					execute = code==AS3KEYCODE_UP;break;
-				case 15:
-					execute = code==AS3KEYCODE_DOWN;break;
-				case 16:
-					execute = code==AS3KEYCODE_PAGE_UP;break;
-				case 17:
-					execute = code==AS3KEYCODE_PAGE_DOWN;break;
-				case 18:
-					execute = code==AS3KEYCODE_TAB;break;
-				case 19:
-					execute = code==AS3KEYCODE_ESCAPE;break;
-				case 32:
-					execute = code==AS3KEYCODE_SPACE;break;
-				case 39:// '
-					execute = code==AS3KEYCODE_QUOTE;break;
-				case 44:// ,
-					execute = code==AS3KEYCODE_COMMA;break;
-				case 45:// -
-					execute = code==AS3KEYCODE_MINUS;break;
-				case 46:// .
-					execute = code==AS3KEYCODE_PERIOD;break;
-				case 47:// /
-					execute = code==AS3KEYCODE_SLASH;break;
-				case 48:// 0
-					execute = code==AS3KEYCODE_NUMBER_0;break;
-				case 49:// 1
-					execute = code==AS3KEYCODE_NUMBER_1;break;
-				case 50:// 2
-					execute = code==AS3KEYCODE_NUMBER_2;break;
-				case 51:// 3
-					execute = code==AS3KEYCODE_NUMBER_3;break;
-				case 52:// 4
-					execute = code==AS3KEYCODE_NUMBER_4;break;
-				case 53:// 5
-					execute = code==AS3KEYCODE_NUMBER_5;break;
-				case 54:// 6
-					execute = code==AS3KEYCODE_NUMBER_6;break;
-				case 55:// 7
-					execute = code==AS3KEYCODE_NUMBER_7;break;
-				case 56:// 8
-					execute = code==AS3KEYCODE_NUMBER_8;break;
-				case 57:// 9
-					execute = code==AS3KEYCODE_NUMBER_9;break;
-				case 59:// ;
-					execute = code==AS3KEYCODE_SEMICOLON;break;
-				case 61:// =
-					execute = code==AS3KEYCODE_EQUAL;break;
-				case 91:// [
-					execute = code==AS3KEYCODE_LEFTBRACKET;break;
-				case 92://
-					execute = code==AS3KEYCODE_BACKSLASH;break;
-				case 93:// ]
-					execute = code==AS3KEYCODE_RIGHTBRACKET;break;
-				case 96:// `
-					execute = code==AS3KEYCODE_BACKQUOTE;break;
-				default:// a-z
-					execute = it->CondKeyPress>=97
-							  && it->CondKeyPress<=122
-							  && (uint32_t)code-(uint32_t)AS3KEYCODE_A==it->CondKeyPress-97;
-					break;
-			}
-		}
-		if (execute)
-		{
-			DisplayObjectContainer* c = lastParent;
-			while (c && !c->is<MovieClip>())
-				c = c->getParent();
-			if (c)
-				ACTIONRECORD::executeActions(c->as<MovieClip>(),c->as<MovieClip>()->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
-		}
-	}
-	return handled;
-}
-
 
 _NR<DisplayObject> SimpleButton::hitTestImpl(const Vector2f& globalPoint, const Vector2f& localPoint, HIT_TYPE type,bool interactiveObjectsOnly)
 {
@@ -503,7 +197,6 @@ void SimpleButton::addDisplayObject(BUTTONOBJECTTYPE state, uint32_t depth, Disp
 
 SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DefineButtonTag *tag)
 	: DisplayObjectContainer(wrk,c)
-	,lastParent(nullptr)
 	,parentSprite{nullptr,nullptr,nullptr,nullptr}
 	,buttontag(tag)
 	,statesdirty(true)
@@ -560,10 +253,6 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DefineButtonTag *tag)
 void SimpleButton::finalize()
 {
 	DisplayObjectContainer::finalize();
-	if (lastParent)
-		lastParent->removeStoredMember();
-	lastParent=nullptr;
-
 	for (uint32_t i=0; i<4; i++)
 	{
 		clearStateObject((BUTTONOBJECTTYPE)i);
@@ -572,9 +261,6 @@ void SimpleButton::finalize()
 
 bool SimpleButton::destruct()
 {
-	if (lastParent)
-		lastParent->removeStoredMember();
-	lastParent=nullptr;
 	for (uint32_t i=0; i<4; i++)
 		clearStateObject((BUTTONOBJECTTYPE)i);
 	enabled=true;
@@ -590,13 +276,6 @@ void SimpleButton::prepareShutdown()
 {
 	if (preparedforshutdown)
 		return;
-	if (lastParent)
-	{
-		DisplayObject* d = lastParent;
-		lastParent=nullptr;
-		d->prepareShutdown();
-		d->removeStoredMember();
-	}
 	for (uint32_t i=0; i<4; i++)
 	{
 		while (!states[i].empty())
@@ -629,8 +308,6 @@ void SimpleButton::prepareShutdown()
 bool SimpleButton::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = DisplayObjectContainer::countCylicMemberReferences(gcstate);
-	if (lastParent)
-		ret = lastParent->countAllCylicMemberReferences(gcstate) || ret;
 	for (uint32_t i=0; i<4; i++)
 	{
 		for (auto it = states[i].begin(); it != states[i].end(); it++)
@@ -786,6 +463,11 @@ void SimpleButton::resetStateToStart(BUTTONOBJECTTYPE type)
 		}
 		else
 			insertLegacyChildAt((*it).first,obj);
+		if (obj->is<SimpleButton>())
+		{
+			obj->as<SimpleButton>()->currentState=this->currentState;
+			obj->as<SimpleButton>()->reflectState(currentState);
+		}
 	}
 }
 void SimpleButton::clearStateObject(BUTTONOBJECTTYPE type)

@@ -118,6 +118,7 @@ public:
 	void updateVariableBindings();
 
 	bool AVM1HandleKeyboardEvent(KeyboardEvent *e) override;
+	bool AVM1HandleKeyPressedEvent(KeyboardEvent *e) override;
 	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
 	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
 	void AVM1AfterAdvance() override;

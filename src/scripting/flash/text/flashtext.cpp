@@ -1908,9 +1908,9 @@ uint32_t TextField::getTagID() const
 	return tag ? tag->getId() : UINT32_MAX;
 }
 
-bool TextField::isFocusable()
+bool TextField::isFocusable(bool fromMouse)
 {
-	return selectable;
+	return selectable || !fromMouse;
 }
 
 int TextField::getTextCharCount()

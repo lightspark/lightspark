@@ -208,37 +208,6 @@ void Stage::onFullScreenSourceRect(_NR<Rectangle> oldValue)
 
 void Stage::defaultEventBehavior(_R<Event> e)
 {
-	if (e->type == "keyDown")
-	{
-		KeyboardEvent* ev = e->as<KeyboardEvent>();
-		uint32_t modifiers = ev->getModifiers() & (KMOD_LSHIFT | KMOD_RSHIFT |KMOD_LCTRL | KMOD_RCTRL | KMOD_LALT | KMOD_RALT);
-		if (modifiers == KMOD_NONE)
-		{
-			switch (ev->getKeyCode())
-			{
-				case AS3KEYCODE_ESCAPE:
-					if (getSystemState()->getEngineData()->inFullScreenMode())
-						getSystemState()->getEngineData()->setDisplayState("normal",getSystemState());
-					break;
-				case AS3KEYCODE_TAB:
-					setTabFocusTarget(true);
-					break;
-				default:
-					break;
-			}
-		}
-		if (modifiers & KMOD_SHIFT)
-		{
-			switch (ev->getKeyCode())
-			{
-				case AS3KEYCODE_TAB:
-					setTabFocusTarget(false);
-					break;
-				default:
-					break;
-			}
-		}
-	}
 }
 
 void Stage::eventListenerAdded(const tiny_string& eventName)
@@ -293,6 +262,9 @@ bool Stage::destruct()
 	if (focus)
 		focus->removeStoredMember();
 	focus=nullptr;
+	if (avm1focus)
+		avm1focus->removeStoredMember();
+	avm1focus=nullptr;
 	root.reset();
 	stage3Ds.reset();
 	nativeWindow.reset();
@@ -329,6 +301,9 @@ void Stage::finalize()
 	if (focus)
 		focus->removeStoredMember();
 	focus=nullptr;
+	if (avm1focus)
+		avm1focus->removeStoredMember();
+	avm1focus=nullptr;
 	root.reset();
 	stage3Ds.reset();
 	nativeWindow.reset();
@@ -350,6 +325,8 @@ bool Stage::countCylicMemberReferences(garbagecollectorstate& gcstate)
 		ret = (*it)->countAllCylicMemberReferences(gcstate) || ret;
 	if (focus)
 		ret = focus->countAllCylicMemberReferences(gcstate) || ret;
+	if (avm1focus)
+		ret = avm1focus->countAllCylicMemberReferences(gcstate) || ret;
 	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
 	{
 		ASObject* o = asAtomHandler::getObject(*it);
@@ -430,11 +407,16 @@ void Stage::prepareShutdown()
 	if (nativeWindow)
 		nativeWindow->prepareShutdown();
 	if (focus)
-		focus->prepareShutdown();
-	if (focus)
 	{
+		focus->prepareShutdown();
 		focus->removeStoredMember();
 		focus=nullptr;
+	}
+	if (avm1focus)
+	{
+		avm1focus->prepareShutdown();
+		avm1focus->removeStoredMember();
+		avm1focus=nullptr;
 	}
 	if (root)
 		root->prepareShutdown();
@@ -467,11 +449,20 @@ void Stage::prepareShutdown()
 }
 
 Stage::Stage(ASWorker* wrk, Class_base* c):DisplayObjectContainer(wrk,c)
-	,focus(nullptr),avm1DisplayObjectFirst(nullptr),avm1DisplayObjectLast(nullptr)
+	,focus(nullptr)
+	,avm1focus(nullptr)
+	,avm1DisplayObjectFirst(nullptr)
+	,avm1DisplayObjectLast(nullptr)
 	,hasAVM1Clips(false)
 	,invalidated(true)
-	,align(c->getSystemState()->getUniqueStringId("TL")), colorCorrection("default"),displayState("normal"),showDefaultContextMenu(true),quality("high")
-	,stageFocusRect(false),allowsFullScreen(false),contentsScaleFactor(1.0)
+	,align(c->getSystemState()->getUniqueStringId("TL"))
+	,colorCorrection("default")
+	,displayState("normal")
+	,showDefaultContextMenu(true)
+	,quality("high")
+	,stageFocusRect(false)
+	,allowsFullScreen(false)
+	,contentsScaleFactor(1.0)
 {
 	// start and end of hidden display object list point to this to ensure that every added displayobject gets a valid pointer set as its next/prev pointers
 	hiddenNextDisplayObject=this;
@@ -665,6 +656,12 @@ InteractiveObject* Stage::getFocusTarget()
 	else
 		return focus;
 }
+
+InteractiveObject* Stage::getAVM1FocusTarget()
+{
+	Locker l(focusSpinlock);
+	return avm1focus;
+}
 void Stage::setTabFocusTarget(bool next)
 {
 	DisplayObject* currentfocustarget = getFocusTarget();
@@ -742,16 +739,22 @@ void Stage::setTabFocusTarget(bool next)
 			newfocustarget->incRef();
 			getVm(getSystemState())->addEvent(_MR(newfocustarget),e);
 		}
-		setFocusTarget(newfocustarget->as<InteractiveObject>());
+		setFocusTarget(asAtomHandler::fromObject(newfocustarget),false);
 	}
 }
-bool Stage::setFocusTarget(InteractiveObject* f)
+bool Stage::setFocusTarget(const asAtom newfocus, bool setFromMouse, bool preventAVM1Events)
 {
 	Locker l(focusSpinlock);
-	if (f==focus)
-		return true;
-	if (f && !f->isFocusable())
-		return false;
+	bool isundefined = asAtomHandler::isUndefined(newfocus);
+	InteractiveObject* f = asAtomHandler::is<InteractiveObject>(newfocus) ? asAtomHandler::as<InteractiveObject>(newfocus) : nullptr;
+	if (f==focus && !isundefined)
+		return newfocus.uintval != asAtomHandler::falseAtom.uintval;
+	bool ret = true;
+	if (f && !f->isFocusable(setFromMouse))
+	{
+		f=nullptr;
+		ret = false;
+	}
 	InteractiveObject* oldfocus = focus;
 	focus = f;
 	if (oldfocus)
@@ -794,24 +797,46 @@ bool Stage::setFocusTarget(InteractiveObject* f)
 	}
 	l.release();
 
-	// handle AVM1 focus listeners
-	avm1listenerMutex.lock();
-	vector<asAtom> tmplisteners = avm1FocusListeners;
-	for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
+	if (focus != avm1focus || isundefined)
 	{
-		ASATOM_INCREF(*it);
-	}
-	avm1listenerMutex.unlock();
-	for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
-	{
-		ASObject* o = asAtomHandler::getObject(*it);
-		if (o)
+		bool setfocus = isundefined
+						|| (!focus && ret)
+						|| (focus && focus->isFocusable(setFromMouse));
+		InteractiveObject* avm1oldfocus = avm1focus;
+		if ((avm1oldfocus && avm1oldfocus->is<TextField>())
+			|| setfocus)
 		{
-			o->AVM1HandleSetFocusEvent(focus, oldfocus);
-			o->decRef();
+			avm1focus = focus;
+			if (avm1focus)
+			{
+				avm1focus->incRef();
+				avm1focus->addStoredMember();
+			}
+			if (!preventAVM1Events)
+			{
+				avm1listenerMutex.lock();
+				vector<asAtom> tmplisteners = avm1FocusListeners;
+				for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
+				{
+					ASATOM_INCREF(*it);
+				}
+				avm1listenerMutex.unlock();
+				for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
+				{
+					ASObject* o = asAtomHandler::getObject(*it);
+					if (o)
+					{
+						o->AVM1HandleSetFocusEvent(
+							setfocus ? focus : nullptr
+							,avm1oldfocus);
+						o->decRef();
+					}
+				}
+			}
+			if (avm1oldfocus)
+				avm1oldfocus->removeStoredMember();
 		}
 	}
-
 	if (oldfocus)
 		oldfocus->requestInvalidation(getSystemState());
 	if (focus)
@@ -819,16 +844,15 @@ bool Stage::setFocusTarget(InteractiveObject* f)
 	l.acquire();
 	if (oldfocus)
 		oldfocus->removeStoredMember();
-	return true;
+	return ret;
 }
 
 void Stage::checkResetFocusTarget(InteractiveObject* removedtarget)
 {
 	Locker l(focusSpinlock);
-	if (focus && focus == removedtarget)
+	if (focus == removedtarget && !getSystemState()->isShuttingDown())
 	{
-		focus->removeStoredMember();
-		focus=nullptr;
+		setFocusTarget(asAtomHandler::nullAtom,false);
 	}
 }
 void Stage::addHiddenObject(DisplayObject* o)
@@ -1117,32 +1141,122 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 {
 	if (e->is<KeyboardEvent>())
 	{
-		if (e->type =="keyDown")
-		{
-			getSystemState()->getInputThread()->setLastKeyDown(e->as<KeyboardEvent>());
-		}
-		else if (e->type =="keyUp")
-		{
-			getSystemState()->getInputThread()->setLastKeyUp(e->as<KeyboardEvent>());
-		}
 		avm1listenerMutex.lock();
 		vector<asAtom> tmplisteners = avm1KeyboardListeners;
 		for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
 			ASATOM_ADDSTOREDMEMBER(*it);
 		avm1listenerMutex.unlock();
-		// eventhandlers may change the listener list, so we work on a copy
-		bool handled = false;
-		auto it = tmplisteners.begin();
-		while (it != tmplisteners.end())
+
+		if (e->type =="keyDown")
 		{
-			ASObject* o = asAtomHandler::getObject(*it);
-			if (o)
+			getSystemState()->getInputThread()->setLastKeyDown(e->as<KeyboardEvent>());
+			for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
 			{
-				if (!handled && o->AVM1HandleKeyboardEvent(e->as<KeyboardEvent>()))
-					handled=true;
-				o->removeStoredMember();
+				ASObject* o = asAtomHandler::getObject(*it);
+				if (o)
+				{
+					o->AVM1HandleKeyboardEvent(e->as<KeyboardEvent>());
+					o->removeStoredMember();
+				}
 			}
-			it++;
+			bool handled = false;
+			auto it = tmplisteners.begin();
+			while (it != tmplisteners.end())
+			{
+				ASObject* o = asAtomHandler::getObject(*it);
+				if (o)
+				{
+					if (!handled && o->AVM1HandleKeyPressedEvent(e->as<KeyboardEvent>()))
+						handled = true;
+				}
+				it++;
+			}
+			if (!e->defaultPrevented && !handled)
+			{
+				uint32_t modifiers = e->as<KeyboardEvent>()->getModifiers() & (KMOD_LSHIFT | KMOD_RSHIFT |KMOD_LCTRL | KMOD_RCTRL | KMOD_LALT | KMOD_RALT);
+				if (modifiers == KMOD_NONE)
+				{
+					switch (e->as<KeyboardEvent>()->getKeyCode())
+					{
+						case AS3KEYCODE_ESCAPE:
+							if (getSystemState()->getEngineData()->inFullScreenMode())
+								getSystemState()->getEngineData()->setDisplayState("normal",getSystemState());
+							break;
+						case AS3KEYCODE_TAB:
+							setTabFocusTarget(true);
+							break;
+						case AS3KEYCODE_ENTER:
+						{
+							auto dispobj=getAVM1FocusTarget();
+							if (dispobj)
+								dispobj->AVM1HandlePressedEvent(dispobj,false);
+							break;
+						}
+						case AS3KEYCODE_SPACE:
+						{
+							auto dispobj=getAVM1FocusTarget();
+							if (dispobj)
+								dispobj->AVM1HandlePressedEvent(dispobj,true);
+							break;
+						}
+						default:
+							break;
+					}
+				}
+				if (modifiers & KMOD_SHIFT)
+				{
+					switch (e->as<KeyboardEvent>()->getKeyCode())
+					{
+						case AS3KEYCODE_TAB:
+							setTabFocusTarget(false);
+							break;
+						default:
+							break;
+					}
+				}
+			}
+		}
+		else if (e->type =="keyUp")
+		{
+			getSystemState()->getInputThread()->setLastKeyUp(e->as<KeyboardEvent>());
+			if (!e->defaultPrevented)
+			{
+				uint32_t modifiers = e->as<KeyboardEvent>()->getModifiers() & (KMOD_LSHIFT | KMOD_RSHIFT |KMOD_LCTRL | KMOD_RCTRL | KMOD_LALT | KMOD_RALT);
+				if (modifiers == KMOD_NONE)
+				{
+					switch (e->as<KeyboardEvent>()->getKeyCode())
+					{
+						case AS3KEYCODE_ENTER:
+						{
+							auto dispobj=getAVM1FocusTarget();
+							if (dispobj)
+								dispobj->AVM1HandleReleasedEvent(dispobj,false);
+							break;
+						}
+						case AS3KEYCODE_SPACE:
+						{
+							auto dispobj=getAVM1FocusTarget();
+							if (dispobj)
+								dispobj->AVM1HandleReleasedEvent(dispobj,true);
+							break;
+						}
+						default:
+							break;
+					}
+				}
+			}
+
+			auto it = tmplisteners.begin();
+			while (it != tmplisteners.end())
+			{
+				ASObject* o = asAtomHandler::getObject(*it);
+				if (o)
+				{
+					o->AVM1HandleKeyboardEvent(e->as<KeyboardEvent>());
+					o->removeStoredMember();
+				}
+				it++;
+			}
 		}
 	}
 	else if (e->is<MouseEvent>())
@@ -1150,7 +1264,7 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 		avm1listenerMutex.lock();
 		// eventhandlers may change the listener list, so we work on a copy
 		vector<asAtom> tmplisteners = avm1MouseListeners;
-		for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
+		for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
 		{
 			ASATOM_ADDSTOREDMEMBER(*it);
 		}
@@ -1167,26 +1281,25 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 				if (o)
 					o->AVM1HandleMouseEvent(dispatcher, e->as<MouseEvent>());
 			}
-			// for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
-			// {
-			// 	ASObject* o = asAtomHandler::getObject(*it);
-			// 	if (o)
-			// 		o->AVM1HandleSetFocusEvent(dispatcher);
-			// }
+			if (dispatcher->is<InteractiveObject>())
+				setFocusTarget(asAtomHandler::fromObject(dispatcher),true);
 			for (auto it = tmplisteners.rbegin(); it != tmplisteners.rend(); it++)
 			{
 				ASObject* o = asAtomHandler::getObject(*it);
 				if (o)
 				{
-					o->AVM1HandlePressedEvent(dispatcher);
+					if (!asAtomHandler::is<DisplayObject>(*it)
+						|| asAtomHandler::as<DisplayObject>(*it)->AVM1isHitByMouseEvent(dispatcher,e->as<MouseEvent>())
+						)
+						o->AVM1HandlePressedEvent(dispatcher,true);
 					o->removeStoredMember();
 				}
 			}
 		}
 		else
 		{
-			auto it = tmplisteners.rbegin();
-			while (it != tmplisteners.rend())
+			auto it = tmplisteners.begin();
+			while (it != tmplisteners.end())
 			{
 				ASObject* o = asAtomHandler::getObject(*it);
 				if (o)
@@ -1457,7 +1570,7 @@ ASFUNCTIONBODY_ATOM(Stage,_setFocus)
 	Stage* th=asAtomHandler::as<Stage>(obj);
 	_NR<InteractiveObject> focus;
 	ARG_CHECK(ARG_UNPACK(focus));
-	th->setFocusTarget(focus.getPtr());
+	th->setFocusTarget(asAtomHandler::fromObject(focus.getPtr()),false);
 }
 
 ASFUNCTIONBODY_ATOM(Stage,_setTabChildren)

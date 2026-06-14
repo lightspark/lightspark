@@ -173,7 +173,7 @@ void MovieClip::prepareShutdown()
 		if (actions->AllEventFlags.ClipEventKeyDown ||
 			actions->AllEventFlags.ClipEventKeyUp ||
 			actions->AllEventFlags.ClipEventKeyPress)
-			getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
+			AVM1removeOneKeyboardEventListener();
 		if (actions->AllEventFlags.ClipEventEnterFrame)
 			getSystemState()->unregisterFrameListener(this);
 	}
@@ -572,15 +572,46 @@ void MovieClip::afterLegacyDelete(bool inskipping)
 }
 bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 {
+	if (getSystemState()->stage->getAVM1FocusTarget() != this)
+		return false;
+	if (!e->defaultPrevented
+		&& (e->getKeyCode() == AS3KEYCODE_TAB)
+		&& (e->getKeyCode() == AS3KEYCODE_ESCAPE)
+		)
+		return false;
+	if (this->actions)
+	{
+		for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
+		{
+			if(it->EventFlags.ClipEventKeyDown)
+				ACTIONRECORD::executeActions(this,this->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
+		}
+	}
+	Sprite::AVM1HandleKeyboardEvent(e);
+	return false;
+}
+bool MovieClip::AVM1HandleKeyPressedEvent(KeyboardEvent *e)
+{
+	if (!e->defaultPrevented)
+	{
+		switch (e->getKeyCode())
+		{
+			case AS3KEYCODE_TAB :
+				return false;
+			case AS3KEYCODE_ESCAPE:
+				return true;
+			case AS3KEYCODE_ENTER:
+				return this->isFocusable(false);
+			default:
+				break;
+		}
+	}
 	if (this->actions)
 	{
 		for (auto it = actions->ClipActionRecords.begin(); it != actions->ClipActionRecords.end(); it++)
 		{
 			bool exec= false;
-			if( (e->type == "keyDown" && it->EventFlags.ClipEventKeyDown) ||
-				(e->type == "keyUp" && it->EventFlags.ClipEventKeyDown))
-				exec = true;
-			else if (e->type == "keyDown" && it->EventFlags.ClipEventKeyPress)
+			if (it->EventFlags.ClipEventKeyPress)
 			{
 				switch (it->KeyCode)
 				{
@@ -634,10 +665,10 @@ bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
 			if (exec)
 			{
 				ACTIONRECORD::executeActions(this,this->AVM1getCurrentFrameContext(),it->actions,it->startactionpos);
+				return true;
 			}
 		}
 	}
-	Sprite::AVM1HandleKeyboardEvent(e);
 	return false;
 }
 bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
@@ -653,7 +684,7 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 		{
 			number_t x,y,xg,yg;
 			// TODO: Add overloads for Vector2f.
-			dispatcher->as<DisplayObject>()->localToGlobal(e->localX,e->localY,xg,yg);
+			dispatcher->as<DisplayObject>()->localToGlobal(e->localX*TWIPS_FACTOR,e->localY*TWIPS_FACTOR,xg,yg);
 			this->globalToLocal(xg,yg,x,y);
 			_NR<DisplayObject> d =hitTest(Vector2f(xg,yg), Vector2f(x,y), MOUSE_CLICK_HIT,true);
 			dispobj = d.getPtr();
@@ -687,6 +718,13 @@ bool MovieClip::AVM1HandleMouseEvent(EventDispatcher *dispatcher, MouseEvent *e)
 				}
 			}
 		}
+
+		if (getSystemState()->stage->getAVM1FocusTarget() == this
+			&& dispatcher != this
+			&& (e->type == "mouseMove" || e->type == "mouseOver")
+			)
+			getSystemState()->stage->setFocusTarget(asAtomHandler::nullAtom,false,true);
+
 		AVM1HandleMouseEventStandard(dispobj,e);
 	}
 	return false;
@@ -769,7 +807,7 @@ void MovieClip::setupActions(const CLIPACTIONS &clipactions)
 	if (clipactions.AllEventFlags.ClipEventKeyDown ||
 		clipactions.AllEventFlags.ClipEventKeyUp ||
 		clipactions.AllEventFlags.ClipEventKeyPress)
-		getSystemState()->stage->AVM1AddKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
+		AVM1addOneKeyboardEventListener();
 
 	if (clipactions.AllEventFlags.ClipEventLoad ||
 			clipactions.AllEventFlags.ClipEventUnload)

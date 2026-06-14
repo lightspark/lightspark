@@ -170,6 +170,7 @@ DisplayObject::DisplayObject(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c
 	,textureRecalculationSkippable(false)
 	,avm1framelistenercount(0)
 	,avm1mouselistenercount(0)
+	,avm1keyboardlistenercount(0)
 	,broadcastEventListenerCount(0)
 	,onStage(false)
 	,visible(true)
@@ -261,6 +262,9 @@ void DisplayObject::finalize()
 	if (avm1mouselistenercount)
 		getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 	avm1mouselistenercount=0;
+	if (avm1keyboardlistenercount)
+		getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
+	avm1keyboardlistenercount=0;
 	if (broadcastEventListenerCount)
 		getSystemState()->unregisterFrameListener(this);
 	broadcastEventListenerCount=0;
@@ -321,6 +325,9 @@ bool DisplayObject::destruct()
 	if (avm1mouselistenercount)
 		getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 	avm1mouselistenercount=0;
+	if (avm1keyboardlistenercount)
+		getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
+	avm1keyboardlistenercount=0;
 	if (broadcastEventListenerCount)
 		getSystemState()->unregisterFrameListener(this);
 	broadcastEventListenerCount=0;
@@ -1623,7 +1630,12 @@ void DisplayObject::setScaleZ(number_t val)
 
 void DisplayObject::setVisible(bool v)
 {
+	if (visible == v)
+		return;
 	visible=v;
+	if (!visible && this->is<InteractiveObject>())
+		getSystemState()->stage->checkResetFocusTarget(this->as<InteractiveObject>());
+
 	if(onStage)
 		requestInvalidation(getSystemState());
 	else
@@ -2684,6 +2696,14 @@ bool DisplayObject::isMouseEvent(uint32_t nameID) const
 		nameID == BUILTIN_STRINGS::STRING_ONRELEASE
 	);
 }
+bool DisplayObject::isKeyboardEvent(uint32_t nameID) const
+{
+	return is<InteractiveObject>() &&
+	(
+		nameID == BUILTIN_STRINGS::STRING_ONKEYDOWN ||
+		nameID == BUILTIN_STRINGS::STRING_ONKEYUP
+	);
+}
 
 asAtom DisplayObject::getPropertyByIndex(size_t idx, ASWorker* wrk)
 {
@@ -3065,6 +3085,14 @@ bool DisplayObject::AVM1setLocalByMultiname
 				AVM1removeOneMouseEventListener();
 			ASATOM_DECREF(prop);
 		}
+		if (isKeyboardEvent(name.name_s_id))
+		{
+			asAtom prop = asAtomHandler::invalidAtom;
+			getVariableByMultiname(prop,name,GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
+			if (prop.uintval != value.uintval && asAtomHandler::is<AVM1Function>(prop))
+				AVM1removeOneKeyboardEventListener();
+			ASATOM_DECREF(prop);
+		}
 		EventDispatcher::setVariableByMultiname
 		(
 			name,
@@ -3103,6 +3131,15 @@ bool DisplayObject::AVM1setLocalByMultiname
 		{
 			as<InteractiveObject>()->setMouseEnabled(true);
 			AVM1addOneMouseEventListener();
+			setIsEnumerable(name, false);
+		}
+	}
+	else if (isKeyboardEvent(name.name_s_id))
+	{
+		if (asAtomHandler::isFunction(value))
+		{
+			as<InteractiveObject>()->setMouseEnabled(true);
+			AVM1addOneKeyboardEventListener();
 			setIsEnumerable(name, false);
 		}
 	}
@@ -3226,6 +3263,16 @@ void DisplayObject::AVM1registerPrototypeListeners()
 				this->as<InteractiveObject>()->setMouseEnabled(true);
 				AVM1addOneMouseEventListener();
 			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONKEYDOWN;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+			{
+				AVM1addOneKeyboardEventListener();
+			}
+			name.name_s_id = BUILTIN_STRINGS::STRING_ONKEYUP;
+			if (pr->hasPropertyByMultiname(name,true,false,getInstanceWorker()))
+			{
+				AVM1addOneKeyboardEventListener();
+			}
 		}
 		pr = pr->getprop_prototype();
 	}
@@ -3308,7 +3355,42 @@ void DisplayObject::AVM1removeOneMouseEventListener()
 		if (this->is<InteractiveObject>())
 			this->as<InteractiveObject>()->setMouseEnabled(false);
 	}
+}
 
+void DisplayObject::AVM1addOneKeyboardEventListener()
+{
+	getSystemState()->stage->AVM1AddKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
+	avm1keyboardlistenercount++;
+}
+
+void DisplayObject::AVM1removeOneKeyboardEventListener()
+{
+	if (avm1keyboardlistenercount==0)
+		return;
+	avm1keyboardlistenercount--;
+	if (avm1keyboardlistenercount==0)
+		getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
+}
+
+bool DisplayObject::AVM1isHitByMouseEvent(ASObject* dispatcher, MouseEvent* e)
+{
+	if (dispatcher == this)
+		return true;
+	if (dispatcher && dispatcher->is<DisplayObject>())
+	{
+		// listener is not the "selected" DisplayObject,
+		// but this DisplayObject may also be under the mouse pointer
+		Vector2f tmp(e->as<MouseEvent>()->localX*TWIPS_FACTOR,e->as<MouseEvent>()->localY*TWIPS_FACTOR);
+		Vector2f globalPoint = dispatcher->as<DisplayObject>()->localToGlobal(tmp,false);
+		Vector2f localPoint = globalToLocal(globalPoint,false);
+		return !hitTest(globalPoint,localPoint,HIT_TYPE::GENERIC_HIT,true).isNull();
+	}
+	return false;
+}
+
+bool DisplayObject::AVM1hasListeners() const
+{
+	return avm1keyboardlistenercount || avm1mouselistenercount;
 }
 
 bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
@@ -3349,7 +3431,11 @@ void DisplayObject::removeAVM1Listeners()
 		avm1mouselistenercount=0;
 		getSystemState()->stage->AVM1RemoveMouseListener(asAtomHandler::fromObjectNoPrimitive(this));
 	}
-	getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
+	if (avm1keyboardlistenercount)
+	{
+		avm1keyboardlistenercount=0;
+		getSystemState()->stage->AVM1RemoveKeyboardListener(asAtomHandler::fromObjectNoPrimitive(this));
+	}
 	getSystemState()->stage->AVM1RemoveFocusListener(asAtomHandler::fromObjectNoPrimitive(this));
 	getSystemState()->unregisterFrameListener(this);
 }
@@ -3698,6 +3784,8 @@ void DisplayObject::AVM1SetupMethods(Class_base* c)
 	c->prototype->setDeclaredMethodByQName("cacheAsBitmap","",c->getSystemState()->getBuiltinFunction(_setter_cacheAsBitmap),SETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("filters","",c->getSystemState()->getBuiltinFunction(_getter_filters,0,Class<Boolean>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,false,false);
 	c->prototype->setDeclaredMethodByQName("filters","",c->getSystemState()->getBuiltinFunction(_setter_filters),SETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("scale9Grid","",c->getSystemState()->getBuiltinFunction(_getScale9Grid),GETTER_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("scale9Grid","",c->getSystemState()->getBuiltinFunction(_setScale9Grid),SETTER_METHOD,false,false);
 
 }
 DisplayObject *DisplayObject::AVM1GetClipFromPath(tiny_string &path, asAtom* member)

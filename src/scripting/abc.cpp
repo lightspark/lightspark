@@ -1038,26 +1038,15 @@ void ABCVm::publicHandleEvent(EventDispatcher* dispatcher, _R<Event> event)
 			event->currentTarget=NullRef;
 		}
 	}
+
 	if (dispatcher->is<DisplayObject>() || dispatcher->is<LoaderInfo>() || dispatcher->is<URLLoader>())
 		dispatcher->getSystemState()->stage->AVM1HandleEvent(dispatcher,event.getPtr());
 	else
 		dispatcher->AVM1HandleEvent(dispatcher,event.getPtr());
-	if (event->type == "mouseDown" && dispatcher->is<InteractiveObject>())
-		dispatcher->getSystemState()->stage->setFocusTarget(dispatcher->as<InteractiveObject>());
 
 	/* This must even be called if stop*Propagation has been called */
 	if(!event->defaultPrevented)
 		dispatcher->defaultEventBehavior(event);
-	// ensure that keyboard events are also handled for the stage
-	if (event->is<KeyboardEvent>() && !stagehandled && !dispatcher->is<Stage>() && dispatcher->is<DisplayObject>())
-	{
-		dispatcher->getSystemState()->stage->incRef();
-		event->currentTarget=_MR(dispatcher->getSystemState()->stage);
-		dispatcher->getSystemState()->stage->handleEvent(event);
-		event->currentTarget=NullRef;
-		if(!event->defaultPrevented)
-			dispatcher->getSystemState()->stage->defaultEventBehavior(event);
-	}
 
 	//Reset events so they might be recycled
 	event->currentTarget=NullRef;

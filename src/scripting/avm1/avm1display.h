@@ -70,7 +70,7 @@ public:
 	ASFUNCTION_ATOM(getFocusEnabled);
 	void setColor(AVM1Color* c);
 	DisplayObject* getDroptarget() const { return droptarget; }
-	bool isFocusable() override;
+	bool isFocusable(bool fromMouse) override;
 };
 
 class AVM1Shape: public Shape
@@ -82,11 +82,29 @@ public:
 
 class AVM1SimpleButton: public SimpleButton
 {
+private:
+	DisplayObjectContainer* lastParent; // needed for AVM1 mouse events that may be handled after the button is removed from stage
+	bool keyPressedHandled;
 public:
 	AVM1SimpleButton(ASWorker* wrk,Class_base* c, DefineButtonTag* tag = nullptr)
-		:SimpleButton(wrk,c,tag) {}
+		:SimpleButton(wrk,c,tag)
+		,lastParent(nullptr)
+		,keyPressedHandled(false)
+	{
+	}
+	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	ASObject* AVM1getClassPrototypeObject() const override;
 	void afterConstruction(bool _explicit) override;
+	void afterLegacyInsert() override;
+	bool isFocusable(bool fromMouse) override;
+	bool AVM1HandleKeyboardEvent(KeyboardEvent* e) override;
+	bool AVM1HandleKeyPressedEvent(KeyboardEvent* e) override;
+	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
+	bool AVM1HandlePressedEvent(ASObject* dispobj, bool fromMouse) override;
+	void AVM1HandleReleasedEvent(ASObject* dispobj, bool fromMouse) override;
 	static void sinit(Class_base* c);
 };
 class AVM1Stage: public Stage

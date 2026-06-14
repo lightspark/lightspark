@@ -35,15 +35,12 @@ namespace lightspark
 class SimpleButton: public DisplayObjectContainer
 {
 private:
-	DisplayObjectContainer* lastParent; // needed for AVM1 mouse events that may be handled after the button is removed from stage
 	std::vector<pair<uint32_t,DisplayObject*>> states[4];// list of depth/DisplayObjects per state (down/hit/over/up)
 	DisplayObject* parentSprite[4]; // container sprites for all states, only used in AVM2
 	_NR<SoundChannel> soundchannel_OverUpToIdle;
 	_NR<SoundChannel> soundchannel_IdleToOverUp;
 	_NR<SoundChannel> soundchannel_OverUpToOverDown;
 	_NR<SoundChannel> soundchannel_OverDownToOverUp;
-	DefineButtonTag* buttontag;
-	bool statesdirty;
 public:
 	enum BUTTONSTATE
 	{
@@ -58,7 +55,9 @@ public:
 		BUTTONOBJECTTYPE_OVER=2,
 		BUTTONOBJECTTYPE_UP=3
 	};
-private:
+protected:
+	DefineButtonTag* buttontag;
+	bool statesdirty;
 	BUTTONSTATE currentState;
 	BUTTONSTATE oldstate;
 	bool enabled;
@@ -73,7 +72,6 @@ private:
 	void clearStateObject(BUTTONOBJECTTYPE type);
 	void getStateObject(BUTTONOBJECTTYPE type, asAtom& ret);
 	void setStateObject(BUTTONOBJECTTYPE type,asAtom o);
-protected:
 	bool boundsRect(number_t& xmin, number_t& xmax, number_t& ymin, number_t& ymax, bool visibleOnly) override;
 public:
 	SimpleButton(ASWorker* wrk,Class_base* c, DefineButtonTag* tag = nullptr);
@@ -102,10 +100,6 @@ public:
 	ASFUNCTION_ATOM(_getUseHandCursor);
 	ASFUNCTION_ATOM(_setUseHandCursor);
 
-	void afterLegacyInsert() override;
-	bool AVM1HandleKeyboardEvent(KeyboardEvent* e) override;
-	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
-	void AVM1HandlePressedEvent(ASObject* dispatcher) override;
 	void handleMouseCursor(bool rollover) override;
 	bool allowAsMask() const override
 	{
@@ -114,6 +108,7 @@ public:
 
 	BUTTONSTATE getCurrentState() const { return currentState; }
 	void refreshCurrentState() { reflectState(currentState); }
+	bool getEnabled() const { return enabled; }
 };
 
 

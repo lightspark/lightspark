@@ -176,7 +176,7 @@ public:
 	uint32_t getTagID() const override;
 	float getScaleFactor() const override { return this->scaling; }
 	bool isInUpdateVarBinding() const { return inUpdateVarBinding; }
-	bool isFocusable() override;
+	bool isFocusable(bool fromMouse) override;
 	int getTextCharCount();
 	void refreshSurfaceState() override;
 

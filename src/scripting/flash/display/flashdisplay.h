@@ -86,9 +86,9 @@ public:
 		else
 			return true;
 	}
-	virtual bool isFocusable()
+	virtual bool isFocusable(bool fromMouse)
 	{
-		return true;
+		return fromMouse ? mouseEnabled : true;
 	}
 	InteractiveObject(ASWorker* wrk,Class_base* c);
 	ASPROPERTY_GETTER_SETTER(_NR<AccessibilityImplementation>,accessibilityImplementation);

@@ -1457,10 +1457,12 @@ public:
 	virtual asAtom getVariableBindingValue(const tiny_string &name);
 	virtual void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) { }
 	virtual bool AVM1HandleKeyboardEvent(KeyboardEvent* e);
+	virtual bool AVM1HandleKeyPressedEvent(KeyboardEvent* e);
 	virtual bool AVM1HandleMouseEvent(EventDispatcher* dispatcher,MouseEvent* e);
 	bool AVM1HandleMouseEventStandard(ASObject *dispobj, MouseEvent *e);
 	void AVM1HandleSetFocusEvent(ASObject *dispobj, ASObject* oldfocus);
-	virtual void AVM1HandlePressedEvent(ASObject *dispobj);
+	virtual bool AVM1HandlePressedEvent(ASObject *dispobj, bool fromMouse);
+	virtual void AVM1HandleReleasedEvent(ASObject *dispobj, bool fromMouse);
 	// updates AVM1 bindings in target for all members of this ASObject
 	void AVM1UpdateAllBindings(DisplayObject* target, ASWorker* wrk);
 	virtual ASObject* AVM1getClassPrototypeObject() const;

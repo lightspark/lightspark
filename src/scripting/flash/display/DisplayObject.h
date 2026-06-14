@@ -104,6 +104,7 @@ private:
 	std::map<uint32_t,asAtom> avm1variables;
 	uint32_t avm1framelistenercount;
 	uint32_t avm1mouselistenercount;
+	uint32_t avm1keyboardlistenercount;
 protected:
 	uint32_t broadcastEventListenerCount;
 	void onSetScrollRect(asAtom oldValue);
@@ -232,6 +233,7 @@ public:
 	float getConcatenatedAlpha() const;
 	virtual float getScaleFactor() const;
 	bool isMouseEvent(uint32_t nameID) const;
+	bool isKeyboardEvent(uint32_t nameID) const;
 
 	asAtom getPropertyByIndex(size_t idx, ASWorker* wrk);
 	void setPropertyByIndex(size_t idx, const asAtom& value, ASWorker* wrk);
@@ -254,6 +256,10 @@ public:
 	void AVM1removeOneEventListener();
 	void AVM1addOneMouseEventListener();
 	void AVM1removeOneMouseEventListener();
+	void AVM1addOneKeyboardEventListener();
+	void AVM1removeOneKeyboardEventListener();
+	bool AVM1isHitByMouseEvent(ASObject* dispatcher, MouseEvent* e);
+	bool AVM1hasListeners() const;
 
 
 	// used by MorphShapes and embedded video

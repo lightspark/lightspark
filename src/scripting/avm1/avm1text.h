@@ -35,7 +35,9 @@ public:
 		:TextField(wrk,c,textData,_selectable,readOnly,varname,_tag)
 	{}
 	static void sinit(Class_base* c);
-	bool isFocusable() override { return true; }
+	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
+	bool AVM1HandlePressedEvent(ASObject *dispobj, bool fromMouse) override;
+	bool AVM1HandleKeyboardEvent(KeyboardEvent *e) override;
 };
 class AVM1TextFormat: public TextFormat
 {

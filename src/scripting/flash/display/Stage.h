@@ -43,6 +43,7 @@ private:
 	// code) and the input thread and is protected focusSpinlock
 	Mutex focusSpinlock;
 	InteractiveObject* focus;
+	InteractiveObject* avm1focus;
 	_NR<RootMovieClip> root;
 	vector<asAtom> avm1KeyboardListeners;
 	vector<asAtom> avm1MouseListeners;
@@ -80,9 +81,14 @@ public:
 	Stage(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
 	_NR<Stage> getStage() override;
+	bool isFocusable(bool fromMouse) override
+	{
+		return false;
+	}
 	InteractiveObject* getFocusTarget();
+	InteractiveObject* getAVM1FocusTarget();
 	void setTabFocusTarget(bool next);
-	bool setFocusTarget(InteractiveObject* focus);
+	bool setFocusTarget(const asAtom newfocus, bool setFromMouse, bool preventAVM1Events=false);
 	void checkResetFocusTarget(InteractiveObject* removedtarget);
 	void addHiddenObject(DisplayObject* o);
 	void removeHiddenObject(DisplayObject* o);

@@ -51,7 +51,25 @@ protected:
 	bool suppressThis;
 	bool preloadThis;
 	bool preloadGlobal;
-	AVM1Function(ASWorker* wrk,Class_base* c,DisplayObject* cl,AVM1context* ctx, std::vector<uint32_t>& p, std::vector<uint8_t>& a, AVM1Scope* _scope,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>(), bool _preloadParent=false, bool _preloadRoot=false, bool _suppressSuper=false, bool _preloadSuper=false, bool _suppressArguments=false, bool _preloadArguments=false,bool _suppressThis=false, bool _preloadThis=false, bool _preloadGlobal=false);
+	AVM1Function(
+		ASWorker* wrk
+		,Class_base* c
+		,DisplayObject* cl
+		,AVM1context* ctx
+		,std::vector<uint32_t>& p
+		,std::vector<uint8_t>& a
+		,AVM1Scope* _scope
+		,std::vector<uint8_t> _registernumbers=std::vector<uint8_t>()
+		,bool _preloadParent=false
+		,bool _preloadRoot=false
+		,bool _suppressSuper=false
+		,bool _preloadSuper=false
+		,bool _suppressArguments=false
+		,bool _preloadArguments=false
+		,bool _suppressThis=false
+		,bool _preloadThis=false
+		,bool _preloadGlobal=false
+		);
 	~AVM1Function();
 	method_info* getMethodInfo() const override { return nullptr; }
 	IFunction* clone(ASWorker* wrk) override
@@ -63,6 +81,7 @@ protected:
 	uint32_t getSWFVersion() const;
 public:
 	asAtom computeSuper();
+	asAtom* computeThis(asAtom* obj);
 	asAtom constructObject(asAtom* args, uint32_t num_args, AVM1Function* caller); // creates a new Object using this function as constructor
 	void setupPrototype(asAtom value);
 	void setupDefineFunctionPrototype(bool hasname);
@@ -70,28 +89,31 @@ public:
 	bool destruct() override;
 	void prepareShutdown() override;
 	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
-	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller = nullptr, bool isInternalCall=false)
+	FORCE_INLINE void call(asAtom* ret, asAtom* obj, asAtom *args, uint32_t num_args, AVM1Function* caller = nullptr, bool isInternalCall=false, asAtom* defaultThis=nullptr)
 	{
+		asAtom* superptr=nullptr;
+		asAtom tmpsuper = asAtomHandler::invalidAtom;
 		if (needsSuper())
 		{
-			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,&newsuper,isInternalCall);
+			tmpsuper = computeSuper();
+			superptr = &tmpsuper;
 		}
-		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,obj, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,nullptr,isInternalCall);
+		asAtom* thisptr=computeThis(obj);
+		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,ret,thisptr, args, num_args, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,caller,this,superptr,isInternalCall,defaultThis);
 		if (isInternalCall)
 			checkInternalException();
 	}
 	FORCE_INLINE multiname* callGetter(asAtom& ret, asAtom& target, ASWorker* wrk) override
 	{
-		asAtom obj = target;
+		asAtom* superptr=nullptr;
+		asAtom tmpsuper = asAtomHandler::invalidAtom;
 		if (needsSuper())
 		{
-			asAtom newsuper = computeSuper();
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,&newsuper,true);
+			tmpsuper = computeSuper();
+			superptr = &tmpsuper;
 		}
-		else
-			ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,&ret,&obj, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,nullptr,true);
+		asAtom* thisptr=computeThis(&target);
+		ACTIONRECORD::executeActions(clip,&context,this->actionlist,0,scope,false,&ret,thisptr, nullptr, 0, paramnames,paramregisternumbers, preloadParent,preloadRoot,suppressSuper,preloadSuper,suppressArguments,preloadArguments,suppressThis,preloadThis,preloadGlobal,nullptr,this,superptr,true);
 		checkInternalException();
 		return nullptr;
 	}
@@ -132,6 +154,14 @@ public:
 		implementedinterfaces.push_back(iface);
 	}
 	bool implementsInterface(asAtom& iface);
+	bool getSuppressThis() const
+	{
+		return suppressThis;
+	}
+	bool getPreloadThis() const
+	{
+		return preloadThis;
+	}
 	void gcCounterReset() override;
 	std::string toDebugString() const override;
 };

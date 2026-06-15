@@ -1876,16 +1876,31 @@ public:
 	static bool implementsInterface(asAtom type, ASObject* value, ASWorker* wrk);
 	static std::pair<ASObject*,tiny_string> resolveLocalVarname(AVM1context* context,const tiny_string& s, asAtom& thisObj, DisplayObject* clip);
 	static void executeActions(
-		DisplayObject* clip, AVM1context* context, const std::vector<uint8_t> &actionlist, uint32_t startactionpos,
-		AVM1Scope* scope = nullptr, bool fromInitAction = false, asAtom *result = nullptr,
-		asAtom* obj = nullptr, asAtom *args = nullptr, uint32_t num_args=0,
-		const std::vector<uint32_t>& paramnames=std::vector<uint32_t>(),
-		const std::vector<uint8_t>& paramregisternumbers=std::vector<uint8_t>(),
-		bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true,
-		bool preloadSuper=false, bool suppressArguments=false, bool preloadArguments=false,
-		bool suppressThis=true, bool preloadThis=false, bool preloadGlobal=false,
-		AVM1Function *caller = nullptr, AVM1Function *callee = nullptr,
-		asAtom* superobj=nullptr, bool isInternalCall=false);
+		DisplayObject* clip
+		,AVM1context* context
+		,const std::vector<uint8_t> &actionlist
+		,uint32_t startactionpos
+		,AVM1Scope* scope = nullptr
+		,bool fromInitAction = false
+		,asAtom *result = nullptr
+		,asAtom* obj = nullptr
+		,asAtom *args = nullptr
+		,uint32_t num_args=0
+		,const std::vector<uint32_t>& paramnames=std::vector<uint32_t>()
+		,const std::vector<uint8_t>& paramregisternumbers=std::vector<uint8_t>()
+		,bool preloadParent=false, bool preloadRoot=false, bool suppressSuper=true
+		,bool preloadSuper=false
+		,bool suppressArguments=false
+		,bool preloadArguments=false
+		,bool suppressThis=true
+		,bool preloadThis=false
+		,bool preloadGlobal=false
+		,AVM1Function *caller = nullptr
+		,AVM1Function *callee = nullptr
+		,asAtom* superobj=nullptr
+		,bool isInternalCall=false
+		,asAtom* defaultThis=nullptr
+		);
 };
 class BUTTONCONDACTION
 {

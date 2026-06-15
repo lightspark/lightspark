@@ -4769,9 +4769,10 @@ tiny_string asAtomHandler::AVM1toString(const asAtom& a, ASWorker* wrk, bool for
 			else if (obj->is<AVM1Super_object>())
 			{
 				ASObject* super = obj->as<AVM1Super_object>()->getSuperObject();
-				if (super ==Class<ASObject>::getRef(obj->getSystemState()).getPtr())
+				if (super ==Class<ASObject>::getRef(obj->getSystemState()).getPtr()
+					&& !obj->as<AVM1Super_object>()->getBaseObject()->AVM1getConstructorFunction())
 					return "[type Object]";
-				obj = obj->as<AVM1Super_object>()->getBaseObject();
+				return "[object Object]";
 			}
 
 			tiny_string ret = "[type Object]";

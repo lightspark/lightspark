@@ -102,7 +102,12 @@ asAtom AVM1Function::computeSuper()
 	setSuper(newsuper);
 	return newsuper;
 }
-
+asAtom* AVM1Function::computeThis(asAtom* obj)
+{
+	// if (suppressThis)
+	// 	return nullptr;
+	return obj;
+}
 asAtom AVM1Function::constructObject(asAtom *args, uint32_t num_args, AVM1Function* caller)
 {
 	asAtom ret = asAtomHandler::invalidAtom;

@@ -687,16 +687,34 @@ std::pair<ASObject*,tiny_string> ACTIONRECORD::resolveLocalVarname(AVM1context* 
 }
 
 Mutex executeactionmutex;
-void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, const std::vector<uint8_t> &actionlist,
-								  uint32_t startactionpos, AVM1Scope* scope, bool fromInitAction,
-								  asAtom* result, asAtom* obj, asAtom *args, uint32_t num_args,
-								  const std::vector<uint32_t>& paramnames,
-								  const std::vector<uint8_t>& paramregisternumbers,
-								  bool preloadParent, bool preloadRoot, bool suppressSuper,
-								  bool preloadSuper, bool suppressArguments, bool preloadArguments,
-								  bool suppressThis, bool preloadThis, bool preloadGlobal,
-								  AVM1Function *caller, AVM1Function *callee,
-								  asAtom *superobj,bool isInternalCall)
+void ACTIONRECORD::executeActions(
+	DisplayObject *clip
+	,AVM1context* context
+	,const std::vector<uint8_t> &actionlist
+	,uint32_t startactionpos
+	,AVM1Scope* scope
+	,bool fromInitAction
+	,asAtom* result
+	,asAtom* obj
+	,asAtom *args
+	,uint32_t num_args
+	,const std::vector<uint32_t>& paramnames
+	,const std::vector<uint8_t>& paramregisternumbers
+	,bool preloadParent
+	,bool preloadRoot
+	,bool suppressSuper
+	,bool preloadSuper
+	,bool suppressArguments
+	,bool preloadArguments
+	,bool suppressThis
+	,bool preloadThis
+	,bool preloadGlobal
+	,AVM1Function *caller
+	,AVM1Function *callee
+	,asAtom *superobj
+	,bool isInternalCall
+	,asAtom* defaultThis
+	)
 {
 	Locker l(executeactionmutex);
 	bool clip_isTarget=false;
@@ -770,15 +788,17 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 	int curdepth = 0;
 	int maxdepth = context->swfversion < 6 ? 8 : 16;
 	auto thisObj = obj != nullptr ? *obj : asAtomHandler::fromObject(clip);
+
 	std::vector<uint8_t>::const_iterator* scopestackstop = LS_STACKALLOC(std::vector<uint8_t>::const_iterator, maxdepth);
 	scopestackstop[0] = actionlist.end();
 	uint32_t currRegister = 1; // spec is not clear, but gnash starts at register 1
+
 	if (!suppressThis || preloadThis)
 	{
 		LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" preload this:"<<asAtomHandler::toDebugString(thisObj));
-		if (!suppressThis)
+		if (preloadThis && !suppressThis)
 			ASATOM_ADDSTOREDMEMBER(thisObj);
-		registers[currRegister++] = !suppressThis ? thisObj : asAtomHandler::undefinedAtom;
+		registers[currRegister++] = preloadThis && !suppressThis ? thisObj : asAtomHandler::undefinedAtom;
 	}
 
 	AVM1Array* argsArray = nullptr;
@@ -1274,7 +1294,26 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				asAtom res = asAtomHandler::invalidAtom;
 				if (pathID == BUILTIN_STRINGS::STRING_SUPER)
 				{
-					res = new_AVM1SuperObject(thisObj,asAtomHandler::getObject(superobj ? *superobj : callee->computeSuper()),wrk);
+					if (suppressSuper || preloadSuper)
+						res = asAtomHandler::undefinedAtom;
+					else
+						res = new_AVM1SuperObject(thisObj,asAtomHandler::getObject(superobj ? *superobj : callee->computeSuper()),wrk);
+				}
+				else if (pathID == BUILTIN_STRINGS::STRING_THIS)
+				{
+					if (suppressThis || preloadThis)
+						res = defaultThis ? *defaultThis : thisObj;
+					else
+						res = thisObj;
+					ASATOM_INCREF(res);
+				}
+				else if (pathID == BUILTIN_STRINGS::STRING_ARGUMENTS)
+				{
+					if (argsArray && !preloadArguments)
+						res = asAtomHandler::fromObject(argsArray);
+					else
+						res = asAtomHandler::undefinedAtom;
+					ASATOM_INCREF(res);
 				}
 				else
 				{
@@ -1734,7 +1773,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 				if (asAtomHandler::is<AVM1Function>(func))
 				{
 					auto f = asAtomHandler::as<AVM1Function>(func);
-					f->call(&ret,&obj,args,numargs,caller);
+					f->call(&ret,&obj,args,numargs,caller,false,defaultThis);
 					f->decRef();
 				}
 				else if (asAtomHandler::is<Function>(func))
@@ -2044,6 +2083,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							m.name_d=asAtomHandler::toNumber(name);
 							break;
 						default:
+						{
 							m.name_type=multiname::NAME_STRING;
 							if (context->isCaseSensitive())
 							{
@@ -2057,6 +2097,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							if (m.name_s_id == BUILTIN_STRINGS::PROTOTYPE)
 								isprototypename=true;
 							break;
+						}
 					}
 					if (o != nullptr)
 					{
@@ -2284,7 +2325,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						AVM1Function* f = asAtomHandler::as<DisplayObject>(scriptobject)->AVM1GetFunction(nameID);
 						if (f)
 						{
-							f->call(&ret,&scriptobject,args,numargs);
+							f->call(&ret,&scriptobject,args,numargs,nullptr,false,defaultThis);
 							LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionCallMethod from displayobject done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject));
 							done=true;
 						}
@@ -2308,7 +2349,8 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					{
 						ASObject* scrobj = asAtomHandler::toObject(scriptobject,wrk);
 						bool issuperobj = scrobj->is<AVM1Super_object>() || (callee && scriptobject.uintval == callee->computeSuper().uintval);
-						scrobj->getVariableByMultiname(func,m,GET_VARIABLE_OPTION::DONT_CHECK_CLASS,wrk);
+						scrobj->getVariableByMultiname(func,m,GET_VARIABLE_OPTION(GET_VARIABLE_OPTION::DONT_CHECK_CLASS|GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE|GET_VARIABLE_OPTION::DONT_CALL_GETTER),wrk);
+						bool isdynamic = asAtomHandler::isValid(func);
 						if (!asAtomHandler::isValid(func))
 						{
 							// search the prototype before searching the class
@@ -2347,10 +2389,10 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 						else if (asAtomHandler::is<AVM1Function>(func))
 						{
 							auto f = asAtomHandler::as<AVM1Function>(func);
-							if (issuperobj)
-								f->call(&ret,&thisObj,args,numargs,caller);
+							if (issuperobj || f->getSuppressThis())
+								f->call(&ret,defaultThis ? defaultThis : &thisObj,args,numargs,caller,false,defaultThis ? defaultThis : &thisObj);
 							else
-								f->call(&ret,&scriptobject,args,numargs,caller);
+								f->call(&ret,&scriptobject,args,numargs,caller,false,!isdynamic || defaultThis ? defaultThis : &thisObj);
 							f->decRef();
 						}
 						else
@@ -2438,7 +2480,6 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 							asAtomHandler::as<Class_base>(constr)->getInstance(wrk,ret,true,nullptr,0);
 						else if (pr->getClass())
 							pr->getClass()->getInstance(wrk,ret,true,nullptr,0);
-						asAtomHandler::toObject(ret,wrk)->setprop_prototype(proto);
 						asAtomHandler::toObject(ret,wrk)->setprop_prototype(proto,BUILTIN_STRINGS::STRING_PROTO);
 						ASATOM_DECREF(constr);
 					}
@@ -2460,7 +2501,7 @@ void ACTIONRECORD::executeActions(DisplayObject *clip, AVM1context* context, con
 					LOG(LOG_NOT_IMPLEMENTED, "AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewMethod function not found "<<asAtomHandler::toDebugString(scriptobject)<<" "<<asAtomHandler::toDebugString(name)<<" "<<asAtomHandler::toDebugString(func));
 
 				if (asAtomHandler::isObject(ret))
-					asAtomHandler::getObjectNoCheck(ret)->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),func,DYNAMIC_TRAIT,true,false);
+					asAtomHandler::getObjectNoCheck(ret)->setVariableAtomByQName(BUILTIN_STRINGS::STRING_CONSTRUCTOR,nsNameAndKind(),func,DYNAMIC_TRAIT,false,false);
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionNewMethod done "<<asAtomHandler::toDebugString(name)<<" "<<numargs<<" "<<asAtomHandler::toDebugString(scriptobject)<<" result:"<<asAtomHandler::toDebugString(ret));
 				if (context->exceptionthrown && !context->exceptionthrown->is<StackOverflowError>())
 				{

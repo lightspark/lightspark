@@ -95,7 +95,7 @@
 
     msys2_32:
       name: Windows 32-bit (msys2 Build)
-      runs-on: windows-2022
+      runs-on: windows-latest
       continue-on-error: false
       needs: draft_release
       env:

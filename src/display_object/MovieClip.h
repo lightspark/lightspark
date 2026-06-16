@@ -91,14 +91,11 @@ private:
 	DisplayObject* hitArea;
 	Graphics* graphics;
 
+	ClipFlags clipFlags;
+
 	uint16_t totalFrames;
 	uint32_t lastFrameScriptExecuted;
 	uint32_t lastRatio;
-	bool inExecuteFramescript;
-	bool inAVM1Attachment;
-	bool isAVM1Loaded;
-	bool forAVM1InitAction;
-	bool hasAVM1LoadEvent;
 
 	bool buttonMode;
 	bool avm2Enabled;
@@ -109,11 +106,7 @@ protected:
 	FrameContainer* frameContainer;
 	const CLIPACTIONS* actions;
 public:
-	void constructionComplete(bool _explicit = false, bool forInitAction = false) override;
-	void beforeConstruction(bool _explicit = false) override;
-	void afterConstruction(bool _explicit = false) override;
 	RunState state;
-	list<AVM1MovieClipLoader*> avm1loaderlist;
 
 	uint32_t getFrameCount();
 	FrameContainer* getFrameContainer() const { return frameContainer; }
@@ -153,15 +146,109 @@ public:
 	 */
 	virtual bool hasFinishedLoading() { return true; }
 
-	void setForAVM1InitAction()
-	{
-		setClipFlag(ClipFlags::ForAVM1InitAction, true);
-	}
+	#define FLAG_GETTER_NAME_DECL(name, flag) bool name() const
+	#define FLAG_GETTER_PREFIX_DECL(prefix, flag) \
+		FLAG_GETTER_NAME_DECL(prefix##flag, flag)
+	#define FLAG_GETTER_SUFFIX_DECL(suffix, flag) \
+		FLAG_GETTER_NAME_DECL(get##suffix, flag)
+	#define FLAG_GETTER_DECL(flag) FLAG_GETTER_PREFIX_DECL(get, flag)
 
-	bool getForAVM1InitAction() const
-	{
-		return hasClipFlag(ClipFlags::ForAVM1InitAction);
-	}
+	#define FLAG_SETTER_SUFFIX_DECL(suffix, flag) \
+		void set##suffix(bool value)
+	#define FLAG_SETTER_DECL(flag) FLAG_SETTER_SUFFIX_DECL(flag, flag)
+
+	#define FLAG_GETTER_SETTER_NAME_DECL(name, flag) \
+		FLAG_GETTER_NAME_DECL(name, flag); \
+		FLAG_SETTER_DECL(flag)
+
+	#define FLAG_GETTER_SETTER_PREFIX_DECL(prefix, flag) \
+		FLAG_GETTER_SETTER_NAME_DECL(prefix##flag, flag)
+
+	#define FLAG_GETTER_SETTER_SUFFIX_DECL(suffix, flag) \
+		FLAG_GETTER_SUFFIX_DECL(suffix, flag); \
+		FLAG_SETTER_SUFFIX_DECL(suffix, flag)
+
+	#define FLAG_GETTER_SETTER_DECL(flag) \
+		FLAG_GETTER_SETTER_PREFIX_DECL(get, flag)
+
+	#define FLAG_GETTER_NAME(name, flag) \
+		bool name() const { return hasClipFlag(ClipFlags::flag); }
+	#define FLAG_GETTER_PREFIX(prefix, flag) \
+		FLAG_GETTER_NAME(prefix##flag, flag)
+	#define FLAG_GETTER_SUFFIX(suffix, flag) \
+		FLAG_GETTER_NAME(get##suffix, flag)
+	#define FLAG_GETTER(flag) FLAG_GETTER_PREFIX(get, flag)
+
+	#define FLAG_SETTER_SUFFIX(suffix, flag) \
+		void set##suffix(bool value) { setClipFlag(ClipFlags::flag, value); }
+	#define FLAG_SETTER_SUFFIX_NO_ARG(suffix, flag, val) \
+		void set##suffix() { setClipFlag(ClipFlags::flag, val); }
+	#define FLAG_SETTER(flag) FLAG_SETTER_SUFFIX(flag, flag)
+	#define FLAG_SETTER_NO_ARG(flag, val) \
+		FLAG_SETTER_SUFFIX_NO_ARG(flag, flag, val)
+
+	#define FLAG_GETTER_SETTER_NAME(name, flag) \
+		FLAG_GETTER_NAME(name, flag); \
+		FLAG_SETTER(flag)
+
+	#define FLAG_GETTER_SETTER_PREFIX(prefix, flag) \
+		FLAG_GETTER_SETTER_NAME(prefix##flag, flag)
+
+	#define FLAG_GETTER_SETTER_SUFFIX(suffix, flag) \
+		FLAG_GETTER_SUFFIX(suffix, flag); \
+		FLAG_SETTER_SUFFIX(suffix, flag)
+
+	#define FLAG_GETTER_SETTER(flag) \
+		FLAG_GETTER_SETTER_PREFIX(get, flag)
+
+	#define FLAG_GETTER_SETTER_NAME_NO_ARG(name, flag, val) \
+		FLAG_GETTER_NAME(name, flag); \
+		FLAG_SETTER_NO_ARG(flag, val)
+
+	#define FLAG_GETTER_SETTER_PREFIX_NO_ARG(prefix, flag, val) \
+		FLAG_GETTER_SETTER_NAME_NO_ARG(prefix##flag, flag, val)
+
+	#define FLAG_GETTER_SETTER_SUFFIX_NO_ARG(suffix, flag, val) \
+		FLAG_GETTER_SUFFIX(suffix, flag); \
+		FLAG_SETTER_SUFFIX_NO_ARG(suffix, flag, val)
+
+	#define FLAG_GETTER_SETTER_NO_ARG(flag) \
+		FLAG_GETTER_SETTER_PREFIX_NO_ARG(get, flag, val)
+
+	FLAG_GETTER_SETTER_PREFIX_NO_ARG(is, Initialized, true);
+	FLAG_GETTER_SETTER_PREFIX(is, ExecutingFrameScript);
+	FLAG_GETTER_SETTER(InAVM1Attachment);
+	FLAG_GETTER_SETTER_NO_ARG(ForAVM1InitAction, true);
+	FLAG_GETTER_SETTER_PREFIX(is, RunningInitFrame);
+	FLAG_GETTER_SETTER_NAME(hasAVM1LoadEvent, HasAVM1LoadEvent);
+	FLAG_GETTER_SETTER_PREFIX(is, PostTimelineCreated);
+
+	#undef FLAG_GETTER_NAME_DECL
+	#undef FLAG_GETTER_PREFIX_DECL
+	#undef FLAG_GETTER_SUFFIX_DECL
+	#undef FLAG_GETTER_DECL
+	#undef FLAG_SETTER_SUFFIX_DECL
+	#undef FLAG_SETTER_DECL
+	#undef FLAG_GETTER_SETTER_NAME_DECL
+	#undef FLAG_GETTER_SETTER_PREFIX_DECL
+	#undef FLAG_GETTER_SETTER_SUFFIX_DECL
+	#undef FLAG_GETTER_SETTER_DECL
+	#undef FLAG_GETTER_NAME
+	#undef FLAG_GETTER_PREFIX
+	#undef FLAG_GETTER_SUFFIX
+	#undef FLAG_GETTER
+	#undef FLAG_SETTER_SUFFIX
+	#undef FLAG_SETTER_SUFFIX_NO_ARG
+	#undef FLAG_SETTER
+	#undef FLAG_SETTER_NO_ARG
+	#undef FLAG_GETTER_SETTER_NAME
+	#undef FLAG_GETTER_SETTER_PREFIX
+	#undef FLAG_GETTER_SETTER_SUFFIX
+	#undef FLAG_GETTER_SETTER
+	#undef FLAG_GETTER_SETTER_NAME_NO_ARG
+	#undef FLAG_GETTER_SETTER_PREFIX_NO_ARG
+	#undef FLAG_GETTER_SETTER_SUFFIX_NO_ARG
+	#undef FLAG_GETTER_SETTER_NO_ARG
 
 	void addFrameScript(uint16_t frame, _NR<ASObject> func);
 
@@ -169,6 +256,7 @@ public:
 	void nextFrame();
 	void prevScene();
 	void nextScene();
+	void gotoFrame(uint16_t frame, bool stop);
 
 	uint16_t getCurrentFrame() const { return state.FP; }
 	Optional<tiny_string> getCurrentFrameLabel() const;
@@ -179,6 +267,17 @@ public:
 	Span<const Scene> getScenes() const;
 	Scene* getCurrentScene() const;
 	bool getIsPlaying() const { return !state.stop_FP; }
+	size_t getBytesTotal() const;
+	size_t getBytesTotalCompressed() const;
+	size_t getBytesLoaded() const;
+	size_t getBytesLoadedCompressed() const;
+
+	Optional<uint16_t> frameLabelToNum(const tiny_string& label) const;
+	void forEachFrameAction
+	(
+		uint16_t frame,
+		std::function<void(Span<uint8_t>)> func
+	);
 
 	void enterFrame(bool implicit) override;
 	void advanceFrame(bool implicit) override;
@@ -187,50 +286,28 @@ public:
 	void executeFrameScript() override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
 
-	void afterLegacyInsert() override;
-	void afterLegacyDelete(bool inskipping) override;
+	void afterTimelineCreation() override;
+	void afterTimelineDeletion(bool inskipping) override;
 
 	uint32_t getTagID() const override;
 	void setupActions(const CLIPACTIONS& clipactions);
-	void updateVariableBindings();
 
-	bool AVM1HandleKeyboardEvent(KeyboardEvent *e) override;
-	bool AVM1HandleMouseEvent(EventDispatcher* dispatcher, MouseEvent *e) override;
-	void AVM1HandleEvent(EventDispatcher* dispatcher, Event* e) override;
-	void AVM1AfterAdvance() override;
+	void AVM1unloadMovie();
+	void AVM1runFrame();
+	void AVM1gotoFrameLabel
+	(
+		const tiny_string& label,
+		bool stop,
+		bool switchPlayState
+	);
 
-	void AVM1gotoFrameLabel(const tiny_string &label, bool stop, bool switchplaystate);
-	void AVM1gotoFrame(int frame, bool stop, bool switchplaystate, bool advanceFrame=true);
-	static void AVM1SetupMethods(Class_base* c);
-	void AVM1ExecuteFrameActionsFromLabelDirect(const tiny_string &label);
-	void AVM1ExecuteFrameActionsDirect(uint32_t frame);
-	void AVM1AddScriptEvents();
-	void AVM1HandleConstruction(bool forInitAction);
-	bool getAVM1Loaded() const { return isAVM1Loaded; }
-	inline AVM1context* getAVM1Context() { return &avm1context; }
-	AVM1context* AVM1getCurrentFrameContext();
-	MovieClip* AVM1CloneSprite(uint32_t targetNameID, int32_t Depth, ASObject* initobj);
-
-	ASFUNCTION_ATOM(AVM1AttachMovie);
-	ASFUNCTION_ATOM(AVM1CreateEmptyMovieClip);
-	ASFUNCTION_ATOM(AVM1RemoveMovieClip);
-	ASFUNCTION_ATOM(AVM1DuplicateMovieClip);
-	ASFUNCTION_ATOM(AVM1Clear);
-	ASFUNCTION_ATOM(AVM1MoveTo);
-	ASFUNCTION_ATOM(AVM1LineTo);
-	ASFUNCTION_ATOM(AVM1CurveTo);
-	ASFUNCTION_ATOM(AVM1LineStyle);
-	ASFUNCTION_ATOM(AVM1BeginFill);
-	ASFUNCTION_ATOM(AVM1BeginGradientFill);
-	ASFUNCTION_ATOM(AVM1EndFill);
-	ASFUNCTION_ATOM(AVM1GetNextHighestDepth);
-	ASFUNCTION_ATOM(AVM1AttachBitmap);
-	ASFUNCTION_ATOM(AVM1getInstanceAtDepth);
-	ASFUNCTION_ATOM(AVM1getSWFVersion);
-	ASFUNCTION_ATOM(AVM1LoadMovie);
-	ASFUNCTION_ATOM(AVM1UnloadMovie);
-	ASFUNCTION_ATOM(AVM1LoadMovieNum);
-	ASFUNCTION_ATOM(AVM1CreateTextField);
+	void AVM1gotoFrame
+	(
+		uint16_t frame,
+		bool stop,
+		bool switchPlayState,
+		bool advanceFrame = true
+	);
 
 	std::string toDebugString() const override;
 };

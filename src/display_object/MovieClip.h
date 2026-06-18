@@ -80,10 +80,12 @@ public TokenContainer
 		PostTimelineCreated = 1 << 6,
 	};
 private:
-	std::map<uint32_t, _R<ASObject>> frameScripts;
+	std::map<uint16_t, _R<ASObject>> frameScripts;
 	std::vector<DisplayObject&> removedFrameScripts;
 	std::vector<AVM1VarBinding> avm1VarBindings;
+	SWFMovie& movie;
 	DefineSpriteTag* tag;
+	LoaderInfo* loaderInfo;
 
 	uint64_t tagStreamPos;
 
@@ -113,16 +115,19 @@ public:
 	MovieClip
 	(
 		SystemState* sys,
-		FrameContainer* f,
-		DefineSpriteTag* _tag,
-		Optional<const tiny_string&> name = {},
+		SWFMovie& _movie,
+		FrameContainer* f = nullptr,
+		DefineSpriteTag* _tag = nullptr,
+		LoaderInfo* _loaderInfo = nullptr,
+		Optional<const tiny_string&> name = {}
 	);
 
 	MovieClip
 	(
 		SystemState* sys,
+		SWFMovie& _movie,
 		Optional<const tiny_string&> name = {}
-	) : MovieClip(sys, nullptr, nullptr, name) {}
+	) : MovieClip(sys, _movie, nullptr, nullptr, nullptr, name) {}
 
 	bool hasClipFlag(const ClipFlags& flag) const
 	{
@@ -290,6 +295,9 @@ public:
 	void afterTimelineDeletion(bool inskipping) override;
 
 	uint32_t getTagID() const override;
+	LoaderInfo* getLoaderInfo() const override { return loaderInfo; }
+	const SWFMovie& getMovie() const override { return movie; }
+
 	void setupActions(const CLIPACTIONS& clipactions);
 
 	void AVM1unloadMovie();

@@ -58,7 +58,7 @@ IF(WIN32)
   #For win32 firefox, plugins have to start with 'np'
   SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES OUTPUT_NAME nplightsparkplugin PREFIX "")
   SET_TARGET_PROPERTIES(lightsparkplugin PROPERTIES LINK_FLAGS "-Wl,--enable-stdcall-fixup")
-  TARGET_LINK_LIBRARIES(lightsparkplugin -lopengl32 spark)
+  TARGET_LINK_LIBRARIES(lightsparkplugin spark)
 ELSE()
   TARGET_INCLUDE_DIRECTORIES(lightsparkplugin PRIVATE ${X11_INCLUDE_DIRS})
   TARGET_LINK_LIBRARIES(lightsparkplugin ${X11_LIBRARIES})

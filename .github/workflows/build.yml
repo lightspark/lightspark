@@ -49,11 +49,8 @@ jobs:
             libcurl4-gnutls-dev \
             libedit-dev \
             zlib1g-dev \
-            libgl1-mesa-dev \
             libavutil-dev \
             libx11-dev \
-            libglu1-mesa-dev \
-            libglew-dev \
             libavcodec-dev \
             libavformat-dev \
             libswresample-dev \
@@ -91,11 +88,8 @@ jobs:
             libcurl4-gnutls-dev \
             libedit-dev \
             zlib1g-dev \
-            libgl1-mesa-dev \
             libavutil-dev \
             libx11-dev \
-            libglu1-mesa-dev \
-            libglew-dev \
             libavcodec-dev \
             libavformat-dev \
             libswresample-dev \
@@ -127,7 +121,6 @@ jobs:
             nasm \
             mesa \
             mesa-glu \
-            glew \
             fontconfig \
             ffmpeg \
             rtmpdump \

@@ -1190,8 +1190,7 @@ void PluginEngineData::DoSwapBuffers()
 			mPixels = new unsigned char[width*height*4]; // 4 bytes for BGRA
 		char* buf = LS_STACKALLOC(char, width*height*4);
 
-		glPixelStorei(GL_PACK_ALIGNMENT, 1);
-		glReadPixels(0,0,width, height, GL_BGRA, GL_UNSIGNED_BYTE, buf);
+		exec_glReadPixels_GL_BGRA(width, height, buf);
 		// received image is upside down, so flip it vertically
 		for (uint32_t i= 0; i < height; i++)
 		{
@@ -1203,10 +1202,10 @@ void PluginEngineData::DoSwapBuffers()
 }
 void PluginEngineData::InitOpenGL()
 {
-	mSDLContext = SDL_GL_CreateContext(widget);
-	if (!mSDLContext)
-		LOG(LOG_ERROR,"failed to create openGL context:"<<SDL_GetError());
-	initGLEW();
+	mSDLContext = createSDLGLContext(widget);
+	SDL_GL_MakeCurrent(widget, mSDLContext);
+	supportPackedDepthStencil = SDL_GL_ExtensionSupported("GL_EXT_packed_depth_stencil");
+	initNanoVG();
 }
 
 void PluginEngineData::DeinitOpenGL()

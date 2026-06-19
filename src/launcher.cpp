@@ -36,6 +36,7 @@
 #include <fstream>
 #include "icon.h"
 #include "backends/lsopengl.h"
+#include "platforms/engineutils.h"
 
 #ifdef __MINGW32__
 #ifndef PATH_MAX
@@ -1286,7 +1287,7 @@ bool Launcher::start()
 		SDL_Quit();
 		return false;
 	}
-	SDL_GLContext gl_context = SDL_GL_CreateContext(window);
+	SDL_GLContext gl_context = EngineData::createSDLGLContext(window);
 	SDL_GL_MakeCurrent(window, gl_context);
 	SDL_GL_SetSwapInterval(1); // Enable vsync
 	

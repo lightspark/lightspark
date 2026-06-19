@@ -144,7 +144,7 @@ public:
 	void resetSDLEventTicker() { sdleventtickjob=nullptr; }
 
 	SDL_Window* createMainSDLWidget(uint32_t w, uint32_t h);
-	SDL_GLContext createSDLGLContext(SDL_Window* widget);
+	static SDL_GLContext createSDLGLContext(SDL_Window* widget);
 	void deleteSDLGLContext(SDL_GLContext ctx);
 	/* This function must be called from mainLoopThread
 	 * It fills this->widget and this->window.
@@ -202,7 +202,6 @@ public:
 	virtual bool FilePathIsAbsolute(const tiny_string& filename);
 	virtual tiny_string FileGetApplicationStorageDir();
 	
-	void initGLEW();
 	void initNanoVG();
 
 	/* show/hide mouse cursor, must be called from mainLoopThread */

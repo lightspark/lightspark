@@ -50,7 +50,7 @@
 #pragma clang diagnostic ignored "-Wunused-macros"                      // warning: macro is not used
 #pragma clang diagnostic ignored "-Wnonportable-system-include-path"
 #endif
-
+#if 0 // we use our own OpenGL header
 // Include OpenGL header (without an OpenGL loader) requires a bit of fiddling
 #if defined(_WIN32) && !defined(APIENTRY)
 #define APIENTRY __stdcall                  // It is customary to use APIENTRY for OpenGL function pointer declarations on all platforms.  Additionally, the Windows OpenGL header needs APIENTRY.
@@ -63,6 +63,9 @@
 #include <OpenGL/gl.h>
 #else
 #include <GL/gl.h>
+#endif
+#else
+#include "backends/lsopengl.h"
 #endif
 
 struct ImGui_ImplOpenGL2_Data

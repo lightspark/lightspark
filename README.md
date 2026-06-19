@@ -19,7 +19,6 @@ In preparation for building Lightspark, you need development packages for:
 * zlib
 * libavcodec
 * libswresample
-* libglew
 * librtmp
 * sdl2
 * libjpeg
@@ -38,7 +37,7 @@ The following tools are also required:
 To install these, run the following command(s):
 ### Ubuntu (tested on 25.10):
 ```
-sudo apt install git gcc g++ nasm cmake libcurl4-gnutls-dev libsdl2-dev libfontconfig-dev libavcodec-dev libswresample-dev libglew-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
+sudo apt install git gcc g++ nasm cmake libcurl4-gnutls-dev libsdl2-dev libfontconfig-dev libavcodec-dev libswresample-dev librtmp-dev libjpeg-dev libavformat-dev liblzma-dev
 ```
 
 ### Fedora (tested on 33):
@@ -51,7 +50,7 @@ sudo dnf builddep lightspark
 
 ### Archlinux
 ```
-sudo pacman -S ffmpeg fontconfig rtmpdump glew sdl2 git cmake nasm
+sudo pacman -S ffmpeg fontconfig rtmpdump sdl2 git cmake nasm
 ```
 
 If you want commands for a distro not listed here, please [create an issue](https://github.com/lightspark/lightspark/issues) if it doesn't already exist.

@@ -67,7 +67,6 @@ jobs:
             mxe-i686-w64-mingw32.static-cc
             mxe-i686-w64-mingw32.static-fontconfig
             mxe-i686-w64-mingw32.static-jpeg
-            mxe-i686-w64-mingw32.static-glew
             mxe-i686-w64-mingw32.static-freetype
             mxe-i686-w64-mingw32.static-curl
             mxe-i686-w64-mingw32.static-librtmp
@@ -133,7 +132,6 @@ jobs:
             mxe-x86-64-w64-mingw32.static-cc
             mxe-x86-64-w64-mingw32.static-fontconfig
             mxe-x86-64-w64-mingw32.static-jpeg
-            mxe-x86-64-w64-mingw32.static-glew
             mxe-x86-64-w64-mingw32.static-freetype
             mxe-x86-64-w64-mingw32.static-curl
             mxe-x86-64-w64-mingw32.static-librtmp

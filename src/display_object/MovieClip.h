@@ -87,11 +87,16 @@ private:
 	DefineSpriteTag* tag;
 	LoaderInfo* loaderInfo;
 
-	uint64_t tagStreamPos;
-
-	DisplayObject* dropTarget;
+	// `hitTarget` is non-null if another `DisplayObject` has registered
+	// this clip as it's `hitArea`. Hits will be relayed to hitTarget.
+	DisplayObject* hitTarget;
 	DisplayObject* hitArea;
+	DisplayObject* dropTarget;
 	Graphics* graphics;
+
+	SoundInstance* soundStream;
+	size_t soundStartFrame;
+	bool streamingSound;
 
 	ClipFlags clipFlags;
 
@@ -107,6 +112,11 @@ private:
 protected:
 	FrameContainer* frameContainer;
 	const CLIPACTIONS* actions;
+
+	void resetToStart() override;
+	void checkSound(uint32_t frame);// start sound streaming if it is not already playing
+	void stopSound();
+	void markSoundFinished();
 public:
 	RunState state;
 
@@ -263,6 +273,12 @@ public:
 	void nextScene();
 	void gotoFrame(uint16_t frame, bool stop);
 
+	void setSound(SoundInstance* sound, bool forStreaming);
+	SoundInstance* getSoundStream() const { return soundStream; }
+	void appendSound(Span<uint8_t> data, uint32_t frame);
+	size_t getSoundStartFrame() const { return soundStartFrame; }
+	void setSoundStartFrame(size_t frame) { soundStartFrame = frame; }
+
 	uint16_t getCurrentFrame() const { return state.FP; }
 	Optional<tiny_string> getCurrentFrameLabel() const;
 	Optional<tiny_string> getCurrentLabel() const;
@@ -276,6 +292,10 @@ public:
 	size_t getBytesTotalCompressed() const;
 	size_t getBytesLoaded() const;
 	size_t getBytesLoadedCompressed() const;
+	Graphics* tryGetGraphics() const { return graphics; }
+	Graphics& getGraphics();
+
+	bool hasGraphics() const { return graphics != nullptr; }
 
 	Optional<uint16_t> frameLabelToNum(const tiny_string& label) const;
 	void forEachFrameAction
@@ -284,12 +304,33 @@ public:
 		std::function<void(Span<uint8_t>)> func
 	);
 
+	IDrawable* invalidate(bool smoothing) override;
+	void markAsChanged() override
+	{
+		DisplayObjectContainer::markAsChanged();
+	}
+
+	void requestInvalidation
+	(
+		InvalidateQueue* q,
+		bool forceTextureRefresh = false
+	) override;
+
+	void refreshSurfaceState() override;
+
 	void enterFrame(bool implicit) override;
 	void advanceFrame(bool implicit) override;
 	void declareFrame(bool implicit) override;
 	void initFrame() override;
 	void executeFrameScript() override;
 	void checkRatio(uint32_t ratio, bool inskipping) override;
+	void handleMouseCursor(bool rollover) override;
+	bool allowAsMask() const override
+	{
+		return !isEmpty() || graphics == nullptr;
+	}
+
+	number_t getScaleFactor() const override { return scaling; }
 
 	void afterTimelineCreation() override;
 	void afterTimelineDeletion(bool inskipping) override;
@@ -297,6 +338,15 @@ public:
 	uint32_t getTagID() const override;
 	LoaderInfo* getLoaderInfo() const override { return loaderInfo; }
 	const SWFMovie& getMovie() const override { return movie; }
+	bool hitTestShape
+	(
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		const HitTestFlags& flags
+	) override;
+
+	Optional<Rect<Twips>> tryBoundsRect(bool visibleOnly) override;
+	Optional<Rect<Twips>> tryBoundsRectWithoutChildren(bool visibleOnly) override;
 
 	void setupActions(const CLIPACTIONS& clipactions);
 

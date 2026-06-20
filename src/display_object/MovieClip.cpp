@@ -57,14 +57,19 @@ MovieClip::MovieClip
 	DefineSpriteTag* _tag,
 	LoaderInfo* _loaderInfo,
 	Optional<const tiny_string&> name
-) : DisplayObject(Type::MovieClip, sys, name),
+) :
+InteractiveObject(Type::MovieClip, sys, name),
+TokenContainer(this),
 movie(_movie),
 tag(_tag),
 loaderInfo(_loaderInfo),
-tagStreamPos(0),
-dropTarget(nullptr),
+hitTarget(nullptr),
 hitArea(nullptr),
+dropTarget(nullptr),
 graphics(nullptr),
+soundStream(nullptr),
+soundStartFrame(-1),
+streamingSound(false),
 clipFlags(0),
 totalFrames(f != nullptr ? f->getFramesLoaded() : 1),
 lastFrameScriptExecuted(UINT32_MAX),
@@ -75,6 +80,226 @@ avm2UseHandCursor(true),
 frameContainer(f),
 actions(nullptr)
 {
+}
+
+void MovieClip::refreshSurfaceState()
+{
+	if (graphics != nullptr)
+		graphics->refreshSurfaceState();
+}
+
+IDrawable* MovieClip::invalidate(bool smoothing)
+{
+	auto trySetupChildrenList = [&](IDrawable* drawable)
+	{
+		if (drawable != nullptr)
+			return drawable;
+
+		Locker l(mutexDisplayList);
+		drawable->getState()->setupChildrenList(dynamicDisplayList);
+		return drawable;
+	};
+
+	auto ret = trySetupChildrenList(getFilterDrawable(smoothing));
+	if (ret != nullptr)
+		return ret;
+
+	if (graphics == nullptr || !graphics->hasBounds())
+		return DisplayObjectContainer::invalidate(smoothing);
+	return trySetupChildrenList(graphics->invalidate
+	(
+		smoothing ?
+		SMOOTH_MODE::SMOOTH_ANTIALIAS :
+		SMOOTH_MODE::SMOOTH_NONE
+	));
+}
+
+Optional<Rect<Twips>> MovieClip::tryBoundsRect(bool visibleOnly)
+{
+	if (visibleOnly && !isVisible())
+		return {};
+
+	auto ret = DisplayObjectContainer::tryBoundsRect(visibleOnly);
+	if (graphics == nullptr || !graphics->hasBounds())
+		return ret;
+
+	if (!ret.hasValue())
+		return graphics->boundsRect();
+
+	return graphics->boundsRect().andThen([&](const auto& rect)
+	{
+		return makeOptional(ret->_union(rect));
+	});
+}
+
+Optional<Rect<Twips>> MovieClip::tryBoundsRectWithoutChildren(bool visibleOnly)
+{
+	if (visibleOnly && !isVisible())
+		return {};
+	if (graphics == nullptr || !graphics->hasBounds())
+		return {}
+	return graphics->boundsRect();
+}
+
+void MovieClip::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
+{
+	if (graphics != nullptr && graphics->hasBounds())
+	{
+		requestInvalidationFilterParent(q);
+		q->addToInvalidateQueue(this);
+	}
+
+	DisplayObjectContainer::requestInvalidation
+	(
+		q,
+		forceTextureRefresh
+	);
+}
+
+bool MovieClip::hitTestShapeChildren
+(
+	const Vector2Twips& point,
+	const HitTestFlags& flags
+)
+{
+	using SkipInvis = HitTestFlags::SkipInvisible;
+	using SkipMask = HitTestFlags::SkipMask;
+
+	Locker l(mutexDisplayList);
+	ssize_t clipDepth = 0;
+	for (auto& child : dynamicDisplayList)
+	{
+		bool pointInChild =
+		(
+			child.getClipDepth() <= 0 &&
+			child.getDepth() >= clipDepth &&
+			child.hitTestShape(point, flags)
+		);
+
+		if (pointInChild)
+			return true;
+
+		if (child.getClipDepth() <= 0)
+			continue;
+
+		clipDepth = !child.hitTestShape
+		(
+			point,
+			SkipMask | SkipInvis
+		) ? child.getClipDepth() ? 0;
+	}
+	return false;
+}
+
+bool MovieClip::hitTestShape
+(
+	const Vector2Twips& globalPoint,
+	const Vector2Twips& localPoint,
+	const HitTestFlags& flags
+)
+{
+	using SkipInvis = HitTestFlags::SkipInvisible;
+	using SkipChildren = HitTestFlags::SkipChildren;
+	using SkipMask = HitTestFlags::SkipMask;
+
+	const bool skipInvis = flags & SkipInvis;
+	const bool skipChildren = flags & SkipChildren;
+	const bool skipMask = flags & SkipMask;
+	if (skipInvis && !isVisible() && getMaskee() == nullptr)
+		return false;
+	if (skipMask && getMaskee() != nullptr)
+		return false;
+	if (!boundsRectWithoutChildren(false).contains(localPoint))
+		return false;
+
+	auto localMtx = globalToLocalMatrix();
+	if (!localMtx.isValid())
+		return false;
+
+	bool pointNotInMask =
+	(
+		getMasker() != nullptr &&
+		!getMasker()->hitTestShape(globalPoint, SkipInvis)
+	);
+
+	if (pointNotInMask)
+		return false;
+
+	if (!skipChildren && hitTestShapeChildren(globalPoint, flags))
+		return true;
+
+	if (hitArea != nullptr)
+		return hitArea->hitTestShape(globalPoint, flags);
+
+	return graphics != nullptr && graphics->hitTest
+	(
+		localPoint,
+		localMtx
+	);
+}
+
+void MovieClip::resetToStart()
+{
+	if (soundStream != nullptr && getTagID() != UINT32_MAX)
+		soundStream->reset();
+}
+
+void MovieClip::setSound(SoundInstance* sound, bool forStreaming)
+{
+	soundStream = sound;
+	streamingSound = forStreaming;
+
+	if (soundStream != nullptr)
+		soundStream->transform = soundTransform;
+}
+
+void MovieClip::appendSound(Span<uint8_t> data, uint32_t frame)
+{
+	if (soundStream != nullptr)
+		soundStream->appendStreamBlock(data);
+	if (soundStartFrame == size_t(-1))
+		soundStartFrame = frame;
+}
+
+void MovieClip::checkSound(uint32_t frame)
+{
+	if (!streamingSound || soundStartFrame != frame)
+		return;
+
+	if (soundStream != nullptr)
+		soundStream->play();
+}
+
+void MovieClip::stopSound()
+{
+	if (soundStream != nullptr)
+		soundStream->stop();
+}
+
+void MovieClip::markSoundFinished()
+{
+	if (soundStream != nullptr)
+		soundStream->markFinished();
+}
+
+Graphics& MovieClip::getGraphics()
+{
+
+	// `graphics` probably isn't used that often, so create it here.
+	if (graphics == nullptr)
+		graphics = new Graphics(this);
+	return *graphics;
+}
+
+void MovieClip::handleMouseCursor(bool rollover)
+{
+	hasMouse = !rollover;
+	sys->setMouseCursor
+	(
+		rollover &&
+		buttonMode &&
+		avm2UseHandCursor
+	);
 }
 
 void MovieClip::addFrameScript(uint16_t frame, _NR<ASObject> func)

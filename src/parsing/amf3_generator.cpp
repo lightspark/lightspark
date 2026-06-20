@@ -120,7 +120,7 @@ asAtom Amf3Deserializer::parseDouble()
 			return asAtomHandler::invalidAtom;
 		}
 	}
-	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
+	tmp.dummy=LS_UINT64_TO_BE(tmp.dummy);
 	
 	return asAtomHandler::fromNumber(tmp.val);
 }
@@ -142,7 +142,7 @@ asAtom Amf3Deserializer::parseDate()
 			return asAtomHandler::invalidAtom;
 		}
 	}
-	tmp.dummy=GINT64_FROM_BE(tmp.dummy);
+	tmp.dummy=LS_UINT64_TO_BE(tmp.dummy);
 	Date* dt = Class<Date>::getInstanceS(input->getInstanceWorker());
 	dt->MakeDateFromMilliseconds((int64_t)tmp.val);
 	return asAtomHandler::fromObject(dt);

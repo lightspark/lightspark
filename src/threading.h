@@ -224,7 +224,7 @@ public:
 // variable.
 class CondTime {
 private:
-	int64_t timepoint;
+	uint64_t timepoint;
 public:
 	CondTime(long milliseconds);
 	bool operator<(const CondTime& c) const;

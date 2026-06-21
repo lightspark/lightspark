@@ -23,7 +23,6 @@
 #include "exceptions.h"
 #include "logger.h"
 #include "compat.h"
-#include <glib.h>
 
 using namespace lightspark;
 
@@ -64,8 +63,7 @@ void Semaphore::signal()
 
 CondTime::CondTime(long milliseconds)
 {
-	// round to full milliseconds
-	timepoint=((g_get_monotonic_time()+G_TIME_SPAN_MILLISECOND/2)/G_TIME_SPAN_MILLISECOND+milliseconds)*G_TIME_SPAN_MILLISECOND;
+	timepoint=compat_msectiming();
 }
 
 bool CondTime::operator<(const CondTime& c) const
@@ -80,21 +78,21 @@ bool CondTime::operator>(const CondTime& c) const
 
 bool CondTime::isInTheFuture() const
 {
-	gint64 now=g_get_monotonic_time();
+	uint64_t now=compat_msectiming();
 	return timepoint>now;
 }
 
 void CondTime::addMilliseconds(long ms)
 {
-	timepoint+=(gint64)ms*G_TIME_SPAN_MILLISECOND;
+	timepoint+=ms;
 	// don't allow that next timepoint will be in the past
-	gint64 now=g_get_monotonic_time();
+	uint64_t now=compat_msectiming();
 	if (timepoint < now)
-		timepoint= now + (gint64)ms*G_TIME_SPAN_MILLISECOND;
+		timepoint= now + ms;
 }
 
 bool CondTime::wait(Mutex& mutex, Cond& cond)
 {
-	gint64 now=g_get_monotonic_time();
-	return cond.wait_until(mutex, (timepoint > now ? (timepoint-now)/G_TIME_SPAN_MILLISECOND : 0));
+	uint64_t now=compat_msectiming();
+	return cond.wait_until(mutex, (timepoint > now ? timepoint-now : 0));
 }

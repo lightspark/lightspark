@@ -581,14 +581,14 @@ size_t MovieClip::getBytesLoadedCompressed() const
 void MovieClip::afterTimelineCreation()
 {
 	lastRatio = ratio;
-	InteractiveObject::afterTimelineCreation();
+	DisplayObjectContainer::afterTimelineCreation();
 }
 
 void MovieClip::afterTimelineDeletion(bool inskipping)
 {
 	sys->stage->AVM1RemoveMouseListener(this);
 	sys->stage->AVM1RemoveKeyboardListener(this);
-	InteractiveObject::afterTimelineDeletion(inskipping);
+	DisplayObjectContainer::afterTimelineDeletion(inskipping);
 }
 
 bool MovieClip::AVM1HandleKeyboardEvent(KeyboardEvent *e)
@@ -860,7 +860,7 @@ void MovieClip::setupActions(const CLIPACTIONS& clipActions)
 		AVM1addOneEventListener();
 }
 
-void MovieClip::forEachFrameAction()
+void MovieClip::forEachFrameAction
 (
 	uint16_t frame,
 	std::function<void(Span<uint8_t>)> func
@@ -875,48 +875,25 @@ void MovieClip::forEachFrameAction()
 
 string MovieClip::toDebugString() const
 {
-	std::string res = Sprite::toDebugString();
-	res += " state=";
-	char buf[100];
-	sprintf(buf,"%d/%u/%u%s",state.last_FP,state.FP,state.next_FP,state.stop_FP?" stopped":"");
-	res += buf;
-	return res;
+	std::stringstream s;
+	s << DisplayObject::toDebugString();
+	if (graphics != nullptr && graphics->hasBounds())
+		s << " hasgraphics ";
+
+	return
+	(
+		s << "state=" <<
+		state.last_FP << '/' <<
+		state.FP << '/' <<
+		state.next_FP <<
+		state.stop_FP ? " stopped" : ""
+	).str();
 }
 
 void MovieClip::AVM1unloadMovie
 {
 	avm1Unload();
 	moveToUnloadedState();
-}
-
-void MovieClip::AVM1HandleConstruction(bool forInitAction)
-{
-	if (needsActionScript3() || inAVM1Attachment || constructorCallComplete)
-		return;
-	setConstructIndicator();
-	if (!forInitAction)
-		getSystemState()->stage->AVM1AddDisplayObject(this);
-	setConstructorCallComplete();
-	AVM1Function* constr = this->getInstanceWorker()->AVM1getClassConstructor(this);
-	if (constr)
-	{
-		asAtom pr = constr->getprop_prototypeAtom();
-		if (!asAtomHandler::isObject(pr))
-			pr = constr->prototype;
-		setprop_prototype(pr, BUILTIN_STRINGS::STRING_PROTO);
-		asAtom ret = asAtomHandler::invalidAtom;
-		asAtom obj = asAtomHandler::fromObjectNoPrimitive(this);
-		constr->call(&ret,&obj,nullptr,0);
-		AVM1registerPrototypeListeners();
-	}
-	else
-	{
-		asAtom proto = asAtomHandler::fromObject(this->getClass()->prototype->getObj());
-		setprop_prototype(proto,BUILTIN_STRINGS::STRING_PROTO);
-	}
-
-	if (this != getSystemState()->mainClip)
-		afterConstruction();
 }
 
 /* Go through the hierarchy and add all
@@ -956,7 +933,7 @@ void MovieClip::declareFrame(bool implicit)
 
 	bool newFrame = (int)state.FP != state.last_FP;
 	if (newFrame)
-		framecontainer->declareFrame(this);
+		frameContainer->declareFrame(this);
 	if (!isAS3() && !state.frameadvanced && wasInitialized)
 		AVM1runFrame();
 	if (newFrame)
@@ -982,8 +959,16 @@ void MovieClip::AVM1runFrame()
 	else
 		handleEvent(ClipEvent::EnterFrame);
 
+	if (state.creatingframe)
+		return;
+
+	if (frameContainer == nullptr)
+		frameContainer = new FrameContainer();
 	if (!state.stop_FP)
 		advanceFrame(true);
+
+	if (sys->getFramePhase() != FramePhase::ADVANCE_FRAME)
+		initFrame();
 }
 
 void MovieClip::initFrame()
@@ -1001,7 +986,7 @@ void MovieClip::initFrame()
 	state.last_FP = state.FP;
 
 	/* call our own constructor, if necassary */
-	Sprite::initFrame();
+	DisplayObjectContainer::initFrame();
 	state.creatingframe = false;
 }
 
@@ -1043,17 +1028,17 @@ void MovieClip::executeFrameScript()
 				false
 			);
 		}
-		catch(ASObject*& e)
+		catch (ASObject*& e)
 		{
 			setStopped();
 			ASATOM_DECREF(v);
 			root->executingFrameScriptCount--;
-			inExecuteFramescript = false;
+			setExecutingFrameScript(false);
 			throw;
 		}
 		ASATOM_DECREF(v);
 		root->executingFrameScriptCount--;
-		inExecuteFramescript = false;
+		setExecutingFrameScript(false);
 	}
 
 	if (state.gotoQueued)
@@ -1068,7 +1053,7 @@ void MovieClip::checkRatio(uint32_t ratio, bool inskipping)
 {
 	// according to http://wahlers.com.br/claus/blog/hacking-swf-2-placeobject-and-ratio/
 	// if the ratio value is different from the previous ratio value for this MovieClip, this clip is resetted to frame 0
-	if (ratio != 0 && ratio != lastratio && !state.stop_FP)
+	if (ratio != 0 && ratio != lastRatio && !state.stop_FP)
 		state.next_FP = 0;
 	lastRatio = ratio;
 }
@@ -1076,22 +1061,21 @@ void MovieClip::checkRatio(uint32_t ratio, bool inskipping)
 
 void MovieClip::enterFrame(bool implicit)
 {
-	std::vector<DisplayObject&> list;
-	cloneDisplayList(list);
+	auto list = cloneDisplayList();
 	for (auto it = list.rbegin(); it != list.rend(); ++it)
 	{
-		auto child = *it;
-		child->setSkipFrame
+		auto& child = *it;
+		child.setSkipFrame
 		(
 			getSkipFrame() ||
 			child->getSkipFrame()
 		);
-		child->enterFrame(implicit);
+		child.enterFrame(implicit);
 	}
 
-	if (skipFrame)
+	if (getSkipFrame())
 	{
-		skipFrame = false;
+		setSkipFrame(false);
 		return;
 	}
 
@@ -1119,8 +1103,8 @@ void MovieClip::advanceFrame(bool implicit)
 
 	if (hasAdvanced)
 		return; // frame was already advanced after construction
-	if (framecontainer == nullptr)
-		framecontainer = new FrameContainer();
+	if (frameContainer == nullptr)
+		frameContainer = new FrameContainer();
 	if (state.last_FP != -1)
 		state.advancedByTick = true;
 	checkSound(state.next_FP);
@@ -1132,7 +1116,7 @@ void MovieClip::advanceFrame(bool implicit)
 	}
 	if (isAS3() || sys->mainClip->isAS3())
 		state.frameadvanced = false;
-	state.creatingframe=true;
+	state.creatingframe = true;
 	/* A MovieClip can only have frames if
 	 * 1a. It is a RootMovieClip
 	 * 1b. or it is a DefineSpriteTag
@@ -1166,8 +1150,18 @@ void MovieClip::advanceFrame(bool implicit)
 		if (!hasFinishedLoading())
 			return;
 
-		if (framecontainer->getFramesLoaded() > 1)
-			LOG(LOG_ERROR,"state.next_FP >= getFramesLoaded:"<< state.next_FP<<" "<<framecontainer->getFramesLoaded() <<" "<<toDebugString()<<" "<<getTagID());
+		if (getFramesLoaded() > 1)
+		{
+			LOG
+			(
+				LOG_ERROR,
+				"state.next_FP >= getFramesLoaded:" <<
+				state.next_FP << ' ' <<
+				getFramesLoaded() << ' ' <<
+				toDebugString() << ' ' <<
+				getTagID()
+			);
+		}
 		state.next_FP = state.FP;
 	}
 
@@ -1199,44 +1193,135 @@ void MovieClip::advanceFrame(bool implicit)
 	setMarkedForTimelineDeletion(false);
 }
 
-void MovieClip::constructionComplete(bool _explicit, bool forInitAction)
+void MovieClip::AVM1handleConstruction
+(
+	_NGC<AVM1Object> initObj,
+	const VMCreator& createdBy,
+	bool runFrame
+)
 {
-	Sprite::constructionComplete(_explicit,forInitAction);
+	auto obj = tryToAVM1Object();
+	if (isAS3() || getInAVM1Attachment() || obj.isNull())
+		return;
+	if (obj->isConstructed() && runFrame)
+	{
+		AVM1runFrame();
+		runStackFrameForClip(this, AVM1VarBinding::bindVars);
+		return;
+	}
+
+	auto ctor = AVM1getClassCtor();
+	if (ctor != nullptr && createdBy != VMCreator::Movie)
+	{
+		AVM1Activation act(sys->avm1Ctx, "[Construct]", this);
+		auto protoVal = protoVal = ctor->getPropNoThrow(act, "prototype");
+		if (!protoVal.hasValue())
+			return;
+
+		obj->setProto(protoVal->toObject(act));
+
+		if (runFrame)
+			AVM1runFrame();
+
+		if (initObj.isNull())
+		{
+			ctor->constructInplace(act, obj, {});
+			return;
+		}
+
+		auto keys = initObj->getKeys(act, false);
+		for (auto it = keys.rbegin(); it != keys.rend(); ++it)
+		{
+			auto val = initObj->getPropNoThrow(act, key);
+			if (!val.hasValue())
+				continue;
+			obj->setProp(act, key, *val);
+		}
+
+		ctor->constructInplace(act, obj, {});
+		return;
+	}
+
+	if (runFrame)
+		AVM1runFrame();
+
+	if (!initObj.isNull())
+	{
+		auto keys = initObj->getKeys(act, false);
+		for (auto it = keys.rbegin(); it != keys.rend(); ++it)
+		{
+			auto val = initObj->getPropNoThrow(act, key);
+			if (!val.hasValue())
+				continue;
+			obj->setProp(act, key, *val);
+		}
+	}
+
+	bool hasClipEvents = actions != nullptr &&
+	(
+		actions->AllEventFlags.ClipEventConstruct ||
+		actions->AllEventFlags.ClipEventInitialize
+	);
+
+	if (!hasClipEvents)
+	{
+		sys->pushAction(this, ConstructAction(ctor, {}));
+		runStackFrameForClip(this, AVM1VarBinding::bindVars);
+		return;
+	}
+
+	std::vector<Span<uint8_t>> events;
+	for (const auto& record : actions->ClipActionRecords)
+	{
+		auto _actions = makeSpan(record.actions);
+		if (record.EventFlags.ClipEventInitialize)
+			sys->pushAction(this, InitAction(_actions));
+		if (record.EventFlags.ClipEventConstruct)
+			events.push_back(_actions);
+	}
+
+	sys->pushAction(this, ConstructAction(ctor, events));
+	runStackFrameForClip(this, AVM1VarBinding::bindVars);
+}
+
+void MovieClip::constructionComplete(bool _explicit)
+{
+	if (!isAS3())
+		return;
+	DisplayObjectContainer::constructionComplete
+	(
+		_explicit,
+		forInitAction
+	);
 
 	/* If this object was 'new'ed from AS code, the first
 	 * frame has not been initalized yet, so init the frame
 	 * now */
-	if (!framecontainer)
-		framecontainer=new FrameContainer();
-	if(state.last_FP == -1
-		&& !needsActionScript3()
-		&& !forInitAction)
-	{
-		if (!framecontainer)
-			framecontainer=new FrameContainer();
-		advanceFrame(true);
-		if (getSystemState()->getFramePhase() != FramePhase::ADVANCE_FRAME)
-			initFrame();
-	}
-	AVM1HandleConstruction(forInitAction);
+	if (frameContainer == nullptr)
+		frameContainer = new FrameContainer();
 }
 
 void MovieClip::beforeConstruction(bool _explicit)
 {
-	if(state.last_FP == -1 && needsActionScript3())
+	if (!isAS3())
+		return;
+	if (state.last_FP == -1)
 	{
-		if (!framecontainer)
-			framecontainer=new FrameContainer();
+		if (frameContainer == nullptr)
+			frameContainer = new FrameContainer();
 		advanceFrame(true);
 	}
-	Sprite::beforeConstruction(_explicit);
+	DisplayObjectContainer::beforeConstruction(_explicit);
 }
 
 void MovieClip::afterConstruction(bool _explicit)
 {
-	if (needsActionScript3())
-		setConstructorCallComplete();
-	Sprite::afterConstruction(_explicit);
+	if (!isAS3())
+		return;
+	auto obj = toASObject();
+	if (!obj.isNull())
+		obj->setConstructorCallComplete();
+	DisplayObjectContainer::afterConstruction(_explicit);
 }
 
 uint32_t MovieClip::getFrameCount()

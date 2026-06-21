@@ -50,6 +50,7 @@ class ASObject;
 class AVM1Object;
 class AVM1Value;
 class CachedSurface;
+class Class_base;
 class DefineSpriteTag;
 class Filter;
 class FrameContainer;
@@ -61,6 +62,7 @@ class Optional;
 class RenderContext;
 class SWFMovie;
 class Stage;
+enum VMCreator;
 
 class MovieClip :
 public InteractiveObject,
@@ -365,6 +367,13 @@ public:
 		bool stop,
 		bool switchPlayState,
 		bool advanceFrame = true
+	);
+
+	void AVM1handleConstruction
+	(
+		_NGC<AVM1Object> initObj,
+		const VMCreator& createdBy,
+		bool runFrame
 	);
 
 	std::string toDebugString() const override;

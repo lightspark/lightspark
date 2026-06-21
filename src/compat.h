@@ -277,4 +277,9 @@ inline uint32_t BigEndianToUnsignedHost24(uint32_t x)
 
 #endif //SDL_BYTEORDER == SDL_BIG_ENDIAN
 
+#ifdef _WIN32
+/* returns the path of the current executable */
+const char* getExectuablePath();
+#endif
+
 #endif /* COMPAT_H */

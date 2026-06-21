@@ -153,6 +153,7 @@ private:
 	bool inMouseEvent;
 	bool inWindowMove;
 	bool hasExitCode;
+	bool enginesCreated;
 	int innerGotoCount;
 	int exitCode;
 	RenderThread* renderThread;
@@ -167,7 +168,6 @@ private:
 	*/
 	void createEngines();
 
-	void launchGnash();
 	/**
 	  	Destroys all the engines used in lightspark: timer, thread pool, vm...
 	*/
@@ -180,15 +180,6 @@ private:
 	Semaphore dumpedSWFPathAvailable;
 	tiny_string dumpedSWFPath;
 
-	//Data for handling Gnash fallback
-	enum VMVERSION { VMNONE=0, AVM1, AVM2 };
-	VMVERSION vmVersion;
-#ifdef _WIN32
-	HANDLE childPid;
-#else
-	int childPid;
-#endif
-
 	//shared null, undefined, true and false instances
 	Null* null;
 	Undefined* undefined;
@@ -199,14 +190,8 @@ private:
 	//Parameters/FlashVars
 	_NR<ASObject> parameters;
 	void setParameters(_R<ASObject> p);
-	/*
-	   	Used to keep a copy of the FlashVars, it's useful when gnash fallback is used
-	*/
-	std::string rawParameters;
 
-	//Cookies for Gnash fallback
 	std::string rawCookies;
-	char* cookiesFileName;
 
 	URLInfo url;
 	Mutex profileDataSpinlock;
@@ -327,7 +312,7 @@ public:
 	InputThread* getInputThread() const { return inputThread; }
 	void setParamsAndEngine(EngineData* e, bool s) DLL_PUBLIC;
 	void setDownloadedPath(const tiny_string& p) DLL_PUBLIC;
-	void needsAVM2(bool n);
+	void createVM();
 	void stageCoordinateMapping(uint32_t windowWidth, uint32_t windowHeight, int& offsetX, int& offsetY, float& scaleX, float& scaleY);
 	void stageCoordinateMapping(const Vector2& windowSize, Vector2& offset, Vector2f& scale);
 	Vector2f windowToStagePoint(const Vector2f& windowPos);
@@ -421,7 +406,7 @@ public:
 	static void parseParametersFromURLIntoObject(const URLInfo& url, _R<ASObject> outParams);
 	_NR<ASObject> getParameters() const;
 
-	//Cookies management (HTTP downloads and Gnash fallback)
+	//Cookies management (HTTP downloads)
 	void setCookies(const char* c) DLL_PUBLIC;
 	const std::string& getCookies();
 

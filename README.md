@@ -104,7 +104,6 @@ Type `lightspark -h` to see all command line options.
 
 ### Environment variables
 
-* ``LIGHTSPARK_USE_GNASH``: if set to 1, lightspark will fall back to gnash for older swf files
 * ``LIGHTSPARK_PLUGIN_LOGLEVEL``: sets the log level (0-4) (browser plugins only)
 * ``LIGHTSPARK_PLUGIN_LOGFILE``: sets the file the log will be written to (browser plugins only)
 * ``LIGHTSPARK_PLUGIN_PARAMFILE``: if set, the flash variables set by the website will be written to this file (browser plugins only)

@@ -1855,11 +1855,6 @@ void ppPluginEngineData::stopMainDownload()
 //		instance->mainDownloader->stop();
 }
 
-uint32_t ppPluginEngineData::getWindowForGnash()
-{
-//	return instance->mWindow;
-	return 0;
-}
 struct userevent_callbackdata
 {
 	EngineData::MainThreadCallback func;

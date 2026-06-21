@@ -148,43 +148,6 @@ Config::Config():
 			dataDirectory = tmpdir;
 		delete[] tmpdir;
 	}
-
-#ifdef _WIN32
-	std::string regGnashPath = readRegistryEntry("GnashPath");
-	if(regGnashPath.empty())
-	{
-		const char* s = getExectuablePath();
-		if(!s)
-			LOG(LOG_ERROR,"Could not get executable path!");
-		else
-		{
-			
-			std::string gnash_exec_path = s;
-			if(g_file_test(std::string(gnash_exec_path + "gtk-gnash.exe").c_str(),G_FILE_TEST_EXISTS))
-			{
-				LOG(LOG_INFO,"Found gnash at " << (gnash_exec_path + "gtk-gnash.exe"));
-				gnashPath = std::string(gnash_exec_path + "gtk-gnash.exe").c_str();
-			}
-			else if(g_file_test(std::string(gnash_exec_path + "sdl-gnash.exe").c_str(),G_FILE_TEST_EXISTS))
-			{
-				LOG(LOG_INFO,"Found gnash at " << gnash_exec_path + "sdl-gnash.exe");
-				gnashPath = std::string(gnash_exec_path + "sdl-gnash.exe").c_str();
-			}
-			else
-				LOG(LOG_ERROR, "Could not find gnash in " << gnash_exec_path);
-		}
-	}
-	else
-	{
-		LOG(LOG_INFO, "Read gnash's path from registry: " << regGnashPath);
-		gnashPath = regGnashPath;
-	}
-#else
-#	ifndef GNASH_PATH
-#	error No GNASH_PATH defined
-#	endif
-	gnashPath = GNASH_PATH;
-#endif
 }
 
 Config::~Config()

@@ -277,17 +277,4 @@ inline uint32_t BigEndianToUnsignedHost24(uint32_t x)
 
 #endif //SDL_BYTEORDER == SDL_BIG_ENDIAN
 
-/* spawning */
-#ifdef _WIN32
-/* returns the path of the current executable */
-const char* getExectuablePath();
-typedef void* HANDLE;
-HANDLE compat_spawn(char** args, int* stdinfd);
-int kill_child(HANDLE childPid);
-#else
-int kill_child(int childPid);
-#endif
-
-
-
 #endif /* COMPAT_H */

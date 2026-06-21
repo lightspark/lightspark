@@ -77,7 +77,6 @@
 #endif
 
 #include "compat.h"
-#include <glib.h>
 
 #ifdef ENABLE_LIBAVCODEC
 extern "C" {
@@ -256,13 +255,12 @@ SystemState::SystemState
 	,inMouseEvent(false)
 	,inWindowMove(false)
 	,hasExitCode(false)
+	,enginesCreated(false)
 	,innerGotoCount(0)
 	,renderThread(nullptr)
 	,inputThread(nullptr)
 	,engineData(nullptr)
 	,dumpedSWFPathAvailable(0)
-	,vmVersion(VMNONE)
-	,childPid(0)
 	,parameters(NullRef)
 	,invalidateQueueHead(nullptr)
 	,invalidateQueueTail(nullptr)
@@ -335,8 +333,6 @@ SystemState::SystemState
 	nsNameAndKindImpl as3Ns(BUILTIN_STRINGS::STRING_AS3NS, NAMESPACE);
 	getUniqueNamespaceId(as3Ns, BUILTIN_NAMESPACES::AS3_NS, nsId, baseId);
 	assert(nsId==1 && baseId==1);
-
-	cookiesFileName = nullptr;
 
 	setTLSSys(this);
 	// it seems Adobe ignores any locale date settings
@@ -485,9 +481,6 @@ static int hexToInt(char c)
 
 void SystemState::parseParametersFromFlashvars(const char* v)
 {
-	//Save a copy of the string
-	rawParameters=v;
-
 	_NR<ASObject> params=getParameters();
 	if(params.isNull())
 		params=_MNR(new_asobject(this->worker));
@@ -813,18 +806,6 @@ void SystemState::destroy()
 			currentVm->handleQueuedEvents();
 	}
 
-	//Kill our child process if any
-	if(childPid)
-	{
-		LOG(LOG_INFO,"Terminating gnash...");
-		kill_child(childPid);
-	}
-	//Delete the temporary cookies file
-	if(cookiesFileName)
-	{
-		unlink(cookiesFileName);
-		g_free(cookiesFileName);
-	}
 	assert(shutdown);
 
 	renderThread->stop();
@@ -1114,23 +1095,9 @@ void SystemState::createEngines()
 		//A shutdown request has arrived before the creation of engines
 		return;
 	}
-	//Check if we should fall back on gnash
-	if(vmVersion==AVM1)
-	{
-		l.release();
-		launchGnash();
-
-		//Engines should not be started, stop everything
-		//We cannot stop the engines now, as this is inside a ThreadPool job
-		//Running this in the Gtk thread is unnecessary, though. Any other thread
-		//would be okey.
-		//TODO: delayedStopping may be scheduled after SystemState::destroy has finished
-		//      and this SystemState object has been deleted.
-		//      We cannot wait for that function to finish, because we run in a ThreadPool
-		//      and the function will wait for all ThreadPool jobs to finish.
-		//engineData->runInMainThread(sigc::mem_fun(this, &SystemState::delayedStopping));
+	if (enginesCreated)
 		return;
-	}
+	enginesCreated=true;
 
 	//The engines must be created in the context of the main thread
 	engineData->runInMainThread(this,&SystemState::delayedCreation);
@@ -1139,193 +1106,17 @@ void SystemState::createEngines()
 	//Otherwise SystemState::destroy may delete this object before delayedCreation is scheduled.
 	if (EngineData::enablerendering)
 		renderThread->waitForInitialization();
-
-	// If the SWF file is AVM1 and Gnash fallback isn't enabled, just shut down.
-
-	//As we lost the lock the shutdown procesure might have started
-	if(shutdown)
-		return;
 }
 
-void SystemState::launchGnash()
-{
-	Locker l(rootMutex);
-	if(Config::getConfig()->getGnashPath().empty())
-	{
-		LOG(LOG_INFO, "Unsupported flash file (AVM1), and no gnash found");
-		l.release();
-		setShutdownFlag();
-		l.acquire();
-		return;
-	}
-
-	/* wait for dumpedSWFPath */
-	l.release();
-	dumpedSWFPathAvailable.wait();
-	l.acquire();
-
-	if(dumpedSWFPath.empty())
-		return;
-
-	LOG(LOG_INFO,"Trying to invoke gnash!");
-	//Dump the cookies to a temporary file
-	int file=g_file_open_tmp("lightsparkcookiesXXXXXX",&cookiesFileName,NULL);
-	if(file!=-1)
-	{
-		std::string data("Set-Cookie: " + rawCookies);
-		ssize_t res;
-		size_t written = 0;
-		// Keep writing until everything we wanted to write actually got written
-		do
-		{
-			res = write(file, data.c_str()+written, data.size()-written);
-			if(res < 0)
-			{
-				LOG(LOG_ERROR, "Error during writing of cookie file for Gnash");
-				break;
-			}
-			written += res;
-		} while(written < data.size());
-		close(file);
-		g_setenv("GNASH_COOKIES_IN", cookiesFileName, 1);
-	}
-	else
-	{
-		LOG(LOG_ERROR,"Failed to create temporary coockie for gnash");
-	}
-
-
-	//Allocate some buffers to store gnash arguments
-	char bufXid[32];
-	char bufWidth[32];
-	char bufHeight[32];
-	snprintf(bufXid,32,"%lu",(long unsigned)engineData->getWindowForGnash());
-	/* Use swf dimensions in standalone mode and window dimensions in plugin mode */
-	snprintf(bufWidth,32,"%u",standalone ? mainClip->applicationDomain->getFrameSize().Xmax/20 : engineData->width);
-	snprintf(bufHeight,32,"%u",standalone ? mainClip->applicationDomain->getFrameSize().Ymax/20 : engineData->height);
-	/* renderMode: 0: disable sound and rendering
-	 *             1: enable rendering and disable sound
-	 *             2: enable sound and disable rendering
-	 *             3: enable sound and rendering
-	 */
-	const char* renderMode = "3";
-	if(!Config::getConfig()->isRenderingEnabled())
-		renderMode = "2";
-
-	string params("FlashVars=");
-	params+=rawParameters;
-	/* TODO: pass -F hostFD to assist in loading urls */
-	char* args[] =
-	{
-		strdup(Config::getConfig()->getGnashPath().c_str()),
-		strdup("-x"), //Xid
-		bufXid,
-		strdup("-j"), //Width
-		bufWidth,
-		strdup("-k"), //Height
-		bufHeight,
-		strdup("-u"), //SWF url
-		strdup(mainClip->getOrigin().getParsedURL().raw_buf()),
-		strdup("-P"), //SWF parameters
-		strdup(params.c_str()),
-		strdup("--render-mode"),
-		strdup(renderMode),
-		strdup("-vv"),
-		strdup("-"),
-		NULL
-	};
-
-	// Print out an informative message about how we are invoking Gnash
-	int i = 1;
-	std::string argsStr = args[0];
-	while(args[i] != NULL)
-	{
-		argsStr += " ";
-		argsStr += args[i];
-		i++;
-	}
-	LOG(LOG_INFO, "Invoking '" << argsStr << " < " << dumpedSWFPath.raw_buf() << "'");
-
-	int gnash_stdin;
-
-	/* Unfortunately, g_spawn_async_with_pipes does not work under win32. First, it needs
-	 * an additional helper 'gspawn-helper-console.exe' and second, it crashes with a buffer overflow
-	 * when the plugin is run in ipc mode.
-	 */
-#if _WIN32
-	//TODO: escape argumetns, and spaces in filename
-	childPid = compat_spawn(args, &gnash_stdin);
-	if(!childPid)
-	{
-		LOG(LOG_ERROR,"Spawning gnash failed!");
-		return;
-	}
-#else
-	GError* errmsg = NULL;
-	if(!g_spawn_async_with_pipes(NULL, args, NULL, (GSpawnFlags)0, NULL, NULL, &childPid,
-			&gnash_stdin, NULL, NULL, &errmsg))
-	{
-		LOG(LOG_ERROR,"Spawning gnash failed: " << errmsg->message);
-		return;
-	}
-#endif
-
-	// Open the SWF file
-	std::ifstream swfStream(dumpedSWFPath.raw_buf(), ios::in|ios::binary);
-	// Read the SWF file and write it to Gnash's stdin
-	char data[1024];
-	std::streamsize written, ret;
-	bool stop = false;
-	while(!swfStream.eof() && !swfStream.fail() && !stop)
-	{
-		swfStream.read(data, 1024);
-		// Keep writing until everything we wanted to write actually got written
-		written = 0;
-		do
-		{
-			ret = write(gnash_stdin, data+written, swfStream.gcount()-written);
-			if(ret < 0)
-			{
-				LOG(LOG_ERROR, "Error during writing of SWF file to Gnash");
-				stop = true;
-				break;
-			}
-			written += ret;
-		} while(written < swfStream.gcount());
-	}
-	// Close the write end of Gnash's stdin, signalling EOF to Gnash.
-	close(gnash_stdin);
-	// Close the SWF file
-	swfStream.close();
-}
-
-
-void SystemState::needsAVM2(bool avm2)
+void SystemState::createVM()
 {
 	Locker l(rootMutex);
 
-	/* Check if we already loaded another swf. If not, then
-	 * vmVersion is VMNONE.
-	 */
-	if((vmVersion == AVM1 && avm2)
-	|| (vmVersion == AVM2 && !avm2))
-	{
-		LOG(LOG_NOT_IMPLEMENTED,"Cannot embed AVM1 media into AVM2 media and vice versa!");
-		return;
-	}
-
-	//Create the virtual machine if needed
-	if(avm2)
-	{
-		//needsAVM2 is only called for the SystemState movie
-		assert(!currentVm);
-		vmVersion=AVM2;
-		LOG(LOG_INFO,"Creating VM");
-		MemoryAccount* vmDataMemory=this->allocateMemoryAccount("VM_Data");
-		currentVm=new ABCVm(this, vmDataMemory);
-	}
-	else
-		vmVersion=AVM1;
+	//createVM is only called for the SystemState movie
+	assert(!currentVm);
+	LOG(LOG_INFO,"Creating VM");
+	MemoryAccount* vmDataMemory=this->allocateMemoryAccount("VM_Data");
+	currentVm=new ABCVm(this, vmDataMemory);
 
 	if(engineData)
 		createEngines();
@@ -1348,8 +1139,6 @@ void SystemState::setParamsAndEngine(EngineData* e, bool s)
 
 	if (EngineData::needinit && !runSingleThreaded && !isEventLoopThread())
 		pushEvent(LSInitEvent(this));
-	if(vmVersion)
-		createEngines();
 }
 
 void SystemState::setRenderRate(float rate)
@@ -1734,14 +1523,17 @@ ParseThread::ParseThread(istream& in, _R<ApplicationDomain> appDomain, _R<Securi
 }
 
 ParseThread::ParseThread(std::istream& in, RootMovieClip *root)
-  : version(0),uncompressedsize(0),
-	sys(root->getSystemState()),
-    f(in),uncompressingFilter(nullptr),
-	backend(nullptr),
-	loader(nullptr),
-	parsedObject(root),
-	url(),fileType(FT_UNKNOWN),
-	backgroundWorkerFileLength(0)
+	:version(0)
+	,uncompressedsize(0)
+	,sys(root->getSystemState())
+	,f(in)
+	,uncompressingFilter(nullptr)
+	,backend(nullptr)
+	,loader(nullptr)
+	,parsedObject(root)
+	,url()
+	,fileType(FT_UNKNOWN)
+	,backgroundWorkerFileLength(0)
 {
 	f.exceptions ( istream::eofbit | istream::failbit | istream::badbit );
 	root->parsethread=this;
@@ -1974,21 +1766,6 @@ void ParseThread::parseSWF(UI8 ver)
 			li->swfVersion = root->applicationDomain->version;
 		}
 
-		int usegnash = 0;
-		char *envvar = getenv("LIGHTSPARK_USE_GNASH");
-		if (envvar)
-			usegnash= atoi(envvar);
-		if(root->applicationDomain->version < 9)
-		{
-			if (usegnash)
-			{
-				LOG(LOG_INFO,"SWF version " << root->applicationDomain->version << " is not handled by lightspark, falling back to gnash (if available)");
-				//Enable flash fallback
-				root->getSystemState()->needsAVM2(false);
-				return; /* no more parsing necessary, handled by fallback */
-			}
-		}
-
 		TagFactory factory(f);
 		Tag* tag=factory.readTag(root);
 
@@ -2004,15 +1781,9 @@ void ParseThread::parseSWF(UI8 ver)
 			root->applicationDomain->usesActionScript3 = fat ? fat->ActionScript3 : false;
 			if(root == root->getSystemState()->mainClip)
 			{
-				root->getSystemState()->needsAVM2(!usegnash || root->applicationDomain->usesActionScript3);
-				if (!usegnash || root->applicationDomain->usesActionScript3)
-					parseExtensions(root);
+				root->getSystemState()->createVM();
+				parseExtensions(root);
 
-				if(usegnash && fat && !fat->ActionScript3)
-				{
-					delete fat;
-					return; /* no more parsing necessary, handled by fallback */
-				}
 				if(fat && fat->UseNetwork
 						&& root->getSystemState()->securityManager->getSandboxType() == SecurityManager::LOCAL_WITH_FILE)
 				{
@@ -2023,7 +1794,7 @@ void ParseThread::parseSWF(UI8 ver)
 		}
 		else if(root == root->getSystemState()->mainClip)
 		{
-			root->getSystemState()->needsAVM2(true);
+			root->getSystemState()->createVM();
 			parseExtensions(root);
 		}
 		root->setupAVM1RootMovie();
@@ -2801,7 +2572,7 @@ void SystemState::stageCoordinateMapping(const Vector2& windowSize, Vector2& off
 {
 	Vector2Tmpl<float> _scale;
 	stageCoordinateMapping(windowSize.x, windowSize.y,
-			       offset.x, offset.y, _scale.x, _scale.y);
+						   offset.x, offset.y, _scale.x, _scale.y);
 	scale = _scale;
 }
 
@@ -2821,7 +2592,7 @@ void SystemState::windowToStageCoordinates(int windowX, int windowY, int& stageX
 	float scaleX;
 	float scaleY;
 	stageCoordinateMapping(renderThread->windowWidth, renderThread->windowHeight,
-			       offsetX, offsetY, scaleX, scaleY);
+						   offsetX, offsetY, scaleX, scaleY);
 	stageX = (windowX-offsetX)/scaleX;
 	stageY = (windowY-offsetY)/scaleY;
 }

@@ -122,12 +122,6 @@ public:
 	{
 		fs::removeAll(tiny_string(Config::getConfig()->getDataDirectory()));
 	}
-	uint32_t getWindowForGnash() override
-	{
-		/* passing and invalid window id to gnash makes
-		 * it create its own window */
-		return 0;
-	}
 	void stopMainDownload() override {}
 	bool isSizable() const override
 	{

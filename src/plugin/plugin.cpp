@@ -1098,11 +1098,6 @@ void PluginEngineData::stopMainDownload()
 		instance->mainDownloader->stop();
 }
 
-uint32_t PluginEngineData::getWindowForGnash()
-{
-	return instance->mWindow;
-}
-
 struct linkOpenData
 {
 	NPP instance;

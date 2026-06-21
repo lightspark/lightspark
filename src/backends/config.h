@@ -42,8 +42,6 @@ namespace lightspark
 		std::string cacheDirectory;
 		//Specifies what prefix the cache files should have, default="cache"
 		std::string cachePrefix;
-		//Specifies the filename including full path of the gnash executable
-		std::string gnashPath;
 		//Specifies the directory where the app can store files
 		std::string dataDirectory;
 		std::string userDataDirectory;
@@ -61,8 +59,6 @@ namespace lightspark
 		const std::string& getDataDirectory() const { return dataDirectory; }
 		const std::string& getUserDataDirectory() const { return userDataDirectory; }
 		
-		const std::string& getGnashPath() const { return gnashPath; }
-
 		bool isRenderingEnabled() const { return renderingEnabled; }
 	};
 }

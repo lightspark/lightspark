@@ -48,7 +48,7 @@ Type* Type::getBuiltinType(ASWorker* wrk, multiname* mn)
 	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::ANY
 		&& mn->hasEmptyNS)
 		return Type::anyType;
-	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::VOID
+	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::STRING_VOID
 		&& mn->hasEmptyNS)
 		return Type::voidType;
 
@@ -145,7 +145,7 @@ Type* Type::getTypeFromMultiname(multiname* mn, ABCContext* context, bool opport
 		&& mn->ns.size() == 1 && mn->hasEmptyNS)
 		return Type::anyType;
 
-	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::VOID
+	if(mn->name_type == multiname::NAME_STRING && mn->name_s_id==BUILTIN_STRINGS::STRING_VOID
 		&& mn->ns.size() == 1 && mn->hasEmptyNS)
 		return Type::voidType;
 

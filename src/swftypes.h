@@ -45,7 +45,7 @@
 namespace lightspark
 {
 enum BUILTIN_STRINGS { EMPTY=0, STRING_WILDCARD='*', ANY=BUILTIN_STRINGS_CHAR_MAX
-					   ,VOID
+					   ,STRING_VOID
 					   ,PROTOTYPE
 					   ,STRING_FUNCTION
 					   ,STRING_AS3VECTOR

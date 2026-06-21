@@ -47,6 +47,9 @@
 	#define glDrawBuffer(x) {}
 #else
 #include "3rdparty/opengl/glcorearb.h"
+#if defined(_WIN32) // undefine macro from windows.h to avoid conflict with our RGB class
+#undef RGB
+#endif
 
 // add some older constants not defined in official api
 #define GL_GENERATE_MIPMAP 0x8191
@@ -153,21 +156,21 @@
 	extern PFNGLUSEPROGRAMPROC glUseProgram;
 
 	//additional functions needed by ImGUI
-	typedef void (*PFNGLCOLORPOINTERPROC)(GLint size,GLenum type,GLsizei stride,const void * pointer);
-	typedef void (*PFNGLDISABLECLIENTSTATEPROC)(GLenum cap);
-	typedef void (*PFNGLENABLECLIENTSTATEPROC)(GLenum cap);
-	typedef void (*PFNGLGETTEXENVIVPROC)(GLenum target,GLenum pname,GLint * params);
-	typedef void (*PFNGLLOADIDENTITYPROC)();
-	typedef void (*PFNGLMATRIXMODEPROC)(GLenum mode);
-	typedef void (*PFNGLORTHOPROC)(GLdouble left,GLdouble right,GLdouble bottom,GLdouble top,GLdouble nearVal,GLdouble farVal);
-	typedef void (*PFNGLPOPATTRIBPROC)();
-	typedef void (*PFNGLPOPMATRIXPROC)();
-	typedef void (*PFNGLPUSHATTRIBPROC)(GLbitfield mask);
-	typedef void (*PFNGLPUSHMATRIXPROC)();
-	typedef void (*PFNGLSHADEMODELPROC)(GLenum mode);
-	typedef void (*PFNGLTEXCOORDPOINTERPROC)(GLint size,GLenum type,GLsizei stride,const void * pointer);
-	typedef void (*PFNGLTEXENVIPROC)(GLenum target,GLenum pname,GLint param);
-	typedef void (*PFNGLVERTEXPOINTERPROC)(GLint size,GLenum type,GLsizei stride,const void * pointer);
+	typedef void (APIENTRYP PFNGLCOLORPOINTERPROC)(GLint size,GLenum type,GLsizei stride,const void * pointer);
+	typedef void (APIENTRYP PFNGLDISABLECLIENTSTATEPROC)(GLenum cap);
+	typedef void (APIENTRYP PFNGLENABLECLIENTSTATEPROC)(GLenum cap);
+	typedef void (APIENTRYP PFNGLGETTEXENVIVPROC)(GLenum target,GLenum pname,GLint * params);
+	typedef void (APIENTRYP PFNGLLOADIDENTITYPROC)();
+	typedef void (APIENTRYP PFNGLMATRIXMODEPROC)(GLenum mode);
+	typedef void (APIENTRYP PFNGLORTHOPROC)(GLdouble left,GLdouble right,GLdouble bottom,GLdouble top,GLdouble nearVal,GLdouble farVal);
+	typedef void (APIENTRYP PFNGLPOPATTRIBPROC)();
+	typedef void (APIENTRYP PFNGLPOPMATRIXPROC)();
+	typedef void (APIENTRYP PFNGLPUSHATTRIBPROC)(GLbitfield mask);
+	typedef void (APIENTRYP PFNGLPUSHMATRIXPROC)();
+	typedef void (APIENTRYP PFNGLSHADEMODELPROC)(GLenum mode);
+	typedef void (APIENTRYP PFNGLTEXCOORDPOINTERPROC)(GLint size,GLenum type,GLsizei stride,const void * pointer);
+	typedef void (APIENTRYP PFNGLTEXENVIPROC)(GLenum target,GLenum pname,GLint param);
+	typedef void (APIENTRYP PFNGLVERTEXPOINTERPROC)(GLint size,GLenum type,GLsizei stride,const void * pointer);
 
 	extern PFNGLCOLORPOINTERPROC glColorPointer;
 	extern PFNGLDISABLECLIENTSTATEPROC glDisableClientState;

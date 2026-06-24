@@ -17,7 +17,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#include <glib.h>
 #include <string>
 #include <sys/stat.h>
 
@@ -25,6 +24,8 @@
 #include "compat.h"
 #include "logger.h"
 #include "exceptions.h"
+#include "utils/specialfolder.h"
+#include "utils/filesystem.h"
 
 #include <cstring>
 
@@ -35,7 +36,6 @@ Config* Config::getConfig()
 {
 	static Config conf;
 	return &conf;
-
 }
 
 #ifdef _WIN32
@@ -77,15 +77,18 @@ std::string readRegistryEntry(std::string name)
 }
 #endif
 
-Config::Config():
+Config::Config()
 	//CONFIGURATION FILENAME AND SEARCH DIRECTORIES
-	configFilename("lightspark.conf"),
-	systemConfigDirectories(g_get_system_config_dirs()),userConfigDirectory(g_get_user_config_dir()),
+	:configFilename("lightspark.conf")
+	,userConfigDirectory(SpecialFolder::get_user_config_dir())
 	//DEFAULT SETTINGS
-	defaultCacheDirectory((string) g_get_user_cache_dir() + G_DIR_SEPARATOR_S + "lightspark"),
-	cacheDirectory(defaultCacheDirectory),cachePrefix("cache"),userDataDirectory((string)g_get_user_data_dir() + G_DIR_SEPARATOR_S + "lightspark"),
-	renderingEnabled(true)
+	,defaultCacheDirectory((Path(SpecialFolder::get_user_cache_dir()) / Path("lightspark")).getStr())
+	,cacheDirectory(defaultCacheDirectory),cachePrefix("cache")
+	,userDataDirectory((Path( SpecialFolder::get_user_data_dir()) / Path("lightspark")).getStr())
+	,renderingEnabled(true)
 {
+	std::list<tiny_string> systemConfigDirectories;
+	SpecialFolder::get_system_config_dirs(systemConfigDirectories);
 #ifdef _WIN32
 	const char* exePath = getExectuablePath();
 	if(exePath)
@@ -93,23 +96,22 @@ Config::Config():
 #endif
 
 	//Try system configs first
-	string sysDir;
-	const char* const* cursor = systemConfigDirectories;
-	while(*cursor != nullptr)
+	tiny_string sysDir;
+	auto it = systemConfigDirectories.begin();
+	while(it != systemConfigDirectories.end())
 	{
-		sysDir = *cursor;
+		sysDir = *it;
 		ini::IniFile parser;
 		parser.setMultiLineValues(true);
-		parser.load(sysDir + G_DIR_SEPARATOR_S + configFilename);
+		parser.load((Path(sysDir) / Path(configFilename)).getStr());
 		handleEntries(parser);
-
-		++cursor;
+		++it;
 	}
 
 	//Try user config next
 	ini::IniFile parser;
 	parser.setMultiLineValues(true);
-	parser.load(userConfigDirectory + G_DIR_SEPARATOR_S + configFilename);
+	parser.load((Path(userConfigDirectory) / Path(configFilename)).getStr());
 	handleEntries(parser);
 
 #ifndef _WIN32
@@ -119,26 +121,25 @@ Config::Config():
 #endif
 
 	//If cache dir doesn't exist, create it
-	if (g_mkdir_with_parents(cacheDirectory.c_str(),S_IRUSR | S_IWUSR | S_IXUSR))
+	if (FileSystem::createDirs(Path(cacheDirectory),FileSystem::Perms::OwnerAll))
 	{
 		LOG(LOG_INFO, "Could not create cache directory, falling back to default cache directory: " <<
 				defaultCacheDirectory);
 		cacheDirectory = defaultCacheDirectory;
 	}
-	dataDirectory = cacheDirectory+G_DIR_SEPARATOR_S+"files";
-	if (g_mkdir_with_parents(dataDirectory.c_str(),S_IRUSR | S_IWUSR | S_IXUSR))
+    dataDirectory = (Path(cacheDirectory) / "files").getStr();
+	if (FileSystem::createDirs(Path(dataDirectory),FileSystem::Perms::OwnerAll))
 	{
 		LOG(LOG_INFO, "Could not create data directory, storing user data may not be possible");
 		dataDirectory = "";
 	}
 	else
 	{
-		dataDirectory += G_DIR_SEPARATOR_S;
-		dataDirectory +="cXXXXXX";
+        dataDirectory = (Path(dataDirectory) / "cXXXXXX").getStr();
 		char* tmpdir = new char[dataDirectory.length()+100];
 		strncpy(tmpdir,dataDirectory.c_str(),dataDirectory.length());
 		tmpdir[dataDirectory.length()] = 0x00;
-		tmpdir =g_mkdtemp(tmpdir);
+        tmpdir =mkdtemp(tmpdir);
 		if (!tmpdir)
 		{
 			LOG(LOG_INFO, "Could not create data directory, storing user data may not be possible");

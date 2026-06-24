@@ -21,7 +21,7 @@
 #include <SDL.h>
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
-#include <glib.h>
+
 #ifdef ENABLE_GLES2
 #define IMGUI_IMPL_OPENGL_ES2
 #include <imgui_impl_opengl3.h>
@@ -37,6 +37,8 @@
 #include "icon.h"
 #include "backends/lsopengl.h"
 #include "platforms/engineutils.h"
+#include "utils/filesystem.h"
+#include "utils/specialfolder.h"
 
 #ifdef __MINGW32__
 #ifndef PATH_MAX
@@ -1292,14 +1294,15 @@ bool Launcher::start()
 	SDL_GL_SetSwapInterval(1); // Enable vsync
 	
 	setWindowIcon(window);
-	std::string settingsfile = g_get_user_config_dir();
-	settingsfile += G_DIR_SEPARATOR_S;
-	settingsfile += "lightspark";
-	settingsfile += G_DIR_SEPARATOR_S;
-	g_mkdir_with_parents(settingsfile.c_str(),0755);
-	settingsfile += "launcher.xml";
-	pugi::xml_document settingsdoc;
-	if (g_file_test(settingsfile.c_str(),G_FILE_TEST_EXISTS))
+
+    Path p(SpecialFolder::get_user_config_dir());
+    p /= "lightspark";
+    FileSystem::createDirs(p,FileSystem::Perms::OwnerAll);
+    p /= "launcher.xml";
+    std::string settingsfile = p.getNativeStr();
+    LOG(LOG_INFO,"launcher settingsfile:"<<settingsfile<<(p.exists() ? " exists" : ""));
+    pugi::xml_document settingsdoc;
+    if (p.exists())
 	{
 		std::ifstream stream(settingsfile.c_str());
 		settingsdoc.load(stream);
@@ -1402,7 +1405,7 @@ bool Launcher::start()
 					needsfilesystem=(*it).attribute("filesystem").as_bool();
 					done = true;
 					start=true;
-				}
+                }
 				ImGui::SameLine();
 				char buf[40];
 				sprintf(buf,"\uE0BC##%i",entrycount); // "settings" icon
@@ -1446,12 +1449,14 @@ bool Launcher::start()
 					0);
 				if (lTheOpenFileName)
 				{
-					if (strcmp(entryname,"<empty>")==0)
+                    memset(swfpath,0,PATH_MAX);
+                    if (strcmp(entryname,"<empty>")==0)
 					{
-						char* fname = g_path_get_basename(lTheOpenFileName);
+                        Path p(lTheOpenFileName);
+                        const char* fname = p.getFilename().getStr().raw_buf();
 						memcpy(entryname,fname,strlen(fname));
 					}
-					memcpy(swfpath,lTheOpenFileName,strlen(lTheOpenFileName));
+                    memcpy(swfpath,lTheOpenFileName,strlen(lTheOpenFileName));
 				}
 			}
 			ImGui::Checkbox("AIR", &bAIR);
@@ -1540,7 +1545,7 @@ bool Launcher::start()
 #endif
 	ImGui_ImplSDL2_Shutdown();
 	ImGui::DestroyContext();
-	
+
 	SDL_GL_DeleteContext(gl_context);
 	SDL_DestroyWindow(window);
 	SDL_Quit();

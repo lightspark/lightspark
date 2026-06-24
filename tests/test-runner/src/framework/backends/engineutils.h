@@ -57,7 +57,6 @@ public:
 	bool isSizable() const override { return false; }
 	void stopMainDownload() override {}
 	void handleQuit() override {}
-	uint32_t getWindowForGnash() override { return 0; }
 
 	// TODO: Implement support for testing `SharedObject`/local storage.
 	// local storage handling

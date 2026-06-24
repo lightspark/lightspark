@@ -322,6 +322,7 @@ SET(LIBSPARK_SOURCES
   utils/dir_iter.cpp
   utils/filesystem.cpp
   utils/path.cpp
+  utils/specialfolder.cpp
   platforms/engineutils.cpp
   3rdparty/nanovg/src/nanovg.c
   3rdparty/pugixml/src/pugixml.cpp

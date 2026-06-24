@@ -25,8 +25,8 @@
 #include "logger.h"
 #include "netutils.h"
 #include "swf.h"
+#include "utils/filesystem.h"
 #include <SDL.h>
-#include <glib.h>
 
 using namespace std;
 using namespace lightspark;
@@ -387,11 +387,14 @@ void FileStreamCache::openCache()
 	}
 
 	//Create a temporary file(name)
-	std::string cacheFilenameS = Config::getConfig()->getCacheDirectory() + G_DIR_SEPARATOR_S + Config::getConfig()->getCachePrefix() + "XXXXXX";
+	Path p(Config::getConfig()->getCacheDirectory());
+	std::string s = Config::getConfig()->getCachePrefix() + "XXXXXX";
+	p /= s;
+	std::string cacheFilenameS = p.getNativeStr();
 	char* cacheFilenameC = LS_STACKALLOC(char,cacheFilenameS.length()+1);
 	strncpy(cacheFilenameC, cacheFilenameS.c_str(), cacheFilenameS.length());
 	cacheFilenameC[cacheFilenameS.length()] = '\0';
-	int fd = g_mkstemp(cacheFilenameC);
+	int fd = mkstemp(cacheFilenameC);
 	if(fd == -1)
 	{
 		markFinished(true);

@@ -32,7 +32,6 @@ namespace lightspark
 
 		//-- CONFIGURATION FILENAME AND SEARCH DIRECTORIES
 		const std::string configFilename;
-		const char* const* systemConfigDirectories;
 		std::string userConfigDirectory;
 
 		//-- SETTINGS

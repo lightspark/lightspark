@@ -32,8 +32,8 @@
 #include "compat.h"
 #include <sstream>
 #include <unistd.h>
-#include <glib.h> // for screenshot file
 #include "3rdparty/nanovg/src/nanovg.h"
+#include "utils/filesystem.h"
 
 #ifdef _WIN32
 #   define WIN32_LEAN_AND_MEAN
@@ -926,8 +926,13 @@ void RenderThread::generateScreenshot()
 	}
 	engineData->exec_glReadPixels(windowWidth, windowHeight, buf);
 
-	char* name_used=nullptr;
-	int fd = g_file_open_tmp("lightsparkXXXXXX.bmp",&name_used,nullptr);
+	Path p = FileSystem::tempDirPath();
+	p /= "lightsparkXXXXXX.bmp";
+	std::string tmpname = p.getNativeStr();
+	char* name_used = LS_STACKALLOC(char,tmpname.length()+1);
+	strncpy(name_used, tmpname.c_str(), tmpname.length());
+	name_used[tmpname.length()] = '\0';
+	int fd = mkstemps(name_used,4);
 	if(fd == -1)
 	{
 		LOG(LOG_ERROR,"generating screenshot file failed");
@@ -962,7 +967,6 @@ void RenderThread::generateScreenshot()
 	close(fd);
 	delete[] buf;
 	LOG(LOG_INFO,"screenshot generated:"<<name_used);
-	g_free(name_used);
 	screenshotneeded=false;
 }
 

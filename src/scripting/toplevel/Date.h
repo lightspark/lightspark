@@ -21,47 +21,56 @@
 #define SCRIPTING_TOPLEVEL_DATE_H 1
 
 #include "asobject.h"
-#include <glib.h>
 
 namespace lightspark
 {
-
 class Date: public ASObject
 {
-private:
-	number_t milliseconds;
-	int extrayears;
+protected:
+	number_t mstimestamp;
+	number_t mstimezoneoffset;
 	bool nan;
-	GDateTime *datetime;
-	GDateTime *datetimeUTC;
-	number_t getMsSinceEpoch();
+	bool isinfinite;
+	bool isinfiniteYear;
+	number_t getMsSinceEpoch(bool utc) const;
+	number_t getTimeInMS(bool utc) const;
+	number_t computeMsTimezoneOffset() const;
 	tiny_string toString_priv(bool utc, const char* formatstr) const;
 	static number_t parse(tiny_string str);
 	int64_t getcurrentms();
-	GDateTime* getlocaldatetime(GDateTime* datetimeUTC);
-protected:
 	bool isValid() const { return !nan; }
-	int64_t getMs() const { return milliseconds; }
-	GDateTime* getDateTime() const { return datetime; }
-	GDateTime* getDateTime() { return datetime; }
-	GDateTime* getDateTimeUTC() { return datetimeUTC; }
-
-	asAtom msSinceEpoch();
-	void MakeDate(number_t year, number_t month, number_t day, number_t hour, number_t minute, number_t second, number_t millisecond, bool bIsLocalTime);
+	bool isInfinite() const { return isinfinite; }
+	struct tm* getDateTimeLocal() const;
+	struct tm* getDateTimeUTC() const;
+	int32_t getYear(bool utc) const;
+	int32_t getMonth(bool utc) const;
+	int32_t getDayInMonth(bool utc) const;
+	int32_t getDayInWeek(bool utc) const;
+	int32_t getHour(bool utc) const;
+	int32_t getMinute(bool utc) const;
+	int32_t getSecond(bool utc) const;
+	int32_t getMillisecond(bool utc) const;
+	asAtom msSinceEpoch(bool utc) const;
+	void MakeDate(number_t year, number_t month, number_t day, number_t time, bool bIsLocalTime, bool clipped, int timezone=0);
+	void MakeDate(number_t year, number_t month, number_t day, number_t hour, number_t minute, number_t second, number_t millisecond, bool bIsLocalTime, bool clipped, int timezoneoffset=0);
+	number_t MakeTime(number_t hour, number_t minute, number_t second, number_t millisecond);
 	~Date();
+	static void _setFullYear(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc, bool fromsetter);
+	static void _setMonth(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc);
+	static void _setDate(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc);
+	static void _setHours(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc);
+	static void _setMinutes(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc);
+	static void _setSeconds(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc);
+	static void _setMilliseconds(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc);
 public:
 	Date(ASWorker* wrk,Class_base* c);
 	bool destruct()
 	{
-		if (datetimeUTC)
-			g_date_time_unref(datetimeUTC);
-		if (datetime)
-			g_date_time_unref(datetime);
-		datetime = nullptr;
-		datetimeUTC = nullptr;
-		extrayears = 0;
-		milliseconds=numeric_limits<double>::quiet_NaN();
+		mstimestamp=numeric_limits<double>::quiet_NaN();
+		mstimezoneoffset=0;
 		nan = true;
+		isinfinite = false;
+		isinfiniteYear = false;
 		return destructIntern();
 	}
 
@@ -127,17 +136,12 @@ public:
 	ASFUNCTION_ATOM(toLocaleDateString);
 	ASFUNCTION_ATOM(toLocaleTimeString);
 
-	int getYear();
-	int getUTCYear();
-
-	
-	void MakeDateFromMilliseconds(number_t ms);
+	void MakeDateFromMilliseconds(number_t ms, bool clipped=false);
 	bool isEqual(ASObject* r);
 	TRISTATE isLess(ASObject* r);
 	TRISTATE isLessAtom(asAtom& r);
 	
 	tiny_string toFormat(bool utc, tiny_string format);
-	tiny_string format(const char* fmt, bool utc);
 	tiny_string toString();
 	//Serialization interface
 	void serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,

@@ -77,7 +77,7 @@ ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_getYear)
 	AVM1Date* th = asAtomHandler::as<AVM1Date>(obj);
 
 	if (th->isValid())
-		asAtomHandler::setInt(ret, th->getYear() - 1900);
+		asAtomHandler::setInt(ret, th->getYear(false)-1900);
 	else
 		asAtomHandler::setNumber(ret, Number::NaN);
 }
@@ -87,7 +87,7 @@ ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_getUTCYear)
 	AVM1Date* th = asAtomHandler::as<AVM1Date>(obj);
 
 	if (th->isValid())
-		asAtomHandler::setInt(ret, th->getUTCYear() - 1900);
+		asAtomHandler::setInt(ret, th->getYear(true)-1900);
 	else
 		asAtomHandler::setNumber(ret, Number::NaN);
 }
@@ -96,37 +96,41 @@ ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_setYear)
 {
 	AVM1Date* th = asAtomHandler::as<AVM1Date>(obj);
 	number_t y, m, d;
-	ARG_CHECK(ARG_UNPACK (y, 0) (m, 0) (d, 0));
+	ARG_CHECK(ARG_UNPACK (y, Number::NaN) (m, 0) (d, 0));
 
+	if (th->nan || th->isinfinite || isnan(y) || isinf(y)) {
+		asAtomHandler::setNumber(ret,Number::NaN);
+		th->nan=true;
+		return;
+	}
 	if (argslen > 0)
 	{
 		if (y >= 0 && y <= 99)
 			y += 1900;
 	}
-	else if (th->isValid())
-		y = th->getYear();
+	else
+		y = th->getYear(false) + 1900;
 
-	if (argslen > 1)
-		m++;
-	else if (th->isValid())
-		m = g_date_time_get_month(th->getDateTime()) ;
+	if (argslen < 2)
+		m = th->getMonth(false);
 
-	if (argslen < 3 && th->isValid())
-		d = th->getDateTime() ? g_date_time_get_day_of_month(th->getDateTime()) : 0;
+	if (argslen < 3)
+		d = th->getDayInMonth(false);
 
 	th->MakeDate
 	(
 		y,
 		m,
 		d,
-		th->isValid() ? g_date_time_get_hour(th->getDateTime()) : 0,
-		th->isValid() ? g_date_time_get_minute(th->getDateTime()) : 0,
-		th->isValid() ? g_date_time_get_second(th->getDateTime()) : 0,
-		th->getMs() % 1000,
+		th->getHour(false),
+		th->getMinute(false),
+		th->getSecond(false),
+		th->getMillisecond(false),
+		true,
 		true
 	);
 
-	ret = th->msSinceEpoch();
+	ret = th->msSinceEpoch(true);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_setUTCYear)
@@ -141,27 +145,26 @@ ASFUNCTIONBODY_ATOM(AVM1Date,AVM1_setUTCYear)
 			y += 1900;
 	}
 	else
-		y = th->getUTCYear();
+		y = th->getYear(true) + 1900;
 
-	if (argslen > 1)
-		m++;
-	else if (th->isValid())
-		m = g_date_time_get_month(th->getDateTimeUTC());
+	if (argslen< 2 && th->isValid())
+		m = th->getMonth(true);
 
-	if (argslen < 3)
-		d = g_date_time_get_day_of_month(th->getDateTimeUTC());
+	if (argslen < 3 && th->isValid())
+		d = th->getDayInMonth(true);
 
 	th->MakeDate
 	(
 		y,
 		m,
 		d,
-		g_date_time_get_hour(th->getDateTimeUTC()),
-		g_date_time_get_minute(th->getDateTimeUTC()),
-		g_date_time_get_second(th->getDateTimeUTC()),
-		th->getMs() % 1000,
-		false
+		th->getHour(true),
+		th->getMinute(true),
+		th->getSecond(true),
+		th->getMillisecond(true),
+		false,
+		true
 	);
 
-	ret = th->msSinceEpoch();
+	ret = th->msSinceEpoch(true);
 }

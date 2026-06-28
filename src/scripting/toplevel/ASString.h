@@ -23,8 +23,6 @@
 #include "scripting/class.h"
 
 
-namespace Glib { class ustring; }
-
 namespace lightspark
 {
 /*
@@ -50,7 +48,6 @@ public:
 	ASString(ASWorker* wrk,Class_base* c);
 	ASString(ASWorker* wrk,Class_base* c, const std::string& s);
 	ASString(ASWorker* wrk,Class_base* c, const tiny_string& s);
-	ASString(ASWorker* wrk,Class_base* c, const Glib::ustring& s);
 	ASString(ASWorker* wrk,Class_base* c, const char* s);
 	ASString(ASWorker* wrk,Class_base* c, const char* s, uint32_t len);
 	bool hasId:1;

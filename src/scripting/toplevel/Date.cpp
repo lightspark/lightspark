@@ -24,13 +24,23 @@
 #include "scripting/argconv.h"
 #include "scripting/flash/utils/ByteArray.h"
 #include "compat.h"
+#include <sys/time.h>
 
 using namespace std;
 using namespace lightspark;
 
+#define MS_PER_DAY number_t(24*60*60*1000)
+#define MS_PER_HOUR number_t(60*60*1000)
+#define MS_PER_MINUTE number_t(60*1000)
+#define MS_PER_SECOND number_t(1000)
 
-Date::Date(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_DATE)
-	,milliseconds(numeric_limits<double>::quiet_NaN()),extrayears(0), nan(true), datetime(nullptr),datetimeUTC(nullptr)
+Date::Date(ASWorker* wrk, Class_base* c)
+	:ASObject(wrk,c,T_OBJECT,SUBTYPE_DATE)
+	,mstimestamp(numeric_limits<double>::quiet_NaN())
+	,mstimezoneoffset(0)
+	,nan(true)
+	,isinfinite(false)
+	,isinfiniteYear(false)
 {
 }
 
@@ -41,6 +51,7 @@ Date::~Date()
 void Date::sinit(Class_base* c)
 {
 	CLASS_SETUP_CONSTRUCTOR_7_PARAMETER(c, ASObject, _constructor, 7, CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_FINAL);
+	c->length=7;
 	c->isReusable = true;
 	c->setDeclaredMethodByQName("getTimezoneOffset",AS3,c->getSystemState()->getBuiltinFunction(getTimezoneOffset,0,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("valueOf",AS3,c->getSystemState()->getBuiltinFunction(valueOf,0,Class<Number>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
@@ -164,8 +175,6 @@ void Date::sinit(Class_base* c)
 	c->prototype->setVariableByQName("toJSON",AS3,c->getSystemState()->getBuiltinFunction(_toString,0,Class<ASString>::getClassUninitialized(c->getSystemState())),DYNAMIC_TRAIT);
 }
 
-const gint64 MS_IN_400_YEARS = 1.26227808e+13;
-
 ASFUNCTIONBODY_ATOM(Date,_constructor)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
@@ -189,111 +198,118 @@ ASFUNCTIONBODY_ATOM(Date,_constructor)
 			nm = parse(asAtomHandler::toString(args[0],wrk));
 		else
 			nm = asAtomHandler::toNumber(args[0]);
-		if (wrk->needsActionScript3())
-		{
-			if (std::isnan(nm) || std::isinf(nm))
-				th->nan = true;
-			else
-				th->MakeDateFromMilliseconds(nm);
-		}
-		else
-		{
-			th->milliseconds=nm;
-			if (std::isnan(nm) || std::isinf(nm))
-				th->nan = true;
-			else
-				th->MakeDateFromMilliseconds(nm);
-		}
+		th->MakeDateFromMilliseconds(nm);
 	} else
 	{
 		number_t year, month, day, hour, minute, second, millisecond;
 		ARG_CHECK(ARG_UNPACK (year, 1970) (month, 0) (day, 1) (hour, 0) (minute, 0) (second, 0) (millisecond, 0));
-		if (fabs(year) < 100 ) year = 1900 + year;
-		th->MakeDate(year, month+1, day, hour, minute,second,millisecond,!wrk->needsActionScript3() || argslen > 3);
+		if (!std::isnan(year) && !std::isinf(year) && year < 100)
+			year = 1900 + year;
+
+		th->MakeDate(year, month, day, hour, minute,second,millisecond,!wrk->needsActionScript3() || argslen > 3,false);
 	}
 }
-void Date::MakeDateFromMilliseconds(number_t ms)
+void Date::MakeDateFromMilliseconds(number_t ms, bool clipped)
 {
-	//GLib's GDateTime sensibly does not support and store very large year numbers
-	//so keep the extra years in units of 400 years separately. A 400 years period has
-	//a fixed number of milliseconds, unaffected by leap year calculations.	extrayears = year;
-	if ( ms > 0) 
+	if (std::isnan(ms))
 	{
-		extrayears = 400*(int64_t(ms)/MS_IN_400_YEARS);
-		ms -= extrayears * MS_IN_400_YEARS/400;
-	}
-	else
-	{
-		extrayears = 0;
-		while (ms < 0)
-		{
-			extrayears -=400;
-			ms += MS_IN_400_YEARS;
-		}
-	}
-	if (datetimeUTC)
-		g_date_time_unref(datetimeUTC);
-	if (datetime)
-		g_date_time_unref(datetime);
-	this->milliseconds = ms;
-	if (std::abs(getMsSinceEpoch()) > 8.64e15)
-	{
-		this->nan=true;
-		this->datetimeUTC=nullptr;
-		this->datetime=nullptr;
+		nan=true;
 		return;
 	}
-	datetimeUTC = g_date_time_new_from_unix_utc(ms/1000);
-	datetime = getlocaldatetime(datetimeUTC);
+	isinfinite = std::isinf(ms);
 	nan = false;
+	mstimestamp = ms;
+	mstimezoneoffset = computeMsTimezoneOffset();
+	if (clipped)
+	{
+		if (fabs(mstimestamp) > 100000000.0*MS_PER_DAY)
+			this->nan=true;
+		else
+			mstimestamp = floor(mstimestamp);
+	}
+}
+
+// helper methods as described in ECMA-262 chapter 15.9
+bool isLeapYear(int32_t year)
+{
+	return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+}
+
+number_t dayFromYear(number_t year)
+{
+	return (365.0 * (year - 1970.0))
+		   + floor((year - 1969.0) / 4.0)
+		   - floor((year - 1901.0) / 100.0)
+		   + floor((year - 1601.0) / 400.0);
 }
 
 int daysinyear[] ={ 0,31,59,90,120,151,181,212,243,273,304,334 };
-void Date::MakeDate(number_t year, number_t month, number_t day, number_t hour, number_t minute, number_t second, number_t millisecond, bool bIsLocalTime)
+int daysinleapyear[] ={ 0,31,60,91,121,152,182,213,244,274,305,335 };
+
+void Date::MakeDate(number_t year, number_t month, number_t day, number_t time, bool bIsLocalTime, bool clipped, int timezone)
 {
-	if (std::isnan(year) || std::isnan(month) || std::isnan(day) || std::isnan(hour) || std::isnan(minute) || std::isnan(second) || std::isnan(millisecond)
-		|| std::isinf(year) || std::isinf(month) || std::isinf(day) || std::isinf(hour) || std::isinf(minute) || std::isinf(second) || std::isinf(millisecond))
-	{
-		this->nan = true;
+	this->nan = std::isnan(month) || std::isinf(month)
+				|| std::isnan(day)
+				|| std::isnan(time);
+	if (this->nan)
 		return;
+	if (std::isnan(year) || std::isinf(year))
+	{
+		year = INT32_MIN;
+		isinfiniteYear=true;
 	}
-	this->nan = false;
+	year = floor(year);
+	month = floor(month);
+	day = floor(day);
 
-	//GLib's GDateTime seems to have problems if the parameters are big values (e.g. second = 1234567)
-	//so we calculate the milliseconds by using the algorithm from ECMAScript documentation
-	extrayears = year;
-	year = 2000+int64_t(year)%400;
-	extrayears = extrayears-year;
-	int64_t y = year +(month-1)/12;
-	int64_t m = int64_t(month-1)%12;
+	year += floor(month / 12.0);
+	month = fmod(month,12.0);
 
-	int64_t d = (day-1) + (y-1970)*365 + (y-1969)/4 - (y-1901)/100 +(y-1601)/400+ daysinyear[m];
-	if (m > 1 && (y % 4 == 0) && ((y%100 != 0) || (y%400 == 0))) // we are in a leap year after february
-		d++;
-	int64_t ms = d * 86400000 + int64_t(hour) * 3600000 + int64_t(minute) * 60000 + int64_t(second) * 1000 + int64_t(millisecond);
-	if (datetimeUTC)
-		g_date_time_unref(datetimeUTC);
-	if (datetime)
-		g_date_time_unref(datetime);
+
+	number_t days = Number::NaN;
+	if (month < 0)
+		month += 12.0;
+	if (year < INT32_MIN || year > INT32_MAX)
+		year = INT32_MIN+1970;
+	if (!std::isnan(month) && month >= 0 && month <= 11)
+		days = dayFromYear(year)
+			   + (isLeapYear(year) ? daysinleapyear[int(month)] : daysinyear[int(month)])
+			   + day
+			   - 1.0;
+	mstimestamp = days * MS_PER_DAY + time;
+	mstimezoneoffset = timezone ? -(timezone*60/100+timezone%100)*MS_PER_MINUTE : computeMsTimezoneOffset();
 	if (bIsLocalTime)
-	{
-		GDateTime* tmp = g_date_time_new_from_unix_utc(ms/1000);
-		GDateTime* tmp2 = getlocaldatetime(tmp);
-		GTimeSpan sp = g_date_time_get_utc_offset(tmp2)/1000;
-		ms = ms - sp;
-		g_date_time_unref(tmp);
-		g_date_time_unref(tmp2);
-	}
-	this->milliseconds = ms;
-	if (std::abs(getMsSinceEpoch()) > 8.64e15)
-	{
+		mstimestamp += mstimezoneoffset;
+	if (clipped && fabs(mstimestamp) > 100000000.0*MS_PER_DAY)
 		this->nan=true;
-		this->datetimeUTC=nullptr;
-		this->datetime=nullptr;
+	this->isinfinite = std::isinf(mstimestamp);
+}
+void Date::MakeDate(number_t year, number_t month, number_t day, number_t hour, number_t minute, number_t second, number_t millisecond, bool bIsLocalTime, bool clipped, int timezoneoffset)
+{
+	this->nan = std::isnan(month) || std::isinf(month)
+				|| std::isnan(day)
+				|| std::isnan(hour)
+				|| std::isnan(minute)
+				|| std::isnan(second)
+				|| std::isnan(millisecond)
+				;
+	if (this->nan)
 		return;
-	}
-	datetimeUTC = g_date_time_new_from_unix_utc(ms/1000);
-	datetime = getlocaldatetime(datetimeUTC);
+	number_t time = MakeTime(hour,minute,second,millisecond);
+	MakeDate(year,month,day,time,bIsLocalTime,clipped,timezoneoffset);
+}
+
+number_t Date::MakeTime(number_t hour, number_t minute, number_t second, number_t millisecond)
+{
+	hour = floor(hour);
+	minute = floor(minute);
+	second = floor(second);
+	millisecond = floor(millisecond);
+
+	return hour * MS_PER_HOUR
+		   + minute * MS_PER_MINUTE
+		   + second * MS_PER_SECOND
+		   + millisecond;
 }
 
 ASFUNCTIONBODY_ATOM(Date,generator)
@@ -308,24 +324,18 @@ ASFUNCTIONBODY_ATOM(Date,generator)
 
 ASFUNCTIONBODY_ATOM(Date,UTC)
 {
-	for (uint32_t i = 0; i < argslen; i++) {
-		if(asAtomHandler::isNumeric(args[i]) && std::isnan(asAtomHandler::toNumber(args[i]))) {
-			asAtomHandler::setNumber(ret, Number::NaN);
-			return;
-		}
-	}
 	number_t year, month, day, hour, minute, second, millisecond;
 	ARG_CHECK(ARG_UNPACK (year) (month) (day, 1) (hour, 0) (minute, 0) (second, 0) (millisecond, 0));
 	_R<Date> dt=_MR(Class<Date>::getInstanceS(wrk));
-	if (!isnan(year) && year >=0 && year <= 99)
+	if (!isnan(year) && !isinf(year) && year < 100)
 		year += 1900;
 
-	dt->MakeDate(year, month+1, day, hour, minute,second, millisecond,false);
+	dt->MakeDate(year, month, day, hour, minute,second, millisecond,false,false);
 	if(dt->nan) {
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	ret = dt->msSinceEpoch();
+	ret = dt->msSinceEpoch(true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,getTimezoneOffset)
@@ -335,8 +345,12 @@ ASFUNCTIONBODY_ATOM(Date,getTimezoneOffset)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	GTimeSpan diff = g_date_time_get_utc_offset(th->datetime);
-	asAtomHandler::setInt(ret,(int32_t)(-diff/G_TIME_SPAN_MINUTE));
+	if(th->isinfinite) {
+		asAtomHandler::setNumber(ret, Number::NaN);
+		return;
+	}
+	number_t res = (th->getMsSinceEpoch(true)-th->getMsSinceEpoch(false))/MS_PER_MINUTE;
+	asAtomHandler::setNumber(ret,res);
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCFullYear)
@@ -346,7 +360,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCFullYear)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,th->extrayears + g_date_time_get_year(th->datetimeUTC));
+	asAtomHandler::setInt(ret,th->getYear(true));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCMonth)
@@ -356,7 +370,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCMonth)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_month(th->datetimeUTC)-1);
+	asAtomHandler::setInt(ret,th->getMonth(true));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCDate)
@@ -366,7 +380,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCDate)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_day_of_month(th->datetimeUTC));
+	asAtomHandler::setInt(ret,th->getDayInMonth(true));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCDay)
@@ -376,7 +390,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCDay)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_day_of_week(th->datetimeUTC)%7);
+	asAtomHandler::setInt(ret,th->getDayInWeek(true));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCHours)
@@ -386,7 +400,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCHours)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_hour(th->datetimeUTC));
+	asAtomHandler::setInt(ret,th->getHour(true));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCMinutes)
@@ -396,7 +410,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCMinutes)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_minute(th->datetimeUTC));
+	asAtomHandler::setInt(ret,th->getMinute(true));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCSeconds)
@@ -406,7 +420,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCSeconds)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_second(th->datetimeUTC));
+	asAtomHandler::setInt(ret,th->getSecond(true));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getUTCMilliseconds)
@@ -416,7 +430,7 @@ ASFUNCTIONBODY_ATOM(Date,getUTCMilliseconds)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,(int32_t)(int64_t(th->milliseconds) % 1000));
+	asAtomHandler::setInt(ret,th->getMillisecond(true));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getFullYear)
@@ -426,7 +440,7 @@ ASFUNCTIONBODY_ATOM(Date,getFullYear)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,th->extrayears + g_date_time_get_year(th->datetime));
+	asAtomHandler::setInt(ret,th->getYear(false));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getMonth)
@@ -436,7 +450,7 @@ ASFUNCTIONBODY_ATOM(Date,getMonth)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_month(th->datetime)-1);
+	asAtomHandler::setInt(ret,th->getMonth(false));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getDate)
@@ -446,7 +460,7 @@ ASFUNCTIONBODY_ATOM(Date,getDate)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_day_of_month(th->datetime));
+	asAtomHandler::setInt(ret,th->getDayInMonth(false));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getDay)
@@ -456,7 +470,7 @@ ASFUNCTIONBODY_ATOM(Date,getDay)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_day_of_week(th->datetime)%7);
+	asAtomHandler::setInt(ret,th->getDayInWeek(false));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getHours)
@@ -466,7 +480,7 @@ ASFUNCTIONBODY_ATOM(Date,getHours)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_hour(th->datetime));
+	asAtomHandler::setInt(ret,th->getHour(false));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getMinutes)
@@ -476,7 +490,7 @@ ASFUNCTIONBODY_ATOM(Date,getMinutes)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_minute(th->datetime));
+	asAtomHandler::setInt(ret,th->getMinute(false));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getSeconds)
@@ -486,7 +500,7 @@ ASFUNCTIONBODY_ATOM(Date,getSeconds)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,g_date_time_get_second(th->datetime));
+	asAtomHandler::setInt(ret,th->getSecond(false));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getMilliseconds)
@@ -496,7 +510,7 @@ ASFUNCTIONBODY_ATOM(Date,getMilliseconds)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	asAtomHandler::setInt(ret,(int32_t)(int64_t(th->milliseconds) % 1000));
+	asAtomHandler::setInt(ret,th->getMillisecond(false));
 }
 
 ASFUNCTIONBODY_ATOM(Date,getTime)
@@ -510,51 +524,83 @@ ASFUNCTIONBODY_ATOM(Date,getTime)
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	ret = th->msSinceEpoch();
+	ret = th->msSinceEpoch(true);
 }
-
 ASFUNCTIONBODY_ATOM(Date,setFullYear)
+{
+	_setFullYear(ret,wrk,obj,args,argslen,false,false);
+}
+void Date::_setFullYear(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc, bool fromsetter)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	if (argslen == 0)
 	{
 		asAtomHandler::setNumber(ret, Number::NaN);
+		th->nan=true;
 		return;
 	}
 	number_t y, m, d;
 	ARG_CHECK(ARG_UNPACK (y) (m, 0) (d, 0));
+	if (th->isinfinite || isnan(y) || isinf(y)) {
+		asAtomHandler::setNumber(ret,Number::NaN);
+		th->nan=true;
+		return;
+	}
+	if (th->nan && fromsetter)
+	{
+		th->nan=false;
+		th->mstimestamp= utc ? 0 : th->mstimezoneoffset;
+	}
 
-	if (argslen > 1)
-		m++;
-	else
-		m = th->nan ? 1 : g_date_time_get_month(th->datetime);
+	if (argslen < 2)
+		m = th->getMonth(utc);
 	if (argslen < 3)
-		d = th->nan ? 0 : g_date_time_get_day_of_month(th->datetime);
-	th->MakeDate(y, m, d, th->nan ? 0 : g_date_time_get_hour(th->datetime),th->nan ? 0 : g_date_time_get_minute(th->datetime),th->nan ? 0 : g_date_time_get_second(th->datetime),int64_t(th->milliseconds) % 1000,true);
-	ret = th->msSinceEpoch();
+		d = th->getDayInMonth(utc);
+	th->MakeDate(
+		y
+		,m
+		,d
+		,th->getTimeInMS(utc)
+		,!utc
+		,true);
+	ret = th->msSinceEpoch(true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,fullYearSetter)
 {
 	asAtom o=asAtomHandler::invalidAtom;
-	Date::setFullYear(o,wrk,obj, args, min(argslen, (unsigned)1));
+	_setFullYear(o,wrk,obj, args, min(argslen, (unsigned)1),false,true);
 	ASATOM_DECREF(o);
 }
 
 ASFUNCTIONBODY_ATOM(Date,setMonth)
 {
+	_setMonth(ret, wrk, obj, args, argslen, false);
+}
+void Date::_setMonth(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc)
+{
 	Date* th=asAtomHandler::as<Date>(obj);
 	number_t m, d;
-	ARG_CHECK(ARG_UNPACK (m) (d, 0));
+	ARG_CHECK(ARG_UNPACK (m,0) (d, 0));
 
-	if (th->nan) {
+	if (isinf(m) || th->isinfinite || th->nan) {
 		asAtomHandler::setNumber(ret,Number::NaN);
+		th->nan=true;
 		return;
 	}
+	if (isnan(m)) {
+		m=0;
+	}
 	if (argslen < 2)
-		d = th->nan ? 0 : g_date_time_get_day_of_month(th->datetime);
-	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, m+1, d, g_date_time_get_hour(th->datetime),g_date_time_get_minute(th->datetime),g_date_time_get_second(th->datetime),int64_t(th->milliseconds) % 1000,true);
-	ret = th->msSinceEpoch();
+		d = th->getDayInMonth(utc);
+	th->MakeDate(
+		th->getYear(utc)
+		,m
+		,d
+		,th->getTimeInMS(utc)
+		,!utc
+		,true);
+	ret = th->msSinceEpoch(true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,monthSetter)
@@ -563,19 +609,29 @@ ASFUNCTIONBODY_ATOM(Date,monthSetter)
 	Date::setMonth(o,wrk,obj, args, min(argslen, (unsigned)1));
 	ASATOM_DECREF(o);
 }
-
 ASFUNCTIONBODY_ATOM(Date,setDate)
+{
+	_setDate(ret, wrk, obj, args, argslen, false);
+}
+void Date::_setDate(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
 	number_t d;
-	ARG_CHECK(ARG_UNPACK (d));
+	ARG_CHECK(ARG_UNPACK (d,Number::NaN));
 
-	if (th->nan) {
+	if (th->nan || th->isinfinite) {
 		asAtomHandler::setNumber(ret, Number::NaN);
+		th->nan=true;
 		return;
 	}
-	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), d, g_date_time_get_hour(th->datetime),g_date_time_get_minute(th->datetime),g_date_time_get_second(th->datetime),int64_t(th->milliseconds) % 1000,true);
-	ret = th->msSinceEpoch();
+	th->MakeDate(
+		th->getYear(utc)
+		,th->getMonth(utc)
+		,d
+		,th->getTimeInMS(utc)
+		,!utc
+		,true);
+	ret = th->msSinceEpoch(true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,dateSetter)
@@ -587,18 +643,34 @@ ASFUNCTIONBODY_ATOM(Date,dateSetter)
 
 ASFUNCTIONBODY_ATOM(Date,setHours)
 {
+	_setHours(ret, wrk, obj, args, argslen, false);
+}
+void Date::_setHours(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc)
+{
 	Date* th=asAtomHandler::as<Date>(obj);
 	number_t h, min, sec, ms;
-	ARG_CHECK(ARG_UNPACK (h) (min, 0) (sec, 0) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
+	ARG_CHECK(ARG_UNPACK (h,Number::NaN) (min, 0) (sec, 0) (ms, th->getMillisecond(utc)));
 
-	if (th->nan) {
+	if (th->nan || th->isinfinite) {
 		asAtomHandler::setNumber(ret, Number::NaN);
+		th->nan=true;
 		return;
 	}
-	if (argslen < 2) min = g_date_time_get_minute(th->datetime);
-	if (argslen < 3) sec = g_date_time_get_second(th->datetime);
-	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), g_date_time_get_day_of_month(th->datetime), h, min, sec, ms,true);
-	ret = th->msSinceEpoch();
+	if (argslen < 2)
+		min = th->getMinute(utc);
+	if (argslen < 3)
+		sec = th->getSecond(utc);
+	th->MakeDate(
+				th->getYear(utc)
+				,th->getMonth(utc)
+				,th->getDayInMonth(utc)
+				,h
+				,min
+				,sec
+				,ms
+				,!utc
+				,true);
+	ret = th->msSinceEpoch(true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,hoursSetter)
@@ -610,23 +682,50 @@ ASFUNCTIONBODY_ATOM(Date,hoursSetter)
 
 ASFUNCTIONBODY_ATOM(Date,setMinutes)
 {
+	_setMinutes(ret, wrk, obj, args, argslen, false);
+}
+void Date::_setMinutes(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc)
+{
 	Date* th=asAtomHandler::as<Date>(obj);
 	number_t min, sec, ms;
 	if (wrk->needsActionScript3())
 	{
-		ARG_CHECK(ARG_UNPACK (min) (sec, 0) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
+		ARG_CHECK(ARG_UNPACK (min) (sec, 0) (ms, th->getMillisecond(utc)));
 	}
 	else
 	{
-		ARG_CHECK(ARG_UNPACK (min,Number::NaN) (sec, 0) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
+		ARG_CHECK(ARG_UNPACK (min,Number::NaN) (sec, 0) (ms, th->getMillisecond(utc)));
 	}
-	if (th->nan) {
+	if (th->nan || th->isinfinite) {
 		asAtomHandler::setNumber(ret, Number::NaN);
+		th->nan=true;
 		return;
 	}
-	if (argslen < 2) sec = g_date_time_get_second(th->datetime);
-	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), g_date_time_get_day_of_month(th->datetime),  g_date_time_get_hour(th->datetime), min, sec, ms,true);
-	ret = th->msSinceEpoch();
+	if (argslen < 2)
+		sec = th->getSecond(false);
+	if (isnan(min) || isinf(min) || min < INT32_MIN)
+		min = INT32_MIN;
+	if (min > INT32_MAX)
+		min = INT32_MAX;
+	if (isnan(sec) || isinf(sec) || sec < INT32_MIN)
+		sec = INT32_MIN;
+	if (sec > INT32_MAX)
+		sec = INT32_MAX;
+	if (isnan(ms) || isinf(ms) || ms < INT32_MIN)
+		ms = INT32_MIN;
+	if (ms > INT32_MAX)
+		ms = INT32_MAX;
+	th->MakeDate(
+		th->getYear(utc)
+		,th->getMonth(utc)
+		,th->getDayInMonth(utc)
+		,th->getHour(utc)
+		,min
+		,sec
+		,ms
+		,!utc
+		,true);
+	ret = th->msSinceEpoch(true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,minutesSetter)
@@ -638,29 +737,39 @@ ASFUNCTIONBODY_ATOM(Date,minutesSetter)
 
 ASFUNCTIONBODY_ATOM(Date,setSeconds)
 {
+	_setSeconds(ret, wrk, obj, args, argslen, false);
+}
+void Date::_setSeconds(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc)
+{
 	Date* th=asAtomHandler::as<Date>(obj);
 
 	number_t sec, ms;
 	if (wrk->needsActionScript3())
 	{
-		ARG_CHECK(ARG_UNPACK (sec) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
+		ARG_CHECK(ARG_UNPACK (sec) (ms, th->getMillisecond(utc)));
 	}
 	else
 	{
-		ARG_CHECK(ARG_UNPACK (sec,Number::NaN) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
+		ARG_CHECK(ARG_UNPACK (sec,Number::NaN) (ms, th->getMillisecond(utc)));
 	}
 
-	if (th->nan
-		|| std::isnan(sec)
-		|| std::isinf(sec)
-		|| std::isnan(ms)
-		|| std::isinf(ms))
+	if (th->nan || th->isinfinite)
 	{
 		asAtomHandler::setNumber(ret, Number::NaN);
+		th->nan=true;
 		return;
 	}
-	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), g_date_time_get_day_of_month(th->datetime),  g_date_time_get_hour(th->datetime), g_date_time_get_minute(th->datetime), int64_t(sec), int64_t(ms),true);
-	ret = th->msSinceEpoch();
+	th->MakeDate(
+				th->getYear(utc)
+				,th->getMonth(utc)
+				,th->getDayInMonth(utc)
+				,th->getHour(utc)
+				,th->getMinute(utc)
+				,sec
+				,ms
+				,!utc
+				,true);
+	ret = th->msSinceEpoch(true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,secondsSetter)
@@ -672,6 +781,10 @@ ASFUNCTIONBODY_ATOM(Date,secondsSetter)
 
 ASFUNCTIONBODY_ATOM(Date,setMilliseconds)
 {
+	_setMilliseconds(ret, wrk, obj, args, argslen, false);
+}
+void Date::_setMilliseconds(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom* args, const unsigned int argslen, bool utc)
+{
 	Date* th=asAtomHandler::as<Date>(obj);
 	number_t ms;
 	if (wrk->needsActionScript3())
@@ -683,12 +796,22 @@ ASFUNCTIONBODY_ATOM(Date,setMilliseconds)
 		ARG_CHECK(ARG_UNPACK (ms,Number::NaN));
 	}
 
-	if (th->nan) {
+	if (th->nan || th->isinfinite) {
 		asAtomHandler::setNumber(ret, Number::NaN);
+		th->nan=true;
 		return;
 	}
-	th->MakeDate(g_date_time_get_year(th->datetime)+th->extrayears, g_date_time_get_month(th->datetime), g_date_time_get_day_of_month(th->datetime),  g_date_time_get_hour(th->datetime), g_date_time_get_minute(th->datetime), g_date_time_get_second(th->datetime), ms,true);
-	ret = th->msSinceEpoch();
+	th->MakeDate(
+				th->getYear(utc)
+				,th->getMonth(utc)
+				,th->getDayInMonth(utc)
+				,th->getHour(utc)
+				,th->getMinute(utc)
+				,th->getSecond(utc)
+				,ms
+				,!utc
+				,true);
+	ret = th->msSinceEpoch(true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,millisecondsSetter)
@@ -700,44 +823,19 @@ ASFUNCTIONBODY_ATOM(Date,millisecondsSetter)
 
 ASFUNCTIONBODY_ATOM(Date,setUTCFullYear)
 {
-	Date* th=asAtomHandler::as<Date>(obj);
-	number_t y, m, d;
-	ARG_CHECK(ARG_UNPACK (y) (m, 0) (d, 0));
-	if (th->nan) {
-		asAtomHandler::setNumber(ret, Number::NaN);
-		return;
-	}
-	if (argslen > 1)
-		m++;
-	else
-		m = g_date_time_get_month(th->datetimeUTC);
-	if (argslen < 3)
-		d = g_date_time_get_day_of_month(th->datetimeUTC);
-	th->MakeDate(y, m, d, g_date_time_get_hour(th->datetimeUTC),g_date_time_get_minute(th->datetimeUTC),g_date_time_get_second(th->datetimeUTC),int64_t(th->milliseconds) % 1000,false);
-	ret = th->msSinceEpoch();
+	_setFullYear(ret,wrk,obj,args,argslen,true,false);
 }
 
 ASFUNCTIONBODY_ATOM(Date,UTCFullYearSetter)
 {
 	asAtom o=asAtomHandler::invalidAtom;
-	Date::setUTCFullYear(o,wrk,obj, args, min(argslen, (unsigned)1));
+	_setFullYear(o,wrk,obj, args, min(argslen, (unsigned)1),true,true);
 	ASATOM_DECREF(o);
 }
 
 ASFUNCTIONBODY_ATOM(Date,setUTCMonth)
 {
-	Date* th=asAtomHandler::as<Date>(obj);
-	number_t m, d;
-	ARG_CHECK(ARG_UNPACK (m) (d, 0));
-
-	if (th->nan) {
-		asAtomHandler::setNumber(ret, Number::NaN);
-		return;
-	}
-	if (argslen < 2)
-		d = g_date_time_get_day_of_month(th->datetimeUTC);
-	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, m+1, d, g_date_time_get_hour(th->datetimeUTC),g_date_time_get_minute(th->datetimeUTC),g_date_time_get_second(th->datetimeUTC),int64_t(th->milliseconds) % 1000,false);
-	ret = th->msSinceEpoch();
+	_setMonth(ret, wrk, obj, args, argslen, true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,UTCMonthSetter)
@@ -749,16 +847,7 @@ ASFUNCTIONBODY_ATOM(Date,UTCMonthSetter)
 
 ASFUNCTIONBODY_ATOM(Date,setUTCDate)
 {
-	Date* th=asAtomHandler::as<Date>(obj);
-	number_t d;
-	ARG_CHECK(ARG_UNPACK (d));
-
-	if (th->nan) {
-		asAtomHandler::setNumber(ret, Number::NaN);
-		return;
-	}
-	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), d, g_date_time_get_hour(th->datetimeUTC),g_date_time_get_minute(th->datetimeUTC),g_date_time_get_second(th->datetimeUTC),int64_t(th->milliseconds) % 1000,false);
-	ret = th->msSinceEpoch();
+	_setDate(ret, wrk, obj, args, argslen, true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,UTCDateSetter)
@@ -770,18 +859,7 @@ ASFUNCTIONBODY_ATOM(Date,UTCDateSetter)
 
 ASFUNCTIONBODY_ATOM(Date,setUTCHours)
 {
-	Date* th=asAtomHandler::as<Date>(obj);
-	number_t h, min, sec, ms;
-	ARG_CHECK(ARG_UNPACK (h) (min, 0) (sec, 0) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
-
-	if (th->nan) {
-		asAtomHandler::setNumber(ret, Number::NaN);
-		return;
-	}
-	if (argslen < 2) min = g_date_time_get_minute(th->datetimeUTC);
-	if (argslen < 3) sec = g_date_time_get_second(th->datetimeUTC);
-	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), g_date_time_get_day_of_month(th->datetimeUTC),  h, min, sec, ms,false);
-	ret = th->msSinceEpoch();
+	_setHours(ret, wrk, obj, args, argslen, true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,UTCHoursSetter)
@@ -793,23 +871,7 @@ ASFUNCTIONBODY_ATOM(Date,UTCHoursSetter)
 
 ASFUNCTIONBODY_ATOM(Date,setUTCMinutes)
 {
-	Date* th=asAtomHandler::as<Date>(obj);
-	number_t min, sec, ms;
-	if (wrk->needsActionScript3())
-	{
-		ARG_CHECK(ARG_UNPACK (min) (sec, 0) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
-	}
-	else
-	{
-		ARG_CHECK(ARG_UNPACK (min,Number::NaN) (sec, 0) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
-	}
-	if (th->nan) {
-		asAtomHandler::setNumber(ret, Number::NaN);
-		return;
-	}
-	if (argslen < 2) sec = g_date_time_get_second(th->datetimeUTC);
-	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), g_date_time_get_day_of_month(th->datetimeUTC),  g_date_time_get_hour(th->datetimeUTC), min, sec, ms,false);
-	ret = th->msSinceEpoch();
+	_setMinutes(ret, wrk, obj, args, argslen, true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,UTCMinutesSetter)
@@ -821,24 +883,7 @@ ASFUNCTIONBODY_ATOM(Date,UTCMinutesSetter)
 
 ASFUNCTIONBODY_ATOM(Date,setUTCSeconds)
 {
-	Date* th=asAtomHandler::as<Date>(obj);
-
-	number_t sec, ms;
-	if (wrk->needsActionScript3())
-	{
-		ARG_CHECK(ARG_UNPACK (sec) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
-	}
-	else
-	{
-		ARG_CHECK(ARG_UNPACK (sec,Number::NaN) (ms, (int64_t(th->getMsSinceEpoch()) % 1000)));
-	}
-
-	if (th->nan) {
-		asAtomHandler::setNumber(ret, Number::NaN);
-		return;
-	}
-	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), g_date_time_get_day_of_month(th->datetimeUTC),  g_date_time_get_hour(th->datetimeUTC), g_date_time_get_minute(th->datetimeUTC), sec, ms,false);
-	ret = th->msSinceEpoch();
+	_setSeconds(ret, wrk, obj, args, argslen, true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,UTCSecondsSetter)
@@ -850,24 +895,7 @@ ASFUNCTIONBODY_ATOM(Date,UTCSecondsSetter)
 
 ASFUNCTIONBODY_ATOM(Date,setUTCMilliseconds)
 {
-	Date* th=asAtomHandler::as<Date>(obj);
-	number_t ms;
-	if (wrk->needsActionScript3())
-	{
-		ARG_CHECK(ARG_UNPACK (ms));
-	}
-	else
-	{
-		ARG_CHECK(ARG_UNPACK (ms,Number::NaN));
-	}
-
-	if (th->nan || std::isnan(ms) || std::isinf(ms)) {
-		th->nan=true;
-		asAtomHandler::setNumber(ret, Number::NaN);
-		return;
-	}
-	th->MakeDate(g_date_time_get_year(th->datetimeUTC)+th->extrayears, g_date_time_get_month(th->datetimeUTC), g_date_time_get_day_of_month(th->datetimeUTC),  g_date_time_get_hour(th->datetimeUTC), g_date_time_get_minute(th->datetimeUTC), g_date_time_get_second(th->datetimeUTC), ms,false);
-	ret = th->msSinceEpoch();
+	_setMilliseconds(ret, wrk, obj, args, argslen, false);
 }
 
 ASFUNCTIONBODY_ATOM(Date,UTCMillisecondsSetter)
@@ -896,16 +924,16 @@ ASFUNCTIONBODY_ATOM(Date,setTime)
 	}
 	assert_and_throw(asAtomHandler::is<Date>(obj));
 	Date* th=asAtomHandler::as<Date>(obj);
-	
+
 	if (std::isnan(ms))
 	{
 		th->nan = true;
 		asAtomHandler::setNumber(ret, Number::NaN);
 		return;
 	}
-	th->MakeDateFromMilliseconds(int64_t(ms));
+	th->MakeDateFromMilliseconds(ms,true);
 
-	ret = th->msSinceEpoch();
+	ret = th->msSinceEpoch(true);
 }
 
 ASFUNCTIONBODY_ATOM(Date,timeSetter)
@@ -923,65 +951,110 @@ ASFUNCTIONBODY_ATOM(Date,valueOf)
 		return;
 	}
 	Date* th=asAtomHandler::as<Date>(obj);
-	if(th->nan) {
-		asAtomHandler::setNumber(ret, Number::NaN);
-		return;
-	}
-	asAtomHandler::setNumber(ret, (int64_t)th->getMsSinceEpoch());
+	if (th->nan || th->isinfinite)
+		ret = asAtomHandler::fromNumber(Number::NaN);
+	else
+		ret = asAtomHandler::fromNumber(int64_t(th->getMsSinceEpoch(true)));
 }
 
-asAtom Date::msSinceEpoch()
+asAtom Date::msSinceEpoch(bool utc) const
 {
-	return this->nan ? getSystemState()->nanAtom : asAtomHandler::fromNumber(getMsSinceEpoch());
+	return this->nan ? getSystemState()->nanAtom : asAtomHandler::fromNumber(getMsSinceEpoch(utc));
 }
-number_t Date::getMsSinceEpoch()
+number_t Date::getMsSinceEpoch(bool utc) const
 {
-	return milliseconds+number_t(extrayears/400*MS_IN_400_YEARS);
+	return utc ? mstimestamp : mstimestamp - mstimezoneoffset;
+}
+number_t Date::computeMsTimezoneOffset() const
+{
+	timeval tv;
+	gettimeofday(&tv,nullptr);
+	struct tm* tloc = localtime(&tv.tv_sec);
+	tloc->tm_isdst=-1;
+	auto tl = mktime(tloc);
+	struct tm* tutc = gmtime(&tv.tv_sec);
+	auto tu = mktime(tutc);
+	return difftime(tl,tu)*1000.0;
+}
+number_t Date::getTimeInMS(bool utc) const
+{
+	number_t time = fmod(getMsSinceEpoch(utc),MS_PER_DAY);
+	if (time < 0)
+		time += MS_PER_DAY;
+	return time;
 }
 
 
 tiny_string Date::toString()
 {
 	assert_and_throw(implEnable);
-	if (needsActionScript3())
-		return toString_priv(false, "%a %b %_e %H:%M:%S GMT%z");
-	else
-		return toString_priv(false, "%a %b %-e %H:%M:%S GMT%z");
-}
-
-int Date::getYear()
-{
-	return this->extrayears + g_date_time_get_year(this->datetime);
-}
-
-int Date::getUTCYear()
-{
-	return extrayears + g_date_time_get_year(datetimeUTC);
+	return toString_priv(false, "%a %b %e %H:%M:%S GMT%z %Y");
 }
 
 tiny_string Date::toFormat(bool utc, tiny_string format)
 {
-	if(nan) 
-		return "Invalid Date";
-	gchar* fs = g_date_time_format(utc? this->datetimeUTC : this->datetime, format.raw_buf());
-	tiny_string res(fs);
-	//g_free(fs); // Should free here but it breaks system
-	return res;
+	return toString_priv(utc,format.raw_buf());
 }
+const char* strweekdays[] ={ "Sun","Mon","Tue","Wed","Thu","Fri","Sat" };
+const char* strmonths[] ={ "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec" };
 
 tiny_string Date::toString_priv(bool utc, const char* formatstr) const
 {
-	if(nan)
+	if(nan || isinfinite || std::isnan(mstimestamp))
 		return "Invalid Date";
-	assert(utc? this->datetimeUTC : this->datetime);
-	gchar* fs = g_date_time_format(utc? this->datetimeUTC : this->datetime, formatstr);
-	tiny_string res(fs);
-	char buf[10];
-	snprintf(buf,10," %d",(extrayears + g_date_time_get_year(utc? this->datetimeUTC : this->datetime)));
-	res += buf;
-	g_free(fs);
+
+	char buf[20];
+	tiny_string res;
+	tiny_string f(formatstr);
+	for (auto it = f.begin(); it != f.end(); it++)
+	{
+		if (*it != '%')
+		{
+			res += *it;
+			continue;
+		}
+		it++; // skip %
+		switch (*it)
+		{
+			case 'a':
+				res += strweekdays[getDayInWeek(utc)];
+				break;
+			case 'b':
+				res += strmonths[getMonth(utc)];
+				break;
+			case 'e':
+				snprintf(buf,19,"%i",getDayInMonth(utc));
+				res += buf;
+				break;
+			case 'H':
+				snprintf(buf,19,"%02i",getHour(utc));
+				res += buf;
+				break;
+			case 'M':
+				snprintf(buf,19,"%02i",getMinute(utc));
+				res += buf;
+				break;
+			case 'S':
+				snprintf(buf,19,"%02i",getSecond(utc));
+				res += buf;
+				break;
+			case 'z':
+			{
+				int32_t tzminutes = -mstimezoneoffset/1000/60;
+				snprintf(buf,19,"%c%02i%02i",tzminutes < 0 ? '-' :'+', abs(tzminutes)/60,abs(tzminutes)%60);
+				res += buf;
+				break;
+			}
+			case 'Y':
+				snprintf(buf,19,"%i",getYear(utc));
+				res += buf;
+				break;
+			default:
+				LOG(LOG_NOT_IMPLEMENTED,"Date format %"<<(char)(*it));
+				break;
+		}
+	}
 	return res;
-	
 }
 
 ASFUNCTIONBODY_ATOM(Date,_toString)
@@ -998,49 +1071,49 @@ ASFUNCTIONBODY_ATOM(Date,_toString)
 ASFUNCTIONBODY_ATOM(Date,toUTCString)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(true,"%a %b %_e %H:%M:%S UTC")));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(true,"%a %b %e %H:%M:%S UTC %Y")));
 }
 
 ASFUNCTIONBODY_ATOM(Date,toDateString)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(false,"%a %b %_e")));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(false,"%a %b %e %Y")));
 }
 
 ASFUNCTIONBODY_ATOM(Date,toTimeString)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(wrk,g_date_time_format(th->datetime, "%H:%M:%S GMT%z")));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toFormat(false, "%H:%M:%S GMT%z")));
 }
 
 
 ASFUNCTIONBODY_ATOM(Date,toLocaleString)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
-	if (!th->datetime)
+	if (!th->isValid())
 	{
 		ret = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 		return;
 	}
-	tiny_string res = th->toString_priv(false,"%a %b %_e");
-	gchar* fs = g_date_time_format(th->datetime, " %I:%M:%S");
+	tiny_string res = th->toString_priv(false,"%a %b %e");
+	tiny_string fs = th->toFormat(false," %I:%M:%S");
 	res += fs;
-	if (g_date_time_get_hour(th->datetime) > 12)
+	auto t = th->getDateTimeLocal();
+	if (t->tm_hour > 12)
 		res += " PM";
 	else
 		res += " AM";
-	g_free(fs);
 	ret = asAtomHandler::fromObject(abstract_s(wrk,res));
 }
 ASFUNCTIONBODY_ATOM(Date,toLocaleDateString)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(false,"%a %b %_e")));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toString_priv(false,"%a %b %e")));
 }
 ASFUNCTIONBODY_ATOM(Date,toLocaleTimeString)
 {
 	Date* th=asAtomHandler::as<Date>(obj);
-	ret = asAtomHandler::fromObject(abstract_s(wrk,g_date_time_format(th->datetime, "%H:%M:%S %Z%z")));
+	ret = asAtomHandler::fromObject(abstract_s(wrk,th->toFormat(false,"%H:%M:%S %Z%z")));
 }
 
 ASFUNCTIONBODY_ATOM(Date,_parse)
@@ -1048,204 +1121,161 @@ ASFUNCTIONBODY_ATOM(Date,_parse)
 	asAtomHandler::setNumber(ret, parse(asAtomHandler::toString(args[0],wrk)));
 }
 
-static const char* months[] = { "Jan", "Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
 number_t Date::parse(tiny_string str)
 {
-	char mo[4],tzd[20];
-	int c,d=0,h=0,m=0,s=0,y=0,mon=-1;
+	int d=0,h=0,m=0,s=0,y=0,mon=-1,tz=0;
+	char buf[10];
+	bool isPM = false;
+	bool hasYear = false;
+	bool hasTimezone = false;
 	bool bvalid = false;
 	number_t res = Number::NaN;
 
-	tzd[0] = 0;
-
-	// Day Mon DD YYYY HH:MM:SS TZD
-	c = sscanf(str.raw_buf(), "%*3s %3s %2d %4d %2d:%2d:%2d %19s",mo, &d,&y, &h,&m,&s,tzd);
-	bvalid = (c == 7);
-	if (!bvalid)
+	std::list<tiny_string> tokens = str.split(' ');
+	for (auto it = tokens.begin(); it != tokens.end(); it++)
 	{
-		// Day Mon DD HH:MM:SS TZD YYYY
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%*3s %3s %2d %2d:%2d:%2d %19s %4d",mo, &d, &h,&m,&s,tzd,&y);
-		bvalid = (c == 7);
-	}
-	if (!bvalid)
-	{
-		// DD YYYY Mon HH:MM:SS TZD
-		// YYYY DD Mon HH:MM:SS TZD
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%4d %4d %3s %2d:%2d:%2d %19s", &d,&y, mo ,&h,&m,&s,tzd);
-		bvalid = (c >= 3);
-		if (bvalid && d > y)
+		if (it->empty())
+			continue;
+		bool tokenvalid=false;
+		int tmp1,tmp2,tmp3;
+		// MM/DD/YYYY
+		// YYYY/MM/DD
+		if (sscanf(it->raw_buf(), "%4d/%4d/%4d",&tmp1,&tmp2, &tmp3) == 3)
 		{
-			int tmp = d;
-			d = y;
-			y = tmp;
-		}
-	}
-	if (!bvalid)
-	{
-		// YYYY/MM/DD HH:MM TZD
-		// MM/DD/YYYY HH:MM TZD
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%4d/%4d/%4d %2d:%2d %19s",&y,&mon, &d,&h,&m,tzd);
-		bvalid = (c >= 3);
-		if (bvalid)
-		{
-			if (y < 70)
+			tokenvalid = true;
+			hasYear=true;
+			if (tmp1 < 32)
 			{
-				int tmp = y;
-				y = d;
-				d = mon;
-				mon = tmp;
+				y=tmp3;
+				mon=tmp1;
+				d=tmp2;
+			}
+			else
+			{
+				y=tmp1;
+				mon=tmp2;
+				d=tmp3;
 			}
 		}
-	}
-	if (!bvalid)
-	{
-		// MM/DD/YYYY HH:MM:SS TZD
-		// YYYY/MM/DD HH:MM:SS TZD
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%4d/%4d/%4d %2d:%2d:%2d %19s",&mon, &d, &y,&h,&m,&s,tzd);
-		bvalid = (c >= 3);
-		if (bvalid)
+		if (!tokenvalid)
 		{
-			if (y < 70)
+			// MMM/DD/YYYY
+			if (!hasYear && sscanf(it->raw_buf(), "%3s/%2d/%4d", buf,&tmp2,&tmp3)==3)
 			{
-				int tmp = y;
-				y = mon;
-				mon = d;
-				d = tmp;
-			}
-		}
-	}
-	if (!bvalid)
-	{
-		// HH:MM:SS TZD Day Mon/DD/YYYY 
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%2d:%2d:%2d %19s %*3s %3s/%2d/%4d",&h,&m,&s,tzd,mo,&d,&y);
-		bvalid = (c == 7);
-	}
-	if (!bvalid)
-	{
-		// Mon YYYY DD HH:MM:SS TZD
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%3s %4d %2d %2d:%2d:%2d %19s",mo, &y,&d, &h,&m,&s,tzd);
-		bvalid = (c >= 3);
-	}
-	if (!bvalid)
-	{
-		// Mon DD YYYY HH:MM:SS TZD
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%3s %2d %4d %2d:%2d:%2d %19s",mo, &d, &y,&h,&m,&s,tzd);
-		bvalid = (c >= 3);
-	}
-	if (!bvalid)
-	{
-		// Day Mon DD HH:MM:SS TZD YYYY
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%*3s %3s %2d %2d:%2d:%2d %19s %4d",mo,&d,&h,&m,&s,tzd,&y);
-		bvalid = (c == 7);
-	}
-	if (!bvalid)
-	{
-		// Day DD Mon HH:MM:SS TZD YYYY
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%*3s %2d %3s %2d:%2d:%2d %19s %4d",&d,mo,&h,&m,&s,tzd,&y);
-		bvalid = (c == 7);
-	}
-	if (!bvalid)
-	{
-		// YYYY/MM/DD HH:MM:SS TZD
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%4d/%2d/%2d %2d:%2d:%2d %19s", &y, &mon,&d,&h,&m,&s,tzd);
-		bvalid = (c >= 3);
-	}
-	if (!bvalid)
-	{
-		// Day Mon DD YYYY
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%*3s %3s %2d %4d",mo,&d,&y);
-		bvalid = (c == 3);
-	}
-	if (!bvalid)
-	{
-		// DD Mon YYYY
-		// YYYY Mon DD
-		d=0;h=0;m=0;s=0;y=0;mon=-1;
-		tzd[0] = 0;
-		c = sscanf(str.raw_buf(), "%4d %3s %4d",&d,mo,&y);
-		bvalid = (c == 3);
-		if (bvalid && d > y)
-		{
-			int tmp = d;
-			d = y;
-			y = tmp;
-		}
-	}
-	if (bvalid)
-	{
-		if (mon == -1)
-		{
-			for (int i = 0;i < 12; i++)
-			{
-				if (!strcmp(mo,months[i]))
+				for (int i = 0; i < 12; i++)
 				{
+					if (strcmp(buf,strmonths[i])==0)
+					{
+						tokenvalid=true;
+						d=tmp2;
+						y=tmp3;
+						mon = i+1;
+						hasYear=true;
+						break;
+					}
+				}
+			}
+		}
+		if (!tokenvalid)
+		{
+			// HH:MM:SS
+			if (sscanf(it->raw_buf(), "%2d:%2d:%2d", &tmp1,&tmp2,&tmp3)==3)
+			{
+				h=tmp1;
+				m=tmp2;
+				s=tmp3;
+				tokenvalid = true;
+			}
+		}
+		if (!tokenvalid)
+		{
+			// Day
+			for (int i = 0; i < 7; i++)
+			{
+				if (*it == strweekdays[i])
+				{
+					tokenvalid=true;
+					break;
+				}
+			}
+		}
+		if (!tokenvalid)
+		{
+			// Mon
+			for (int i = 0; i < 12; i++)
+			{
+				if (*it == strmonths[i])
+				{
+					tokenvalid=true;
 					mon = i+1;
 					break;
 				}
-				
 			}
 		}
-		bool bIsLocalTime = false;
-		tiny_string ampm = tzd;
-		ampm.uppercase();
-		if (!strcmp(ampm.raw_buf(),"AM"))
+		if (!tokenvalid)
 		{
-			bvalid = (h <= 12);
-			h = h%12;
-			bIsLocalTime = true;
-		}
-		if (!strcmp(ampm.raw_buf(),"PM"))
-		{
-			bvalid = (h <= 12);
-			h = h%12;
-			h += 12;
-			bIsLocalTime = true;
-		}
-		if (bvalid && mon > 0)
-		{
-			// parse timezone string
-			if (!strcmp(tzd,"UTC"))
-				bIsLocalTime=false;
-			char* p = tzd;
-			while (*p && isalpha(*p))
-				p++;
-			int tz = 0;
-			if (*p)
-				sscanf(p, "%19d",&tz);
-			if (y >=70 && y<100)
-				y += 1900;
-			if (mon >= 1 && mon <= 12 && d >= 1 && d <= 31 && h >= 0 && h <= 23 && m >= 0 && m <= 59 && s >= 0 && s <= 59)
+			// TZD
+			if (!hasTimezone && (it->startsWith("GMT") || it->startsWith("UTC")))
 			{
-				_R<Date> dt=_MR(Class<Date>::getInstanceS(getWorker()));
-				if (tz == 0)
-					dt->MakeDate(y, mon, d, h, m, s, 0, bIsLocalTime);
+				if (it->numBytes()>3)
+					tokenvalid = sscanf(it->raw_buf()+3, "%d",&tz);
 				else
-					dt->MakeDate(y, mon, d, h-(tz/100),m-(tz%100), s, 0,false);
-				res =dt->nan ? Number::NaN : dt->milliseconds+dt->extrayears/400*MS_IN_400_YEARS;
+					tokenvalid=true;
+				hasTimezone=true;
 			}
 		}
+		if (!tokenvalid)
+		{
+			// DD or YYYY
+			int tmp=0;
+			if (sscanf(it->raw_buf(), "%d",&tmp)==1 && tmp >=0)
+			{
+				if (tmp >= 70)
+				{
+					if (!hasYear)
+					{
+						y = tmp;
+						hasYear=true;
+						tokenvalid = true;
+					}
+				}
+				else
+				{
+					d=tmp;
+					tokenvalid = true;
+				}
+			}
+		}
+		if (!tokenvalid)
+		{
+			// AM
+			if (it->uppercase() == "AM")
+				tokenvalid=true;
+		}
+		if (!tokenvalid)
+		{
+			// PM
+			if (it->uppercase() == "PM")
+			{
+				tokenvalid=true;
+				isPM=true;
+			}
+		}
+		bvalid = tokenvalid;
+		if (!tokenvalid)
+			break;
+	}
+
+	if (bvalid && hasYear && mon >0)
+	{
+		if (isPM)
+			h += 12;
+		if (y >=0 && y <= 99)
+			y += 1900;
+		Date* dt=Class<Date>::getInstanceS(getWorker());
+		dt->MakeDate(y, mon-1, d, h,m, s, 0,true,false,tz);
+		res =dt->nan ? Number::NaN : dt->mstimestamp;
+		dt->decRef();
 	}
 	return res;
 }
@@ -1255,29 +1285,21 @@ bool Date::isEqual(ASObject* r)
 	if(this==r)
 		return true;
 	if (r->is<Date>())
-		return getMsSinceEpoch() == r->as<Date>()->getMsSinceEpoch();
+		return getMsSinceEpoch(true) == r->as<Date>()->getMsSinceEpoch(true);
 	return ASObject::isEqual(r);
 }
 
 TRISTATE Date::isLess(ASObject* r)
 {
 	if (r->is<Date>())
-		return (getMsSinceEpoch() < r->as<Date>()->getMsSinceEpoch())?TTRUE:TFALSE;
+		return (getMsSinceEpoch(true) < r->as<Date>()->getMsSinceEpoch(true))?TTRUE:TFALSE;
 	return ASObject::isLess(r);
 }
 TRISTATE Date::isLessAtom(asAtom& r)
 {
 	if (asAtomHandler::is<Date>(r))
-		return (getMsSinceEpoch() < asAtomHandler::as<Date>(r)->getMsSinceEpoch())?TTRUE:TFALSE;
+		return (getMsSinceEpoch(true) < asAtomHandler::as<Date>(r)->getMsSinceEpoch(true))?TTRUE:TFALSE;
 	return ASObject::isLessAtom(r);
-}
-
-tiny_string Date::format(const char *fmt, bool utc)
-{
-	gchar* fs = g_date_time_format(utc? this->datetimeUTC : this->datetime, "%a %b %_e %H:%M:%S GMT%z");
-	tiny_string res(fs);
-	g_free(fs);
-	return res;
 }
 
 void Date::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
@@ -1289,7 +1311,7 @@ void Date::serialize(ByteArray* out, std::map<tiny_string, uint32_t>& stringMap,
 		LOG(LOG_NOT_IMPLEMENTED,"serializing Date in AMF0 not implemented");
 		return;
 	}
-	number_t val = getMsSinceEpoch();
+	number_t val = getMsSinceEpoch(true);
 	out->writeByte(date_marker);
 	// write milliseconds since 1970 as double
 	out->serializeDouble(val);
@@ -1301,38 +1323,104 @@ int64_t Date::getcurrentms()
 	if (getSystemState()->use_testrunner_date)
 	{
 		// ruffle tests expect a specific date in specific timezone as "current date"
-#if GLIB_VERSION_2_68
-		GTimeZone* tmtz = g_time_zone_new_identifier("+05:45");
-#else
-		GTimeZone* tmtz = g_time_zone_new("+05:45");
-#endif
-		GDateTime* tmp = g_date_time_new(tmtz,2001, 2, 3, 4, 5, 6);
-		ms = g_date_time_to_unix(tmp)*1000 + g_date_time_get_microsecond (tmp)/1000;
-		g_date_time_unref(tmp);
-		g_time_zone_unref(tmtz);
+		// 2001-02-03 04:05:06 GMT+05:45
+		setenv("TZ", "GMT+5:45", 1);
+		tzset();
+		MakeDate(2001,2-1,3,4,5,6,0,true,false);
+		ms = mstimestamp;
 	}
 	else
 	{
-		GDateTime* tmp = g_date_time_new_now_utc();
-		ms = g_date_time_to_unix(tmp)*1000 + g_date_time_get_microsecond (tmp)/1000;
-		g_date_time_unref(tmp);
+		struct timeval tv;
+		gettimeofday(&tv,nullptr);
+		ms = (tv.tv_sec*1000)+tv.tv_usec/1000;
 	}
 	return ms;
 }
-GDateTime* Date::getlocaldatetime(GDateTime* datetimeUTC)
+
+struct tm* Date::getDateTimeUTC() const
 {
-	GDateTime* ret = nullptr;
-	if (getSystemState()->use_testrunner_date)
-	{
-#if GLIB_VERSION_2_68
-		GTimeZone* tmtz = g_time_zone_new_identifier("+05:45");
-#else
-		GTimeZone* tmtz = g_time_zone_new("+05:45");
-#endif
-		ret = g_date_time_to_timezone(datetimeUTC,tmtz);
-		g_time_zone_unref(tmtz);
-	}
-	else
-		ret = g_date_time_to_local(datetimeUTC);
-	return ret;
+	time_t t = floor(this->mstimestamp/1000.0);
+	return gmtime(&t);
+}
+
+struct tm* Date::getDateTimeLocal() const
+{
+	time_t t = floor(this->mstimestamp/1000.0);
+	return localtime(&t);
+}
+
+int32_t Date::getYear(bool utc) const
+{
+	if (isinfinite || isinfiniteYear)
+		return INT32_MIN+1970;
+	number_t ms = getMsSinceEpoch(utc);
+	number_t daysin400years = (400 * 365) + 100 + 1 - 4; // 100 leap years + 1 leap year at 400 - 4 non-leap years every 100 years
+	number_t day = floor(ms / MS_PER_DAY) - dayFromYear(0);
+	number_t year = day * 400.0 / daysin400years;
+	return int32_t(floor(year));
+}
+
+// getters based on algorithms described in ECMA-262 chapter 15.9
+int32_t Date::getMonth(bool utc) const
+{
+	number_t y = floor(getYear(utc));
+	number_t d = floor(getMsSinceEpoch(utc)/MS_PER_DAY) - dayFromYear(y);
+	if (isinf(d) || d<0)
+		return 0;
+	bool isleapyear = isLeapYear(y);
+	int i=0;
+	while (i < 12 && d >= (isleapyear ? daysinleapyear[i] : daysinyear[i]))
+		i++;
+	return i-1;
+}
+int32_t Date::getDayInMonth(bool utc) const
+{
+	number_t y = floor(getYear(utc));
+	number_t d = floor(getMsSinceEpoch(utc)/MS_PER_DAY) - dayFromYear(y);
+	bool isleapyear = isLeapYear(y);
+	int i=1;
+	while (i < 12 && d >= (isleapyear ? daysinleapyear[i] : daysinyear[i]))
+		i++;
+	return int32_t(d- (isleapyear ? daysinleapyear[i-1] : daysinyear[i-1])) +1;
+}
+int32_t Date::getDayInWeek(bool utc) const
+{
+	number_t d =floor(getMsSinceEpoch(utc)/MS_PER_DAY);
+	number_t res = fmod(d+4.0,7);
+	if (res < INT32_MIN || res > INT32_MAX || std::isnan(res))
+		res = INT32_MIN;
+	return res < 0 ? res + 7 : res;
+}
+int32_t Date::getHour(bool utc) const
+{
+	number_t h =floor((getMsSinceEpoch(utc)+.5)/MS_PER_HOUR);
+	number_t res = fmod(h,24);
+	if (res < INT32_MIN || res > INT32_MAX || std::isnan(res))
+		res = INT32_MIN;
+	return res < 0 ? res + 24 : res;
+}
+int32_t Date::getMinute(bool utc) const
+{
+	number_t m =floor(getMsSinceEpoch(utc)/MS_PER_MINUTE);
+	number_t res = fmod(m,60);
+	if (res < INT32_MIN || res > INT32_MAX || std::isnan(res))
+		res = INT32_MIN;
+	return res < 0 ? res + 60 : res;
+}
+int32_t Date::getSecond(bool utc) const
+{
+	number_t s =floor(getMsSinceEpoch(utc)/MS_PER_SECOND);
+	number_t res = fmod(s,60);
+	if (res < INT32_MIN || res > INT32_MAX || std::isnan(res))
+		res = INT32_MIN;
+	return res < 0 ? res + 60 : res;
+}
+int32_t Date::getMillisecond(bool utc) const
+{
+	number_t ms = getMsSinceEpoch(utc);
+	number_t res = fmod(ms,1000);
+	if (res < INT32_MIN || res > INT32_MAX || std::isnan(res))
+		res = INT32_MIN;
+	return res < 0 ? res + 1000 : res;
 }

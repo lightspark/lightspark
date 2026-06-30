@@ -96,13 +96,19 @@ public:
 
 	void fillTabStopsByTabIndex(std::map<int32_t, DisplayObject&>& indexMap);
 	void dumpDisplayList(size_t level = 0);
-	void handleRemovedEvent
+	static void handleAddedEvent
 	(
+		const DisplayObject& parent,
 		DisplayObject& child,
-		bool keepOnStage,
-		bool inskipping,
-		bool sendEvents
+		bool wasOnStage
 	);
+
+	static void handleAddedEventOnly(DisplayObject& child);
+	static void handleAddedToStageEvent(DisplayObject& child);
+	static void handleAddedToStageEventOnly(DisplayObject& child);
+
+	void handleRemovedEvent(DisplayObject& child, bool keepOnStage);
+	void handleRemovedFromStageEvent(DisplayObject& child);
 
 	bool removeChild
 	(
@@ -110,12 +116,11 @@ public:
 		bool direct = false,
 		bool inskipping = false,
 		bool keepOnStage = false,
-		bool sendEvents = true,
 		bool removeName = true
 	);
 
 	void removeFromDisplayList(DisplayObject& child);
-	void removeAllChildren(bool sendEvents, bool recursive);
+	void removeAllChildren(bool recursive);
 	void removeAVM1Listeners();
 	size_t getChildIndex(DisplayObject& child);
 	void markAsChanged();
@@ -135,7 +140,7 @@ public:
 	DisplayObject* tryGetChildAt(int32_t depth);
 	bool hasChildByName(const tiny_string& name, bool caseSensitive) const;
 	DisplayObject* getChildByName(const tiny_string& name, bool caseSensitive);
-	void setupClipActionsAt(iint32_t depth, const CLIPACTIONS& actions);
+	void setupClipActionsAt(int32_t depth, const CLIPACTIONS& actions);
 	void checkRatioForChildAt(int32_t depth, uint32_t ratio, bool inskipping);
 	void checkColorTransformForChildAt(int32_t depth, const CXFORMWITHALPHA& ct);
 	void removeChildName(DisplayObject& obj);
@@ -159,6 +164,17 @@ public:
 	void executeFrameScript();
 	void afterTimelineCreation();
 	void afterTimelineDeletion(bool inskipping);
+
+	std::vector<DisplayObject&> getObjectsFromPoint
+	(
+		const Vector2Twips& point
+	);
+
+	void getObjectsFromPoint
+	(
+		const Vector2Twips& point,
+		std::vector<DisplayObject&>& list
+	);
 };
 
 }

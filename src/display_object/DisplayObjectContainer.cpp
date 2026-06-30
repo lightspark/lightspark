@@ -482,31 +482,44 @@ void DisplayObjectContainer::fillTabStopsByTabIndex
 
 void DisplayObjectContainer::dumpDisplayList(size_t level)
 {
-	tiny_string indent(std::string(2*level, ' '));
-	auto it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();++it)
+	std::string indent(2 * level, ' ');
+	for (const auto& child : dynamicDisplayList)
 	{
-		Vector2f pos = (*it)->getXY();
-		LOG(LOG_INFO, indent << (*it)->toDebugString() <<
-		    " (" << pos.x << "," << pos.y << ") " <<
-		    (*it)->getNominalWidth() << "x" << (*it)->getNominalHeight() << " " <<
-		    ((*it)->isVisible() ? "v" : "") <<
-						  ((*it)->isMask() ? "m" : "") <<((*it)->hasFilters() ? "f" : "") <<(asAtomHandler::is<Rectangle>((*it)->scrollRect) ? "s" : "") << " cd=" <<(*it)->ClipDepth<<" "<<
-			"a=" << (*it)->clippedAlpha() <<" '"<<
-			((*it)->name != UINT32_MAX ? getSystemState()->getStringFromUniqueId((*it)->name) : "")<<"'"
-			<<" depth:"<<(*it)->getDepth()<<" blendmode:"<<(*it)->getBlendMode()<<
-		    ((*it)->cacheAsBitmap ? " cached" : ""));
+		auto pos = child.getXY();
+		auto size = child.getNominalSize();
+		bool hasScrollRect = child.getScrollRect().hasValue();
+		LOG
+		(
+			LOG_INFO,
+			indent << child.toDebugString() <<
+			" (" << pos.x << ',' << pos.y << ") " <<
+			size.x << 'x' << size.y << ' ' <<
+			child.isVisible() ? "v" : "" <<
+			child.isMask() ? "m" : "" <<
+			child.hasFilters() ? "f" : "" <<
+			hasScrollRect ? "s " : " " <<
+			"cd=" << child.getClipDepth() << ' ' <<
+			"a=" << child.getAlpha() << " '" <<
+			child.getName() << "' " <<
+			"depth:" << child.getDepth() << ' ' <<
+			"blendmode:" << child.getBlendMode() <<
+			child.getCachedBitmapPreference() ? " cached" ? ""
+		);
 
-		if ((*it)->is<DisplayObjectContainer>())
-		{
-			(*it)->as<DisplayObjectContainer>()->dumpDisplayList(level+1);
-		}
+		auto container = child.as<DisplayObjectContainer>();
+		if (container != nullptr)
+			container->dumpDisplayList(level + 1);
 	}
-	auto i = mapDepthToLegacyChild.begin();
-	while( i != mapDepthToLegacyChild.end() )
+	
+	for (const auto& pair : mapDepthToChild)
 	{
-		LOG(LOG_INFO, indent << "legacy:"<<i->first <<" "<<i->second->toDebugString());
-		i++;
+		LOG
+		(
+			LOG_INFO,
+			indent << "legacy:" <<
+			pair.first << ' ' <<
+			pair.second.toDebugString()
+		);
 	}
 }
 
@@ -516,390 +529,544 @@ void DisplayObjectContainer::constructionComplete(bool _explicit, bool forInitAc
 		return;
 
 	auto list = cloneDisplayList();
-	initializingFrame = true;
 	for (auto& child : list)
 		child.initFrame();
-	initializingFrame = false;
 }
 
-void DisplayObjectContainer::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
+void DisplayObjectContainer::requestInvalidation
+(
+	InvalidateQueue* q,
+	bool forceTextureRefresh
+)
 {
-	DisplayObject::requestInvalidation(q);
-	if (forceTextureRefresh)
+	if (!forceTextureRefresh)
 	{
-		std::vector<_R<DisplayObject>> tmplist;
-		cloneDisplayList(tmplist); // use copy of displaylist to avoid deadlock when computing boundsrect for cached bitmaps
-		auto it=tmplist.begin();
-		for(;it!=tmplist.end();++it)
-		{
-			(*it)->hasChanged = true;
-			(*it)->requestInvalidation(q,forceTextureRefresh);
-		}
+		base.setHasChanged(true);
+		q->addToInvalidateQueue(this);
+		base.requestInvalidationFilterParent(q);
+		return;
 	}
-	if (forceTextureRefresh)
-		this->setNeedsTextureRecalculation();
-	hasChanged=true;
+
+	// Use a copy of the display list to avoid deadlocks when computing
+	// `boundsRect` for cached bitmaps.
+	auto list = cloneDisplayList();
+	for (auto& child : list)	
+		child.markAsChanged(q, true);
+
+	base.setNeedsTextureRecalculation();
+	base.setHasChanged(true);
 	q->addToInvalidateQueue(this);
 	requestInvalidationFilterParent(q);
 }
+
 void DisplayObjectContainer::requestInvalidationIncludingChildren(InvalidateQueue* q)
 {
-	DisplayObject::requestInvalidationIncludingChildren(q);
-	auto it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();++it)
-	{
-		(*it)->requestInvalidationIncludingChildren(q);
-	}
+	for (auto& child : dynamicDisplayList)
+		child.requestInvalidationIncludingChildren(q);
 }
+
 IDrawable* DisplayObjectContainer::invalidate(bool smoothing)
 {
-	IDrawable* res = getFilterDrawable(smoothing);
-	if (res)
+	IDrawable* ret = getFilterDrawable(smoothing);
+	if (ret != nullptr)
 	{
 		Locker l(mutexDisplayList);
-		res->getState()->setupChildrenList(dynamicDisplayList);
-		return res;
+		ret->getState()->setupChildrenList(dynamicDisplayList);
+		return ret;
 	}
-	number_t x,y;
-	number_t width,height;
-	number_t bxmin=0,bxmax=0,bymin=0,bymax=0;
-	boundsRect(bxmin,bxmax,bymin,bymax,false);
-	MATRIX matrix = getMatrix();
+
+	const auto& matrix = base.getMatrix();
+	auto bounds = computeBoundsForTransformedRect
+	(
+		base.boundsRect(false),
+		MATRIX().scale(matrix.getScale())
+	);
 	
-	bool isMask=false;
-	MATRIX m;
-	m.scale(matrix.getScaleX(),matrix.getScaleY());
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
+	auto ct = base.getColorTransform();
+	base.resetNeedsTextureRecalculation();
 	
-	ColorTransformBase ct=this->colorTransform;
-	this->resetNeedsTextureRecalculation();
-	
-	res = new RefreshableDrawable(x, y, ceil(width), ceil(height)
-								   , matrix.getScaleX(), matrix.getScaleY()
-								   , isMask, cacheAsBitmap
-								   , getScaleFactor(),getConcatenatedAlpha()
-								   , ct, smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS:SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+	ret = new RefreshableDrawable
+	(
+		bounds.min,
+		bounds.max.ceil(),
+		matrix.getScale(),
+		false,
+		base.getCachedBitmapPref
+		base.getCachedBitmapPreference(),
+		base.getScaleFactor(),
+		base.getConcatenatedAlpha(),
+		ct,
+		smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,
+		base.getBlendMode(),
+		matrix
+	);
+
+	auto state = ret->getState();
+
 	{
 		Locker l(mutexDisplayList);
-		res->getState()->setupChildrenList(dynamicDisplayList);
+		state->setupChildrenList(dynamicDisplayList);
 	}
-	if (!this->needsActionScript3()
-			&& asAtomHandler::AVM1toBool(tabEnabled,getInstanceWorker(),loadedFrom->version)
-			&& this == getSystemState()->stage->getFocusTarget())
-	{
-		// add rectangle to be rendered for focused SimpleButton/Sprite (AVM1 only)
-		assert (this->is<Sprite>() || this->is<SimpleButton>());
-		number_t bxmin,bxmax,bymin,bymax;
-		if(boundsRect(bxmin,bxmax,bymin,bymax,false))
-		{
-			if (!res->getState()->tokens.stroketokens)
-				res->getState()->tokens.stroketokens=_MR(new tokenListRef());
-			res->getState()->renderWithNanoVG=true;
-			res->getState()->tokens.isFilled=true;
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(SET_STROKE).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(getSystemState()->avm1FocusRectLinestyle).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(MOVE).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2(0.0 , (bymin-bxmin))).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2(0.0, (bymax-bymin))).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin), (bymax-bymin))).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin), 0.0)).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(Vector2(0.0, 0.0)).uval);
-			res->getState()->tokens.stroketokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
-		}
-	}
-	return res;
+
+	auto sys = base.getSys();
+	if (_isAS3 || !base.isTabEnabled() || &base != sys->stage->getFocusTarget())
+		return ret;
+
+	// add rectangle to be rendered for focused Button/Sprite (AVM1 only)
+	assert(base.is<Sprite>() || baseis<Button>());
+
+	auto _bounds = base.tryBoundsRect(false);
+	if (!_bounds.hasValue())
+		return ret;
+	
+	if (state->tokens.stroketokens.isNull())
+		state->tokens.stroketokens = _MR(new tokenListRef());
+	state->renderWithNanoVG = true;
+	state->tokens.isFilled = true;
+	auto size = _bounds.size();
+	auto& strokeTokens = state->tokens.stroketokens->tokens;
+	strokeTokens.emplace_back(GeomToken(SET_STROKE).uval);
+	strokeTokens.emplace_back(GeomToken(sys->avm1FocusRectLinestyle).uval);
+
+	strokeTokens.emplace_back(GeomToken(MOVE).uval);
+	strokeTokens.emplace_back(GeomToken(Vector2f
+	(
+		0,
+		bounds.min.y - bounds.min.x
+	).uval));
+
+	strokeTokens.emplace_back(GeomToken(STRAIGHT).uval);
+	strokeTokens.emplace_back(GeomToken(Vector2f(0, size.y)).uval);
+
+	strokeTokens.emplace_back(GeomToken(STRAIGHT).uval);
+	strokeTokens.emplace_back(GeomToken(size).uval);
+
+	strokeTokens.emplace_back(GeomToken(STRAIGHT).uval);
+	strokeTokens.emplace_back(GeomToken(Vector2f(size.x, 0)).uval);
+
+	strokeTokens.emplace_back(GeomToken(STRAIGHT).uval);
+	strokeTokens.emplace_back(GeomToken(Vector2f()).uval);
+
+	strokeTokens.emplace_back(GeomToken(CLEAR_STROKE).uval);
+	return ret;
 }
-void DisplayObjectContainer::invalidateForRenderToBitmap(BitmapContainerRenderData* container,bool smoothing)
+
+void DisplayObjectContainer::addChildAt
+(
+	DisplayObject& child,
+	size_t index,
+	bool inskipping
+)
 {
-	DisplayObject::invalidateForRenderToBitmap(container, smoothing);
-	auto it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();++it)
-	{
-		(*it)->invalidateForRenderToBitmap(container, smoothing);
-	}
-}
-void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int index, bool inskipping)
-{
+	auto sys = base.getSys();
+	auto parent = child.getParent();
 	//If the child has no parent, set this container to parent
 	//If there is a previous parent, purge the child from his list
-	if(child->getParent() && !getSystemState()->isInResetParentList(child))
+	bool hasParent =
+	(
+		parent != nullptr &&
+		sys->isInResetParentList(child);
+	);
+
+	if (hasParent && parent == &base && getChildIndex(child) >= 0)
 	{
-		if(child->getParent()==this)
-		{
-			if (this->getChildIndex(child) >= 0)
-			{
-				//Child already in this container, set to new position
-				setChildIndexIntern(child,index);
-				child->decRef();
-				return;
-			}
-		}
-		else
-		{
-			child->getParent()->_removeChild(child,false,inskipping);
-		}
-	}
-	getSystemState()->removeFromResetParentList(child);
-	if(!child->needsActionScript3())
-		getSystemState()->stage->AVM1AddDisplayObject(child);
-	child->setParent(this,false);
-	{
-		Locker l(mutexDisplayList);
-		//We insert the object in the back of the list
-		if(index >= dynamicDisplayList.size())
-			dynamicDisplayList.push_back(child);
-		else
-		{
-			auto it=dynamicDisplayList.begin();
-			for(unsigned int i=0;i<index;i++)
-				++it;
-			dynamicDisplayList.insert(it,child);
-		}
-		child->addStoredMember();
-	}
-	_R<Event> e=_MR(Class<Event>::getInstanceS(getInstanceWorker(),"added",true));
-	if(isVmThread())
-		ABCVm::publicHandleEvent(child,e);
-	else
-	{
-		child->incRef();
-		getVm(getSystemState())->addEvent(_MR(child),e);
+		//Child already in this container, set to new position
+		setChildIndexImpl(child, index);
+		return;
 	}
 
-	if (!onStage || child != getSystemState()->mainClip)
-		child->setOnStage(onStage,false,inskipping);
+	if (hasParent && parent != &base)
+		parent->removeChild(child, false, inskipping);
+
+	sys->removeFromResetParentList(child);
+	if (!child.isAS3())
+		sys->stage->AVM1AddDisplayObject(child);
+
+	bool wasOnStage = child.isOnStage();
+	child.setPlaceFrame(0);
+	child.setParent(&base, false);
+	if (!_isAS3)
+		child.setRemovedByAVM1(false);
+
+	{
+		Locker l(mutexDisplayList);
+		auto it =
+		(
+			index >= dynamicDisplayList.size() ?
+			//We insert the object in the back of the list
+			dynamicDisplayList.end() :
+			dynamicDisplayList.begin() + index
+		);
+		dynamicDisplayList.insert(it, child);
+	}
+
+	handleAddedEvent(base, child, wasOnStage);
+
+	if (base.isOnStage())
+		base.requestInvalidation(sys);
+}
+
+void DisplayObjectContainer::handleAddedEvent
+(
+	const DisplayObject& parent,
+	DisplayObject& child,
+	bool wasOnStage
+)
+{
+	handleAddedEventOnly(child);
+	if (parent.isOnStage() && !wasOnStage)
+		handleAddedToStageEvent(child);
+}
+
+void DisplayObjectContainer::handleAddedEventOnly(DisplayObject& child)
+{
+	auto obj = child.toASObject();
+	if (obj.isNull())
+		return;
+
+	auto wrk = obj->getInstanceWorker();
+	getVm(child.getSys())->tryAddEvent(_MR(Class<Event>::getInstanceS
+	(
+		wrk,
+		"added",
+		true
+	)));
+}
+
+void DisplayObjectContainer::handleAddedToStageEvent(DisplayObject& child)
+{
+	handleAddedToStageEventOnly(child);
+
+	auto container = child.as<DisplayObjectContainer>();
+	if (container != nullptr)
+	{
+		auto list = container->cloneDisplayList();
+		for (auto& _child : list)
+			handleAddedToStageEvent(_child);
+	}
+
+	auto button = child.as<SimpleButton>();
+	if (button == nullptr)
+		return;
 	
-	if (isOnStage())
-		this->requestInvalidation(getSystemState());
+	auto _child = button->getCurrentStateObj();
+	if (_child != nullptr)
+		handleAddedToStageEvent(_child);
+		
+
 }
 
-void DisplayObjectContainer::handleRemovedEvent(DisplayObject* child, bool keepOnStage, bool inskipping, bool sendevents)
+void DisplayObjectContainer::handleAddedToStageEventOnly
+(
+	DisplayObject& child
+)
 {
-	if (sendevents)
-	{
-		_R<Event> e=_MR(Class<Event>::getInstanceS(child->getInstanceWorker(),"removed",true));
-		if (isVmThread())
-			ABCVm::publicHandleEvent(child, e);
-		else
-		{
-			child->incRef();
-			getVm(getSystemState())->addEvent(_MR(child), e);
-		}
-	}
-	if (!keepOnStage && (child->isOnStage() || !child->getStage().isNull()))
-		child->setOnStage(false, true, inskipping);
+	auto obj = child.toASObject();
+	if (obj.isNull())
+		return;
+
+	auto wrk = obj->getInstanceWorker();
+	getVm(child.getSys())->tryAddEvent(_MR(Class<Event>::getInstanceS
+	(
+		wrk,
+		"addedToStage",
+		true
+	)));
 }
 
-bool DisplayObjectContainer::_removeChild(DisplayObject* child, bool direct, bool inskipping, bool keeponstage, bool sendevents, bool removeName)
+void DisplayObjectContainer::handleRemovedEvent
+(
+	DisplayObject& child,
+	bool keepOnStage
+)
 {
-	if(!child->getParent() || child->getParent()!=this)
+	auto obj = child.toASObject();
+	if (obj.isNull())
+		return;
+
+	auto sys = child.getSys();
+	auto wrk = obj->getInstanceWorker();
+	getVm(sys)->tryAddEvent(_MR(Class<Event>::getInstanceS
+	(
+		wrk,
+		"removed",
+		true
+	)));
+
+	bool isRemovedFromStage = !keepOnStage &&
+	(
+		child.isOnStage() ||
+		child.getStage() != nullptr
+	);
+
+	if (isRemovedFromStage)
+		handleRemovedFromStageEvent(child);
+}
+
+void DisplayObjectContainer::handleRemovedFromStageEvent(DisplayObject& child)
+{
+	auto obj = child.toASObject();
+	if (obj.isNull())
+		return;
+
+	auto sys = child.getSys();
+	auto engineData = sys->getEngineData();
+	auto wrk = obj->getInstanceWorker();
+	getVm(sys)->tryAddEvent(_MR(Class<Event>::getInstanceS
+	(
+		wrk,
+		"removedToStage"
+	)));
+
+	if (!child.is<InteractiveObject>() || engineData == nullptr)
+		return;
+	engineData->InteractiveObjectRemovedFromStage();
+	sys->stage->AVM1RemoveDisplayObject(child);
+}
+
+bool DisplayObjectContainer::removeChild
+(
+	DisplayObject& child,
+	bool direct,
+	bool inskipping,
+	bool keepOnStage,
+	bool removeName
+)
+{
+	auto sys = base.getSys();
+	auto parent = child.getParent();
+	if (parent == nullptr || parent != &base)
 		return false;
-	if (!needsActionScript3())
-		child->removeAVM1Listeners();
+
+	if (!_isAS3)
+		child.removeAVM1Listeners();
 
 	{
 		Locker l(mutexDisplayList);
-		auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
-		if(it==dynamicDisplayList.end())
-			return getSystemState()->isInResetParentList(child);
+		auto it = std::find
+		(
+			dynamicDisplayList.begin(),
+			dynamicDisplayList.end(),
+			child
+		);
+		if (it == dynamicDisplayList.end())
+			return sys->isInResetParentList(child);
 	}
-	child->setMask(NullRef);
-	_removeFromDisplayList(child);
-	handleRemovedEvent(child, keeponstage, inskipping, sendevents);
+
+	child.setMask(nullptr);
+	removeFromDisplayList(child);
+	handleRemovedEvent(child, keepOnstage);
 	if (!direct && !inskipping && !isVmThread())
-		getSystemState()->addDisplayObjectToResetParentList(child);
+		sys->addDisplayObjectToResetParentList(child);
 	else
 	{
-		child->setParent(nullptr,false);
+		child.setParent(nullptr);
 		if (removeName)
 			removeChildName(child);
 	}
-	this->hasChanged=true;
-	this->requestInvalidation(getSystemState());
-	getSystemState()->stage->prepareForRemoval(child);
+	base.markAsChanged(true);
+	sys->stage->prepareForRemoval(child);
 	checkClipDepth();
 	return true;
 }
-void DisplayObjectContainer::_removeFromDisplayList(DisplayObject* child)
+
+void DisplayObjectContainer::removeFromDisplayList(DisplayObject& child)
 {
 	Locker l(mutexDisplayList);
-	auto it=find(dynamicDisplayList.begin(),dynamicDisplayList.end(),child);
+	auto it = std::find
+	(
+		dynamicDisplayList.begin(),
+		dynamicDisplayList.end(),
+		child
+	);
 	
 	//Erase this from the legacy child map (if it is in there)
-	umarkLegacyChild(child);
+	unmarkChild(child);
 	dynamicDisplayList.erase(it);
 }
 
-void DisplayObjectContainer::_removeAllChildren(bool sendevents, bool recursive)
+void DisplayObjectContainer::removeAllChildren(bool sendevents, bool recursive)
 {
-	mutexDisplayList.lock();
-	vector<DisplayObject*> childrenToRemove = dynamicDisplayList;
-	mutexDisplayList.unlock();
 	if (dynamicDisplayList.empty())
 		return; // no need to request invalidation if this container is already empty
-	auto it = childrenToRemove.begin();
-	while (it != childrenToRemove.end())
+
+	auto list = cloneDisplayList();
+	for (auto& child : list)
 	{
-		if (recursive && (*it)->is<DisplayObjectContainer>())
-			(*it)->as<DisplayObjectContainer>()->_removeAllChildren(sendevents,recursive);
-		_removeChild(*it,false,false,false,sendevents);
-		it++;
+		auto container = child.as<DisplayObjectContainer>();
+		if (recursive && container != nullptr)
+			container->removeAllChildren(recursive);
+		removeChild(child, false, false, false);
 	}
-	this->requestInvalidation(getSystemState());
+
+	base.requestInvalidation(base.getSys());
 }
 
 void DisplayObjectContainer::removeAVM1Listeners()
 {
-	if (needsActionScript3())
+	if (_isAS3())
 		return;
+
 	Locker l(mutexDisplayList);
-	auto it=dynamicDisplayList.begin();
-	while (it!=dynamicDisplayList.end())
-	{
-		(*it)->removeAVM1Listeners();
-		it++;
-	}
-	DisplayObject::removeAVM1Listeners();
+	for (auto& child : dynamicDisplayList)
+		child.removeAVM1Listeners();
 }
 
-bool DisplayObjectContainer::_contains(DisplayObject* d)
+bool DisplayObjectContainer::contains(const DisplayObject& child) const
 {
-	if(d==this)
+	if (&child == &base)
 		return true;
 
-	auto it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();++it)
+	for (auto& _child : dynamicDisplayList)
 	{
-		if(*it==d)
+		if (&_child == &child)
 			return true;
-		if((*it)->is<DisplayObjectContainer>() && (*it)->as<DisplayObjectContainer>()->_contains(d))
+		auto container = _child.as<DisplayObjectContainer>();
+		if (container != nullptr && container->contains(child))
 			return true;
 	}
 	return false;
 }
 
-void DisplayObjectContainer::stopAllMovieClipsIntern()
+void DisplayObjectContainer::stopAllMovieClipsImpl()
 {
-	if (is<MovieClip>())
-		as<MovieClip>()->setStopped();
-	auto it=dynamicDisplayList.begin();
-	for(;it!=dynamicDisplayList.end();++it)
+	(void)base.tryAs<MovieClip>().andThen([](const auto& clip)
 	{
-		if ((*it)->is<MovieClip>())
-			(*it)->as<MovieClip>()->setStopped();
-		if((*it)->is<DisplayObjectContainer>())
-			(*it)->as<DisplayObjectContainer>()->stopAllMovieClipsIntern();
+		clip.setStopped();
+		return clip;
+	});
+
+	for (auto& child : dynamicDisplayList)
+	{
+		auto clip = child.as<MovieClip>();
+		auto container = child.as<DisplayObjectContainer>();
+		if (clip != nullptr)
+			clip->setStopped();
+		if(container != nullptr)
+			container->stopAllMovieClipsImpl();
 	}
 }
 
-void DisplayObjectContainer::setChildIndexIntern(DisplayObject *child, int index)
+void DisplayObjectContainer::setChildIndexImpl
+(
+	DisplayObject& child,
+	size_t index
+)
 {
-	int curIndex = this->getChildIndex(child);
+	auto curIndex = getChildIndex(child);
 	if(curIndex < 0)
 		return;
-	auto itrem = this->dynamicDisplayList.begin()+curIndex;
-	this->dynamicDisplayList.erase(itrem); //remove from old position
 
-	auto it=this->dynamicDisplayList.begin();
-	int i = 0;
-	//Erase the child from the legacy child map (if it is in there)
-	this->umarkLegacyChild(child);
+	// Remove from the old position.
+	dynamicDisplayList.erase
+	(
+		dynamicDisplayList.begin() +
+		curIndex
+	);
+
+	//Erase the child from the child map (if it is in there)
+	unmarkChild(child);
 	
-	for(;it != this->dynamicDisplayList.end(); ++it)
-		if(i++ == index)
-		{
-			this->dynamicDisplayList.insert(it, child);
-			this->checkClipDepth();
-			this->requestInvalidation(this->getSystemState());
-			return;
-		}
-	this->dynamicDisplayList.push_back(child);
-	this->checkClipDepth();
-	this->requestInvalidation(this->getSystemState());
-}
-
-void DisplayObjectContainer::getObjectsFromPoint(const Vector2f& point, Array *ar)
-{
-	Locker l(mutexDisplayList);
-	if (getClipDepth())
-		return;
-	if (!hitTestMask(point,HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN))
-		return;
-	if  (!isVisible())
-		return;
-	Vector2f localpoint = this->globalToLocal(point,false);
-	auto obj = this->hitTest(point,localpoint,HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN,false);
-	if (obj)
-	{
-		obj->incRef();
-		ar->push(asAtomHandler::fromObject(obj.getPtr()));
-	}
+	if (index >= dynamicDisplayList.size())
+		dynamicDisplayList.push_back(child);
 	else
 	{
-		auto it = dynamicDisplayList.begin();
-		while (it != dynamicDisplayList.end())
-		{
-			if ((*it)->getClipDepth())
-			{
-				it++;
-				continue;
-			}
-			localpoint = (*it)->globalToLocal(point, false);
-			auto obj = (*it)->hitTest(point, localpoint,HIT_TYPE::GENERIC_HIT_EXCLUDE_CHILDREN,false);
-			if (obj)
-			{
-				obj->incRef();
-				ar->push(asAtomHandler::fromObject(obj.getPtr()));
-			}
-			if ((*it)->is<DisplayObjectContainer>())
-				(*it)->as<DisplayObjectContainer>()->getObjectsFromPoint(point,ar);
-			it++;
-		}
+		dynamicDisplayList.insert
+		(
+			dynamicDisplayList.begin() + index,
+			child
+		);
+	}
+
+	checkClipDepth();
+	base.requestInvalidation(base.getSys());
+}
+
+std::vector<DisplayObject&> DisplayObjectContainer::getObjectsFromPoint
+(
+	const Vector2Twips& point
+)
+{
+	std::vector<DisplayObject&> list;
+	getObjectsFromPoint(point, list);
+	return list;
+}
+
+void DisplayObjectContainer::getObjectsFromPoint
+(
+	const Vector2Twips& point,
+	std::vector<DisplayObject&>& list
+)
+{
+	const auto flags =
+	(
+		HitTestFlags::SkipMask |
+		HitTestFlags::SkipInvisible |
+		HitTestFlags::SkipChildren
+	);
+
+	auto obj = base.hitTestShape
+	(
+		point,
+		base.globalToLocal(point, false),
+		flags
+	);
+
+	if (obj != nullptr)
+	{
+		list.push_back(*obj);
+		return;
+	}
+
+	Locker l(mutexDisplayList);
+	for (auto& child : dynamicDisplayList)
+	{
+		obj = child.hitTestShape
+		(
+			point,
+			child.globalToLocal(point, false),
+			flags
+		);
+
+		if (obj != nullptr)
+			list.push_back(*obj);
+		auto container = child.as<DisplayObjectContainer>();
+		if (container != nullptr)
+			container->getObjectsFromPoint(point, list);
 	}
 }
 
-void DisplayObjectContainer::umarkLegacyChild(DisplayObject* child)
+void DisplayObjectContainer::unmarkChild(DisplayObject& child)
 {
-	auto it = mapLegacyChildToDepth.find(child);
-	if (it != mapLegacyChildToDepth.end())
+	auto it = mapChildToDepth.find(child);
+	if (it != mapChildToDepth.end())
 	{
-		mapDepthToLegacyChild.erase(it->second);
-		mapLegacyChildToDepth.erase(it);
+		mapDepthToChild.erase(it->second);
+		mapChildToDepth.erase(it);
 	}
 }
 
 void DisplayObjectContainer::clearDisplayList()
 {
-	auto it = dynamicDisplayList.rbegin();
-	while (it != dynamicDisplayList.rend())
+	auto& list = dynamicDisplayList;
+	for (auto it = list.rbegin(); it != list.rend(); it = list.erase(it))
 	{
-		DisplayObject* c = (*it);
-		dynamicDisplayList.pop_back();
-		removeChildName(c);
-		c->setParent(nullptr,true);
-		c->removeStoredMember();
-		getSystemState()->removeFromResetParentList(c);
-		it = dynamicDisplayList.rbegin();
+		removeChildName(*it);
+		it->setParent(nullptr);
+		it->getSys()->removeFromResetParentList(*it);
 	}
+
 }
 
 void DisplayObjectContainer::declareFrame(bool implicit)
 {
-	if (needsActionScript3())
-	{
-		// elements of the dynamicDisplayList may be removed/added during declareFrame() calls,
-		// so we create a temporary list containing all elements
-		std::vector<_R<DisplayObject>> tmplist;
-		cloneDisplayList(tmplist);
-		auto it=tmplist.begin();
-		for(;it!=tmplist.end();it++)
-			(*it)->declareFrame(true);
-	}
-	DisplayObject::declareFrame(implicit);
+	if (!_isAS3)
+		return;
+	// elements of the dynamicDisplayList may be removed/added during declareFrame() calls,
+	// so we create a temporary list containing all elements
+	auto list = cloneDisplayList();
+	for (auto& child : list)
+		child.declareFrame(true);
 }
 
 /* Go through the hierarchy and add all
@@ -909,10 +1076,6 @@ void DisplayObjectContainer::declareFrame(bool implicit)
  * This is called in vm's thread context */
 void DisplayObjectContainer::initFrame()
 {
-	// it's possible that legacy MovieClips are defined as inherited directly from Sprite
-	// so we have to set initializingFrame here
-	initializingFrame=true;
-
 	/* call our own constructor, if necassary */
 	DisplayObject::initFrame();
 
@@ -920,69 +1083,59 @@ void DisplayObjectContainer::initFrame()
 
 	// elements of the dynamicDisplayList may be removed during initFrame() calls,
 	// so we create a temporary list containing all elements
-	std::vector<_R<DisplayObject>> tmplist;
-	cloneDisplayList(tmplist);
-	auto it=tmplist.begin();
-	for(;it!=tmplist.end();it++)
-		(*it)->initFrame();
-	initializingFrame=false;
+	auto list = cloneDisplayList();
+	for (auto& child : list)
+		child.initFrame();
 }
 
 void DisplayObjectContainer::executeFrameScript()
 {
 	// elements of the dynamicDisplayList may be removed during executeFrameScript() calls,
 	// so we create a temporary list containing all elements
-	std::vector<_R<DisplayObject>> tmplist;
-	cloneDisplayList(tmplist);
-	auto it=tmplist.begin();
-	for(;it!=tmplist.end();it++)
-		(*it)->executeFrameScript();
+	auto list = cloneDisplayList();
+	for (auto& child : list)
+		child.executeFrameScript();
 }
 
-void DisplayObjectContainer::afterLegacyInsert()
+void DisplayObjectContainer::afterTimelineCreation()
 {
-	std::vector<_R<DisplayObject>> tmplist;
-	cloneDisplayList(tmplist);
-	auto it=tmplist.begin();
-	for(;it!=tmplist.end();it++)
-		(*it)->afterLegacyInsert();
+	auto list = cloneDisplayList();
+	for (auto& child : list)
+		child.afterTimelineCreation();
 }
 
-void DisplayObjectContainer::afterLegacyDelete(bool inskipping)
+void DisplayObjectContainer::afterTimelineDeletion(bool inskipping)
 {
-	std::vector<_R<DisplayObject>> tmplist;
-	cloneDisplayList(tmplist);
-	auto it=tmplist.begin();
-	for(;it!=tmplist.end();it++)
-		(*it)->afterLegacyDelete(inskipping);
+	auto list = cloneDisplayList();
+	for (auto& child : list)
+		child.afterTimelineDeletion();
 }
 
 void DisplayObjectContainer::enterFrame(bool implicit)
 {
-	std::vector<_R<DisplayObject>> list;
-	cloneDisplayList(list);
-	for (auto child : list)
+	auto list = cloneDisplayList();
+	for (auto& child : list)
 	{
-		child->skipFrame = skipFrame ? true : child->skipFrame;
-		child->enterFrame(implicit);
+		if (base.getSkipFrame())
+			child.setSkipFrame(true);
+		child.enterFrame(implicit);
 	}
-	if (!is<MovieClip>()) // reset skipFrame for everything that is not a MovieClip (Loader/Sprite/SimpleButton)
-		skipFrame = false;
+
+	// Reset `SkipFrame` for anything that isn't a `MovieClip`
+	// (`Loader`, `Sprite`, `{,Simple}Button`).
+	if (!base.is<MovieClip>())
+		base.setSkipFrame(false);
 }
 
 /* This is run in vm's thread context */
 void DisplayObjectContainer::advanceFrame(bool implicit)
 {
-	if (needsActionScript3() || !implicit)
-	{
-		// elements of the dynamicDisplayList may be removed during advanceFrame() calls,
-		// so we create a temporary list containing all elements
-		std::vector<_R<DisplayObject>> tmplist;
-		cloneDisplayList(tmplist);
-		auto it=tmplist.begin();
-		for(;it!=tmplist.end();it++)
-			(*it)->advanceFrame(implicit);
-	}
-	else
-		InteractiveObject::advanceFrame(implicit);
+	if (!_isAS3 && implicit)
+		return;
+
+	// elements of the dynamicDisplayList may be removed during advanceFrame() calls,
+	// so we create a temporary list containing all elements
+	auto list = cloneDisplayList();
+	for (auto& child : list)
+		child.advanceFrame(implicit);
 }

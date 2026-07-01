@@ -34,7 +34,7 @@
 #include "timer.h"
 #include "utils/filesystem.h"
 #include "utils/path.h"
-#include <glib.h>
+
 
 #ifdef __MINGW32__
     #ifndef PATH_MAX
@@ -713,8 +713,15 @@ int main(int argc, char* argv[])
 	if(HTTPcookie)
 		sys->setCookies(HTTPcookie);
 
+	char *homedir = getenv(
+#ifdef _WIN32
+		"USERPROFILE"
+#else
+		"HOME"
+#endif
+		);
 	// create path for shared object local storage
-	Path homeDir(g_get_home_dir());
+	Path homeDir(homedir ? homedir : "");
 	// remove home dir, if file is located below home dir
 	Path fileDataPath = fs::relative(absPath, homeDir);
 

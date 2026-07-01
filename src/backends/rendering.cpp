@@ -394,6 +394,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				flipvertical=false; // avoid flipping resulting image vertically (as is done for normal rendering)
 				setViewPort(w,h,false);
 
+				// uint c1 = 0;
+				// uint64_t t1 = compat_msectiming();
 				while (!renderdata->rendercalls.empty())
 				{
 					RenderDisplayObjectToBitmapContainer& container = renderdata->rendercalls.front();
@@ -535,6 +537,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 						nanoVGDeleteImage(nanoVGoriginalImage,engineData);
 					}
 				}
+				// uint64_t t2 = compat_msectiming();
+				// LOG(LOG_ERROR,"***rendertobitmap:"<<(t2-t1)<<" "<<c1);
 				// reset everything for normal rendering
 				baseFramebuffer=0;
 				baseRenderbuffer=0;
@@ -932,7 +936,13 @@ void RenderThread::generateScreenshot()
 	char* name_used = LS_STACKALLOC(char,tmpname.length()+1);
 	strncpy(name_used, tmpname.c_str(), tmpname.length());
 	name_used[tmpname.length()] = '\0';
+#ifdef _WIN32
+	name_used[tmpname.length()-4] = '\0';
+	int fd = mkstemp(name_used);
+	name_used[tmpname.length()-4] = '.';
+#else
 	int fd = mkstemps(name_used,4);
+#endif
 	if(fd == -1)
 	{
 		LOG(LOG_ERROR,"generating screenshot file failed");

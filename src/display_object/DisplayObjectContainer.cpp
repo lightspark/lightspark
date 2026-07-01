@@ -186,47 +186,84 @@ void DisplayObjectContainer::checkColorTransformForChildAt
 	child->setColorTransform(ct);
 }
 
-void DisplayObjectContainer::removeChildName(DisplayObject& obj)
+void DisplayObjectContainer::removeChildName(DisplayObject& child)
 {
-	if (obj.getName().empty)
+	if (child.getName().empty())
 		return;
+
+	auto obj = base.toASObject();
+	if (obj.isNull() || !child.isAS3())
+		return;
+
+	auto sys = base.getSys();
+	auto wrk = obj->getInstanceWorker();
 
 	//The variable is not deleted, but just set to null
 	//This is a tested behavior
 	multiname objName(nullptr);
-	objName.name_type=multiname::NAME_STRING;
-	objName.name_s_id=obj->name;
-	objName.ns.emplace_back(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE);
-	asAtom a=asAtomHandler::invalidAtom;
-	GET_VARIABLE_RESULT r = getVariableByMultiname(a,objName,GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE|GET_VARIABLE_OPTION::DONT_CALL_GETTER,getInstanceWorker());
-	if (r&GET_VARIABLE_RESULT::GETVAR_ISGETTER)
+	objName.name_type = multiname::NAME_STRING;
+	objName.name_s_id = sys->getUniqueStringId(child.getName());
+	objName.ns.emplace_back(sys, BUILTIN_STRINGS::EMPTY, NAMESPACE);
+	auto atom = asAtomHandler::invalidAtom;
+	auto ret = obj->getVariableByMultiname
+	(
+		atom,
+		objName,
+		(
+			GET_VARIABLE_OPTION::DONT_CHECK_PROTOTYPE |
+			GET_VARIABLE_OPTION::DONT_CALL_GETTER
+		),
+		wrk
+	);
+
+	bool isGetter = ret & GET_VARIABLE_RESULT::GETVAR_ISGETTER;
+
+	// don't try to remove child name if property is builtin function
+	if (isGetter && asAtomHandler::is<SyntheticFunction>(atom))
 	{
-		// don't try to remove child name if property is builtin function
-		if (asAtomHandler::is<SyntheticFunction>(a))
-		{
-			IFunction* f = asAtomHandler::as<IFunction>(a);
-			asAtom closure = asAtomHandler::getClosureAtom(a,asAtomHandler::fromObject(this));
-			f->callGetter(a,closure,this->getInstanceWorker());
-		}
-		else
-			a = asAtomHandler::invalidAtom;
+		auto f = asAtomHandler::as<IFunction>(atom);
+		f->callGetter(atom, asAtomHandler::getClosureAtom
+		(
+			atom,
+			asAtomHandler::fromObject(obj)
+		), wrk);
 	}
-	if (asAtomHandler::getObject(a))
+	else if (isGetter)
+		return;
+
+	if (asAtomHandler::getObject(atom) == nullptr)
+		return;
+
+	auto newObj =
+	(
+		_isAS3 ?
+		asAtomHandler::nullAtom :
+		asAtomHandler::undefinedAtom
+	);
+
+	for (auto& _child : dynamicDisplayList)
 	{
-		asAtom newobj = needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom;
-		for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); ++it)
-		{
-			if ((*it) != obj && (*it)->name==obj->name)
-			{
-				// set to DisplayObject with same name and lowest depth
-				(*it)->incRef();
-				newobj=asAtomHandler::fromObjectNoPrimitive(*it);
-				break;
-			}
-		}
-		setVariableByMultiname(objName,newobj, CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());
+		if (&_child == &child || _child.getName() != child.getName())
+			continue;
+
+		auto childObj = _child.toASObject();
+		if (childObj.isNull())
+			continue;
+
+		// set to DisplayObject with same name and lowest depth
+		childObj->incRef();
+		newObj = asAtomHandler::fromObjectNoPrimitive(childObj.getPtr());
 	}
-	ASATOM_DECREF(a);
+
+	obj->setVariableByMultiname
+	(
+		objName,
+		newObj,
+		CONST_NOT_ALLOWED,
+		nullptr,
+		wrk
+	);
+	ASATOM_DECREF(atom);
 }
 
 void DisplayObjectContainer::deleteChildAt(int32_t depth, bool inskipping)
@@ -557,6 +594,45 @@ void DisplayObjectContainer::requestInvalidation
 	base.setHasChanged(true);
 	q->addToInvalidateQueue(this);
 	requestInvalidationFilterParent(q);
+}
+
+void DisplayObjectContainer::removeChildrenMarkedForDeletion()
+{
+	auto& list = childrenMarkedForDeletion;
+	for (auto it = list.begin(); it != list.end(); it = list.erase(it))
+		deleteChildAt(*it, false);
+}
+
+DisplayObject* DisplayObjectContainer::getLastFrameChildAtDepth
+(
+	int32_t depth,
+	uint32_t id
+)
+{
+	auto it = mapFrameDepthToChildRemembered.find(depth);
+	if (it == mapFrameDepthToChildRemembered.end())
+		return nullptr;
+
+	DisplayObject& obj = it->second;
+	mapFrameDepthToLegacyChildRemembered.erase(it);
+
+	if (obj.getTagID() != id)
+		return nullptr;
+
+	obj.setMarkedForTimelineDeletion(false);
+	obj.setColorTransform(ColorTransform());
+	return &obj;
+}
+
+bool DisplayObjectContainer::removeChildDeletionMark(int32_t depth)
+{
+	auto it = childrenMarkedForDeletion.find(depth);
+	if (it != legacyChildrenMarkedForDeletion.end())
+	{
+		legacyChildrenMarkedForDeletion.erase(it);
+		return true;
+	}
+	return false;
 }
 
 void DisplayObjectContainer::requestInvalidationIncludingChildren(InvalidateQueue* q)

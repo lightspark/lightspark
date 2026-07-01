@@ -968,11 +968,13 @@ number_t Date::getMsSinceEpoch(bool utc) const
 number_t Date::computeMsTimezoneOffset() const
 {
 	timeval tv;
+	time_t t;
 	gettimeofday(&tv,nullptr);
-	struct tm* tloc = localtime(&tv.tv_sec);
+	t = tv.tv_sec;
+	struct tm* tloc = localtime(&t);
 	tloc->tm_isdst=-1;
 	auto tl = mktime(tloc);
-	struct tm* tutc = gmtime(&tv.tv_sec);
+	struct tm* tutc = gmtime(&t);
 	auto tu = mktime(tutc);
 	return difftime(tl,tu)*1000.0;
 }

@@ -38,6 +38,7 @@ Namespace::Namespace(ASWorker* wrk,Class_base* c, uint32_t _uri, uint32_t _prefi
 void Namespace::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED | CLASS_FINAL);
+	c->length=2;
 	//c->setDeclaredMethodByQName("uri","",c->getSystemState()->getBuiltinFunction(_setURI),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("uri","",c->getSystemState()->getBuiltinFunction(_getURI),GETTER_METHOD,true);
 	//c->setDeclaredMethodByQName("prefix","",c->getSystemState()->getBuiltinFunction(_setPrefix),SETTER_METHOD,true);

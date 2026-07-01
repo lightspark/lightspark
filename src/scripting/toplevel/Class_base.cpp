@@ -394,7 +394,7 @@ void Class_base::addPrototypeGetter()
 void Class_base::addLengthConstant()
 {
 	if (length >=0)
-		setVariableAtomByQName("length",nsNameAndKind(getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),asAtomHandler::fromInt(length),CONSTANT_TRAIT);
+		setVariableAtomByQName("length",nsNameAndKind(getSystemState(),BUILTIN_STRINGS::EMPTY,NAMESPACE),asAtomHandler::fromInt(length),CONSTANT_TRAIT);
 }
 
 Class_base::~Class_base()

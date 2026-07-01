@@ -1324,7 +1324,11 @@ int64_t Date::getcurrentms()
 	{
 		// ruffle tests expect a specific date in specific timezone as "current date"
 		// 2001-02-03 04:05:06 GMT+05:45
+#ifdef _WIN32
+		_putenv_s("TZ", "GMT+5:45");
+#else
 		setenv("TZ", "GMT+5:45", 1);
+#endif
 		tzset();
 		MakeDate(2001,2-1,3,4,5,6,0,true,false);
 		ms = mstimestamp;

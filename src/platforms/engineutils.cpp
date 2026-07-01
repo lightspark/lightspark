@@ -38,7 +38,6 @@
 #include "launcher.h"
 #include "utils/filesystem.h"
 #include "utils/path.h"
-#include <glib/gstdio.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>

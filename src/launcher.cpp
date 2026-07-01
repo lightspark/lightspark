@@ -21,6 +21,7 @@
 #include <SDL.h>
 #include <imgui.h>
 #include <imgui_impl_sdl2.h>
+#include <limits.h>
 
 #ifdef ENABLE_GLES2
 #define IMGUI_IMPL_OPENGL_ES2

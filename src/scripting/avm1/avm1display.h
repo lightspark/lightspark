@@ -118,8 +118,6 @@ public:
 	ASFUNCTION_ATOM(_setShowMenu);
 	ASFUNCTION_ATOM(getAlign);
 	ASFUNCTION_ATOM(setAlign);
-	ASFUNCTION_ATOM(addResizeListener);
-	ASFUNCTION_ATOM(removeResizeListener);
 };
 
 class AVM1MovieClipLoader: public ASObject
@@ -127,7 +125,6 @@ class AVM1MovieClipLoader: public ASObject
 private:
 	Mutex loadermutex;
 	std::set<Loader*> loaderlist;
-	std::set<ASObject*> listeners;
 	void addLoader(URLRequest* r, DisplayObject* target, int level);
 public:
 	AVM1MovieClipLoader(ASWorker* wrk,Class_base* c):ASObject(wrk,c,SWFOBJECT_TYPE::T_OBJECT,CLASS_SUBTYPE::SUBTYPE_AVM1MOVIECLIPLOADER){}

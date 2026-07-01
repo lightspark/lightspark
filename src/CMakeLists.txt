@@ -317,6 +317,7 @@ SET(LIBSPARK_SOURCES
   scripting/avm1/avm1rectangle.cpp
   scripting/avm1/avm1transform.cpp
   scripting/avm1/avm1colortransform.cpp
+  scripting/avm1/avm1IME.cpp
   scripting/avm1/scope.cpp
   scripting/avm1_interpreter.cpp
   utils/dir_iter.cpp

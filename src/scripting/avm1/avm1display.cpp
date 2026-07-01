@@ -19,6 +19,8 @@
 
 #include "backends/cachedsurface.h"
 #include "scripting/avm1/avm1display.h"
+#include "scripting/avm1/avm1key.h"
+#include "scripting/avm1/avm1array.h"
 #include "scripting/flash/display/LoaderInfo.h"
 #include "scripting/flash/display/Loader.h"
 #include "scripting/flash/display/RootMovieClip.h"
@@ -637,6 +639,9 @@ void AVM1Stage::sinit(Class_base* c)
 {
 	// in AVM1 Stage is no DisplayObject and all methods/properties are static
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
+
+	c->setVariableAtomByQName("_listeners",nsNameAndKind(),asAtomHandler::fromObjectNoPrimitive(Class<AVM1Array>::getInstanceSNoArgs(c->getInstanceWorker())),CONSTANT_TRAIT);
+
 	c->prototype->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_getStageWidth),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("width","",c->getSystemState()->getBuiltinFunction(_setStageWidth),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("height","",c->getSystemState()->getBuiltinFunction(_getStageHeight),GETTER_METHOD,false);
@@ -649,8 +654,8 @@ void AVM1Stage::sinit(Class_base* c)
 	c->prototype->setDeclaredMethodByQName("showMenu","",c->getSystemState()->getBuiltinFunction(_setShowMenu),SETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("align","",c->getSystemState()->getBuiltinFunction(getAlign),GETTER_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("align","",c->getSystemState()->getBuiltinFunction(setAlign),SETTER_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addResizeListener),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeResizeListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(AVM1Broadcaster::addListener),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(AVM1Broadcaster::removeListener),NORMAL_METHOD,false);
 }
 
 ASFUNCTIONBODY_ATOM(AVM1Stage,_getDisplayState)
@@ -682,18 +687,6 @@ ASFUNCTIONBODY_ATOM(AVM1Stage,setAlign)
 	wrk->getSystemState()->stage->align = wrk->getSystemState()->getUniqueStringId(newalign);
 	wrk->getSystemState()->stage->onAlign(oldalign);
 }
-ASFUNCTIONBODY_ATOM(AVM1Stage,addResizeListener)
-{
-	_NR<ASObject> listener;
-	ARG_CHECK(ARG_UNPACK(listener,NullRef));
-	wrk->getSystemState()->stage->AVM1AddResizeListener(listener.getPtr());
-}
-ASFUNCTIONBODY_ATOM(AVM1Stage,removeResizeListener)
-{
-	_NR<ASObject> listener;
-	ARG_CHECK(ARG_UNPACK(listener,NullRef));
-	ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1RemoveResizeListener(listener.getPtr()));
-}
 
 
 void AVM1MovieClipLoader::addLoader(URLRequest* r, DisplayObject* target,int level)
@@ -714,14 +707,17 @@ void AVM1MovieClipLoader::addLoader(URLRequest* r, DisplayObject* target,int lev
 
 void AVM1MovieClipLoader::sinit(Class_base* c)
 {
-	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL);
+	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
 	c->isReusable = true;
-	c->setDeclaredMethodByQName("loadClip","",c->getSystemState()->getBuiltinFunction(loadClip),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(addListener),NORMAL_METHOD,true);
-	c->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(removeListener),NORMAL_METHOD,true);
+
+	c->prototype->setDeclaredMethodByQName("loadClip","",c->getSystemState()->getBuiltinFunction(loadClip),NORMAL_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("addListener","",c->getSystemState()->getBuiltinFunction(AVM1Broadcaster::addListener),NORMAL_METHOD,false,false);
+	c->prototype->setDeclaredMethodByQName("removeListener","",c->getSystemState()->getBuiltinFunction(AVM1Broadcaster::removeListener),NORMAL_METHOD,false,false);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,_constructor)
 {
+	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
+	th->setVariableAtomByQName("_listeners",nsNameAndKind(),asAtomHandler::fromObject(Class<AVM1Array>::getInstanceSNoArgs(wrk)),DYNAMIC_TRAIT);
 }
 ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 {
@@ -771,31 +767,6 @@ ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,loadClip)
 	ret = asAtomHandler::trueAtom;
 	th->addLoader(r,t,-1);
 }
-ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,addListener)
-{
-	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
-
-	wrk->getSystemState()->stage->AVM1AddEventListener(th);
-	ASObject* o = asAtomHandler::toObject(args[0],wrk);
-
-	o->incRef();
-	o->addStoredMember();
-	th->listeners.insert(o);
-}
-ASFUNCTIONBODY_ATOM(AVM1MovieClipLoader,removeListener)
-{
-	AVM1MovieClipLoader* th=asAtomHandler::as<AVM1MovieClipLoader>(obj);
-	
-	ASObject* o = asAtomHandler::toObject(args[0],wrk);
-	
-	auto it = th->listeners.find(o);
-	if (it != th->listeners.end())
-	{
-		th->listeners.erase(o);
-		o->removeStoredMember();
-	}
-	wrk->getSystemState()->stage->AVM1RemoveEventListener(th);
-}
 void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 {
 	loadermutex.lock();
@@ -815,8 +786,25 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 	{
 		ASWorker* wrk = getInstanceWorker();
 		
-		std::set<ASObject*> tmplisteners = listeners;
-		tmplisteners.insert(this);
+		multiname mlisteners(nullptr);
+		mlisteners.name_type=multiname::NAME_STRING;
+		mlisteners.isAttribute = false;
+		mlisteners.name_s_id=getSystemState()->getUniqueStringId("_listeners");
+		asAtom l = asAtomHandler::invalidAtom;
+		this->getVariableByMultiname(l,mlisteners,GET_VARIABLE_OPTION::NONE,wrk);
+		if (!asAtomHandler::is<AVM1Array>(l))
+			return;
+		AVM1Array* listeners = asAtomHandler::as<AVM1Array>(l);
+		std::vector<ASObject*> tmplisteners;
+		tmplisteners.push_back(this);
+		for (uint32_t i = 0; i < listeners->size(); i++)
+		{
+			asAtom a= asAtomHandler::invalidAtom;
+			listeners->at_nocheck(a,i);
+			ASObject* o = asAtomHandler::getObject(a);
+			if (o)
+				tmplisteners.push_back(o);
+		}
 		auto it = tmplisteners.begin();
 		while (it != tmplisteners.end())
 		{
@@ -935,13 +923,6 @@ void AVM1MovieClipLoader::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 void AVM1MovieClipLoader::finalize()
 {
 	getSystemState()->stage->AVM1RemoveEventListener(this);
-	auto itlst = listeners.begin();
-	while (itlst != listeners.end())
-	{
-		ASObject* o = (*itlst);
-		itlst = listeners.erase(itlst);
-		o->removeStoredMember();
-	}
 	loadermutex.lock();
 	auto itldr = loaderlist.begin();
 	while (itldr != loaderlist.end())
@@ -956,13 +937,6 @@ void AVM1MovieClipLoader::finalize()
 
 bool AVM1MovieClipLoader::destruct()
 {
-	auto itlst = listeners.begin();
-	while (itlst != listeners.end())
-	{
-		ASObject* o = (*itlst);
-		itlst = listeners.erase(itlst);
-		o->removeStoredMember();
-	}
 	loadermutex.lock();
 	auto itldr = loaderlist.begin();
 	while (itldr != loaderlist.end())
@@ -980,14 +954,6 @@ void AVM1MovieClipLoader::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	ASObject::prepareShutdown();
-	auto itlst = listeners.begin();
-	while (itlst != listeners.end())
-	{
-		ASObject* o = (*itlst);
-		itlst = listeners.erase(itlst);
-		o->prepareShutdown();
-		o->removeStoredMember();
-	}
 	loadermutex.lock();
 	auto itldr = loaderlist.begin();
 	while (itldr != loaderlist.end())
@@ -1002,12 +968,6 @@ void AVM1MovieClipLoader::prepareShutdown()
 bool AVM1MovieClipLoader::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
-	auto itlst = listeners.begin();
-	while (itlst != listeners.end())
-	{
-		ret = (*itlst)->countAllCylicMemberReferences(gcstate) || ret;
-		itlst++;
-	}
 	loadermutex.lock();
 	auto itldr = loaderlist.begin();
 	while (itldr != loaderlist.end())
@@ -1270,12 +1230,13 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,broadcastMessage)
 		}
 	}
 }
+
 ASFUNCTIONBODY_ATOM(AVM1Broadcaster,addListener)
 {
 	ASObject* th = asAtomHandler::getObject(obj);
-	_NR<ASObject> listener;
+	asAtom listener = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(listener));
-	if (listener.isNull())
+	if (asAtomHandler::isInvalid(listener))
 	{
 		ret = asAtomHandler::falseAtom;
 		return;
@@ -1284,6 +1245,7 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,addListener)
 	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=wrk->getSystemState()->getUniqueStringId("_listeners");
+
 	th->getVariableByMultiname(l,m,GET_VARIABLE_OPTION::NO_INCREF,wrk);
 	if (asAtomHandler::isArray(l))
 	{
@@ -1301,19 +1263,28 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,addListener)
 		}
 		if (!found)
 		{
-			listener->incRef();
-			listeners->push(asAtomHandler::fromObjectNoPrimitive(listener.getPtr()));
+			ASATOM_INCREF(listener);
+			listeners->push(listener);
 		}
 	}
-	ret = asAtomHandler::trueAtom;
+	if (th == Class<AVM1Key>::getRef(wrk->getSystemState()).getPtr())
+		ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1AddKeyboardListener(args[0]));
+	else if (th == Class<AVM1Mouse>::getRef(wrk->getSystemState()).getPtr())
+		ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1AddMouseListener(args[0]));
+	else if (th == Class<AVM1Stage>::getRef(wrk->getSystemState()).getPtr())
+		wrk->getSystemState()->stage->AVM1AddResizeListener(asAtomHandler::getObject(listener));
+	else if (th->is<AVM1MovieClipLoader>())
+		wrk->getSystemState()->stage->AVM1AddEventListener(th);
+	else
+		ret = asAtomHandler::trueAtom;
 }
 ASFUNCTIONBODY_ATOM(AVM1Broadcaster,removeListener)
 {
 	ASObject* th = asAtomHandler::getObject(obj);
-	_NR<ASObject> listener;
+	asAtom listener = asAtomHandler::invalidAtom;
 	ARG_CHECK(ARG_UNPACK(listener));
 	ret = asAtomHandler::falseAtom;
-	if (listener.isNull())
+	if (asAtomHandler::isInvalid(listener))
 		return;
 	asAtom l = asAtomHandler::invalidAtom;
 	multiname m(nullptr);
@@ -1327,7 +1298,8 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,removeListener)
 		{
 			asAtom o=asAtomHandler::invalidAtom;
 			listeners->at_nocheck(o,i);
-			if (o.uintval==args[0].uintval)
+			LOG(LOG_ERROR,"***removelist:"<<asAtomHandler::toDebugString(o)<<" "<<i<<"/"<<listeners->size()<<" "<<asAtomHandler::toDebugString(args[0]));
+			if (asAtomHandler::isEqualStrict(o,wrk,args[0]))
 			{
 				asAtom res;
 				asAtom index = asAtomHandler::fromUInt(i);
@@ -1338,6 +1310,14 @@ ASFUNCTIONBODY_ATOM(AVM1Broadcaster,removeListener)
 			}
 		}
 	}
+	if (th == Class<AVM1Key>::getRef(wrk->getSystemState()).getPtr())
+		ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1RemoveKeyboardListener(args[0]));
+	else if (th == Class<AVM1Mouse>::getRef(wrk->getSystemState()).getPtr())
+		ret = asAtomHandler::fromBool(wrk->getSystemState()->stage->AVM1RemoveMouseListener(args[0]));
+	else if (th == Class<AVM1Stage>::getRef(wrk->getSystemState()).getPtr())
+		wrk->getSystemState()->stage->AVM1RemoveResizeListener(asAtomHandler::getObject(listener));
+	else if (th->is<AVM1MovieClipLoader>())
+		wrk->getSystemState()->stage->AVM1RemoveEventListener(th);
 }
 
 void AVM1BitmapData::sinit(Class_base *c)

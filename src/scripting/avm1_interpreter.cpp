@@ -1723,6 +1723,7 @@ void ACTIONRECORD::executeActions(
 					m.name_s_id = sys->getUniqueStringId(pair.second,context->isCaseSensitive());
 					if (pair.first->AVM1setLocalByMultiname(m,value,CONST_ALLOWED,wrk))
 						ASATOM_DECREF(value);
+					pair.first->decRef();
 				}
 				else
 				{
@@ -1885,6 +1886,7 @@ void ACTIONRECORD::executeActions(
 						auto atom = asAtomHandler::undefinedAtom;
 						pair.first->AVM1setLocalByMultiname(m,atom,CONST_ALLOWED,wrk);
 					}
+					pair.first->decRef();
 				}
 				else
 				{
@@ -2872,6 +2874,8 @@ void ACTIONRECORD::executeActions(
 						pair.first->as<DisplayObject>()->AVM1SetFunction(pair.second,_MR(f));
 					else
 						clip->AVM1SetFunction(name,_MR(f));
+					if (pair.first)
+						pair.first->decRef();
 				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction2 done:"<<name<<" "<<f->toDebugString());
 				break;
@@ -3103,6 +3107,8 @@ void ACTIONRECORD::executeActions(
 						pair.first->as<DisplayObject>()->AVM1SetFunction(pair.second,_MR(f));
 					else
 						clip->AVM1SetFunction(name,_MR(f));
+					if (pair.first)
+						pair.first->decRef();
 				}
 				LOG_CALL("AVM1:"<<clip->getTagID()<<" "<<(clip->is<MovieClip>() ? clip->as<MovieClip>()->state.FP : 0)<<" ActionDefineFunction done "<<name<<" "<<f->toDebugString());
 				break;

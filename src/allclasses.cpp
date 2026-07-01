@@ -194,6 +194,7 @@
 #include "scripting/avm1/avm1rectangle.h"
 #include "scripting/avm1/avm1transform.h"
 #include "scripting/avm1/avm1colortransform.h"
+#include "scripting/avm1/avm1IME.h"
 
 using namespace lightspark;
 

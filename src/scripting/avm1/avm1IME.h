@@ -1,7 +1,7 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2011-2013  Alessandro Pignotti (a.pignotti@sssup.it)
+	Copyright (C) 2026  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -17,33 +17,22 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
-#ifndef SCRIPTING_AVM1_AVM1KEY_H
-#define SCRIPTING_AVM1_AVM1KEY_H
+#ifndef SCRIPTING_AVM1_AVM1IME_H
+#define SCRIPTING_AVM1_AVM1IME_H
+
 
 #include "asobject.h"
+
 namespace lightspark
 {
 
-class AVM1Key: public ASObject
+class AVM1IME: public ASObject
 {
 public:
-	AVM1Key(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
+	AVM1IME(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);
-
-	ASFUNCTION_ATOM(isDown);
-	ASFUNCTION_ATOM(isToggled);
-	ASFUNCTION_ATOM(getCode);
-	ASFUNCTION_ATOM(getAscii);
-};
-class AVM1Mouse: public ASObject
-{
-public:
-	AVM1Mouse(ASWorker* wrk,Class_base* c):ASObject(wrk,c){}
-	static void sinit(Class_base* c);
-
-	ASFUNCTION_ATOM(hide);
-	ASFUNCTION_ATOM(show);
+	ASFUNCTION_ATOM(getEnabled);
 };
 
 }
-#endif // SCRIPTING_AVM1_AVM1KEY_H
+#endif // SCRIPTING_AVM1_AVM1IME_H

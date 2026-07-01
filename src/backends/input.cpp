@@ -41,9 +41,19 @@ InputThread* lightspark::getInputThread()
 	return ret;
 }
 
-InputThread::InputThread(SystemState* s):m_sys(s),engineData(nullptr),status(CREATED),
-	curDragged(),currentMouseOver(),lastMouseDownTarget(),
-	lastKeyUp(AS3KEYCODE_UNKNOWN), dragLimit(nullptr),button1pressed(false)
+InputThread::InputThread(SystemState* s)
+	:m_sys(s)
+	,engineData(nullptr)
+	,status(CREATED)
+	,curDragged()
+	,currentMouseOver()
+	,lastMouseDownTarget()
+	,lastKeyUp(AS3KEYCODE_UNKNOWN)
+	,dragLimit(nullptr)
+	,button1pressed(false)
+	,testrunnercapslock(false)
+	,testrunnernumlock(false)
+
 {
 	LOG(LOG_INFO,"Creating input thread");
 }
@@ -506,6 +516,19 @@ bool InputThread::handleKeyboardShortcuts(const LSKeyEvent& event)
 			return true;
 		}
 	}
+	if (m_sys->use_testrunner_date)
+	{
+		if (event.keyCode == AS3KEYCODE_CAPS_LOCK)
+		{
+			testrunnercapslock=!testrunnercapslock;
+			return false;
+		}
+		if (event.keyCode == AS3KEYCODE_NUM_LOCK)
+		{
+			testrunnernumlock=!testrunnernumlock;
+			return false;
+		}
+	}
 	bool handled = false;
 	if (!(event.modifiers & LSModifier::Ctrl))
 		return handled;
@@ -653,7 +676,7 @@ AS3KeyCode lightspark::getAS3KeyCode(SDL_Keycode sdlkey)
 		case SDLK_LEFT: return AS3KEYCODE_LEFT;
 		case SDLK_DOWN: return AS3KEYCODE_DOWN;
 		case SDLK_UP: return AS3KEYCODE_UP;
-		case SDLK_NUMLOCKCLEAR: return AS3KEYCODE_NUMPAD;
+		case SDLK_NUMLOCKCLEAR: return AS3KEYCODE_NUM_LOCK;
 		case SDLK_KP_DIVIDE: return AS3KEYCODE_NUMPAD_DIVIDE;
 		case SDLK_KP_MULTIPLY: return AS3KEYCODE_NUMPAD_MULTIPLY;
 		case SDLK_KP_MINUS:return AS3KEYCODE_NUMPAD_SUBTRACT;
@@ -939,4 +962,26 @@ void InputThread::CheckRemovedInteractiveObject(InteractiveObject* o)
 		if (lastRolledOver.getPtr()==o)
 			lastRolledOver.reset();
 	}
+}
+
+bool InputThread::isCapsLockSet() const
+{
+	if (m_sys->use_testrunner_date)
+		return testrunnercapslock;
+	else
+	{
+		SDL_Keymod mod = SDL_GetModState();
+		return (mod & KMOD_CAPS) == KMOD_CAPS;
+	}
+}
+bool InputThread::isNumLockSet() const
+{
+	if (m_sys->use_testrunner_date)
+		return testrunnernumlock;
+	else
+	{
+		SDL_Keymod mod = SDL_GetModState();
+		return (mod & KMOD_NUM) == KMOD_NUM;
+	}
+
 }

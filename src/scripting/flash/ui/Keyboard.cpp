@@ -314,8 +314,7 @@ void Keyboard::sinit(Class_base* c)
 
 ASFUNCTIONBODY_ATOM(Keyboard, capsLock)
 {
-	SDL_Keymod mod = SDL_GetModState();
-	asAtomHandler::setBool(ret,(mod & KMOD_CAPS) == KMOD_CAPS);
+	asAtomHandler::setBool(ret,wrk->getSystemState()->getInputThread()->isCapsLockSet());
 }
 
 ASFUNCTIONBODY_ATOM(Keyboard, hasVirtualKeyboard)
@@ -325,8 +324,7 @@ ASFUNCTIONBODY_ATOM(Keyboard, hasVirtualKeyboard)
 
 ASFUNCTIONBODY_ATOM(Keyboard, numLock)
 {
-	SDL_Keymod mod = SDL_GetModState();
-	asAtomHandler::setBool(ret,(mod & KMOD_NUM) == KMOD_NUM);
+	asAtomHandler::setBool(ret,wrk->getSystemState()->getInputThread()->isNumLockSet());
 }
 
 ASFUNCTIONBODY_ATOM(Keyboard, physicalKeyboardType)

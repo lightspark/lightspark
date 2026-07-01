@@ -99,6 +99,8 @@ private:
 	Vector2 mousePos;
 	Vector2 mousePosStart;
 	bool button1pressed;
+	bool testrunnercapslock;
+	bool testrunnernumlock;
 public:
 	InputThread(SystemState* s);
 	~InputThread();
@@ -136,6 +138,8 @@ public:
 	void setLastKeyDown(KeyboardEvent* e);
 	void setLastKeyUp(KeyboardEvent* e);
 	void CheckRemovedInteractiveObject(InteractiveObject* o);
+	bool isCapsLockSet() const;
+	bool isNumLockSet() const;
 };
 
 InputThread* getInputThread();

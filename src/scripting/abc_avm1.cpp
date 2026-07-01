@@ -33,6 +33,7 @@
 #include "scripting/avm1/avm1rectangle.h"
 #include "scripting/avm1/avm1transform.h"
 #include "scripting/avm1/avm1colortransform.h"
+#include "scripting/avm1/avm1IME.h"
 #include "scripting/toplevel/Global.h"
 #include "scripting/toplevel/Boolean.h"
 #include "scripting/flash/display/RootMovieClip.h"
@@ -102,9 +103,10 @@ void ABCVm::registerClassesAVM1()
 	builtinavm1->registerBuiltin("LocalConnection","",Class<AVM1LocalConnection>::getRef(m_sys));
 	builtinavm1->registerBuiltin("LoadVars","",Class<AVM1LoadVars>::getRef(m_sys));
 
+	ASObject* systempackage = nullptr;
 	if (m_sys->getSwfVersion() >= 6)
 	{
-		ASObject* systempackage = new_asobject(m_sys->worker);
+		systempackage = new_asobject(m_sys->worker);
 		builtinavm1->setVariableByQName("System",nsNameAndKind(m_sys,"",PACKAGE_NAMESPACE),systempackage,CONSTANT_TRAIT);
 
 		systempackage->setVariableByQName("security","System",Class<Security>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
@@ -156,6 +158,8 @@ void ABCVm::registerClassesAVM1()
 
 		flashnetpackage->setVariableByQName("FileReference","flash.net",Class<AVM1FileReference>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 		flashnetpackage->setVariableByQName("FileReferenceList","flash.net",Class<AVM1FileReferenceList>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
+
+		systempackage->setVariableByQName("IME","System",Class<AVM1IME>::getRef(m_sys).getPtr(),CONSTANT_TRAIT);
 	}
 	m_sys->avm1global=builtinavm1;
 }

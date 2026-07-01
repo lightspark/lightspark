@@ -74,14 +74,14 @@ protected:
 	mutable Mutex mutexDisplayList;
 	virtual void resetToStart() {}
 	bool tabChildren;
-	void LegacyChildEraseDeletionMarked();
-	void stopAllMovieClipsIntern();
+	void removeChildrenMarkedForDeletion();
+	void stopAllMovieClipsImpl();
 public:
 	DisplayObjectContainer(const SWFMovie& movie);
 
 	void constructionComplete(bool _explicit = false, bool forInitAction = false);
 	DisplayObject* getLastFrameChildAtDepth(int32_t depth, uint32_t id);
-	bool childRemoveDeletionMark(int32_t depth);
+	bool removeChildDeletionMark(int32_t depth);
 	void requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh = false);
 	void requestInvalidationIncludingChildren(InvalidateQueue* q);
 	IDrawable* invalidate(bool smoothing);
@@ -143,7 +143,7 @@ public:
 	void setupClipActionsAt(int32_t depth, const CLIPACTIONS& actions);
 	void checkRatioForChildAt(int32_t depth, uint32_t ratio, bool inskipping);
 	void checkColorTransformForChildAt(int32_t depth, const CXFORMWITHALPHA& ct);
-	void removeChildName(DisplayObject& obj);
+	void removeChildName(DisplayObject& child);
 	void deleteChildAt(int32_t depth, bool inskipping);
 	void insertChildAt
 	(

@@ -144,6 +144,14 @@ void SystemState::addBroadcastEvent(const tiny_string& event)
 
 void SystemState::handleBroadcastEvent(const tiny_string& event)
 {
+	if (event == "render")
+	{
+		if (stage->invalidated)
+			RELEASE_WRITE(stage->invalidated,false);
+		else
+			return;
+	}
+
 	std::list<DisplayObject*> tmplisteners; // work on copy of framelisteners, as the list may change during event handling
 	{
 		Locker l(mutexFrameListeners);
@@ -2338,12 +2346,8 @@ void SystemState::tick()
 
 	/* Step 6: dispatch exitFrame event */
 	addBroadcastEvent("exitFrame");
-	/* Step 7: dispatch render event (Assuming stage.invalidate() has been called) */
-	if (stage->invalidated)
-	{
-		RELEASE_WRITE(stage->invalidated,false);
-		addBroadcastEvent("render");
-	}
+	/* Step 7: dispatch render event */
+	addBroadcastEvent("render");
 	/* Step 8: Scheduled screen render for frame */
 	currentVm->addEvent(NullRef, _MR(new (unaccountedMemory) RenderFrameEvent()));
 

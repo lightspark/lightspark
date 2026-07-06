@@ -89,6 +89,9 @@ enum class Quality
 
 class Stage : public InteractiveObject, public DisplayObjectContainer
 {
+	template<typename T>
+	using RefWrapper = std::reference_wrapper<T>;
+	using DisplayObjectRef = RefWrapper<DisplayObject>;
 public:
 	Vector2 getStageSize() const;
 	uint32_t internalGetHeight() const { return getStageSize().y; }
@@ -106,11 +109,11 @@ private:
 	InteractiveObject* focus;
 	InteractiveObject* avm1Focus;
 	RootMovieClip* root;
+	std::list<DisplayObjectRef> hiddenObjects;
 	std::vector<AVM1Value> avm1KeyboardListeners;
 	std::vector<AVM1Value> avm1MouseListeners;
 	std::vector<std::pair<_GC<AVM1Object>, uint32_t>> avm1EventListeners;
 	std::vector<_GC<AVM1Object>> avm1ResizeListeners;
-	std::vector<AVM1Value> avm1FocusListeners;
 	// double linked list of AVM1 MovieClips currently on Stage that have scripts to execute
 	// this is needed to execute the scripts in the correct order
 	DisplayObject* avm1DisplayObjectFirst;
@@ -119,7 +122,7 @@ private:
 	bool hasAVM1Clips;
 	void executeAVM1Scripts(bool implicit);
 	Mutex DisplayObjectRemovedMutex;
-	std::unordered_set<DisplayObject&> removedDisplayObjects;
+	std::unordered_set<DisplayObjectRef> removedDisplayObjects;
 
 	Optional<RGB> backgroundColor;
 	StageScale scaleMode;
@@ -161,8 +164,8 @@ public:
 	);
 
 	void checkResetFocusTarget(InteractiveObject& removedtarget);
-	void addHiddenObject(DisplayObject& o);
-	void removeHiddenObject(DisplayObject& o);
+	void addHiddenObject(DisplayObject& obj);
+	void removeHiddenObject(DisplayObject& obj);
 	void forEachHiddenObject
 	(
 		std::function<void(DisplayObject*)> callback,
@@ -287,14 +290,12 @@ public:
 	void AVM1RemoveEventListener(ASObject *o);
 	void AVM1AddResizeListener(ASObject *o);
 	bool AVM1RemoveResizeListener(ASObject *o);
-	void AVM1AddFocusListener(asAtom listener);
-	bool AVM1RemoveFocusListener(asAtom listener);
-	void AVM1AddDisplayObject(DisplayObject* dobj);
-	void AVM1RemoveDisplayObject(DisplayObject* dobj);
+	void AVM1AddDisplayObject(DisplayObject& obj);
+	void AVM1RemoveDisplayObject(DisplayObject& obj);
 	void AVM1AddScriptToExecute(AVM1scriptToExecute& script);
-	void AVM1SetLevelRoot(int level, RootMovieClip* root);
-	void AVM1removeLevelRoot(int level);
-	RootMovieClip* AVM1getLevelRoot(int level);
+	void AVM1SetLevelRoot(int32_t level, RootMovieClip& root);
+	void AVM1removeLevelRoot(int32_t level);
+	RootMovieClip* AVM1getLevelRoot(int32_t level);
 	void AVM1RemoveAllListeners();
 };
 

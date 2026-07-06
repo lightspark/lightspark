@@ -324,324 +324,365 @@ void Stage::setTabFocusTarget(bool next)
 	setFocusTarget(*newFocusTarget->as<InteractiveObject>(), false);
 }
 
-bool Stage::setFocusTarget(const asAtom newfocus, bool setFromMouse, bool preventAVM1Events)
+bool Stage::setFocusTarget
+(
+	InteractiveObject* obj,
+	bool setFromMouse,
+	bool preventAVM1Events = false
+)
 {
+	auto wrk = getSys()->worker;
 	Locker l(focusSpinlock);
-	bool isundefined = asAtomHandler::isUndefined(newfocus);
-	InteractiveObject* f = asAtomHandler::is<InteractiveObject>(newfocus) ? asAtomHandler::as<InteractiveObject>(newfocus) : nullptr;
-	if (f==focus && !isundefined)
-		return newfocus.uintval != asAtomHandler::falseAtom.uintval;
+
 	bool ret = true;
-	if (f && !f->isFocusable(setFromMouse))
+	if (obj != nullptr && !obj->isFocusable(setFromMouse))
 	{
-		f=nullptr;
+		obj = nullptr;
 		ret = false;
 	}
-	InteractiveObject* oldfocus = focus;
-	focus = f;
-	if (oldfocus)
-	{
-		oldfocus->lostFocus();
-		_NR<InteractiveObject> focusrel;
-		if (f && f!=this && !f->is<RootMovieClip>())
-		{
-			f->incRef();
-			focusrel=_MR(f);
-		}
 
-		auto e = _MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusOut",false,focusrel));
-		// it seems that focus events are executed directly
-		if(isVmThread())
-			ABCVm::publicHandleEvent(oldfocus,e);
-		else
-			getVm(getSystemState())->addEvent(_MR(oldfocus),e);
-	}
-	if (focus)
+	auto oldFocus = focus;
+	focus = obj;
+
+	auto addFocusEvent = [&]
+	(
+		const tiny_string& name
+		InteractiveObject* focusRel,
+	)
 	{
-		focus->incRef();
-		focus->addStoredMember();
-		focus->gotFocus();
-		_NR<InteractiveObject> focusrel;
-		if (oldfocus && oldfocus!=this)
-		{
-			oldfocus->incRef();
-			focusrel=_MR(oldfocus);
-		}
-		auto e = _MR(Class<FocusEvent>::getInstanceS(getInstanceWorker(),"focusIn",false,focusrel));
+		if (focusRel == nullptr)
+			return;
+
+		auto _obj = focusRel.toASObject();
+		if (_obj.isNull())
+			return;
+
+		auto vm = getVm(getSys());
 		// it seems that focus events are executed directly
-		if(isVmThread())
-			ABCVm::publicHandleEvent(focus,e);
-		else
-		{
-			focus->incRef();
-			getVm(getSystemState())->addEvent(_MR(focus),e);
-		}
+		vm->tryAddEvent(_obj, _MR(Class<FocusEvent>::getInstanceS
+		(
+			wrk,
+			name,
+			false,
+			focusRel
+		)));
+	};
+
+	if (oldFocus != nullptr)
+	{
+		oldFocus->lostFocus();
+		addFocusEvent("focusOut",
+		(
+			obj != nullptr &&
+			obj != this &&
+			obj->is<RootMovieClip>()
+		) ? obj : nullptr);
 	}
+
+	if (focus != nullptr)
+	{
+		focus->gotFocus();
+		addFocusEvent("focusIn",
+		(
+			oldFocus != nullptr &&
+			oldFocus != this &&
+		) ? oldFocus : nullptr);
+	}
+
 	l.release();
 
-	if (focus != avm1focus || isundefined)
+	[&]
 	{
-		bool setfocus = isundefined
-						|| (!focus && ret)
-						|| (focus && focus->isFocusable(setFromMouse));
-		InteractiveObject* avm1oldfocus = avm1focus;
-		if ((avm1oldfocus && avm1oldfocus->is<TextField>())
-			|| setfocus)
-		{
-			avm1focus = focus;
-			if (avm1focus)
-			{
-				avm1focus->incRef();
-				avm1focus->addStoredMember();
-			}
-			if (!preventAVM1Events)
-			{
-				avm1listenerMutex.lock();
-				vector<asAtom> tmplisteners = avm1FocusListeners;
-				for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
-				{
-					ASATOM_INCREF(*it);
-				}
-				avm1listenerMutex.unlock();
-				for (auto it = tmplisteners.begin(); it != tmplisteners.end(); it++)
-				{
-					ASObject* o = asAtomHandler::getObject(*it);
-					if (o)
-					{
-						o->AVM1HandleSetFocusEvent(
-							setfocus ? focus : nullptr
-							,avm1oldfocus);
-						o->decRef();
-					}
-				}
-			}
-			if (avm1oldfocus)
-				avm1oldfocus->removeStoredMember();
-		}
-	}
-	if (oldfocus)
-		oldfocus->requestInvalidation(getSystemState());
-	if (focus)
-		focus->requestInvalidation(getSystemState());
+		if (focus == avm1Focus && obj != nullptr)
+			return;
+		bool _setFocus = obj == nullptr ||
+		(
+			focus == nullptr && ret
+		) ||
+		(
+			focus != nullptr &&
+			focus->isFocusable(setFromMouse)
+		);
+
+		bool isValid =
+		(
+			avm1Focus != nullptr &&
+			avm1Focus->is<TextField>()
+		) || _setFocus;
+		if (!isValid)
+			return;
+
+		auto oldAVM1Focus = avm1Focus;
+		avm1Focus = focus;
+		if (preventAVM1Events)
+			return;
+
+		auto rootClip = getRootClip();
+		if (rootClip == nullptr)
+			return;
+
+
+		auto oldFocusVal =
+		(
+			oldAVM1Focus != nullptr ?
+			oldAVM1Focus->toAVM1ValueOrUndef() :
+			AVM1Value::nullVal
+		);
+
+		auto newFocusVal =
+		(
+			_setFocus &&
+			avm1Focus != nullptr
+		) ? avm1Focus->toAVM1ValueOrUndef() : AVM1Value::nullVal;
+
+		AVM1Context::notifySystemListeners
+		(
+			rootClip,
+			"Selection",
+			"onSetFocus",
+			{ oldFocusVal, newFocusVal }
+		);
+	}();
+
+	if (oldFocus != nullptr)
+		oldFocus->requestInvalidation(getSys());
+	if (focus != nullptr)
+		focus->requestInvalidation(getSys());
+
 	l.acquire();
-	if (oldfocus)
-		oldfocus->removeStoredMember();
 	return ret;
 }
 
 void Stage::checkResetFocusTarget(InteractiveObject* removedtarget)
 {
 	Locker l(focusSpinlock);
-	if (focus == removedtarget && !getSystemState()->isShuttingDown())
-	{
-		setFocusTarget(asAtomHandler::nullAtom,false);
-	}
-}
-void Stage::addHiddenObject(DisplayObject* o)
-{
-	if (!o->getInstanceWorker()->isPrimordial)
-		return;
-	if (o->hiddenPrevDisplayObject || o->hiddenNextDisplayObject || this->hiddenNextDisplayObject == o)
-		return;
-	assert(o!=this);
-	// don't add hidden object if any ancestor was already added as one
-	DisplayObject* p=o->getParent();
-	while (p && p != this)
-	{
-		if (p->hiddenPrevDisplayObject || p->hiddenNextDisplayObject)
-			return;
-		p=p->getParent();
-	}
-	if (this->hiddenNextDisplayObject==this)
-	{
-		this->hiddenNextDisplayObject=o;
-		o->hiddenPrevDisplayObject=this;
-		o->hiddenNextDisplayObject=this;
-	}
-	else
-	{
-		o->hiddenNextDisplayObject=this->hiddenNextDisplayObject;
-		o->hiddenPrevDisplayObject=this;
-		this->hiddenNextDisplayObject->hiddenPrevDisplayObject=o;
-		this->hiddenNextDisplayObject=o;
-	}
+	if (focus == removedtarget && !getSys()->isShuttingDown())
+		setFocusTarget(nullptr, false);
 }
 
-void Stage::removeHiddenObject(DisplayObject* o)
+void Stage::addHiddenObject(DisplayObject& obj)
 {
-	if (!o->hiddenPrevDisplayObject || !o->hiddenNextDisplayObject || o==this)
-		return;
-	if (o->hiddenPrevDisplayObject !=this)
-		o->hiddenPrevDisplayObject->hiddenNextDisplayObject=o->hiddenNextDisplayObject;
-	else
+	auto isHiddenObj = [&hiddenObjects](DisplayObject& obj)
 	{
-		this->hiddenNextDisplayObject=o->hiddenNextDisplayObject;
-		this->hiddenNextDisplayObject->hiddenPrevDisplayObject=this;
+		return std::find
+		(
+			hiddenObjects.begin(),
+			hiddenObjects.end(),
+			[&](const auto& _obj) { return &_obj == &obj; }
+		) != hiddenObjects.end();
+	};
+
+	auto _obj = obj.toASObject();
+	if (_obj.isNull() || !_obj->getInstanceWorker()->isPrimordial)
+		return;
+
+	if (isHiddenObj(obj))
+		return;
+	assert(&obj != this);
+
+	// don't add hidden object if any ancestor was already added as one
+	for (auto p = obj.getParent(); p != nullptr; p = p->getParent())
+	{
+		if (isHiddenObj(*p))
+			return;
 	}
-	if (o->hiddenNextDisplayObject!=this)
-		o->hiddenNextDisplayObject->hiddenPrevDisplayObject=o->hiddenPrevDisplayObject;
-	else
-		o->hiddenPrevDisplayObject->hiddenNextDisplayObject=this;
-	o->hiddenPrevDisplayObject=nullptr;
-	o->hiddenNextDisplayObject=nullptr;
+
+	hiddenObjects.emplace_back(obj);
+}
+
+void Stage::removeHiddenObject(DisplayObject& obj)
+{
+	auto it = std::find
+	(
+		hiddenObjects.begin(),
+		hiddenObjects.end(),
+		[&](const auto& _obj) { return &_obj == &obj; }
+	);
+
+	if (it != hiddenObjects.end())
+		hiddenObjects.erase(it);
 }
 
 void Stage::forEachHiddenObject(std::function<void(DisplayObject*)> callback, bool allowInvalid)
 {
-	DisplayObject* clip = this->hiddenNextDisplayObject;
-	while (clip && clip != this)
+	auto& list = hiddenObjects;
+	// NOTE: A range for loop can't be used here because a clip can be
+	// removed from the list during the callback.
+	for (auto it = list.begin(); it != list.end(); ++it)
 	{
-		DisplayObject* nextclip = clip->hiddenNextDisplayObject;
-		if ((allowInvalid || clip->getParent() == nullptr))
+		auto& clip = it->get();
+		if (!allowInvalid && clip.getParent() != nullptr)
+			continue;
+
+		// NOTE: Because the clip can be removed from the list during the
+		// callback, we need to get the previous iterator for later.
+		auto prevIt = std::prev(it);
+		callback(&clip);
+
+		if (std::next(prevIt) != it)
 		{
-			clip->incRef(); // clip may be destroyed inside callback, we have to delay that until callback is done
-			callback(clip);
-			clip->decRef();
+			// The clip was removed from the list, so use the previous
+			// iterator.
+			it = prevIt;
 		}
-		clip = nextclip;
 	}
 }
 
 void Stage::cleanupDeadHiddenObjects()
 {
-	DisplayObject* clip = this->hiddenNextDisplayObject;
-	while (clip && clip != this)
+	auto it = hiddenObjects.begin();
+	while (it != hiddenObjects.end())
 	{
-		DisplayObject* nextclip = clip->hiddenNextDisplayObject;
-		if (clip->getParent() != nullptr)
-			this->removeHiddenObject(clip);
-		clip = nextclip;
+		if (it->get().getParent() != nullptr)
+			it = hiddenObjects.erase(it);
+		else
+			++it;
 	}
 }
 
-void Stage::prepareForRemoval(DisplayObject* d)
+void Stage::prepareForRemoval(DisplayObject& d)
 {
 	Locker l(DisplayObjectRemovedMutex);
-	if (!removedDisplayObjects.insert(d).second)
-		d->removeStoredMember();
+	removedDisplayObjects.emplace(d);
 }
 
 void Stage::cleanupRemovedDisplayObjects()
 {
-	if (getVm(getSystemState()))
-		getVm(getSystemState())->clearDeletableObjects();
+	if (getVm(getSys()) != nullptr)
+		getVm(getSys())->clearDeletableObjects();
+
+	if (getSys()->isShuttingDown())
+		return;
+
 	Locker l(DisplayObjectRemovedMutex);
-	auto it = removedDisplayObjects.begin();
-	while (it != removedDisplayObjects.end())
+	auto& list = removedDisplayObjects;
+	for (auto it = list.begin(); it != list.end(); it = list.erase(it))
 	{
-		DisplayObject* o = *it;
-		it = removedDisplayObjects.erase(it);
-		if (!getSystemState()->isShuttingDown())
+		auto& obj = it->get();
+		// DisplayObjects with broadcast listeners are not destroyed, only hidden
+		if (!obj.hasBroadcastListeners())
+			continue;
+		auto clip = obj.as<MovieClip>();
+		if (clip != nullptr && clip->state.advancedByTick)
 		{
-			if (o->hasBroadcastListeners()) // DisplayObjects with broadcast listeners are not destroyed, only hidden
-			{
-				if (o->is<MovieClip>() && !o->as<MovieClip>()->state.advancedByTick)
-				{
-					// ensure the hidden MovieClip is not advanced on the next tick
-					o->as<MovieClip>()->state.next_FP = o->as<MovieClip>()->state.FP;
-				}
-				addHiddenObject(o);
-			}
+			// ensure the hidden MovieClip is not advanced on the next tick
+			clip->state.next_FP = clip->state.FP;
 		}
-		o->removeStoredMember();
+		addHiddenObject(obj);
 	}
 }
 
-void Stage::AVM1AddDisplayObject(DisplayObject* dobj)
+void Stage::AVM1AddDisplayObject(DisplayObject& obj)
 {
-	if (!hasAVM1Clips || dobj->needsActionScript3())
+	if (!hasAVM1Clips || obj.isAS3())
 		return;
+
 	Locker l(avm1DisplayObjectMutex);
-	if (dobj->avm1PrevDisplayObject || dobj->avm1NextDisplayObject || this->avm1DisplayObjectFirst == dobj)
+	bool canAdd =
+	(
+		obj.avm1PrevDisplayObject == nullptr &&
+		obj.avm1NextDisplayObject == nullptr &&
+		avm1DisplayObjectFirst != &obj
+	);
+
+	if (!canAdd)
 		return;
-	if (!this->avm1DisplayObjectFirst)
+
+	if (avm1DisplayObjectFirst == nullptr)
 	{
-		this->avm1DisplayObjectFirst=dobj;
-		this->avm1DisplayObjectLast=dobj;
+		avm1DisplayObjectFirst = &obj;
+		avm1DisplayObjectLast = &dobj;
+		return;
 	}
-	else
-	{
-		dobj->avm1NextDisplayObject=this->avm1DisplayObjectFirst;
-		this->avm1DisplayObjectFirst->avm1PrevDisplayObject=dobj;
-		this->avm1DisplayObjectFirst=dobj;
-	}
+
+	obj.avm1NextDisplayObject = avm1DisplayObjectFirst;
+	avm1DisplayObjectFirst->avm1PrevDisplayObject = &obj;
+	avm1DisplayObjectFirst = &obj;
 }
 
-void Stage::AVM1RemoveDisplayObject(DisplayObject* dobj)
+void Stage::AVM1RemoveDisplayObject(DisplayObject& obj)
 {
 	if (!hasAVM1Clips)
 		return;
+
 	Locker l(avm1DisplayObjectMutex);
-	if (!dobj->avm1PrevDisplayObject && !dobj->avm1NextDisplayObject)
+	bool canRemove =
+	(
+		obj.avm1PrevDisplayObject != nullptr ||
+		dobj.avm1NextDisplayObject != nullptr
+	);
+
+	if (!canRemove)
 		return;
-	if (dobj->avm1PrevDisplayObject)
-		dobj->avm1PrevDisplayObject->avm1NextDisplayObject=dobj->avm1NextDisplayObject;
+
+	if (obj.avm1PrevDisplayObject != nullptr)
+		obj.avm1PrevDisplayObject->avm1NextDisplayObject = obj.avm1NextDisplayObject;
 	else
 	{
-		this->avm1DisplayObjectFirst=dobj->avm1NextDisplayObject;
-		this->avm1DisplayObjectFirst->avm1PrevDisplayObject=nullptr;
+		avm1DisplayObjectFirst = dobj.avm1NextDisplayObject;
+		avm1DisplayObjectFirst->avm1PrevDisplayObject = nullptr;
 	}
-	if (dobj->avm1NextDisplayObject)
-		dobj->avm1NextDisplayObject->avm1PrevDisplayObject=dobj->avm1PrevDisplayObject;
+
+	if (obj.avm1NextDisplayObject != nullptr)
+		obj.avm1NextDisplayObject->avm1PrevDisplayObject = dobj.avm1PrevDisplayObject;
 	else
 	{
-		this->avm1DisplayObjectLast=dobj->avm1PrevDisplayObject;
-		dobj->avm1PrevDisplayObject->avm1NextDisplayObject=nullptr;
+		avm1DisplayObjectLast = obj.avm1PrevDisplayObject;
+		obj.avm1PrevDisplayObject->avm1NextDisplayObject = nullptr;
 	}
-	dobj->avm1PrevDisplayObject=nullptr;
-	dobj->avm1NextDisplayObject=nullptr;
+
+	obj.avm1PrevDisplayObject = nullptr;
+	obj.avm1NextDisplayObject = nullptr;
 }
 
 void Stage::AVM1AddScriptToExecute(AVM1scriptToExecute& script)
 {
-	assert(!script.clip->needsActionScript3());
+	assert(!script.clip->isAS3());
 	Locker l(avm1ScriptMutex);
-	avm1scriptstoexecute.push_back(script);
+	avm1ScriptsToExecute.push_back(script);
 }
 
-void Stage::AVM1SetLevelRoot(int level, RootMovieClip* root)
+void Stage::AVM1SetLevelRoot(int32_t level, RootMovieClip& root)
 {
-	avm1MapLevelToRoot[level]=root;
+	addChildAt(root, level);
 }
 
-void Stage::AVM1removeLevelRoot(int level)
+void Stage::AVM1removeLevelRoot(int32_t level)
 {
-	avm1MapLevelToRoot.erase(level);
+	deleteChildAt(level);
 }
 
-RootMovieClip* Stage::AVM1getLevelRoot(int level)
+RootMovieClip* Stage::AVM1getLevelRoot(int32_t level)
 {
-	auto it = avm1MapLevelToRoot.find(level);
-	if (it != avm1MapLevelToRoot.end())
-		return it->second;
-	return nullptr;
+	auto root = tryGetChildAt(level);
+	return root != nullptr ? root->as<RootMovieClip>() : nullptr;
 }
 
 void Stage::enterFrame(bool implicit)
 {
-	std::vector<_R<DisplayObject>> list;
-	cloneDisplayList(list);
-	for (auto child : list)
+	auto list = cloneDisplayList();
+	for (auto& child : list)
 		child->enterFrame(implicit);
 	executeAVM1Scripts(implicit);
 }
 
 void Stage::advanceFrame(bool implicit)
 {
-	if (getSystemState()->mainClip->getFramesLoaded()==0)
+	auto root = getSys()->mainClip;
+	if (!root->getFramesLoaded())
 		return;
-	if (!getSystemState()->mainClip->getParent())
-	{
-		getSystemState()->mainClip->incRef();
-		insertLegacyChildAt(-16384, getSystemState()->mainClip, false, false);
-	}
+	if (root->getParent() == nullptr)
+		insertChildAt(0, *root, false, false);
+
 	forEachHiddenObject([&](DisplayObject* obj)
 	{
 		obj->advanceFrame(implicit);
 	});
+
 	DisplayObjectContainer::advanceFrame(implicit);
 	executeAVM1Scripts(implicit);
 }
+
 void Stage::executeAVM1Scripts(bool implicit)
 {
 	if (hasAVM1Clips)

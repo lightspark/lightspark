@@ -110,9 +110,9 @@ private:
 	InteractiveObject* avm1Focus;
 	RootMovieClip* root;
 	std::list<DisplayObjectRef> hiddenObjects;
-	std::vector<AVM1Value> avm1KeyboardListeners;
-	std::vector<AVM1Value> avm1MouseListeners;
-	std::vector<std::pair<_GC<AVM1Object>, uint32_t>> avm1EventListeners;
+	std::vector<DisplayObjectRef> avm1KeyListeners;
+	std::vector<DisplayObjectRef> avm1MouseListeners;
+	std::vector<std::pair<_GC<AVM1Object>, size_t>> avm1EventListeners;
 	std::vector<_GC<AVM1Object>> avm1ResizeListeners;
 	// double linked list of AVM1 MovieClips currently on Stage that have scripts to execute
 	// this is needed to execute the scripts in the correct order
@@ -280,16 +280,16 @@ public:
 	}
 	
 	void AVM1HandleEvent(EventDispatcher *dispatcher, Event* e) override;
-	bool AVM1AddKeyboardListener(asAtom listener);
-	bool AVM1RemoveKeyboardListener(asAtom listener);
-	void AVM1GetKeyboardListeners(AVM1Array* res);
-	bool AVM1AddMouseListener(asAtom listener);
-	bool AVM1RemoveMouseListener(asAtom listener);
-	void AVM1GetMouseListeners(AVM1Array* res);
-	void AVM1AddEventListener(ASObject *o);
-	void AVM1RemoveEventListener(ASObject *o);
-	void AVM1AddResizeListener(ASObject *o);
-	bool AVM1RemoveResizeListener(ASObject *o);
+	bool addAVM1KeyListener(DisplayObject& obj);
+	bool removeAVM1KeyListener(DisplayObject& obj);
+	std::vector<DisplayObjectRef> getAVM1KeyListeners();
+	bool addAVM1MouseListener(DisplayObject& obj);
+	bool removeAVM1MouseListener(DisplayObject& obj);
+	std::vector<DisplayObjectRef> getAVM1MouseListeners();
+	void addAVM1EventListener(_GC<AVM1Object> obj);
+	void removeAVM1EventListener(_GC<AVM1Object> obj);
+	void addAVM1ResizeListener(_GC<AVM1Object> obj);
+	bool removeAVM1ResizeListener(_GC<AVM1Object> obj);
 	void AVM1AddDisplayObject(DisplayObject& obj);
 	void AVM1RemoveDisplayObject(DisplayObject& obj);
 	void AVM1AddScriptToExecute(AVM1scriptToExecute& script);

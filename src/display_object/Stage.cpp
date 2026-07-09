@@ -464,7 +464,7 @@ void Stage::addHiddenObject(DisplayObject& obj)
 {
 	auto isHiddenObj = [&hiddenObjects](DisplayObject& obj)
 	{
-		return std::find
+		return std::find_if
 		(
 			hiddenObjects.begin(),
 			hiddenObjects.end(),
@@ -492,7 +492,7 @@ void Stage::addHiddenObject(DisplayObject& obj)
 
 void Stage::removeHiddenObject(DisplayObject& obj)
 {
-	auto it = std::find
+	auto it = std::find_if
 	(
 		hiddenObjects.begin(),
 		hiddenObjects.end(),
@@ -685,62 +685,67 @@ void Stage::advanceFrame(bool implicit)
 
 void Stage::executeAVM1Scripts(bool implicit)
 {
-	if (hasAVM1Clips)
+	if (!hasAVM1Clips)
+		return;
+
+	// scripts on AVM1 clips are executed in order of instantiation
+	avm1DisplayObjectMutex.lock();
+	auto obj = avm1DisplayObjectFirst;
+	avm1DisplayObjectMutex.unlock();
+
+	DisplayObject* prev = nullptr;
+	DisplayObject* next = nullptr;
+
+	for (; obj != nullptr; obj = next)
 	{
-		// scripts on AVM1 clips are executed in order of instantiation
-		avm1DisplayObjectMutex.lock();
-		DisplayObject* dobj = avm1DisplayObjectFirst;
-		avm1DisplayObjectMutex.unlock();
-		DisplayObject* prevdobj = nullptr;
-		DisplayObject* nextdobj = nullptr;
-		while (dobj)
+		if (!obj->isAS3() && obj->isCreatedByTimeline())
+			obj->advanceFrame(implicit);
+
+		Locker l(avm1DisplayObjectMutex);
+		bool isRemoved =
+		(
+			obj->avm1NextDisplayObject == nullptr &&
+			obj->avm1PrevDisplayObject == nullptr
+		);
+
+		if (!isRemoved)
 		{
-			dobj->incRef();
-			if (!dobj->needsActionScript3() && dobj->isConstructed())
-				dobj->advanceFrame(implicit);
-			avm1DisplayObjectMutex.lock();
-			if (!dobj->avm1NextDisplayObject && !dobj->avm1PrevDisplayObject) // clip was removed from list during frame advance
-			{
-				if (prevdobj)
-					nextdobj = prevdobj->avm1NextDisplayObject;
-				else if (dobj != avm1DisplayObjectFirst)
-					nextdobj = avm1DisplayObjectFirst;
-				else
-					nextdobj = nullptr;
-			}
-			else 
-			{
-				nextdobj = dobj->avm1NextDisplayObject;
-				prevdobj = dobj;
-			}
-			avm1DisplayObjectMutex.unlock();
-			dobj->decRef();
-			dobj = nextdobj;
+			next = obj->avm1NextDisplayObject;
+			prev = obj;
+			continue;
 		}
-		avm1ScriptMutex.lock();
-		auto itscr = avm1scriptstoexecute.begin();
-		while (itscr != avm1scriptstoexecute.end())
-		{
-			if (!(*itscr).clip->markedForLegacyDeletion)
-				(*itscr).execute();
-			else
-				(*itscr).clip->decRef(); // was increffed in AVM1AddScriptEvents
-			itscr = avm1scriptstoexecute.erase(itscr);
-		}
-		avm1ScriptMutex.unlock();
-		
-		avm1DisplayObjectMutex.lock();
-		dobj = avm1DisplayObjectFirst;
-		while (dobj)
-		{
-			if (dobj->isConstructed())
-				dobj->AVM1AfterAdvance();
-			dobj = dobj->avm1NextDisplayObject;
-		}
-		avm1DisplayObjectMutex.unlock();
-		AVM1AfterAdvance();
+
+		// clip was removed from list during frame advance
+		next =
+		(
+			prev != nullptr ?
+			prev->avm1NextDisplayObject :
+			obj != avm1DisplayObjectFirst ?
+			avm1DisplayObjectFirst :
+			nullptr
+		);
 	}
+
+	avm1ScriptMutex.lock();
+	auto& list = avm1ScriptsToExecute;
+	for (auto it = list.begin(); it != list.end(); it = list.erase(it))
+	{
+		if (!it->clip->isMarkedForTimelineDeletion())
+			it->execute();
+	}
+	avm1ScriptMutex.unlock();
+
+	avm1DisplayObjectMutex.lock();
+	obj = avm1DisplayObjectFirst;
+	for (; obj != nullptr; obj = obj->avm1NextDisplayObject)
+	{
+		if (obj->isCreatedByTimeline())
+			obj->AVM1AfterAdvance();
+	}
+	avm1DisplayObjectMutex.unlock();
+	AVM1AfterAdvance();
 }
+
 void Stage::initFrame()
 {
 	forEachHiddenObject([&](DisplayObject* obj)
@@ -985,336 +990,182 @@ void Stage::AVM1HandleEvent(EventDispatcher* dispatcher, Event* e)
 	}
 }
 
-bool Stage::AVM1AddKeyboardListener(asAtom listener)
+bool Stage::addAVM1KeyListener(DisplayObject& obj)
 {
-	Locker l(avm1listenerMutex);
-	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
-	{
-		if ((*it).uintval == listener.uintval)
-			return false;
-	}
-	ASATOM_ADDSTOREDMEMBER(listener);
-	avm1KeyboardListeners.push_back(listener);
-	return true;
-}
-
-bool Stage::AVM1RemoveKeyboardListener(asAtom listener)
-{
-	Locker l(avm1listenerMutex);
-	for (auto it = avm1KeyboardListeners.begin(); it != avm1KeyboardListeners.end(); it++)
-	{
-		if ((*it).uintval == listener.uintval)
-		{
-			avm1KeyboardListeners.erase(it);
-			ASATOM_REMOVESTOREDMEMBER(listener);
-			return true;
-		}
-	}
-	return true;
-}
-
-void Stage::AVM1GetKeyboardListeners(AVM1Array* res)
-{
-	Locker l(avm1listenerMutex);
-	res->resize(avm1KeyboardListeners.size());
-	for (uint32_t i = 0; i < avm1KeyboardListeners.size();i++)
-	{
-		asAtom l = avm1KeyboardListeners.at(i);
-		res->set(i,l,false);
-	}
-}
-bool Stage::AVM1AddMouseListener(asAtom listener)
-{
-	Locker l(avm1listenerMutex);
-	auto it = std::find_if(avm1MouseListeners.begin(), avm1MouseListeners.end(), [&](asAtom obj)
-	{
-		if (obj.uintval == listener.uintval)
-			return true;
-		ASObject* o = asAtomHandler::getObject(listener);
-		if (o && o->is<DisplayObject>() && asAtomHandler::is<DisplayObject>(obj))
-		{
-			DisplayObject* dispA = o->as<DisplayObject>();
-			DisplayObject* dispB = asAtomHandler::as<DisplayObject>(obj);
-
-			if (dispA != nullptr && dispB != nullptr)
-			{
-				auto commonAncestor = dispA->findCommonAncestor(dispB);
-				int parentDepthA = dispA->findParentDepth(commonAncestor);
-				int parentDepthB = dispB->findParentDepth(commonAncestor);
-
-				if (commonAncestor != nullptr)
-				{
-					int depthA = 16384 + commonAncestor->findLegacyChildDepth(dispA->getAncestor(parentDepthB < 0 ? 0 : parentDepthA-1));
-					int depthB = 16384 + commonAncestor->findLegacyChildDepth(dispB->getAncestor(parentDepthA < 0 ? 0 : parentDepthB-1));
-					return depthA < depthB;
-				}
-			}
-		}
+	Locker l(avm1ListenerMutex);
+	auto it = std::find_if
+	(
+		avm1KeyListeners.begin(),
+		avm1KeyListeners.end(),
+		[&](const auto& _obj) { return &obj == &_obj.get(); }
+	);
+	if (it != avm1KeyListeners.end())
 		return false;
-	});
-	if (it != avm1MouseListeners.end() && (*it).uintval == listener.uintval)
-		return true;
-	if (it != avm1MouseListeners.end())
-		avm1MouseListeners.insert(it, listener);
-	else
-		avm1MouseListeners.push_back(listener);
-	ASATOM_ADDSTOREDMEMBER(listener);
+
+	avm1KeyListeners.emplace_back(obj);
 	return true;
 }
 
-bool Stage::AVM1RemoveMouseListener(asAtom listener)
+bool Stage::removeAVM1KeyListener(DisplayObject& obj)
 {
-	Locker l(avm1listenerMutex);
-	for (auto it = avm1MouseListeners.begin(); it != avm1MouseListeners.end(); it++)
+	Locker l(avm1ListenerMutex);
+	auto it = std::find_if
+	(
+		avm1KeyListeners.begin(),
+		avm1KeyListeners.end(),
+		[&](const auto& _obj) { return &obj == &_obj.get(); }
+	);
+	if (it == avm1KeyListeners.end())
+		return false;
+	avm1KeyListeners.erase(it);
+	return true;
+}
+
+std::vector<DisplayObjectRef> Stage::getAVM1KeyListeners()
+{
+	Locker l(avm1ListenerMutex);
+	auto listeners = avm1KeyListeners;
+	return listeners;
+}
+
+bool Stage::AVM1AddMouseListener(DisplayObject& obj)
+{
+	auto findFunc = [&](const DisplayObject& _obj)
 	{
-		if ((*it).uintval == listener.uintval)
-		{
-			ASATOM_REMOVESTOREDMEMBER(listener);
-			avm1MouseListeners.erase(it);
+		if (&obj == &_obj)
 			return true;
-		}
+
+		auto commonParent = obj.findCommonAncestor(_obj);
+		if (commonParent == nullptr)
+			return false;
+
+		auto depthA = obj.findParentDepth(commonParent);
+		auto depthB = _obj.findParentDepth(commonParent);
+		auto parentA = obj.getAncestor(depthB >= 0 ? depthA - 1 : 0);
+		auto parentB = _obj.getAncestor(depthA >= 0 ? depthB - 1 : 0);
+		if (parentA == nullptr && parentB == nullptr)
+			return false;
+		return parentA->getDepth() < parentB->getDepth();
+	};
+
+	Locker l(avm1ListenerMutex);
+	auto it = std::find_if
+	(
+		avm1MouseListeners.begin(),
+		avm1MouseListeners.end(),
+		findFunc
+	);
+
+	if (it == avm1MoustListeners.end())
+	{
+		avm1MouseListeners.emplace_back(obj);
+		return true;
 	}
-	return false;
+
+	if (&obj == &it->get())
+		return false;
+	avm1MouseListeners.insert(it, obj);
+	return true;
 }
 
-void Stage::AVM1GetMouseListeners(AVM1Array* res)
+bool Stage::removeAVM1MouseListener(DisplayObject& obj)
 {
-	Locker l(avm1listenerMutex);
-	res->resize(avm1MouseListeners.size());
-	for (uint32_t i = 0; i < avm1MouseListeners.size();i++)
-	{
-		asAtom listener = avm1MouseListeners.at(i);
-		res->set(i,listener,false);
-	}
+	Locker l(avm1ListenerMutex);
+	auto it = std::find_if
+	(
+		avm1MouseListeners.begin(),
+		avm1MouseListeners.end(),
+		[&](const auto& _obj) { return &obj == &_obj.get(); }
+	);
+	if (it == avm1MouseListeners.end())
+		return false;
+	avm1MouseListeners.erase(it);
+	return true;
 }
 
-void Stage::AVM1AddEventListener(ASObject *o)
+std::vector<DisplayObjectRef> Stage::getAVM1MouseListeners()
 {
-	Locker l(avm1listenerMutex);
-	o->incRef();
-	o->addStoredMember();
-	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
-	{
-		if ((*it).first == o)
-		{
-			++(*it).second;
-			return;
-		}
-	}
-	avm1EventListeners.push_back(make_pair(o,1));
-}
-void Stage::AVM1RemoveEventListener(ASObject *o)
-{
-	Locker l(avm1listenerMutex);
-	for (auto it = avm1EventListeners.begin(); it != avm1EventListeners.end(); it++)
-	{
-		if ((*it).first == o)
-		{
-			assert ((*it).second);
-			--(*it).second;
-			o->removeStoredMember();
-			if ((*it).second==0)
-				avm1EventListeners.erase(it);
-			break;
-		}
-	}
+	Locker l(avm1ListenerMutex);
+	auto listeners = avm1MouseListeners;
+	return listeners;
 }
 
-void Stage::AVM1AddResizeListener(ASObject *o)
+void Stage::addAVM1EventListener(_GC<AVM1Object> obj)
 {
-	Locker l(avm1listenerMutex);
-	for (auto it = avm1ResizeListeners.begin(); it != avm1ResizeListeners.end(); it++)
-	{
-		if ((*it) == o)
-			return;
-	}
-	avm1ResizeListeners.push_back(o);
-}
+	Locker l(avm1ListenerMutex);
+	auto it = std::find_if
+	(
+		avm1EventListeners.begin(),
+		avm1EventListeners.end(),
+		[&](const auto& pair) { return pair.first == obj; }
+	);
 
-bool Stage::AVM1RemoveResizeListener(ASObject *o)
-{
-	Locker l(avm1listenerMutex);
-	for (auto it = avm1ResizeListeners.begin(); it != avm1ResizeListeners.end(); it++)
+	if (it == avm1EventListeners.end())
 	{
-		if ((*it) == o)
-		{
-			avm1ResizeListeners.erase(it);
-			o->decRef();
-			// it's not mentioned in the specs but I assume we return true if we found the listener object
-			return true;
-		}
-	}
-	return false;
-}
-void Stage::AVM1AddFocusListener(asAtom listener)
-{
-	Locker l(avm1listenerMutex);
-	for (auto it = avm1FocusListeners.begin(); it != avm1FocusListeners.end(); it++)
-	{
-		if ((*it).uintval == listener.uintval)
-			return;
-	}
-	ASATOM_ADDSTOREDMEMBER(listener);
-	avm1FocusListeners.push_back(listener);
-}
-
-bool Stage::AVM1RemoveFocusListener(asAtom listener)
-{
-	Locker l(avm1listenerMutex);
-	for (auto it = avm1FocusListeners.begin(); it != avm1FocusListeners.end(); it++)
-	{
-		if ((*it).uintval == listener.uintval)
-		{
-			avm1FocusListeners.erase(it);
-			ASATOM_REMOVESTOREDMEMBER(listener);
-			return true;
-		}
-	}
-	return false;
-}
-ASFUNCTIONBODY_ATOM(Stage,_getFocus)
-{
-	Stage* th=asAtomHandler::as<Stage>(obj);
-	InteractiveObject* focus = th->getFocusTarget();
-	if (!focus || focus==th || focus->is<RootMovieClip>())
-	{
-		ret = asAtomHandler::nullAtom;
+		++it->second;
 		return;
 	}
-	else
-	{
-		focus->incRef();
-		ret = asAtomHandler::fromObject(focus);
-	}
+
+	avm1EventListeners.emplace_back(obj, 1);
+}
+void Stage::removeAVM1EventListener(_GC<AVM1Object> obj)
+{
+	Locker l(avm1ListenerMutex);
+	auto it = std::find_if
+	(
+		avm1EventListeners.begin(),
+		avm1EventListeners.end(),
+		[&](const auto& pair) { return pair.first == obj; }
+	);
+
+	if (it == avm1EventListeners.end())
+		return;
+
+	assert(it->second);
+	if (!--it->second)
+		avm1EventListeners.erase(it);
 }
 
-ASFUNCTIONBODY_ATOM(Stage,_setFocus)
+void Stage::addAVM1EventListener(_GC<AVM1Object> obj)
 {
-	Stage* th=asAtomHandler::as<Stage>(obj);
-	_NR<InteractiveObject> focus;
-	ARG_CHECK(ARG_UNPACK(focus));
-	th->setFocusTarget(asAtomHandler::fromObject(focus.getPtr()),false);
+	Locker l(avm1ListenerMutex);
+	auto it = std::find
+	(
+		avm1ResizeListeners.begin(),
+		avm1ResizeListeners.end(),
+		obj
+	);
+
+	if (it == avm1ResizeListeners.end())
+		avm1ResizeListeners.emplace_back(obj);
 }
 
-ASFUNCTIONBODY_ATOM(Stage,_setTabChildren)
+bool Stage::removeAVM1EventListener(_GC<AVM1Object> obj)
 {
-	// The specs says that Stage.tabChildren should throw
-	// IllegalOperationError, but testing shows that instead of
-	// throwing this simply ignores the value.
+	Locker l(avm1ListenerMutex);
+	auto it = std::find
+	(
+		avm1ResizeListeners.begin(),
+		avm1ResizeListeners.end(),
+		obj
+	);
+
+	if (it == avm1ResizeListeners.end())
+		return false;
+
+	avm1ResizeListeners.erase(it);
+	// it's not mentioned in the specs but I assume we return true if we found the listener object
+	return true;
 }
 
-ASFUNCTIONBODY_ATOM(Stage,_getFrameRate)
-{
-	Stage* th=asAtomHandler::as<Stage>(obj);
-	RootMovieClip* root = th->getRoot();
-	if (!root)
-		asAtomHandler::setNumber(ret, wrk->getSystemState()->mainClip->applicationDomain->getFrameRate());
-	else
-		asAtomHandler::setNumber(ret, root->applicationDomain->getFrameRate());
-}
-
-ASFUNCTIONBODY_ATOM(Stage,_setFrameRate)
-{
-	Stage* th=asAtomHandler::as<Stage>(obj);
-	number_t frameRate;
-	ARG_CHECK(ARG_UNPACK(frameRate));
-	RootMovieClip* root = th->getRoot();
-	if (root)
-		root->applicationDomain->setFrameRate(frameRate);
-}
-
-ASFUNCTIONBODY_ATOM(Stage,_getAllowFullScreen)
-{
-	asAtomHandler::setBool(ret,wrk->getSystemState()->allowFullscreen);
-}
-
-ASFUNCTIONBODY_ATOM(Stage,_getAllowFullScreenInteractive)
-{
-	asAtomHandler::setBool(ret,wrk->getSystemState()->allowFullscreenInteractive);
-}
-
-ASFUNCTIONBODY_ATOM(Stage,_getColorCorrectionSupport)
-{
-	asAtomHandler::setBool(ret,false); // until color correction is implemented
-}
-
-ASFUNCTIONBODY_ATOM(Stage,_getWmodeGPU)
-{
-	asAtomHandler::setBool(ret,false);
-}
-ASFUNCTIONBODY_ATOM(Stage,_invalidate)
-{
-	Stage* th=asAtomHandler::as<Stage>(obj);
-	th->forceInvalidation();
-}
 void Stage::forceInvalidation()
 {
-	RELEASE_WRITE(this->invalidated,true);
-	_R<FlushInvalidationQueueEvent> event=_MR(new (getSystemState()->unaccountedMemory) FlushInvalidationQueueEvent());
-	getVm(getSystemState())->addEvent(NullRef,event);
-}
-ASFUNCTIONBODY_ATOM(Stage,_getColor)
-{
-	Stage* th=asAtomHandler::as<Stage>(obj);
-	RGB rgb;
-	RootMovieClip* root = th->getRoot();
-	if (root)
-		rgb = root->getBackground();
-	asAtomHandler::setUInt(ret,rgb.toUInt());
-}
+	RELEASE_WRITE(invalidated, true);
 
-ASFUNCTIONBODY_ATOM(Stage,_setColor)
-{
-	Stage* th=asAtomHandler::as<Stage>(obj);
-	uint32_t color;
-	ARG_CHECK(ARG_UNPACK(color));
-	RGB rgb(color);
-	RootMovieClip* root = th->getRoot();
-	if (root)
-		root->setBackground(rgb);
-}
+	auto event = _MR(new
+	(
+		getSys()->unaccountedMemory
+	) FlushInvalidationQueueEvent());
 
-
-void StageScaleMode::sinit(Class_base* c)
-{
-	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("EXACT_FIT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"exactFit"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("NO_BORDER",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"noBorder"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("NO_SCALE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"noScale"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("SHOW_ALL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"showAll"),CONSTANT_TRAIT);
-}
-
-void StageAlign::sinit(Class_base* c)
-{
-	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("BOTTOM",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"B"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("BOTTOM_LEFT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"BL"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("BOTTOM_RIGHT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"BR"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LEFT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"L"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("RIGHT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"R"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("TOP",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"T"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("TOP_LEFT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"TL"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("TOP_RIGHT",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"TR"),CONSTANT_TRAIT);
-}
-
-void StageQuality::sinit(Class_base* c)
-{
-	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("BEST",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"best"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("HIGH",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"high"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("LOW",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"low"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("MEDIUM",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"medium"),CONSTANT_TRAIT);
-
-	c->setVariableAtomByQName("HIGH_16X16",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"16x16"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("HIGH_16X16_LINEAR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"16x16linear"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("HIGH_8X8",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"8x8"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("HIGH_8X8_LINEAR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"8x8linear"),CONSTANT_TRAIT);
-}
-
-void StageDisplayState::sinit(Class_base* c)
-{
-	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED | CLASS_FINAL);
-	c->setVariableAtomByQName("FULL_SCREEN",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"fullScreen"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("FULL_SCREEN_INTERACTIVE",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"fullScreenInteractive"),CONSTANT_TRAIT);
-	c->setVariableAtomByQName("NORMAL",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"normal"),CONSTANT_TRAIT);
+	getVm(getSys())->addEvent(NullRef, event);
 }

@@ -249,9 +249,9 @@ public:
 	const Vector2Twips& getTextSize() const { return textSize; }
 	const Twips& getTextWidth() const { return textSize.x; }
 	const Twips& getTextHeight() const { return textSize.y; }
-	const FormatText& getTextFormat(size_t from, size_t to) const;
+	FormatText getTextFormat(size_t from, size_t to) const;
 	void setTextFormat(const FormatText& fmt, size_t from, size_t to);
-	const FormatText& getDefaultTextFormat() const;
+	FormatText getDefaultTextFormat() const;
 	void setDefaultTextFormat(const FormatText& fmt);
 	// TODO: Implement this later.
 	//size_t getCharIndexAtPoint(const Vector2Twips& pos) const;

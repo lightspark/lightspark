@@ -88,12 +88,6 @@ public:
 	enum TEXT_INTERACTION_MODE { TI_NORMAL, TI_SELECTION };
 private:
 	Optional<Rect<Twips>> tryBoundsRect(bool visibleOnly) override;
-	bool hitTestShape
-	(
-		const Vector2Twips& globalPoint,
-		const Vector2Twips& localPoint,
-		const HitTestFlags& flags
-	) override;
 
 	IDrawable* invalidate(bool smoothing) override;
 	void requestInvalidation
@@ -131,15 +125,15 @@ private:
 	DisplayObject* tagVarTarget;
 	Mutex invalidatemutex;
 	DefineEditTextTag* tag;
-	int32_t originalXPosition;
-	int32_t originalWidth;
+	Twips origX;
+	Twips origWidth;
 
 	// these are only used when drawing to DisplayObject, so they are guarranteed not to be destroyed during rendering
 	std::list<FILLSTYLE> fillStyleTextColor;
 	FILLSTYLE fillStyleBackgroundColor;
 	LINESTYLE2 lineStyleBorder;
 	LINESTYLE2 lineStyleCaret;
-	Mutex* lineMutex;
+	Mutex lineMutex;
 	bool inAVM1syncVar;
 	bool inUpdateVarBinding;
 	bool isHtml;
@@ -196,7 +190,6 @@ public:
 		DefineEditTextTag* _tag = nullptr
 	);
 
-	~TextField();
 	void setHtmlText(const tiny_string& html);
 	void avm1SyncTagVar();
 	void UpdateVariableBinding(asAtom v) override;
@@ -215,7 +208,6 @@ public:
 	void refreshSurfaceState() override;
 	void setupOriginalPosition();
 
-	void appendText(const tiny_string& text);
 	const ANTI_ALIAS_TYPE& getAntiAliasType() const
 	{
 		return antiAliasType;
@@ -261,13 +253,16 @@ public:
 	void setTextFormat(const FormatText& fmt, size_t from, size_t to);
 	const FormatText& getDefaultTextFormat() const;
 	void setDefaultTextFormat(const FormatText& fmt);
-	size_t getCharIndexAtPoint() const;
-	size_t getLineIndexAtPoint() const;
-	size_t getLineIndexOfChar() const;
-	size_t getLineLength() const;
-	LineMetrics getLineMetrics() const;
-	size_t getLineOffset() const;
-	tiny_string getLineText() const;
+	// TODO: Implement this later.
+	//size_t getCharIndexAtPoint(const Vector2Twips& pos) const;
+	size_t getLineIndexAtPoint(const Vector2Twips& pos) const;
+	size_t getLineIndexOfChar(size_t idx) const;
+	size_t getLineLength(size_t lineIdx) const;
+	Optional<LineMetrics> getLineMetrics(size_t lineIdx) const;
+	size_t getLineOffset(size_t lineIdx) const;
+	Optional<tiny_string> getLineText(size_t lineIdx) const;
+	size_t getTextLength() const;
+	size_t getLineCountWithLock() const;
 	size_t getBottomScrollV() const;
 	Optional<const tiny_string&> getRestrict() const
 	{
@@ -294,7 +289,7 @@ public:
 	}
 
 	void setSelection(size_t from, size_t to);
-	Rect<Twips> getCharBoundaries() const;
+	Optional<Rect<Twips>> getCharBounds(size_t charIdx) const;
 	bool getDisplayAsPassword() const { return isPassword; }
 	void setDisplayAsPassword(bool _isPassword);
 	size_t getParagraphStart(size_t idx) const;

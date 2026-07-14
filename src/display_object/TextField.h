@@ -104,8 +104,8 @@ private:
 	tiny_string compactHTMLWhiteSpace(const tiny_string& str);
 	void validateScrollH(int32_t oldValue);
 	void validateScrollV(int32_t oldValue);
-	int32_t getMaxScrollH();
-	int32_t getMaxScrollV();
+	size_t getMaxScrollH();
+	size_t getMaxScrollV();
 	void textUpdated();
 	void setSizeAndPositionFromAutoSize(bool updateWidth = true);
 	void replaceText
@@ -123,7 +123,7 @@ private:
 	number_t autoSizePos;
 	tiny_string tagVarName;
 	DisplayObject* tagVarTarget;
-	Mutex invalidatemutex;
+	Mutex invalidateMutex;
 	DefineEditTextTag* tag;
 	Twips origX;
 	Twips origWidth;
@@ -325,11 +325,11 @@ public:
 	size_t getScrollH() const { return scrollH; }
 	void setScrollH(size_t _scrollH);
 	size_t getScrollV() { return scrollV; }
-	void setScrollV(size_t _scrollV);
+	void setScrollV(number_t _scrollV);
 	bool isSelectable() const { return selectable; }
 	void setSelectable(bool flag) { selectable = flag; }
 	number_t getSharpness() const { return sharpness; }
-	void setSharpness(number_t val);
+	void setSharpness(number_t val) { sharpness = val; }
 	StyleSheet* getStyleSheet() const { return styleSheet; }
 	void setStyleSheet(StyleSheet* _styleSheet)
 	{
@@ -341,7 +341,7 @@ public:
 	number_t getThickness() const { return thickness; }
 	const EDIT_TYPE& getEditType() const { return editType; }
 	void setEditType(const EDIT_TYPE& _type) { editType = _type; }
-	void setThickness(number_t val);
+	void setThickness(number_t val) { thickness = val; }
 	bool getUseRichTextClipboard() const { useRichTextClipboard; }
 	void setUseRichTextClipboard(bool flag)
 	{

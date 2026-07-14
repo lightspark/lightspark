@@ -28,7 +28,7 @@
 #include "parsing/tags.h"
 #include "scripting/flash/ui/keycodes.h"
 
-#define BULLER_INDENT 36.0
+#define BULLET_INDENT 36.0
 
 using namespace lightspark;
 
@@ -633,25 +633,50 @@ Optional<Rect<Twips>> TextField::getCharBounds(size_t charIdx) const
 	return Rect<Twips> { min, min + rectB.max };
 }
 
-ASFUNCTIONBODY_ATOM(TextField,getFirstCharInParagraph)
+static constexpr bool isSwfNewline(uint32_t ch)
 {
-	TextField* th=asAtomHandler::as<TextField>(obj);
-
-	int32_t charIndex;
-	ARG_CHECK(ARG_UNPACK(charIndex));
-
-	LOG(LOG_NOT_IMPLEMENTED,"TextField.getFirstCharInParagraph always returns 0");
-	ret = asAtomHandler::fromInt(0);
+	return ch == '\n' || ch == '\b';
 }
-ASFUNCTIONBODY_ATOM(TextField,getParagraphLength)
+
+size_t TextField::getParagraphStart(size_t idx) const
 {
-	TextField* th=asAtomHandler::as<TextField>(obj);
+	tiny_string text;
+	{
+		Locker l(lineMutex);
+		text = getText();
+	}
 
-	int32_t charIndex;
-	ARG_CHECK(ARG_UNPACK(charIndex));
+	// NOTE: The index can be equal to the text length.
+	if (idx > text.numChars())
+		return -1;
 
-	LOG(LOG_NOT_IMPLEMENTED,"TextField.getParagraphLength always returns 0");
-	ret = asAtomHandler::fromInt(0);
+	for(; idx && isSwfNewline(text[idx]); --idx);
+	return idx;
+}
+
+size_t TextField::getParagraphLength(size_t idx) const
+{
+	auto startIdx = getParagraphStart(idx);
+	if (startIdx == -1)
+		return -1;
+
+	tiny_string text;
+	{
+		Locker l(lineMutex);
+		text = getText();
+	}
+
+	size_t textLen = text.numChars();
+	// NOTE: If the index is equal to the text length, Flash Player will
+	// act as if a character is at that point, and return the length of
+	// the last paragraph + 1.
+	if (idx == textLen)
+		return textLen - startIdx + 1;
+
+	for(; idx < textLen && isSwfNewline(text[idx]); ++idx);
+	// NOTE: The trailing newline also counts towards the length.
+	idx += idx < textLen && isSwfNewline(text[idx]);
+	return idx - startIdx;
 }
 
 void TextField::afterSetLegacyMatrix()
@@ -661,398 +686,539 @@ void TextField::afterSetLegacyMatrix()
 }
 void TextField::setupOriginalPosition()
 {
-	originalXPosition = getMatrix().getTranslateX();
-	originalWidth = width;
+	origXPos = getMatrix().tx;
+	origWidth = size.x;
 }
 
-void TextField::validateThickness(number_t /*oldValue*/)
+void TextField::setScrollH(size_t _scrollH);
 {
-	if (needsActionScript3())
-		thickness = dmin(dmax(thickness, -200.), 200.);
-}
-
-void TextField::validateSharpness(number_t /*oldValue*/)
-{
-	if (needsActionScript3())
-		sharpness = dmin(dmax(sharpness, -400.), 400.);
-}
-
-void TextField::validateScrollH(int32_t oldValue)
-{
-	int32_t maxScrollH = getMaxScrollH();
-	if (scrollH > maxScrollH)
-		scrollH = maxScrollH;
-	hasChanged=true;
+	bool isDifferent = scrollH != _scrollH;
+	scrollH = _scrollH;
+	setHasChanged(true);
 	setNeedsTextureRecalculation();
 
-	if (onStage && (scrollH != oldValue) && isVisible())
-		requestInvalidation(this->getSystemState());
+	if (isOnStage() && isDifferent && isVisible())
+		requestInvalidation(getSys());
 }
 
-void TextField::validateScrollV(int32_t oldValue)
+void TextField::setScrollV(number_t _scrollV);
 {
-	int32_t maxScrollV = getMaxScrollV();
-	if (scrollV < 1)
-		scrollV = 1;
-	else if (scrollV > maxScrollV)
-		scrollV = maxScrollV;
-	hasChanged=true;
+	// NOTE: While not exact, this overflow limit was experimentally
+	// found by the Ruffle team, and was found to be the same in both
+	// AVM1, and 2.
+	constexpr number_t overflowLimit = 767100486418433.0;
+	bool scrollOverflows =
+	(
+		std::isnan(_scrollV) ||
+		_scrollV < 0 ||
+		_scrollV >= overflowLimit
+	);
+
+	auto scrollLines = clampTmpl<size_t>
+	(
+		scrollOverflows ? 1 : _scrollV,
+		1,
+		getMaxScrollV()
+	);
+
+	if (scrollV == scrollLines)
+		return;
+
+	scrollV = scrollLines;
+	setHasChanged(true);
 	setNeedsTextureRecalculation();
 
-	if (onStage && (scrollV != oldValue) && isVisible())
-		requestInvalidation(this->getSystemState());
+	if (isOnStage() && isVisible())
+		requestInvalidation(getSys());
 }
 
-int32_t TextField::getMaxScrollH()
+size_t TextField::getMaxScrollH()
 {
-	if (wordWrap || (textWidth <= width))
-		return 0;
-	else
-		return textWidth;
+	return !wordWrap && textSize.x > size.x ? textSize.x : 0;
 }
 
-int32_t TextField::getMaxScrollV()
+size_t TextField::getMaxScrollV()
 {
-	Locker l(*linemutex);
+	Locker l(lineMutex);
 	if (getLineCount() <= 1)
 		return 1;
-	int32_t Ymax = 0;
-	for (uint32_t i = 0; i < getLineCount(); i++)
-	{
-		Ymax+=textlines[i].height;
-	}
-	if (Ymax <= (int32_t)height)
+
+	size_t yMax = 0;
+	for (const auto& line : textlines)
+		yMax += line.height;
+
+	if (yMax <= size.y)
 		return 1;
 
 	// one full page from the bottom
-	int32_t pagesize=0;
-	for (int k=(int)getLineCount()-1; k>=0; k--)
+	size_t pageSize = 0;
+	for (size_t i = getLineCount() - 1; i; --i)
 	{
-		pagesize+=textlines[k].height;
-		if (Ymax - pagesize > (int32_t)height)
-		{
-			return imin(k+1+1, getLineCount());
-		}
+		pageSize += textlines[i].height;
+		if (yMax - pageSize > size.y)
+			return std::min(i + 2, getLineCount());
 	}
+
 	return 1;
 }
 
-void TextField::updateSizes(bool updateformat)
+void TextField::updateSizes(bool updateFormat)
 {
-	Locker l(invalidatemutex);
-	uint32_t tw,th;
-	tw = 0;
-	th = 0;
-	
-	scaling = 1.0f/1024.0f;
-	th=0;
-	number_t w=0;
-	number_t h=0;
+	constexpr Twips textPadding = Twips::fromPx(TEXTFIELD_PADDING * 2);
 
-	linemutex->lock();
-	auto it = textlines.begin();
-	while (it != textlines.end())
+	Locker l(invalidateMutex);
+	Vector2u _textSize;
+	Vector2f _size;
+	scaling = 1 / 1024.0;
+
+	auto trySetTextWidth = [&]
 	{
-		if (updateformat)
-			(*it).format = FormatText(*this);
-		FontTag* ef = nullptr;
-		if ((*it).format.embeddedfontID != UINT32_MAX)
-			ef = this->loadedFrom->getEmbeddedFontByID((*it).format.embeddedfontID);
-		getTextSizes(getSystemState(),(*it).format,ef,(*it).text,w,h);
-		(*it).textwidth=w;
-		(*it).height=h;
-		bool listchanged=false;
-		uint32_t realwidth = width;
-		if (!it->format.leftmargin.empty())
-			realwidth -= parseNumber(it->format.leftmargin)*TWIPS_FACTOR;
-		if (!it->format.rightmargin.empty())
-			realwidth -= parseNumber(it->format.rightmargin)*TWIPS_FACTOR;
-		if (it->format.bullet)
-			realwidth -= BULLER_INDENT*TWIPS_FACTOR;
-		if (wordWrap
-			&& realwidth > TEXTFIELD_PADDING*2
-			&& uint32_t(w) > realwidth-TEXTFIELD_PADDING*2)
+		if (_size.x > _textSize.x)
+			_textSize.x = _size.x;
+	};
+
+	Locker l(lineMutex);
+	for (auto it = textlines.begin() it != textlines.end(); ++it)
+	{
+		auto& line = *it;
+		if (updateFormat)
+			line.format = FormatText(*this);
+		const auto& fmt = line.format;
+		auto fontTag =
+		(
+			fmt.embeddedFontID != UINT32_MAX ?
+			movie.getEmbeddedFontByID(fmt.embeddedFontID) :
+			nullptr
+		);
+
+		line.size = getTextSizes
+		(
+			getSys(),
+			fmt,
+			fontTag,
+			line.text
+		);
+
+		bool listChanged = false;
+		auto realWidth = size.x;
+		if (fmt.leftMargin.hasValue())
+			realWidth -= *fmt.leftMargin;
+		if (fmt.rightMargin.hasValue())
+			realWidth -= *fmt.rightMargin;
+		if (fmt.bullet)
+			realWidth -= BULLET_INDENT;
+
+
+		bool calcWordWrap =
+		(
+			wordWrap &&
+			realwidth > textPadding &&
+			_size.x > realwidth - textPadding
+		);
+
+		bool listChanged = false;
+		if (calcWordWrap)
 		{
+			constexpr auto npos = tiny_string::npos;
 			// calculate lines for wordwrap
-			tiny_string text =(*it).text;
-			uint32_t c= text.rfind(" ");// TODO check for other whitespace characters
-			while (c != tiny_string::npos && c != 0)
+			auto text = line.text;
+			auto pos = text.rfind(' ');// TODO check for other whitespace characters
+
+			auto _realWidth = realWidth - textPadding;
+			for (; pos && pos != npos; pos = text.rfind(' ', pos - 1))
 			{
-				getTextSizes(getSystemState(),(*it).format,ef,text.substr(0,c),w,h);
-				if (w <= realwidth-TEXTFIELD_PADDING*2)
+				_size = getTextSizes
+				(
+					getSys(),
+					fmt,
+					fontTag,
+					text.substr(0, pos)
+				);
+
+				if (_size.x > _realWidth)
+					continue;
+
+				trySetTextWidth();
+				line.size.x = _size.x;
+				line.text = text.substr(0, pos).removeWhitespace();
+
+				text = text.substr(pos, npos);
+				if (line.leftMargin.hasValue())
+					text = text.removeWhitespace();
+
+				_size = getTextSizes
+				(
+					getSys(),
+					fmt,
+					fontTag,
+					text
+				);
+
+				listChanged = true;
+				it = textlines.insert(++it, textline
 				{
-					if(w>tw)
-						tw = w;
-					(*it).textwidth=w;
-					(*it).text = text.substr(0,c).removeWhitespace();
-					textline t;
-					t.autosizeposition=0;
-					text = text.substr(c,UINT32_MAX);
-					if (!it->format.leftmargin.empty())
-						text = text.removeWhitespace();
-					getTextSizes(getSystemState(),(*it).format,ef,text,w,h);
-					t.text = text;
-					t.textwidth=w;
-					t.height=h;
-					t.format= (*it).format;
-					it = textlines.insert(++it,t);
-					listchanged=true;
-					if (uint32_t(w) <= realwidth-TEXTFIELD_PADDING*2)
-					{
-						if(w>tw)
-							tw = w;
-						break;
-					}
-					th+=h;
-					c=text.numChars();
+					.autoSizePos = 0,
+					.text = text,
+					.size = _size,
+					.format = fmt,
+				});
+
+				if (_size.x <= _realWidth)
+				{
+					trySetTextWidth();
+					break;
 				}
-				c= text.rfind(" ",c-1);// TODO check for other whitespace characters
+
+				_textSize.y += _size.y;
+				pos = text.numChars();
 			}
 		}
-		else if (w>tw)
-			tw = w;
-		if (!listchanged)
-			it++;
-		th+=h;
+		else
+			trySetTextWidth();
+
+		_textSize.y += _size.y;
 		if (it != textlines.end())
-			th+=this->leading/TWIPS_FACTOR;
+			_textSize.y += leading;
+		if (listChanged)
+			--it;
 	}
-	linemutex->unlock();
-	if(w>tw)
-		tw = w;
-	textWidth=tw;
-	textHeight=th;
+
+	trySetTextWidth();
+	textSize = _textSize;
 }
 
 tiny_string TextField::toHtmlText()
 {
+	auto isSameFont = []
+	(
+		const FormatText& a,
+		const FormatText& b
+	)
+	{
+		return
+		(
+			a.font == b.font &&
+			a.fontColor == b.fontColor &&
+			a.fontSize == b.fontSize
+		);
+	};
+
 	pugi::xml_document doc;
 
-	Locker l(*linemutex);
 	//Split text into paragraphs and wraps them into <p> tags
-	int openParagraph=0;
-	pugi::xml_node node=doc;
-	std::stack<FormatText> formatstack;
-	FormatText prevformat;
-	FormatText lastformat;
-	bool firstline=true;
-	uint32_t prevlinebreaks=0;
+	size_t openParagraph = 0;
+	pugi::xml_node node = doc;
+	std::stack<FormatText> formatStack;
+	FormatText prevFormat;
+	FormatText lastFormat;
+	bool firstline = true;
+	size_t prevLineBreaks = 0;
+
+	auto addFontAttr = [&]
+	(
+		bool flag,
+		bool lastFlag,
+		bool needsFlag,
+		const char* tagStr
+	)
+	{
+		if (flag || needsFlag)
+		{
+			node = node.append_child(tagStr);
+			formatStack.push(format);
+			return true;
+		}
+		else if (!firstLine || node.type() == pugi::node_null)
+			return true;
+
+		if (!needsFlag && lastFlag && !prevLineBreaks)
+			node = node.parent();
+		return false;
+	};
+
+	Locker l(lineMutex);
 	for (auto it = textlines.begin(); it != textlines.end(); it++)
 	{
-		bool mergetext=true;
-		bool ignoretext=false;
-		FormatText& format = (*it).format;
-		pugi::xml_node prevnode = node;
-		while (!formatstack.empty())
+		const auto& line = *it;
+		bool mergeText = true;
+		bool ignoreText = false;
+		const auto& format = line.format;
+		auto prevNode = node;
+
+		while (!formatStack.empty())
 		{
-			prevformat = formatstack.top();
-			if (format.level < prevformat.level)
-			{
-				formatstack.pop();
-				prevnode = prevnode.parent();
-			}
-			else
+			prevFormat = formatstack.top();
+			if (format.level >= prevFormat.level)
 				break;
+
+			formatStack.pop();
+			prevNode = prevNode.parent();
 		}
-		pugi::xml_node startnode = doc;
-		bool islastline = it == textlines.end()-1;
-		if ((firstline || it->needsnewline || it->linebreaks) && (
-			!format.blockindent.empty()
-			|| !format.blockindent.empty()
-			|| !format.indent.empty()
-			|| !format.leading.empty()
-			|| !format.leftmargin.empty()
-			|| !format.rightmargin.empty()
-			|| !format.tabstops.empty()
-																  ))
+
+		pugi::xml_node startNode = doc;
+		bool isLastLine = it == textlines.end() - 1;
+
+		bool hasAttrs =
+		(
+			firstLine ||
+			line.needsNewline ||
+			line.linebreaks
+		) &&
+		(
+			format.blockIndent.hasValue() ||
+			format.indent.hasValue() ||
+			format.leading.hasValue() ||
+			format.leftMargin.hasValue() ||
+			format.rightMargin.hasValue() ||
+			format.tabStops.hasValue()
+		)
+
+		if (hasAttrs)
 		{
-			startnode = node = doc.append_child("TEXTFORMAT");
-			formatstack.push(format);
-			if (!format.blockindent.empty())
-				node.append_attribute("BLOCKINDENT").set_value(format.blockindent.raw_buf());
-			if (!format.rightmargin.empty())
-				node.append_attribute("RIGHTMARGIN").set_value(format.rightmargin.raw_buf());
-			if (!format.indent.empty())
-				node.append_attribute("INDENT").set_value(format.indent.raw_buf());
-			if (!format.leftmargin.empty())
-				node.append_attribute("LEFTMARGIN").set_value(format.leftmargin.raw_buf());
-			if (!format.leading.empty())
-				node.append_attribute("LEADING").set_value(format.leading.raw_buf());
-			if (!format.tabstops.empty())
-				node.append_attribute("TABSTOPS").set_value(format.tabstops.raw_buf());
+			startNode = node = doc.append_child("TEXTFORMAT");
+			formatStack.push(format);
+			if (format.blockIndent.hasValue())
+				node.append_attribute("BLOCKINDENT").set_value(*format.blockIndent);
+			if (format.rightMargin.hasValue())
+				node.append_attribute("RIGHTMARGIN").set_value(*format.rightMargin);
+			if (format.indent.hasValue())
+				node.append_attribute("INDENT").set_value(*format.indent);
+			if (format.leftMargin.hasValue())
+				node.append_attribute("LEFTMARGIN").set_value(*format.leftMargin);
+			if (format.leading.hasValue())
+				node.append_attribute("LEADING").set_value(*format.leading);
+			if (format.tabStops.hasValue())
+				node.append_attribute("TABSTOPS").set_value(*format.tabStops);
 		}
-		bool setfont = false;
+
+		bool setFont = false;
+
 		if (format.bullet)
 		{
-			setfont=true;
+			setFont = true;
 			node = doc.append_child("LI");
-			formatstack.push(format);
+			formatStack.push(format);
 		}
-		else
+		else if
+		(
+			condenseWhite &&
+			line.text.empty() &&
+			(!multiline || !format.paragraph)
+		)
+			continue;
+		else if
+		(
+			(!openParagraph && (!isLastLine || firstLine)) ||
+			format.paragraph ||
+			line.needsNewline ||
+			(prevLineBreaks && !line.text.empty())
+		)
 		{
-			if ((!this->multiline || !format.paragraph) && condenseWhite && (*it).text.empty())
-				continue;
-			if (openParagraph==0 || it->needsnewline || format.paragraph || (prevlinebreaks && !it->text.empty()))// || (swfversion < 7 && !format.bullet))
+			openParagraph++;
+			setFont = true;
+			tiny_string parentName = node.parent().name();
+			if (format.paragraph && parentName == "FONT")
 			{
-				if (((!islastline || firstline) && openParagraph==0)
-					|| (format.paragraph)
-					|| (it->needsnewline)
-					|| (prevlinebreaks && !it->text.empty())
-					)
+				// it seems adobe merges text when adding paragraph inside font tag, but still closes the current paragraph?!?
+				tiny_string t = node.text().as_string();
+				node.text().set((t + line.text).raw_buf());
+				ignoreText = true;
+				setFont = false;
+				node = startNode;
+			}
+			else
+			{
+				node = startNode.append_child("P");
+				formatStack.push(format);
+				switch (format.align)
 				{
-					openParagraph++;
-					setfont=true;
-					tiny_string parentname = node.parent().name();
-					if (format.paragraph && parentname=="FONT")
-					{
-						// it seems adobe merges text when adding paragraph inside font tag, but still closes the current paragraph?!?
-						tiny_string t = node.text().as_string();
-						t += (*it).text;
-						node.text().set(t.raw_buf());
-						ignoretext=true;
-						setfont=false;
-						node=startnode;
-					}
-					else
-					{
-						node = startnode.append_child("P");
-						formatstack.push(format);
-						switch (format.align)
-						{
-							case ALIGNMENT::AS_NONE:
-							case ALIGNMENT::AS_LEFT:
-								node.append_attribute("ALIGN").set_value("LEFT");
-								break;
-							case ALIGNMENT::AS_CENTER:
-								node.append_attribute("ALIGN").set_value("CENTER");
-								break;
-							case ALIGNMENT::AS_RIGHT:
-								node.append_attribute("ALIGN").set_value("RIGHT");
-								break;
-							default:
-								break;
-						}
-					}
+					case ALIGNMENT::AS_NONE:
+					case ALIGNMENT::AS_LEFT:
+						node.append_attribute("ALIGN").set_value("LEFT");
+						break;
+					case ALIGNMENT::AS_CENTER:
+						node.append_attribute("ALIGN").set_value("CENTER");
+						break;
+					case ALIGNMENT::AS_RIGHT:
+						node.append_attribute("ALIGN").set_value("RIGHT");
+						break;
+					default:
+						break;
 				}
 			}
 		}
-		bool fontchanged = format.font!=BUILTIN_STRINGS::EMPTY && (format.font != prevformat.font || !(format.fontColor == prevformat.fontColor) || format.fontSize != prevformat.fontSize);
-		bool needsbold=false;
-		bool needsitalic=false;
-		bool needsunderline=false;
-		bool needsurl=false;
-		if (setfont || fontchanged)
+		bool fontChanged = !format.font.empty() && !isSameFont
+		(
+			format,
+			prevFormat
+		);
+		bool needsBold = false;
+		bool needsItalic = false;
+		bool needsUnderline = false;
+		bool needsUrl = false;
+
+		if (!setFont && !fontChanged)
+			goto checkUrl;
+		if
+		(
+			!setFont &&
+			fontChanged &&
+			format.level == prevformat.level &&
+			formatStack.size() > 1
+		)
 		{
-			bool addFontTag = true;
-			if (!setfont && fontchanged)
-			{
-				if (format.level==prevformat.level)
-				{
-					if (formatstack.size() > 1)
-					{
-						formatstack.pop();
-						FormatText tmpformat = formatstack.top();
-						addFontTag = format.font != tmpformat.font || !(format.fontColor == tmpformat.fontColor) || format.fontSize != tmpformat.fontSize;
-						formatstack.push(tmpformat);
-						if (!addFontTag)
-							node = prevnode.parent().append_child(pugi::node_pcdata);
-					}
-				}
-			}
-			if (addFontTag)
-			{
-				if (!it->needsnewline && !format.paragraph && !format.bullet &&
-					(prevformat.bold || prevformat.italic || prevformat.underline || !prevformat.url.empty() || !prevformat.target.empty()))
-				{
-					if (format.level>=prevformat.level)
-					{
-						if (prevformat.bold == lastformat.bold)
-							needsbold=prevformat.bold;
-						if (prevformat.italic == lastformat.italic)
-							needsitalic=prevformat.italic;
-						if (prevformat.underline == lastformat.underline)
-							needsunderline=prevformat.underline;
-						if (prevformat.url == lastformat.url && prevformat.target == lastformat.target)
-							needsurl=!prevformat.url.empty() || !prevformat.target.empty();
-					}
-					if (!prevlinebreaks)
-						node = node.parent();
-				}
-				node = node.append_child("FONT");
-				formatstack.push(format);
-				ostringstream ss;
-				ss << format.fontSize;
-				if (setfont || format.font != lastformat.font)
-					node.append_attribute("FACE").set_value(getSystemState()->getStringFromUniqueId(format.font).raw_buf());
-				if (setfont || format.fontSize != lastformat.fontSize)
-					node.append_attribute("SIZE").set_value(ss.str().c_str());
-				if (setfont || !(format.fontColor == lastformat.fontColor))
-					node.append_attribute("COLOR").set_value(format.fontColor.toString(false).uppercase().raw_buf());
-				if (setfont || format.letterspacing != lastformat.letterspacing)
-					node.append_attribute("LETTERSPACING").set_value(format.letterspacing);
-				if (setfont || format.kerning != lastformat.kerning)
-					node.append_attribute("KERNING").set_value(format.kerning);
-			}
+			formatStack.pop();
+			auto tmpFmt = formatstack.top();
+			_addFontTag = !isSameFont(format, tmpFmt);
+			formatstack.push(tmpFmt);
+			if (!_addFontTag)
+				node = preNnode.parent().append_child(pugi::node_pcdata);
 		}
-		if (format.url != prevformat.url || format.target != prevformat.target || needsurl)
+
+		if (!_addFontTag)
+			goto checkUrls;
+
+		if
+		(
+			line.needsNewline ||
+			format.paragraph ||
+			format.bullet
+		)
+			goto addFontTag;
+		if
+		(
+			!prevFormat.bold &&
+			!prevFormat.italic &&
+			!prevFormat.underline &&
+			prevFormat.url.empty() &&
+			prevFormat.target.empty()
+		)
+			goto addFontTag;
+
+		if (format.level >= prevformat.level)
 		{
-			if (!needsurl && !prevformat.url.empty())
-				node = node.parent();
-			if (!format.url.empty() || needsurl)
-			{
-				node = node.append_child("A");
-				formatstack.push(format);
-				node.append_attribute("HREF").set_value(format.url.raw_buf());
-				node.append_attribute("TARGET").set_value(format.target.raw_buf());
-			}
-			else if (!firstline && node.type() != pugi::node_null)
-			{
-				node = node.parent();
-				mergetext=false;
-			}
+			needsBold =
+			(
+				prevFormat.bold ==
+				lastFormat.bold
+			) && prevFormat.bold;
+
+			needsItalic =
+			(
+				prevFormat.italic ==
+				lastFormat.italic
+			) && prevFormat.italic;
+
+			needsUnderline =
+			(
+				prevFormat.underline ==
+				lastFormat.underline
+			) && prevFormat.underline;
+			needsUrl =
+			(
+				prevFormat.url == lastFormat.url &&
+				prevFormat.target == lastFormat.target
+			) &&
+			(
+				!prevFormat.url.empty() ||
+				!prevFormat.target.empty()
+			);
 		}
-		if (format.bold != prevformat.bold || (it->needsnewline && format.bold) || needsbold)
+
+		if (!prevLineBreaks)
+			node = node.parent();
+
+	addFontTag:
+		node = node.append_child("FONT");
+		formatStack.push(format);
+		std::stringstream s;
+		s << format.fontSize;
+		if (setFont || format.font != lastFormat.font)
+			node.append_attribute("FACE").set_value(format.font.raw_buf());
+		if (setFont || format.fontSize != lastFormat.fontSize)
+			node.append_attribute("SIZE").set_value(ss.str().c_str());
+		if (setFont || format.fontColor != lastFormat.fontColor)
 		{
-			if (format.bold || needsbold)
-			{
-				node = node.append_child("B");
-				formatstack.push(format);
-			}
-			else if (!firstline && node.type() != pugi::node_null)
-			{
-				if (!needsbold && lastformat.bold && !prevlinebreaks)
-					node = node.parent();
-				mergetext=false;
-			}
+			auto str = format.fontColor.toString(false);
+			node.append_attribute("COLOR").set_value(str.uppercase().raw_buf());
 		}
-		if (format.italic != prevformat.italic || (it->needsnewline && format.italic) || needsitalic)
+		if (setFont || format.letterspacing != lastFormat.letterspacing)
+			node.append_attribute("LETTERSPACING").set_value(format.letterspacing);
+		if (setFont || format.kerning != lastFormat.kerning)
+			node.append_attribute("KERNING").set_value(format.kerning);
+	checkUrl:
+		if
+		(
+			format.url == prevformat.url &&
+			format.target == prevformat.target &&
+			!needsUrl
+		)
+			goto checkBold;
+
+		if (!needsUrl && !prevFormat.url.empty())
+			node = node.parent();
+		if (!format.url.empty() || needsUrl)
 		{
-			if (format.italic || needsitalic)
-			{
-				node = node.append_child("I");
-				formatstack.push(format);
-			}
-			else if (!firstline && node.type() != pugi::node_null)
-			{
-				if (!needsitalic && lastformat.italic && !prevlinebreaks)
-					node = node.parent();
-				mergetext=false;
-			}
+			node = node.append_child("A");
+			formatStack.push(format);
+			node.append_attribute("HREF").set_value(format.url.raw_buf());
+			node.append_attribute("TARGET").set_value(format.target.raw_buf());
 		}
-		if (format.underline != prevformat.underline || (it->needsnewline && format.underline) || needsunderline)
+		else if (!firstLine && node.type() != pugi::node_null)
 		{
-			if (format.underline || needsunderline)
-			{
-				node = node.append_child("U");
-				formatstack.push(format);
-			}
-			else if (!firstline && node.type() != pugi::node_null)
-			{
-				if (!needsunderline && lastformat.underline && !prevlinebreaks)
-					node = node.parent();
-				mergetext=false;
-			}
+			node = node.parent();
+			mergeText = false;
 		}
+
+	checkBold:
+		if
+		(
+			format.bold != prevformat.bold ||
+			(line.needsNewline && !format.bold) ||
+			needsBold
+		)
+		{
+			mergeText = addFontAttr
+			(
+				format.bold,
+				needsBold,
+				lastFormat.bold,
+				"B"
+			);
+		}
+
+		if
+		(
+			format.italic != prevFormat.italic ||
+			(line.needsNewline && format.italic) &&
+			needsItalic
+		)
+		{
+			mergeText = addFontAttr
+			(
+				format.italic,
+				needsItalic,
+				lastFormat.italic,
+				"I"
+			);
+		}
+
+		if
+		(
+			format.underline != prevFormat.underline ||
+			(line.needsNewline && format.underline) ||
+			needsUnderline
+		)
+		{
+			mergeText = addFontAttr
+			(
+				format.underline,
+				needsUnderline,
+				lastFormat.underline,
+				"U"
+			);
+		}
+
 		if (!ignoretext)
 		{
 			tiny_string t = node.text().as_string();
@@ -1065,48 +1231,68 @@ tiny_string TextField::toHtmlText()
 			}
 			node.text().set(t.raw_buf());
 		}
-		lastformat=format;
-		prevlinebreaks=it->linebreaks;
-		firstline=false;
+		lastFormat = format;
+		prevLineBreaks = line.linebreaks;
+		firstLine = false;
 	}
 
-	ostringstream buf;
-	doc.print(buf,"\t",pugi::format_raw|pugi::format_no_escapes);
-	tiny_string ret = tiny_string(buf.str());
-	return ret;
+	std::stringstream s;
+	doc.print(s, "\t", pugi::format_raw|pugi::format_no_escapes);
+	return buf.str();
 }
 
 void TextField::setHtmlText(const tiny_string& html)
 {
-	linemutex->lock();
-	vector<tiny_string> oldtext;
-	vector<FormatText> oldformats;
-	if (this->isConstructed())
+	std::vector<tiny_string> oldText;
+	std::vector<FormatText> oldFormats;
+
+	lineMutex.lock();
+	if (isConstructed())
 	{
-		oldtext.reserve(textlines.size());
-		oldformats.reserve(textlines.size());
-		for (uint32_t i =0; i < textlines.size(); i++)
+		oldText.reserve(textlines.size());
+		oldFormats.reserve(textlines.size());
+
+		for (const auto& line : textlines)
 		{
-			oldtext.push_back(textlines[i].text);
-			oldformats.push_back(textlines[i].format);
+			oldText.emplace_back(line.text);
+			oldFormats.emplace_back(line.format);
 		}
 	}
-	uint32_t swfversion = this->loadedFrom->version;
-	HtmlTextParser parser(swfversion,condenseWhite,multiline,this->loadedFrom);
-	parser.parseTextAndFormating(html, this);
-	if(swfversion >= 8 && condenseWhite && isWhitespaceOnly(multiline))
+
+	auto swfVersion = getSwfVersion();
+	HtmlTextParser parser
+	(
+		swfVersion,
+		condenseWhite,
+		multiline,
+		movie
+	);
+
+	parser.parseTextAndFormating(html, *this);
+	if
+	(
+		swfVersion >= 8 &&
+		condenseWhite &&
+		isWhitespaceOnly(multiline)
+	)
 		clear();
-	if (swfversion >= 7 && !multiline && getLineCount()>1 && this->textlines.back().text.empty())
+	if
+	(
+		swfVersion >= 7 &&
+		!multiline &&
+		getLineCount() > 1 &&
+		textlines.back().text.empty()
+	)
 	{
 		//more than one line and last line is empty => remove last line
-		this->textlines.pop_back();
+		textlines.pop_back();
 	}
-	linemutex->unlock();
+	lineMutex.unlock();
 
-	isHtml=true;
-	if (this->isConstructed() && !this->TextIsEqual(oldtext,oldformats))
+	isHtml = true;
+	if (isConstructed() && TextIsEqual(oldText, oldFormats))
 	{
-		hasChanged=true;
+		setHasChanged(true);
 		setNeedsTextureRecalculation();
 		textUpdated();
 	}

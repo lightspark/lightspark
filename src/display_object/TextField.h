@@ -35,6 +35,7 @@
 namespace lightspark
 {
 
+class AVM1Activation;
 class DefineEditTextTag;
 class SWFMovie;
 
@@ -97,7 +98,7 @@ private:
 	) override;
 
 	void defaultEventBehavior(_R<Event> e) override;
-	void updateText(const tiny_string& new_text);
+	void updateText(const tiny_string& newText);
 	//Computes and changes (text)width and (text)height
 	void updateSizes(bool updateFormat = false);
 	tiny_string toHtmlText();
@@ -192,6 +193,8 @@ public:
 
 	void setHtmlText(const tiny_string& html);
 	void avm1SyncTagVar();
+	bool tryBindVar(AVM1Activation& act, bool setInitVal);
+	void avm1Unload() override;
 	void UpdateVariableBinding(asAtom v) override;
 	void afterTimelineCreation() override;
 	void afterTimelineDeletion(bool inskipping) override;

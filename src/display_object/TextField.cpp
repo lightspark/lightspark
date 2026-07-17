@@ -1300,24 +1300,28 @@ void TextField::setHtmlText(const tiny_string& html)
 
 std::string TextField::toDebugString() const
 {
-	std::string res = InteractiveObject::toDebugString();
-	res += " \"";
-	res += this->getText(0);
-	res += "\";";
-	char buf[100];
-	sprintf(buf,"(%i) %5.2fx%5.2f %5.2f %d/%d %s",this->getLineCount(),textWidth/TWIPS_FACTOR,textHeight/TWIPS_FACTOR,autosizeposition,autoSize,align,getSystemState()->getStringFromUniqueId(fontname).raw_buf());
-	res += buf;
-	return res;
+	std::stringstream s;
+	return
+	(
+		s << InteractiveObject::toDebugString() <<
+		'"' << getText(0) << "\";" <<
+		'(' << getLineCount() << ") " <<
+		textSize.x << 'x' << textSize.y << ' ' <<
+		autoSizePos << ' ' <<
+		autoSize << '/' << align << ' ' <<
+		fontName
+	).str();
 }
 
-void TextField::updateText(const tiny_string& new_text)
+void TextField::updateText(const tiny_string& newText)
 {
-	if (!hasChanged && getText() == new_text)
+	if (!hasChanged() && getText() == newText)
 		return;
-	linemutex->lock();
-	FormatText format(*this);
-	setText(new_text.raw_buf(),false,&format);
-	linemutex->unlock();
+	{
+		Locker l(lineMutex);
+		FormatText format(*this);
+		setText(newText, false, &format);
+	}
 	textUpdated();
 }
 
@@ -1356,111 +1360,179 @@ void TextField::UpdateVariableBinding(asAtom v)
 	inUpdateVarBinding = false;
 }
 
-void TextField::afterLegacyInsert()
+void TextField::UpdateVariableBinding(asAtom v)
 {
-	if (!tagvarname.empty() && !getConstructIndicator())
-	{
-		tagvartarget = getParent();
-		uint32_t finddot = tagvarname.rfind(".");
-		if (finddot != tiny_string::npos)
-		{
-			tiny_string path = tagvarname.substr(0,finddot);
-			tagvartarget = tagvartarget->AVM1GetClipFromPath(path);
-			tagvarname = tagvarname.substr(finddot+1,tagvarname.numChars()-(finddot+1));
-		}
-		while (tagvartarget)
-		{
-			if (tagvartarget->is<MovieClip>())
-			{
-				tagvartarget->as<MovieClip>()->setVariableBinding(tagvarname,this);
-				asAtom value = tagvartarget->as<MovieClip>()->getVariableBindingValue(tagvarname);
-				if (asAtomHandler::isValid(value) && !asAtomHandler::isUndefined(value))
-				{
-					UpdateVariableBinding(value);
-				}
-				ASATOM_DECREF(value);
-				break;
-			}
-			tagvartarget = tagvartarget->getParent();
-		}
-		if (tagvartarget)
-		{
-			tagvartarget->incRef();
-			tagvartarget->addStoredMember();
-		}
-	}
-	if (!loadedFrom->usesActionScript3 && !getConstructIndicator())
-	{
-		setConstructIndicator();
-		constructionComplete();
-		afterConstruction();
-	}
-	originalWidth=width;
-	avm1SyncTagVar();
-	InteractiveObject::afterLegacyInsert();
+	inUpdateVarBinding = true;
+	tiny_string s = asAtomHandler::toString(v,getInstanceWorker());
+	if (!s.empty() && tag->isHTML())
+		setHtmlText(s);
+	else
+		updateText(s);
+	inUpdateVarBinding = false;
 }
 
-void TextField::afterLegacyDelete(bool inskipping)
+// Based on Ruffle's `EditText::try_bind_text_field_variable()`.
+bool TextField::tryBindVar(AVM1Activation& act, bool setInitVal)
 {
-	if (!tagvarname.empty() && !inskipping)
+	// A `TextField` with no variable is treated as a success by default.
+	if (tagVarName.empty())
+		return true;
+
+	// The previous binding (if any) should've been cleared at this point.
+	assert(tagVarTarget == nullptr);
+
+	auto parent = getAVM1Parent();
+	for
+	(
+		;
+		parent != nullptr && parent->is<Button>();
+		parent = parent->getAVM1Parent()
+	);
+
+	if (parent == nullptr)
+		return false;
+
+	auto childFrameFunc = [&](AVM1Activation& _act) -> Any
 	{
-		if (tagvartarget)
+		auto pair = _act.resolveVariablePath(*parent, tagVarName);
+		if (!pair.hasValue())
+			return false;
+
+		auto obj = pair->first;
+		const auto& prop = pair->second;
+		// If this `TextField` was just created, we propagate the text
+		// to the variable (or vice versa).
+		if (!setInitVal)
+			goto checkObject;
+
+		// If the prop exists on the object, we overwrite the text with
+		// the prop's value.
+		if (obj.hasProp(act, prop))
 		{
-			tagvartarget->as<MovieClip>()->setVariableBinding(tagvarname,nullptr);
-			tagvartarget->removeStoredMember();
-			tagvartarget=nullptr;
+			setHtmlText(obj->getProp
+			(
+				act,
+				prop
+			).tryToString(act).valueOr(""));
 		}
+		// Otherwise, we only initialize the prop with the `TextField`'s
+		// text, if it's non empty.
+		// NOTE: HTML `TextField`s are usually initialized with an empty
+		// `<p>` tag, which isn't considered empty.
+		else if (!getText().empty())
+			obj->setProp(act, prop, getText());
+	checkObject:
+		auto dispObj = obj->as<DisplayObject>();
+		if (dispObj == nullptr)
+			return false;
+		tagVarTarget = dispObj;
+		AVM1VarBinding(*this, prop).registerBinding(dispObj);
+		return true;
+	};
+
+	return act.runChildFrameForClip
+	(
+		"[TextField Binding]",
+		*parent,
+		getSwfVersion(),
+		childFrameFunc
+	).unsafeAs<bool>();
+}
+
+void TextField::avm1Unload()
+{
+	dropFocus();
+	DisplayObject::avm1Unload();
+
+	if (tagVarTarget != nullptr)
+	{
+		AVM1VarBinding::clearBinding(tagVarTarget, *this);
+		tagVarTarget = nullptr;
 	}
+
+	AVM1VarBinding::unregisterBindings(*this);
+
+	if (!tagVarName.empty())
+		getSys()->removeUnboundTextField(*this);
+	setRemovedByAVM1(true);
+}
+
+void TextField::afterTimelineInsertion()
+{
+	if (isAS3() || tryToAVM1Object().isNull())
+		return;
+
+	AVM1Context::runWithStackFrameForClip(*this, [&](auto& act)
+	{
+		if (!tryBindVar(act, true))
+			getSys()->addUnboundTextField(*this);
+		AVM1VarBinding::bindVars(act);
+		initBroadcaster(act);
+	});
+
+	origWidth = size.x;
+}
+
+void TextField::afterTimelineDeletion(bool inskipping)
+{
+	if (inskipping)
+		avm1Unload();
 }
 
 void TextField::lostFocus()
 {
 	SDL_StopTextInput();
-	getSystemState()->removeJob(this);
-	caretblinkstate = false;
-	hasChanged=true;
+	getSys()->removeJob(this);
+	caretBlinkState = false;
+	setHasChanged(true);
 	setNeedsTextureRecalculation();
-	if(onStage && isVisible())
-		requestInvalidation(this->getSystemState());
+	if(isOnStage() && isVisible())
+		requestInvalidation(getSys());
 }
 
 void TextField::gotFocus()
 {
-	if (this->type != ET_EDITABLE)
+	if (editType != ET_EDITABLE)
 		return;
+
 	SDL_StartTextInput();
-	getSystemState()->addTick(500,this);
+	getSys()->addTick(500, this);
 }
 
-void TextField::textInputChanged(const tiny_string &newtext)
+void TextField::textInputChanged(const tiny_string& newText)
 {
-	if (this->type != ET_EDITABLE)
+	if (editType != ET_EDITABLE)
 		return;
-	linemutex->lock();
-	tiny_string tmptext = getText();
-	linemutex->unlock();
-	
-	if (maxChars == 0 || tmptext.numChars()+newtext.numChars() <= uint32_t(maxChars))
+
+	tiny_string tmp;
 	{
-		if (caretIndex< 0)
-			caretIndex=0;
-		if (caretIndex < int(tmptext.numChars()))
-			tmptext.replace(caretIndex,0,newtext);
-		else
-			tmptext+=newtext;
-		caretIndex+= newtext.numChars();
+		Locker l(lineMutex;
+		tmpText = getText();
 	}
-	this->updateText(tmptext);
+	
+	if (maxChars && tmp.numChars() + newText.numChars() > maxChars)
+	{
+		updateText(tmp);
+		return;
+	}
+
+	caretIndex = std::max(caretIndex, 0);
+
+	if (caretIndex < tmp.numChars())
+		tmp.replace(caretIndex, 0, newText);
+	else
+		tmp += newText;
+
+	caretIndex += newText.numChars();
+	updateText(tmp);
 }
 
 void TextField::tick()
 {
-	if (this->type != ET_EDITABLE)
+	if (editType != ET_EDITABLE)
 		return;
-	if (this == getSystemState()->stage->getFocusTarget())
-		caretblinkstate = !caretblinkstate;
-	else
-		caretblinkstate = false;
+
+	caretBlinkState ^= this == getSys()->stage->getFocusTarget();
 	hasChanged=true;
 	setNeedsTextureRecalculation();
 	
@@ -1495,29 +1567,34 @@ void TextField::textUpdated()
 		avm1SyncTagVar();
 	scrollH = 0;
 	scrollV = 1;
-	linemutex->lock();
-	checkEmbeddedFont(this);
-	linemutex->unlock();
+	{
+		Locker l(lineMutex;
+		checkEmbeddedFont(this);
+	}
+
 	updateSizes();
 	setSizeAndPositionFromAutoSize();
 	setNeedsTextureRecalculation();
-	hasChanged=true;
-
-	if(onStage && isVisible())
-		requestInvalidation(this->getSystemState());
+	setHasChanged(true);
+	if(isOnStage() && isVisible())
+		requestInvalidation(getSys());
 	else
-		requestInvalidationFilterParent(this->getSystemState());
+		requestInvalidationFilterParent(getSys());
 }
 
-void TextField::requestInvalidation(InvalidateQueue* q, bool forceTextureRefresh)
+void TextField::requestInvalidation
+(
+	InvalidateQueue* q,
+	bool forceTextureRefresh)
 {
-	if (!tokensEmpty())
-		TokenContainer::requestInvalidation(q,forceTextureRefresh);
-	else
+	if (tokensEmpty())
 	{
 		requestInvalidationFilterParent(q);
 		q->addToInvalidateQueue(this);
+		return;
 	}
+
+	TokenContainer::requestInvalidation(q, forceTextureRefresh);
 }
 
 void TextField::defaultEventBehavior(_R<Event> e)
@@ -1686,236 +1763,347 @@ void TextField::defaultEventBehavior(_R<Event> e)
 
 IDrawable* TextField::invalidate(bool smoothing)
 {
-	Locker l(invalidatemutex);
-	number_t x,y;
-	number_t width,height;
-	number_t bxmin,bxmax,bymin,bymax;
-	if(boundsRect(bxmin,bxmax,bymin,bymax,false)==false)
+	Locker l(invalidateMutex);
+
+	auto smoothMode =
+	(
+		smoothing ?
+		SMOOTH_MODE::SMOOTH_SUBPIXEL :
+		SMOOTH_MODE::SMOOTH_NONE
+	);
+
+	auto _rect = tryBoundsRect(false);
+	if (!_bounds.hasValue())
 	{
 		//No contents, nothing to do
 		return nullptr;
 	}
 
-	ColorTransformBase ct;
+	ColorTransform ct;
 	ct.fillConcatenated(this);
-	MATRIX matrix = getMatrix();
-	bool isMask=this->isMask();
+	auto matrix = getMatrix();
+
 	MATRIX m;
-	m.scale(matrix.getScaleX(),matrix.getScaleY());
-	computeBoundsForTransformedRect(bxmin,bxmax,bymin,bymax,x,y,width,height,m);
+	m.scale(matrix.getScale());
+	auto _bounds = computeBoundsForTransformedRect(_rect, m);
+
 	tokens.clear();
-	if (!tokens.filltokens)
+	if (tokens.filltokens.isNull())
 		tokens.filltokens = _MR(new tokenListRef());
-	scaling = 1.0f/1024.0f/20.0f;
-	if ( this->background)
+	scaling = 1 / 1024.0;
+
+	auto makeRefreshableDrawable = [&]
 	{
-		fillstyleBackgroundColor.FillStyleType=SOLID_FILL;
-		fillstyleBackgroundColor.Color=this->backgroundColor;
-		tokens.filltokens->tokens.push_back(GeomToken(SET_FILL).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(fillstyleBackgroundColor).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(CLEAR_FILL).uval);
-	}
-	if (this->border)
+		resetNeedsTextureRecalculation();
+		return new RefreshableDrawable
+		(
+			_bounds.min,
+			_bounds.max.ceil(),
+			matrix.getScale(),
+			isMask(),
+			getCachedBitmapPreference(),
+			getScaleFactor(),
+			getConcatenatedAlpha()
+			ct,
+			smoothMode,
+			getBlendMode(),
+			matrix
+		);
+	};
+
+	auto addRect = [&]
+	(
+		const GEOM_TOKEN_TYPE& _type,
+		const GeomToken& arg
+	)
 	{
-		lineStyleBorder.Color=this->borderColor;
-		lineStyleBorder.Width=0;//hairline
-		tokens.filltokens->tokens.push_back(GeomToken(SET_STROKE).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(lineStyleBorder).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, (bymax-bymin)/scaling)).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, (bymax-bymin)/scaling)).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2((bxmax-bxmin)/scaling, bymin/scaling)).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2(bxmin/scaling, bymin/scaling)).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
+		auto& _fillTokens = tokens.filltokens->tokens;
+		auto boundsSize = _bounds.size();
+		_fillTokes.insert(_fillTokens.end(),
+		{
+			GeomToken(_type).uval,
+			arg.uval,
+			GeomToken(MOVE).uval,
+			GeomToken(Vector2(_bounds.min) / scaling).uval,
+			GeomToken(STRAIGHT).uval,
+			GeomToken(Vector2
+			(
+				_bounds.min.x,
+				boundsSize.y
+			) / scaling).uval,
+			GeomToken(STRAIGHT).uval,
+			GeomToken(Vector2(boundsSize) / scaling).uval,
+			GeomToken(STRAIGHT).uval,
+			GeomToken(Vector2
+			(
+				boundsSize.x,
+				_bounds.min.y
+			) / scaling).uval,
+			GeomToken(STRAIGHT).uval,
+			GeomToken(Vector2(_bounds.min) / scaling).uval,
+			GeomToken(CLEAR_FILL).uval
+		});
+
+	};
+
+	if (background)
+	{
+		fillStyleBackgroundColor.FillStyleType = SOLID_FILL;
+		fillStyleBackgroundColor.Color = backgroundColor;
+		addRect(SET_FILL, fillStyleBackgroundColor);
 	}
+
+	if (border)
+	{
+		lineStyleBorder.Color = borderColor;
+		lineStyleBorder.Width = 0; //hairline
+		addRect(SET_STROKE, lineStyleBorder);
+	}
+
 	if (this->caretblinkstate)
 	{
-		uint32_t tw=0;
-		if (!getText().empty())
-		{
-			tiny_string tmptxt = getText().substr(0,caretIndex);
-			number_t w,h;
-			getTextSizes(getSystemState(),FormatText(),nullptr,tmptxt,w,h);
-			tw = w;
-			tw += autosizeposition/scaling;
-		}
-		else
-		{
-			tw += autosizeposition;
-			tw /=scaling;
-		}
-		lineStyleCaret.Color=RGB(0,0,0);
-		lineStyleCaret.Width=40;
-		int ypadding = (bymax-bymin-2)/scaling;
+		uint32_t textWidth = !getText().empty() ? getTextSizes
+		(
+			getSys(),
+			FormatText(),
+			nullptr,
+			getText().substr(0, caretIndex)
+		).x + autoSizePos : autoSizePos;
+
+		lineStyleCaret.Color = RGB();
+		lineStyleCaret.Width = 40;
+		Vector2 padding(0, _rect.size().y - 2);
+
 		tokens.filltokens->tokens.push_back(GeomToken(SET_STROKE).uval);
 		tokens.filltokens->tokens.push_back(GeomToken(lineStyleCaret).uval);
 		tokens.filltokens->tokens.push_back(GeomToken(MOVE).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2(tw, bymin/scaling+ypadding)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken((Vector2
+		(
+			textWidth,
+			_rect.min.y
+		) + padding) / scaling).uval);
 		tokens.filltokens->tokens.push_back(GeomToken(STRAIGHT).uval);
-		tokens.filltokens->tokens.push_back(GeomToken(Vector2(tw, (bymax-bymin)/scaling-ypadding)).uval);
+		tokens.filltokens->tokens.push_back(GeomToken((Vector2
+		(
+			textWidth,
+			_rect.size().y
+		) - padding) / scaling).uval);
 		tokens.filltokens->tokens.push_back(GeomToken(CLEAR_STROKE).uval);
 	}
-	if (embeddedFont)
-	{
-		int32_t startposy = TEXTFIELD_PADDING+bymin+(embeddedFont->getAscent())*fontSize/1024*TWIPS_FACTOR;
 
-		linemutex->lock();
-		RGBA color(textColor.Red,textColor.Green,textColor.Blue,0xff);
-		tokensVector* tk = &tokens;
+	if (embeddedFont != nullptr)
+	{
+		Vector2Twips startPos(0,
+		(
+			TEXTFIELD_PADDING +
+			_rect.min.y +
+			embeddedFont->getAscent() *
+			fontSize / 1024
+		));
+		RGBA color = textColor;
+		auto tk = &tokens;
 		bool first = tk->empty();
-		for (auto it = textlines.begin(); it != textlines.end(); it++)
+
+		lineMutex.lock();
+		for (auto& line : textlines)
 		{
-			if (startposy > (int32_t)this->height)
+			if (startPos.y > size.y)
 				break;
-			if ((*it).text.empty())
+			if (line.text.empty())
 			{
-				startposy += (embeddedFont->getAscent()+embeddedFont->getDescent()+embeddedFont->getLeading())*fontSize/1024*TWIPS_FACTOR;
+				startPos.y +=
+				(
+					embeddedFont->getAscent() +
+					embeddedFont->getDescent() +
+					embeddedFont->getLeading()
+				) * fontSize / 1024;
 				continue;
 			}
+
 			if (!first)
 				tk = tk->next = new tokensVector();
 
 			first = false;
-			int startposx = (TEXTFIELD_PADDING+autosizeposition+(*it).autosizeposition);
-			if (it->format.bullet)
+			startPos.x =
+			(
+				TEXTFIELD_PADDING +
+				autoSizePos +
+				line.autoSizePos
+			);
+
+			if (line.format.bullet)
 			{
-				tiny_string bullet = tiny_string::fromChar(0x2022); // unicode bullet char
-				tk = embeddedFont->fillTextTokens(*tk,bullet,(*it).format,color,leading,startposx,startposy);
-				startposx += BULLER_INDENT*TWIPS_FACTOR;
+				auto bullet = tiny_string::fromChar(0x2022); // unicode bullet char
+				tk = embeddedFont->fillTextTokens
+				(
+					*tk,
+					// unicode bullet char,
+					tiny_string::fromChar(0x2022),
+					line.format,
+					color,
+					leading,
+					startPos
+				);
+				startPos.x += BULLET_INDENT;
 				tk = tk->next = new tokensVector();
 			}
-			if (isPassword)
-			{
-				tiny_string pwtxt;
-				for (uint32_t i = 0; i < (*it).text.numChars(); i++)
-					pwtxt+="*";
-				tk = embeddedFont->fillTextTokens(*tk,pwtxt,(*it).format,color,leading,startposx,startposy);
-			}
-			else
-				tk = embeddedFont->fillTextTokens(*tk,(*it).text,(*it).format,color,leading,startposx,startposy);
-			startposy += (embeddedFont->getAscent()+embeddedFont->getDescent()+embeddedFont->getLeading())*fontSize/1024*TWIPS_FACTOR;
+
+			auto _text = isPassword ? tiny_string(std::string
+			(
+				'*',
+				line.text.numChars()
+			) : line.text;
+
+			tk = embeddedFont->fillTextTokens
+			(
+				*tk,
+				_text,
+				line.format,
+				color,
+				leading,
+				startPos
+			);
+
+			startPos.y +=
+			(
+				embeddedFont->getAscent() +
+				embeddedFont->getDescent() +
+				embeddedFont->getLeading()
+			) * fontSize / 1024;
 		}
-		linemutex->unlock();
+		lineMutex.unlock();
+
 		if (tokens.empty())
+			return makeRefreshableDrawable();
 		{
-			this->resetNeedsTextureRecalculation();
-			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
-										   , matrix.getScaleX(), matrix.getScaleY()
-										   , isMask, cacheAsBitmap
-										   , getScaleFactor(), getConcatenatedAlpha()
-										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+			resetNeedsTextureRecalculation();
+			return new RefreshableDrawable
+			(
+				_bounds.min,
+				_bounds.max.ceil(),
+				matrix.getScale(),
+				isMask(),
+				getCachedBitmapPreference(),
+				getScaleFactor(),
+				getConcatenatedAlpha()
+				ct,
+				smoothMode,
+				getBlendMode(),
+				matrix
+			);
 		}
 		// it seems that textfields are always rendered with subpixel smoothing when rendering to bitmap
-		return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,false,tokens);
+		return TokenContainer::invalidate(smoothMode, false, tokens);
 	}
-	if (this->type != ET_EDITABLE)
+	if (editType != ET_EDITABLE)
 	{
-		Locker l(*linemutex);
-		if (getLineCount()==0)
-		{
-			this->resetNeedsTextureRecalculation();
-			return new RefreshableDrawable(x, y, ceil(width), ceil(height)
-										   , matrix.getScaleX(), matrix.getScaleY()
-										   , isMask, cacheAsBitmap
-										   , getScaleFactor(), getConcatenatedAlpha()
-										   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
-		}
-	}
-	if(width==0 || height==0)
-	{
-		this->resetNeedsTextureRecalculation();
-		return new RefreshableDrawable(x, y, ceil(width), ceil(height)
-									   , matrix.getScaleX(), matrix.getScaleY()
-									   , isMask, cacheAsBitmap
-									   , getScaleFactor(), getConcatenatedAlpha()
-									   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
+		Locker l(lineMutex);
+		if (!getLineCount())
+			return makeRefreshableDrawable();
 	}
 
-	float xscale = getConcatenatedMatrix().getScaleX();
-	float yscale = getConcatenatedMatrix().getScaleY();
+	if (!size.x || !size.y)
+		return makeRefreshableDrawable();
+
+	auto _scale = getConcatenatedMatrix().getScale();
 	// use specialized Renderer from EngineData, if available, otherwise fallback to nanoVG
-	IDrawable* res = this->getSystemState()->getEngineData()->getTextRenderDrawable(*this,matrix, x, y, ceil(width), ceil(height),
-																					xscale,yscale,isMask,cacheAsBitmap, 1.0f,getConcatenatedAlpha(),
-																					ColorTransformBase(),
-																					smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode());
-	if (res != nullptr)
-		return res;
-	res = new RefreshableDrawable(x,y, ceil(width), ceil(height)
-								   , matrix.getScaleX(), matrix.getScaleY()
-								   , isMask, cacheAsBitmap
-								   , TWIPS_FACTOR, getConcatenatedAlpha()
-								   , ct, smoothing ? SMOOTH_MODE::SMOOTH_SUBPIXEL : SMOOTH_MODE::SMOOTH_NONE,this->getBlendMode(),matrix);
-	res->getState()->tokens.filltokens = tokens.filltokens;
-	res->getState()->tokens.stroketokens = tokens.stroketokens;
-	res->getState()->tokens.next = tokens.next;
-	res->getState()->tokens.color = tokens.color;
-	res->getState()->tokens.startMatrix = tokens.startMatrix;
-	res->getState()->textdata = *this;
-	res->getState()->renderWithNanoVG = true;
-	this->resetNeedsTextureRecalculation();
-	return res;
+	auto ret = getSys()->getEngineData()->getTextRenderDrawable
+	(
+		*this,
+		matrix,
+		_bounds.min,
+		_bounds.max.ceil(),
+		getConcatenatedMatrix().getScale(),
+		isMask(),
+		getCachedBitmapPreference(),
+		1.0f,
+		getConcatenatedAlpha(),
+		ColorTransformBase(),
+		smoothMode,
+		getBlendMode()
+	);
+	if (ret != nullptr)
+		return ret;
+
+	ret = makeRefreshableDrawable();
+	ret->getState()->tokens.filltokens = tokens.filltokens;
+	ret->getState()->tokens.stroketokens = tokens.stroketokens;
+	ret->getState()->tokens.next = tokens.next;
+	ret->getState()->tokens.color = tokens.color;
+	ret->getState()->tokens.startMatrix = tokens.startMatrix;
+	ret->getState()->textdata = *this;
+	ret->getState()->renderWithNanoVG = true;
+	return ret;
 
 }
 void TextField::refreshSurfaceState()
 {
-	linemutex->lock();
+	Locker l(lineMutex)
 	getCachedSurface()->getState()->textdata = *this;
-	linemutex->unlock();
 }
 
-void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
-						      TextData *dest)
+void TextField::HtmlTextParser::parseTextAndFormating
+(
+	const tiny_string& html,
+	TextData* dest
+)
 {
-	textdata = dest;
-	if (!textdata)
+	auto swfVersion = getSwfVersion();
+
+	textData = dest;
+	if (textdata == nullptr)
 		return;
 
-	tiny_string rooted = html;
+	auto rooted = html;
 	if (condenseWhite)
 	{
 		// according to ruffle swf >= 8 condenses whitespace across html tags, so we condense whitspace later
-		rooted = swfversion < 8 ? html.compactHTMLWhiteSpace(false) : html.trimLeft();
+		rooted =
+		(
+			swfVersion < 8 ?
+			html.compactHTMLWhiteSpace(false) :
+			html.trimLeft()
+		);
 	}
+
 	if (rooted.isWhiteSpaceOnly())
 	 	return;
-	uint32_t pos=0;
+	size_t pos = rooted.rfind("<br>");
 	// ensure <br> tags are properly parsed
-	while ((pos = rooted.find("<br>",pos)) != tiny_string::npos)
-		rooted.replace_bytes(pos,4,"<br />");
+
+	for (; pos != tiny_string::npos; pos = rooted.find("<br>", pos))
+		rooted.replace_bytes(pos, 4, "<br />");
+
 	pugi::xml_document doc;
-	unsigned int options = pugi::parse_cdata | pugi::parse_escapes | pugi::parse_wconv_attribute | pugi::parse_eol | pugi::parse_fragment | pugi::parse_embed_pcdata;
-	if ((dest->multiline && swfversion > 6) || swfversion>=8)
-	{
+	auto options =
+	(
+		pugi::parse_cdata |
+		pugi::parse_escapes |
+		pugi::parse_wconv_attribute |
+		pugi::parse_eol |
+		pugi::parse_fragment |
+		pugi::parse_embed_pcdata
+	);
+
+	if (swfVersion >= 8)
 		options |= pugi::parse_ws_pcdata;
-		if (swfversion<8)
-			options |= pugi::parse_ws_pcdata_single;
-	}
-	pugi::xml_parse_result result = doc.load_buffer(rooted.raw_buf(),rooted.numBytes(), options);
-	if (result.status == pugi::status_ok)
+	else if (dest->multiline && swfVersion > 6)
 	{
-		textdata->clear();
-		doc.traverse(*this);
-		if (textdata->getLineCount() == 0 && !formatStack.empty() && formatStack.back().paragraph)
-			textdata->appendFormatText("",formatStack.back(),swfversion,condenseWhite);
-		formatStack.erase(formatStack.begin(), formatStack.end());
-		textdata->checklastline(rooted.endsWith("\n</p>") || rooted.endsWith("\n</li>"));
+		options |=
+		(
+			pugi::parse_ws_pcdata |
+			pugi::parse_ws_pcdata_single
+		);
 	}
-	else
+
+	pugi::xml_parse_result result = doc.load_buffer
+	(
+		rooted.raw_buf(),
+		rooted.numBytes(),
+		options
+	);
+
+	if (result.status != pugi::status_ok)
 	{
 		LOG(LOG_ERROR, "TextField HTML parser error:"<<rooted);
 		LOG(LOG_ERROR, "Reason: " << result.description());
@@ -1923,125 +2111,177 @@ void TextField::HtmlTextParser::parseTextAndFormating(const tiny_string& html,
 		LOG(LOG_ERROR, "Text at offset: " << (rooted.raw_buf() + result.offset));
 		return;
 	}
+
+	textdata->clear();
+	doc.traverse(*this);
+
+	bool _addFormatText =
+	(
+		!textData->getLineCount() &&
+		!formatStack.empty() &&
+		formatStack.back().paragraph
+	);
+	if (_addFormatText)
+	{
+		textdata->appendFormatText
+		(
+			"",
+			formatStack.back(),
+			swfVersion,
+			condenseWhite
+		);
+	}
+
+	formatStack.clear();
+	textData->checklastline
+	(
+		rooted.endsWith("\n</p>") ||
+		rooted.endsWith("\n</li>")
+	);
 }
 
-bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
+bool TextField::HtmlTextParser::for_each(pugi::xml_node& node)
 {
-	if (!textdata)
+	if (textData == nullptr)
 		return true;
 
-	int currentDepth = depth();
-	tiny_string name = node.name();
-	name = name.lowercase();
+	auto currentDepth = depth();
+	auto name = tiny_string(node.name()).lowercase();
 	tiny_string v = node.value();
-	tiny_string newtext;
-	tiny_string parentname = node.parent().name();
+	tiny_string newText;
+	tiny_string parentName = node.parent().name();
+
 	if (currentDepth < prevDepth)
 	{
-		for (int i = currentDepth; i < prevDepth; ++i)
+		for (size_t i = currentDepth; i < prevDepth; ++i)
 			formatStack.pop_back();
 	}
+
 	FormatText format;
 	if (formatStack.empty())
 	{
 		format = FormatText(*textdata);
 		formatStack.push_back(format);
 	}
+
 	format = formatStack.back();
-	format.level=currentDepth;
-	uint32_t index =v.find("&nbsp;");
-	while (index != tiny_string::npos)
-	{
-		v.replace(index,6," ");
-		index =v.find("&nbsp;",index);
-	}
-	newtext += v;
-	bool emptycontent= node.children().begin() == node.children().end();
+	format.level = currentDepth;
+
+	size_t idx = v.find("&nbsp;");
+	for (; idx != tiny_string::npos; index = v.find("&nbsp;", idx))
+		v.replace(idx, 6, " ");
+
+	newText += v;
+	bool emptyContent =
+	(
+		node.children().begin() ==
+		node.children().end()
+	);
+
 	if (name == "br" || name == "sbr") // adobe seems to interpret the unknown tag <sbr /> as <br> ?
 	{
-		if (parentname=="textformat" && !format.bullet)
-			format.paragraph = ++textdata->maxParagraphID;
-		textdata->appendLineBreak(currentDepth == prevDepth
-								  ,((parentname=="textformat" || format.bullet) && strlen(node.parent().value())==0) || (node.previous_sibling().type() == pugi::node_null && node.next_sibling().type() == pugi::node_null)
-								  ,format);
+		if (parentName == "textformat" && !format.bullet)
+			format.paragraph = ++textData->maxParagraphID;
+
+		bool firstLineOnly =
+		((
+			parentName == "textformat" ||
+			format.bullet
+		) && !strlen(node.parent().value())) ||
+		(
+			node.previous_sibling().type() == pugi::node_null &&
+			node.next_sibling().type() == pugi::node_null
+		);
+		textData->appendLineBreak
+		(
+			currentDepth == prevDepth,
+			firstLineOnly,
+			format
+		);
 	}
-	if (name == "p")
+	else if (name == "p")
 	{
-		format.paragraph= ++textdata->maxParagraphID;
-		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
+		format.paragraph = ++textData->maxParagraphID;
+		for (auto attr : node.attributes())
 		{
-			tiny_string attrname = it->name();
-			attrname = attrname.lowercase();
-			tiny_string value = it->value();
-			if (attrname == "align")
+			auto attrName = tiny_string(attr.name()).lowercase();
+			if (attrName != "align")
 			{
-				if (value == "left")
-				{
-					textdata->align = ALIGNMENT::AS_LEFT;
-					format.align = ALIGNMENT::AS_LEFT;
-				}
-				if (value == "center")
-				{
-					textdata->align = ALIGNMENT::AS_CENTER;
-					format.align = ALIGNMENT::AS_CENTER;
-				}
-				if (value == "right")
-				{
-					textdata->align = ALIGNMENT::AS_RIGHT;
-					format.align = ALIGNMENT::AS_RIGHT;
-				}
+				LOG
+				(
+					LOG_NOT_IMPLEMENTED,
+					"TextField html tag <" << name <<
+					">: unsupported attribute:" <<
+					attrName
+				);
+				continue;
 			}
-			else
+
+			tiny_string value = attr.value();
+			if (value == "left")
 			{
-				LOG(LOG_NOT_IMPLEMENTED,"TextField html tag <"<<name<<">: unsupported attribute:"<<attrname);
+				textData->align = ALIGNMENT::AS_LEFT;
+				format.align = ALIGNMENT::AS_LEFT;
+			}
+			else if (value == "center")
+			{
+				textData->align = ALIGNMENT::AS_CENTER;
+				format.align = ALIGNMENT::AS_CENTER;
+			}
+			else if (value == "right")
+			{
+				textData->align = ALIGNMENT::AS_RIGHT;
+				format.align = ALIGNMENT::AS_RIGHT;
 			}
 		}
 	}
 	else if (name == "font")
 	{
 		if (format.paragraph)
-			emptycontent=false;
+			emptyContent = false;
 		else
-			format.paragraph= ++textdata->maxParagraphID;
-		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
+			format.paragraph= ++textData->maxParagraphID;
+		for (auto attr : node.attributes())
 		{
-			tiny_string attrname = it->name();
-			attrname = attrname.lowercase();
-			if (attrname == "face")
-				format.font = appdomain->getSystemState()->getUniqueStringId(it->value());
-			else if (attrname == "size")
-				format.fontSize = parseFontSize(it->value(), format.fontSize);
-			else if (attrname == "color")
-				format.fontColor = RGB(tiny_string(it->value()));
-			else if (attrname == "kerning")
+			auto attrName = tiny_string(attr.name()).lowercase();
+			auto value = attr.value();
+			if (attrName == "face")
+				format.font = value;
+			else if (attrName == "size")
+				format.fontSize = parseFontSize(value, format.fontSize);
+			else if (attrName == "color")
+				format.fontColor = RGB(tiny_string(value));
+			else if (attrName == "kerning")
 			{
 				format.kerning = it->as_double();
-				if (appdomain)
-				{
-					// it seems that adobe overwrites the kerning setting if it is an embedded font without kerning table
-					FontTag* font = appdomain->getEmbeddedFont(appdomain->getSystemState()->getStringFromUniqueId(format.font));
-					if (font && !font->hasKerning())
-						format.kerning = 0;
-				}
+				// it seems that adobe overwrites the kerning setting if it is an embedded font without kerning table
+				auto font = movie.getEmbeddedFont(format.font);
+				if (font != nullptr && !font->hasKerning())
+					format.kerning = 0;
 			}
-			else if (attrname == "letterspacing")
-			{
+			else if (attrName == "letterspacing")
 				format.letterspacing = it->as_double();
-			}
 			else
-				LOG(LOG_NOT_IMPLEMENTED,"TextField html tag <font>: unsupported attribute:"<<attrname<<" "<<it->value());
+			{
+				LOG
+				(
+					LOG_NOT_IMPLEMENTED,
+					"TextField html tag <font>: "
+					"unsupported attribute:" <<
+					attrName << ' ' << value
+				);
+			}
 		}
 	}
 	else if (name == "a")
 	{
-		for (auto it : node.attributes())
+		for (auto attr : node.attributes())
 		{
-			tiny_string attrname = it.name();
-			attrname = attrname.lowercase();
-			if (attrname == "href")
-				format.url = it.value();
-			else if (attrname == "target")
-				format.target = it.value();
+			auto attrName = tiny_string(attr.name()).lowercase();
+			if (attrName == "href")
+				format.url = attr.value();
+			else if (attrName == "target")
+				format.target = attr.value();
 		}
 	}
 	else if (name == "b")
@@ -2055,80 +2295,116 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	else if (name == "textformat")
 	{
 		// Adobe seems to ignore textformat tags not on root level except if it is the child of a textformat or font tag
-		if (currentDepth==0 || parentname=="textformat" || parentname=="font")
+		if (!currentDepth || parentName == "textformat" || parentName == "font")
 		{
 			for (auto it : node.attributes())
 			{
-				tiny_string attrname = it.name();
-				tiny_string attrvalue = it.value();
-				if (attrvalue=="0")
+				tiny_string attrValue = it.value();
+				if (attrValue == "0")
 					continue;
-				attrname = attrname.lowercase();
-				if (attrname == "blockindent")
-					format.blockindent = attrvalue;
-				else if (attrname == "indent")
-					format.indent = attrvalue;
-				else if (attrname == "leading")
-					format.leading = attrvalue;
-				else if (attrname == "leftmargin")
-					format.leftmargin = attrvalue;
-				else if (attrname == "rightmargin")
-					format.rightmargin = attrvalue;
-				else if (attrname == "tabstops")
-					format.tabstops = attrvalue;
+
+				auto attrName = tiny_string(it.name()).lowercase();
+				if (attrName == "blockindent")
+					format.blockindent = attrValue;
+				else if (attrName == "indent")
+					format.indent = attrValue;
+				else if (attrName == "leading")
+					format.leading = attrValue;
+				else if (attrName == "leftmargin")
+					format.leftmargin = attrValue;
+				else if (attrName == "rightmargin")
+					format.rightmargin = attrValue;
+				else if (attrName == "tabstops")
+					format.tabstops = attrValue;
 			}
 		}
-		else
-		{
-			if (emptycontent && newtext.empty())
-				textdata->appendLineBreak(false,true,format);
-		}
+		else if (emptyContent && newtext.empty())
+			textdata->appendLineBreak(false, true, format);
 	}
 	else if (name == "img" || name == "span" ||  name == "tab")
 	{
-		LOG(LOG_NOT_IMPLEMENTED, "Unsupported tag in TextField: " << name);
+		LOG
+		(
+			LOG_NOT_IMPLEMENTED,
+			"Unsupported tag in TextField: " << name
+		);
 	}
-	if (!emptycontent)
+
+	if (!emptyContent)
 		formatStack.push_back(format);
-	if (swfversion < 8  && condenseWhite && newtext.removeWhitespace().empty())
-		newtext="";
-	if (!newtext.empty()
-		|| (swfversion < 7 && (name == "p" || name == "li") && emptycontent)
-		|| (((textdata->multiline && swfversion>=7)|| swfversion>=8)
-			&& (emptycontent
-				|| (name != "p" && name != "li" && name != "font"))))
+	if (swfVersion < 8  && condenseWhite && newText.removeWhitespace().empty())
+		newText = "";
+
+	bool _addFormatText = !newText.empty() ||
+	(
+		swfversion < 7 &&
+		(name == "p" || name == "li") &&
+		emptyContent
+	) ||
+	(
+		(
+			swfVersion >= 8 ||
+			(
+				textData->multiline &&
+				swfVersion == 7
+			)
+		) &&
+		(
+			emptycontent ||
+			(
+				name != "p" &&
+				name != "li" &&
+				name != "font"
+			)
+		)
+	);
+
+	if (_addFormatText)
 	{
-		textdata->appendFormatText(newtext.raw_buf(), format,swfversion,condenseWhite);
+		textData->appendFormatText
+		(
+			newText,
+			format,
+			swfVersion,
+			condenseWhite
+		);
 	}
+
 	prevDepth = currentDepth;
 	prevName = name;
 	return true;
 }
 
-uint32_t TextField::HtmlTextParser::parseFontSize(const char* s,
-						  uint32_t currentFontSize)
+uint8_t TextField::HtmlTextParser::parseFontSize
+(
+	const tiny_string& str,
+	size_t currentFontSize
+)
 {
-	if (!s)
+	if (str.empty())
 		return currentFontSize;
 
-	uint32_t basesize = 0;
-	int multiplier = 1;
-	if (s[0] == '+' || s[0] == '-')
+	auto it = str.begin();
+	size_t baseSize = 0;
+	ssize_t mult = 1;
+	if (*it == '+' || *it == '-')
 	{
 		// relative size
-		basesize = currentFontSize;
-		if (s[0] == '-')
-			multiplier = -1;
-		s++;
+		baseSize = currentFontSize;
+		mult = *it++ != '-' ? 1 : -1;
 	}
-	if (s[0]<'0'||s[0]>'9')
+
+	if (*it < '0'|| *it > '9')
 		return currentFontSize;
 
-	int64_t size = basesize + multiplier*strtoll(s, nullptr, 10);
-	if (size < 1)
-		size = 1;
-	if (size > 127)
-		size = 127;
-	
-	return (uint32_t)size;
+	return iclamp
+	(
+		baseSize + mult * str.substr
+		(
+			it,
+			tiny_string::npos
+		).tryToNumber<size_t>().valueOr(-1),
+		1,
+		127
+	);
 }

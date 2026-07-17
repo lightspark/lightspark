@@ -980,7 +980,7 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 #endif
 
 	if (tex->type == NVG_TEXTURE_RGBA)
-		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_BGRA, GL_UNSIGNED_BYTE, data);  // Lightspark always delivers images in BGRA format
 	else
 #if defined(NANOVG_GLES2) || defined(NANOVG_GL2)
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);

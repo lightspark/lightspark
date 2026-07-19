@@ -146,6 +146,8 @@ public:
 	void appendText(const char* text, bool firstlineonly=false, const FormatText* format = nullptr, uint32_t swfversion=UINT32_MAX, bool condensewhite=false);
 	void appendFormatText(const char* text, const FormatText& format, uint32_t swfversion, bool condensewhite);
 	void appendLineBreak(bool needsadditionalbreak, bool emptyline, FormatText format);
+	void appendTextToLastLine(const tiny_string& text);
+	void setNeedsNewLineToLastLine();
 	void clear();
 	bool isWhitespaceOnly(bool multiline) const;
 	void getTextSizes(SystemState* sys, const FormatText& format, FontTag* ef, const tiny_string& text, number_t& tw, number_t& th);

@@ -1539,9 +1539,9 @@ tiny_string TextField::toHtmlText()
 	FormatText lastformat;
 	bool firstline=true;
 	uint32_t prevlinebreaks=0;
+	bool mergetext=true;
 	for (auto it = textlines.begin(); it != textlines.end(); it++)
 	{
-		bool mergetext=true;
 		bool ignoretext=false;
 		FormatText& format = (*it).format;
 		pugi::xml_node prevnode = node;
@@ -1558,7 +1558,7 @@ tiny_string TextField::toHtmlText()
 		}
 		pugi::xml_node startnode = doc;
 		bool islastline = it == textlines.end()-1;
-		if ((firstline || it->needsnewline || it->linebreaks) && (
+		if ((firstline || it->needsnewline || prevlinebreaks || format.bullet) && (
 			!format.blockindent.empty()
 			|| !format.blockindent.empty()
 			|| !format.indent.empty()
@@ -1586,20 +1586,29 @@ tiny_string TextField::toHtmlText()
 		bool setfont = false;
 		if (format.bullet)
 		{
+			mergetext=false;
 			setfont=true;
-			node = doc.append_child("LI");
+			node = startnode.append_child("LI");
 			formatstack.push(format);
 		}
 		else
 		{
 			if ((!this->multiline || !format.paragraph) && condenseWhite && (*it).text.empty())
 				continue;
-			if (openParagraph==0 || it->needsnewline || format.paragraph || (prevlinebreaks && !it->text.empty()))// || (swfversion < 7 && !format.bullet))
+			if (openParagraph==0
+				|| it->needsnewline
+				|| (islastline && openParagraph>1)
+				|| (format.paragraph != prevformat.paragraph)
+				|| (prevlinebreaks && !it->text.empty())
+				|| (!mergetext)
+				)
 			{
 				if (((!islastline || firstline) && openParagraph==0)
-					|| (format.paragraph)
+					|| (format.paragraph != prevformat.paragraph)
+					|| (islastline && openParagraph>1)
 					|| (it->needsnewline)
 					|| (prevlinebreaks && !it->text.empty())
+					|| (!mergetext)
 					)
 				{
 					openParagraph++;
@@ -1769,6 +1778,9 @@ tiny_string TextField::toHtmlText()
 		}
 		lastformat=format;
 		prevlinebreaks=it->linebreaks;
+		mergetext=!it->needsnewline || (firstline && it->format.paragraph);
+		if (!mergetext)
+			node = node.parent();
 		firstline=false;
 	}
 
@@ -2454,13 +2466,21 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	tiny_string parentname = node.parent().name();
 	if (currentDepth < prevDepth)
 	{
+		intextformat=false;
 		for (int i = currentDepth; i < prevDepth; ++i)
 			formatStack.pop_back();
 	}
+	if (node.type()==pugi::node_pcdata)
+		mergetext=true;
+	else if (currentDepth != prevDepth)
+		mergetext=false;
+
 	FormatText format;
 	if (formatStack.empty())
 	{
 		format = FormatText(*textdata);
+		if (swfversion < 8)
+			format.align = AS_LEFT;
 		formatStack.push_back(format);
 	}
 	format = formatStack.back();
@@ -2473,16 +2493,24 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	}
 	newtext += v;
 	bool emptycontent= node.children().begin() == node.children().end();
+	bool addparagraphandlinebreak=false;
 	if (name == "br" || name == "sbr") // adobe seems to interpret the unknown tag <sbr /> as <br> ?
 	{
-		if (parentname=="textformat" && !format.bullet)
-			format.paragraph = ++textdata->maxParagraphID;
+		mergetext=false;
+		if (intextformat)
+		{
+			if (format.bullet)
+				addparagraphandlinebreak=true;
+			else
+				format.paragraph = ++textdata->maxParagraphID;
+		}
 		textdata->appendLineBreak(currentDepth == prevDepth
 								  ,((parentname=="textformat" || format.bullet) && strlen(node.parent().value())==0) || (node.previous_sibling().type() == pugi::node_null && node.next_sibling().type() == pugi::node_null)
 								  ,format);
 	}
 	if (name == "p")
 	{
+		mergetext=false;
 		format.paragraph= ++textdata->maxParagraphID;
 		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
 		{
@@ -2517,8 +2545,6 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	{
 		if (format.paragraph)
 			emptycontent=false;
-		else
-			format.paragraph= ++textdata->maxParagraphID;
 		for (auto it=node.attributes_begin(); it!=node.attributes_end(); ++it)
 		{
 			tiny_string attrname = it->name();
@@ -2567,12 +2593,29 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 	else if (name == "u")
 		format.underline = true;
 	else if (name == "li")
+	{
+		if (format.paragraph
+			|| format.bullet
+			)
+			addparagraphandlinebreak=true;
+		textdata->setNeedsNewLineToLastLine();
+		mergetext=false;
 		format.bullet = true;
+	}
 	else if (name == "textformat")
 	{
-		// Adobe seems to ignore textformat tags not on root level except if it is the child of a textformat or font tag
-		if (currentDepth==0 || parentname=="textformat" || parentname=="font")
+		if (mergetext && !newtext.empty())
 		{
+			textdata->appendTextToLastLine(newtext);
+			newtext="";
+		}
+		// Adobe seems to ignore textformat tags not on root level except if it is the child of a textformat or font tag
+		else if ((currentDepth==0)
+			|| parentname=="textformat"
+			|| parentname=="font"
+			)
+		{
+			intextformat=true;
 			for (auto it : node.attributes())
 			{
 				tiny_string attrname = it.name();
@@ -2615,6 +2658,17 @@ bool TextField::HtmlTextParser::for_each(pugi::xml_node &node)
 				|| (name != "p" && name != "li" && name != "font"))))
 	{
 		textdata->appendFormatText(newtext.raw_buf(), format,swfversion,condenseWhite);
+		mergetext=true;
+	}
+	if (addparagraphandlinebreak)
+	{
+		if (format.paragraph)
+			format.bullet=false;
+		else
+			format.paragraph = ++textdata->maxParagraphID;
+		textdata->appendLineBreak(true
+								  ,true
+								  ,format);
 	}
 	prevDepth = currentDepth;
 	prevName = name;

@@ -121,7 +121,7 @@ void TextData::appendText(const char *text, bool firstlineonly, const FormatText
 		line.format = newformat;
 		line.autosizeposition=0;
 		line.textwidth=UINT32_MAX;
-		line.needsnewline = t.getLine(index,line.text);
+		line.needsnewline = t.getLine(index,line.text) || newformat.paragraph || newformat.bullet;
 		textlines.push_back(line);
 	}
 	while (!condenseWhite && index != tiny_string::npos && !firstlineonly);
@@ -156,6 +156,18 @@ void TextData::appendLineBreak(bool needsadditionalbreak, bool emptyline,FormatT
 		line.linebreaks=1;
 		textlines.push_back(line);
 	}
+}
+
+void TextData::appendTextToLastLine(const tiny_string& text)
+{
+	assert(textlines.size());
+	textlines.back().text += text;
+}
+
+void TextData::setNeedsNewLineToLastLine()
+{
+	if (!textlines.empty())
+		textlines.back().needsnewline=true;
 }
 
 void TextData::clear()

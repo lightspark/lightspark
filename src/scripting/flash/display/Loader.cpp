@@ -303,6 +303,7 @@ ASFUNCTIONBODY_ATOM(Loader,loadBytes)
 	_NR<LoaderContext> context;
 	ARG_CHECK(ARG_UNPACK (bytes)(context, NullRef));
 
+	th->checkContentLoaderInfo();
 	ApplicationDomain* parentDomain = ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
 	if (parentDomain)
 		parentDomain->incRef();

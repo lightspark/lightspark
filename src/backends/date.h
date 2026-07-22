@@ -20,6 +20,7 @@
 #ifndef BACKENDS_DATE_H
 #define BACKENDS_DATE_H 1
 
+#include <functional>
 #include <utility>
 
 #include "interfaces/backends/date.h"
@@ -36,7 +37,29 @@ class DeterministicDate : public IDate
 private:
 	TimeSpec time;
 	int32_t timeZoneOffset;
+	std::function<bool(const TimeSpec&)> dstFunc;
+
+	static constexpr size_t getDayWithinYear(const TimeSpec& time);
+	static constexpr uint16_t getMonthOffset
+	(
+		ssize_t i,
+		bool _inLeapYear
+	);
+
+	static constexpr uint64_t dayFromYear(uint64_t year);
+	static constexpr size_t getYear(const TimeSpec& time);
+	static constexpr size_t getMonth(const TimeSpec& time);
+	static constexpr size_t getDate(const TimeSpec& time);
+	static constexpr size_t getWeekDay(const TimeSpec& time);
 public:
+	template<typename F>
+	DeterministicDate
+	(
+		const TimeSpec& _time,
+		int32_t tzOffset = 0,
+		F&& func
+	) : time(_time), timeZoneOffset(tzOffset), dstFunc(func) {}
+
 	DeterministicDate
 	(
 		const TimeSpec& _time,
@@ -55,6 +78,7 @@ public:
 	TimeSpec now() const override { return getTime(); }
 	int32_t getLocalTZA(bool isUTC) const override;
 	int32_t getDSTAdjustment(const TimeSpec& _time) const override;
+
 	tiny_string toFormatStr
 	(
 		const TimeSpec& _time,

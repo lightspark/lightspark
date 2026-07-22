@@ -157,6 +157,17 @@ int32_t DeterministicDate::getDSTAdjustment(const TimeSpec& _time) const
 	) ? secPerHour : 0;
 }
 
+static Optional<uint32_t> parsePadChar(uint32_t ch)
+{
+	switch (ch)
+	{
+		case '0': return '0'; break;
+		case '-': return '\0'; break;
+		case '_': return ' '; break;
+		default: return {}; break;
+	}
+}
+
 static std::stringstream& parseFormatChar
 (
 	std::stringstream& s,
@@ -164,28 +175,34 @@ static std::stringstream& parseFormatChar
 	const TimeSpec& time
 )
 {
+	#define FORCE_PAD(char, n) std::setfill(char) << std::setw(n)
 	#define PAD(char, n) \
-		std::setfill(char) << std::setw(n)
+		FORCE_PAD(padChar.transformOr(char, [](auto ch) \
+		{ \
+			return ch == '\0' ? ' ' : ch; \
+		}), padChar.valueOr(char) == '\0' ? 0 : n)
 	
 	static constexpr auto days = makeArray
 	(
-		"Sun", "Mon", "Tue",
-		"Wed", "Thu", "Fri",
-		"Sat"
+		"Sunday", "Monday", "Tuesday",
+		"Wednesday", "Thursday", "Friday",
+		"Saturday"
 	);
 	
 	static constexpr auto months = makeArray
 	(
-		"Jan", "Feb", "Mar", "Apr",
-		"May", "Jun", "Jul", "Aug",
-		"Sep", "Oct", "Nov", "Dec"
+		"January", "February", "March", "April",
+		"May", "June", "July", "August",
+		"September", "October", "November", "December"
 	);
 
 	switch (ch)
 	{
-		case 'a': return s << days[getDayInWeek(time)];
-		case 'b': return s << months[getMonth(time)];
-		case 'e': return s << getDayInMonth(time);
+		case 'a': return s << days[getDayInWeek(time)].substr(0, 3); break;
+		case 'A': return s << days[getDayInWeek(time)]; break;
+		case 'b': return s << months[getMonth(time)].substr(0, 3); break;
+		case 'B': return s << months[getMonth(time)]; break;
+		case 'e': return s << getDayInMonth(time); break;
 		case 'T':
 			return
 			(
@@ -194,19 +211,21 @@ static std::stringstream& parseFormatChar
 				PAD('0', 2) << getMinute(time) << ':' <<
 				PAD('0', 2) << getSecond(time)
 			);
-		case 'H': return s << PAD('0', 2) << getHour(time);
-		case 'M': return s << PAD('0', 2) << getMinute(time);
-		case 'S': return s << PAD('0', 2) << getSecond(time);
+			break;
+		case 'H': return s << PAD('0', 2) << getHour(time); break;
+		case 'M': return s << PAD('0', 2) << getMinute(time); break;
+		case 'S': return s << PAD('0', 2) << getSecond(time); break;
 		case 'z':
 		{
 			auto tzOffset = getTimeZoneOffset();
 			return
 			(
 				s << std::showpos <<
-				PAD('0', 2) << tzOffset / 60 <<
+				FORCE_PAD('0', 2) << tzOffset / 60 <<
 				std::shownopos <<
-				PAD('0', 2) << std::abs(tzOffset % 60)
+				FORCE_PAD('0', 2) << std::abs(tzOffset % 60)
 			);
+			break;
 		}
 		case 'Y': return s << getYear(time);
 		default:
@@ -219,6 +238,7 @@ static std::stringstream& parseFormatChar
 			break;
 	}
 	#undef PAD
+	#undef FORCE_PAD
 }
 
 tiny_string DeterministicDate::toFormatStr
@@ -235,9 +255,17 @@ tiny_string DeterministicDate::toFormatStr
 	{
 		s << fmt.substr(prevPos, i - prevPos);
 		
-		auto ch = fmt[i++];
+		auto padChar = parsePadChar(fmt[i]);
+		if (padChar.hasValue())
+			++i;
 
-		parseFormatChar(s, ch, time);
+		parseFormatChar
+		(
+			s,
+			fmt[i++],
+			time,
+			padChar
+		);
 		prevPos = i;
 	}
 

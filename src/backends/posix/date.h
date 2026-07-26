@@ -36,12 +36,6 @@ public:
 	TimeSpec now() const override;
 	int32_t getLocalTZA(bool isUTC) const override;
 	int32_t getDSTAdjustment(const TimeSpec& time) const override;
-
-	tiny_string toFormatStr
-	(
-		const TimeSpec& time,
-		const tiny_string& fmt
-	) const override;
 };
 
 }

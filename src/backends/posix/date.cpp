@@ -83,17 +83,3 @@ int32_t PosixDate::getDSTAdjustment(const TimeSpec& time) const
 		return 0;
 	return t->tm_isdst > 0 ? secPerHour : 0;
 }
-
-tiny_string PosixDate::toFormatStr
-(
-	const TimeSpec& time,
-	const tiny_string& fmt
-) const
-{
-	char str[256] = { '\0' };
-	auto t = getBrokenDownTime(time);
-	auto size = strftime(str, sizeof(str), fmt.raw_buf, &t);
-	if (!size)
-		return "";
-	return str;
-}

@@ -1655,7 +1655,7 @@ bool ABCVm::getLex(call_context* th, int n)
 }
 bool ABCVm::getLex_multiname(call_context* th, multiname* name,uint32_t localresult)
 {
-	LOG_CALL( "getLex"<<(localresult!=UINT32_MAX ? "_l:":":") << *name );
+	LOG_CALL( "getLex_multiname"<<(localresult!=UINT32_MAX ? "_l:":":") << *name <<" "<<localresult);
 	vector<scope_entry>::reverse_iterator it;
 	// o will be a reference owned by this function (or NULL). At
 	// the end the reference will be handed over to the runtime

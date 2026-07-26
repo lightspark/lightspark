@@ -29,9 +29,10 @@
 		ASATOM_DECREF(ret); \
 		return; \
 	} \
-	asAtom oldres = CONTEXT_GETLOCAL(context,pos);\
+	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,pos)); \
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,pos),ret);\
-	ASATOM_DECREF(oldres);\
+	if (o)\
+		o->decRefAndGCCheck();\
 }
 
 #endif /* SCRIPTING_ABC_OPTIMIZED_H */

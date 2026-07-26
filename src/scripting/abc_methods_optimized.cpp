@@ -41,9 +41,10 @@ FORCE_INLINE void replacelocalresult(call_context* context,uint16_t pos,asAtom& 
 		ASATOM_DECREF(ret);
 		return;
 	}
-	asAtom oldres = CONTEXT_GETLOCAL(context,pos);
+	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,pos));
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,pos),ret);
-	ASATOM_DECREF(oldres);
+	if (o)
+		o->decRefAndGCCheck();
 }
 void ABCVm::abc_ifnlt_constant_constant(call_context* context)
 {
@@ -4833,12 +4834,18 @@ void ABCVm::abc_constructpropMultiArgs_constant_localresult(call_context* contex
 {
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj= *context->exec_pos->arg1_constant;
-	LOG_CALL( "constructprop_MultiArgs_c_lr");
+	LOG_CALL( "constructprop_MultiArgs_c_lr "<<context->exec_pos->local2.pos<<" "<<context->exec_pos->local3.pos);
 	asAtom res=asAtomHandler::invalidAtom;
-	constructpropMultiArgs_intern(context,res,obj);
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	constructpropMultiArgs_intern(context,res,obj);
 	if (oldres.uintval != res.uintval)
 		replacelocalresult(context,instrptr->local3.pos,res);
+	else
+	{
+		ASObject* o = asAtomHandler::getObject(oldres);
+		if (o)
+			o->decRefAndGCCheck();
+	}
 	++(context->exec_pos);
 }
 void ABCVm::abc_constructpropMultiArgs_local_localresult(call_context* context)
@@ -4847,9 +4854,15 @@ void ABCVm::abc_constructpropMultiArgs_local_localresult(call_context* context)
 	asAtom obj= CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	LOG_CALL( "constructprop_MultiArgs_l_lr ");
 	asAtom res=asAtomHandler::invalidAtom;
-	constructpropMultiArgs_intern(context,res,obj);
 	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
+	constructpropMultiArgs_intern(context,res,obj);
 	if (oldres.uintval != res.uintval)
 		replacelocalresult(context,instrptr->local3.pos,res);
+	else
+	{
+		ASObject* o = asAtomHandler::getObject(oldres);
+		if (o)
+			o->decRefAndGCCheck();
+	}
 	++(context->exec_pos);
 }

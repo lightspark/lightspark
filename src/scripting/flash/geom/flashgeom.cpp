@@ -458,6 +458,7 @@ ASFUNCTIONBODY_ATOM(Transform,getRelativeMatrix3D)
 {
 	//Transform* th=asAtomHandler::as<Transform>(obj);
 	LOG(LOG_NOT_IMPLEMENTED,"Transform.getRelativeMatrix3D");
+	ret = asAtomHandler::nullAtom;
 }
 
 ASFUNCTIONBODY_ATOM(Transform,_getConcatenatedColorTransform)

@@ -435,7 +435,15 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 							// can be skipped and getproperty will use the setlocal position as arg
 							op.removeArg(state);
 							state.operandlist.pop_back();
-							state.preloadedcode.back().pcode.local3.pos = argindex;
+
+							// find the last preloadedcode with a localresult
+							// this usually is the last preloadedcode, but it can be a previous one
+							// if the last optimization step added special preloadedcodes
+							auto it = state.preloadedcode.rbegin();
+							while (it != state.preloadedcode.rend() && !it->hasLocalResult)
+								++it;
+							assert (it != state.preloadedcode.rend());
+							it->pcode.local3.pos = argindex;
 							op = operands(OP_LOCAL,state.localtypes[argindex],argindex,1,state.preloadedcode.size()-1);
 							addOperand(state,op,code);
 							typestack.push_back(typestackentry(state.localtypes[argindex],false));

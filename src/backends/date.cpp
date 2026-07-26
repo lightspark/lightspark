@@ -26,24 +26,19 @@
 
 using namespace lightspark;
 
-static constexpr auto monthOffsets = makeArray<uint16_t>
-(
-	31, 59, 90,
-	120, 151, 181,
-	212, 243, 273,
-	304, 334, 365
-);
-
-size_t DeterministicDate::getDayWithinYear(const TimeSpec& time)
+template<typename T>
+static constexpr remEuclid(const T& a, const T& b)
 {
-	return clampToInt<int32_t>
-	(
-		getDay(time) -
-		dayFromYear(getYear(time))
-	);
+	auto ret = a % b;
+	return ret < 0 ? ret + std::abs(b) : ret;
 }
 
-uint16_t DeterministicDate::getMonthOffset
+Date Date::now()
+{
+	return Date(getSys()->date->now());
+}
+
+uint16_t Date::getMonthOffset
 (
 	ssize_t i,
 	bool _inLeapYear
@@ -55,7 +50,12 @@ uint16_t DeterministicDate::getMonthOffset
 	return monthOffsets[std::min(i, 11)] + addLeapDay;
 }
 
-uint64_t DeterministicDate::dayFromYear(uint64_t year)
+TimeSpec Date::getTimeWithinDay() const
+{
+	return TimeSpec::fromNs(remEuclid(toTimeSpec.toSNs(), nsPerDay);
+}
+
+size_t Date::getDayFromYear(size_t year)
 {
 	return
 	(
@@ -66,18 +66,7 @@ uint64_t DeterministicDate::dayFromYear(uint64_t year)
 	);
 }
 
-static TimeSpec timeFromYear(ssize_t year)
-{
-	constexpr uint64_t secPerMin = 60;
-	constexpr uint64_t minPerHour = 60;
-	constexpr uint64_t hoursPerDay = 24;
-	constexpr uint64_t nsPerMin = TimeSpec::nsPerSec * secPerMin;
-	constexpr uint64_t nsPerHour = nsPerMin * minPerHour;
-	constexpr uint64_t nsPerDay = nsPerHour * hoursPerDay;
-	return TimeSpec(dayFromYear(year) * nsPerDay);
-}
-
-size_t DeterministicDate::getYear(const TimeSpec& time)
+size_t Date::getYear(const TimeSpec& time)
 {
 	auto day = getDay(time);
 
@@ -110,54 +99,116 @@ size_t DeterministicDate::getYear(const TimeSpec& time)
 	return low;
 }
 
-size_t DeterministicDate::getMonth(const TimeSpec& time)
+size_t Date::getMonth(const TimeSpec& time)
 {
 	auto day = getDayWithinYear(time);
-	bool _inLeapYear = inLeapYear(time);
+	bool _inLeapYear = isLeapYear(getYear(time));
 
-	#if 1
 	size_t i;
 	for (i = 0; i < 11 && day < getMonthOffset(i + 1, _inLeapYear); ++i);
 	return i;
-	#else
-	return std::distance(monthOffsets.begin() + 1, std::find_if
+}
+
+size_t Date::getDate(const TimeSpec& time)
+{
+	return getDayWithinYear(time) - getMonthOffset(getMonth(time)) + 1;
+}
+
+size_t Date::getWeekDay() const
+{
+	return remEuclid(getDay() + 4, 7);
+}
+
+TimeSpec Date::getLocalTZA(bool isUTC)
+{
+	return TimeSpec::fromSec(getSys()->date->getLocalTZA(isUTC));
+}
+
+TimeSpec Date::getDSTAdjustment(const TimeSpec& time)
+{
+	auto date = getSys()->date;
+	return TimeSpec::fromSec(date->getDSTAdjustment(time));
+}
+
+TimeSpec AVM1DateImpl::getDSTAdjustment()
+{
+	auto date = getSys()->date;
+	return TimeSpec::fromSec(date->getDSTAdjustment(toTimeSpec()));
+}
+
+Date Date::getLocalTime() const
+{
+	return Date
 	(
-		monthOffsets.begin() + 1,
-		monthOffsets.end(),
-		[&](uint16_t offset)
-		{
-			return day < offset + _inLeapYear;
-		}
-	)) - 1;
-	#endif
+		toTimeSpec() +
+		getLocalTZA(true) +
+		getDSTAdjustment()
+	);
 }
 
-size_t DeterministicDate::getDate(const TimeSpec& time)
+Date Date::getUTC() const
 {
-	return dayWithinYear(time) - getMonthOffset(getMonth(time)) + 1;
+	auto time = toTimeSpec() - getLocalTZA(false);
+	return Date(time - getDSTAdjustment(time));
 }
 
-size_t DeterministicDate::getWeekDay(const TimeSpec& time)
+size_t Date::getTimezoneOffset() const
 {
-	return remEuclidInt(getDay(time) + 4, 7);
+	return (toTimeSpec() - getLocalTime()).getSecs() / secPerMin;
 }
 
-int32_t DeterministicDate::getLocalTZA(bool isUTC) const
+uint8_t Date::getHours(const TimeSpec& time)
 {
-	return isUTC ? timeZoneOffset : -timeZoneOffset;
+	return remEuclid(time.getSecs() / secPerHour, hoursPerDay);
 }
 
-int32_t DeterministicDate::getDSTAdjustment(const TimeSpec& _time) const
+uint8_t Date::getMinutes(const TimeSpec& time)
 {
-	constexpr int32_t secPerHour = 3600;
-	return
+	return remEuclid(time.getSecs() / secPerMin, minPerHour);
+}
+
+uint8_t Date::getSeconds(const TimeSpec& time)
+{
+	return remEuclid(time.getSecs(), secPerMin);
+}
+
+uint64_t Date::getNs(const TimeSpec& time)
+{
+	return time.getNsecs();
+}
+
+size_t Date::getDayFromMonth(size_t year, uint8_t month)
+{
+	if (month > 12)
+		return -1;
+
+	return getDayFromYear(year) + getMonthOffset
 	(
-		dstFunc != nullptr &&
-		dstFunc(_time)
-	) ? secPerHour : 0;
+		month,
+		isLeapYear(year)
+	);
 }
 
-static Optional<uint32_t> parsePadChar(uint32_t ch)
+size_t Date::makeDay
+(
+	uint64_t year,
+	uint8_t month,
+	uint8_t date
+)
+{
+	return dayFromMonth
+	(
+		year + (month / 12),
+		remEuclid(month, 12)
+	) + date - 1;
+}
+
+TimeSpec Date::makeDate(uint64_t day, uint64_t nsecs)
+{
+	return TimeSpec::fromNs(day * nsPerDay + nsecs);
+}
+
+Optional<uint32_t> Date::parsePadChar(uint32_t ch)
 {
 	switch (ch)
 	{
@@ -168,11 +219,10 @@ static Optional<uint32_t> parsePadChar(uint32_t ch)
 	}
 }
 
-static std::stringstream& parseFormatChar
+std::ostream& Date::parseFormatChar
 (
-	std::stringstream& s,
-	uint32_t ch,
-	const TimeSpec& time
+	std::ostream& s,
+	uint32_t ch
 )
 {
 	#define FORCE_PAD(char, n) std::setfill(char) << std::setw(n)
@@ -181,14 +231,14 @@ static std::stringstream& parseFormatChar
 		{ \
 			return ch == '\0' ? ' ' : ch; \
 		}), padChar.valueOr(char) == '\0' ? 0 : n)
-	
+
 	static constexpr auto days = makeArray
 	(
 		"Sunday", "Monday", "Tuesday",
 		"Wednesday", "Thursday", "Friday",
 		"Saturday"
 	);
-	
+
 	static constexpr auto months = makeArray
 	(
 		"January", "February", "March", "April",
@@ -198,26 +248,26 @@ static std::stringstream& parseFormatChar
 
 	switch (ch)
 	{
-		case 'a': return s << days[getDayInWeek(time)].substr(0, 3); break;
-		case 'A': return s << days[getDayInWeek(time)]; break;
-		case 'b': return s << months[getMonth(time)].substr(0, 3); break;
-		case 'B': return s << months[getMonth(time)]; break;
-		case 'e': return s << getDayInMonth(time); break;
+		case 'a': return s << days[getWeekDay()].substr(0, 3); break;
+		case 'A': return s << days[getWeekDay()]; break;
+		case 'b': return s << months[month].substr(0, 3); break;
+		case 'B': return s << months[month]; break;
+		case 'e': return s << date; break;
 		case 'T':
 			return
 			(
 				s <<
-				PAD('0', 2) << getHour(time) << ':' <<
-				PAD('0', 2) << getMinute(time) << ':' <<
-				PAD('0', 2) << getSecond(time)
+				PAD('0', 2) << hours << ':' <<
+				PAD('0', 2) << minutes << ':' <<
+				PAD('0', 2) << seconds
 			);
 			break;
-		case 'H': return s << PAD('0', 2) << getHour(time); break;
-		case 'M': return s << PAD('0', 2) << getMinute(time); break;
-		case 'S': return s << PAD('0', 2) << getSecond(time); break;
+		case 'H': return s << PAD('0', 2) << hours; break;
+		case 'M': return s << PAD('0', 2) << minutes; break;
+		case 'S': return s << PAD('0', 2) << seconds; break;
 		case 'z':
 		{
-			auto tzOffset = getTimeZoneOffset();
+			auto tzOffset = -getTimeZoneOffset();
 			return
 			(
 				s << std::showpos <<
@@ -227,12 +277,12 @@ static std::stringstream& parseFormatChar
 			);
 			break;
 		}
-		case 'Y': return s << getYear(time);
+		case 'Y': return s << year;
 		default:
 			LOG
 			(
 				LOG_NOT_IMPLEMENTED,
-				"DeterministicDate: "
+				"Date: "
 				"format char \"%" << char(ch) << '"'
 			);
 			break;
@@ -241,11 +291,7 @@ static std::stringstream& parseFormatChar
 	#undef FORCE_PAD
 }
 
-tiny_string DeterministicDate::toFormatStr
-(
-	const TimeSpec& _time,
-	const tiny_string& fmt
-) const
+tiny_string Date::toFormatStr(const tiny_string& fmt) const
 {
 	constexpr auto npos = tiny_string::npos;
 	std::stringstream s;
@@ -263,11 +309,24 @@ tiny_string DeterministicDate::toFormatStr
 		(
 			s,
 			fmt[i++],
-			time,
 			padChar
 		);
 		prevPos = i;
 	}
 
 	return s.str();
+}
+
+int32_t DeterministicDate::getLocalTZA(bool isUTC) const
+{
+	return isUTC ? timeZoneOffset : -timeZoneOffset;
+}
+
+int32_t DeterministicDate::getDSTAdjustment(const TimeSpec& _time) const
+{
+	return
+	(
+		dstFunc != nullptr &&
+		dstFunc(_time)
+	) ? Date::secPerHour : 0;
 }

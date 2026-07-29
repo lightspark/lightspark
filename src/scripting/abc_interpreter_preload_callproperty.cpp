@@ -526,8 +526,23 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 								|| (op.type != OP_LOCAL && op.type != OP_CACHED_SLOT)
 							;
 						uint32_t opsize=state.operandlist.size();
-						if ((!needResult && setupInstructionTwoArgumentsNoResult(state,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME,opcode,code)) ||
-						   ((needResult && setupInstructionTwoArguments(state,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME,opcode,code,false,false,!(reuseoperand || generatorneedsconversion) || !isGenerator,p,resulttype))))
+						if ((!needResult && setupInstructionTwoArgumentsNoResult
+							 (state
+							 ,ABC_OP_OPTIMZED_CALLPROPVOID_STATICNAME
+							 ,opcode,code
+							 ,reuseoperand || generatorneedsconversion ? op.index : INT32_MAX)) ||
+							((needResult && setupInstructionTwoArguments
+							 (state
+							 ,ABC_OP_OPTIMZED_CALLPROPERTY_STATICNAME
+							 ,opcode
+							 ,code
+							 ,false
+							 ,false
+							 ,!(reuseoperand || generatorneedsconversion) || !isGenerator
+							 ,p
+							 ,resulttype
+							 ,UINT32_MAX
+							 ,reuseoperand || generatorneedsconversion ? op.index : INT32_MAX))))
 						{
 							// generator for Integer/UInteger/Number can be skipped if argument is already an Integer/UInteger/Number and the result will be used as local result
 							if (isGenerator && (reuseoperand || generatorneedsconversion))

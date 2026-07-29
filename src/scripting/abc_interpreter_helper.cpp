@@ -1261,7 +1261,12 @@ bool setupInstructionOneArgumentNoResult(preloadstate& state,int operator_start,
 	}
 	return hasoperands;
 }
-bool setupInstructionTwoArgumentsNoResult(preloadstate& state,int operator_start,int opcode,memorystream& code)
+bool setupInstructionTwoArgumentsNoResult
+	(preloadstate& state
+	,int operator_start
+	,int opcode
+	,memorystream& code
+	,int32_t ignorelocalresultindex)
 {
 	bool hasoperands = false;
 #ifdef ENABLE_OPTIMIZATION
@@ -1273,13 +1278,13 @@ bool setupInstructionTwoArgumentsNoResult(preloadstate& state,int operator_start
 		// remove preloaded code for both operands in the correct order
 		if (op1.preloadedcodepos < op2.preloadedcodepos)
 		{
-			op2.removeArg(state);
-			op1.removeArg(state);
+			op2.removeArg(state,ignorelocalresultindex!=op2.index);
+			op1.removeArg(state,ignorelocalresultindex!=op1.index);
 		}
 		else
 		{
-			op1.removeArg(state);
-			op2.removeArg(state);
+			op1.removeArg(state,ignorelocalresultindex!=op1.index);
+			op2.removeArg(state,ignorelocalresultindex!=op2.index);
 		}
 		auto it = state.operandlist.end();
 		// optimized opcodes are in order CONSTANT/CONSTANT, LOCAL/CONSTANT, CONSTANT/LOCAL, LOCAL/LOCAL
@@ -1383,7 +1388,18 @@ bool setupInstructionOneArgument(preloadstate& state,int operator_start,int opco
 	return hasoperands;
 }
 
-bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opcode,memorystream& code, bool skip_conversion,bool cancollapse,bool checklocalresult, uint32_t startcodepos,Class_base* resulttype,uint32_t operator_start_setslot)
+bool setupInstructionTwoArguments
+	(preloadstate& state
+	,int operator_start
+	,int opcode
+	,memorystream& code
+	,bool skip_conversion
+	,bool cancollapse
+	,bool checklocalresult
+	,uint32_t startcodepos
+	,Class_base* resulttype
+	,uint32_t operator_start_setslot
+	,int32_t ignorelocalresultindex)
 {
 	bool hasoperands = false;
 #ifdef ENABLE_OPTIMIZATION
@@ -1397,13 +1413,13 @@ bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opc
 		// remove preloaded code for both operands in the correct order
 		if (op1.preloadedcodepos < op2.preloadedcodepos)
 		{
-			op2.removeArg(state);
-			op1.removeArg(state);
+			op2.removeArg(state,ignorelocalresultindex!=op2.index);
+			op1.removeArg(state,ignorelocalresultindex!=op1.index);
 		}
 		else
 		{
-			op1.removeArg(state);
-			op2.removeArg(state);
+			op1.removeArg(state,ignorelocalresultindex!=op1.index);
+			op2.removeArg(state,ignorelocalresultindex!=op2.index);
 		}
 		auto it = state.operandlist.end();
 		if (cancollapse && (--it)->type != OP_LOCAL && it->type != OP_CACHED_SLOT && (--it)->type != OP_LOCAL && it->type != OP_CACHED_SLOT) // two constants means we can compute the result now and use it
@@ -2385,7 +2401,7 @@ void preloadFunction_secondPass(preloadstate& state)
 					state.mi->body->code[p-2] = 0x02; //nop
 					state.mi->body->code[p-1] = 0xf0; //debugline
 				}
-				else
+				else if (state.mi->body->exceptions.empty()) // TODO lastsetlocal optimization disabled (for now) if function has try/catch blocks
 					lastsetlocal[t] = p-1;
 				state.unchangedlocals.erase(t);
 				setdefaultlocaltype(state,t,currenttype);
@@ -2408,7 +2424,7 @@ void preloadFunction_secondPass(preloadstate& state)
 					state.mi->body->code[p-2] = 0x02; //nop
 					state.mi->body->code[p-1] = 0x02; //nop
 				}
-				else
+				else if (state.mi->body->exceptions.empty()) // TODO lastsetlocal optimization disabled (for now) if function has try/catch blocks
 					lastsetlocal[v] = p-1;
 				state.unchangedlocals.erase(v);
 				setdefaultlocaltype(state,v,currenttype);

@@ -193,9 +193,9 @@ bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden)
 void setForceInt(preloadstate& state,memorystream& code,Class_base** resulttype);
 bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_jumpspace, Class_base* restype,int preloadpos=-1,int preloadlocalpos=-1, bool checkchanged=false,bool fromdup = false, uint32_t opcode_setslot=UINT32_MAX);
 bool setupInstructionOneArgumentNoResult(preloadstate& state,int operator_start,int opcode,memorystream& code, uint32_t startcodepos);
-bool setupInstructionTwoArgumentsNoResult(preloadstate& state,int operator_start,int opcode,memorystream& code);
+bool setupInstructionTwoArgumentsNoResult(preloadstate& state,int operator_start,int opcode,memorystream& code, int32_t ignorelocalresultindex=INT32_MAX);
 bool setupInstructionOneArgument(preloadstate& state,int operator_start,int opcode,memorystream& code,bool constantsallowed, bool useargument_for_skip, Class_base* resulttype, uint32_t startcodepos, bool checkforlocalresult, bool addchanged=false,bool fromdup=false, bool checkoperands=true,uint32_t operator_start_setslot=UINT32_MAX);
-bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opcode,memorystream& code, bool skip_conversion,bool cancollapse,bool checklocalresult, uint32_t startcodepos,Class_base* resulttype = nullptr,uint32_t operator_start_setslot=UINT32_MAX);
+bool setupInstructionTwoArguments(preloadstate& state,int operator_start,int opcode,memorystream& code, bool skip_conversion,bool cancollapse,bool checklocalresult, uint32_t startcodepos,Class_base* resulttype = nullptr,uint32_t operator_start_setslot=UINT32_MAX,int32_t ignorelocalresultindex=INT32_MAX);
 bool checkmatchingLastObjtype(preloadstate& state, Type* resulttype, Class_base* requiredtype);
 void addOperand(preloadstate& state,operands& op,memorystream& code);
 void addCachedConstant(preloadstate& state,method_info* mi, asAtom& val,memorystream& code);

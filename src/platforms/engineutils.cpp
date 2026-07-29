@@ -645,11 +645,7 @@ SDL_GLContext EngineData::createSDLGLContext(SDL_Window* widget)
 		LOG(LOG_ERROR,"failed to create openGL context:"<<SDL_GetError());
 		return ret;
 	}
-#if defined(ENABLE_GLES2)
-	supportPackedDepthStencil=SDL_GL_ExtensionSupported("GL_OES_packed_depth_stencil");
-#elif defined(ENABLE_GLES3)
-	supportPackedDepthStencil=true;
-#else
+#if !defined(ENABLE_GLES2) && !defined(ENABLE_GLES3)
 	LSLOADOPENGLFUNCTION(glActiveTexture,PFNGLACTIVETEXTUREPROC);
 	LSLOADOPENGLFUNCTION(glAttachShader,PFNGLATTACHSHADERPROC);
 	LSLOADOPENGLFUNCTION(glBindAttribLocation,PFNGLBINDATTRIBLOCATIONPROC);
@@ -1309,7 +1305,13 @@ void EngineData::InitOpenGL()
 {
 	mSDLContext = createSDLGLContext(widget);
 	SDL_GL_MakeCurrent(widget, mSDLContext);
+#if defined(ENABLE_GLES2)
+	supportPackedDepthStencil=SDL_GL_ExtensionSupported("GL_OES_packed_depth_stencil");
+#elif defined(ENABLE_GLES2)
+	supportPackedDepthStencil=true;
+#else
 	supportPackedDepthStencil = SDL_GL_ExtensionSupported("GL_EXT_packed_depth_stencil");
+#endif
 	initNanoVG();
 }
 

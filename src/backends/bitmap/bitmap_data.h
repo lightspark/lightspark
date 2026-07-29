@@ -34,26 +34,28 @@ namespace lightspark
 {
 
 class Bitmap;
+class BitmapRef;
 class BitmapContainer;
 class DisplayObject;
+class SystemState;
 
 class BitmapData : public IBitmapDrawable
 {
 private:
+	SystemState* sys;
 	_NR<BitmapContainer> pixels;
-	_NR<Bitmap> temporaryBitmap;
+	_NR<BitmapRef> temporaryBitmap;
 	size_t locked;
-	bool needsupload;
+	bool needsUpload;
 	bool transparent;
 	//Avoid cycles by not using automatic references
 	//Bitmap will take care of removing itself when needed
 	std::set<std::reference_wrapper<Bitmap>> users;
 	void notifyUsers();
 public:
-	BitmapData();
-	BitmapData(_R<BitmapContainer> _pixels);
+	BitmapData(SystemState* _sys, const Vector2u& size = Vectr2u());
+	BitmapData(SystemState* _sys, _R<BitmapContainer> _pixels);
 	BitmapData(const BitmapData& other);
-	BitmapData(const Vector2u& size);
 	_NR<BitmapContainer> getBitmapContainer() const { return pixels; }
 	Bitmap* getRenderCallBitmap();
 	uint32_t getWidth() const { return getSize().x; }
@@ -63,27 +65,33 @@ public:
 		return !pixels.isNull() ? pixels->getSize() : Vector2u();
 	}
 
-	void addUser(Bitmap* b, bool startUpload = true);
-	void removeUser(Bitmap* b);
+	Rect<uint32_t> getRect() const
+	{
+		return Rect<uint32_t> { Vector2u(), getSize() };
+	}
+
+	void addUser(Bitmap& bitmap, bool startUpload = true);
+	void removeUser(Bitmap& bitmap);
 	void checkForUpload();
 	/*
 	 * Utility method to draw a DisplayObject on the surface
 	 */
 	void drawDisplayObject
 	(
-		DisplayObject& obj,
+		DisplayObject* obj,
 		const MATRIX& initialMatrix,
 		bool smoothing,
 		const AS_BLENDMODE& blendMode,
-		ColorTransform* ct,
-		const Rect<Twips>& clipRect,
+		Optional<const ColorTransform&> ct,
+		Optional<const Rect<Twips>&> clipRect,
 		bool needsCopy,
 		Optional<const RGBA&> fillColor = {},
 		uint8_t qualityFactor = 1
 	);
 
-	bool isDisposed() const { return pixels.isNull(); }
+	_NR<BitmapData> clone();
 
+	bool isDisposed() const { return pixels.isNull(); }
 	void dispose();
 	void copyPixels
 	(
@@ -95,7 +103,12 @@ public:
 		bool mergeAlpha
 	);
 
-	void copyPixelsToByteArray();
+	void copyPixelsToBuffer
+	(
+		const Rect<int32_t>& rect,
+		std::vector<uint32_t>& data
+	);
+
 	void fillRect(const Rect<int32_t>& rect, const RGBA& color);
 	bool hitTestBitmap
 	(
@@ -127,11 +140,23 @@ public:
 
 	void lock() { ++locked; }
 	void unlock();
+	void histogram
+	(
+		Optional<const Rect<int32_t>&> rect
+		std::array<std::array<uint32_t, 256>, 4>& arr
+	);
+
 	Rect<uint32_t> getColorBoundsRect
 	(
 		bool findColor,
 		uint32_t mask,
 		const RGBA& color
+	);
+
+	void getPixels
+	(
+		const Rect<int32_t>& rect,
+		std::vector<uint32_t>& data
 	);
 
 	void setPixels
@@ -146,7 +171,7 @@ public:
 		const CXFORMWITHALPHA& cxform
 	);
 
-	void compare(_R<BitmapData> source);
+	_NR<BitmapData> compare(_R<BitmapData> source);
 	void applyFilter
 	(
 		_R<BitmapData> source,

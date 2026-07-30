@@ -670,322 +670,259 @@ void BitmapData::applyFilter
 	notifyUsers();
 }
 
-uint32_t LehmerRandom(uint32_t& seed)
+static uint32_t LehmerRandom(uint32_t& seed)
 {
 	seed = (uint64_t(seed) * 16807U) % 2147483647;
 	return seed;
 }
 
-ASFUNCTIONBODY_ATOM(BitmapData,noise)
+void BitmapData::noise
+(
+	uint32_t randomSeed,
+	uint8_t low,
+	uint8_t high,
+	const BitmapChannelOptions& opts,
+	bool grayScale
+)
 {
-	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->checkDisposed(ret))
+	if (isDisposed())
 		return;
 
-	int32_t randomSeed;
-	uint32_t low;
-	uint32_t high;
-	uint32_t channelOptions;
-	bool grayScale;
-	ARG_CHECK(ARG_UNPACK(randomSeed)(low, 0) (high, 255) (channelOptions, 7) (grayScale, false));
-
-	uint32_t randomval = randomSeed <= 0 ? -randomSeed+1 : randomSeed;
 	if (high < low)
-		high=low;
-	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
+		high = low;
+	pixels->flushRenderCalls(sys->getRenderThread());
 
-	uint32_t range = (uint8_t)high-(uint8_t)low;
-	for (int32_t y=0; y<th->getHeight(); y++)
+	auto range = high - low;
+	auto size = getSize();
+	auto getRand = [&] -> uint8_t
 	{
-		for (int32_t x=0; x<th->getWidth(); x++)
+		return LehmerRandom(randomSeed) % (range + 1) + low;
+	};
+
+	for (size_t y = 0; y < size.y; ++y)
+	{
+		for (size_t x = 0; x < size.x; ++x)
 		{
-			uint32_t pixel = 0;
 
 			if (grayScale)
 			{
-				uint8_t v = (LehmerRandom(randomval) % (range +1) + low) & 0xff;
-				pixel |= v<<16 | v<<8 | v;
-				if((channelOptions & 0x8) == 0x8) // A
-					pixel |= (LehmerRandom(randomval) % (range +1) + low)<<24;
-				else
-					pixel |= 0xff<<24;
+				auto v = getRand();
+				pixels->setPixel(x, y, RGBA
+				(
+					v,
+					v,
+					v,
+					opts & 8 ? getRand() : 0xff
+				), true, false);
+				continue;
 			}
-			else
-			{
-				if((channelOptions & 0x1) == 0x1) // R
-					pixel |= ((LehmerRandom(randomval) % (range +1) + low) & 0xff)<<16;
-				if((channelOptions & 0x2) == 0x2) // G
-					pixel |= ((LehmerRandom(randomval) % (range +1) + low) & 0xff)<<8;
-				if((channelOptions & 0x4) == 0x4) // B
-					pixel |= ((LehmerRandom(randomval) % (range +1) + low) & 0xff);
-				if((channelOptions & 0x8) == 0x8) // A
-					pixel |= ((LehmerRandom(randomval) % (range +1) + low) & 0xff)<<24;
-				else
-					pixel |= 0xff<<24;
-			}
-			th->pixels->setPixel(x, y,pixel,true,false);
+
+			pixels->setPixel(x, y, RGBA
+			(
+				opts & 1 ? getRand() : 0,
+				opts & 2 ? getRand() : 0,
+				opts & 4 ? getRand() : 0,
+				opts & 8 ? getRand() : 0xff
+			), true, false);
 		}
 	}
 }
-ASFUNCTIONBODY_ATOM(BitmapData,perlinNoise)
+
+void BitmapData::perlinNoise
+(
+	const Vector2f& base,
+	size_t numOctaves,
+	uint32_t randomSeed,
+	bool stitch,
+	bool fractalNoise,
+	const BitmapChannelOptions& opts,
+	bool grayScale,
+	Span<Vector2f> offsets
+)
 {
-	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->checkDisposed(ret))
+	if (isDisposed())
 		return;
 
-	number_t baseX;
-	number_t baseY;
-	unsigned int numOctaves;
-	int randomSeed;
-	bool stitch;
-	bool fractalNoise;
-	unsigned int channelOptions;
-	bool grayScale;
-	_NR<Array> offsets;
-	ARG_CHECK(ARG_UNPACK(baseX)(baseY)(numOctaves)(randomSeed)(stitch) (fractalNoise) (channelOptions, 7) (grayScale, false) (offsets, NullRef));
-
 	if (stitch)
-		LOG(LOG_NOT_IMPLEMENTED,"perlinNoise: parameter stitch is ignored");
+		LOG(LOG_NOT_IMPLEMENTED, "perlinNoise: parameter stitch is ignored");
 	if (fractalNoise)
-		LOG(LOG_NOT_IMPLEMENTED,"perlinNoise: parameter fractalNoise is ignored");
-	if (!offsets.isNull())
-		LOG(LOG_NOT_IMPLEMENTED,"perlinNoise: parameter offsets is ignored");
-	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
+		LOG(LOG_NOT_IMPLEMENTED, "perlinNoise: parameter fractalNoise is ignored");
+	if (!offsets.empty())
+		LOG(LOG_NOT_IMPLEMENTED, "perlinNoise: parameter offsets is ignored");
+	pixels->flushRenderCalls(sys->getRenderThread());
 
 	const siv::PerlinNoise perlin(randomSeed);
-	for (int32_t x=0; x<th->getWidth(); x++)
+	for (size_t y = 0; y < size.y; ++y)
 	{
-		for (int32_t y=0; y<th->getHeight(); y++)
+		for (size_t x = 0; x < size.x; ++x)
 		{
-			uint32_t pixel = 0x000000ff;
-			number_t v1 = perlin.octaveNoise0_1(x / baseX, y / baseY, numOctaves);
+			Vector2u pos(x, y);
+			Vector2f _pos = pos / base;
+			auto v1 = perlin.octaveNoise0_1(_pos.x, _pos.y, numOctaves);
 			if (grayScale)
 			{
-				uint8_t v = v1 >= 1.0 ? 255 : v1 <= 0.0 ? 0 : static_cast<std::uint8_t>(v1 * 255.0 + 0.5);
-				pixel |= v<<24 | v<<16 | v<<8;
+				uint8_t v = dclamp(v1, 0, 1) * 255 + 0.5;
+				pixels->setPixel
+				(
+					pos,
+					RGB(v, v, v),
+					true,
+					true
+				);
+				continue;
 			}
-			else
-			{
-				if((channelOptions & 0x1) == 0x1) // R
-				{
-					uint32_t v = v1 >= 1.0 ? 255 : v1 <= 0.0 ? 0 : static_cast<std::uint32_t>(v1 * UINT32_MAX + 0.5);
-					pixel |= v&0xff000000;
-				}
-				if((channelOptions & 0x2) == 0x2) // G
-				{
-					uint32_t v = v1 >= 1.0 ? 255 : v1 <= 0.0 ? 0 : static_cast<std::uint32_t>(v1 * UINT32_MAX + 0.5);
-					pixel |= v&0x00ff0000;
-				}
-				if((channelOptions & 0x4) == 0x4) // B
-				{
-					uint32_t v = v1 >= 1.0 ? 255 : v1 <= 0.0 ? 0 : static_cast<std::uint32_t>(v1 * UINT32_MAX + 0.5);
-					pixel |= v&0x0000ff00;
-				}
-				if((channelOptions & 0x8) == 0x8) // A
-				{
-					uint32_t v = v1 >= 1.0 ? 255 : v1 <= 0.0 ? 0 : static_cast<std::uint32_t>(v1 * UINT32_MAX + 0.5);
-					pixel |= v&0x000000ff;
-				}
-			}
-			th->pixels->setPixel(x, y,pixel,true,true);
+
+			uint32_t v = v1 >= 1 ? 255 : v1 <= 0 ? 0 :
+			(
+				v1 *
+				UINT32_MAX +
+				0.5
+			);
+
+
+			pixels->setPixel(pos, RGBA
+			(
+				opts & 1 ? v >> 24 : 0,
+				opts & 2 ? v >> 16 : 0,
+				opts & 4 ? v >> 8 : 0,
+				opts & 8 ? v & 0xff : 0xff
+			), true, true);
 			//LOG(LOG_INFO,"perlinnoise pixel:"<<x<<" "<<y<<" "<<hex<<th->pixels->getPixel(x,y)<<" "<<grayScale);
 		}
 	}
 }
-ASFUNCTIONBODY_ATOM(BitmapData,threshold)
-{
-	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->checkDisposed(ret))
-		return;
-	_NR<BitmapData> sourceBitmapData;
-	_NR<Rectangle> sourceRect;
-	_NR<Point> destPoint;
-	tiny_string operation;
-	uint32_t threshold;
-	uint32_t color;
-	uint32_t mask;
-	bool copySource;
-	ARG_CHECK(ARG_UNPACK(sourceBitmapData)(sourceRect)(destPoint)(operation)(threshold) (color,0) (mask, 0xFFFFFFFF) (copySource, false));
 
-	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.threshold not implemented");
+size_t BitmapData::getThreshold
+(
+	_R<BitmapData> source,
+	const Rect<int32_t>& srcRect,
+	const Vector2& destPoint,
+	const ThresholdOp& op,
+	size_t threshold,
+	const RGBA& color,
+	uint32_t mask,
+	bool copySource
+)
+{
+	if (isDisposed())
+		return 0;
+
+	LOG
+	(
+		LOG_NOT_IMPLEMENTED,
+		"BitmapData::getThreshold isn't implemented yet"
+	);
+	return 0;
 }
-ASFUNCTIONBODY_ATOM(BitmapData,merge)
-{
-	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->checkDisposed(ret))
-		return;
-	_NR<BitmapData> sourceBitmapData;
-	_NR<Rectangle> sourceRect;
-	_NR<Point> destPoint;
-	uint32_t redMultiplier;
-	uint32_t greenMultiplier;
-	uint32_t blueMultiplier;
-	uint32_t alphaMultiplier;
-	ARG_CHECK(ARG_UNPACK(sourceBitmapData)(sourceRect) (destPoint) (redMultiplier) (greenMultiplier) (blueMultiplier) (alphaMultiplier));
 
-	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.merge not implemented");
+void BitmapData::merge
+(
+	_R<BitmapData> source,
+	const Vector2& destPoint,
+	const Rect<int32_t>& srcRect,
+	const RGBA& mult
+)
+{
+	if (isDisposed())
+		return;
+
+	LOG
+	(
+		LOG_NOT_IMPLEMENTED,
+		"BitmapData::merge isn't implemented yet"
+	);
 }
-ASFUNCTIONBODY_ATOM(BitmapData,paletteMap)
+
+void BitmapData::paletteMap
+(
+	_R<BitmapData> source,
+	const Rect<int32_t>& srcRect,
+	const Vector2& destPoint,
+	const std::array<uint32_t, 256>& redArray,
+	const std::array<uint32_t, 256>& greenArray,
+	const std::array<uint32_t, 256>& blueArray,
+	const std::array<uint32_t, 256>& alphaArray
+)
 {
-	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->checkDisposed(ret))
+	if (isDisposed())
 		return;
 
-	_NR<BitmapData> sourceBitmapData;
-	_NR<Rectangle> sourceRect;
-	_NR<Point> destPoint;
-	_NR<Array> redArray;
-	_NR<Array> greenArray;
-	_NR<Array> blueArray;
-	_NR<Array> alphaArray;
-	ARG_CHECK(ARG_UNPACK(sourceBitmapData)(sourceRect) (destPoint) (redArray, NullRef) (greenArray, NullRef) (blueArray, NullRef) (alphaArray, NullRef));
-
-	LOG(LOG_NOT_IMPLEMENTED,"BitmapData.paletteMap not implemented");
+	LOG
+	(
+		LOG_NOT_IMPLEMENTED,
+		"BitmapData::paletteMap isn't implemented yet"
+	);
 }
-ASFUNCTIONBODY_ATOM(BitmapData,pixelDissolve)
+
+uint32_t BitmapData::pixelDissolve
+(
+	_R<BitmapData> source,
+	const Rect<int32_t>& srcRect,
+	const Vector2& destPoint,
+	uint32_t randomSeed,
+	size_t numPixels,
+	const RGBA& fillColor
+)
 {
-	BitmapData* th = asAtomHandler::as<BitmapData>(obj);
-	if(th->checkDisposed(ret))
-		return;
+	if (isDisposed())
+		return randomSeed;
 
-	ret = asAtomHandler::fromInt(-1);
-	_NR<BitmapData> sourceBitmapData;
-	_NR<Rectangle> sourceRect;
-	_NR<Point> destPoint;
-	int32_t randomSeed;
-	int32_t numPixels;
-	uint32_t fillColor;
-	if (wrk->needsActionScript3())
+	auto _srcRect = Rect<int32_t>
 	{
-		ARG_CHECK(ARG_UNPACK(sourceBitmapData)(sourceRect) (destPoint) (randomSeed, 0) (numPixels, 0) (fillColor, 0xff000000));
-		if (numPixels < 0)
-		{
-			createError<RangeError>(wrk,kParamRangeNonNegativeError,"numPixels",asAtomHandler::toString(args[4],wrk));
-			return;
-		}
-	}
-	else
-	{
-		// contrary to specs default fillcolor seems to be fully opaque black for AS3
-		ARG_CHECK(ARG_UNPACK_NO_ERROR(sourceBitmapData)(sourceRect) (destPoint) (randomSeed, 0) (numPixels, 0) (fillColor, 0));
-		if (wrk->AVM1callStack.back()->exceptionthrown)
-		{
-			wrk->AVM1callStack.back()->exceptionthrown->decRef();
-			wrk->AVM1callStack.back()->exceptionthrown=nullptr;
-			return;
-		}
-	}
-	if (sourceBitmapData.isNull())
-	{
-		if (wrk->needsActionScript3())
-			createError<TypeError>(wrk,kNullPointerError,"sourceBitmapData");
-		return;
-	}
-	if(sourceBitmapData->pixels.isNull())
-	{
-		if (wrk->needsActionScript3())
-			createError<ArgumentError>(wrk,kInvalidBitmapData);
-		return;
-	}
-	if (sourceRect.isNull())
-	{
-		if (wrk->needsActionScript3())
-			createError<TypeError>(wrk,kNullPointerError,"sourceRect");
-		else
-			ret = asAtomHandler::fromInt(-4);
-		return;
-	}
-	if (destPoint.isNull())
-	{
-		createError<TypeError>(wrk,kNullPointerError,"destPoint");
-		return;
-	}
+		srcRect.min.max(Vector2()),
+		srcRect.max
+	};
 
-	uint32_t seed = (uint32_t)randomSeed;
-	RECT rc = sourceRect->getRect();
-	if (rc.Xmin<0) rc.Xmin=0;
-	if (rc.Ymin<0) rc.Ymin=0;
-	if (rc.Xmin > th->pixels->getWidth()
-		|| rc.Ymin > th->pixels->getHeight()
-		|| rc.Xmax<=rc.Xmin
-		|| rc.Ymax<=rc.Ymin)
+	auto size = getSize();
+	if (_srcRect.min > size || _srcRect.max <= _srcRect.min)
+		return randomSeed;
+
+	auto _size = _srcRect.size();
+	pixels->flushRenderCalls(sys->getRenderThread());
+	source->pixels->flushRenderCalls(sys->getRenderThread());
+
+	if (destPoint < Vector2() && _size + destPoint <= Vector2())
+		return randomSeed;
+
+	Vector2u _destPoint = destPoint.max(Vector2());
+	_size += destPoint.max(Vector2());
+
+	if (source.getPtr == this) // it seems that first pixel is always set if source and target are the same
+		pixels->setPixel(_destPoint, fillColor, true);
+
+	_size = _size.min(size - _destPoint - _srcRect.min);
+	pixels->flushRenderCalls(sts->getRenderThread());
+	for (size_t i = 0; i < numPixels; ++i)
 	{
-		ret = asAtomHandler::fromInt(seed);
-		return;
-	}
-	uint32_t w =(rc.Xmax-rc.Xmin);
-	uint32_t h =(rc.Ymax-rc.Ymin);
-	uint32_t destx=0;
-	uint32_t desty=0;
-	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
-	sourceBitmapData->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
-	if (destPoint->getX()>=0)
-		destx = (uint32_t)destPoint->getX();
-	else
-	{
-		destx =0;
-		if ((int32_t)w + destPoint->getX() > 0)
-			w = uint32_t((int32_t)w + destPoint->getX());
-		else
+		Vector2u pos = (Vector2f
+		(
+			LehmerRandom(randomSeed),
+			LehmerRandom(randomSeed)
+		) / UINT32_MAX) * _size + _destPoint;
+		if (source.getPtr() != this)
 		{
-			ret = asAtomHandler::fromInt(seed);
-			return;
+			pixels->setPixel
+			(
+				pos,
+				source->pixels->getPixel(_srcRect + pos),
+				true
+			);
+			continue;
 		}
-	}
-	if (destPoint->getY()>=0)
-		desty = (uint32_t)destPoint->getY();
-	else
-	{
-		desty =0;
-		if ((int32_t)h + destPoint->getY() > 0)
-			h = uint32_t((int32_t)h + destPoint->getY());
-		else
+
+		auto initPos = pos;
+		while (pixels->getPixel(pos) == fillColor)
 		{
-			ret = asAtomHandler::fromInt(seed);
-			return;
-		}
-	}
-	if (sourceBitmapData.getPtr() == th) // it seems that first pixel is always set if source and target are the same
-		th->pixels->setPixel(destx,desty,fillColor,true);
-	if (w > th->pixels->getWidth()-destx-rc.Xmin )
-		w = th->pixels->getWidth()-destx-rc.Xmin;
-	if (h > th->pixels->getHeight()-desty-rc.Ymin)
-		h = th->pixels->getHeight()-desty-rc.Ymin;
-	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
-	for (int32_t i = 0; i < numPixels; i++)
-	{
-		int x = (((number_t)LehmerRandom(seed))/(number_t)UINT32_MAX)*w+destx;
-		int y = (((number_t)LehmerRandom(seed))/(number_t)UINT32_MAX)*h+desty;
-		if (sourceBitmapData.getPtr() == th)
-		{
-			int x1=x;
-			int y1=y;
-			while (th->pixels->getPixel(x,y)==fillColor)
+			// simple search for next unfilled position
+			pos = (pos + 1).min(_size + _destPoint);
+			if (pos == initPos)
 			{
-				// simple search for next unfilled position
-				x++;
-				if (x >= int(w+destx))
-				{
-					x = destx;
-					y++;
-					if (y >= int(h+desty))
-					{
-						y = desty;
-					}
-				}
-				if (y == y1 && x == x1)
-				{
-					// all is filled
-					ret = asAtomHandler::fromInt(seed);
-					return;
-				}
+				// all is filled
+				return randomSeed;
 			}
-			th->pixels->setPixel(x,y,fillColor,true);
 		}
-		else
-		{
-			th->pixels->setPixel(x,y,sourceBitmapData->pixels->getPixel(rc.Xmin+x,rc.Ymin+y),true);
-		}
+		pixels->setPixel(pos, fillColor, true);
 	}
-	ret = asAtomHandler::fromInt(seed);
+
+	return randomSeed;
 }

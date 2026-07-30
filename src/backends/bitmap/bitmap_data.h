@@ -185,7 +185,7 @@ public:
 		uint32_t randomSeed,
 		uint8_t low,
 		uint8_t high,
-		const BitmapChannelOptions& channelOpts,
+		const BitmapChannelOptions& opts,
 		bool grayScale
 	);
 
@@ -196,7 +196,7 @@ public:
 		uint32_t randomSeed,
 		bool stitch,
 		bool fractalNoise,
-		const BitmapChannelOptions& channelOpts,
+		const BitmapChannelOptions& opts,
 		bool grayScale,
 		Span<Vector2f> offsets
 	);
@@ -232,7 +232,7 @@ public:
 		const std::array<uint32_t, 256>& alphaArray
 	);
 
-	void pixelDissolve
+	uint32_t pixelDissolve
 	(
 		_R<BitmapData> source,
 		const Rect<int32_t>& srcRect,

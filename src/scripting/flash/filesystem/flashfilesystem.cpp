@@ -492,13 +492,16 @@ ASFUNCTIONBODY_ATOM(ASFile,resolvePath)
 
 ASFUNCTIONBODY_ATOM(ASFile,createDirectory)
 {
+	ret = asAtomHandler::undefinedAtom;
 	ASFile* th=asAtomHandler::as<ASFile>(obj);
 	Path p(th->path);
+	if (p.exists() && p.isDir())
+		return;
 	// ensure that directory name ends with a directory separator
-	if (!p.getGenericStr().endsWith("/"))
-		p += "/";
-	
-	if (!wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),p.getStr(),true))
+	tiny_string d= p.getStr();
+	if (!d.endsWith(Path::nativeSeparator))
+		d += Path::nativeSeparator;
+	if (!wrk->getSystemState()->getEngineData()->FileCreateDirectory(wrk->getSystemState(),d,true))
 		createError<IOError>(wrk,kFileWriteError,th->path);
 }
 

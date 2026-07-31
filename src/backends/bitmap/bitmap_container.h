@@ -151,11 +151,11 @@ public:
 		bool fromPNG = false
 	);
 
-	bool fromJPEG(Span<uint8_t> data, Span<uint8_t> tablesData = {});
+	bool fromJPEG(Span<uint8_t> _data, Span<uint8_t> tablesData = {});
 	bool fromJPEG(std::istream& s);
 	bool fromPNG(std::istream& s);
-	bool fromPNG(Span<uint8_t> data);
-	bool fromGIF(SystemState* sys, Span<uint8_t> data);
+	bool fromPNG(Span<uint8_t> _data);
+	bool fromGIF(SystemState* sys, Span<uint8_t> _data);
 	bool fromPalette
 	(
 		uint8_t* inData,
@@ -166,7 +166,7 @@ public:
 		size_t paletteBPP
 	);
 
-	void fromRawData(uint8_t* data, const Vector2u& _size);
+	void fromRawData(uint8_t* _data, const Vector2u& _size);
 	// Clip sourceRect coordinates to this BitmapContainer. The
 	// output coordinates can be used to access pixels in data
 	// without out-of-bounds errors.
@@ -180,7 +180,11 @@ public:
 		const Vector2& destPoint
 	);
 
-	void setAlpha(int32_t x, int32_t y, uint8_t alpha);
+	void setAlpha(int32_t x, int32_t y, uint8_t alpha)
+	{
+		setAlpha(Vector2(x, y), alpha);
+	}
+
 	void setAlpha(const Vector2& pos, uint8_t alpha);
 	void setPixel
 	(
@@ -243,7 +247,7 @@ public:
 		bool isPremultiplied = true
 	);
 
-	const RGBA& getPixel
+	RGBA getPixel
 	(
 		int32_t x,
 		int32_t y,
@@ -253,7 +257,7 @@ public:
 		return getPixel(Vector2(x, y), isPremultiplied);
 	}
 
-	const RGBA& getPixel
+	RGBA getPixel
 	(
 		const Vector2& pos,
 		bool isPremultiplied = true
@@ -278,7 +282,7 @@ public:
 		_R<BitmapContainer> source,
 		const Rect<int32_t>& sourceRect,
 		const Vector2f& destPoint,
-		BitmapFilter* filter
+		BitmapFilter& filter
 	);
 
 	void fillRectangle

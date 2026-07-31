@@ -176,6 +176,7 @@ private:
 
 	Program3D* currentprogram;
 	uint32_t currenttextureid;
+	uint32_t currentframebuffertextureid;
 	bool renderingToTexture;
 	bool enableDepthAndStencilBackbuffer;
 	bool enableDepthAndStencilTextureBuffer;

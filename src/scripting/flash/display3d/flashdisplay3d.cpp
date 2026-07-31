@@ -71,7 +71,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			
 			if ((action.udata2 & CLEARMASK::COLOR) != 0)
 				engineData->exec_glClearColor(action.fdata[0],action.fdata[1],action.fdata[2],action.fdata[3]);
-			if (enableDepthAndStencilTextureBuffer)
+			if (enableDepthAndStencilTextureBuffer || enableDepthAndStencilBackbuffer)
 			{
 				if ((action.udata2 & CLEARMASK::DEPTH) != 0)
 					engineData->exec_glClearDepthf(action.fdata[4]);
@@ -186,6 +186,13 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		case RENDER_RENDERTOBACKBUFFER:
 			if (renderingToTexture)
 			{
+				if (currentframebuffertextureid!=UINT32_MAX)
+				{
+					// generate mipmaps for rendered texture
+					engineData->exec_glBindTexture_GL_TEXTURE_2D(currentframebuffertextureid);
+					engineData->exec_glGenerateMipmap_GL_TEXTURE_2D();
+				}
+
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(backframebufferIDcurrent);
 				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(backframebuffer[currentactionvector]);
 				engineData->exec_glViewport(0,0,this->backBufferWidth,this->backBufferHeight);
@@ -199,10 +206,12 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 					engineData->exec_glDisable_GL_DEPTH_TEST();
 					engineData->exec_glDisable_GL_STENCIL_TEST();
 				}
+				vcposdata[1] = 1.0;
+				setPositionScale(engineData);
+				engineData->exec_glFrontFace(false);
+				renderingToTexture = false;
+				currentframebuffertextureid=UINT32_MAX;
 			}
-			vcposdata[1] = 1.0;
-			setPositionScale(engineData);
-			renderingToTexture = false;
 			break;
 		case RENDER_TOTEXTURE:
 		{
@@ -210,6 +219,15 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata1 = enableDepthAndStencil
 			//action.udata2 = width
 			//action.udata3 = height
+			if (renderingToTexture)
+			{
+				if (currentframebuffertextureid!=UINT32_MAX)
+				{
+					// generate mipmaps for rendered texture
+					engineData->exec_glBindTexture_GL_TEXTURE_2D(currentframebuffertextureid);
+					engineData->exec_glGenerateMipmap_GL_TEXTURE_2D();
+				}
+			}
 			TextureBase* tex = action.dataobject->as<TextureBase>();
 			if (tex->textureID == UINT32_MAX)
 			{
@@ -220,12 +238,13 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			}
 			if (tex->textureframebuffer == UINT32_MAX)
 				tex->textureframebuffer = engineData->exec_glGenFramebuffer();
+
 			engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(tex->textureframebuffer);
-			uint32_t textureframebufferID = tex->textureID;
-			engineData->exec_glBindTexture_GL_TEXTURE_2D(textureframebufferID);
+			currentframebuffertextureid = tex->textureID;
+			engineData->exec_glBindTexture_GL_TEXTURE_2D(currentframebuffertextureid);
 			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
 			engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
-			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(textureframebufferID);
+			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(currentframebuffertextureid);
 			engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 			enableDepthAndStencilTextureBuffer = action.udata1;
 			if (enableDepthAndStencilTextureBuffer)
@@ -674,7 +693,12 @@ void Context3D::setSamplers(EngineData *engineData)
 				engineData->exec_glBindTexture_GL_TEXTURE_CUBE_MAP(samplers[currentprogram->samplerState[i].n]);
 			else
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(samplers[currentprogram->samplerState[i].n]);
-			engineData->exec_glSetTexParameters(currentprogram->samplerState[i].b,currentprogram->samplerState[i].d,currentprogram->samplerState[i].f,currentprogram->samplerState[i].m,currentprogram->samplerState[i].w);
+			engineData->exec_glSetTexParameters(
+				currentprogram->samplerState[i].b
+				,currentprogram->samplerState[i].d
+				,currentprogram->samplerState[i].f
+				,currentprogram->samplerState[i].m
+				,currentprogram->samplerState[i].w);
 			engineData->exec_glUniform1i(sampid, currentprogram->samplerState[i].n);
 		}
 		else
@@ -781,6 +805,7 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	engineData->exec_glDepthFunc(currentdepthfunction);
 	engineData->exec_glStencilFunc(currentstencilfunction, currentstencilref, currentstencilmask);
 	engineData->exec_glCullFace(currentcullface);
+	engineData->exec_glFrontFace(false);
 	engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ZERO);
 	engineData->exec_glColorMask(true,true,true,true);
 
@@ -980,15 +1005,28 @@ uint32_t Context3D::getBufferID(uint32_t bufferIDindex) const
 	return bufferIDindex < bufferIDs.size() ? bufferIDs[bufferIDindex] : UINT32_MAX;
 }
 
-Context3D::Context3D(ASWorker* wrk, Class_base *c):EventDispatcher(wrk,c),samplers{UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX},currentactionvector(0)
-  ,currentprogram(nullptr),currenttextureid(UINT32_MAX)
-  ,renderingToTexture(false),enableDepthAndStencilBackbuffer(true),enableDepthAndStencilTextureBuffer(true),swapbuffers(false)
-  ,currentcullface(TRIANGLE_FACE::FACE_NONE),currentdepthfunction(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_LESS)
-  ,currentstencilfunction(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_ALWAYS)
-  ,currentstencilref(0xff)
-  ,currentstencilmask(0xff)
-  ,stage3D(nullptr),backBufferHeight(0),backBufferWidth(0),enableErrorChecking(false)
-  ,maxBackBufferHeight(16384),maxBackBufferWidth(16384)
+Context3D::Context3D(ASWorker* wrk, Class_base *c)
+	:EventDispatcher(wrk,c)
+	,samplers{UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX,UINT32_MAX}
+	,currentactionvector(0)
+	,currentprogram(nullptr)
+	,currenttextureid(UINT32_MAX)
+	,currentframebuffertextureid(UINT32_MAX)
+	,renderingToTexture(false)
+	,enableDepthAndStencilBackbuffer(true)
+	,enableDepthAndStencilTextureBuffer(true)
+	,swapbuffers(false)
+	,currentcullface(TRIANGLE_FACE::FACE_NONE)
+	,currentdepthfunction(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_LESS)
+	,currentstencilfunction(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_ALWAYS)
+	,currentstencilref(0xff)
+	,currentstencilmask(0xff)
+	,stage3D(nullptr)
+	,backBufferHeight(0)
+	,backBufferWidth(0)
+	,enableErrorChecking(false)
+	,maxBackBufferHeight(16384)
+	,maxBackBufferWidth(16384)
 {
 	subtype = SUBTYPE_CONTEXT3D;
 	memset(vertexConstants,0,4 * CONTEXT3D_PROGRAM_REGISTERS * sizeof(float));
@@ -1697,6 +1735,12 @@ ASFUNCTIONBODY_ATOM(Context3D,present)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	Locker l(th->rendermutex);
+
+	// ensure rendertotexture mode is ended
+	renderaction action;
+	action.action = RENDER_ACTION::RENDER_RENDERTOBACKBUFFER;
+	th->addAction(action);
+
 	if (th->swapbuffers)
 	{
 		if (wrk->getSystemState()->getRenderThread()->isStarted() && !th->actions[th->currentactionvector].empty())

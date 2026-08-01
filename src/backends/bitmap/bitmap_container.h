@@ -34,6 +34,7 @@
 #include "smartrefs.h"
 #include "swftypes.h"
 #include "threading.h"
+#include "utils/span.h"
 
 namespace lightspark
 {
@@ -88,8 +89,8 @@ protected:
 	std::vector<uint8_t> colorTransformedData;
 	// color transformation values currently applied to data_colortransformed
 	ColorTransform currentColorTransform;
-	uint32_t* getDataNoBoundsChecking(const Vector2f& pos);
-	uint8_t* getCurrentData();
+	Span<uint32_t> getDataNoBoundsChecking(const Vector2f& pos);
+	Span<uint8_t> getCurrentData();
 	void checkModifiedTexture();
 	bool hasModifiedData;
 	bool hasModifiedTexture;
@@ -120,12 +121,12 @@ public:
 	BitmapContainer(MemoryAccount* m, bool _fromTag = false);
 	~BitmapContainer();
 	size_t getDataSize() const { return data.size(); }
-	uint8_t* getData() { return getCurrentData(); }
-	uint8_t* getOriginalData() { return &data[0]; }
-	uint8_t* getColorTransformedData()
+	Span<uint8_t> getData() { return getCurrentData(); }
+	Span<uint8_t> getOriginalData() { return makeSpan(data); }
+	Span<uint8_t> getColorTransformedData()
 	{
 		colorTransformedData.reserve(data.size());
-		return &colorTransformedData[0];
+		return makeSpan(colorTransformedData);
 	}
 
 	uint8_t* applyColorTransform(const ColorTransform& ct);
@@ -170,13 +171,13 @@ public:
 	// Clip sourceRect coordinates to this BitmapContainer. The
 	// output coordinates can be used to access pixels in data
 	// without out-of-bounds errors.
-	Rect<int32_t> clipRect(const Rect<int32_t>& sourceRect) const;
+	Rect<int32_t> clipRect(const Rect<int32_t>& srcRect) const;
 	// Clip a rectangle to fit both source and destination
 	// bitmaps.
 	std::pair<Rect<int32_t>, Vector2> clipRect
 	(
 		_R<BitmapContainer> source,
-		const Rect<int32_t>& sourceRect,
+		const Rect<int32_t>& srcRect,
 		const Vector2& destPoint
 	);
 

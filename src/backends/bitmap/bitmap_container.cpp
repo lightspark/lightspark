@@ -791,59 +791,63 @@ void BitmapContainer::fillRectangle
 	setModifiedData(true);
 }
 
-bool BitmapContainer::scroll(int32_t x, int32_t y)
+bool BitmapContainer::scroll(const Vector2& pos)
 {
-	int sourceX = imax(-x, 0);
-	int sourceY = imax(-y, 0);
+	auto srcPos = -pos.max(Vector2());
+	auto destPos = pos.max(Vector2());
+	auto copySize = (size - pos.abs()).max(Vector2());
 
-	int destX = imax(x, 0);
-	int destY = imax(y, 0);
-
-	int copyWidth = imax(width - abs(x), 0);
-	int copyHeight = imax(height - abs(y), 0);
-
-	if (copyWidth <= 0 && copyHeight <= 0)
+	if (copySize <= Vector2())
 		return false;
 
-	uint8_t *dataBase = getCurrentData();
-	for(int i=0; i<copyHeight; i++)
+	auto _data = getCurrentData().as<RGBA>();
+	for (size_t i = 0; i < copySize.y; ++i)
 	{
 		//Set the copy direction so that we don't
 		//overwrite the destination region
-		int row;
-		if (y > 0)
-			row = copyHeight - i - 1;
-		else
-			row = i;
+		size_t row = copySize.y > 0 ? copySize.y - i - 1 : i;
 
-		memmove(dataBase + (destY+row)*stride + 4*destX,
-			dataBase + (sourceY+row)*stride + 4*sourceX,
-			4*copyWidth);
+		memmove
+		(
+			&_data[(destPos.y + row) * size.x + destPos.x],
+			&_data[(srcPos.y + row) * size.x + srcPos.x],
+			copySize.x * 4
+		);
 	}
+
 	setModifiedData(true);
 	return true;
 }
 
-inline uint32_t *BitmapContainer::getDataNoBoundsChecking(int32_t x, int32_t y)
+inline Span<uint32_t> BitmapContainer::getDataNoBoundsChecking(const Vector2f& pos)
 {
-	uint8_t* d = getCurrentData();
-	return (uint32_t*)&d[y*stride + 4*x];
+	return getCurrentData().as<uint32_t>().getLast
+	(
+		pos.y *
+		size.x +
+		pos.x
+	)
 }
 
-uint8_t* BitmapContainer::getCurrentData()
+Span<uint8_t> BitmapContainer::getCurrentData()
 {
 	checkModifiedTexture();
-	return currentcolortransform.isIdentity() ? (uint8_t*)data.data() : (uint8_t*)data_colortransformed.data();
+	return
+	(
+		currentColorTransform.isIdentity() ?
+		makeSpan(data) :
+		makeSpan(colorTransformedData)
+	);
 }
 
 void BitmapContainer::checkModifiedTexture()
 {
-	if (hasModifiedTexture)
-	{
-		setModifiedTexture(false);
-		this->incRef();
-		getSys()->getRenderThread()->readPixelsToBimapContainer(_MR(this));
-	}
+	if (!hasModifiedTexture)
+		return;
+
+	setModifiedTexture(false);
+	incRef();
+	getSys()->getRenderThread()->readPixelsToBimapContainer(_MR(this));
 }
 
 /*
@@ -852,73 +856,81 @@ void BitmapContainer::checkModifiedTexture()
  * Adapted from "A simple non-recursive scan line method" at
  * http://www.codeproject.com/Articles/6017/QuickFill-An-efficient-flood-fill-algorithm
  */
-void BitmapContainer::floodFill(int32_t startX, int32_t startY, uint32_t color)
+void BitmapContainer::floodFill(const Vector2& pos, const RGBA& color)
 {
-	struct LineSegment {
-		LineSegment(int32_t _x1, int32_t _x2, int32_t _y, int32_t _dy) 
-			: x1(_x1), x2(_x2), y(_y), dy(_dy) {}
+	struct LineSegment
+	{
+		LineSegment
+		(
+			int32_t _x1,
+			int32_t _x2,
+			int32_t _y,
+			int32_t _dy
+		) : x1(_x1), x2(_x2), y(_y), dy(_dy) {}
 		int32_t x1; // leftmost filled point on last line
 		int32_t x2; // rightmost filled point on last line
 		int32_t y;  // y coordinate (may be invalid!)
 		int32_t dy; // vertical direction (1 or -1)
 	};
 
-	stack<LineSegment> segments;
+	std::stack<LineSegment> segments;
 
-	if (startX < 0 || startX >= width || startY < 0 || startY >= height)
+	if (pos < Vector2() || pos >= size)
 		return;
 
-	uint32_t seedColor = getPixel(startX, startY);
+	auto seedColor = getPixel(pos);
 
 	// Comment on the codeproject.com: "needed in some cases" ???
-	segments.push(LineSegment(startX, startX, startY+1, 1));
+	segments.push(LineSegment(pos.x, pos.x, pos.y + 1, 1));
 	// The starting point
-	segments.push(LineSegment(startX, startX, startY, -1));
+	segments.push(LineSegment(pos.x, pos.x, pos.y, -1));
 
 	while (!segments.empty())
 	{
 		int32_t left;
-		LineSegment r = segments.top();
+		auto r = segments.top();
 		segments.pop();
-		if (r.y < 0 || r.y >= height)
+		if (r.y < 0 || r.y >= size.y)
 			continue;
 
 		assert(r.x1 <= r.x2);
 		assert(r.x1 >= 0);
-		assert(r.x2 < width);
+		assert(r.x2 < size.x);
 
 		// current x-coordinate
-		int t = r.x1;
+		auto t = r.x1;
 		// pointer to the current pixel, keep in sync with t
-		uint32_t *p = getDataNoBoundsChecking(r.x1, r.y);
+		auto p = getDataNoBoundsChecking(Vector2
+		(
+			r.x1,
+			r.y
+		)).as<RGBA>().data();
 
 		// extend left
-		while (t >= 0 && *p == seedColor)
-		{
+		for (; t >= 0 && *p == seedColor; --p, --t)
 			*p = color;
-			p--;
-			t--;
-		}
 
 		if (t >= r.x1)
 		{
 			// Did not extend to left. Skip over border if
 			// any.
-			while (t <= r.x2 && *p != seedColor)
-			{
-				p++;
-				t++;
-			}
+			for (; t <= r.x2 && *p != seedColor; ++p, ++t);
 			left = t;
 		}
 		else
 		{
 			// Extended past r.x1, push the segment on the
 			// previous line
-			left = t+1;
+			left = t + 1;
 			if (left < r.x1)
 			{
-				segments.push(LineSegment(left, r.x1-1, r.y-r.dy, -r.dy));
+				segments.emplace
+				(
+					left,
+					r.x1 - 1,
+					r.y - r.dy,
+					-r.dy
+				);
 			}
 
 			t = r.x1 + 1;
@@ -928,34 +940,46 @@ void BitmapContainer::floodFill(int32_t startX, int32_t startY, uint32_t color)
 		// filled point
 		do
 		{
-			p = getDataNoBoundsChecking(t, r.y);
-			while (t < width && *p == seedColor)
-			{
-				*p = color;
-				p++;
-				t++;
-			}
+			auto _p = getDataNoBoundsChecking(Vector2
+			(
+				t,
+				r.y
+			)).as<RGBA>();
+
+			auto it = _p.begin();
+			for (; t < size.x && *it == seedColor; ++it, ++t)
+				*it = color;
 
 			// push the segment on the next line
 			if (t >= left+1)
-				segments.push(LineSegment(left, t-1, r.y+r.dy, r.dy));
+			{
+				segments.emplace
+				(
+					left,
+					t - 1,
+					r.y + r.dy,
+					r.dy
+				);
+			}
 
 			// If extended past r.x2, push the segment on
 			// the previous line
 			if (t > r.x2+1)
 			{
-				segments.push(LineSegment(r.x2, t-1, r.y-r.dy, -r.dy));
+				segments.emplace
+				(
+					r.x2,
+					t - 1,
+					r.y - r.dy,
+					-r.dy
+				);
 				break; // we are done with this segment
 			}
 
 			// Skip forward
-			p++;
-			t++;
-			while (t <= r.x2 && *p != seedColor)
-			{
-				p++;
-				t++;
-			}
+			++it;
+			++t;
+			for (; t <= r.x2 && *it != seedColor; ++it, ++t);
 			left = t;
 		}
 		while (t <= r.x2);
@@ -964,68 +988,81 @@ void BitmapContainer::floodFill(int32_t startX, int32_t startY, uint32_t color)
 	setModifiedData(true);
 }
 
-void BitmapContainer::clipRect(const RECT& sourceRect, RECT& clippedRect) const
+Rect<int32_t> BitmapContainer::clipRect(const Rect<int32_t>& srcRect) const
 {
-	clippedRect.Xmin = imax(sourceRect.Xmin, 0);
-	clippedRect.Ymin = imax(sourceRect.Ymin, 0);
-	clippedRect.Xmax = imax(imin(sourceRect.Xmax, getWidth()), 0);
-	clippedRect.Ymax = imax(imin(sourceRect.Ymax, getHeight()), 0);
+	return Rect<int32_t>
+	{
+		sourceRect.min.max(Vector2()),
+		sourceRect.max.clamp(Vector2(), size)
+	};
 }
 
 void BitmapContainer::clipRect(_R<BitmapContainer> source, const RECT& sourceRect,
 			       int32_t destX, int32_t destY, RECT& outputSourceRect,
 			       int32_t& outputX, int32_t& outputY) const
+std::pair<Rect<int32_t>, Vector2> BitmapContainer::clipRect
+(
+	_R<BitmapContainer> source,
+	const Rect<int32_t>& srcRect,
+	const Vector2& destPoint
+)
 {
-	int sLeft = imax(sourceRect.Xmin, 0);
-	int sTop = imax(sourceRect.Ymin, 0);
-	int sRight = imax(imin(sourceRect.Xmax, source->getWidth()), 0);
-	int sBottom = imax(imin(sourceRect.Ymax, source->getHeight()), 0);
+	auto rect = source->clipRect(srcRect);
+	auto destTL = destPoint;
 
-	int dLeft = destX;
-	int dTop = destY;
-	if (dLeft < 0)
+	if (destTL.x < 0)
 	{
-		sLeft += -dLeft;
-		dLeft = 0;
-	}
-	if (dTop < 0)
-	{
-		sTop += -dTop;
-		dTop = 0;
+		rect.min.x -= destTL.x;
+		destTL.x = 0;
 	}
 
-	int clippedWidth = imax(imin(sRight - sLeft, getWidth() - dLeft), 0);
-	int clippedHeight = imax(imin(sBottom - sTop, getHeight() - dTop), 0);
+	if (destTL.y < 0)
+	{
+		rect.min.y -= destTL.y;
+		destTL.y = 0;
+	}
 
-	outputSourceRect.Xmin = sLeft;
-	outputSourceRect.Xmax = sLeft + clippedWidth;
-	outputSourceRect.Ymin = sTop;
-	outputSourceRect.Ymax = sTop + clippedHeight;
-	
-	outputX = dLeft;
-	outputY = dTop;
+	auto clippedSize = rect.size().clamp
+	(
+		Vector2(),
+		size - rect.tl()
+	);
+
+	return std::make_pair(Rect<int32_t>
+	{
+		rect.tl(),
+		rect.tl() + clippedSize
+	}, rect.tl());
 }
 
 std::vector<uint32_t> BitmapContainer::getPixelVector(const RECT& inputRect, bool premultiplied)
+std::vector<RGBA> BitmapContainer::getPixelVector
+(
+	const Rect<int32_t>& rect,
+	bool isPremultiplied
+)
 {
-	RECT rect;
-	clipRect(inputRect, rect);
+	auto _rect = clipRect(rect);
 
-	std::vector<uint32_t> result;
-	if ((rect.Xmax - rect.Xmin <= 0) || (rect.Ymax - rect.Ymin <= 0))
-		return result;
+	if (_rect.size() <= Vector2())
+		return {};
 
-	result.reserve((rect.Xmax - rect.Xmin)*(rect.Ymax - rect.Ymin));
-	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
+	auto _size = _rect.size();
+	std::vector<RGBA> ret;
+	ret.reserve(_size.x * _size.y);
+	for (ssize_t y = _rect.min.y; y < _rect.max.y; ++y)
 	{
-		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
+		for (ssize_t x = _rect.min.x; x < _rect.max.x; ++x)
 		{
-			if (premultiplied)
-				result.push_back(*getDataNoBoundsChecking(x, y));
-			else
-				result.push_back(getPixel(x, y,false));
+			Vector2 pos(x, y);
+			ret.emplace_back
+			(
+				isPremultiplied ?
+				getDataNoBoundsCheck(pos).front() :
+				getPixel(pos, false)
+			);
 		}
 	}
 
-	return result;
+	return ret;
 }

@@ -644,6 +644,10 @@ uint32_t tiny_string::findLastInv(const tiny_string& str, uint32_t start) const
 
 void tiny_string::makePrivateCopy(const char* s)
 {
+	if (s == nullptr) {
+		resetToStatic();
+		return;
+	}
 	resetToStatic();
 	stringSize=strlen(s)+1;
 	if(stringSize > STATIC_SIZE)

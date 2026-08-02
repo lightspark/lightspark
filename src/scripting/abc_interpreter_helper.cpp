@@ -1222,6 +1222,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			state.preloadedcode[preloadpos].hasLocalResult=true;
 			state.preloadedcode[preloadlocalpos].pcode.local3.pos = state.mi->body->getReturnValuePos()+1+resultpos;
 			state.preloadedcode[preloadlocalpos].operator_setslot=opcode_setslot;
+			state.preloadedcode[preloadlocalpos].hasLocalResult=true;
 			state.operandlist.push_back(operands(OP_LOCAL,restype,state.mi->body->getReturnValuePos()+1+resultpos,0,0));
 			state.operandlist.back().setaslocalresult=true;
 			state.lastlocalresultpos=UINT32_MAX;
@@ -2235,11 +2236,14 @@ void optimize_lastsetlocal(memorystream& codetypes, std::map<int32_t,int32_t>& l
 		// local was set previously and never read, "old" setlocal can be replaced by pop
 		// which then will be optimized away in pass 3
 		uint32_t oldpos = it->second;
-		switch ((uint8_t)state.mi->body->code[oldpos])
+		uint8_t opcode = (uint8_t)state.mi->body->code[oldpos];
+		switch (opcode)
 		{
 			case 0x63://setlocal
 			{
 				state.mi->body->code[oldpos] = 0x29; //pop
+				int32_t t = codetypes.peeku30FromPosition(oldpos+1);
+				removeInitializeLocalToConstant(state,t);
 				uint32_t skippos = codetypes.skipu30FromPosition(oldpos+1);
 				for (uint32_t i = oldpos+1; i < skippos; i++)
 					state.mi->body->code[i] = 0x02; //nop
@@ -2249,10 +2253,12 @@ void optimize_lastsetlocal(memorystream& codetypes, std::map<int32_t,int32_t>& l
 			case 0xd5://setlocal_1
 			case 0xd6://setlocal_2
 			case 0xd7://setlocal_3
-			{
+				removeInitializeLocalToConstant(state,opcode-0xd4);
 				state.mi->body->code[oldpos] = 0x29; //pop
 				break;
-			}
+			case 0x29://pop
+				//already optimized, nothing to do
+				break;
 			default:
 				LOG(LOG_ERROR,"preload setlocal optimization wrong original opcode, should not happen:"<<codetypes.tellg()<<"/"<<oldpos<<" "<<hex<<int((uint8_t)state.mi->body->code[oldpos]));
 				state.worker->dumpStacktrace();
@@ -2435,6 +2441,7 @@ void preloadFunction_secondPass(preloadstate& state)
 			case 0x94://declocal
 			{
 				uint32_t t = codetypes.readu30();
+				lastsetlocal.erase(t);
 				state.unchangedlocals.erase(t);
 				setdefaultlocaltype(state,t,Class<Number>::getRef(function->getSystemState()).getPtr());
 				currenttype=nullptr;
@@ -2448,6 +2455,7 @@ void preloadFunction_secondPass(preloadstate& state)
 			case 0xc3://declocal_i
 			{
 				uint32_t t = codetypes.readu30();
+				lastsetlocal.erase(t);
 				state.unchangedlocals.erase(t);
 				setdefaultlocaltype(state,t,Class<Integer>::getRef(function->getSystemState()).getPtr());
 				currenttype=nullptr;

@@ -1220,7 +1220,7 @@ number_t Date::parse(tiny_string str)
 			if (!hasTimezone && (it->startsWith("GMT") || it->startsWith("UTC")))
 			{
 				if (it->numBytes()>3)
-					tokenvalid = sscanf(it->raw_buf()+3, "%3d",&tz);
+					tokenvalid = sscanf(it->raw_buf()+3, "%5d",&tz);
 				else
 					tokenvalid=true;
 				hasTimezone=true;

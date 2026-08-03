@@ -47,7 +47,7 @@ obj(_obj),
 oldVolume(-1.0),
 checkPolicyFile(false),
 rawAccessAllowed(false),
-framesdecoded(0),
+framesDecoded(0),
 playbackBytesPerSecond(0),
 maxBytesPerSecond(0),
 dataGenerationExpectType(DATAGENERATION_HEADER),
@@ -150,7 +150,7 @@ void NetStream::play(Optional<const tiny_string&> name)
 	{
 		auto engineData = sys->getEngeineData();
 		dataGenerationFile = engineData->createFileStreamCache(sys);
-		datagenerationfile->openForWriting();
+		dataGenerationFile->openForWriting();
 		streamTime = 0;
 		return;
 	}
@@ -238,11 +238,13 @@ void NetStream::play(Optional<const tiny_string&> name)
 	if (!url.isValid())
 	{
 		//Notify an error during loading
-		throw RunTimeException
-		(
-			"`NetStream::play()`: "
-			"Invalid URL."
-		);
+		handleStatusEvent(makeSpan
+		({
+			{ "code", "NetStream.Play.Failed" },
+			{ "level", "status" },
+		}));
+		handleIOError();
+		return;
 	}
 
 	//The URL is valid so we can start the download and add ourself as a job
@@ -384,7 +386,7 @@ void NetStream::appendBytes(Span<uint8_t> data)
 	auto span = makeSpan(dataGenerationBuffer);
 	for (bool done = false; !done;)
 	{
-		switch (datagenerationexpecttype)
+		switch (dataGenerationExpectType)
 		{
 			case DATAGENERATION_HEADER:
 			{
@@ -573,7 +575,7 @@ void NetStream::tick()
 		prevStreamTime
 	) / 1000, 0);
 	//LOG(LOG_INFO,"tick:"<< " "<<bufferLength << " "<<streamTime<<" "<<frameRate<<" "<<framesdecoded<<" "<<bufferTime<<" "<<this->playbackBytesPerSecond<<" "<<this->getReceivedLength());
-	countermutex.unlock();
+	counterMutex.unlock();
 	if (videoDecoder == nullptr)
 		return;
 	videoDecoder->skipUntil(streamTime);
@@ -623,225 +625,314 @@ void NetStream::clearFrameBuffer()
 
 void NetStream::execute()
 {
+	auto sys = getSys();
 	//checkPolicyFile only applies to per-pixel access, loading and playing is always allowed.
 	//So there is no need to disallow playing if policy files disallow it.
 	//We do need to check if per-pixel access is allowed.
-	SecurityManager::EVALUATIONRESULT evaluationResult = getSystemState()->securityManager->evaluatePoliciesURL(url, true);
-	if(evaluationResult == SecurityManager::NA_CROSSDOMAIN_POLICY)
+	auto evalRet = sys->securityManager->evaluatePoliciesURL
+	(
+		url,
+		true
+	);
+
+	if (evalRet == SecurityManager::NA_CROSSDOMAIN_POLICY)
 		rawAccessAllowed = true;
 
-	std::streambuf *sbuf = nullptr;
-	if (streamDecoder)
+	std::streambuf* sbuf = nullptr;
+	if (streamDecoder != nullptr)
 		delete streamDecoder;
-	streamDecoder=nullptr;
+	streamDecoder = nullptr;
 
-	if (datagenerationfile)
+	if (dataGenerationFile != nullptr)
+		sbuf = dataGenerationFile->createReader();
+	else if (downloader == nullptr)
+		return;
+	else if (downloader->hasFailed())
 	{
-		sbuf = datagenerationfile->createReader();
+		handleStatusEvent(makeSpan
+		({
+			{ "description", "Downloader failed" },
+			{ "code", "NetStream.Play.Failed" },
+			{ "level", "error" }
+		}));
+		handleIOError();
+		sys->downloadManager->destroy(downloader);
+		downloader = nullptr;
+		return;
 	}
 	else
 	{
-		if (!downloader)
-			return;
-		if(downloader->hasFailed())
-		{
-			this->incRef();
-			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS(getInstanceWorker())));
-			getSystemState()->downloadManager->destroy(downloader);
-			downloader = nullptr;
-			return;
-		}
-		
 		//The downloader hasn't failed yet at this point
-		
 		sbuf = downloader->getCache()->createReader();
 	}
-	istream s(sbuf);
+
+	std::istream s(sbuf);
 	s.exceptions(istream::goodbit);
 
-	ThreadProfile* profile=getSystemState()->allocateProfiler(RGB(0,0,200));
+	auto profile = sys->allocateProfiler(RGB(0, 0, 200));
 	profile->setTag("NetStream");
-	bool waitForFlush=true;
+	bool waitForFlush = true;
 	//We need to catch possible EOF and other error condition in the non reliable stream
 	try
 	{
 #ifdef ENABLE_LIBAVCODEC
 		Chronometer chronometer;
-		if (!sbuf)
-		{
+		if (sbuf == nullptr)
 			threadAbort();
-		}
 		else
 		{
-			countermutex.lock();
-			streamDecoder=new BuiltinStreamDecoder(s,this,::ceil(bufferTime));
+			counterMutex.lock();
+			streamDecoder = new BuiltinStreamDecoder
+			(
+				s,
+				this,
+				std::ceil(bufferTime)
+			);
 			if (!streamDecoder->isValid()) // not FLV stream, so we try ffmpeg detection
 			{
 				delete streamDecoder;
 				s.seekg(0);
-				streamDecoder=new FFMpegStreamDecoder(this,this->getSystemState()->getEngineData(),s,::ceil(bufferTime));
+				streamDecoder = new FFMpegStreamDecoder
+				(
+					this,
+					sys->getEngineData(),
+					s,
+					std::ceil(bufferTime)
+				);
 			}
-			countermutex.unlock();
+			counterMutex.unlock();
 			if(!streamDecoder->isValid())
 				threadAbort();
 		}
-		countermutex.lock();
-		framesdecoded = 0;
-		frameRate=0;
+
+		counterMutex.lock();
+		framesDecoded = 0;
+		frameRate = 0;
 		videoDecoder = nullptr;
-		this->prevstreamtime = streamTime;
-		this->bufferLength = 0;
-		countermutex.unlock();
-		bool done=false;
-		bool bufferfull = true;
-		while(!done)
+		prevStreamTime = streamTime;
+		bufferLength = 0;
+		counterMutex.unlock();
+
+		bool bufferFull = true;
+		for (;;)
 		{
 			//Check if threadAbort has been called, if so, stop this loop
-			if(closed)
-			{
-				done = true;
-				continue;
-			}
-			bool decodingSuccess= bufferfull && streamDecoder->decodeNextFrame();
-			if(!decodingSuccess && bufferfull)
+			if (closed)
+				break;
+			bool decodingSuccess = bufferFull && streamDecoder->decodeNextFrame();
+			if (!decodingSuccess && bufferFull)
 			{
 				if (s.tellg() == -1)
+					break;
+				LOG
+				(
+					LOG_INFO,
+					"decoding failed: " <<
+					s.tellg() << ' ' <<
+					getReceivedLength()
+				);
+				bufferFull = false;
+			}
+			else if
+			(
+				streamDecoder->videoDecoder != nullptr &&
+				streamDecoder->videoDecoder->framesdecoded != framesDecoded
+			)
+			{
+				counterMutex.lock();
+
+				framesDecoded = streamDecoder->videoDecoder->framesDecoded;
+				if (!frameRate)
 				{
-					done = true;
-					continue;
+					assert(streamDecoder->videoDecoder->frameRate);
+					frameRate = streamDecoder->videoDecoder->frameRate;
 				}
 
-				LOG(LOG_INFO,"decoding failed:"<<s.tellg()<<" "<<this->getReceivedLength());
-				bufferfull = false;
-			}
-			else
-			{
-				if (streamDecoder->videoDecoder)
+				if (frameRate)
 				{
-					if (streamDecoder->videoDecoder->framesdecoded != framesdecoded)
-					{
-						countermutex.lock();
+					playbackBytesPerSecond = s.tellg() /
+					(
+						framesDecoded /
+						frameRate
+					);
+					bufferLength =
+					(
+						framesDecoded /
+						frameRate
+					) -
+					(
+						streamTime -
+						prevStreamTime
+					) / 1000;
+				}
+				counterMutex.unlock();
 
-						framesdecoded = streamDecoder->videoDecoder->framesdecoded;
-						if(frameRate==0)
-						{
-							assert(streamDecoder->videoDecoder->frameRate);
-							frameRate=streamDecoder->videoDecoder->frameRate;
-						}
-						if (frameRate)
-						{
-							this->playbackBytesPerSecond = s.tellg() / (framesdecoded / frameRate);
-							this->bufferLength = (framesdecoded / frameRate) - (streamTime-prevstreamtime)/1000.0;
-						}
-						countermutex.unlock();
-						if (bufferfull && this->bufferLength < 0)
-						{
-							bufferfull = false;
-							this->bufferLength=0;
-							this->incRef();
-							getVm(getSystemState())->addEvent(_MR(this),_MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Buffer.Empty")));
-						}
-					}
+				if (bufferFull && bufferLength < 0)
+				{
+					bufferFull = false;
+					bufferLength = 0;
+					handleStatusEvent(makeSpan
+					({
+						{ "code", "NetStream.Buffer.Empty" },
+						{ "level", "status" }
+					}));
 				}
 			}
-			if(videoDecoder==nullptr && streamDecoder->videoDecoder)
+
+			if
+			(
+				videoDecoder == nullptr &&
+				streamDecoder->videoDecoder != nullptr
+			)
 			{
-				videoDecoder=streamDecoder->videoDecoder;
-				this->incRef();
-				getVm(getSystemState())->addEvent(_MR(this),
-								  _MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Play.Start")));
+				videoDecoder = streamDecoder->videoDecoder;
+				handleStatusEvent(makeSpan
+				({
+					{ "code", "NetStream.Play.Start" },
+					{ "level", "status" }
+				}));
 			}
-			if(audioDecoder==nullptr && streamDecoder->audioDecoder)
-				audioDecoder=streamDecoder->audioDecoder;
-			
-			if(audioStream==nullptr && audioDecoder && audioDecoder->isValid() && getSys()->audioManager)
-				audioStream=getSystemState()->audioManager->createStream(audioDecoder,streamDecoder->hasVideo(),this,-1,0,soundTransform ? number_t(soundTransform->volume)/100.0 : 1.0);
-			if(!tickStarted && isReady() && frameRate && ((framesdecoded / frameRate) >= this->bufferTime))
+
+			if
+			(
+				audioDecoder == nullptr &&
+				streamDecoder->audioDecoder != nullptr
+			)
+				audioDecoder = streamDecoder->audioDecoder;
+
+			if
+			(
+				audioStream == nullptr &&
+				audioDecoder != nullptr &&
+				audioDecoder->isValid() &&
+				sys->audioManager != nullptr
+			)
 			{
-				tickStarted=true;
-				paused=false;
-				this->incRef();
-				getVm(getSystemState())->addEvent(_MR(this),
-								  _MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Buffer.Full")));
-				getSystemState()->addTick(1000/frameRate,this);
+				audioStream = sys->audioManager->createStream
+				(
+					audioDecoder,
+					streamDecoder->hasVideo(),
+					this,
+					-1,
+					0,
+					soundTransform.hasValue() ?
+					soundTransform->volume / 100.0 :
+					1.0
+				);
+			}
+
+			if
+			(
+				!tickStarted &&
+				isReady() &&
+				frameRate &&
+				(framesDecoded / frameRate) >= bufferTime
+			)
+			{
+				tickStarted = true;
+				paused = false;
+				handleStatusEvent(makeSpan
+				({
+					{ "code", "NetStream.Buffer.Full" },
+					{ "level", "status" }
+				}));
+
 				//Also ask for a render rate equal to the video one (capped at 24)
-				float localRenderRate=dmin(frameRate,24);
-				getSystemState()->setRenderRate(localRenderRate);
+				sys->setRenderRate(dmin(frameRate, 24));
 			}
-			if (!bufferfull && frameRate && ((framesdecoded / frameRate) >= this->bufferTime))
+
+			if
+			(
+				!bufferFull &&
+				frameRate &&
+				(framesDecoded / frameRate) >= bufferTime
+			)
 			{
-				bufferfull = true;
-				this->incRef();
-				getVm(getSystemState())->addEvent(_MR(this),
-								  _MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Buffer.Full")));
+				bufferFull = true;
+				handleStatusEvent(makeSpan
+				({
+					{ "code", "NetStream.Buffer.Full" },
+					{ "level", "status" }
+				}));
 			}
 			profile->accountTime(chronometer.checkpoint());
-			if(threadAborting)
+			if (threadAborting)
 				throw JobTerminationException();
 		}
 #endif //ENABLE_LIBAVCODEC
 	}
-	catch(LightsparkException& e)
+	catch (LightsparkException& e)
 	{
 		LOG(LOG_ERROR, "Exception in NetStream " << e.cause);
 		threadAbort();
-		waitForFlush=false;
+		waitForFlush = false;
 	}
-	catch(JobTerminationException& e)
+	catch (JobTerminationException& e)
 	{
 		LOG(LOG_ERROR, "JobTerminationException in NetStream ");
 		threadAbort();
-		waitForFlush=false;
+		waitForFlush = false;
 	}
-	catch(exception& e)
+	catch (std::exception& e)
 	{
-		LOG(LOG_ERROR, "Exception in reading: "<<e.what());
+		LOG(LOG_ERROR, "Exception in reading: " << e.what());
 	}
-	if(waitForFlush)
+
+	if (waitForFlush)
 	{
 		//Put the decoders in the flushing state and wait for the complete consumption of contents
-		if(audioDecoder)
+		if (audioDecoder != nullptr)
 			audioDecoder->setFlushing();
-		if(videoDecoder)
+		if (videoDecoder != nullptr)
 			videoDecoder->setFlushing();
 		
-		if(audioDecoder)
+		if (audioDecoder != nullptr)
 			audioDecoder->waitFlushed();
-		if(videoDecoder)
+		if (videoDecoder != nullptr)
 			videoDecoder->waitFlushed();
 
-		if (!this->closed)
+		if (!closed)
 		{
-			this->incRef();
-			getVm(getSystemState())->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Buffer.Flush")));
-			this->incRef();
-			getVm(getSystemState())->addEvent(_MR(this), _MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Play.Stop")));
+			handleStatusEvent(makeSpan
+			({
+				{ "code", "NetStream.Buffer.Flush" },
+				{ "level", "status" }
+			}));
+
+			handleStatusEvent(makeSpan
+			({
+				{ "code", "NetStream.Play.Stop" },
+				{ "level", "status" }
+			}));
 		}
 	}
+
 	//Before deleting stops ticking, removeJobs also spin waits for termination
-	getSystemState()->removeJob(this);
-	tickStarted=false;
+	sys->removeJob(this);
+	tickStarted = false;
 
 	{
 		Locker l(mutex);
 		//Change the state to invalid to avoid locking
-		videoDecoder=nullptr;
-		audioDecoder=nullptr;
+		videoDecoder = nullptr;
+		audioDecoder = nullptr;
 		//Clean up everything for a possible re-run
-		if (downloader)
-			getSys()->downloadManager->destroy(downloader);
+		if (downloader != nullptr)
+			sys->downloadManager->destroy(downloader);
 		//This transition is critical, so the mutex is needed
-		downloader=nullptr;
-		if (audioStream)
-			getSys()->audioManager->removeStream(audioStream);
-		audioStream=nullptr;
+		downloader = nullptr;
+		if (audioStream != nullptr)
+			sys->audioManager->removeStream(audioStream);
+		audioStream = nullptr;
 	}
-	if (streamDecoder)
+
+	if (streamDecoder != nullptr)
 	{
 		delete streamDecoder;
 		streamDecoder = nullptr;
 	}
-	if (sbuf)
+
+	if (sbuf != nullptr)
 		delete sbuf;
 }
 
@@ -851,16 +942,16 @@ void NetStream::threadAbort()
 	//This will stop the rendering loop
 	closed = true;
 
-	if(downloader)
+	if (downloader != nullptr)
 		downloader->stop();
 
 	//Clear everything we have in buffers, discard all frames
-	if(videoDecoder)
+	if (videoDecoder != nullptr)
 	{
 		videoDecoder->setFlushing();
 		videoDecoder->skipAll();
 	}
-	if(audioDecoder)
+	if (audioDecoder != nullptr)
 	{
 		//Clear everything we have in buffers, discard all frames
 		audioDecoder->setFlushing();
@@ -868,88 +959,247 @@ void NetStream::threadAbort()
 	}
 }
 
-void NetStream::sendClientNotification(const tiny_string& name, std::list<asAtom>& arglist)
+void NetStream::sendClientNotification
+(
+	const tiny_string& name,
+	const AVM0Value& val
+)
 {
-	if (client.isNull())
-		return;
-	multiname callbackName(nullptr);
-	callbackName.name_type=multiname::NAME_STRING;
-	callbackName.name_s_id=getSys()->getUniqueStringId(name);
-	callbackName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
-	asAtom callback=asAtomHandler::invalidAtom;
-	client->getVariableByMultiname(callback,callbackName,GET_VARIABLE_OPTION::NONE,client->getInstanceWorker());
-	if(asAtomHandler::isFunction(callback))
+	switch (obj.getType())
 	{
-		asAtom callbackArgs[arglist.size()];
-		
-		ASObject* closure = asAtomHandler::getObject(asAtomHandler::getClosureAtom(callback,asAtomHandler::invalidAtom));
-		if (!closure)
-			closure = client.getPtr();
-		closure->incRef();
-		int i= 0;
-		for (auto it = arglist.cbegin();it != arglist.cend(); it++)
-		{
-			asAtom arg = (*it);
-			ASATOM_INCREF(arg);
-			callbackArgs[i++] = arg;
-		}
-		ASATOM_INCREF(callback);
-		_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(callback,
-				asAtomHandler::fromObject(closure), callbackArgs, arglist.size()));
-		getVm(getSystemState())->addEvent(NullRef,event);
+		case NetStreamObject::Type::AVM1:
+			sendAVM1ClientNotification(name, val.toAVM1Value());
+			break;
+		case NetStreamObject::Type::AVM2:
+			sendAVM2ClientNotification(name, val.toASAtom());
+			break;
+		default:
+			break;
 	}
 }
 
-ASFUNCTIONBODY_ATOM(NetStream,_getBytesLoaded)
+void NetStream::sendAVM1ClientNotification
+(
+	const tiny_string& name,
+	const AVM1Value& val
+)
 {
-	NetStream* th=asAtomHandler::as<NetStream>(obj);
-	if(th->isReady())
-		asAtomHandler::setUInt(ret,th->getReceivedLength());
-	else
-		asAtomHandler::setUInt(ret,0);
+	auto _obj = getAVM1Obj();
+	assert(!_obj.isNull());
+
+	AVM1Activation act
+	(
+		getSys(),
+		"[FLV " + name + ']',
+		getSys()->stage->mainClip
+	);
+
+	try
+	{
+		(void)val.callMethod
+		(
+			act,
+			name,
+			{ val },
+			AVM1ExecutionReason::Special
+		);
+	}
+	catch (std::exception& e)
+	{
+		LOG
+		(
+			LOG_ERROR,
+			"Got error while handling an AVM1 `" << name << "` "
+			"handler from a `NetStream`. "
+			"Reason: " << e.what()
+		);
+	}
 }
 
-ASFUNCTIONBODY_ATOM(NetStream,_getBytesTotal)
+void NetStream::sendAVM2ClientNotification
+(
+	const tiny_string& name,
+	const asAtom& val
+)
 {
-	NetStream* th=asAtomHandler::as<NetStream>(obj);
-	if(th->isReady())
-		asAtomHandler::setUInt(ret,th->getTotalLength());
-	else
-		asAtomHandler::setUInt(ret,0);
+	auto _obj = getASObj();
+	assert(!_obj.isNull());
+
+	if (client.isNull())
+		return;
+
+	auto sys = getSys();
+	multiname callbackName(nullptr);
+	callbackName.name_type = multiname::NAME_STRING;
+	callbackName.name_s_id = sys->getUniqueStringId(name);
+	callbackName.ns.emplace_back(sys, "", NAMESPACE);
+	auto callback = asAtomHandler::invalidAtom;
+	client->getVariableByMultiname
+	(
+		callback,
+		callbackName,
+		GET_VARIABLE_OPTION::NONE,
+		client->getInstanceWorker()
+	);
+
+	if (!asAtomHandler::isFunction(callback))
+		return;
+
+	auto closure = asAtomHandler::getObject(asAtomHandler::getClosureAtom
+	(
+		callback,
+		asAtomHandler::invalidAtom
+	));
+
+	if (closure == nullptr)
+		closure = client.getPtr();
+	closure->incRef();
+
+	ASATOM_INCREF(val);
+	ASATOM_INCREF(callback);
+	auto event = _MR(new (sys->unaccountedMemory) FunctionEvent
+	(
+		callback,
+		asAtomHandler::fromObject(closure),
+		&val,
+		1
+	));
+	getVm(sys)->addEvent(NullRef, event);
 }
 
-ASFUNCTIONBODY_ATOM(NetStream,_getTime)
+void NetStream::handleStatusEvent(Span<const KVPair> values)
 {
-	NetStream* th=asAtomHandler::as<NetStream>(obj);
-	if(th->isReady())
-		asAtomHandler::setNumber(ret, th->getStreamTime()/1000.);
-	else
-		asAtomHandler::setUInt(ret,0);
+	switch (obj.getType())
+	{
+		case NetStreamObject::Type::AVM1:
+			handleAVM1StatusEvent(values);
+			break;
+		case NetStreamObject::Type::AVM2:
+			handleAVM2StatusEvent(values);
+			break;
+		default:
+			break;
+	}
 }
 
-ASFUNCTIONBODY_ATOM(NetStream,_getCurrentFPS)
+void NetStream::handleAVM1StatusEvent(Span<const KVPair> values)
+{
+	auto _obj = getAVM1Obj();
+	assert(!_obj.isNull());
+
+	AVM1Activation act
+	(
+		getSys(),
+		"[NetStream Status Event]"
+		getSys()->stage->mainClip
+	);
+
+	auto infoObj = NEW_GC_PTR(act.getGcCtx(), AVM1Object
+	(
+		act.getGcCtx(),
+		act.getPrototypes()->object->proto
+	));
+
+	for (const auto& pair : values)
+		infoObj->setProp(act, pair.first, pair.second);
+
+	try
+	{
+		(void)val.callMethod
+		
+		(
+			act,
+			"onStatus",
+			{ infoObj },
+			AVM1ExecutionReason::Special
+		);
+	}
+	catch (std::exception& e)
+	{
+		LOG
+		(
+			LOG_ERROR,
+			"Got error while handling an AVM1 `onStatus` "
+			"handler from a `NetStream`. "
+			"Reason: " << e.what()
+		);
+	}
+}
+
+void NetStream::handleAVM2StatusEvent(Span<const KVPair> values)
+{
+	auto tryGetVal = [&](const tiny_string& name)
+	{
+		auto it = std::find_if
+		(
+			values.begin(),
+			values.end(),
+			[&](const auto& pair)
+			{
+				return pair.first == name;
+			}
+		);
+		return it != values.end() ? it->second : "";
+	};
+
+	auto _obj = getASObj();
+	assert(!_obj.isNull());
+
+	_obj->incRef();
+	getVm(getSys())->addEvent
+	(
+		_MR(_obj),
+		_MR(Class<NetStatusEvent>::getInstanceS
+		(
+			_obj->getInstanceWorker(),
+			tryGetVal("level"),
+			tryGetVal("status")
+		))
+	);
+}
+
+void NetStream::handleIOError()
+{
+	auto _obj = obj.getASObj();
+	if (_obj.isNull())
+		return;
+
+	_obj->incRef();
+	getVm(getSys())->addEvent
+	(
+		_MR(_obj),
+		_MR(Class<IOErrorEvent>::getInstanceS(_obj->getInstanceWorker()))
+	);
+}
+
+size_t NetStream::getBytesLoaded() const
+{
+	return isReady() ? getReceivedLength() : 0;
+}
+
+size_t NetStream::getBytesTotal() const
+{
+	return isReady() ? getTotalLength() : 0;
+}
+
+number_t NetStream::getTime() const
+{
+	return isReady() ? getStreamTime() / 1000.0 : 0;
+}
+
+number_t NetStream::getCurrentFPS() const
 {
 	//TODO: provide real FPS (what really is displayed)
-	NetStream* th=asAtomHandler::as<NetStream>(obj);
-	if(th->isReady() && !th->paused)
-		asAtomHandler::setNumber(ret, th->getFrameRate());
-	else
-		asAtomHandler::setUInt(ret,0);
+	return isReady() && !paused ? getFrameRate() : 0;
 }
 
-uint32_t NetStream::getVideoWidth() const
+const Vector2u& NetStream::getVideoSize() const
 {
 	assert(isReady());
-	return videoDecoder->getWidth();
+	return videoDecoder->getSize();
 }
 
-uint32_t NetStream::getVideoHeight() const
-{
-	assert(isReady());
-	return videoDecoder->getHeight();
-}
-
-double NetStream::getFrameRate()
+number_t NetStream::getFrameRate()
 {
 	assert(isReady());
 	return frameRate;
@@ -961,24 +1211,25 @@ TextureChunk& NetStream::getTexture() const
 	return videoDecoder->getTexture();
 }
 
-uint32_t NetStream::getStreamTime()
+size_t NetStream::getStreamTime()
 {
 	assert(isReady());
 	return streamTime;
 }
 
-uint32_t NetStream::getReceivedLength()
+size_t NetStream::getReceivedLength()
 {
 	assert(isReady());
-	if (datagenerationfile)
-		return datagenerationfile->getReceivedLength();
-	return downloader->getReceivedLength();
+	return
+	(
+		dataGenerationFile != nullptr ?
+		dataGenerationFile->getReceivedLength() :
+		downloader->getReceivedLength()
+	);
 }
 
-uint32_t NetStream::getTotalLength()
+size_t NetStream::getTotalLength()
 {
 	assert(isReady());
-	if (datagenerationfile)
-		return 0;
-	return downloader->getLength();
+	return dataGenerationFile != nullptr ? 0 : downloader->getLength();
 }

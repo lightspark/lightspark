@@ -46,15 +46,18 @@ namespace lightspark
 class ASNetStream;
 class ASObject;
 class AVM1NetStream;
+class AVM1Value;
 class AudioDecoder;
 class AudioStream;
 class Downloader;
+class AMF0Value;
 class NetConnection;
 class NetStreamInfo;
 class SoundTransform;
 class StreamCache;
 class StreamDecoder;
 class VideoDecoder;
+union asAtom;
 class tiny_string;
 
 class NetStreamObject
@@ -82,6 +85,8 @@ public:
 	bool isNull() const { return type == Type::None; }
 	bool isAVM1() const { return type == Type::AVM1; }
 	bool isAVM2() const { return type == Type::AVM2; }
+
+	const Type& getType() const { return type; }
 
 	_NGC<AVM1NetStream> getAVM1Obj() const
 	{
@@ -114,6 +119,7 @@ enum class NetStreamAppendBytesAction
 class NetStream : public IThreadJob, public ITickJob
 {
 	using AppendBytesAction = NetStreamAppendBytesAction;
+	using KVPair = std::pair<tiny_string, tiny_string>;
 private:
 	bool tickStarted;
 	//Indicates whether the NetStream is paused
@@ -144,6 +150,21 @@ private:
 	void tick() override;
 	void tickFence() override;
 	bool isReady() const;
+
+	void sendAVM1ClientNotification
+	(
+		const tiny_string& name,
+		const AVM1Value& val
+	);
+
+	void sendAVM2ClientNotification
+	(
+		const tiny_string& name,
+		const asAtom& val
+	);
+
+	void handleAVM1StatusEvent(Span<const KVPair> values);
+	void handleAVM2StatusEvent(Span<const KVPair> values);
 
 	NetStreamObject obj;
 	_NR<ASObject> client;
@@ -188,7 +209,7 @@ private:
 
 	size_t backBufferLength;
 	number_t backBufferTime;
-	size_t bufferLength;
+	ssize_t bufferLength;
 	number_t bufferTime;
 	number_t bufferTimeMax;
 	number_t maxPauseBufferTime;
@@ -238,7 +259,15 @@ public:
 	_NR<ASNetStream> getASObj() const { return obj.getASObj(); }
 	_NGC<AVM1NetStream> getAVM1Obj() const { return obj.getAVM1Obj(); }
 
-	void sendClientNotification(const tiny_string& name, std::list<asAtom>& arglist);
+	void sendClientNotification
+	(
+		const tiny_string& name,
+		const AMF0Value& val
+	);
+
+	using KVPair = std::pair<tiny_string, tiny_string>;
+	void handleStatusEvent(Span<const KVPair> values);
+	void handleIOError();
 
 	//Interface for video
 	/**
@@ -268,7 +297,7 @@ public:
 		@pre lock on the object should be acquired and object should be ready
 		@return the frame rate
 	*/
-	double getFrameRate();
+	number_t getFrameRate();
 	/**
 		Get the texture containing the current video Frame
 		@pre lock on the object should be acquired and object should be ready

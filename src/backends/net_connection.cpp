@@ -45,7 +45,7 @@ nearID((std::stringstream() << "nearID" << ++nearIDCounter).str())
 void NetConnection::call
 (
 	const tiny_string& cmd,
-	const AMF0Value& msg,
+	const AMFValue& msg,
 	const ResponderObject& _responder
 )
 {
@@ -70,7 +70,20 @@ void NetConnection::call
 	}
 
 	responder = _responder;
-	message = msg;
+	message = AMFMessage
+	(
+		cmd,
+		(std::stringstream() << '/' << messageCount).str(),
+		msg
+	);
+
+	auto obj = getASObj();
+	if (!obj.isNull())
+	{
+		//To be decreffed in jobFence
+		obj->incRef();
+	}
+
 	getSys()->addJob(this);
 }
 
@@ -93,7 +106,7 @@ void NetConnection::execute()
 	(
 		uri,
 		cache,
-		AMFPacket(message).toBytes(),
+		message->toBytes(),
 		{ "Content-Type: application/x-amf" },
 		nullptr
 	);
@@ -108,8 +121,30 @@ void NetConnection::execute()
 			"`NetConnection::execute()`: "
 			"Download of URL failed: " << uri
 		);
-		this->incRef();
-		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<IOErrorEvent>::getInstanceS(getInstanceWorker())));
+
+		if (!getAVM1Obj().isNull())
+		{
+			handleAVM1StatusEvent({});
+			return;
+		}
+
+		auto obj = getASObj();
+		if (obj.isNull())
+			return;
+
+		auto wrk = obj->getInstanceWorker();
+		handleAVM2StatusEvent
+		({
+			{ "code", "NetConnection.Call.Failed" },
+			{ "level", "error" }
+		});
+
+		obj->incRef();
+		getVm(sys)->addEvent
+		(
+			_MR(obj),
+			_MR(Class<IOErrorEvent>::getInstanceS(wrk))
+		);
 		removeDownloader();
 		return;
 	}
@@ -117,20 +152,71 @@ void NetConnection::execute()
 	auto sbuf = cache->createReader();
 	std::istream s(sbuf);
 
-	std::vector<uint8_t> msg(downloader->getLength());
-	s.read(msg.data(), msg.size());
+	std::vector<uint8_t> msgData(downloader->getLength());
+	s.read(msgData.data(), msgData.size());
 	//Download is done, destroy it
 	delete sbuf;
 	removeDownloader();
 
-	auto event = _MR(new (sys->unaccountedMemory) ParseRPCMessageEvent
-	(
-		message,
-		client,
-		responder
-	));
+	AMFPacket responsePkt(makeSpan(msgData));
+	if (!responsePkt.isValid())
+	{
+		responder.reset();
+		return;
+	}
 
-	getVm(sys)->addEvent(NullRef, event);
+	for (const auto& msg : responsePkt.getMessages())
+	{
+		const auto& targetURI = msg.getTargetURI();
+		auto _targetURI = targetURI.tryStripPrefix('/');
+		if (!_targetURI.hasValue())
+			continue;
+
+		bool isStatus = false;
+		auto idx = _targetURI->tryStripSuffix
+		(
+			"/onResult"
+		).orElse([&]
+		{
+			auto ret = _targetURI->tryStripSuffix("/onStatus");
+			isStatus = ret.hasValue();
+			return ret;
+		}).andThen([&](const auto& str)
+		{
+			return str.tryToNumber<size_t>();
+		});
+
+		if (!idx.hasValue())
+			continue;
+
+		auto avm1Obj = responder.getAVM1Obj();
+		if (!avm1Obj.isNull())
+		{
+			avm1Obj->sendCallback
+			(
+				sys,
+				isStatus,
+				msg.getValue()
+			);
+			continue;
+		}
+
+		auto asObj = responder.getASObj();
+		if (asObj.isNull())
+			continue;
+
+		asObj->incRef();
+		auto unaccountedMem = sys->unaccountedMemory;
+		auto ev = _MR(new (unaccountedMem) RPCMessageEvent
+		(
+			msg.getValue(),
+			client,
+			asObj
+		));
+
+		getVm(sys)->addEvent(NullRef, ev);
+	}
+
 	responder.reset();
 }
 
@@ -144,12 +230,29 @@ void NetConnection::threadAbort()
 
 void NetConnection::jobFence()
 {
-	decRef();
+	auto obj = getASObj();
+	if (!obj.isNull())
+		obj->decRef();
+}
+
+void NetConnection::connect()
+{
+	//Null argument means local file or web server, the spec only mentions NULL, but youtube uses UNDEFINED, so supporting that too.
+	_connected = false;
+	handleStatusEvent
+	({
+		{ "level", "status" },
+		{ "code", "NetConnection.Connect.Success" }
+	});
+
+	if (!getAVM1Obj().isNull())
+		_connected = true;
 }
 
 void NetConnection::connect(const URLInfo& url)
 {
 	auto sys = getSys();
+	auto secMgr = sys->securityManager;
 	//This seems strange:
 	//LOCAL_WITH_FILE may not use connect(), even if it tries to connect to a local file.
 	//I'm following the specification to the letter. Testing showed
@@ -157,46 +260,39 @@ void NetConnection::connect(const URLInfo& url)
 	if
 	(
 		url.isValid() &&
-		sys->securityManager->evaluateSandbox
-		(
-			SecurityManager::LOCAL_WITH_FILE
-		)
+		secMgr->evaluateSandbox(SecurityManager::LOCAL_WITH_FILE)
 	)
 	{
-		createError<SecurityError>(wrk,0,"SecurityError: NetConnection::connect "
-				"from LOCAL_WITH_FILE sandbox");
-		return;
-	}
-
-	bool isNull = false;
-	bool isRTMP = false;
-	//bool isRPC = false;
-
-	_connected = false;
-	//Null argument means local file or web server, the spec only mentions NULL, but youtube uses UNDEFINED, so supporting that too.
-	if (url.isEmpty())
-	{
-		incRef();
-		getVm(sys)->addEvent
+		handleSecurityError
 		(
-			_MR(this),
-			_MR(Class<NetStatusEvent>::getInstanceS
-			(
-				wrk,
-				"status",
-				"NetConnection.Connect.Success"
-			))
+			"NetConnection.Connect.Failed",
+			"`NetConnection::connect()`: "
+			"Tried to connect to " + url + " from a "
+			"LOCAL_WITH_FILE sandbox."
 		);
 		return;
 	}
 
+	bool isRTMP = false;
+	//bool isRPC = false;
+
+	_connected = false;
+
 	//String argument means Flash Remoting/Flash Media Server
 	uri = url;
 
-	if (sys->securityManager->evaluatePoliciesURL(uri, true) != SecurityManager::ALLOWED)
+	if
+	(
+		secMgr->evaluatePoliciesURL(uri, true) !=
+		SecurityManager::ALLOWED
+	)
 	{
 		//TODO: find correct way of handling this case
-		createError<SecurityError>(wrk,0,"SecurityError: connection to domain not allowed by securityManager");
+		handleSecurityError
+		(
+			"NetConnection.Connect.Failed",
+			"Connection to domain not allowed by securityManager"
+		);
 		return;
 	}
 
@@ -238,26 +334,121 @@ void NetConnection::connect(const URLInfo& url)
 	if (!isRTMP)
 		return;
 	//When the URI is undefined the connect is successful (tested on Adobe player)
-	incRef();
-	getVm(sys)->addEvent
+	handleStatusEvent
+	({
+		{ "level", "status" },
+		{ "code", "NetConnection.Connect.Success" }
+	});
+
+	if (!getAVM1Obj().isNull())
+		_connected = true;
+}
+
+void NetConnection::handleStatusEvent(Span<const KVPair> values)
+{
+	if (!getAVM1Obj().isNull())
+		handleAVM1StatusEvent(values);
+	else if (!getASObj().isNull())
+		handleAVM2StatusEvent(values);
+}
+
+void NetConnection::handleSecurityError
+(
+	const tiny_string& errorCode,
+	const tiny_string& reason
+)
+{
+	handleStatusEvent
+	({
+		{ "level", "error" },
+		{ "code", errorCode }
+	});
+
+	auto obj = getASObj();
+	if (obj.isNull())
+		return;
+
+	createError<SecurityError>
 	(
-		_MR(this),
-		_MR(Class<NetStatusEvent>::getInstanceS
-		(
-			wrk,
-			"status",
-			"NetConnection.Connect.Success"
-		))
+		obj->getInstanceWorker(),
+		0,
+		"SecurityError: " + reason
 	);
 }
-void NetConnection::afterExecution(_R<Event> ev)
+
+void NetConnection::handleAVM1StatusEvent(Span<const KVPair> values)
 {
-	if (ev->is<NetStatusEvent>())
+	auto obj = getAVM1Obj();
+	assert(!obj.isNull());
+
+	AVM1Activation act
+	(
+		getSys(),
+		"[NetConnection Status Event]"
+		getSys()->stage->mainClip
+	);
+
+	auto infoObj = NEW_GC_PTR(act.getGcCtx(), AVM1Object
+	(
+		act.getGcCtx(),
+		act.getPrototypes()->object->proto
+	));
+
+	for (const auto& pair : values)
+		infoObj->setProp(act, pair.first, pair.second);
+
+	try
 	{
-		// it seems that the connected flag should only be set after the NetConnection.Connect.Success event is handled
-		if (ev->as<NetStatusEvent>()->statuscode == "NetConnection.Connect.Success")
-			this->_connected = true;
+		(void)obj->callMethod
+		(
+			act,
+			"onStatus",
+			{ infoObj },
+			AVM1ExecutionReason::Special
+		);
 	}
+	catch (std::exception& e)
+	{
+		LOG
+		(
+			LOG_ERROR,
+			"Got error while handling an AVM1 `onStatus` "
+			"handler from a `NetConnection`. "
+			"Reason: " << e.what()
+		);
+	}
+}
+
+void NetConnection::handleAVM2StatusEvent(Span<const KVPair> values)
+{
+	auto tryGetVal = [&](const tiny_string& name)
+	{
+		auto it = std::find_if
+		(
+			values.begin(),
+			values.end(),
+			[&](const auto& pair)
+			{
+				return pair.first == name;
+			}
+		);
+		return it != values.end() ? it->second : "";
+	};
+
+	auto obj = getASObj();
+	assert(!obj.isNull());
+
+	obj->incRef();
+	getVm(getSys())->addEvent
+	(
+		_MR(obj),
+		_MR(Class<NetStatusEvent>::getInstanceS
+		(
+			obj->getInstanceWorker(),
+			tryGetVal("level"),
+			tryGetVal("status")
+		))
+	);
 }
 
 const tiny_string& NetConnection::getConnectedProxyType() const

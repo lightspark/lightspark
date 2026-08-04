@@ -34,12 +34,13 @@
 #include "scripting/avm_object.h"
 #include "smartrefs.h"
 #include "utils/optional.h"
+#include "utils/span.h"
 #include "tiny_string.h"
 
 namespace lightspark
 {
 
-class AMF0Value;
+class AMFValue;
 class ASNetConnection;
 class ASObject;
 class AVM1NetConnection;
@@ -50,8 +51,9 @@ class Responder;
 class NetConnection : public IThreadJob
 {
 	friend class NetStream;
+	using KVPair = std::pair<tiny_string, tiny_string>;
 public:
-	using ResponderObject = AVMObject<Responder>;
+	using ResponderObject = AVMObject<AVM1NetConnection, Responder>;
 private:
 	enum PROXY_TYPE { PT_NONE, PT_HTTP, PT_CONNECT_ONLY, PT_CONNECT, PT_BEST };
 	//Indicates whether the application is connected to a server through a persistent RMTP connection/HTTP server with Flash Remoting
@@ -60,7 +62,7 @@ private:
 	URLInfo uri;
 	//Data for remoting support (NetConnection::call)
 	// The message data to be sent asynchronously
-	Optional<AMF0Value> message;
+	Optional<AMFMessage> message;
 
 	Mutex downloaderLock;
 	Downloader* downloader;
@@ -78,18 +80,30 @@ private:
 	void execute() override;
 	void threadAbort() override;
 	void jobFence() override;
+
+	void handleAVM1StatusEvent(Span<const KVPair> values);
+	void handleAVM2StatusEvent(Span<const KVPair> values);
+protected:
+	void setConnected(bool flag) { _connected = flag; }
 public:
 	NetConnection();
 
 	virtual bool hasObj() const { return false; }
 	virtual _NR<ASNetConnection> getASObj() const { return NullRef; }
 	virtual _NGC<AVM1NetConnection> getAVM1Obj() const { return NullGc; }
+	void handleStatusEvent(Span<const KVPair> values);
+	void handleSecurityError
+	(
+		const tiny_string& errorCode,
+		const tiny_string& reason
+	);
 
+	void connect();
 	void connect(const URLInfo& url);
 	void call
 	(
 		const tiny_string& cmd,
-		const AMF0Value& msg,
+		const AMFValue& msg,
 		const ResponderObject& _responder = ResponderObject()
 	);
 

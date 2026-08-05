@@ -595,7 +595,7 @@ void DisplayObject::onSetScrollRect(asAtom oldValue)
 	{
 		// not mentioned in the specs, but setting scrollRect actually creates a clone of the provided rect,
 		// so that any future changes to the scrollRect have no effect on the provided rect and vice versa
-		Rectangle* res=Class<Rectangle>::getInstanceS(this->getInstanceWorker());
+		Rectangle* res=Class<Rectangle>::getInstanceSNoArgs(this->getInstanceWorker());
 		res->x=asAtomHandler::as<Rectangle>(scrollRect)->x;
 		res->y=asAtomHandler::as<Rectangle>(scrollRect)->y;
 		res->width=asAtomHandler::as<Rectangle>(scrollRect)->width;
@@ -1089,6 +1089,8 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		if (state->hasOpaqueBackground)
 			state->opaqueBackground=RGB(asAtomHandler::toUInt(this->opaqueBackground));
 	}
+	if (this->is<Bitmap>())
+		state->isVerticallyFlipped=this->as<Bitmap>()->getVerticallyFlipped();
 	currentrendermatrix=state->matrix;
 }
 

@@ -68,24 +68,20 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			// fdata[2] = blue
 			// fdata[3] = alpha
 			// fdata[4] = depth
-			
 			if ((action.udata2 & CLEARMASK::COLOR) != 0)
 				engineData->exec_glClearColor(action.fdata[0],action.fdata[1],action.fdata[2],action.fdata[3]);
-			if (enableDepthAndStencilTextureBuffer || enableDepthAndStencilBackbuffer)
-			{
-				if ((action.udata2 & CLEARMASK::DEPTH) != 0)
-					engineData->exec_glClearDepthf(action.fdata[4]);
-				if ((action.udata2 & CLEARMASK::STENCIL) != 0)
-					engineData->exec_glClearStencil (action.udata1);
-				engineData->exec_glClear((CLEARMASK)action.udata2);
-			}
-			else
-				engineData->exec_glClear((CLEARMASK)(action.udata2 & CLEARMASK::COLOR));
+			if ((action.udata2 & CLEARMASK::DEPTH) != 0)
+				engineData->exec_glClearDepthf(action.fdata[4]);
+			if ((action.udata2 & CLEARMASK::STENCIL) != 0)
+				engineData->exec_glClearStencil (action.udata1);
+			engineData->exec_glClear((CLEARMASK)action.udata2);
+
 			break;
 		case RENDER_CONFIGUREBACKBUFFER:
 			//action.udata1 = enableDepthAndStencil
 			//action.udata2 = backBufferWidth
 			//action.udata3 = backBufferHeight
+			LOG(LOG_ERROR,"***configbackbuf:"<<action.udata1<<" "<<action.udata2<<"x"<<action.udata3);
 			configureBackBufferIntern(action.udata1,action.udata2,action.udata3,0);
 			configureBackBufferIntern(action.udata1,action.udata2,action.udata3,1);
 			break;
@@ -186,12 +182,14 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		case RENDER_RENDERTOBACKBUFFER:
 			if (renderingToTexture)
 			{
-				if (currentframebuffertextureid!=UINT32_MAX)
+				if (currentframebuffertextureid!=UINT32_MAX && currentframebufferdirty && currentframebufferNeedsMipmaps)
 				{
 					// generate mipmaps for rendered texture
 					engineData->exec_glBindTexture_GL_TEXTURE_2D(currentframebuffertextureid);
 					engineData->exec_glGenerateMipmap_GL_TEXTURE_2D();
 				}
+				currentframebufferdirty=false;
+				currentframebufferNeedsMipmaps=false;
 
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(backframebufferIDcurrent);
 				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(backframebuffer[currentactionvector]);
@@ -219,16 +217,18 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata1 = enableDepthAndStencil
 			//action.udata2 = width
 			//action.udata3 = height
+			TextureBase* tex = action.dataobject->as<TextureBase>();
 			if (renderingToTexture)
 			{
-				if (currentframebuffertextureid!=UINT32_MAX)
+				if (currentframebuffertextureid!=UINT32_MAX && currentframebufferdirty && currentframebufferNeedsMipmaps)
 				{
 					// generate mipmaps for rendered texture
 					engineData->exec_glBindTexture_GL_TEXTURE_2D(currentframebuffertextureid);
 					engineData->exec_glGenerateMipmap_GL_TEXTURE_2D();
 				}
 			}
-			TextureBase* tex = action.dataobject->as<TextureBase>();
+			currentframebufferdirty=false;
+			currentframebufferNeedsMipmaps=!tex->is<RectangleTexture>();
 			if (tex->textureID == UINT32_MAX)
 			{
 				if (tex->is<CubeTexture>())
@@ -338,6 +338,7 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				resetAttribs(engineData,currentprogram->vertexattributes);
 				resetAttribs(engineData,currentprogram->fragmentattributes);
 			}
+			currentframebufferdirty=true;
 			break;
 		}
 		case RENDER_CREATEINDEXBUFFER:
@@ -524,6 +525,8 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				engineData->exec_glDeleteTextures(1, &action.udata1);
 			if (action.udata2 != UINT32_MAX)
 				engineData->exec_glDeleteFramebuffers(1,&action.udata2);
+			if (action.udata3 != UINT32_MAX)
+				engineData->exec_glDeleteRenderbuffers(1,&action.udata3);
 			uint32_t stencilRenderBuffer=action.fdata[0];
 			if (stencilRenderBuffer != UINT32_MAX)
 				engineData->exec_glDeleteRenderbuffers(1,&stencilRenderBuffer);
@@ -567,15 +570,41 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 		}
 		case RENDER_SETSTENCILREFERENCEVALUE:
 			//action.udata1 = referenceValue | readMask | writeMask;
-			//action.udata2 = currentstencilfunction;
 			engineData->exec_glStencilMask(action.udata1&0xff);
-			engineData->exec_glStencilFunc(DEPTHSTENCIL_FUNCTION(action.udata2),(action.udata1>>16)&0xff,(action.udata1>>8)&0xff);
+			engineData->exec_glStencilFunc(currentstencilfunction,(action.udata1>>16)&0xff,(action.udata1>>8)&0xff);
+			currentstencilref = (action.udata1>>16)&0xff;
+			currentstencilmask = (action.udata1>>8)&0xff;
 			break;
 		case RENDER_SETSTENCILACTIONS:
 			//action.udata1 = face;
 			//action.udata2 = func;
 			//action.udata3 = (pass<<16)|(depthfail<<8)|depthpassstencilfail;
 			engineData->exec_glStencilOpSeparate(TRIANGLE_FACE(action.udata1), DEPTHSTENCIL_OP(action.udata3&0xff), DEPTHSTENCIL_OP((action.udata3>>8)&0xff), DEPTHSTENCIL_OP((action.udata3>>16)&0xff));
+
+			currentstencilfunction=DEPTHSTENCIL_FUNCTION(action.udata2);
+			switch (TRIANGLE_FACE(action.udata1))
+			{
+				case TRIANGLE_FACE::FACE_FRONT:
+					currentstencilop_sfail_front = DEPTHSTENCIL_OP(action.udata3&0xff);
+					currentstencilop_dpfail_front = DEPTHSTENCIL_OP((action.udata3>>8)&0xff);
+					currentstencilop_dppass_front = DEPTHSTENCIL_OP((action.udata3>>16)&0xff);
+					break;
+				case TRIANGLE_FACE::FACE_BACK:
+					currentstencilop_sfail_back = DEPTHSTENCIL_OP(action.udata3&0xff);
+					currentstencilop_dpfail_back = DEPTHSTENCIL_OP((action.udata3>>8)&0xff);
+					currentstencilop_dppass_back = DEPTHSTENCIL_OP((action.udata3>>16)&0xff);
+					break;
+				case TRIANGLE_FACE::FACE_FRONT_AND_BACK:
+					currentstencilop_sfail_front = DEPTHSTENCIL_OP(action.udata3&0xff);
+					currentstencilop_dpfail_front = DEPTHSTENCIL_OP((action.udata3>>8)&0xff);
+					currentstencilop_dppass_front = DEPTHSTENCIL_OP((action.udata3>>16)&0xff);
+					currentstencilop_sfail_back = DEPTHSTENCIL_OP(action.udata3&0xff);
+					currentstencilop_dpfail_back = DEPTHSTENCIL_OP((action.udata3>>8)&0xff);
+					currentstencilop_dppass_back = DEPTHSTENCIL_OP((action.udata3>>16)&0xff);
+					break;
+				default:
+					break;
+			}
 			break;
 	}
 }
@@ -754,8 +783,32 @@ void Context3D::disposeintern()
 		(*it)->removeStoredMember();
 		vectorbufferlist.erase(it);
 	}
+	currentprogram=nullptr;
+	currenttextureid=UINT32_MAX;
+	currentframebuffertextureid=UINT32_MAX;
+	renderingToTexture=false;
+	enableDepthAndStencilBackbuffer=true;
+	enableDepthAndStencilTextureBuffer=true;
+	swapbuffers=false;
+	currentframebufferdirty=false;
+	currentframebufferNeedsMipmaps=false;
+	currentcullface=TRIANGLE_FACE::FACE_NONE;
+	currentdepthfunction=DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_LESS;
+	currentstencilfunction=DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_ALWAYS;
 	currentstencilref=0xff;
 	currentstencilmask=0xff;
+	currentstencilop_sfail_front=DEPTHSTENCIL_KEEP;
+	currentstencilop_sfail_back=DEPTHSTENCIL_KEEP;
+	currentstencilop_dpfail_front=DEPTHSTENCIL_KEEP;
+	currentstencilop_dpfail_back=DEPTHSTENCIL_KEEP;
+	currentstencilop_dppass_front=DEPTHSTENCIL_KEEP;
+	currentstencilop_dppass_back=DEPTHSTENCIL_KEEP;
+	stage3D=nullptr;
+	backBufferHeight=0;
+	backBufferWidth=0;
+	enableErrorChecking=false;
+	maxBackBufferHeight=16384;
+	maxBackBufferWidth=16384;
 	bufferIDfreelist.clear();
 	bufferIDs.clear();
 }
@@ -804,6 +857,8 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	engineData->exec_glDepthMask(true);
 	engineData->exec_glDepthFunc(currentdepthfunction);
 	engineData->exec_glStencilFunc(currentstencilfunction, currentstencilref, currentstencilmask);
+	engineData->exec_glStencilOpSeparate(TRIANGLE_FACE::FACE_FRONT, currentstencilop_sfail_front, currentstencilop_dpfail_front, currentstencilop_dppass_front);
+	engineData->exec_glStencilOpSeparate(TRIANGLE_FACE::FACE_BACK, currentstencilop_sfail_back, currentstencilop_dpfail_back, currentstencilop_dppass_back);
 	engineData->exec_glCullFace(currentcullface);
 	engineData->exec_glFrontFace(false);
 	engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ZERO);
@@ -815,6 +870,7 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 		renderaction& action = actions[1-currentactionvector][i];
 		handleRenderAction(engineData,action);
 	}
+	currentframebufferdirty=false;
 
 	// cleanup for stage rendering
 	engineData->exec_glClearDepthf(1.0);
@@ -834,6 +890,7 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 		engineData->exec_glDisable_GL_DEPTH_TEST();
 		engineData->exec_glDisable_GL_STENCIL_TEST();
 		renderingToTexture = false;
+		currentframebufferNeedsMipmaps=false;
 	}
 	actions[1-currentactionvector].clear();
 	backframebufferIDcurrent=backframebufferID[currentactionvector];
@@ -851,7 +908,19 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 	if (newtex && tex->bitmaparray.size() == 0)
-		engineData->exec_glTexImage2D_GL_TEXTURE_2D(0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0,false);
+	{
+		if (tex->optimizeForRenderToTexture)
+		{
+			// it seems that optimizeForRenderToTexture means that
+			// the texture is cleared when loading without bitmap data
+			uint8_t* data = new uint8_t[tex->width*tex->height*4];
+			memset(data,0,tex->width*tex->height*4);
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D(0, tex->width, tex->height, 0, data,tex->format,tex->compressedformat,0,false);
+			delete[] data;
+		}
+		else
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D(0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0,false);
+	}
 	else if (level == UINT32_MAX)
 	{
 		for (uint32_t i = 0; i <= tex->maxmiplevel && i < tex->bitmaparray.size(); i++)
@@ -866,7 +935,7 @@ void Context3D::loadTexture(TextureBase *tex, uint32_t level)
 	{
 		if (tex->maxmiplevel >= level && tex->bitmaparray.size() > level && tex->bitmaparray[level].size() > 0)
 		{
-			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, tex->width>>level, tex->height>>level, 0, tex->bitmaparray[level].data(),tex->format,tex->compressedformat,tex->bitmaparray[level].size(),false);
+			engineData->exec_glTexImage2D_GL_TEXTURE_2D(level, max(tex->width>>level,1U), max(tex->height>>level,1U), 0, tex->bitmaparray[level].data(),tex->format,tex->compressedformat,tex->bitmaparray[level].size(),false);
 			tex->bitmaparray[level].clear();
 		}
 	}
@@ -1016,11 +1085,19 @@ Context3D::Context3D(ASWorker* wrk, Class_base *c)
 	,enableDepthAndStencilBackbuffer(true)
 	,enableDepthAndStencilTextureBuffer(true)
 	,swapbuffers(false)
+	,currentframebufferdirty(false)
+	,currentframebufferNeedsMipmaps(false)
 	,currentcullface(TRIANGLE_FACE::FACE_NONE)
 	,currentdepthfunction(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_LESS)
 	,currentstencilfunction(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_ALWAYS)
 	,currentstencilref(0xff)
 	,currentstencilmask(0xff)
+	,currentstencilop_sfail_front(DEPTHSTENCIL_KEEP)
+	,currentstencilop_sfail_back(DEPTHSTENCIL_KEEP)
+	,currentstencilop_dpfail_front(DEPTHSTENCIL_KEEP)
+	,currentstencilop_dpfail_back(DEPTHSTENCIL_KEEP)
+	,currentstencilop_dppass_front(DEPTHSTENCIL_KEEP)
+	,currentstencilop_dppass_back(DEPTHSTENCIL_KEEP)
 	,stage3D(nullptr)
 	,backBufferHeight(0)
 	,backBufferWidth(0)
@@ -1229,14 +1306,13 @@ ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	tiny_string format;
-	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
 	CubeTexture* res = Class<CubeTexture>::getInstanceS(wrk,th);
 	res->incRef();
 	res->addStoredMember();
 	th->texturelist.insert(res);
 	uint32_t size;
-	ARG_CHECK(ARG_UNPACK(size)(format)(optimizeForRenderToTexture)(streamingLevels,0));
+	ARG_CHECK(ARG_UNPACK(size)(format)(res->optimizeForRenderToTexture)(streamingLevels,0));
 	uint32_t i = size;
 	while (i)
 	{
@@ -1246,40 +1322,35 @@ ASFUNCTIONBODY_ATOM(Context3D,createCubeTexture)
 	res->width = res->height = size;
 	res->bitmaparray.resize(res->max_miplevel*6); // reserve space for 6 bitmaps * no. of mipmaps
 	res->setFormat(format);
-	if (optimizeForRenderToTexture || streamingLevels != 0)
-		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createCubeTexture ignores parameters optimizeForRenderToTexture,streamingLevels:"<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
+	if (streamingLevels != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createCubeTexture ignores parameter streamingLevels:"<<streamingLevels<<" "<<res);
 	ret = asAtomHandler::fromObject(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createRectangleTexture)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	tiny_string format;
-	bool optimizeForRenderToTexture;
-	int32_t streamingLevels;
 	RectangleTexture* res = Class<RectangleTexture>::getInstanceS(wrk,th);
 	res->incRef();
 	res->addStoredMember();
 	th->texturelist.insert(res);
-	ARG_CHECK(ARG_UNPACK(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0));
+	ARG_CHECK(ARG_UNPACK(res->width)(res->height)(format)(res->optimizeForRenderToTexture));
 	res->setFormat(format);
-	if (optimizeForRenderToTexture || streamingLevels != 0)
-		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createRectangleTexture ignores parameters optimizeForRenderToTexture,streamingLevels:"<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
 	ret = asAtomHandler::fromObjectNoPrimitive(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createTexture)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
 	tiny_string format;
-	bool optimizeForRenderToTexture;
 	int32_t streamingLevels;
 	Texture* res = Class<Texture>::getInstanceS(wrk,th);
 	res->incRef();
 	res->addStoredMember();
 	th->texturelist.insert(res);
-	ARG_CHECK(ARG_UNPACK(res->width)(res->height)(format)(optimizeForRenderToTexture)(streamingLevels, 0));
+	ARG_CHECK(ARG_UNPACK(res->width)(res->height)(format)(res->optimizeForRenderToTexture)(streamingLevels, 0));
 	res->setFormat(format);
-	if (optimizeForRenderToTexture || streamingLevels != 0)
-		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createTexture ignores parameters optimizeForRenderToTexture,streamingLevels:"<<optimizeForRenderToTexture<<" "<<streamingLevels<<" "<<res);
+	if (streamingLevels != 0)
+		LOG(LOG_NOT_IMPLEMENTED,"Context3D.createTexture ignores parameter streamingLevels:"<<" "<<streamingLevels<<" "<<res);
 	ret = asAtomHandler::fromObjectNoPrimitive(res);
 }
 ASFUNCTIONBODY_ATOM(Context3D,createVideoTexture)
@@ -1870,9 +1941,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setStencilActions)
 		createError<ArgumentError>(wrk,kInvalidArgumentError,"actionOnDepthPassStencilFail");
 		return;
 	}
-	
 	th->rendermutex.lock();
-	th->currentstencilfunction=func;
 	renderaction action;
 	action.action = RENDER_ACTION::RENDER_SETSTENCILACTIONS;
 	action.udata1 = face;
@@ -1891,11 +1960,8 @@ ASFUNCTIONBODY_ATOM(Context3D,setStencilReferenceValue)
 	ARG_CHECK(ARG_UNPACK(referenceValue)(readMask,255)(writeMask,255));
 	renderaction action;
 	th->rendermutex.lock();
-	th->currentstencilref = referenceValue&0xff;
-	th->currentstencilmask = readMask&0xff;
 	action.action = RENDER_ACTION::RENDER_SETSTENCILREFERENCEVALUE;
 	action.udata1 = (referenceValue&0xff<<16)|(readMask&0xff<<8)|(writeMask&0xff);
-	action.udata2 = th->currentstencilfunction;
 	th->actions[th->currentactionvector].push_back(action);
 	th->rendermutex.unlock();
 }

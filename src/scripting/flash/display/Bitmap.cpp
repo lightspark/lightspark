@@ -33,14 +33,22 @@
 using namespace std;
 using namespace lightspark;
 
-Bitmap::Bitmap(ASWorker* wrk, Class_base* c):
-	DisplayObject(wrk,c),TokenContainer(this,&bitmaptokens,1.0),fs(0xff),smoothing(false)
+Bitmap::Bitmap(ASWorker* wrk, Class_base* c)
+	:DisplayObject(wrk,c)
+	,TokenContainer(this,&bitmaptokens,1.0)
+	,fs(0xff)
+	,isVerticallyFlipped(false)
+	,smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	usedInRenderCall.clear();
 }
-Bitmap::Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, std::istream *s, FILE_TYPE type):
-	DisplayObject(wrk,c),TokenContainer(this,&bitmaptokens,1.0),fs(0xff),smoothing(false)
+Bitmap::Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, std::istream *s, FILE_TYPE type)
+	:DisplayObject(wrk,c)
+	,TokenContainer(this,&bitmaptokens,1.0)
+	,fs(0xff)
+	,isVerticallyFlipped(false)
+	,smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	usedInRenderCall.clear();
@@ -83,8 +91,13 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, std::istream *s, FI
 	afterConstruction();
 }
 
-Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload) :
-	DisplayObject(wrk,c),TokenContainer(this,&bitmaptokens,1.0),size(data->getWidth(), data->getHeight()),fs(0xff),smoothing(false)
+Bitmap::Bitmap(ASWorker* wrk, Class_base* c, _R<BitmapData> data, bool startupload)
+	:DisplayObject(wrk,c)
+	,TokenContainer(this,&bitmaptokens,1.0)
+	,size(data->getWidth(), data->getHeight())
+	,fs(0xff)
+	,isVerticallyFlipped(false)
+	,smoothing(false)
 {
 	subtype=SUBTYPE_BITMAP;
 	usedInRenderCall.clear();
@@ -108,6 +121,7 @@ bool Bitmap::destruct()
 	smoothing = false;
 	bitmaptokens.clear();
 	usedInRenderCall.clear();
+	isVerticallyFlipped=false;
 	return DisplayObject::destruct();
 }
 
@@ -287,7 +301,10 @@ IDrawable *Bitmap::invalidate(bool smoothing)
 {
 	if (bitmapcontainer)
 		bitmapcontainer->flushRenderCalls(getSystemState()->getRenderThread(),nullptr,false);
-	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);
+	auto ret = TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);
+	if (ret)
+		ret->getState()->isVerticallyFlipped=isVerticallyFlipped;
+	return ret;
 }
 
 void Bitmap::setupRenderCallBitmap(BitmapData* data)
@@ -295,6 +312,7 @@ void Bitmap::setupRenderCallBitmap(BitmapData* data)
 	bitmapcontainer = data->getBitmapContainer();
 	setSize(data->getWidth(), data->getHeight());
 	hasChanged=true;
+	isVerticallyFlipped=true;
 	setupTokens();
 	resetNeedsTextureRecalculation();
 }

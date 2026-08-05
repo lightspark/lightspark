@@ -49,6 +49,7 @@ private:
 	_NR<BitmapContainer> bitmapcontainer;
 	void setupTokens();
 	atomic_flag usedInRenderCall;
+	bool isVerticallyFlipped;
 public:
 	ASPROPERTY_GETTER_SETTER(_NR<BitmapData>,bitmapData);
 	ASPROPERTY_GETTER_SETTER(bool, smoothing);
@@ -82,6 +83,7 @@ public:
 		scrollRect=asAtomHandler::invalidAtom;
 		decRef();
 	}
+	bool getVerticallyFlipped() const  { return isVerticallyFlipped;}
 };
 
 }

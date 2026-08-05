@@ -181,11 +181,19 @@ private:
 	bool enableDepthAndStencilBackbuffer;
 	bool enableDepthAndStencilTextureBuffer;
 	bool swapbuffers;
+	bool currentframebufferdirty;
+	bool currentframebufferNeedsMipmaps;
 	TRIANGLE_FACE currentcullface;
 	DEPTHSTENCIL_FUNCTION currentdepthfunction;
 	DEPTHSTENCIL_FUNCTION currentstencilfunction;
 	uint32_t currentstencilref;
 	uint32_t currentstencilmask;
+	DEPTHSTENCIL_OP currentstencilop_sfail_front;
+	DEPTHSTENCIL_OP currentstencilop_sfail_back;
+	DEPTHSTENCIL_OP currentstencilop_dpfail_front;
+	DEPTHSTENCIL_OP currentstencilop_dpfail_back;
+	DEPTHSTENCIL_OP currentstencilop_dppass_front;
+	DEPTHSTENCIL_OP currentstencilop_dppass_back;
 	std::vector<uint32_t> bufferIDs;
 	std::list<uint32_t> bufferIDfreelist;
 

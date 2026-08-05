@@ -39,6 +39,7 @@ protected:
 	uint32_t depthRenderBuffer;
 	uint32_t stencilRenderBuffer;
 	bool async;
+	bool optimizeForRenderToTexture;
 	TEXTUREFORMAT format;
 	TEXTUREFORMAT_COMPRESSED compressedformat;
 	vector<vector<uint8_t>> bitmaparray;
@@ -51,15 +52,34 @@ protected:
 	void uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplevel, uint32_t side=0, uint32_t max_miplevel=0);
 	void uploadFromByteArrayIntern(ByteArray* source, uint32_t offset, uint32_t miplevel);
 public:
-	TextureBase(ASWorker* wrk,Class_base* c):EventDispatcher(wrk,c)
-		,textureID(UINT32_MAX),width(0),height(0),maxmiplevel(0)
-		,textureframebuffer(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX)
-		,async(false),format(BGRA),compressedformat(UNCOMPRESSED),context(nullptr)
+	TextureBase(ASWorker* wrk,Class_base* c)
+		:EventDispatcher(wrk,c)
+		,textureID(UINT32_MAX)
+		,width(0)
+		,height(0)
+		,maxmiplevel(0)
+		,textureframebuffer(UINT32_MAX)
+		,depthRenderBuffer(UINT32_MAX)
+		,stencilRenderBuffer(UINT32_MAX)
+		,async(false)
+		,optimizeForRenderToTexture(false)
+		,format(BGRA)
+		,compressedformat(UNCOMPRESSED)
+		,context(nullptr)
 	{ subtype = SUBTYPE_TEXTUREBASE;}
-	TextureBase(ASWorker* wrk,Class_base* c,Context3D* _context):EventDispatcher(wrk,c)
-		,textureID(UINT32_MAX),width(0),height(0),maxmiplevel(0)
-		,textureframebuffer(UINT32_MAX),depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX)
-		,async(false),format(BGRA),compressedformat(UNCOMPRESSED),context(_context)
+	TextureBase(ASWorker* wrk,Class_base* c,Context3D* _context)
+		:EventDispatcher(wrk,c)
+		,textureID(UINT32_MAX)
+		,width(0)
+		,height(0)
+		,maxmiplevel(0)
+		,textureframebuffer(UINT32_MAX)
+		,depthRenderBuffer(UINT32_MAX),stencilRenderBuffer(UINT32_MAX)
+		,async(false)
+		,optimizeForRenderToTexture(false)
+		,format(BGRA)
+		,compressedformat(UNCOMPRESSED)
+		,context(_context)
 	{ subtype = SUBTYPE_TEXTUREBASE;}
 	static void sinit(Class_base* c);
 	bool destruct() override;

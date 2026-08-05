@@ -776,7 +776,7 @@ ASFUNCTIONBODY_ATOM(Matrix,transformPoint)
 		Point* pt=asAtomHandler::as<Point>(args[0]);
 		th->matrix.multiply2D(pt->getX()*TWIPS_FACTOR,pt->getY()*TWIPS_FACTOR,ttx,tty);
 	}
-	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,ttx, tty));
+	ret = asAtomHandler::fromObject(Class<Point>::getInstanceS(wrk,ttx/TWIPS_FACTOR, tty/TWIPS_FACTOR));
 }
 
 ASFUNCTIONBODY_ATOM(Matrix,deltaTransformPoint)
@@ -808,7 +808,7 @@ ASFUNCTIONBODY_ATOM(Matrix,setTo)
 	//ty -> y0
 	number_t a,b,c,d,tx,ty;
 	ARG_CHECK(ARG_UNPACK(a)(b)(c)(d)(tx)(ty));
-	th->matrix = MATRIX(a,d,b,c,tx,ty);
+	th->matrix = MATRIX(a,d,b,c,tx*TWIPS_FACTOR,ty*TWIPS_FACTOR);
 }
 ASFUNCTIONBODY_ATOM(Matrix,copyFrom)
 {

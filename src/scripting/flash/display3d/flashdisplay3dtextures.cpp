@@ -639,6 +639,7 @@ uint32_t TextureBase::getBytesNeeded(uint32_t miplevel)
 void TextureBase::uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplevel, uint32_t side, uint32_t max_miplevel)
 {
 	// get bitmap data before locking rendermutex to avoid possible deadlock in render thread
+	source->getBitmapContainer()->flushRenderCalls(getSystemState()->getRenderThread());
 	uint8_t* bmdata = source->getBitmapContainer()->getData();
 
 	context->rendermutex.lock();

@@ -45,16 +45,29 @@
 using namespace lightspark;
 
 SurfaceState::SurfaceState(float _xoffset, float _yoffset, float _alpha, float _xscale, float _yscale, const ColorTransformBase& _colortransform, const MATRIX& _matrix, bool _ismask, bool _cacheAsBitmap, AS_BLENDMODE _blendmode, SMOOTH_MODE _smoothing, float _scaling, bool _needsfilterrefresh, bool _needslayer)
-	:xOffset(_xoffset),yOffset(_yoffset),alpha(_alpha),xscale(_xscale),yscale(_yscale)
-	,colortransform(_colortransform),matrix(_matrix)
-	,depth(0),clipdepth(0),maxfilterborder(0)
-	,blendmode(_blendmode),smoothing(_smoothing),scaling(_scaling)
-	,visible(true),allowAsMask(true),isMask(_ismask),cacheAsBitmap(_cacheAsBitmap)
+	:xOffset(_xoffset)
+	,yOffset(_yoffset)
+	,alpha(_alpha)
+	,xscale(_xscale)
+	,yscale(_yscale)
+	,colortransform(_colortransform)
+	,matrix(_matrix)
+	,depth(0)
+	,clipdepth(0)
+	,maxfilterborder(0)
+	,blendmode(_blendmode)
+	,smoothing(_smoothing)
+	,scaling(_scaling)
+	,visible(true)
+	,allowAsMask(true)
+	,isMask(_ismask)
+	,cacheAsBitmap(_cacheAsBitmap)
 	,needsFilterRefresh(_needsfilterrefresh)
 	,needsLayer(_needslayer)
 	,isYUV(false)
 	,renderWithNanoVG(false)
 	,hasOpaqueBackground(false)
+	,isVerticallyFlipped(false)
 {
 #ifndef NDEBUG
 	src=nullptr;
@@ -99,6 +112,7 @@ void SurfaceState::reset()
 	needsFilterRefresh=true;
 	needsLayer=false;
 	hasOpaqueBackground=false;
+	isVerticallyFlipped=false;
 	textdata.clear();
 }
 
@@ -579,7 +593,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 	{
 		MATRIX m = ctxt.transformStack().transform().matrix;
 		sys->getEngineData()->exec_glScissor(m.getTranslateX()/TWIPS_FACTOR+state->scrollRect.Xmin*m.getScaleX()
-											 ,sys->getRenderThread()->getFlipVertical()
+											 ,sys->getRenderThread()->getFlipVertical() || state->isVerticallyFlipped
 												? sys->getRenderThread()->currentframebufferHeight-(m.getTranslateY()/TWIPS_FACTOR + state->scrollRect.Ymax*m.getScaleY())
 												: m.getTranslateY()/TWIPS_FACTOR + state->scrollRect.Ymin*m.getScaleY()
 											 ,(state->scrollRect.Xmax-state->scrollRect.Xmin)*m.getScaleX()

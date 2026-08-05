@@ -91,6 +91,7 @@ bool Rectangle::destruct()
 	y=0;
 	width=0;
 	height=0;
+	users.clear();
 	return destructIntern();
 }
 void Rectangle::addUser(DisplayObject* u)

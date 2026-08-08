@@ -30,6 +30,7 @@ void Vector3D::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
+	c->canHaveCyclicMembers = false;
 
 	// constants
 	Vector3D* tx = new (c->memoryAccount) Vector3D(c->getInstanceWorker(),c);

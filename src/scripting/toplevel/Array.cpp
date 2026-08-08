@@ -2626,6 +2626,8 @@ void Array::outofbounds(unsigned int index) const
 bool Array::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	if (gcstate.stopped)
+		return false;
 	for (auto it = data_first.begin(); it != data_first.end(); it++)
 	{
 		if (asAtomHandler::isObject(*it))

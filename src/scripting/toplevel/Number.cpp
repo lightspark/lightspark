@@ -680,6 +680,7 @@ void Number::sinit(Class_base* c)
 {
 	CLASS_SETUP_CONSTRUCTOR_1_PARAMETER(c, ASObject, _constructor, 1, Type::anyType, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
+	c->canHaveCyclicMembers = false;
 	c->setVariableAtomByQName("NEGATIVE_INFINITY",nsNameAndKind(),asAtomHandler::fromNumber(-numeric_limits<double>::infinity()),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("POSITIVE_INFINITY",nsNameAndKind(),asAtomHandler::fromNumber(numeric_limits<double>::infinity()),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtomHandler::fromNumber(numeric_limits<double>::max()),CONSTANT_TRAIT);

@@ -91,6 +91,7 @@ void ASString::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_FINAL | CLASS_SEALED);
 	c->isReusable = true;
+	c->canHaveCyclicMembers = false;
 	c->setDeclaredMethodByQName("split",AS3,c->getSystemState()->getBuiltinFunction(split,2,Class<Array>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("substr",AS3,c->getSystemState()->getBuiltinFunction(substr,2,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("substring",AS3,c->getSystemState()->getBuiltinFunction(substring,2,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);

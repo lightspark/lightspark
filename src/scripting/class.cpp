@@ -128,6 +128,8 @@ Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_i
 	this->global=_global;
 	this->incRef(); //create on reference for the classes map
 	isReusable = true;
+	use_protected=false;
+	canHaveCyclicMembers=false;
 	subtype = SUBTYPE_INHERIT;
 }
 

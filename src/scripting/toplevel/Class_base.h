@@ -394,6 +394,8 @@ public:
 	
 	/* returns the Global object this type is associated to */
 	virtual Global* getGlobalScope() const = 0;
+
+	virtual bool canHaveCyclicMemberReference() const = 0;
 };
 template<> inline Type* ASObject::as<Type>() { return dynamic_cast<Type*>(this); }
 
@@ -407,6 +409,7 @@ public:
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }
 	bool isBuiltin() const override { return true; }
 	Global* getGlobalScope() const override { return nullptr; }
+	bool canHaveCyclicMemberReference() const override { return true; }
 };
 
 class Void: public Type
@@ -419,6 +422,7 @@ public:
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }
 	bool isBuiltin() const override { return true; }
 	Global* getGlobalScope() const override { return nullptr; }
+	bool canHaveCyclicMemberReference() const override { return false; }
 };
 
 /*
@@ -437,6 +441,7 @@ public:
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override;
 	bool isBuiltin() const override { return true; }
 	Global* getGlobalScope() const override { return nullptr; }
+	bool canHaveCyclicMemberReference() const override { return true; }
 };
 
 class Class_base: public ASObject, public Type
@@ -513,9 +518,9 @@ public:
 	
 	// indicates if objects can be reused after they have lost their last reference
 	bool isReusable:1;
-private:
-	//TODO: move in Class_inherit
-	bool use_protected:1;
+
+	// indicates if members of objects have to be checked for cyclic references during GC
+	bool canHaveCyclicMembers:1;
 public:
 	uint32_t classID;
 	void addConstructorGetter();
@@ -601,6 +606,10 @@ public:
 		assert(slot_id < borrowedVariableSlots.size());
 		return borrowedVariableSlots[slot_id];
 	}
+	bool canHaveCyclicMemberReference() const override
+	{
+		return canHaveCyclicMembers;
+	}
 };
 
 class Template_base : public ASObject, public Type
@@ -621,6 +630,7 @@ public:
 	const multiname* resolveSlotTypeName(uint32_t slotId) const override { return nullptr; }
 	bool isBuiltin() const override { return true;}
 	Global* getGlobalScope() const override	{ return nullptr; }
+	bool canHaveCyclicMemberReference() const override { return true; }
 };
 
 class Class_object: public Class_base

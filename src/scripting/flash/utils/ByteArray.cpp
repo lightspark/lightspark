@@ -100,6 +100,7 @@ void ByteArray::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable=true;
+	c->canHaveCyclicMembers = false;
 	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_getLength,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("length","",c->getSystemState()->getBuiltinFunction(_setLength),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("bytesAvailable","",c->getSystemState()->getBuiltinFunction(_getBytesAvailable,0,Class<UInteger>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);

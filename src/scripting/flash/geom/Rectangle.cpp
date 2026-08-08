@@ -32,7 +32,8 @@ void Rectangle::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable = true;
-	
+	c->canHaveCyclicMembers = false;
+
 	c->setDeclaredMethodByQName("left","",c->getSystemState()->getBuiltinFunction(_getLeft,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("left","",c->getSystemState()->getBuiltinFunction(_setLeft),SETTER_METHOD,true);
 	c->setDeclaredMethodByQName("x","",c->getSystemState()->getBuiltinFunction(_getLeft,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);

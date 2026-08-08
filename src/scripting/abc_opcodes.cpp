@@ -2695,6 +2695,8 @@ void ABCVm::newClass(call_context* th, int n)
 	}
 	ret->isFinal = th->mi->context->instances[n].isFinal();
 	ret->isSealed = th->mi->context->instances[n].isSealed();
+	if (!ret->isSealed)
+		ret->canHaveCyclicMembers=true;
 	ret->isInterface = th->mi->context->instances[n].isInterface();
 
 	assert_and_throw(th->mi->context);

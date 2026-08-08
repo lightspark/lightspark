@@ -183,6 +183,7 @@ void UInteger::sinit(Class_base* c)
 {
 	CLASS_SETUP_CONSTRUCTOR_1_PARAMETER(c, ASObject, _constructor, 1, Type::anyType, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
+	c->canHaveCyclicMembers = false;
 	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)0xFFFFFFFF),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(),asAtomHandler::fromUInt((uint32_t)0),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);

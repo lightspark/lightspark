@@ -248,6 +248,7 @@ void Integer::sinit(Class_base* c)
 {
 	CLASS_SETUP_CONSTRUCTOR_1_PARAMETER(c, ASObject, _constructor, 1, Type::anyType, CLASS_SEALED | CLASS_FINAL);
 	c->isReusable = true;
+	c->canHaveCyclicMembers = false;
 	c->setVariableAtomByQName("MAX_VALUE",nsNameAndKind(c->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),asAtomHandler::fromInt(numeric_limits<int32_t>::max()),CONSTANT_TRAIT);
 	c->setVariableAtomByQName("MIN_VALUE",nsNameAndKind(c->getSystemState(),BUILTIN_STRINGS::STRING_AS3NS,NAMESPACE),asAtomHandler::fromInt(numeric_limits<int32_t>::min()),CONSTANT_TRAIT);
 	c->setDeclaredMethodByQName("toString",AS3,c->getSystemState()->getBuiltinFunction(_toString,1,Class<ASString>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,true);

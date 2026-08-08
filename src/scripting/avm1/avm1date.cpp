@@ -29,6 +29,7 @@ void AVM1Date::sinit(Class_base* c)
 {
 	CLASS_SETUP_CONSTRUCTOR_7_PARAMETER(c, ASObject, _constructor, 7, CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_GETREF(c,Number), CLASS_FINAL);
 	c->isReusable = true;
+	c->canHaveCyclicMembers = false;
 
 	c->prototype->setVariableByQName("getDate","",c->getSystemState()->getBuiltinFunction(getDate,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);
 	c->prototype->setVariableByQName("getDay","",c->getSystemState()->getBuiltinFunction(getDay,0,Class<Number>::getClassUninitialized(c->getSystemState())),CONSTANT_TRAIT);

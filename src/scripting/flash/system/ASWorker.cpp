@@ -224,6 +224,11 @@ void ASWorker::finalize()
 	inShutdown=true;
 	if (getWorker()==this)
 		setTLSWorker(nullptr);
+	delete[] stacktrace;
+	delete[] freelist;
+	freelist=nullptr;
+	delete[] freelist_template;
+	freelist_template=nullptr;
 	// destruct all constant refs
 	auto it = constantrefs.begin();
 	while (it != constantrefs.end())
@@ -245,11 +250,6 @@ void ASWorker::finalize()
 		delete o;
 	}
 	constantrefs.clear();
-	delete[] stacktrace;
-	delete[] freelist;
-	freelist=nullptr;
-	delete[] freelist_template;
-	freelist_template=nullptr;
 }
 
 void ASWorker::prepareShutdown()

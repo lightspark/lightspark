@@ -1476,6 +1476,8 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 				value = asAtomHandler::nullAtom;
 			}
 		}
+		if (mainObj->is<Class_inherit>() && traitKind == INSTANCE_TRAIT)
+			mainObj->as<Class_inherit>()->canHaveCyclicMembers=true;
 	}
 	else
 	{
@@ -1500,6 +1502,10 @@ void variables_map::initializeVar(multiname& mname, asAtom& obj, multiname* type
 
 		if (typemname->isStatic && typemname->cachedType == nullptr)
 			typemname->cachedType = type;
+		if (mainObj->is<Class_inherit>()
+			&& traitKind == INSTANCE_TRAIT
+			&& type->canHaveCyclicMemberReference())
+			mainObj->as<Class_inherit>()->canHaveCyclicMembers=true;
 	}
 	if (asAtomHandler::getObject(value))
 		cloneable = false;
@@ -2153,7 +2159,6 @@ void ASObject::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	preparedforshutdown=true;
-	classdef=nullptr;
 	objfreelist=nullptr;
 	while (!ownedObjects.empty())
 	{
@@ -2570,7 +2575,10 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 					break;
 			}
 
-			if (it->second.isRefcountedVar() && !o->getInDestruction() && o->canHaveCyclicMemberReference() && !o->deletedingarbagecollection)
+			if (it->second.isRefcountedVar()
+				&& !o->getInDestruction()
+				&& !o->deletedingarbagecollection
+				&& o->classdef->canHaveCyclicMemberReference())
 			{
 				if (o->getRefCount()==o->storedmembercount ||o==gcstate.startobj)
 				{
@@ -2787,7 +2795,7 @@ void ASObject::setClass(Class_base* c)
 
 bool ASObject::removefromGarbageCollection()
 {
-	if (!canHaveCyclicMemberReference())
+	if (!classdef->canHaveCyclicMemberReference())
 		return true;
 	if (getInstanceWorker() && markedforgarbagecollection)
 		getInstanceWorker()->removeObjectFromGarbageCollector(this);
@@ -2798,7 +2806,7 @@ bool ASObject::removefromGarbageCollection()
 
 bool ASObject::addToGarbageCollection()
 {
-	if (getInstanceWorker() && canHaveCyclicMemberReference() && !markedforgarbagecollection)
+	if (getInstanceWorker() && classdef->canHaveCyclicMemberReference() && !markedforgarbagecollection)
 	{
 		getInstanceWorker()->addObjectToGarbageCollector(this);
 		markedforgarbagecollection = true;
@@ -2809,7 +2817,7 @@ bool ASObject::addToGarbageCollection()
 
 void ASObject::addStoredMember()
 {
-	if (this->getConstant() || !this->canHaveCyclicMemberReference())
+	if (this->getConstant() || !classdef->canHaveCyclicMemberReference())
 		return;
 	assert(storedmembercount<this->getRefCount());
 	storedmembercount++;
@@ -2824,7 +2832,7 @@ void ASObject::removeStoredMember()
 {
 	if (getConstant() || getCached() || this->getInDestruction() || deletedingarbagecollection)
 		return;
-	if(!this->canHaveCyclicMemberReference())
+	if(!classdef->canHaveCyclicMemberReference())
 	{
 		decRef();
 		return;
@@ -2855,7 +2863,7 @@ bool ASObject::handleGarbageCollection()
 		decRef();
 		return false;
 	}
-	if (storedmembercount && this->canHaveCyclicMemberReference() && (this->getRefCount() == storedmembercount+1))
+	if (storedmembercount && classdef->canHaveCyclicMemberReference() && (this->getRefCount() == storedmembercount+1))
 	{
 		garbagecollectorstate gcstate(this,max(16U,this->Variables.size()));
 		this->countCylicMemberReferences(gcstate);
@@ -2952,9 +2960,10 @@ bool ASObject::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	ret = Variables.countCylicMemberReferences(gcstate,this) || ret;
 	return ret;
 }
+
 bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (!canHaveCyclicMemberReference())
+	if (!classdef->canHaveCyclicMemberReference())
 		return false;
 
 	if (this->hasStoredMemberStatic() && this->gccounter.hasmember)
@@ -2980,7 +2989,7 @@ bool ASObject::countAllCylicMemberReferences(garbagecollectorstate& gcstate)
 	}
 	else if (!getInDestruction()
 			   && !getCached()
-			   && canHaveCyclicMemberReference()
+			   && classdef->canHaveCyclicMemberReference()
 			   && !deletedingarbagecollection
 			   && !this->gccounter.inchecking
 			   )

@@ -231,7 +231,7 @@ Class_base::Class_base(const QName& name, uint32_t _classID, MemoryAccount* m)
 	,isSealed(false)
 	,isInterface(false)
 	,isReusable(false)
-	,use_protected(false)
+	,canHaveCyclicMembers(true)
 	,classID(_classID)
 {
 	setSystemState(getSys());
@@ -255,7 +255,7 @@ Class_base::Class_base(const Class_object* c)
 	,isSealed(false)
 	,isInterface(false)
 	,isReusable(false)
-	,use_protected(false)
+	,canHaveCyclicMembers(true)
 	,classID(UINT32_MAX)
 {
 	type=T_CLASS;
@@ -310,6 +310,9 @@ void Class_base::copyBorrowedTraits(Class_base* src)
 		borrowedVariables.Variables.insert(make_pair(i->first,v));
 		setupBorrowedSlot(&v);
 	}
+	if (src != Class<ASObject>::getRef(getSystemState()).getPtr()
+		&& src->canHaveCyclicMemberReference())
+		this->canHaveCyclicMembers=true;
 }
 
 void Class_base::initStandardProps()
@@ -558,7 +561,6 @@ void Class_base::finalize()
 	isFinal = false;
 	isSealed = false;
 	isInterface = false;
-	use_protected = false;
 }
 void Class_base::prepareShutdown()
 {

@@ -161,10 +161,15 @@ void Vector::prepareShutdown()
 bool Vector::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	if (gcstate.stopped)
+		return false;
+	if (!this->vec_type->canHaveCyclicMemberReference())
+		return ret;
 	for (auto it = vec.begin(); it != vec.end(); it++)
 	{
-		if (asAtomHandler::isObject(*it))
-			ret = asAtomHandler::getObjectNoCheck(*it)->countAllCylicMemberReferences(gcstate) || ret;
+		ASObject* o = asAtomHandler::getObject(*it);
+		if (o)
+			ret = o->countAllCylicMemberReferences(gcstate) || ret;
 	}
 	return ret;
 }

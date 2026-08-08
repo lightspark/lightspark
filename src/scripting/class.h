@@ -56,6 +56,7 @@ private:
 	_NR<ASObject> instancefactory;
 	asfreelist freelist;
 public:
+	bool use_protected;
 	void getInstanceTemporary(ASWorker* worker,asAtom& ret) override;
 	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait, Global* _global);
 	bool checkScriptInit();

@@ -202,9 +202,9 @@ void lightspark::abc_callFunctionBuiltinOneArg_constant_constant_localresult(cal
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar() : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionBuiltinOneArg_ccl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
-	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, &value, 1);
-	ASATOM_DECREF(oldres);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,ret);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
 	++(context->exec_pos);
@@ -217,9 +217,9 @@ void lightspark::abc_callFunctionBuiltinOneArg_local_constant_localresult(call_c
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar() : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionBuiltinOneArg_lcl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
-	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, &value, 1);
-	ASATOM_DECREF(oldres);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,ret);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
 	++(context->exec_pos);
@@ -232,9 +232,9 @@ void lightspark::abc_callFunctionBuiltinOneArg_constant_local_localresult(call_c
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar() : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionOneBuiltinArg_cll " << instrptr->local_pos2<<"/"<<instrptr->local3.pos<<" "<<asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value));
-	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, &value, 1);
-	ASATOM_DECREF(oldres);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,ret);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
 	++(context->exec_pos);
@@ -247,9 +247,9 @@ void lightspark::abc_callFunctionBuiltinOneArg_local_local_localresult(call_cont
 	bool fromglobal = (++context->exec_pos)->local2.flags & ABC_OP_FROMGLOBAL;
 	asAtom func = fromglobal ? context->exec_pos->cachedvar3->getVar() : asAtomHandler::fromObjectNoPrimitive(context->exec_pos->cacheobj3);
 	LOG_CALL("callFunctionOneBuiltinArg_lll " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << ' ' << asAtomHandler::toDebugString(obj)<<" " <<asAtomHandler::toDebugString(value)<<" "<<instrptr->local_pos1<<"/"<<instrptr->local_pos2<<"/"<<instrptr->local3.pos);
-	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, &value, 1);
-	ASATOM_DECREF(oldres);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,ret);
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
 	++(context->exec_pos);
@@ -458,9 +458,9 @@ void lightspark::abc_callFunctionBuiltinNoArgs_constant_localresult(call_context
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
-	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, nullptr, 0);
-	ASATOM_DECREF(oldres);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, nullptr, 0);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
 }
 void lightspark::abc_callFunctionBuiltinNoArgs_local_localresult(call_context* context)
@@ -479,8 +479,8 @@ void lightspark::abc_callFunctionBuiltinNoArgs_local_localresult(call_context* c
 		createError<TypeError>(context->worker,kConvertUndefinedToObjectError);
 		return;
 	}
-	asAtom oldres = CONTEXT_GETLOCAL(context,instrptr->local3.pos);
-	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(CONTEXT_GETLOCAL(context,instrptr->local3.pos),context->worker, obj, nullptr, 0);
-	ASATOM_DECREF(oldres);
+	asAtom ret = asAtomHandler::invalidAtom;
+	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, nullptr, 0);
+	REPLACELOCALRESULT(context,instrptr->local3.pos,ret);
 	++(context->exec_pos);
 }

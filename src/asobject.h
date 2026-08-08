@@ -1060,13 +1060,6 @@ public:
 	}
 	bool handleGarbageCollection();
 	virtual bool countCylicMemberReferences(garbagecollectorstate& gcstate);
-	FORCE_INLINE bool canHaveCyclicMemberReference()
-	{
-		return type == T_ARRAY || type == T_CLASS || type == T_PROXY || type == T_TEMPLATE || type == T_FUNCTION ||
-				(type == T_OBJECT &&
-				subtype != SUBTYPE_DATE
-				); // TODO check other subtypes
-	}
 	bool countAllCylicMemberReferences(garbagecollectorstate& gcstate);
 
 	ASFUNCTION_ATOM(_constructor);

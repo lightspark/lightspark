@@ -22,6 +22,7 @@
 
 #include <cstdint>
 #include <list>
+#include <utility>
 
 #include "tiny_string.h"
 #include "utils/optional.h"
@@ -33,11 +34,13 @@ namespace lightspark
 
 class IXMLParser;
 
+using XMLAttr = std::pair<tiny_string, tiny_string>;
+
 class XMLStartTag
 {
 private:
 	tiny_string name;
-	std::list<tiny_string> attrs;
+	std::list<XMLAttr> attrs;
 public:
 	XMLStartTag
 	(
@@ -134,12 +137,44 @@ private:
 	tiny_string data;
 	CharIterator pos;
 	IXMLParser* parser;
+	bool ignoreWhite;
+	bool ignoreCase;
+
+	CharIterator trimWhitespace(const CharIterator& end) const;
+	XMLEvent parseDocType();
+	XMLEvent parseXMLDecl();
+	XMLEvent parsePI();
+	XMLEvent parseRef();
+	XMLEvent parseComment(CharIterator it);
+	XMLEvent parseCData(CharIterator it);
+	tiny_string parseNodeWithTerminator(const tiny_string& str);
+	XMLAttr parseAttr();
+	void throwIf(bool flag);
+	void throwIfEmptyAfterWhitespace();
 public:
 	XMLParser
 	(
 		const tiny_string& _data,
 		IXMLParser* _parser = nullptr
-	) : data(_data), parser(_parser) {}
+	) : XMLParser(_data, false, false, _parser) {}
+
+	XMLParser
+	(
+		const tiny_string& _data,
+		bool _ignoreWhite,
+		bool _ignoreCase,
+		IXMLParser* _parser = nullptr
+	) :
+	data(_data),
+	pos(data.begin()),
+	parser(_parser),
+	ignoreWhite(_ignoreWhite),
+	ignoreCase(_ignoreCase) {}
+
+	bool getIgnoreWhite() const { return ignoreWhite; }
+	void setIgnoreWhite(bool flag) { ignoreWhite = flag; }
+	bool getIgnoreCase() const { return ignoreCase; }
+	void setIgnoreCase(bool flag) { ignoreCase = flag; }
 
 	void read();
 	template<typename V>

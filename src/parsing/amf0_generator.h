@@ -79,7 +79,7 @@ public:
 		Optional<Amf0ArraySerializer>,
 		uint16_t
 	>;
-
+protected:
 	virtual uint16_t makeRef() = 0;
 	virtual Optional<uint16_t> tryGetRef(void* ptr) const  = 0;
 	virtual void addRef(void* ptr, uint16_t ref)  = 0;
@@ -87,34 +87,25 @@ public:
 	(
 		const tiny_string& name,
 		const AMFValue& val,
-		bool incRef
-	)  = 0;
+		bool incRef = true
+	) = 0;
 
 	void writeNumber(const tiny_string& name, number_t val);
 	void writeBool(const tiny_string& name, bool val);
 	void writeString(const tiny_string& name, const tiny_string& str);
-	virtual WriteObjType writeObject(const tiny_string& name, void* obj);
+	WriteObjType writeObject(const tiny_string& name, void* obj);
+	void writeNull(const tiny_string& name);
+	void writeUndefined(const tiny_string& name);
 	void writeRef(const tiny_string& name, uint16_t ref);
-	virtual WriteArrayType writeECMAArray
+	WriteArrayType writeArray(const tiny_string& name, void* arr);
+	void writeDate
 	(
 		const tiny_string& name,
-		void* arr
-	)  = 0;
+		number_t val,
+		uint16_t timeZone
+	);
 
-	virtual WriteArrayType writeStrictArray
-	(
-		const tiny_string& name,
-		void* arr
-	)  = 0;
-
-	void writeDate(const tiny_string& name, number_t val);
-	void writeLongString(const tiny_string& name, const tiny_string& str);
 	void writeXML(const tiny_string& name, const tiny_string& str);
-	virtual WriteObjType writeTypedObject
-	(
-		const tiny_string& name,
-		void* obj
-	) = 0;
 };
 
 class Amf0Serializer : public Amf0SerializerBase
@@ -123,35 +114,68 @@ private:
 	std::vector<AMFElement> elems;
 	uint16_t curRef;
 	tsl::ordered_map<void*, uint16_t> refs;
-public:
-	virtual uint16_t makeRef() override;
-	virtual Optional<uint16_t> tryGetRef(void* ptr) const override;
-	virtual void addRef(void* ptr, uint16_t ref) override;
-	virtual void addElem
+
+	static void writeNumber(IAMFWriter& writer, number_t val);
+	static void writeBool(IAMFWriter& writer, bool val);
+	static void writeStringVal(IAMFWriter& writer, const tiny_string& str);
+	static void writeString(IAMFWriter& writer, const tiny_string& str);
+	static void writeObject
+	(
+		IAMFWriter& writer,
+		Span<const AMFElement> elems
+	);
+
+	static void writeRef(IAMFWriter& writer, uint16_t ref);
+	static void writeECMAArray
+	(
+		IAMFWriter& writer,
+		Span<const AMFElement> elems,
+		size_t size
+	);
+
+	static void writeStrictArray
+	(
+		IAMFWriter& writer,
+		Span<const AMF0Value> elems
+	);
+
+	static void writeDate
+	(
+		IAMFWriter& writer,
+		number_t val,
+		uint16_t timeZone
+	);
+
+	static void writeLongStringVal(IAMFWriter& writer, const tiny_string& str);
+	static void writeLongString(IAMFWriter& writer, const tiny_string& str);
+	static void writeXML(IAMFWriter& writer, const tiny_string& str);
+
+	static void writeTypedObject
+	(
+		IAMFWriter& writer,
+		const tiny_string& name,
+		Span<const AMFElement> elems
+	);
+
+	static void writeAMF3Value(IAMFWriter& writer, const AMF3Value& val);
+	static void writeElem
+	(
+		IAMFWriter& writer,
+		const tiny_string& name,
+		const AMF0Value& val
+	);
+protected:
+	uint16_t makeRef() override { return curRef++; }
+	Optional<uint16_t> tryGetRef(void* ptr) const override;
+	void addRef(void* ptr, uint16_t ref) override;
+	void addElem
 	(
 		const tiny_string& name,
 		const AMFValue& val,
-		bool incRef
+		bool incRef = true
 	) override;
-
-	virtual WriteArrayType writeECMAArray
-	(
-		const tiny_string& name,
-		void* arr
-	) override;
-
-	virtual WriteArrayType writeStrictArray
-	(
-		const tiny_string& name,
-		void* arr
-	) override;
-
-	virtual WriteObjType writeTypedObject
-	(
-		const tiny_string& name,
-		void* obj
-	) override;
-
+public:
+	static void writeValue(IAMFWriter& writer, const AMF0Value& val);
 	LSO makeLSO(const tiny_string& name);
 };
 
@@ -161,45 +185,26 @@ class Amf0ObjectSerializer : public Amf0SerializerBase
 private:
 	std::vector<AMFElement> elems;
 	Base& parent;
-public:
-	Amf0ObjectSerializer(Base& _parent) : parent(_parent) {}
-
-	virtual uint16_t makeRef() override { return parent.makeRef(); }
-	virtual Optional<uint16_t> tryGetRef(void* ptr) const override
+protected:
+	uint16_t makeRef() override { return parent.makeRef(); }
+	Optional<uint16_t> tryGetRef(void* ptr) const override
 	{
 		return parent.tryGetRef(ptr);
 	}
 
-	virtual void addRef(void* ptr, uint16_t ref) override
+	void addRef(void* ptr, uint16_t ref) override
 	{
 		parent.addRef(ptr, ref);
 	}
 
-	virtual void addElem
+	void addElem
 	(
 		const tiny_string& name,
 		const AMFValue& val,
-		bool incRef
+		bool incRef = true
 	) override;
-
-	virtual WriteArrayType writeECMAArray
-	(
-		const tiny_string& name,
-		void* arr
-	) override;
-
-	virtual WriteArrayType writeStrictArray
-	(
-		const tiny_string& name,
-		void* arr
-	) override;
-
-	virtual WriteObjType writeTypedObject
-	(
-		const tiny_string& name,
-		void* obj
-	) override;
-
+public:
+	Amf0ObjectSerializer(Base& _parent) : parent(_parent) {}
 	void commit(const tiny_string& name);
 };
 
@@ -209,46 +214,27 @@ class Amf0ArraySerializer : public Amf0SerializerBase
 private:
 	std::vector<AMFElement> elems;
 	Base& parent;
-public:
-	Amf0ArraySerializer(Base& _parent) : parent(_parent) {}
-
-	virtual uint16_t makeRef() override { return parent.makeRef(); }
-	virtual Optional<uint16_t> tryGetRef(void* ptr) const override
+protected:
+	uint16_t makeRef() override { return parent.makeRef(); }
+	Optional<uint16_t> tryGetRef(void* ptr) const override
 	{
 		return parent.tryGetRef(ptr);
 	}
 
-	virtual void addRef(void* ptr, uint16_t ref) override
+	void addRef(void* ptr, uint16_t ref) override
 	{
 		parent.addRef(ptr, ref);
 	}
 
-	virtual void addElem
+	void addElem
 	(
 		const tiny_string& name,
 		const AMFValue& val,
-		bool incRef
+		bool incRef = true
 	) override;
-
-	virtual WriteArrayType writeECMAArray
-	(
-		const tiny_string& name,
-		void* arr
-	) override;
-
-	virtual WriteArrayType writeStrictArray
-	(
-		const tiny_string& name,
-		void* arr
-	) override;
-
-	virtual WriteObjType writeTypedObject
-	(
-		const tiny_string& name,
-		void* obj
-	) override;
-
-	void commit(const tiny_string& name);
+public:
+	Amf0ArraySerializer(Base& _parent) : parent(_parent) {}
+	void commit(const tiny_string& name, size_t size);
 };
 
 }

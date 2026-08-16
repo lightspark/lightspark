@@ -2773,6 +2773,20 @@ void ABCVm::newClass(call_context* th, int n)
 		int kind=cur->traits[i].kind&0xf;
 		if(kind==traits_info::Method || kind==traits_info::Setter || kind==traits_info::Getter)
 			th->mi->context->buildTrait(ret,additionalslots,&cur->traits[i],true);
+		else if (kind==traits_info::Slot)
+		{
+			// check if slot type can have cyclic member references
+			multiname* typemname=th->mi->context->getMultiname(cur->traits[i].type_name,nullptr);
+			Type* type = nullptr;
+			if (typemname->isStatic)
+				type = typemname->cachedType;
+			if (type == nullptr)
+				type = Type::getBuiltinType(ret->getInstanceWorker(),typemname);
+			if (type == nullptr)
+				type = Type::getTypeFromMultiname(typemname,th->mi->context,true);
+			if(type==nullptr || type->canHaveCyclicMemberReference())
+				ret->canHaveCyclicMembers=true;
+		}
 	}
 	ret->initAdditionalSlots(additionalslots);
 

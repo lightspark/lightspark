@@ -24,6 +24,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <functional>
 #include <vector>
 
 #include "compat.h"
@@ -43,32 +44,53 @@ struct TraitsRef
 {
 	tiny_string name;
 	std::vector<tiny_string> staticProps;
+	bool external;
 	bool dynamic;
 
 	TraitsRef
 	(
 		const tiny_string& _name = "",
 		const std::vector<tiny_string>& _staticProps = {},
+		bool _external = false,
 		bool _dynamic = false
-	) : name(_name), staticProps(_staticProps), dynamic(_dynamic) {}
+	) :
+	name(_name),
+	staticProps(_staticProps),
+	external(_external),
+	dynamic(_dynamic) {}
 };
 
 class Amf3Deserializer
 {
+public:
+	using ExtDecoderFunc = std::function<std::vector<AMFElement>
+	(
+		Span<const uint8_t>&,
+		Amf3Deserializer&
+	)>;
 private:
-	tiny_string parserError;
 	std::vector<tiny_string> stringMap;
 	std::vector<_R<AMF3Value>> objMap;
-	std::vector<TraitsRef> traitsgMap;
+	std::vector<TraitsRef> traitsMap;
+	std::unordered_map<tiny_string, ExtDecoderFunc> extDecoders;
+	size_t objId { 0 };
 
+	std::pair<bool, size_t> parseSize(Span<const uint8_t>& data);
+	uint32_t parseInt(Span<const uint8_t>& data);
 	int32_t parseInteger(Span<const uint8_t>& data);
 	number_t parseDouble(Span<const uint8_t>& data);
 	tiny_string parseString(Span<const uint8_t>& data);
-	_R<AMF3Value> parseXMLDoc(Span<const uint8_t>& data);
 	_R<AMF3Value> parseDate(Span<const uint8_t>& data);
 	_R<AMF3Value> parseArray(Span<const uint8_t>& data);
 	_R<AMF3Value> parseObject(Span<const uint8_t>& data);
-	_R<AMF3Value> parseXML(Span<const uint8_t>& data);
+	_R<AMF3Value> parseObjectImpl
+	(
+		Span<const uint8_t>& data,
+		size_t size,
+		size_t idx
+	);
+
+	_R<AMF3Value> parseXML(Span<const uint8_t>& data, bool isStr);
 	_R<AMF3Value> parseByteArray(Span<const uint8_t>& data);
 	_R<AMF3Value> parseVector
 	(
@@ -80,13 +102,22 @@ private:
 	_R<AMF3Value> parseRefOrVal
 	(
 		Span<const uint8_t>& data,
-		std::function<_R<AMF3Value>()> makeValue,
+		std::function<AMF3Value()> makeValue,
 		std::function<_R<AMF3Value>(size_t, size_t)> parseVal
 	);
+
+	TraitsRef parseTraits
+	(
+		Span<const uint8_t>& data,
+		size_t size,
+		size_t idx
+	);
+
+	AMFElement parseElement(Span<const uint8_t>& data);
+	AMF3Value parseValueImpl(Span<const uint8_t>& data);
 public:
 	_R<AMF3Value> parseValue(Span<const uint8_t>& data);
 	std::vector<AMFElement> parseBody(Span<const uint8_t>& data);
-	const tiny_string& getParserError() const { return parserError; }
 };
 
 }

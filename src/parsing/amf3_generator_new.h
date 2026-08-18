@@ -76,12 +76,19 @@ private:
 	size_t objId { 0 };
 
 	std::pair<bool, size_t> parseSize(Span<const uint8_t>& data);
-	uint32_t parseInt(Span<const uint8_t>& data);
+	uint32_t parseUInt29(Span<const uint8_t>& data);
 	int32_t parseInteger(Span<const uint8_t>& data);
 	number_t parseDouble(Span<const uint8_t>& data);
 	tiny_string parseString(Span<const uint8_t>& data);
 	_R<AMF3Value> parseDate(Span<const uint8_t>& data);
 	_R<AMF3Value> parseArray(Span<const uint8_t>& data);
+	_R<AMF3Value> parseArrayImpl
+	(
+		Span<const uint8_t>& data,
+		size_t size,
+		size_t idx
+	);
+
 	_R<AMF3Value> parseObject(Span<const uint8_t>& data);
 	_R<AMF3Value> parseObjectImpl
 	(
@@ -98,7 +105,17 @@ private:
 		Span<const uint8_t>& data
 	);
 
+	template<typename T>
+	_R<AMF3Value> parseVec(Span<const uint8_t>& data, size_t size);
+	_R<AMF3Value> parseObjVec(Span<const uint8_t>& data, size_t size);
 	_R<AMF3Value> parseDictionary(Span<const uint8_t>& data);
+	_R<AMF3Value> parseDictionaryImpl
+	(
+		Span<const uint8_t>& data,
+		size_t size,
+		size_t idx
+	);
+
 	_R<AMF3Value> parseRefOrVal
 	(
 		Span<const uint8_t>& data,
@@ -106,7 +123,7 @@ private:
 		std::function<_R<AMF3Value>(size_t, size_t)> parseVal
 	);
 
-	TraitsRef parseTraits
+	const TraitsRef& parseTraits
 	(
 		Span<const uint8_t>& data,
 		size_t size,

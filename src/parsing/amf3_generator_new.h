@@ -25,6 +25,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <functional>
+#include <tsl/ordered_set.h>
 #include <vector>
 
 #include "compat.h"
@@ -135,6 +136,126 @@ private:
 public:
 	_R<AMF3Value> parseValue(Span<const uint8_t>& data);
 	std::vector<AMFElement> parseBody(Span<const uint8_t>& data);
+};
+
+template<typename T>
+class ElemVec
+{
+	using VecType = tsl::ordered_set<T>;
+private:
+	VecType elems;
+public:
+	using value_type = VecType::value_type;
+	using size_type = VecType::size_type;
+	using difference_type = VecType::difference_type;
+	using iterator = VecType::iterator;
+	using const_iterator = VecType::iterator;
+
+	using Iter = VecType::iterator;
+	using ConstIter = VecType::const_iterator;
+	using SizePair = std::pair<bool, size_t>;
+
+	bool hasElem(const T& val) const { return elems.contains(val); }
+	void addElem(const T& val) { elems.insert(val); }
+	template<typename... Args>
+	void emplaceElem(Args&&... args) { elems.emplace(args...); }
+	Optional<const T&> getElem(size_t i) const;
+	Optional<size_t> getIndex() const;
+	SizePair toSize(const T& val, size_t size = 0) const;
+	SizePair toSizeAdd(const T& val, size_t size - 0);
+
+	Iter begin() { return elems.begin(); }
+	ConstIter begin() { return elems.begin(); }
+	ConstIter cbegin() { return elems.begin(); }
+	Iter end() { return elems.end(); }
+	ConstIter end() { return elems.end(); }
+	ConstIter cend() { return elems.end(); }
+};
+
+class Amf3Serializer
+{
+	using RefPair = std::pair<AMF3TypeMarker, size_t>;
+	using DictPair = std::pair<_R<AMF3Value>, _R<AMF3Value>>;
+private:
+	ElemVec<tiny_string> stringMap;
+	ElemVec<AMF3Value> objMap;
+	std::vector<TraitsRef> traitsMap;
+	std::unordered_map<tiny_string, IExternalEncoder> extEncoders;
+	std::unordered_map<size_t, RefPair> refMap;
+
+	void writeUInt29(IAMFWriter& writer, uint32_t val);
+	void writeInt(IAMFWriter& writer, int32_t val);
+	void writeBool(IAMFWriter& writer, bool val);
+	void writeDouble(IAMFWriter& writer, number_t val);
+	void writeStringVal(IAMFWriter& writer, const tiny_string& str);
+	void writeString(IAMFWriter& writer, const tiny_string& str);
+	void writeDate(IAMFWriter& writer, size_t id, number_t time);
+	void writeArray
+	(
+		IAMFWriter& writer,
+		Span<const AMFElement> elems,
+		Span<const AMF3Value> denseElems
+	);
+
+	void writeObject
+	(
+		IAMFWriter& writer,
+		size_t id,
+		Optional<const TraitsRef&> traits,
+		Span<const AMFElement> props,
+		Span<const AMFElement> customProps = {}
+	);
+
+	void writeXML
+	(
+		IAMFWriter& writer,
+		const tiny_string& str,
+		bool isStr
+	);
+
+	void writeByteArray(IAMFWriter& writer, Span<const uint8_t> data);
+	template<typename T>
+	void writeVector
+	(
+		IAMFWriter& writer,
+		Span<const T> elems,
+		bool fixedLen
+	);
+
+	void writeObjVector
+	(
+		IAMFWriter& writer,
+		size_t id,
+		Span<const T> elems,
+		bool fixedLen
+	);
+
+	void writeDictionary
+	(
+		IAMFWriter& writer,
+		size_t id,
+		Span<const DictPair> elems,
+		bool weakKeys
+	);
+
+	void writeRef
+	(
+		IAMFWriter& writer,
+		const AMF3TypeMarker& type,
+		size_t ref
+	);
+
+	void writeTraits(IAMFWriter& writer, const TraitsRef& traits);
+	void writeTraitRef(IAMFWriter& writer, const TraitsRef& ref);
+	void writeElem
+	(
+		IAMFWriter& writer,
+		const tiny_string& name,
+		const AMF3Value& val
+	);
+public:
+	void writeValue(IAMFWriter& writer, const AMF3Value& val);
+	void writeLSOBody(IAMFWriter& writer, const LSO& lso);
 };
 
 }

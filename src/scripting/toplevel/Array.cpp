@@ -37,7 +37,10 @@
 using namespace std;
 using namespace lightspark;
 
-Array::Array(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_ARRAY),currentsize(0)
+Array::Array(ASWorker* wrk, Class_base* c)
+	:ASObject(wrk,c,T_ARRAY)
+	,currentsize(0)
+	,canHaveCyclicMembersCount(0)
 {
 }
 
@@ -72,6 +75,7 @@ bool Array::destruct()
 	data_first.clear();
 	data_second.clear();
 	currentsize=0;
+	canHaveCyclicMembersCount=0;
 	return destructIntern();
 }
 
@@ -739,6 +743,8 @@ ASFUNCTIONBODY_ATOM(Array,shift)
 	{
 		o->incRef();// will be decreffed in removeStoreMember
 		o->removeStoredMember();
+		if (o->getClass()->canHaveCyclicMemberReference())
+			--th->canHaveCyclicMembersCount;
 	}
 }
 
@@ -839,13 +845,21 @@ ASFUNCTIONBODY_ATOM(Array,splice)
 			if (i+startIndex < ARRAY_SIZE_THRESHOLD)
 			{
 				if ((uint32_t)startIndex <th->data_first.size())
+				{
+					ASObject* o = asAtomHandler::getObject(th->data_first[startIndex]);
+					if (o && o->getClass()->canHaveCyclicMemberReference())
+						--th->canHaveCyclicMembersCount;
 					th->data_first.erase(th->data_first.begin()+startIndex);
+				}
 			}
 			else
 			{
 				auto it = th->data_second.find(startIndex+i);
 				if (it != th->data_second.end())
 				{
+					ASObject* o = asAtomHandler::getObject(it->second);
+					if (o && o->getClass()->canHaveCyclicMemberReference())
+						--th->canHaveCyclicMembersCount;
 					th->data_second.erase(it);
 				}
 			}
@@ -1034,6 +1048,8 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 				{
 					o->incRef();// will be decreffed in removeStoreMember
 					o->removeStoredMember();
+					if (o->getClass()->canHaveCyclicMemberReference())
+						--th->canHaveCyclicMembersCount;
 				}
 			}
 		}
@@ -1050,6 +1066,8 @@ ASFUNCTIONBODY_ATOM(Array,_pop)
 			{
 				o->incRef();// will be decreffed in removeStoreMember
 				o->removeStoredMember();
+				if (o->getClass()->canHaveCyclicMemberReference())
+					--th->canHaveCyclicMembersCount;
 			}
 		}
 		else
@@ -2145,6 +2163,8 @@ ASFUNCTIONBODY_ATOM(Array,removeAt)
 	{
 		o->incRef();
 		o->removeStoredMember();
+		if (o->getClass()->canHaveCyclicMemberReference())
+			--th->canHaveCyclicMembersCount;
 	}
 }
 int32_t Array::getVariableByMultiname_i(const multiname& name, ASWorker* wrk)
@@ -2433,7 +2453,11 @@ bool Array::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 	{
 		ASObject* obj = asAtomHandler::getObject(data_first.at(index));
 		if (obj)
+		{
+			if (obj->getClass()->canHaveCyclicMemberReference())
+				--canHaveCyclicMembersCount;
 			obj->removeStoredMember();
+		}
 		data_first[index]=asAtomHandler::invalidAtom;
 		return true;
 	}
@@ -2443,7 +2467,11 @@ bool Array::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 		return true;
 	ASObject* obj = asAtomHandler::getObject(it->second);
 	if (obj)
+	{
+		if (obj->getClass()->canHaveCyclicMemberReference())
+			--canHaveCyclicMembersCount;
 		obj->removeStoredMember();
+	}
 	data_second.erase(it);
 	return true;
 }
@@ -2628,6 +2656,8 @@ bool Array::countCylicMemberReferences(garbagecollectorstate& gcstate)
 	bool ret = ASObject::countCylicMemberReferences(gcstate);
 	if (gcstate.stopped)
 		return false;
+	if (canHaveCyclicMembersCount==0)
+		return ret;
 	for (auto it = data_first.begin(); it != data_first.end(); it++)
 	{
 		if (asAtomHandler::isObject(*it))
@@ -2655,7 +2685,11 @@ void Array::resize(uint64_t n,bool removemember)
 					ASObject* o = asAtomHandler::getObject(*it1);
 					it1++;
 					if (o)
+					{
+						if (o->getClass()->canHaveCyclicMemberReference())
+							--canHaveCyclicMembersCount;
 						o->removeStoredMember();
+					}
 				}
 			}
 			data_first.resize(n);
@@ -2670,7 +2704,11 @@ void Array::resize(uint64_t n,bool removemember)
 				ASObject* o = asAtomHandler::getObject(it2a->second);
 				data_second.erase(it2a);
 				if (removemember && o)
+				{
+					if (o->getClass()->canHaveCyclicMemberReference())
+						--canHaveCyclicMembersCount;
 					o->removeStoredMember();
+				}
 			}
 			else
 				++it2;
@@ -2928,7 +2966,11 @@ bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref, bo
 					asAtom oldvar = data_first.at(index);
 					ASObject* obj = asAtomHandler::getObject(oldvar);
 					if (obj)
+					{
+						if (obj->getClass()->canHaveCyclicMemberReference())
+							--canHaveCyclicMembersCount;
 						obj->removeStoredMember();
+					}
 				}
 			}
 			else
@@ -2942,6 +2984,8 @@ bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref, bo
 						obj->incRef();
 					if (addmember)
 						obj->addStoredMember();
+					if (obj->getClass()->canHaveCyclicMemberReference())
+						++canHaveCyclicMembersCount;
 				}
 			}
 			data_first[index]=o;
@@ -2957,7 +3001,11 @@ bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref, bo
 					asAtom oldvar = data_second[index];
 					ASObject* obj = asAtomHandler::getObject(oldvar);
 					if (obj)
+					{
+						if (obj->getClass()->canHaveCyclicMemberReference())
+							--canHaveCyclicMembersCount;
 						obj->removeStoredMember();
+					}
 				}
 			}
 			if (ret)
@@ -2969,6 +3017,8 @@ bool Array::set(unsigned int index, asAtom& o, bool checkbounds, bool addref, bo
 						obj->incRef();
 					if (addmember)
 						obj->addStoredMember();
+					if (obj->getClass()->canHaveCyclicMemberReference())
+						++canHaveCyclicMembersCount;
 				}
 			}
 			data_second[index]=o;

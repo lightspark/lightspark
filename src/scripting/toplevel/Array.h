@@ -54,6 +54,7 @@ class Array: public ASObject
 {
 protected:
 	uint64_t currentsize;
+	uint64_t canHaveCyclicMembersCount;
 	// data is split into a vector for the first ARRAY_SIZE_THRESHOLD indexes, and a map for bigger indexes
 	std::vector<asAtom> data_first;
 	std::unordered_map<uint32_t,asAtom> data_second;

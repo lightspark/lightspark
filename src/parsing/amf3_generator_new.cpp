@@ -132,7 +132,7 @@ _R<AMF3Value> Amf3Deserializer::parseArrayImpl
 
 	auto denseElems = parseDenseElems();
 	assert_and_throw(arr.hasValue());
-	return _MR(new AMF3Value(arr->id, elems, densElems));
+	return _MR(new AMF3Value(arr->id, elems, denseElems));
 }
 
 _R<AMF3Value> Amf3Deserializer::parseArray(Span<const uint8_t>& data)
@@ -466,4 +466,237 @@ std::vector<AMFElement> Amf3Deserializer::parseBody(Span<const uint8_t>& data)
 		(void)data.read();
 	}
 	return ret;
+}
+
+void Amf3Serializer::writeUInt29(IAMFWriter& writer, uint32_t val)
+{
+}
+
+void Amf3Serializer::writeInt(IAMFWriter& writer, int32_t val)
+{
+}
+
+void Amf3Serializer::writeBool(IAMFWriter& writer, bool val)
+{
+}
+
+void Amf3Serializer::writeDouble(IAMFWriter& writer, number_t val)
+{
+}
+
+void Amf3Serializer::writeStringVal
+(
+	IAMFWriter& writer,
+	const tiny_string& str
+)
+{
+}
+
+void Amf3Serializer::writeString
+(
+	IAMFWriter& writer,
+	const tiny_string& str
+)
+{
+}
+
+void Amf3Serializer::writeDate(IAMFWriter& writer, size_t id, number_t time)
+{
+}
+
+void Amf3Serializer::writeArray
+(
+	IAMFWriter& writer,
+	size_t id,
+	Span<const AMFElement> elems,
+	Span<const AMF3Value> denseElems
+)
+{
+}
+
+void Amf3Serializer::writeObject
+(
+	IAMFWriter& writer,
+	size_t id,
+	Span<const AMFElement> props,
+	Span<const AMFElement> customProps
+)
+{
+}
+
+void Amf3Serializer::writeXML
+(
+	IAMFWriter& writer,
+	const tiny_string& str,
+	bool isStr
+)
+{
+}
+
+void Amf3Serializer::writeByteArray
+(
+	IAMFWriter& writer,
+	Span<const uint8_t> data
+)
+{
+}
+
+template<typename T>
+void Amf3Serializer::writeVector
+(
+	IAMFWriter& writer,
+	size_t id,
+	Span<const T> elems,
+	bool fixedLen
+)
+{
+}
+
+void Amf3Serializer::writeDictionary
+(
+	IAMFWriter& writer,
+	size_t id,
+	Span<const DictPair> elems,
+	bool weakKeys
+)
+{
+}
+
+void Amf3Serializer::writeRef
+(
+	IAMFWriter& writer,
+	const AMF3TypeMarker& type,
+	size_t ref
+)
+{
+}
+
+void Amf3Serializer::writeTraits
+(
+	IAMFWriter& writer,
+	const TraitsRef& traits
+)
+{
+}
+
+void Amf3Serializer::writeTraitRef
+(
+	IAMFWriter& writer,
+	const TraitsRef& traits
+)
+{
+}
+
+void Amf3Serializer::writeElem
+(
+	IAMFWriter& writer,
+	const tiny_string& name,
+	const AMF3Value& val
+)
+{
+	writeString(writer, name);
+	writeValue(writer, val);
+}
+
+void Amf3Serializer::writeValue(IAMFWriter& writer, const AMF3Value& val)
+{
+	using Type = AMF3TypeMarker;
+	val.visit(makeVisitor
+	(
+		[&](AMF3Undefined) { writer.writeUInt8(Type::Undefined); },
+		[&](AMF3Null) { writer.writeUInt8(Type::Null); },
+		[&](bool flag) { writeBool(writer, flag); },
+		[&](int32_t val) { writeInt(writer, val); },
+		[&](number_t num) { writeNumber(writer, num); },
+		[&](const tiny_string& str) { writeStringVal(writer, str); },
+		[&](const AMF3Date& date)
+		{
+			writeDate(writer, date.id, date.date);
+		},
+		[&](const AMF3Array& arr)
+		{
+			auto pair = objMap.toLengthAdd(val);
+			if (pair.first)
+			{
+				refMap.emplace(arr.id,
+				{
+					Type::Array,
+					pair.second
+				});
+			}
+
+			writeArray(writer, arr.elems, arr.denseElems);
+		},
+		[&](const AMF3DenseArray& arr)
+		{
+			auto pair = objMap.toLengthAdd(val);
+			if (pair.first)
+			{
+				refMap.emplace(arr.id,
+				{
+					Type::Array,
+					pair.second
+				});
+			}
+
+			writeArray(writer, {}, arr.elems);
+		},
+		[&](const AMF3Object& obj)
+		{
+			writeObject(writer, obj.id, obj.traits, obj.props);
+		},
+		[&](const AMF3CustomObject& obj)
+		{
+			writeObject
+			(
+				writer,
+				obj.id,
+				obj.traits,
+				obj.props,
+				obj.customProps
+			);
+		},
+		[&](const AMF3XML& xml)
+		{
+			writeXML(writer, xml.data, xml.isStr);
+		},
+		[&](const AMF3IntVector& vec)
+		{
+			auto span = makeSpan(vec.elems);
+			writeVector(writer, span, vec.fixedLen);
+		},
+		[&](const AMF3UIntVector& vec)
+		{
+			auto span = makeSpan(vec.elems);
+			writeVector(writer, span, vec.fixedLen);
+		},
+		[&](const AMF3DoubleVector& vec)
+		{
+			auto span = makeSpan(vec.elems);
+			writeVector(writer, span, vec.fixedLen);
+		},
+		[&](const AMF3ObjVector& vec)
+		{
+			auto span = makeSpan(vec.elems);
+			writeObjVector(writer, vec.id, span, vec.fixedLen);
+		},
+		[&](Span<const uint8_t> data)
+		{
+			writeByteArray(writer, data);
+		},
+		[&](size_t ref)
+		{
+			const auto& pair = *refMap.nth(ref);
+			writeRef(writer, pair.first, pair.second);
+		}
+	));
+}
+
+void Amf3Serializer::writeLSOBody(IAMFWriter& writer, const LSO& lso)
+{
+	for (const auto& elem : lso.getBody())
+	{
+		writeElem(writer, elem.first, elem.second);
+		writer.write(0);
+	}
 }

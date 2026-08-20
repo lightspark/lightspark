@@ -189,7 +189,7 @@ private:
 	void writeDouble(IAMFWriter& writer, number_t val);
 	void writeStringVal(IAMFWriter& writer, const tiny_string& str);
 	void writeString(IAMFWriter& writer, const tiny_string& str);
-	void writeDate(IAMFWriter& writer, size_t id, number_t time);
+	void writeDate(IAMFWriter& writer, number_t time);
 	void writeArray
 	(
 		IAMFWriter& writer,
@@ -214,28 +214,16 @@ private:
 	);
 
 	void writeByteArray(IAMFWriter& writer, Span<const uint8_t> data);
-	template<typename T>
-	void writeVector
-	(
-		IAMFWriter& writer,
-		Span<const T> elems,
-		bool fixedLen
-	);
+	template<typename T, typename = void>
+	void writeVector(IAMFWriter& writer, const T& vec);
+	void writeDictionary(IAMFWriter& writer, const AMF3Dict& dict);
 
-	void writeObjVector
+	std::pair<bool, size_t> addRef
 	(
-		IAMFWriter& writer,
+		const AMF3Value& val
+		const AMF3TypeMarker& type,
 		size_t id,
-		Span<const T> elems,
-		bool fixedLen
-	);
-
-	void writeDictionary
-	(
-		IAMFWriter& writer,
-		size_t id,
-		Span<const DictPair> elems,
-		bool weakKeys
+		size_t size
 	);
 
 	void writeRef

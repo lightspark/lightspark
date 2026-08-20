@@ -470,18 +470,35 @@ std::vector<AMFElement> Amf3Deserializer::parseBody(Span<const uint8_t>& data)
 
 void Amf3Serializer::writeUInt29(IAMFWriter& writer, uint32_t val)
 {
+	bool isFourBytes = val >> 24;
+	for (size_t i = 3; i; --i)
+	{
+		uint8_t byte = val >> (i * 7 + isFourBytes);
+		if (byte)
+			writer.writeUInt8(byte | 0x80);
+	}
+
+	writer.writeU29(val & 0x7f);
 }
 
 void Amf3Serializer::writeInt(IAMFWriter& writer, int32_t val)
 {
+	using Type = AMF3TypeMarker;
+	writer.writeUInt8(Type::Integer);
+	writeUInt29(writer, val & 0x1fffffff);
 }
 
 void Amf3Serializer::writeBool(IAMFWriter& writer, bool val)
 {
+	using Type = AMF3TypeMarker;
+	writer.writeUInt8(val ? Type::True : Type::False);
 }
 
 void Amf3Serializer::writeDouble(IAMFWriter& writer, number_t val)
 {
+	using Type = AMF3TypeMarker;
+	writer.writeUInt8(Type::Double);
+	writer.writeDouble(val);
 }
 
 void Amf3Serializer::writeStringVal
@@ -490,6 +507,9 @@ void Amf3Serializer::writeStringVal
 	const tiny_string& str
 )
 {
+	using Type = AMF3TypeMarker;
+	writer.writeUInt8(Type::String);
+	writeString(writer, str);
 }
 
 void Amf3Serializer::writeString
@@ -498,10 +518,29 @@ void Amf3Serializer::writeString
 	const tiny_string& str
 )
 {
+	auto pair = !str.empty() ? stringMap.toSize
+	(
+		str,
+		str.numBytes()
+	) : std::make_pair(false, 0);
+
+	bool isOnlySize = pair.first && !str.empty();
+	if (!str.empty())
+		stringMap.addElem(str);
+
+	writeUInt29(writer, (pair.second << 1) | !pair.first);
+	if (!isOnlySize)
+		writer.writeBytes(makeSpan(str));
 }
 
-void Amf3Serializer::writeDate(IAMFWriter& writer, size_t id, number_t time)
+void Amf3Serializer::writeDate(IAMFWriter& writer, number_t time)
 {
+	using Type = AMF3TypeMarker;
+	auto pair = objMap.toSize(AMF3Date(time), 0);
+	writer.writeUInt8(Type::Date);
+	writeUInt29(writer, (pair.second << 1) | !pair.first);
+	if (!pair.first)
+		writer.writeDouble(time);
 }
 
 void Amf3Serializer::writeArray
@@ -531,6 +570,10 @@ void Amf3Serializer::writeXML
 	bool isStr
 )
 {
+	using Type = AMF3TypeMarker;
+	writer.writeUInt8(isStr ? Type::XML : Type::XMLDoc);
+	writeUInt29(writer, (str.numBytes() << 1) | 1);
+	writer.writeBytes(makeSpan(str));
 }
 
 void Amf3Serializer::writeByteArray
@@ -539,27 +582,108 @@ void Amf3Serializer::writeByteArray
 	Span<const uint8_t> data
 )
 {
+	using Type = AMF3TypeMarker;
+	auto pair = objMap.toSize(data, data.getSize());
+	writer.writeUInt8(Type::ByteArray);
+	writeUInt29(writer, (pair.second << 1) | !pair.first);
+
+	if (!pair.first)
+		writer.writeBytes(data);
 }
 
+template<typename T, typename... Args>
+using IsAnyOf = Conj<IsSame<T, Args>...>;
+
 template<typename T>
-void Amf3Serializer::writeVector
+void Amf3Serializer::writeVector<T, EnableIf<IsAnyOf
+<
+	T,
+	AMF3IntVector,
+	AMF3UIntVector,
+	AMF3DoubleVector
+>::value, bool>(IAMFWriter& writer, const T& vec)
+{
+	auto pair = addRef(vec, T::TypeMarker, vec.id, vec.elems.size());
+
+	writer.writeUInt8(T::TypeMarker);
+	writeUInt29(writer, (pair.second << 1) | !pair.first);
+
+	if (pair.first)
+		return;
+
+	writer.writeUInt8(vec.fixedLen);
+	for (const auto& val : vec.elems)
+		writer.write(val);
+}
+
+template<>
+void Amf3Serializer::writeVector<AMF3ObjVector, void>
 (
 	IAMFWriter& writer,
-	size_t id,
-	Span<const T> elems,
-	bool fixedLen
+	const AMF3ObjVector& vec
 )
 {
+	using Type = AMF3TypeMarker;
+	auto pair = addRef
+	(
+		vec,
+		Type::VectorObject,
+		vec.id,
+		vec.elems.size()
+	);
+
+	writer.writeUInt8(Type::VectorObject);
+	writeUInt29(writer, (pair.second << 1) | !pair.first);
+
+	if (pair.first)
+		return;
+
+	writer.writeUInt8(vec.fixedLen);
+	for (const auto& val : vec.elems)
+		writeValue(writer, *val);
 }
 
 void Amf3Serializer::writeDictionary
 (
 	IAMFWriter& writer,
-	size_t id,
-	Span<const DictPair> elems,
-	bool weakKeys
+	const AMF3Dict& dict
 )
 {
+	using Type = AMF3TypeMarker;
+	auto pair = addRef
+	(
+		dict,
+		Type::Dictionary,
+		dict.id,
+		dict.elems.size()
+	);
+
+	writer.writeUInt8(Type::Dictionary);
+	writeUInt29(writer, (pair.second << 1) | !pair.first);
+
+	if (pair.first)
+		return;
+	writer.writeUInt8(dict.weakKeys);
+	for (const auto& elem : dict.elems)
+	{
+		writeValue(writer, elem.first);
+		writeValue(writer, elem.second);
+	}
+}
+
+std::pair<bool, size_t> Amf3Serializer::addRef
+(
+	const AMF3Value& val
+	const AMF3TypeMarker& type,
+	size_t id,
+	size_t size
+)
+{
+	auto ret = objMap.toSizeAdd(val, size);
+	auto pair = objMap.toSize(val, 0);
+	if (pair.first)
+		refMap.emplace(id, { type, pair.second });
+	return ret;
 }
 
 void Amf3Serializer::writeRef
@@ -569,6 +693,8 @@ void Amf3Serializer::writeRef
 	size_t ref
 )
 {
+	writer.writeUInt8(type);
+	writeUInt29(ref << 1);
 }
 
 void Amf3Serializer::writeTraits
@@ -607,12 +733,9 @@ void Amf3Serializer::writeValue(IAMFWriter& writer, const AMF3Value& val)
 		[&](AMF3Null) { writer.writeUInt8(Type::Null); },
 		[&](bool flag) { writeBool(writer, flag); },
 		[&](int32_t val) { writeInt(writer, val); },
-		[&](number_t num) { writeNumber(writer, num); },
+		[&](number_t num) { writeDouble(writer, num); },
 		[&](const tiny_string& str) { writeStringVal(writer, str); },
-		[&](const AMF3Date& date)
-		{
-			writeDate(writer, date.id, date.date);
-		},
+		[&](const AMF3Date& date) { writeDate(writer, date.date); },
 		[&](const AMF3Array& arr)
 		{
 			auto pair = objMap.toLengthAdd(val);
@@ -659,6 +782,10 @@ void Amf3Serializer::writeValue(IAMFWriter& writer, const AMF3Value& val)
 		[&](const AMF3XML& xml)
 		{
 			writeXML(writer, xml.data, xml.isStr);
+		},
+		[&](Span<const uint8_t> data)
+		{
+			writeByteArray(writer, data);
 		},
 		[&](const AMF3IntVector& vec)
 		{

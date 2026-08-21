@@ -304,7 +304,7 @@ _R<AMF3Value> Amf3Deserializer::parseObjectImpl
 
 	if (traits.external)
 	{
-		auto it = extDecoders.find(traitRef);
+		auto it = extDecoders.find(traits.name);
 		assert_and_throw(it != extDecoders.end());
 		return _MR(new AMF3Value(AMF3Custom
 		(
@@ -536,7 +536,7 @@ void Amf3Serializer::writeString
 void Amf3Serializer::writeDate(IAMFWriter& writer, number_t time)
 {
 	using Type = AMF3TypeMarker;
-	auto pair = objMap.toSize(AMF3Date(time), 0);
+	auto pair = objMap.toSize(AMF3Date(time));
 	writer.writeUInt8(Type::Date);
 	writeUInt29(writer, (pair.second << 1) | !pair.first);
 	if (!pair.first)
@@ -551,16 +551,54 @@ void Amf3Serializer::writeArray
 	Span<const AMF3Value> denseElems
 )
 {
+	using Type = AMF3TypeMarker;
+	writer.writeUInt8(Type::Array);
+	writeUInt29(writer, (denseElems.getSize() << 1) | 1);
+
+	for (const auto& elem : elems)
+		writeElem(writer, elem);
+
+	writeString(writer, "");
+
+	for (const auto& elem : denseElems)
+		writeValue(writer, elem);
 }
 
 void Amf3Serializer::writeObject
 (
 	IAMFWriter& writer,
 	size_t id,
+	Optional<const TraitsRef&> traits,
 	Span<const AMFElement> props,
 	Span<const AMFElement> customProps
 )
 {
+	using Type = AMF3TypeMarker;
+	AMF3Object obj(id, props, traits);
+	objMap.emplace_back(obj);
+
+	auto pair = objMap.toSize(obj);
+	if (pair.first)
+		refMap.emplace(id, { Type::Object, pair.second });
+
+	writer.writeUInt8(Type::Object);
+
+	const auto& _traits = traits.valueOr({});
+	auto it = std::find(traitsMap.begin(), traitsMap.end(), _traits);
+	if (it != traitsMap.end())
+	{
+		auto idx = it - traitsMap.begin();
+		writeTraitRef(writer, idx, props, customProps, _traits);
+		return;
+	}
+
+	const auto& staticProps = _traits.staticProps;
+	uint8_t encoding = _traits.external | (traits.dynamic << 1);
+	int32_t size = (staticProps.size() << 4) | (encoding << 2) | 3;
+	traitsMap.emplace_back(_traits);
+	writeUInt29(writer, size & 0x1fffffff);
+	writeTraits(writer, _traits);
+	writeTraitRef(writer, -1, props, customProps, _traits);
 }
 
 void Amf3Serializer::writeXML
@@ -680,7 +718,7 @@ std::pair<bool, size_t> Amf3Serializer::addRef
 )
 {
 	auto ret = objMap.toSizeAdd(val, size);
-	auto pair = objMap.toSize(val, 0);
+	auto pair = objMap.toSize(val);
 	if (pair.first)
 		refMap.emplace(id, { type, pair.second });
 	return ret;
@@ -703,14 +741,58 @@ void Amf3Serializer::writeTraits
 	const TraitsRef& traits
 )
 {
+	writeString(writer, traits.name);
+	for (const auto& prop : traits.StaticProps)
+		writeString(writer, prop);
 }
 
 void Amf3Serializer::writeTraitRef
 (
 	IAMFWriter& writer,
-	const TraitsRef& traits
+	size_t idx,
+	Span<const AMFElement> props,
+	Span<const AMFElement> customProps,
+	const TraitsRef& ref
 )
 {
+	if (size != -1)
+		writeUInt29(writer, (idx << 2) | 1);
+
+	if (ref.external)
+	{
+		auto it = extEncoders.find(ref.name);
+		assert_and_throw(it != extEncoders.end());
+		writer.writeBytes(it->encode(*this, customProps, ref));
+		return;
+	}
+
+	auto isStaticProp = [&](const tiny_string& name)
+	{
+		return std::find
+		(
+			ref.staticProps.begin(),
+			ref.staticProps.end(),
+			name
+		) != ref.staticProps.end();
+	};
+
+	for (const auto& elem : props)
+	{
+		if (isStaticProp(elem.first))
+			writeValue(writer, elem.second);
+	}
+
+	if (!ref.dynamic)
+		return;
+
+	for (const auto& elem : props)
+	{
+		if (isStaticProp(elem.first))
+			continue;
+		writeString(writer, elem.first);
+		writeValue(writer, elem.second);
+	}
+	writeString(writer, "");
 }
 
 void Amf3Serializer::writeElem
@@ -738,7 +820,7 @@ void Amf3Serializer::writeValue(IAMFWriter& writer, const AMF3Value& val)
 		[&](const AMF3Date& date) { writeDate(writer, date.date); },
 		[&](const AMF3Array& arr)
 		{
-			auto pair = objMap.toLengthAdd(val);
+			auto pair = objMap.toSizeAdd(val);
 			if (pair.first)
 			{
 				refMap.emplace(arr.id,
@@ -752,7 +834,7 @@ void Amf3Serializer::writeValue(IAMFWriter& writer, const AMF3Value& val)
 		},
 		[&](const AMF3DenseArray& arr)
 		{
-			auto pair = objMap.toLengthAdd(val);
+			auto pair = objMap.toSizeAdd(val);
 			if (pair.first)
 			{
 				refMap.emplace(arr.id,

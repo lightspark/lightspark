@@ -159,10 +159,33 @@ public:
 	void addElem(const T& val) { elems.insert(val); }
 	template<typename... Args>
 	void emplaceElem(Args&&... args) { elems.emplace(args...); }
-	Optional<const T&> getElem(size_t i) const;
-	Optional<size_t> getIndex() const;
-	SizePair toSize(const T& val, size_t size = 0) const;
-	SizePair toSizeAdd(const T& val, size_t size - 0);
+	Optional<const T&> getElem(size_t i) const
+	{
+		if (i >= elems.size())
+			return {};
+		return makeOptionalRef(elems.nth(i));
+	}
+
+	Optional<size_t> getIndex(const T& val) const
+	{
+		auto it = elems.find(val);
+		if (it == elems.end())
+			return {};
+		return it - elems.begin();
+	}
+
+	SizePair toSize(const T& val, size_t size = 0) const
+	{
+		auto idx = getIndex(val);
+		return { idx.hasValue(), idx.valueOr(size) };
+	}
+
+	SizePair toSizeAdd(const T& val, size_t size = 0)
+	{
+		auto pair = toSize(val, size);
+		addElem(val);
+		return pair;
+	}
 
 	Iter begin() { return elems.begin(); }
 	ConstIter begin() { return elems.begin(); }
@@ -234,7 +257,15 @@ private:
 	);
 
 	void writeTraits(IAMFWriter& writer, const TraitsRef& traits);
-	void writeTraitRef(IAMFWriter& writer, const TraitsRef& ref);
+	void writeTraitRef
+	(
+		IAMFWriter& writer,
+		size_t idx,
+		Span<const AMFElement> props,
+		Span<const AMFElement> customProps,
+		const TraitsRef& ref
+	);
+
 	void writeElem
 	(
 		IAMFWriter& writer,

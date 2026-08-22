@@ -184,6 +184,21 @@ void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, a
 	//We override the classdef
 	if(realClass==nullptr)
 		realClass=this;
+	if (isReusable && !tag) //TODO implement reuse for tag binded classes
+	{
+		if(realClass==nullptr)
+			realClass=this;
+		ASObject* obj = this->freelist.getObjectFromFreeList();
+		if (obj)
+		{
+			obj->setClass(realClass);
+			obj->resetCached();
+			ret=asAtomHandler::fromObject(obj);
+			if(construct)
+				handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed(), callSyntheticConstructor);
+			return;
+		}
+	}
 	if (this->needsBindingCheck()) // it seems possible that an instance of a class is constructed before the binding of the class is available, so we have to check for a binding here
 	{
 		worker->rootClip->bindClass(this->class_name,this);

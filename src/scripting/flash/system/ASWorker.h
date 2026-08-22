@@ -43,6 +43,7 @@ private:
 	bool started;
 	bool inShutdown;
 	bool inFinalize;
+	bool inGC;
 	//Synchronization
 	Mutex event_queue_mutex;
 	Mutex constantrefmutex;
@@ -172,6 +173,10 @@ public:
 	{
 		assert(size < undefinedAtomPool.size());
 		memcpy(arr,undefinedAtomPool.data(),size*sizeof(asAtom));
+	}
+	bool inGarbageCollection() const
+	{
+		return inGC;
 	}
 };
 

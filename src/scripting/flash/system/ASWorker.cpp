@@ -48,6 +48,7 @@ ASWorker::ASWorker(SystemState* s)
 	,started(false)
 	,inShutdown(false)
 	,inFinalize(false)
+	,inGC(false)
 	,gcStart(nullptr)
 	,gcEnd(nullptr)
 	,stage(nullptr)
@@ -79,6 +80,7 @@ ASWorker::ASWorker(Class_base* c)
 	,started(false)
 	,inShutdown(false)
 	,inFinalize(false)
+	,inGC(false)
 	,gcStart(nullptr)
 	,gcEnd(nullptr)
 	,stage(nullptr)
@@ -111,6 +113,7 @@ ASWorker::ASWorker(ASWorker* wrk, Class_base* c)
 	,started(false)
 	,inShutdown(false)
 	,inFinalize(false)
+	,inGC(false)
 	,gcStart(nullptr)
 	,gcEnd(nullptr)
 	,stage(nullptr)
@@ -697,6 +700,7 @@ void ASWorker::processGarbageCollection(bool force)
 	bool hasEntries=this->gcStart;
 	// use two loops to make sure objects added during inner loop are handled _after_ the inner loop is complete
 	LOG_CALL("start garbage collection");
+	inGC=true;
 	while (hasEntries)
 	{
 		ASObject* ogc = this->gcStart;
@@ -736,6 +740,7 @@ void ASWorker::processGarbageCollection(bool force)
 	}
 	if (force && this->gcStart)
 		processGarbageCollection(true);
+	inGC=false;
 	LOG_CALL("garbage collection done");
 }
 

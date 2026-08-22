@@ -2453,6 +2453,9 @@ void ABCContext::buildTrait(ASObject* obj,std::vector<multiname*>& additionalslo
 					if(superclass && superclass->is<Class_base>() && !superclass->is<Class_inherit>())
 					{
 						c->setSuper(superclass->as<Class_base>());
+						if (!superclass->as<Class_base>()->isReusable
+							&& superclass != Class<ASObject>::getRef(superclass->getSystemState()).getPtr())
+							c->isReusable=false;
 					}
 				}
 				applicationDomain->classesBeingDefined.insert(make_pair(mname, c));

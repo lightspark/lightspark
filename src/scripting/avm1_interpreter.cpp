@@ -100,16 +100,14 @@ AVM1context::~AVM1context()
 
 void AVM1context::setScope(AVM1Scope* sc)
 {
+	if (sc)
+		sc->addStoredMember();
 	if (scope)
 	{
 		scope->removeStoredMember();
 		scope->decRef();
 	}
 	scope = sc;
-	if (scope)
-	{
-		scope->addStoredMember();
-	}
 }
 void AVM1context::setGlobalScope(AVM1Scope* sc)
 {

@@ -2849,6 +2849,18 @@ void ASObject::removeStoredMember()
 		this->markedforgarbagecollection=true;
 		return;
 	}
+	else if (!getInstanceWorker()->inFinalization()
+			 && !getInstanceWorker()->inGarbageCollection()
+			 && storedmembercount==0
+			 && this->markedforgarbagecollection
+			 && storedmembercountstatic==0)
+	{
+		// this Object was marked for GC and has its last member reference removed
+		// so we can remove it from GC and destruct it directly
+		getInstanceWorker()->removeObjectFromGarbageCollector(this);
+		this->markedforgarbagecollection=false;
+		decRef();
+	}
 	decRef();
 }
 
@@ -4010,7 +4022,6 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 		return;
 	}
 
-	asAtom c = obj;
 	if (getObjectNoCheck(caller)->is<SyntheticFunction>())
 	{
 		if (!args_refcounted)
@@ -4019,27 +4030,27 @@ void asAtomHandler::callFunction(asAtom& caller,ASWorker* wrk,asAtom& ret,asAtom
 				ASATOM_INCREF(args[i]);
 			ASATOM_INCREF(obj); // ensure we have a reference to the calling object as it may be decreffed during the call
 		}
-		getObjectNoCheck(caller)->as<SyntheticFunction>()->call(wrk,ret,c, args, num_args,coerceresult,coercearguments);
-		ASATOM_DECREF(c);
+		getObjectNoCheck(caller)->as<SyntheticFunction>()->call(wrk,ret,obj, args, num_args,coerceresult,coercearguments);
+		ASATOM_DECREF(obj);
 		return;
 	}
 	if (getObjectNoCheck(caller)->is<AVM1Function>())
 	{
 		// The caller is just the previous callee.
 		auto argCaller = wrk->AVM1getCallee();
-		getObjectNoCheck(caller)->as<AVM1Function>()->call(&ret,&c, args, num_args, argCaller,isAVM1InternalCall);
+		getObjectNoCheck(caller)->as<AVM1Function>()->call(&ret,&obj, args, num_args, argCaller,isAVM1InternalCall);
 	}
 	else
 	{
 		// when calling builtin functions, normally no refcounting is needed
 		// if it is, it has to be done inside the called function
-		getObjectNoCheck(caller)->as<Function>()->call(ret,wrk, c, args, num_args);
+		getObjectNoCheck(caller)->as<Function>()->call(ret,wrk, obj, args, num_args);
 	}
 	if (args_refcounted)
 	{
 		for (uint32_t i = 0; i < num_args; i++)
 			ASATOM_DECREF(args[i]);
-		ASATOM_DECREF(c);
+		ASATOM_DECREF(obj);
 	}
 }
 

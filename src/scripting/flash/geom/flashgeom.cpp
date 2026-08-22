@@ -487,6 +487,7 @@ void Matrix::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
 	c->isReusable=true;
+	c->canHaveCyclicMembers=false;
 	//Properties
 	c->setDeclaredMethodByQName("a","",c->getSystemState()->getBuiltinFunction(_get_a,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);
 	c->setDeclaredMethodByQName("b","",c->getSystemState()->getBuiltinFunction(_get_b,0,Class<Number>::getClassUninitialized(c->getSystemState())),GETTER_METHOD,true);

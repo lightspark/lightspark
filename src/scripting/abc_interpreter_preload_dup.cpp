@@ -424,6 +424,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 					)
 				{
 					b = code.peekbyteFromPosition(pos);
+					bool canbeskipped=false;
 					switch (b)
 					{
 						case 0x66://getproperty
@@ -431,30 +432,42 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 							uint32_t t = code.peeku30FromPosition(pos+1);
 							if (state.mi->context->constant_pool.multinames[t].runtimeargs)
 								break;
-							// dup on a local result followed by setlocal and getproperty,
-							// can be skipped and getproperty will use the setlocal position as arg
-							op.removeArg(state);
-							state.operandlist.pop_back();
-
-							// find the last preloadedcode with a localresult
-							// this usually is the last preloadedcode, but it can be a previous one
-							// if the last optimization step added special preloadedcodes
-							auto it = state.preloadedcode.rbegin();
-							while (it != state.preloadedcode.rend() && !it->hasLocalResult)
-								++it;
-							assert (it != state.preloadedcode.rend());
-							it->pcode.local3.pos = argindex;
-							op = operands(OP_LOCAL,state.localtypes[argindex],argindex,1,state.preloadedcode.size()-1);
-							addOperand(state,op,code);
-							typestack.push_back(typestackentry(state.localtypes[argindex],false));
-							code.seekg(pos);
-							return;
+							canbeskipped=true;
+							break;
 						}
+						case 0x35://li8
+						case 0x36://li16
+						case 0x37://li32
+						case 0x38://lf32
+						case 0x39://lf64
+							canbeskipped=true;
+							break;
 						default:
-							// LOG(LOG_ERROR,"dup with setlocal:"<<p<<" "<<hex<<(int)b);
+							//LOG(LOG_ERROR,"dup with setlocal:"<<p<<" "<<hex<<(int)b);
 							// state.worker->dumpStacktrace();
 							// TODO optimize other setlocal/opcode combinations
 							break;
+					}
+					if (canbeskipped)
+					{
+						// dup on a local result followed by setlocal and matching opcode,
+						// can be skipped and preloadedcode will use the setlocal position as arg
+						op.removeArg(state);
+						state.operandlist.pop_back();
+
+						// find the last preloadedcode with a localresult
+						// this usually is the last preloadedcode, but it can be a previous one
+						// if the last optimization step added special preloadedcodes
+						auto it = state.preloadedcode.rbegin();
+						while (it != state.preloadedcode.rend() && !it->hasLocalResult)
+							++it;
+						assert (it != state.preloadedcode.rend());
+						it->pcode.local3.pos = argindex;
+						op = operands(OP_LOCAL,state.localtypes[argindex],argindex,1,state.preloadedcode.size()-1);
+						addOperand(state,op,code);
+						typestack.push_back(typestackentry(state.localtypes[argindex],false));
+						code.seekg(pos);
+						return;
 					}
 				}
 				// this ensures that the "old" value is stored in a localresult and can be used later, as the duplicated value may be changed by an increment etc.

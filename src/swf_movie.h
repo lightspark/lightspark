@@ -45,12 +45,9 @@ class SWFMovie
 	using SandboxType = SecurityManager::SANDBOXTYPE;
 private:
 	SystemState* sys;
-	SWFHeader header;
-	FileAttributesTag fileAttrs;
-	Optional<RGB> backgroundColor;
-	size_t size;
+	SWFExtHeader header;
 
-	Span<const uint8_t> data;
+	std::vector<uint8_t> data;
 	URLInfo url;
 	Optional<URLInfo> loaderURL;
 	std::vector<FlashVarPair> flashVars;
@@ -59,7 +56,13 @@ private:
 	bool _isMovie;
 	SandboxType sandboxType;
 
-	static SandboxType inferSandboxType(const URLInfo& url);
+	static SandboxType inferSandboxType
+	(
+		const URLInfo& url,
+		const SWFExtHeader& header
+	);
+
+	void addFlashVarsFromURL();
 public:
 	SWFMovie
 	(
@@ -94,12 +97,11 @@ public:
 		Optional<const URLInfo&> _loaderURL = {}
 	);
 
-	SWFMovie(SystemState* _sys, const URLInfo& _url, size_t _size);
-
+	SWFMovie(SystemState* _sys, const URLInfo& _url, size_t size);
 	SystemState* getSys() const { return sys; }
 	const SWFHeader& getHeader() const { return header; }
 	uint8_t getVersion() const { return header.getVersion(); }
-	const Span<const uint8_t>& getData() const { return data; }
+	Span<const uint8_t> getData() const { return makeSpan(data); }
 	const TextEncoding& getEncoding() const { return encoding; }
 	const Twips& getWidth() const { return getStageSize().x; }
 	const Twips& getHeight() const { return getStageSize().y; }
@@ -127,8 +129,8 @@ public:
 	}
 
 	size_t getCompressedSize() const { return compressedSize; }
-	size_t getSize() const { return size; }
-	bool isAS3() const { return fileAttrs.ActionScript3; }
+	size_t getSize() const { return header.getSize(); }
+	bool isAS3() const { return header.isAS3(); }
 	const Vector2Twips& getStageSize() const
 	{
 		return header.getStageSize();
@@ -179,7 +181,7 @@ public:
 
 	Span<const uint8_t> getData() const
 	{
-		return movie.getData().subSpan(start, getSize());
+		return movie.getData().trySubSpan(start, getSize());
 	}
 
 	uint8_t getVersion() const { return movie.getVersion(); }

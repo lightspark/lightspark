@@ -1003,7 +1003,7 @@ protected:
 		bool dodestruct = true;
 		if (objfreelist)
 		{
-			if (!getCached())
+			if (!getCached() && !getConstant())
 				dodestruct = !objfreelist->pushObjectToFreeList(this);
 			else
 				dodestruct = false;

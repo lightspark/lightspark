@@ -180,8 +180,11 @@ multiname *Dictionary::setVariableByMultiname(multiname& name, asAtom& o, CONST_
 	dictType::iterator it=findKey(key);
 	if(it!=data.end())
 	{
-		if (alreadyset && it->second.uintval == o.uintval)
-			*alreadyset=true;
+		if (it->second.uintval == o.uintval)
+		{
+			if (alreadyset)
+				*alreadyset=true;
+		}
 		else
 		{
 			asAtom oldvar = it->second;

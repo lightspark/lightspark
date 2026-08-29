@@ -144,6 +144,7 @@ protected:
 	virtual void afterSetLegacyMatrix() {}
 	bool skipCountCylicMemberReferences(garbagecollectorstate& gcstate);
 public:
+	RECT currentScrollRect;
 	void geometryChanged();
 	void handleConstruction();
 	bool boundsRectGlobal(RectF& rect, bool fromcurrentrendering=true);

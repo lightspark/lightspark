@@ -87,7 +87,6 @@ public:
 	bool isYUV;
 	bool renderWithNanoVG;
 	bool hasOpaqueBackground;
-	bool isVerticallyFlipped;
 	RGB opaqueBackground;
 	TextData textdata;
 #ifndef NDEBUG

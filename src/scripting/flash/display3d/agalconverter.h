@@ -185,7 +185,7 @@ public:
 	}
 	void addSaR (SamplerRegister sr, RegisterUsage usage)
 	{
-		add (sr.type, sr.toGLSL (), sr.n, usage);
+		add (sr.type, sr.toGLSL (), sr.registernumber, usage);
 	}
 	void addSR (SourceRegister sr, RegisterUsage usage, int offset = 0)
 	{
@@ -736,13 +736,26 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 							map.addSaR (sampler, RegisterUsage::SAMPLER_CUBE);
 						}
 						break;
+					default:
+						LOG(LOG_ERROR,"AGALtoGLSL texture sampler invalid type:"<<sampler.d);
+						break;
 				}
 				//sb.AppendFormat("{0} = vec4(0,1,0,1);", dr.toGLSL () );
 				map.addDR (dr, RegisterUsage::VECTOR_4);
 				map.addSR (sr1, RegisterUsage::VECTOR_4);
 
 				// add sampler state to output list for caller
-				samplerState.push_back(sampler);
+				bool found = false;
+				for (auto it = samplerState.begin(); it != samplerState.end(); it++)
+				{
+					if (it->registernumber == sampler.registernumber)
+					{
+						found = true;
+						break;
+					}
+				}
+				if (!found)
+					samplerState.push_back(sampler);
 				break;
 			}
 			case 0x29: // sge
@@ -801,17 +814,12 @@ tiny_string AGALtoGLSL(ByteArray* agal,bool isVertexProgram,std::vector<SamplerR
 	glsl += "#version 120\n";
 #endif
 	glsl += map.toGLSL (false);
-	if (isVertexProgram) {
-		// this is needed for flipping render textures upside down
-		glsl += "uniform vec4 vcPositionScale;\n";
-		vertexregistermap=map;
-	}
 	glsl += "void main() {\n";
 	glsl += map.toGLSL (true);
 	glsl += sb;
 	if (isVertexProgram) {
 		// this is needed for flipping render textures upside down
-		glsl += "\tgl_Position *= vcPositionScale;\n";
+		glsl += "\tgl_Position.y = -gl_Position.y;\n";
 	}
 	glsl += "}\n";
 	

@@ -45,15 +45,22 @@ enum RegisterUsage {
 	VECTOR_4_ARRAY
 };
 
+// taken from AGALMiniAssembler
+enum SamplerSpecialFlags {
+	SAMPLERSPECIAL_CENTROID=1, // TODO figure out the meaning of this flag
+	SAMPLERSPECIAL_SINGLE=2, // TODO figure out the meaning of this flag
+	SAMPLERSPECIAL_IGNORESAMPLER=4
+};
+
 struct SamplerRegister
 {
 	int32_t b; // lod bias
 	int32_t d; // dimension 0=2d 1=cube
 	int32_t f; // Filter (0=nearest,1=linear) (4 bits)
 	int32_t m; // Mipmap (0=disable,1=nearest, 2=linear)
-	int32_t n; // number
+	int32_t registernumber; // number
 	bool isVertexProgram;
-	int32_t s; // special flags bit
+	int32_t special; // special flags bit
 	int32_t t; // texture format (0=none, dxt1=1, dxt5=2)
 	RegisterType type;
 	int32_t w; // wrap (0=clamp 1=repeat_wrap_s 2=repeat_wrap_t 3=repeat)
@@ -90,8 +97,8 @@ struct RegisterMapEntry
 	
 };
 
-#define CONTEXT3D_SAMPLER_COUNT 8
-#define CONTEXT3D_ATTRIBUTE_COUNT 8
+#define CONTEXT3D_SAMPLER_COUNT 16
+#define CONTEXT3D_ATTRIBUTE_COUNT 16
 #define CONTEXT3D_PROGRAM_REGISTERS 128
 
 namespace lightspark
@@ -165,7 +172,6 @@ private:
 	constantregister fragmentConstants[CONTEXT3D_PROGRAM_REGISTERS];
 	attribregister attribs[CONTEXT3D_ATTRIBUTE_COUNT];
 	uint32_t samplers[CONTEXT3D_SAMPLER_COUNT];
-	float vcposdata[4] = { 1.0,1.0,1.0,1.0 };
 	int currentactionvector;
 
 	uint32_t backframebufferIDcurrent;
@@ -202,7 +208,6 @@ private:
 	void setAttribs(EngineData* engineData, std::vector<RegisterMapEntry> &attributes);
 	void resetAttribs(EngineData* engineData, std::vector<RegisterMapEntry> &attributes);
 	void setSamplers(EngineData* engineData);
-	void setPositionScale(EngineData *engineData);
 	unordered_set<Program3D*> programlist;
 	unordered_set<TextureBase*> texturelist;
 	unordered_set<IndexBuffer3D*> indexbufferlist;
@@ -398,7 +403,6 @@ private:
 	Context3D* context;
 	uint32_t gpu_program;
 protected:
-	uint32_t vcPositionScale;
 	tiny_string vertexprogram;
 	tiny_string fragmentprogram;
 	std::vector<SamplerRegister> samplerState;
@@ -408,8 +412,17 @@ protected:
 	std::vector<RegisterMapEntry> fragmentattributes;
 	bool disposed;
 public:
-	Program3D(ASWorker* wrk,Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_PROGRAM3D),gpu_program(UINT32_MAX),vcPositionScale(UINT32_MAX),disposed(false){}
-	Program3D(ASWorker* wrk,Class_base* c,Context3D* _ct):ASObject(wrk,c,T_OBJECT,SUBTYPE_PROGRAM3D),context(_ct),gpu_program(UINT32_MAX),vcPositionScale(UINT32_MAX),disposed(false){}
+	Program3D(ASWorker* wrk,Class_base* c)
+		:ASObject(wrk,c,T_OBJECT,SUBTYPE_PROGRAM3D)
+		,gpu_program(UINT32_MAX)
+		,disposed(false)
+	{}
+	Program3D(ASWorker* wrk,Class_base* c,Context3D* _ct)
+		:ASObject(wrk,c,T_OBJECT,SUBTYPE_PROGRAM3D)
+		,context(_ct)
+		,gpu_program(UINT32_MAX)
+		,disposed(false)
+	{}
 	static void sinit(Class_base* c);
 	bool destruct() override;
 	void finalize() override;

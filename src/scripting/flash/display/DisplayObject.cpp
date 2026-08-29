@@ -300,6 +300,7 @@ bool DisplayObject::destruct()
 	accessibilityProperties.reset();
 	colorTransform = ColorTransformBase();
 	scalingGrid.reset();
+	currentScrollRect = RECT();
 	ASATOM_REMOVESTOREDMEMBER(opaqueBackground);
 	opaqueBackground=asAtomHandler::nullAtom;
 	ASATOM_REMOVESTOREDMEMBER(metaData);
@@ -600,6 +601,7 @@ void DisplayObject::onSetScrollRect(asAtom oldValue)
 		res->y=asAtomHandler::as<Rectangle>(scrollRect)->y;
 		res->width=asAtomHandler::as<Rectangle>(scrollRect)->width;
 		res->height=asAtomHandler::as<Rectangle>(scrollRect)->height;
+		currentScrollRect = res->getRect();
 
 		ASATOM_REMOVESTOREDMEMBER(scrollRect);
 		this->scrollRect = asAtomHandler::fromObjectNoPrimitive(res);
@@ -1070,10 +1072,14 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		}
 	}
 	this->boundsRectWithoutChildren(state->bounds.min.x, state->bounds.max.x, state->bounds.min.y, state->bounds.max.y, false);
+	state->scrollRect=currentScrollRect;
+	// currentScrollRect may have been overwritten when rendering to bitmap
+	// so we have to reset it
 	if (asAtomHandler::is<Rectangle>(scrollRect))
-		state->scrollRect=asAtomHandler::as<Rectangle>(scrollRect)->getRect();
+		currentScrollRect = asAtomHandler::as<Rectangle>(scrollRect)->getRect();
 	else
-		state->scrollRect= RECT();
+		currentScrollRect = RECT();
+
 	if (this->is<RootMovieClip>())
 	{
 		state->hasOpaqueBackground = true;
@@ -1089,8 +1095,6 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		if (state->hasOpaqueBackground)
 			state->opaqueBackground=RGB(asAtomHandler::toUInt(this->opaqueBackground));
 	}
-	if (this->is<Bitmap>())
-		state->isVerticallyFlipped=this->as<Bitmap>()->getVerticallyFlipped();
 	currentrendermatrix=state->matrix;
 }
 

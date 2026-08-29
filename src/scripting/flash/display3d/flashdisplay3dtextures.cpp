@@ -746,6 +746,7 @@ bool TextureBase::destruct()
 	width=0;
 	height=0;
 	async=false;
+	optimizeForRenderToTexture=false;
 	format=BGRA;
 	compressedformat=UNCOMPRESSED;
 	context=nullptr;

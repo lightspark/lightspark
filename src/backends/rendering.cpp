@@ -521,11 +521,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 						MATRIX m;
 						m = container.initialMatrix;
 						m.scale(realquality,realquality);
-						if (realquality>1)
-						{
-							engineData->exec_glClearColor(0,0,0,0);
-							engineData->exec_glClear(CLEARMASK::COLOR);
-						}
+						engineData->exec_glClearColor(0,0,0,0);
+						engineData->exec_glClear(CLEARMASK::COLOR);
 						container.cachedsurface->Render(m_sys,*this,&m,&container);
 					}
 					renderdata->rendercalls.pop();

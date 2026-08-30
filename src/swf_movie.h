@@ -27,6 +27,7 @@
 
 #include "backends/security.h"
 #include "backends/urlutils.h"
+#include "caseless_string.h"
 #include "parsing/tags.h"
 #include "swftypes.h"
 #include "tiny_string.h"
@@ -37,14 +38,26 @@ namespace lightspark
 {
 
 class SystemState;
+class DisplayObject;
 
 // Based on Ruffle's `ruffle_common::tag_utils::SwfMovie`.
 class SWFMovie
 {
 	using FlashVarPair = std::pair<tiny_string, tiny_string>;
 	using SandboxType = SecurityManager::SANDBOXTYPE;
+	using DictionaryTagRef = std::reference_wrapper<DictionaryTag>;
+	using FontTagRef = std::reference_wrapper<FontTag>;
 private:
 	SystemState* sys;
+	Mutex dictMutex;
+	std::unordered_map<uint32_t, DictionaryTagRef> dictTags;
+	std::unordered_map
+	<
+		tiny_string,
+		FontTagRef,
+		CaselessEqual
+	> embeddedFonts;
+	std::map<uint32_t, FontTagRef> embeddedFontsByID;
 	SWFExtHeader header;
 
 	std::vector<uint8_t> data;
@@ -148,6 +161,15 @@ public:
 
 	bool isMovie() const { return _isMovie; }
 	const SandboxType getSandboxType() { return sandboxType; }
+
+	void addToDictionary(DictionaryTag& tag);
+	DictionaryTag* dictionaryLookup(uint32_t id);
+	DictionaryTag* dictionaryLookupByName(const tiny_string& name);
+	void registerEmbeddedFont(const tiny_string& name, FontTag& tag);
+	FontTag* getEmbeddedFont(const tiny_string& name) const;
+	FontTag* getEmbeddedFontByID(uint32_t id) const;
+	DisplayObject* createInstanceById(uint32_t id);
+	DisplayObject* createClipByExportName(const tiny_string& name);
 };
 
 class EmptyTag {};

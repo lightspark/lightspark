@@ -196,6 +196,89 @@ sandboxType(inferSandboxType(_url, header))
 	addFlashVarsFromURL();
 }
 
+void SWFMovie::addToDictionary(DictionaryTag& tag)
+{
+	Locker l(dictMutex);
+	dictTags.emplace(tag.getId(), tag);
+}
+
+DictionaryTag* SWFMovie::dictionaryLookup(uint32_t id)
+{
+	Locker l(dictMutex);
+	auto it = dictTags.find(id);
+	if (it != dictTags.end())
+		return &it->second.get();
+
+	LOG(LOG_ERROR,"No such Id on dictionary " << id << " for " << url);
+	return nullptr;
+}
+
+DictionaryTag* SWFMovie::dictionaryLookupByName(const tiny_string& name)
+{
+	Locker l(dictMutex);
+	auto it = std::find
+	(
+		dictTags.begin(),
+		dictTags.end(),
+		[&](const auto& pair)
+		{
+			const auto& tag = pair.second.get();
+			return
+			(
+				tag.name == name ||
+				tag.name.caselessEquals(name)
+			);
+		}
+	);
+	if (it != dictTags.end())
+		return &it->second.get();
+
+	LOG(LOG_ERROR,"No such name on dictionary " << name << " for " << url);
+	return nullptr;
+}
+
+void SWFMovie::registerEmbeddedFont(const tiny_string& name, FontTag& tag)
+{
+	if (name.empty())
+	{
+		embeddedFontsByID.emplace(tag.getId(), tag);
+		return;
+	}
+
+	auto it = embeddedFonts.find(fontName);
+	if (it == embeddedFonts.end())
+		embeddedFonts.emplace(name, tag);
+	embeddedFontsByID.emplace(tag.getId(), tag);
+}
+
+FontTag* SWFMovie::getEmbeddedFont(const tiny_string& name) const
+{
+	auto it = embeddedFonts.find(name);
+	if (it != embeddedFonts.end())
+		return &it->second.get();
+	return nullptr;
+}
+
+FontTag* SWFMovie::getEmbeddedFontByID(uint32_t id) const
+{
+	auto it = embeddedFontsByID.find(fontID);
+	if (it != embeddedFontsByID.end())
+		return &it->second.get();
+	return nullptr;
+}
+
+DisplayObject* SWFMovie::createInstanceById(uint32_t id)
+{
+	auto tag = dictionaryLookup(id);
+	return tag != nullptr ? tag->createDispObjInstance() : nullptr;
+}
+
+DisplayObject* SWFMovie::createClipByExportName(const tiny_string& name)
+{
+	auto tag = dictionaryLookupByName(name);
+	return tag != nullptr ? tag->createDispObjInstance() : nullptr;
+}
+
 // Based on Ruffle's `SwfSlice::to_subslice()`.
 SWFSpan SWFSpan::toSubSpan(Span<const uint8_t> span) const
 {

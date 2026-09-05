@@ -220,9 +220,16 @@ private:
 	asAtom result;
 	asAtom status;
 public:
-	Responder(ASWorker* wrk,Class_base* c):ASObject(wrk,c),result(asAtomHandler::invalidAtom),status(asAtomHandler::invalidAtom){}
+	Responder(ASWorker* wrk,Class_base* c)
+		:ASObject(wrk,c,T_OBJECT,SUBTYPE_RESPONDER)
+		,result(asAtomHandler::undefinedAtom)
+		,status(asAtomHandler::undefinedAtom)
+	{}
 	static void sinit(Class_base*);
 	void finalize() override;
+	bool destruct() override;
+	void prepareShutdown() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(onResult);
 };

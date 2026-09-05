@@ -1660,6 +1660,7 @@ class Rectangle;
 class RectangleTexture;
 class ReferenceError;
 class RegExp;
+class Responder;
 class RootMovieClip;
 class SampleDataEvent;
 class SecurityError;
@@ -1882,6 +1883,7 @@ template<> inline bool ASObject::is<Rectangle>() const { return subtype==SUBTYPE
 template<> inline bool ASObject::is<RectangleTexture>() const { return subtype==SUBTYPE_RECTANGLETEXTURE; }
 template<> inline bool ASObject::is<ReferenceError>() const { return subtype==SUBTYPE_REFERENCEERROR; }
 template<> inline bool ASObject::is<RegExp>() const { return subtype==SUBTYPE_REGEXP; }
+template<> inline bool ASObject::is<Responder>() const { return subtype==SUBTYPE_RESPONDER; }
 template<> inline bool ASObject::is<RootMovieClip>() const { return subtype==SUBTYPE_ROOTMOVIECLIP; }
 template<> inline bool ASObject::is<SampleDataEvent>() const { return subtype==SUBTYPE_SAMPLEDATA_EVENT; }
 template<> inline bool ASObject::is<ShaderFilter>() const { return subtype==SUBTYPE_SHADERFILTER; }

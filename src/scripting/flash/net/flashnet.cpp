@@ -2646,14 +2646,45 @@ ASFUNCTIONBODY_ATOM(lightspark,navigateToURL)
 void Responder::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	c->setDeclaredMethodByQName("onResult","",c->getSystemState()->getBuiltinFunction(onResult),NORMAL_METHOD,true);
 }
 
 void Responder::finalize()
 {
 	ASObject::finalize();
-	ASATOM_DECREF(result);
-	ASATOM_DECREF(status);
+	ASATOM_REMOVESTOREDMEMBER(result);
+	result = asAtomHandler::undefinedAtom;
+	ASATOM_REMOVESTOREDMEMBER(status);
+	status = asAtomHandler::undefinedAtom;
+}
+bool Responder::destruct()
+{
+	ASATOM_REMOVESTOREDMEMBER(result);
+	result = asAtomHandler::undefinedAtom;
+	ASATOM_REMOVESTOREDMEMBER(status);
+	status = asAtomHandler::undefinedAtom;
+	return ASObject::destruct();
+}
+void Responder::prepareShutdown()
+{
+	if (preparedforshutdown)
+		return;
+	ASObject::prepareShutdown();
+	ASATOM_PREPARESHUTDOWN(result);
+	ASATOM_PREPARESHUTDOWN(status);
+}
+bool Responder::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = ASObject::countCylicMemberReferences(gcstate);
+	ASObject* o;
+	o = asAtomHandler::getObject(result);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	o = asAtomHandler::getObject(status);
+	if (o)
+		ret = o->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
 }
 
 ASFUNCTIONBODY_ATOM(Responder,_constructor)
@@ -2661,11 +2692,11 @@ ASFUNCTIONBODY_ATOM(Responder,_constructor)
 	Responder* th=Class<Responder>::cast(asAtomHandler::getObject(obj));
 	assert_and_throw(argslen==1 || argslen==2);
 	assert_and_throw(asAtomHandler::isFunction(args[0]));
-	ASATOM_INCREF(args[0]);
+	ASATOM_ADDSTOREDMEMBER(args[0]);
 	th->result = args[0];
 	if(argslen==2 && asAtomHandler::isFunction(args[1]))
 	{
-		ASATOM_INCREF(args[1]);
+		ASATOM_ADDSTOREDMEMBER(args[1]);
 		th->status = args[1];
 	}
 }

@@ -1847,6 +1847,8 @@ void DisplayObjectContainer::_removeAllChildren(bool sendevents, bool recursive)
 	{
 		if (recursive && (*it)->is<DisplayObjectContainer>())
 			(*it)->as<DisplayObjectContainer>()->_removeAllChildren(sendevents,recursive);
+		if (recursive && !sendevents && getSystemState()->isShuttingDown())
+			(*it)->prepareShutdown();
 		_removeChild(*it,false,false,false,sendevents);
 		it++;
 	}

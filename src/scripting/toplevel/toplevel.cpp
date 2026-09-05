@@ -155,9 +155,7 @@ FORCE_INLINE void resetLocals(call_context *cc, call_context* saved_cc, const as
 	for(asAtom* i=cc->lastlocal-1;i>cc->locals ;--i)
 	{
 		LOG_CALL("locals:"<<asAtomHandler::toDebugString(*i)<<" "<<(i-cc->locals));
-		ASObject* o = asAtomHandler::getObject(*i);
-		if (o)
-			o->decRef();
+		ASATOM_DECREF(*i);
 	}
 	cc->worker->fillArrayWithUndefinedAtom(cc->locals+1,cc->mi->body->getMaxLocalsWithoutSlots()-1);
 	if (cc->locals[0].uintval != obj.uintval)
@@ -189,6 +187,9 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	call_context* saved_cc = wrk->incStack(obj,this);
 	if (codeStatus != method_body_info::PRELOADED && codeStatus != method_body_info::USED)
 	{
+		/* resolve argument and return types */
+		if(!mi->returnType)
+			checkParamTypes();
 		mi->body->codeStatus = method_body_info::PRELOADING;
 		mi->cc.sys = getSystemState();
 		mi->cc.worker=wrk;
@@ -225,33 +226,34 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 		}
 	}
 
-	/* resolve argument and return types */
-	if(!mi->returnType)
-	{
-		checkParamTypes();
-	}
-
-	if(numArgs < mi->numArgs()-mi->numOptions())
+	if(isMethod() || mi->hasExplicitTypes)
 	{
 		/* Not enough arguments provided.
 		 * We throw if this is a method.
 		 * We won't throw if all arguments are of 'Any' type.
 		 * This is in accordance with the proprietary player. */
-		if(isMethod() || mi->hasExplicitTypes)
+		if(numArgs < mi->numArgs()-mi->numOptions())
 		{
-			createError<ArgumentError>(wrk,kWrongArgumentCountError,
-						  asAtomHandler::toObject(obj,wrk)->getClassName(),
-						  Integer::toString(mi->numArgs()-mi->numOptions()),
-						  Integer::toString(numArgs));
+			createError<ArgumentError>(
+				wrk
+				,kWrongArgumentCountError
+				,asAtomHandler::toObject(obj,wrk)->getClassName()
+				,Integer::toString(mi->numArgs()-mi->numOptions())
+				,Integer::toString(numArgs));
 			wrk->decStack(saved_cc);
 			return;
 		}
-	}
-	if ((isMethod() || mi->hasExplicitTypes) && numArgs > mi->numArgs() && !mi->needsArgs() && !mi->needsRest() && !mi->hasOptional())
-	{
-		createError<ArgumentError>(wrk,kWrongArgumentCountError,getSystemState()->getStringFromUniqueId(functionname),Integer::toString(mi->numArgs()),Integer::toString(numArgs));
-		wrk->decStack(saved_cc);
-		return;
+		if (numArgs > mi->numArgs() && !mi->needsArgs() && !mi->needsRest() && !mi->hasOptional())
+		{
+			createError<ArgumentError>(
+				wrk
+				,kWrongArgumentCountError
+				,getSystemState()->getStringFromUniqueId(functionname)
+				,Integer::toString(mi->numArgs())
+				,Integer::toString(numArgs));
+			wrk->decStack(saved_cc);
+			return;
+		}
 	}
 
 #ifdef LLVM_ENABLED
@@ -457,12 +459,7 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 				
 				if (mi->needsscope && cc->exec_pos == mi->body->preloadedcode.data())
 				{
-					ASObject* o = asAtomHandler::getObject(obj);
-					if (o)
-					{
-						o->incRef();
-						o->addStoredMember();
-					}
+					ASATOM_INCREF(obj);
 					cc->scope_stack[0] = obj;
 					cc->scope_stack_dynamic[0] = false;
 					cc->curr_scope_stack++;
@@ -506,8 +503,14 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 					{
 						--cc->curr_scope_stack;
 						LOG_CALL("scopestack exception:"<<asAtomHandler::toDebugString(cc->scope_stack[cc->curr_scope_stack]));
-						if (asAtomHandler::isObject(cc->scope_stack[cc->curr_scope_stack]))
-							asAtomHandler::getObjectNoCheck(cc->scope_stack[cc->curr_scope_stack])->removeStoredMember();
+						ASObject* so = asAtomHandler::getObject(cc->scope_stack[cc->curr_scope_stack]);
+						if (so)
+						{
+							if (so->is<Activation_object>())
+								so->removeStoredMember();
+							else
+								so->decRef();
+						}
 					}
 					break;
 				}
@@ -564,9 +567,15 @@ void SyntheticFunction::call(ASWorker* wrk,asAtom& ret, asAtom& obj, asAtom *arg
 	asAtom* lastscope=cc->scope_stack+cc->curr_scope_stack;
 	for(asAtom* i=cc->scope_stack;i< lastscope;++i)
 	{
+		ASObject* so = asAtomHandler::getObject(*i);
 		LOG_CALL("scopestack:"<<asAtomHandler::toDebugString(*i));
-		if (asAtomHandler::isObject(*i))
-			asAtomHandler::getObjectNoCheck(*i)->removeStoredMember();
+		if (so)
+		{
+			if (so->is<Activation_object>())
+				so->removeStoredMember();
+			else
+				so->decRef();
+		}
 	}
 	if(!mi->needsRest())
 	{
@@ -614,8 +623,13 @@ bool SyntheticFunction::destruct()
 			if (asAtomHandler::isAccessible(it->object))
 			{
 				ASObject* o = asAtomHandler::getObject(it->object);
-				if (o && !o->is<Global>())
-					o->removeStoredMember();
+				if (o)
+				{
+					if (o->is<Activation_object>())
+						o->removeStoredMember();
+					else if (!o->is<Global>())
+						o->decRef();
+				}
 			}
 		}
 	}
@@ -639,8 +653,13 @@ void SyntheticFunction::finalize()
 		for (auto it = func_scope->scope.begin();it != func_scope->scope.end(); it++)
 		{
 			ASObject* o = asAtomHandler::getObject(it->object);
-			if (o && !o->is<Global>())
-				o->removeStoredMember();
+			if (o)
+			{
+				if (o->is<Activation_object>())
+					o->removeStoredMember();
+				else if (!o->is<Global>())
+					o->decRef();
+			}
 		}
 	}
 	func_scope.reset();
@@ -658,9 +677,13 @@ void SyntheticFunction::prepareShutdown()
 		func_scope->scope.pop_back();
 		ASObject* o = asAtomHandler::getObject(s.object);
 		if (o)
+		{
 			o->prepareShutdown();
-		if (o && !o->is<Global>())
-			o->removeStoredMember();
+			if (o->is<Activation_object>())
+				o->removeStoredMember();
+			else if (!o->is<Global>())
+				o->decRef();
+		}
 	}
 	func_scope.reset();
 }

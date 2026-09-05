@@ -625,7 +625,7 @@ void ABCVm::pushWith(call_context* th)
 	RUNTIME_STACK_POP_CREATE(th,t);
 	LOG_CALL( "pushWith " << asAtomHandler::toDebugString(*t) );
 	assert_and_throw(th->curr_scope_stack < th->mi->body->max_scope_depth);
-	if (asAtomHandler::isObject(*t))
+	if (asAtomHandler::is<Activation_object>(*t))
 		asAtomHandler::getObjectNoCheck(*t)->addStoredMember();
 	th->scope_stack[th->curr_scope_stack] = *t;
 	th->scope_stack_dynamic[th->curr_scope_stack] = true;
@@ -637,7 +637,7 @@ void ABCVm::pushScope(call_context* th)
 	RUNTIME_STACK_POP_CREATE(th,t);
 	LOG_CALL( "pushScope " << asAtomHandler::toDebugString(*t) );
 	assert_and_throw(th->curr_scope_stack < th->mi->body->max_scope_depth);
-	if (asAtomHandler::isObject(*t))
+	if (asAtomHandler::is<Activation_object>(*t))
 		asAtomHandler::getObjectNoCheck(*t)->addStoredMember();
 	th->scope_stack[th->curr_scope_stack] = *t;
 	th->scope_stack_dynamic[th->curr_scope_stack] = false;
@@ -2941,8 +2941,10 @@ void ABCVm::popScope(call_context* th)
 	LOG_CALL("popScope");
 	assert_and_throw(th->curr_scope_stack);
 	th->curr_scope_stack--;
-	if (asAtomHandler::isObject(th->scope_stack[th->curr_scope_stack]))
+	if (asAtomHandler::is<Activation_object>(th->scope_stack[th->curr_scope_stack]))
 		asAtomHandler::getObjectNoCheck(th->scope_stack[th->curr_scope_stack])->removeStoredMember();
+	else
+		ASATOM_DECREF(th->scope_stack[th->curr_scope_stack]);
 }
 
 bool ABCVm::lessThan(ASObject* obj1, ASObject* obj2)
@@ -3061,20 +3063,30 @@ ASObject* ABCVm::newFunction(call_context* th, int n)
 		for (auto it = f->func_scope->scope.begin(); it != f->func_scope->scope.end(); it++)
 		{
 			ASObject* o = asAtomHandler::getObject(it->object);
-			if (o && !o->is<Global>())
+			if (o)
 			{
-				o->incRef();
-				o->addStoredMember();
+				if (o->is<Activation_object>())
+				{
+					o->incRef();
+					o->addStoredMember();
+				}
+				else if (!o->is<Global>())
+					o->incRef();
 			}
 		}
 	}
 	for(uint32_t i = 0 ; i < th->curr_scope_stack; i++)
 	{
 		ASObject* o = asAtomHandler::getObject(th->scope_stack[i]);
-		if (o && !o->is<Global>())
+		if (o)
 		{
-			o->incRef();
-			o->addStoredMember();
+			if (o->is<Activation_object>())
+			{
+				o->incRef();
+				o->addStoredMember();
+			}
+			else if (!o->is<Global>())
+				o->incRef();
 		}
 		f->addToScope(scope_entry(th->scope_stack[i],th->scope_stack_dynamic[i]));
 	}

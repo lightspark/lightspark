@@ -621,11 +621,13 @@ void ABCVm::abc_pushScope_constant(call_context* context)
 	asAtom* t = context->exec_pos->arg1_constant;
 	LOG_CALL( "pushScope_c " << asAtomHandler::toDebugString(*t) );
 	assert_and_throw(context->curr_scope_stack < context->mi->body->max_scope_depth);
-	if (asAtomHandler::isObject(*t))
+	if (asAtomHandler::is<Activation_object>(*t))
 	{
 		asAtomHandler::getObjectNoCheck(*t)->incRef();
 		asAtomHandler::getObjectNoCheck(*t)->addStoredMember();
 	}
+	else
+		ASATOM_INCREF(*t);
 	context->scope_stack[context->curr_scope_stack] = *t;
 	context->scope_stack_dynamic[context->curr_scope_stack] = false;
 	context->curr_scope_stack++;
@@ -637,11 +639,13 @@ void ABCVm::abc_pushScope_local(call_context* context)
 	asAtom* t = &CONTEXT_GETLOCAL(context,context->exec_pos->local_pos1);
 	LOG_CALL( "pushScope_l " << asAtomHandler::toDebugString(*t) );
 	assert_and_throw(context->curr_scope_stack < context->mi->body->max_scope_depth);
-	if (asAtomHandler::isObject(*t))
+	if (asAtomHandler::is<Activation_object>(*t))
 	{
 		asAtomHandler::getObjectNoCheck(*t)->incRef();
 		asAtomHandler::getObjectNoCheck(*t)->addStoredMember();
 	}
+	else
+		ASATOM_INCREF(*t);
 	context->scope_stack[context->curr_scope_stack] = *t;
 	context->scope_stack_dynamic[context->curr_scope_stack] = false;
 	context->curr_scope_stack++;

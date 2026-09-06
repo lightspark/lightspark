@@ -49,6 +49,7 @@ struct RenderDisplayObjectToBitmapContainer
 	bool hasClipRect:1;
 	bool needsfill:1;
 	bool needscopy:1;
+	bool needsclear:1;
 };
 
 struct BitmapContainerRenderData

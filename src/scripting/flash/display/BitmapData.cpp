@@ -284,7 +284,8 @@ void BitmapData::drawDisplayObject(DisplayObject* d
 								   ,const RECT& clipRect
 								   ,bool needscopy
 								   ,RGBA* fillcolor
-								   ,uint8_t qualityfactor)
+								   ,uint8_t qualityfactor
+								   ,bool needsclear)
 {
 	RenderDisplayObjectToBitmapContainer r;
 	r.initialMatrix = initialMatrix;
@@ -300,9 +301,13 @@ void BitmapData::drawDisplayObject(DisplayObject* d
 	{
 		r.needsfill = true;
 		r.backgroundcolor=*fillcolor;
+		r.needsclear=false;
 	}
 	else
+	{
 		r.needsfill = false;
+		r.needsclear = needsclear;
+	}
 	if (d)
 		d->invalidateForRenderToBitmap(pixels->getRenderData(),smoothing);
 	if (d)
@@ -391,7 +396,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,drawWithQuality)
 			case BUILTIN_STRINGS::STRING_SCREEN: bl = BLENDMODE_SCREEN; break;
 			case BUILTIN_STRINGS::STRING_SUBTRACT: bl = BLENDMODE_SUBTRACT; break;
 		}
-		th->drawDisplayObject(d, initialMatrix,smoothing,bl,ctransform.getPtr(),rc,needscopy,nullptr,qualityfactor);
+		th->drawDisplayObject(d, initialMatrix,smoothing,bl,ctransform.getPtr(),rc,needscopy,nullptr,qualityfactor,false);
 		if (th->users.empty())
 			th->pixels->flushRenderCalls(th->getSystemState()->getRenderThread(),drawable->is<BitmapData>() ? d->as<Bitmap>() : nullptr);
 	}
@@ -577,9 +582,9 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 	MATRIX m;
 	m.translate(destPoint->getX()*TWIPS_FACTOR,destPoint->getY()*TWIPS_FACTOR);
 	if (mergeAlpha)
-		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,RECT(),source->getBitmapContainer()==th->getBitmapContainer());
+		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,RECT(),source->getBitmapContainer()==th->getBitmapContainer(),nullptr,1,false);
 	else
-		th->drawDisplayObject(d, m,true,BLENDMODE_INTERN_REPLACE,nullptr,RECT(),source->getBitmapContainer()==th->getBitmapContainer());
+		th->drawDisplayObject(d, m,true,BLENDMODE_INTERN_REPLACE,nullptr,RECT(),source->getBitmapContainer()==th->getBitmapContainer(),nullptr);
 	th->getBitmapContainer()->addRenderCallBitmap(th->getSystemState()->getRenderThread(),d);
 
 	th->notifyUsers();

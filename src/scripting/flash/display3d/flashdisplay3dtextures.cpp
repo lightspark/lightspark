@@ -723,6 +723,7 @@ void TextureBase::uploadFromByteArrayIntern(ByteArray* source, uint32_t offset, 
 void TextureBase::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, EventDispatcher, CLASS_SEALED);
+	c->canHaveCyclicMembers=false;
 	c->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,true);
 }
 
@@ -771,6 +772,7 @@ ASFUNCTIONBODY_ATOM(TextureBase,dispose)
 void Texture::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, TextureBase, CLASS_SEALED);
+	c->canHaveCyclicMembers=false;
 	c->setDeclaredMethodByQName("uploadCompressedTextureFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadCompressedTextureFromByteArray),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uploadFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadFromByteArray),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uploadFromBitmapData","",c->getSystemState()->getBuiltinFunction(uploadFromBitmapData),NORMAL_METHOD,true);
@@ -847,6 +849,7 @@ ASFUNCTIONBODY_ATOM(Texture,uploadFromByteArray)
 void CubeTexture::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, TextureBase, CLASS_SEALED);
+	c->canHaveCyclicMembers=false;
 	c->setDeclaredMethodByQName("uploadCompressedTextureFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadCompressedTextureFromByteArray),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uploadFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadFromByteArray),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uploadFromBitmapData","",c->getSystemState()->getBuiltinFunction(uploadFromBitmapData),NORMAL_METHOD,true);
@@ -928,6 +931,7 @@ ASFUNCTIONBODY_ATOM(CubeTexture,uploadFromByteArray)
 void RectangleTexture::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, TextureBase, CLASS_SEALED);
+	c->canHaveCyclicMembers=false;
 	c->setDeclaredMethodByQName("uploadFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadFromByteArray),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uploadFromBitmapData","",c->getSystemState()->getBuiltinFunction(uploadFromBitmapData),NORMAL_METHOD,true);
 }
@@ -963,6 +967,7 @@ ASFUNCTIONBODY_ATOM(RectangleTexture,uploadFromByteArray)
 void VideoTexture::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, TextureBase, CLASS_SEALED);
+	c->canHaveCyclicMembers=false;
 	REGISTER_GETTER(c,videoHeight);
 	REGISTER_GETTER(c,videoWidth);
 	c->setDeclaredMethodByQName("attachCamera","",c->getSystemState()->getBuiltinFunction(attachCamera),NORMAL_METHOD,true);

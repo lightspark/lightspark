@@ -934,11 +934,11 @@ void AudioDecoder::skipUntilF32(const TimeSpec& time)
 		auto& cur = samplesBufferF32.front();
 		assert(time == cur.time);
 		//Check how many bytes are needed to fill the gap
-		size_t samples =
+		auto samples =
 		(
-			time.absDiff(cur.time).toFloat() *
-			getSampleTime()
-		);
+			time.absDiff(cur.time) *
+			sampleRate
+		).getSecs();
 
 		auto bytesToDiscard = (samples * channelCount * 4) & ~1;
 		if (cur.len <= bytesToDiscard) //The whole frame is droppable
@@ -965,11 +965,11 @@ void AudioDecoder::skipUntilS16(const TimeSpec& time)
 		auto& cur = samplesBufferS16.front();
 		assert(time == cur.time);
 		//Check how many bytes are needed to fill the gap
-		size_t samples =
+		auto samples =
 		(
-			time.absDiff(cur.time).toFloat() *
-			getSampleTime()
-		);
+			time.absDiff(cur.time) *
+			sampleRate
+		).getSecs();
 
 		auto bytesToDiscard = (samples * channelCount * 2) & ~1;
 		if (cur.len <= bytesToDiscard) //The whole frame is droppable
@@ -1005,87 +1005,103 @@ void AudioDecoder::skipAll()
 }
 
 #ifdef ENABLE_LIBAVCODEC
-FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng, LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen, uint32_t buffertime):AudioDecoder(buffertime+1,eng),ownedContext(true),codecContext(nullptr)
+FFMpegAudioDecoder::FFMpegAudioDecoder
+(
+	EngineData* _engineData,
+	const LS_AUDIO_CODEC& codec,
+	Span<const uint8_t> initData,
+	size_t bufferTime
+) :
+AudioDecoder(bufferTime + 1, _engineData),
+ownedContext(true),
+codecContext(nullptr)
 {
-	switchCodec(audioCodec,initdata,datalen);
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
-	frameIn=av_frame_alloc();
-#endif
+	switchCodec(audioCodec, initData);
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 106, 102)
+	frameIn = av_frame_alloc();
+	#endif
 }
-void FFMpegAudioDecoder::switchCodec(LS_AUDIO_CODEC audioCodec, uint8_t* initdata, uint32_t datalen)
+
+void FFMpegAudioDecoder::switchCodec
+(
+	const LS_VIDEO_CODEC& codecId,
+	Span<const uint8_t> initData
+)
 {
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 63, 100)
-	if (codecContext)
+	if (codecContext != nullptr)
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 63, 100)
 		avcodec_free_context(&codecContext);
-#else
-	if (codecContext)
+	#else
 		avcodec_close(codecContext);
-#endif
-#ifdef HAVE_LIBSWRESAMPLE
-	if (resamplecontext)
+	#endif
+
+	#ifdef HAVE_LIBSWRESAMPLE
+	if (resampleContext != nullptr)
 		swr_free(&resamplecontext);
-	resamplecontext=nullptr;
-#elif defined HAVE_LIBAVRESAMPLE
-	if (resamplecontext)
-		avresample_free(&resamplecontext);
-	resamplecontext=nullptr;
-#endif
-	const AVCodec* codec=avcodec_find_decoder(LSToFFMpegCodec(audioCodec));
-	assert(codec);
+	resampleContext = nullptr;
+	#elif defined(HAVE_LIBAVRESAMPLE)
+	if (resampleContext != nullptr)
+		avresample_free(&resampleContext);
+	resampleContext = nullptr;
+	#endif
+	auto codec = avcodec_find_decoder(LSToFFMpegCodec(audioCodec));
+	assert(codec != nullptr);
 
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53,8,0)
-	codecContext=avcodec_alloc_context3(nullptr);
-#else
-	codecContext=avcodec_alloc_context();
-#endif
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 8, 0)
+	codecContext = avcodec_alloc_context3(nullptr);
+	#else
+	codecContext = avcodec_alloc_context();
+	#endif
 
-	if(initdata)
+	if (!initData.empty())
 	{
-		codecContext->extradata=initdata;
-		codecContext->extradata_size=datalen;
+		codecContext->extradata = initData.getData();
+		codecContext->extradata_size = initData.getSize();
 	}
 
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53,8,0)
-	if(avcodec_open2(codecContext, codec, nullptr)<0)
-#else
-	if(avcodec_open(codecContext, codec)<0)
-#endif
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 8, 0)
+	if (avcodec_open2(codecContext, codec, nullptr) < 0)
+	#else
+	if (avcodec_open(codecContext, codec) < 0)
+	#endif
 		throw RunTimeException("Cannot open decoder");
 
-	if(fillDataAndCheckValidity())
-		status=VALID;
-	else
-		status=INIT;
+	status = fillDataAndCheckValidity() ? VALID : INIT;
 }
 
 FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng, LS_AUDIO_CODEC lscodec, int sampleRate, int channels, uint32_t buffertime, bool):AudioDecoder(buffertime+1,eng),ownedContext(true)
+(
+	EngineData* _engineData,
+	const LS_AUDIO_CODEC& codec,
+	size_t sampleRate,
+	uint8_t channels
+	size_t bufferTime,
+	bool
+) : AudioDecoder(bufferTime + 1, _engineData), ownedContext(true)
 {
-	status=INIT;
+	status = INIT;
 
-	CodecID codecId = LSToFFMpegCodec(lscodec);
-	const AVCodec* codec=avcodec_find_decoder(codecId);
-	assert(codec);
-	codecContext=avcodec_alloc_context3(codec);
+	auto codecId = toFFMpegCodec(codec);
+	auto _codec = avcodec_find_decoder(codecId);
+	assert(_codec != nullptr);
+	codecContext = avcodec_alloc_context3(codec);
 	codecContext->codec_id = codecId;
 	codecContext->sample_rate = sampleRate;
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
+	#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 24, 100)
 	codecContext->ch_layout.nb_channels = channels;
+	#else
+	codecContext->channels = channels;
+	#endif
 	switch (channels)
 	{
+		#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 24, 100)
 		case 1:
 			codecContext->ch_layout = AV_CHANNEL_LAYOUT_MONO;
 			break;
 		case 2:
 			codecContext->ch_layout = AV_CHANNEL_LAYOUT_STEREO;
 			break;
-		default:
-			LOG(LOG_NOT_IMPLEMENTED,"FFMpegAudioDecoder: channel layout for "<<channels<<" channels");
-			break;
-	}
-#else
-	codecContext->channels = channels;
-	switch (channels)
-	{
+		#else
 		case 1:
 			codecContext->channel_layout = AV_CH_LAYOUT_MONO;
 			break;
@@ -1093,164 +1109,191 @@ FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng, LS_AUDIO_CODEC lscodec, 
 			codecContext->channel_layout = AV_CH_LAYOUT_STEREO;
 			break;
 		default:
-			LOG(LOG_NOT_IMPLEMENTED,"FFMpegAudioDecoder: channel layout for "<<channels<<" channels");
+		#endif
+		default:
+			LOG
+			(
+				LOG_NOT_IMPLEMENTED,
+				"FFMpegAudioDecoder: "
+				"channel layout for " << channels << " channels"
+			);
 			break;
 	}
-#endif
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53,8,0)
-	if(avcodec_open2(codecContext, codec, nullptr)<0)
-#else
-	if(avcodec_open(codecContext, codec)<0)
-#endif
+
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 8, 0)
+	if (avcodec_open2(codecContext, codec, nullptr) < 0)
+	#else
+	if (avcodec_open(codecContext, codec) < 0)
+	#endif
 		return;
 
-	if(fillDataAndCheckValidity())
-		status=VALID;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
-	frameIn=av_frame_alloc();
-#endif
+	if (fillDataAndCheckValidity())
+		status = VALID;
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 106, 102)
+	frameIn = av_frame_alloc();
+	#endif
 }
 
-#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
-FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecParameters* codecPar, uint32_t buffertime):AudioDecoder(buffertime+1,eng),ownedContext(true),codecContext(nullptr)
+FFMpegAudioDecoder::FFMpegAudioDecoder
+(
+	EngineData* _engineData,
+	#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
+	AVCodecParameters* codecPar,
+	#else
+	AVCodecContext* _codecContext,
+	#endif
+	size_t bufferTime
+) :
+AudioDecoder(bufferTime + 1, _engineData),
+#if LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(57, 40, 101)
+ownedContext(true),
+codecContext(_codecContext)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 8, 0)
+codecContext(avcodec_alloc_context3(nullptr))
+#else
+codecContext(avcodec_alloc_context())
+#endif
+#else
+ownedContext(false),
+codecContext(_codecContext)
+#endif
 {
-	status=INIT;
-	const AVCodec* codec=avcodec_find_decoder(codecPar->codec_id);
-	assert(codec);
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53,8,0)
-	codecContext=avcodec_alloc_context3(nullptr);
-#else
-	codecContext=avcodec_alloc_context();
-#endif
-	avcodec_parameters_to_context(codecContext,codecPar);
+	status = INIT;
+	#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
+	auto codec = avcodec_find_decoder(codecPar->codec_id);
+	avcodec_parameters_to_context(codecContext ,codecPar);
+	#else
+	auto codec = avcodec_find_decoder(codecContext->codec_id);
+	#endif
+	assert(codec != nullptr);
 
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53,8,0)
-	if(avcodec_open2(codecContext, codec, nullptr)<0)
-#else
-	if(avcodec_open(codecContext, codec)<0)
-#endif
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53,8,0)
+	if (avcodec_open2(codecContext, codec, nullptr) < 0)
+	#else
+	if (avcodec_open(codecContext, codec) < 0)
+	#endif
 		return;
 
-	if(fillDataAndCheckValidity())
-		status=VALID;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
-	frameIn=av_frame_alloc();
-#endif
-}
-#else
-FFMpegAudioDecoder::FFMpegAudioDecoder(EngineData* eng,AVCodecContext* _c, uint32_t buffertime):AudioDecoder(buffertime+1,eng),ownedContext(false),codecContext(_c)
-{
-	status=INIT;
-	const AVCodec* codec=avcodec_find_decoder(codecContext->codec_id);
-	assert(codec);
+	if (fillDataAndCheckValidity())
+		status = VALID;
 
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53,8,0)
-	if(avcodec_open2(codecContext, codec, nullptr)<0)
-#else
-	if(avcodec_open(codecContext, codec)<0)
-#endif
-		return;
-
-	if(fillDataAndCheckValidity())
-		status=VALID;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
-	frameIn=av_frame_alloc();
-#endif
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 106, 102)
+	frameIn = av_frame_alloc();
+	#endif
 }
-#endif
 
 FFMpegAudioDecoder::~FFMpegAudioDecoder()
 {
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 63, 100)
-	if(ownedContext)
+	if (ownedContext)
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55, 63, 100)
 		avcodec_free_context(&codecContext);
-#else
-	if(ownedContext)
+	#else
 	{
 		avcodec_close(codecContext);
 		av_free(codecContext);
 	}
-#endif
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 0, 0)
+	#endif
+	#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 0, 0)
 	av_frame_free(&frameIn);
-#elif LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
+	#elif LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 106, 102)
 	av_free(frameIn);
-#endif
+	#endif
 }
 
-CodecID FFMpegAudioDecoder::LSToFFMpegCodec(LS_AUDIO_CODEC LSCodec)
+CodecID FFMpegAudioDecoder::toFFMpegCodec(const LS_AUDIO_CODEC& codec)
 {
-	switch(LSCodec)
+	switch (codec)
 	{
-		case AAC:
-			return CODEC_ID_AAC;
-		case MP3:
-			return CODEC_ID_MP3;
-		case ADPCM:
-			return CODEC_ID_ADPCM_SWF;
-		case NELLYMOSER:
-			return AV_CODEC_ID_NELLYMOSER;
+		case AAC: return CODEC_ID_AAC;
+		case MP3: return CODEC_ID_MP3;
+		case ADPCM: return CODEC_ID_ADPCM_SWF;
+		case NELLYMOSER: return AV_CODEC_ID_NELLYMOSER;
+		case LINEAR_PCM_LE: return CODEC_ID_PCM_S16LE;
+		#if __BYTE_ORDER == __BIG_ENDIAN
 		case LINEAR_PCM_PLATFORM_ENDIAN:
-#if __BYTE_ORDER == __BIG_ENDIAN
 			return CODEC_ID_PCM_S16BE;
-#else
-			return CODEC_ID_PCM_S16LE;
-#endif
-		case LINEAR_PCM_LE:
+		case LINEAR_PCM_FLOAT_PLATFORM_ENDIAN:
+			return CODEC_ID_PCM_F32BE;
+		#else
+		case LINEAR_PCM_PLATFORM_ENDIAN:
 			return CODEC_ID_PCM_S16LE;
 		case LINEAR_PCM_FLOAT_PLATFORM_ENDIAN:
-#if __BYTE_ORDER == __BIG_ENDIAN
-			return CODEC_ID_PCM_F32BE;
-#else
 			return CODEC_ID_PCM_F32LE;
-#endif
-		default:
-			return CODEC_ID_NONE;
+		#endif
+		default: return CODEC_ID_NONE;
 	}
 }
 
 bool FFMpegAudioDecoder::fillDataAndCheckValidity()
 {
-	if(codecContext->sample_rate!=0)
-	{
-		LOG(LOG_TRACE,"AUDIO DEC: Audio sample rate " << codecContext->sample_rate);
-		sampleRate=codecContext->sample_rate;
-	}
-	else
+	if (!codecContext->sample_rate)
+		return false;
+	LOG
+	(
+		LOG_TRACE,
+		"AUDIO DEC: "
+		"Audio sample rate " << codecContext->sample_rate
+	);
+	sampleRate = codecContext->sample_rate;
+
+	#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 24, 100)
+	const auto& channels = codecContext->ch_layout.nb_channels;
+	#else
+	const auto& channels = codecContext->channels;
+	#endif
+	if (!channels)
 		return false;
 
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
-	if(codecContext->ch_layout.nb_channels!=0)
-	{
-		LOG(LOG_TRACE, "AUDIO DEC: Audio channels " << codecContext->ch_layout.nb_channels);
-		channelCount=codecContext->ch_layout.nb_channels;
-	}
-#else
-	if(codecContext->channels!=0)
-	{
-		LOG(LOG_TRACE, "AUDIO DEC: Audio channels " << codecContext->channels);
-		channelCount=codecContext->channels;
-	}
-#endif
-	else
+	LOG(LOG_TRACE, "AUDIO DEC: Audio channels " << channels);
+	channelCount = channels;
+
+	if (initialTime.getSecs() != -1 || !hasDecodedFrames())
 		return false;
 
-	if(initialTime==(uint32_t)-1 && (!samplesBufferS16.isEmpty() || !samplesBufferF32.isEmpty()))
-	{
-		initialTime=getFrontTime();
-		LOG(LOG_TRACE,"AUDIO DEC: Initial timestamp " << initialTime);
-	}
-	else
-		return false;
-
+	initialTime = getFrontTime();
+	LOG
+	(
+		LOG_TRACE,
+		"AUDIO DEC: Initial timestamp " <<
+		initialTime.getSecs() << "s " <<
+		initialTime.getNsecs() << "ns"
+	);
 	return true;
 }
 
-uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t time)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 106, 102)
+template<typename T>
+void FFMPegAudioDecoder::decodeDataImpl
+(
+	T& samples,
+	Span<const uint8_t> data,
+	const TimeSpec& time
+)
 {
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
-	AVPacket* pkt = av_packet_alloc();
-	if (!pkt)
+	while (!data.empty())
+	{
+		auto& tail = samples.acquireLast();
+		auto size = std::min(data.getSize(), sizeof(T::samples));
+		assert(!(size % 2));
+
+		memcpy(tail.samples, data.getData(), size);
+		data = data.subSpan(size);
+		tail.size = size;
+		assert(!(tail.size & 0x80000000));
+		tail.current = tail.samples;
+		tail.time = time;
+		samples.commitLast();
+	}
+}
+
+size_t FFMpegAudioDecoder::decodeData
+(
+	Span<const uint8_t> data,
+	const TimeSpec& time
+)
+{
+	auto pkt = av_packet_alloc();
+	if (pkt == nullptr)
 		return 0;
 
 	// If some data was left unprocessed on previous call,
@@ -1258,562 +1301,392 @@ uint32_t FFMpegAudioDecoder::decodeData(uint8_t* data, int32_t datalen, uint32_t
 	std::vector<uint8_t> combinedBuffer;
 	if (overflowBuffer.empty())
 	{
-		pkt->data=data;
-		pkt->size=datalen;
+		pkt->data = data.getData();
+		pkt->size = data.getSize();
 	}
 	else
 	{
-		combinedBuffer.assign(overflowBuffer.begin(), overflowBuffer.end());
-		if (datalen > 0)
-			combinedBuffer.insert(combinedBuffer.end(), data, data+datalen);
+		combinedBuffer = overflowBuffer;
+		if (!data.empty())
+		{
+			combinedBuffer.insert
+			(
+				combinedBuffer.end(),
+				data.begin(),
+				data.end()
+			);
+		}
+
 		pkt->data = &combinedBuffer[0];
 		pkt->size = combinedBuffer.size();
 		overflowBuffer.clear();
 	}
+
 	av_frame_unref(frameIn);
-	int ret = avcodec_send_packet(codecContext, pkt);
-	int maxLen = 0;
-	while (ret == 0)
-	{
-		
-		ret = avcodec_receive_frame(codecContext,frameIn);
-		
-		if(ret != 0)
-		{
-			if (ret != AVERROR(EAGAIN))
-				LOG(LOG_ERROR,"not decoded audio:"<<ret );
-		}
-		else
-		{
-			uint8_t* output=nullptr;
-			int len;
-			resampleFrame(&output,len);
-#if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
-			maxLen = av_frame_get_pkt_size (frameIn);
-#elif ( LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(58,29,100) )
-			maxLen = pkt->size;
-#else
-			maxLen = frameIn->pkt_size;
-#endif
-			if (engine->audio_useFloatSampleFormat())
-			{
-				int curpos = 0;
-				while (len)
-				{
-					FrameSamplesF32& curTail=samplesBufferF32.acquireLast();
-					int curbufsize= min(len,(int)sizeof(FrameSamplesF32::samples));
-					memcpy(curTail.samples,output+curpos,curbufsize);
-					curpos += curbufsize;
-					curTail.len=curbufsize;
-					assert(!(curTail.len&0x80000000));
-					assert(curbufsize%2==0);
-					curTail.current=curTail.samples;
-					curTail.time=time;
-					samplesBufferF32.commitLast();
-					len -= curbufsize;
-				}
-			}
-			else
-			{
-				int curpos = 0;
-				while (len)
-				{
-					FrameSamplesS16& curTail=samplesBufferS16.acquireLast();
-					int curbufsize= min(len,(int)sizeof(FrameSamplesS16::samples));
-					memcpy(curTail.samples,output+curpos,curbufsize);
-					curpos += curbufsize;
-					curTail.len=curbufsize;
-					assert(!(curTail.len&0x80000000));
-					assert(curbufsize%2==0);
-					curTail.current=curTail.samples;
-					curTail.time=time;
-					samplesBufferS16.commitLast();
-					len -= curbufsize;
-				}
-			}
-			if (output)
-				av_freep(&output);
-			if(status==INIT && fillDataAndCheckValidity())
-				status=VALID;
-		}
-	}
-	if (maxLen > 0)
-	{
-		int tmpsize = pkt->size - maxLen;
-		uint8_t* tmpdata = pkt->data;
-		tmpdata += maxLen;
+	auto ret = avcodec_send_packet(codecContext, pkt);
+	size_t maxSize = 0;
 
-		if (tmpsize > 0)
+	while (!ret)
+	{
+		ret = avcodec_receive_frame(codecContext, frameIn);
+		if (ret && ret != AVERROR(EAGAIN))
 		{
-			overflowBuffer.assign(tmpdata , tmpdata+tmpsize);
+			LOG(LOG_ERROR, "not decoded audio:" << ret);
+			continue;
 		}
+		else if (ret)
+			break;
+		auto output = resampleFrame();
+		#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56, 0, 100)
+		maxSize = av_frame_get_pkt_size(frameIn);
+		#elif LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(58, 29, 100)
+		maxSize = pkt->size;
+		#else
+		maxSize = frameIn->pkt_size;
+		#endif
+		if (engineData->audio_useFloatSampleFormat())
+			decodeDataImpl(samplesBufferF32, output, time);
+		else
+			decodeDataImpl(samplesBufferS16, output, time);
+		if (!output.empty())
+			av_freep(&output.getData());
+		if (status == INIT && fillDataAndCheckValidity())
+			status = VALID;
 	}
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,12,100)
+
+	if (maxSize)
+	{
+		auto tmp = Span<const uint8_t>
+		(
+			pkt->data,
+			pkt->size
+		).subSpan(maxSize);
+		if (!tmp.empty())
+			overflowBuffer.assign(tmp.begin(), tmp.end());
+	}
+
 	av_packet_unref(pkt);
-#else
-	av_free_packet(pkt);
-#endif
 	av_packet_free(&pkt);
-	return maxLen;
-#else
-	uint8_t* output=nullptr;
-	int len;
-	resampleFrame(&output,len);
-	if (engine->audio_useFloatSampleFormat())
-	{
-		FrameSamplesF32& curTail=samplesBufferF32.acquireLast();
-		int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52,23,0)
-		AVPacket pkt;
-		av_init_packet(&pkt);
-		
-		// If some data was left unprocessed on previous call,
-		// concatenate.
-		std::vector<uint8_t> combinedBuffer;
-		if (overflowBuffer.empty())
-		{
-			pkt.data=data;
-			pkt.size=datalen;
-		}
-		else
-		{
-			combinedBuffer.assign(overflowBuffer.begin(), overflowBuffer.end());
-			if (datalen > 0)
-				combinedBuffer.insert(combinedBuffer.end(), data, data+datalen);
-			pkt.data = &combinedBuffer[0];
-			pkt.size = combinedBuffer.size();
-			overflowBuffer.clear();
-		}
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
-		av_frame_unref(frameIn);
-		int frameOk=0;
-		int32_t ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, &pkt);
-		if(frameOk==0)
-		{
-			LOG(LOG_ERROR,"not decoded audio:"<<ret);
-		}
-		else
-		{
-			uint8_t* output=nullptr;
-			int len;
-			resampleFrame(&output,len);
-			maxLen=len;
-			int curpos = 0;
-			while (len)
-			{
-				int curbufsize= min(len,(int)sizeof(FrameSamplesF32::samples));
-				memcpy(curTail.samples,output+curpos,curbufsize);
-				curpos += curbufsize;
-				curTail.len=curbufsize;
-				assert(!(curTail.len&0x80000000));
-				assert(curbufsize%2==0);
-				curTail.current=curTail.samples;
-				curTail.time=time;
-				samplesBufferF32.commitLast();
-				len -= curbufsize;
-			}
-			if (output)
-				av_freep(&output[0]);
-		}
-#else
-		int32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
-#endif
-		
-		if (ret > 0)
-		{
-			pkt.data += ret;
-			pkt.size -= ret;
-			
-			if (pkt.size > 0)
-			{
-				overflowBuffer.assign(pkt.data, pkt.data+pkt.size);
-			}
-		}
-		
-#else
-		int32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
-#endif
-		
-		curTail.len=maxLen;
-		assert(!(curTail.len&0x80000000));
-		assert(maxLen%2==0);
-		curTail.current=curTail.samples;
-		curTail.time=time;
-		samplesBufferF32.commitLast();
-	}
-	else
-	{
-		FrameSamplesS16& curTail=samplesBufferS16.acquireLast();
-		int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52,23,0)
-		AVPacket pkt;
-		av_init_packet(&pkt);
-		
-		// If some data was left unprocessed on previous call,
-		// concatenate.
-		std::vector<uint8_t> combinedBuffer;
-		if (overflowBuffer.empty())
-		{
-			pkt.data=data;
-			pkt.size=datalen;
-		}
-		else
-		{
-			combinedBuffer.assign(overflowBuffer.begin(), overflowBuffer.end());
-			if (datalen > 0)
-				combinedBuffer.insert(combinedBuffer.end(), data, data+datalen);
-			pkt.data = &combinedBuffer[0];
-			pkt.size = combinedBuffer.size();
-			overflowBuffer.clear();
-		}
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
-		av_frame_unref(frameIn);
-		int frameOk=0;
-		int32_t ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, &pkt);
-		if(frameOk==0)
-		{
-			LOG(LOG_ERROR,"not decoded audio:"<<ret);
-		}
-		else
-		{
-			uint8_t* output=nullptr;
-			int len;
-			resampleFrame(&output,len);
-			maxLen=len;
-			int curpos = 0;
-			while (len)
-			{
-				int curbufsize= min(len,(int)sizeof(FrameSamplesS16::samples));
-				memcpy(curTail.samples,output+curpos,curbufsize);
-				curpos += curbufsize;
-				curTail.len=curbufsize;
-				assert(!(curTail.len&0x80000000));
-				assert(curbufsize%2==0);
-				curTail.current=curTail.samples;
-				curTail.time=time;
-				samplesBufferS16.commitLast();
-				len -= curbufsize;
-			}
-			if (output)
-				av_freep(&output[0]);
-		}
-#else
-		int32_t ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, &pkt);
-#endif
-		
-		if (ret > 0)
-		{
-			pkt.data += ret;
-			pkt.size -= ret;
-			
-			if (pkt.size > 0)
-			{
-				overflowBuffer.assign(pkt.data, pkt.data+pkt.size);
-			}
-		}
-		
-#else
-		int32_t ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, data, datalen);
-#endif
-		
-		curTail.len=maxLen;
-		assert(!(curTail.len&0x80000000));
-		assert(maxLen%2==0);
-		curTail.current=curTail.samples;
-		curTail.time=time;
-		samplesBufferS16.commitLast();
-	}
-	if(status==INIT && fillDataAndCheckValidity())
-		status=VALID;
-
-	return maxLen;
-#endif
+	return maxSize;
 }
 
-int FFMpegAudioDecoder::decodePacket(AVPacket* pkt, uint32_t time)
+int FFMpegAudioDecoder::decodePacket(AVPacket* pkt, const TimeSpec& time)
 {
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
 	av_frame_unref(frameIn);
-	int ret = avcodec_send_packet(codecContext, pkt);
-	while (ret == 0)
+	auto ret = avcodec_send_packet(codecContext, pkt);
+	while (!ret)
 	{
 		ret = avcodec_receive_frame(codecContext,frameIn);
-		if(ret != 0)
+		if (ret && ret != AVERROR(EAGAIN))
 		{
-			if (ret != AVERROR(EAGAIN))
-				LOG(LOG_ERROR,"not decoded audio:"<<ret);
+			LOG(LOG_ERROR, "not decoded audio:" << ret);
+			return ret;
 		}
+		else if (ret)
+			return ret;
+
+		auto output = resampleFrame();
+		if (engineData->audio_useFloatSampleFormat())
+			decodeDataImpl(samplesBufferF32, output, time);
 		else
-		{
-			uint8_t* output=nullptr;
-			int len;
-			resampleFrame(&output,len);
-			if (engine->audio_useFloatSampleFormat())
-			{
-				int curpos = 0;
-				while (len)
-				{
-					FrameSamplesF32& curTail=samplesBufferF32.acquireLast();
-					int curbufsize= min(len,(int)sizeof(FrameSamplesF32::samples));
-					memcpy(curTail.samples,output+curpos,curbufsize);
-					curpos += curbufsize;
-					curTail.len=curbufsize;
-					assert(!(curTail.len&0x80000000));
-					assert(curbufsize%2==0);
-					curTail.current=curTail.samples;
-					curTail.time=time;
-					samplesBufferF32.commitLast();
-					len -= curbufsize;
-				}
-			}
-			else
-			{
-				int curpos = 0;
-				while (len)
-				{
-					FrameSamplesS16& curTail=samplesBufferS16.acquireLast();
-					int curbufsize= min(len,(int)sizeof(FrameSamplesS16::samples));
-					memcpy(curTail.samples,output+curpos,curbufsize);
-					curpos += curbufsize;
-					curTail.len=curbufsize;
-					assert(!(curTail.len&0x80000000));
-					assert(curbufsize%2==0);
-					curTail.current=curTail.samples;
-					curTail.time=time;
-					samplesBufferS16.commitLast();
-					len -= curbufsize;
-				}
-			}
-			if (output)
-				av_freep(&output);
-			if(status==INIT && fillDataAndCheckValidity())
-				status=VALID;
-		}
-	}
-#else
-	if (engine->audio_useFloatSampleFormat())
-	{
-		FrameSamplesF32& curTail=samplesBufferF32.acquireLast();
-		int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
-		av_frame_unref(frameIn);
-		int frameOk=0;
-		int ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, pkt);
-		if(frameOk==0)
-		{
-			LOG(LOG_ERROR,"not decoded audio:"<<ret);
-		}
-		else
-		{
-			uint8_t* output=nullptr;
-			int len;
-			resampleFrame(&output,len);
-			maxLen=len;
-			int curpos = 0;
-			while (len)
-			{
-				int curbufsize= min(len,(int)sizeof(FrameSamplesF32::samples));
-				memcpy(curTail.samples,output+curpos,curbufsize);
-				curpos += curbufsize;
-				curTail.len=curbufsize;
-				assert(!(curTail.len&0x80000000));
-				assert(curbufsize%2==0);
-				curTail.current=curTail.samples;
-				curTail.time=time;
-				samplesBufferF32.commitLast();
-				len -= curbufsize;
-			}
-			if (output)
-				av_freep(&output[0]);
-		}
-#elif LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52,23,0)
-		int ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
-#else
-		int ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, pkt->data, pkt->size);
-#endif
-		
-		if(ret==-1)
-		{
-			//A decoding error occurred, create an empty sample buffer
-			LOG(LOG_ERROR,"Malformed audio packet");
-			curTail.len=0;
-			curTail.current=curTail.samples;
-			curTail.time=time;
-			samplesBufferF32.commitLast();
-			return maxLen;
-		}
-		
-		assert_and_throw(ret==pkt->size);
-		
+			decodeDataImpl(samplesBufferS16, output, time);
+
+		if (output)
+			av_freep(&output);
 		if(status==INIT && fillDataAndCheckValidity())
 			status=VALID;
-		
-		curTail.len=maxLen;
-		assert(!(curTail.len&0x80000000));
-		assert(maxLen%2==0);
-		curTail.current=curTail.samples;
-		curTail.time=time;
-		samplesBufferF32.commitLast();
 	}
-	else
-	{
-		FrameSamplesS16& curTail=samplesBufferS16.acquireLast();
-		int maxLen=AVCODEC_MAX_AUDIO_FRAME_SIZE;
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
-		av_frame_unref(frameIn);
-		int frameOk=0;
-		int ret=avcodec_decode_audio4(codecContext, frameIn, &frameOk, pkt);
-		if(frameOk==0)
-		{
-			LOG(LOG_ERROR,"not decoded audio:"<<ret);
-		}
-		else
-		{
-			uint8_t* output=nullptr;
-			int len;
-			resampleFrame(&output,len);
-			maxLen=len;
-			int curpos = 0;
-			while (len)
-			{
-				int curbufsize= min(len,(int)sizeof(FrameSamplesS16::samples));
-				memcpy(curTail.samples,output+curpos,curbufsize);
-				curpos += curbufsize;
-				curTail.len=curbufsize;
-				assert(!(curTail.len&0x80000000));
-				assert(curbufsize%2==0);
-				curTail.current=curTail.samples;
-				curTail.time=time;
-				samplesBufferS16.commitLast();
-				len -= curbufsize;
-			}
-			if (output)
-				av_freep(&output[0]);
-		}
-#elif LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52,23,0)
-		int ret=avcodec_decode_audio3(codecContext, curTail.samples, &maxLen, pkt);
-#else
-		int ret=avcodec_decode_audio2(codecContext, curTail.samples, &maxLen, pkt->data, pkt->size);
-#endif
-		
-		if(ret==-1)
-		{
-			//A decoding error occurred, create an empty sample buffer
-			LOG(LOG_ERROR,"Malformed audio packet");
-			curTail.len=0;
-			curTail.current=curTail.samples;
-			curTail.time=time;
-			samplesBufferS16.commitLast();
-			return maxLen;
-		}
-		
-		assert_and_throw(ret==pkt->size);
-		
-		if(status==INIT && fillDataAndCheckValidity())
-			status=VALID;
-		
-		curTail.len=maxLen;
-		assert(!(curTail.len&0x80000000));
-		assert(maxLen%2==0);
-		curTail.current=curTail.samples;
-		curTail.time=time;
-		samplesBufferS16.commitLast();
-	}
-#endif
+
 	return ret;
 }
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
-void FFMpegAudioDecoder::resampleFrame(uint8_t **output, int& outputsize)
+
+Span<const uint8_t> FFMpegAudioDecoder::resampleFrame()
 {
-	int sample_rate = engine->audio_getSampleRate();
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
-	AVChannelLayout channel_layout = AV_CHANNEL_LAYOUT_STEREO;
-#else
-	unsigned int channel_layout = AV_CH_LAYOUT_STEREO;
-#endif
-#if ( LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56,0,100) )
- 	int framesamplerate = av_frame_get_sample_rate(frameIn);
-#else
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
-	int framesamplerate = frameIn->sample_rate;
-#else
-	int framesamplerate = this->codecContext->sample_rate;
-#endif
-#endif
-	AVSampleFormat outputsampleformat = forExtraction || engine->audio_useFloatSampleFormat() ? AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
-	int outputsampleformatsize = forExtraction || engine->audio_useFloatSampleFormat() ? sizeof(float) : sizeof(int16_t);
-#ifdef HAVE_LIBSWRESAMPLE
-	if (!resamplecontext)
+	auto _sampleRate = engineData->audio_getSampleRate();
+	#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 24, 100)
+	auto chLayout = AV_CHANNEL_LAYOUT_STEREO;
+	#else
+	auto chLayout = AV_CH_LAYOUT_STEREO;
+	#endif
+	#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56, 0, 100)
+	auto framesamplerate = av_frame_get_sample_rate(frameIn);
+	#else
+	auto frameSampleRate = frameIn->sample_rate;
+	#endif
+	auto outSampleFmt =
+	(
+		forExtraction ||
+		engine->audio_useFloatSampleFormat()
+	) ? AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
+
+	auto outSampleFmtSize =
+	(
+		forExtraction ||
+		engine->audio_useFloatSampleFormat()
+	) ? sizeof(float) : sizeof(int16_t);
+
+	#ifdef HAVE_LIBSWRESAMPLE
+	if (resampleContext == nullptr)
 	{
-		resamplecontext = swr_alloc();
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
+		resampleContext = swr_alloc();
+		#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
 		av_opt_set_chlayout(resamplecontext, "in_chlayout",  &frameIn->ch_layout, 0);
-		av_opt_set_chlayout(resamplecontext, "out_chlayout", &channel_layout,  0);
-#else
+		av_opt_set_chlayout(resamplecontext, "out_chlayout", &chLayout,  0);
+		#else
 		av_opt_set_int(resamplecontext, "in_channel_layout",  frameIn->channel_layout, 0);
-		av_opt_set_int(resamplecontext, "out_channel_layout", channel_layout,  0);
-#endif
-		av_opt_set_int(resamplecontext, "in_sample_rate",     framesamplerate,     0);
-		av_opt_set_int(resamplecontext, "out_sample_rate",    sample_rate,     0);
-		av_opt_set_int(resamplecontext, "in_sample_fmt",      frameIn->format,   0);
-		av_opt_set_int(resamplecontext, "out_sample_fmt",     outputsampleformat,    0);
+		av_opt_set_int(resamplecontext, "out_channel_layout", chLayout,  0);
+		#endif
+		av_opt_set_int(resamplecontext, "in_sample_rate", frameSampleRate, 0);
+		av_opt_set_int(resamplecontext, "out_sample_rate", sampleRate, 0);
+		av_opt_set_int(resamplecontext, "in_sample_fmt", frameIn->format, 0);
+		av_opt_set_int(resamplecontext, "out_sample_fmt", outputsampleformat, 0);
 		swr_init(resamplecontext);
 	}
 
-	int out_samples = swr_get_out_samples(resamplecontext,frameIn->nb_samples);
-	int res = av_samples_alloc(output, nullptr, 2, out_samples,outputsampleformat, 0);
+	const uint8_t* output = nullptr;
+	auto outSamples = swr_get_out_samples(resampleContext, frameIn->nb_samples);
+	auto _ret = av_samples_alloc(output, nullptr, 2, outSamples, outSampleFmt, 0);
 
-	if (res >= 0)
+	if (_ret < 0)
 	{
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
-		outputsize = swr_convert(resamplecontext, output, out_samples, (const uint8_t**)frameIn->extended_data, frameIn->nb_samples)*outputsampleformatsize*channel_layout.nb_channels;
+		LOG(LOG_ERROR, "resampling failed, error code:" << _ret);
+		return { nullptr, 0 };
+	}
+
+	auto outSize = swr_convert
+	(
+		resampleContext,
+		output,
+		outSamples,
+		(const uint8_t**)frameIn->extended_data,
+		frameIn->nb_samples
+	) *
+	(
+		outSampleFmtSize *
+		#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 24, 100)
+		channel_layout.nb_channels
+		#else
+		av_get_channel_layout_nb_channels(channel_layout)
+		#endif
+	);
+
+	if (outSize <= 0)
+	{
+		LOG(LOG_ERROR, "resampling failed");
+		return { nullptr, 0 };
+	}
+
+	return { output, outSize };
+	#elif defined HAVE_LIBAVRESAMPLE
+	if (resampleContext == nullptr)
+	{
+		resamplContext = avresample_alloc_context();
+		av_opt_set_int(resampleContext, "in_channel_layout", frameIn->channel_layout, 0);
+		av_opt_set_int(resampleContext, "out_channel_layout", chLayout, 0);
+		av_opt_set_int(resampleContext, "in_sample_rate", frameSampleRate, 0);
+		av_opt_set_int(resampleContext, "out_sample_rate", _sampleRate, 0);
+		av_opt_set_int(resampleContext, "in_sample_fmt", frameIn->format, 0);
+		av_opt_set_int(resampleContext, "out_sample_fmt", outSampleFmt, 0);
+		avresample_open(resampleContext);
+	}
+
+	auto outSamples =
+	(
+		avresample_available(resampleContext) + av_rescale_rnd
+		(
+			avresample_get_delay(resampleContext) +
+			frameIn->linesize[0],
+			_sampleRate,
+			_sampleRate,
+			AV_ROUND_UP
+		)
+	);
+
+	int outLineSize = 0;
+	auto _ret = av_samples_alloc
+	(
+		output,
+		&outLineSize,
+		frameIn->nb_samples,
+		outSamples,
+		outSampleFmt,
+		0
+	);
+
+	if (_ret < 0)
+	{
+		LOG(LOG_ERROR, "resampling failed, error code:" << _ret);
+		return { nullptr, 0 };
+	}
+
+	size_t outSize = avresample_convert
+	(
+		resampleContext,
+		output,
+		outLineSize,
+		outSamples,
+		frameIn->extended_data,
+		frameIn->linesize[0],
+		frameIn->nb_samples
+	) * outSampleFmtSize * av_get_channel_layout_nb_channels(chLayout);
+	return { output, outSize };
+	#else
+	LOG
+	(
+		LOG_ERROR,
+		"unexpected sample format and can't resample, recompile with "
+		"libswresample"
+	);
+	return { nullptr, 0 };
+	#endif
+}
 #else
-		outputsize = swr_convert(resamplecontext, output, out_samples, (const uint8_t**)frameIn->extended_data, frameIn->nb_samples)*outputsampleformatsize*av_get_channel_layout_nb_channels(channel_layout);
-#endif
-		if (outputsize <= 0)
+template<typename T>
+size_t FFMpegAudioDecoder::decodeDataImpl
+(
+	T& samples,
+	Span<const uint8_t> data,
+	const TimeSpec& time
+)
+{
+	auto& curTail = samples.acquireLast();
+	int maxSize = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+	AVPacket pkt;
+	av_init_packet(&pkt);
+
+	// If some data was left unprocessed on previous call,
+	// concatenate.
+	std::vector<uint8_t> combinedBuffer;
+	if (overflowBuffer.empty())
+	{
+		pkt.data = data.getData();
+		pkt.size = data.getSize();
+	}
+	else
+	{
+		combinedBuffer = overflowBuffer;
+		if (!data.empty())
 		{
-			LOG(LOG_ERROR, "resampling failed");
-			outputsize=0;
+			combinedBuffer.insert
+			(
+				combinedBuffer.end(),
+				data.begin(),
+				data.end()
+			);
 		}
-	}
-	else
-	{
-		LOG(LOG_ERROR, "resampling failed, error code:"<<res);
-		outputsize=0;
-	}
-#elif defined HAVE_LIBAVRESAMPLE
-	if (!resamplecontext)
-	{
-		resamplecontext = avresample_alloc_context();
-		av_opt_set_int(resamplecontext, "in_channel_layout",  frameIn->channel_layout, 0);
-		av_opt_set_int(resamplecontext, "out_channel_layout", channel_layout,  0);
-		av_opt_set_int(resamplecontext, "in_sample_rate",     framesamplerate,     0);
-		av_opt_set_int(resamplecontext, "out_sample_rate",    sample_rate,     0);
-		av_opt_set_int(resamplecontext, "in_sample_fmt",      frameIn->format,   0);
-		av_opt_set_int(resamplecontext, "out_sample_fmt",     outputsampleformat,    0);
-		avresample_open(resamplecontext);
+
+		pkt.data = combinedBuffer.data();
+		pkt.size = combinedBuffer.size();
+		overflowBuffer.clear();
 	}
 
-	int out_linesize;
-	int out_samples = avresample_available(resamplecontext) + av_rescale_rnd(avresample_get_delay(resamplecontext) + frameIn->linesize[0], sample_rate, sample_rate, AV_ROUND_UP);
-	int res = av_samples_alloc(output, &out_linesize, frameIn->nb_samples, out_samples, outputsampleformat, 0);
-	if (res >= 0)
+	auto ret = avcodec_decode_audio3
+	(
+		codecContext,
+		curTail.samples,
+		&maxSize,
+		&pkt
+	);
+
+	if (ret > 0)
 	{
-		outputsize = avresample_convert(resamplecontext, output, out_linesize, out_samples, frameIn->extended_data, frameIn->linesize[0], frameIn->nb_samples)*outputsampleformatsize*av_get_channel_layout_nb_channels(channel_layout);
+		auto tmp = Span<const uint8_t>
+		(
+			pkt.data,
+			pkt.size
+		).subSpan(ret);
+		if (!tmp.empty())
+			overflowBuffer.assign(tmp.begin(), tmp.end());
 	}
-	else
-	{
-		LOG(LOG_ERROR, "resampling failed, error code:"<<res);
-		outputsize=0;
-	}
-#else
-	LOG(LOG_ERROR, "unexpected sample format and can't resample, recompile with libswresample");
-	outputsize=0;
-#endif
+
+	curTail.size = maxSize;
+	assert(!(curTail.size & 0x80000000) && !(maxSize % 2));
+	curTail.current = curTail.samples;
+	curTail.time = time;
+	samples.commitLast();
+	return ret;
 }
 
-#endif
+size_t FFMpegAudioDecoder::decodeData
+(
+	Span<const uint8_t> data,
+	const TimeSpec& time
+)
+{
+	auto ret =
+	(
+		engineData->audio_useFloatSampleFormat() ?
+		decodeDataImpl(samplesBufferF32, data, time) :
+		decodeDataImpl(samplesBufferS16, data, time)
+	);
 
+	if (status == INIT && fillDataAndCheckValidity())
+		status = VALID;
+	return maxLen;
+}
+
+template<template T>
+size_t FFMpegAudioDecoder::decodePacketImpl
+(
+	T& samples,
+	AVPacket* pkt,
+	const TimeSpec& time
+)
+{
+	auto& curTail = samples.acquireLast();
+	int maxSize = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52, 23, 0)
+	auto ret = avcodec_decode_audio3
+	(
+		codecContext,
+		curTail.samples,
+		&maxSize,
+		pkt
+	);
+	#else
+	auto ret = avcodec_decode_audio2
+	(
+		codecContext,
+		curTail.samples,
+		&maxSize,
+		pkt->data,
+		pkt->size
+	);
+	#endif
+
+	if (ret < 0)
+	{
+		//A decoding error occurred, create an empty sample buffer
+		LOG(LOG_ERROR, "Malformed audio packet");
+		curTail.size = 0;
+		curTail.current = curTail.samples;
+		curTail.time = time;
+		samples.commitLast();
+		return maxSize;
+	}
+
+	assert_and_throw(ret == pkt->size);
+	if (status == INIT && fillDataAndCheckValidity())
+		status = VALID;
+
+	curTail.size = maxSize;
+	assert(!(curTail.size & 0x80000000) && !(maxLen % 2));
+	curTail.current = curTail.samples;
+	curTail.time = time;
+	samples.commitLast();
+	return ret;
+}
+
+size_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, const TimeSpec& time)
+{
+	return
+	(
+		engineData->audio_useFloatSampleFormat() ?
+		decodePacketImpl(samplesBufferF32, pkt, time) :
+		decodePacketImpl(samplesBufferS16, pkt, time)
+	);
+}
+#endif
 #endif //ENABLE_LIBAVCODEC
 
 StreamDecoder::~StreamDecoder()

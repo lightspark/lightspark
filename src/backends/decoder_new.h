@@ -36,7 +36,7 @@ extern "C"
 #ifndef AVCODEC_MAX_AUDIO_FRAME_SIZE
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
 #endif
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54,51,100)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54, 51, 100)
 #define CodecID AVCodecID
 #define CODEC_ID_NONE AV_CODEC_ID_NONE
 #define CODEC_ID_H264 AV_CODEC_ID_H264
@@ -410,7 +410,7 @@ public:
 	virtual size_t decodeData
 	(
 		Span<const uint8_t> data,
-		Optional<const TimeSpec&> time
+		const TimeSpec& time
 	) = 0;
 
 	F32SamplePair getNextSampleF32() = 0;
@@ -477,7 +477,7 @@ public:
 	size_t decodeData
 	(
 		Span<const uint8_t> data,
-		Optional<const TimeSpec&> time
+		const TimeSpec& time
 	) override { return 0; }
 };
 
@@ -512,7 +512,7 @@ public:
 	size_t decodeData
 	(
 		Span<const uint8_t> data,
-		Optional<const TimeSpec&> time
+		const TimeSpec& time
 	) override;
 
 	F32SamplePair getNextSampleF32() override;
@@ -534,10 +534,34 @@ private:
 	bool ownedContext;
 	AVCodecContext* codecContext;
 	std::vector<uint8_t> overflowBuffer;
-	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 106, 102)
 	AVFrame* frameIn;
-	size_t resampleFrame(uint8_t** output);
+	Span<const uint8_t> resampleFrame();
+	template<typename T>
+	void decodeDataImpl
+	(
+		T& samples,
+		Span<const uint8_t> data,
+		const TimeSpec& time
+	);
+	#else
+	template<typename T>
+	size_t decodeDataImpl
+	(
+		T& samples,
+		Span<const uint8_t> data,
+		const TimeSpec& time
+	);
+
+	template<template T>
+	size_t decodePacketImpl
+	(
+		T& samples,
+		AVPacket* pkt,
+		const TimeSpec& time
+	);
 	#endif
+
 	bool fillDataAndCheckValidity();
 	CodecID toFFMpegCodec(const LS_AUDIO_CODEC& codec);
 public:
@@ -546,7 +570,7 @@ public:
 		EngineData* _engineData,
 		const LS_AUDIO_CODEC& codec,
 		Span<const uint8_t> initData,
-		size_t buffertime
+		size_t bufferTime
 	);
 
 	FFMpegAudioDecoder
@@ -555,29 +579,29 @@ public:
 		const LS_AUDIO_CODEC& codec,
 		size_t sampleRate,
 		uint8_t channels
-		size_t buffertime,
+		size_t bufferTime,
 		bool
 	);
 
 	/*
 	   Specialized constructor used by FFMpegStreamDecoder
 	*/
-	FFMpegAudioDecoder(EngineData* eng,AVCodecParameters* codecPar, uint32_t buffertime);
+	FFMpegAudioDecoder
 	(
 		EngineData* _engineData,
 		#if LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(57, 40, 101)
 		AVCodecParameters* codecPar,
 		#else
-		AVCodecContext* codecContext,
+		AVCodecContext* _codecContext,
 		#endif
-		size_t buffertime
+		size_t bufferTime
 	);
 
 	~FFMpegAudioDecoder();
 	/*
 	   Specialized decoding used by FFMpegStreamDecoder
 	*/
-	int decodePacket(AVPacket* pkt, const TimeSpec& time);
+	size_t decodePacket(AVPacket* pkt, const TimeSpec& time);
 	void switchCodec
 	(
 		const LS_VIDEO_CODEC& codecId,
@@ -587,7 +611,7 @@ public:
 	size_t decodeData
 	(
 		Span<const uint8_t> data,
-		Optional<const TimeSpec&> time
+		const TimeSpec& time
 	) override;
 
 	F32SamplePair getNextSampleF32() override;

@@ -211,8 +211,6 @@ public:
 class FFMpegVideoDecoder : public VideoDecoder
 {
 private:
-	constexpr static size_t _bufferSize = 80;
-
 	struct YUVBuffer
 	{
 	public:
@@ -296,6 +294,8 @@ private:
 	void setSize(const Vector2u& size);
 	bool fillDataAndCheckValidity();
 public:
+	constexpr static size_t _bufferSize = 80;
+
 	FFMpegVideoDecoder
 	(
 		const LS_VIDEO_CODEC& codec,
@@ -638,11 +638,11 @@ public:
 	virtual void jumpToFrame(size_t frame) = 0;
 	bool isValid() const { return valid; }
 	bool hasVideo() const { return _hasVideo; }
-	bool isAtEnd() const  { return atEnd; }
+	bool isAtEnd() const { return atEnd; }
 };
 
 #ifdef ENABLE_LIBAVCODEC
-class FFMpegStreamDecoder: public StreamDecoder
+class FFMpegStreamDecoder : public StreamDecoder
 {
 private:
 	NetStream* netStream;
@@ -650,16 +650,12 @@ private:
 	bool videoFound;
 	std::istream& stream;
 	AVFormatContext* formatCtx;
-	int32_t audioIndex;
-	int32_t videoIndex;
-	//We use our own copy of these to have access of the ffmpeg specific methods
-	FFMpegAudioDecoder* customAudioDecoder;
-	FFMpegVideoDecoder* customVideoDecoder;
+	ssize_t audioIndex;
+	ssize_t videoIndex;
 	//Helpers for custom I/O of libavformat
 	Span<uint8_t> avioBuffer;
-	uint8_t* avioBuffer;
-	static int avioReadPacket(void* data, Span<uint8_t> buf);
-	static size_t avioSeek(void *data, ssize_t offset, size_t type);
+	static int avioReadPacket(void* data, uint8_t* buf, int size);
+	static int64_t avioSeek(void *data, int64_t offset, int type);
 	//NOTE: this will become AVIOContext in FFMpeg 0.7
 	#if LIBAVUTIL_VERSION_MAJOR < 51
 	ByteIOContext* avioContext;
@@ -675,7 +671,7 @@ public:
 		EngineData* engineData,
 		std::istream& _stream,
 		size_t bufferTime,
-		AudioFormat* format = nullptr,
+		Optional<const AudioFormat&> format = {},
 		size_t streamSize = -1,
 		bool forExtraction = false
 	);

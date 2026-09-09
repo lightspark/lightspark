@@ -1370,6 +1370,22 @@ size_t FFMpegAudioDecoder::decodeData
 	return maxSize;
 }
 
+AudioDecoder::F32SamplePair FFMpegAudioDecoder::getNextSampleF32()
+{
+}
+
+AudioDecoder::S16SamplePair FFMpegAudioDecoder::getNextSampleS16()
+{
+}
+
+size_t FFMpegAudioDecoder::getSamples(Span<F32SamplePair> span)
+{
+}
+
+size_t FFMpegAudioDecoder::getSamples(Span<S16SamplePair> span)
+{
+}
+
 int FFMpegAudioDecoder::decodePacket(AVPacket* pkt, const TimeSpec& time)
 {
 	av_frame_unref(frameIn);
@@ -1708,8 +1724,6 @@ FFMpegStreamDecoder::FFMpegStreamDecoder
 ) :
 valid(false),
 netStream(_netStream),
-audioFound(false),
-videoFound(false),
 stream(_stream),
 formatCtx(nullptr),
 audioIndex(-1),
@@ -1882,20 +1896,14 @@ fullStreamSize(streamSize)
 		#else
 		auto codecType = stream->codec->codec_type;
 		#endif
-		if (codecType == AVMEDIA_TYPE_VIDEO && !videoFound)
-		{
-			videoFound = true;
+		if (codecType == AVMEDIA_TYPE_VIDEO && videoIndex < 0)
 			videoIndex = i;
-		}
-		else if (codecType == AVMEDIA_TYPE_AUDIO && !audioFound)
-		{
-			audioFound = true;
+		else if (codecType == AVMEDIA_TYPE_AUDIO && audioIndex < 0)
 			audioIndex = i;
-		}
 
 	}
 
-	if (videoFound)
+	if (videoIndex >= 0)
 	{
 		//Pass the frame rate from the container, the once from the codec is often wrong
 		auto stream = formatCtx->streams[videoIndex];
@@ -1928,7 +1936,7 @@ fullStreamSize(streamSize)
 		return fmt.codec;
 	});
 
-	audioDecoder = !audioFound ? nullptr :
+	audioDecoder = audioIndex < 0 ? nullptr :
 	(
 		format.hasValue() &&
 		format->codec != CODEC_NONE
@@ -2026,6 +2034,14 @@ void FFMpegStreamDecoder::jumpToPosition(const TimeSpec& pos)
 	atEnd = false;
 }
 
+void FFMpegStreamDecoder::jumpToFrame(size_t frame, bool isVideo)
+{
+	auto idx = isVideo ? videoIndex : audioIndex;
+	assert_and_throw(idx >= 0);
+	av_seek_frame(formatCtx, idx, frame, 0);
+	atEnd = false;
+}
+
 bool FFMpegStreamDecoder::decodeNextFrame()
 {
 	struct Packet : AVPacket
@@ -2084,18 +2100,14 @@ bool FFMpegStreamDecoder::decodeNextFrame()
 	if (!_videoDecoder->decodePacket(&pkt, time))
 	{
 		_videoDecoder->framesDecoded++;
-		hasVideo = true;
+		_hasVideo = true;
 	}
 	return true;
 }
 
-size_t FFMpegStreamDecoder::getAudioSampleRate()
+size_t FFMpegStreamDecoder::getAudioSampleRate() const
 {
-	auto _audioDecoder = static_cast
-	<
-		FFMpegAudioDecoder*
-	>(audioDecoder);
-	return _audioDecoder != nullptr ? _audioDecoder->sampleRate : 0;
+	return audioDecoder != nullptr ? audioDecoder->sampleRate : 0;
 }
 
 int FFMpegStreamDecoder::avioReadPacket(void* data, uint8_t* buf, int size)
@@ -2119,21 +2131,21 @@ int FFMpegStreamDecoder::avioReadPacket(void* data, uint8_t* buf, int size)
 	return ret;
 }
 
-int64_t FFMpegStreamDecoder::avioSeek(void *data, int64_t offset, int type)
+int64_t FFMpegStreamDecoder::avioSeek(void* data, int64_t offset, int type)
 {
 	auto th = static_cast<FFMpegStreamDecoder*>(data);
-	switch (whence)
+	switch (type)
 	{
 		case SEEK_SET:
-			th->stream.seekg(offset, ios_base::beg);
+			th->stream.seekg(offset, std::ios_base::beg);
 			th->availableStreamSize = th->fullStreamSize - offset;
 			return th->stream.tellg();
 		case SEEK_CUR:
 			th->availableStreamSize = th->stream.tellg() + offset;
-			th->stream.seekg(offset, ios_base::cur);
+			th->stream.seekg(offset, std::ios_base::cur);
 			return th->stream.tellg();
 		case SEEK_END:
-			th->stream.seekg(offset,ios_base::end);
+			th->stream.seekg(offset, std::ios_base::end);
 			th->availableStreamSize = -offset;
 			return th->stream.tellg();
 		case AVSEEK_SIZE: return th->fullStreamSize;
@@ -2347,4 +2359,20 @@ end:
 	samplesBufferS16.commitLast();
 	bufferedSamples += sampleCount;
 	return sampleCount * 2;
+}
+
+AudioDecoder::F32SamplePair SampleDataAudioDecoder::getNextSampleF32()
+{
+}
+
+AudioDecoder::S16SamplePair SampleDataAudioDecoder::getNextSampleS16()
+{
+}
+
+size_t SampleDataAudioDecoder::getSamples(Span<F32SamplePair> span)
+{
+}
+
+size_t SampleDataAudioDecoder::getSamples(Span<S16SamplePair> span)
+{
 }

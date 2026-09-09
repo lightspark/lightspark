@@ -413,10 +413,10 @@ public:
 		const TimeSpec& time
 	) = 0;
 
-	F32SamplePair getNextSampleF32() = 0;
-	S16SamplePair getNextSampleS16() = 0;
-	size_t getSamples(Span<F32SamplePair> span) = 0;
-	size_t getSamples(Span<S16SamplePair> span) = 0;
+	virtual F32SamplePair getNextSampleF32() = 0;
+	virtual S16SamplePair getNextSampleS16() = 0;
+	virtual size_t getSamples(Span<F32SamplePair> span) = 0;
+	virtual size_t getSamples(Span<S16SamplePair> span) = 0;
 
 	bool hasDecodedFrames() const
 	{
@@ -635,7 +635,7 @@ public:
 	virtual ~StreamDecoder();
 	virtual bool decodeNextFrame() = 0;
 	virtual void jumpToPosition(const TimeSpec& pos) = 0;
-	virtual void jumpToFrame(size_t frame) = 0;
+	virtual void jumpToFrame(size_t frame, bool isVideo = false) = 0;
 	bool isValid() const { return valid; }
 	bool hasVideo() const { return _hasVideo; }
 	bool isAtEnd() const { return atEnd; }
@@ -646,8 +646,6 @@ class FFMpegStreamDecoder : public StreamDecoder
 {
 private:
 	NetStream* netStream;
-	bool audioFound;
-	bool videoFound;
 	std::istream& stream;
 	AVFormatContext* formatCtx;
 	ssize_t audioIndex;
@@ -662,8 +660,8 @@ private:
 	#else
 	AVIOContext* avioContext;
 	#endif
-	size_t availableStreamSize;
-	size_t fullStreamSize;
+	ssize_t availableStreamSize;
+	ssize_t fullStreamSize;
 public:
 	FFMpegStreamDecoder
 	(
@@ -679,8 +677,8 @@ public:
 	~FFMpegStreamDecoder();
 	bool decodeNextFrame() override;
 	void jumpToPosition(const TimeSpec& pos) override;
-	void jumpToFrame(size_t frame) override;
-	size_t getAudioSampleRate();
+	void jumpToFrame(size_t frame, bool isVideo = false) override;
+	size_t getAudioSampleRate() const;
 };
 #endif
 

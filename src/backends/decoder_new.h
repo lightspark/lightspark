@@ -62,9 +62,10 @@ extern "C"
 #define AV_INPUT_BUFFER_PADDING_SIZE 0
 #endif
 
-#include "compat.h"
-#include "threading.h"
 #include "backends/graphics.h"
+#include "compat.h"
+#include "interfaces/backends/decoder.h"
+#include "threading.h"
 
 namespace lightspark
 {
@@ -348,14 +349,18 @@ public:
 };
 #endif
 
-class AudioDecoder : public Decoder
+class AudioDecoder : public IAudioDecoder, public Decoder
 {
-public:
-	using F32SamplePair = std::pair<float, float>;
-	using S16SamplePair = std::pair<int16_t, int16_t>;
 private:
+	template<typename T>
+	using SamplesBuffer = BlockingCircularQueue<FrameSamples<T>>;
+
 	void skipUntilF32(const TimeSpec& time);
 	void skipUntilS16(const TimeSpec& time);
+	template<typename T>
+	T getNextSampleImpl(SamplesBuffer<T>& samples);
+	template<typename T>
+	size_t getSamplesImpl(SamplesBuffer<T>& samples, Span<T> span);
 protected:
 	template<typename T>
 	struct FrameSamples
@@ -379,8 +384,8 @@ protected:
 	#elif defined HAVE_LIBAVRESAMPLE
 	AVAudioResampleContext* resampleContext;
 	#endif
-	BlockingCircularQueue<FrameSamples<int16_t>> samplesBufferS16;
-	BlockingCircularQueue<FrameSamples<float>> samplesBufferF32;
+	SamplesBuffer<int16_t> samplesBufferS16;
+	SamplesBuffer<float> samplesBufferF32;
 
 	virtual void samplesConsumed(size_t samples) {}
 	bool discardFrameS16();
@@ -400,25 +405,30 @@ public:
 	  	The AudioDecoder contains audio buffers that must be aligned to 16 bytes, so we redefine the allocator
 	*/
 	AudioDecoder(size_t size, EngineData* _engineData);
-	virtual ~AudioDecoder();
-	virtual void switchCodec
-	(
-		const LS_VIDEO_CODEC& codecId,
-		Span<const uint8_t> initData
-	) = 0;
+	~AudioDecoder();
 
-	virtual size_t decodeData
-	(
-		Span<const uint8_t> data,
-		const TimeSpec& time
-	) = 0;
+	size_t getSampleRate() const override { return sampleRate; }
+	float getNextSampleF32() override
+	{
+		return getNextSampleImpl(samplesBufferF32);
+	}
 
-	virtual F32SamplePair getNextSampleF32() = 0;
-	virtual S16SamplePair getNextSampleS16() = 0;
-	virtual size_t getSamples(Span<F32SamplePair> span) = 0;
-	virtual size_t getSamples(Span<S16SamplePair> span) = 0;
+	int16_t getNextSampleS16() override
+	{
+		return getNextSampleImpl(samplesBufferS16);
+	}
 
-	bool hasDecodedFrames() const
+	size_t getSamples(Span<float> span) override
+	{
+		return getSamplesImpl(samplesBufferF32, span);
+	}
+
+	size_t getSamples(Span<int16_t> span) override
+	{
+		return getSamplesImpl(samplesBufferS16, span);
+	}
+
+	bool hasDecodedFrames() const override
 	{
 		return
 		(
@@ -433,8 +443,15 @@ public:
 		return sampleRate * channelCount * 2 / 1000;
 	}
 
-	size_t copyFrameS16(Span<int16_t> data) DLL_PUBLIC;
-	size_t copyFrameF32(Span<float> data) DLL_PUBLIC;
+	size_t copyFrameS16(Span<int16_t> data) DLL_PUBLIC
+	{
+		return getSamplesImpl(samplesBufferS16, span);
+	}
+
+	size_t copyFrameF32(Span<float> data) DLL_PUBLIC
+	{
+		return getSamplesImpl(samplesBufferF32, span);
+	}
 	/**
 	  	Skip samples until the given time
 
@@ -479,6 +496,11 @@ public:
 		Span<const uint8_t> data,
 		const TimeSpec& time
 	) override { return 0; }
+
+	float getNextSampleF32() override { return 0; }
+	int16_t getNextSampleS16() override { return 0; }
+	size_t getSamples(Span<float> span) override { return 0; }
+	size_t getSamples(Span<int16_t> span) override { return 0; }
 };
 
 // this is the AudioDecoder for streaming Sounds by SampleDataEvent
@@ -514,11 +536,6 @@ public:
 		Span<const uint8_t> data,
 		const TimeSpec& time
 	) override;
-
-	F32SamplePair getNextSampleF32() override;
-	S16SamplePair getNextSampleS16() override;
-	size_t getSamples(Span<F32SamplePair> span) override;
-	size_t getSamples(Span<S16SamplePair> span) override;
 
 	size_t getBufferedSamples() const
 	{
@@ -613,12 +630,73 @@ public:
 		Span<const uint8_t> data,
 		const TimeSpec& time
 	) override;
-
-	F32SamplePair getNextSampleF32() override;
-	S16SamplePair getNextSampleS16() override;
-	size_t getSamples(Span<F32SamplePair> span) override;
-	size_t getSamples(Span<S16SamplePair> span) override;
 };
+
+class FFMpegSeekableAudioDecoder :
+public IAudioDecoder,
+public ISeekableAudioDecoder
+{
+private:
+	bool valid;
+	bool atEnd;
+	FFMpegAudioDecoder* decoder;
+
+	std::istream& stream;
+	AVFormatContext* formatCtx;
+	ssize_t streamIdx;
+	//NOTE: this will become AVIOContext in FFMpeg 0.7
+	#if LIBAVUTIL_VERSION_MAJOR < 51
+	ByteIOContext* avioContext;
+	#else
+	AVIOContext* avioContext;
+	#endif
+	ssize_t curStreamSize;
+	ssize_t streamSize;
+	Span<uint8_t> avioBuffer;
+
+	static int avioReadPacket(void* data, uint8_t* buf, int size);
+	static int64_t avioSeek(void *data, int64_t offset, int type);
+	bool decodeNextFrame();
+public:
+	FFMpegSeekableAudioDecoder
+	(
+		EngineData* engineData,
+		std::istream& _stream,
+		size_t bufferTime,
+		Optional<const AudioFormat&> format = {},
+		size_t _streamSize = -1,
+		bool forExtraction = false
+	);
+
+	~FFMpegSeekableAudioDecoder();
+
+	// `IAudioDecoder`'s interface.
+	void switchCodec
+	(
+		const LS_VIDEO_CODEC& codecId,
+		Span<const uint8_t> initData
+	) override;
+
+	size_t decodeData
+	(
+		Span<const uint8_t> data,
+		const TimeSpec& time
+	) override;
+
+	bool hasDecodedFrames() const override;
+	size_t getSampleRate() const override;
+	float getNextSampleF32() override;
+	int16_t getNextSampleS16() override;
+	size_t getSamples(Span<float> span) override;
+	size_t getSamples(Span<int16_t> span) override;
+
+	// `ISeekableAudioDecoder`'s interface.
+	void seekToPos(const TimeSpec& pos) override;
+	void seekToSampleFrame(size_t frame) override;
+
+	bool isValid() const { return valid; }
+	bool isAtEnd() const { return atEnd; }
+}
 #endif
 
 class StreamDecoder

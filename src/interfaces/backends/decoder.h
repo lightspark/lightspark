@@ -22,6 +22,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <utility>
 
 namespace lightspark
 {
@@ -34,6 +35,11 @@ class Span;
 class IAudioDecoder
 {
 public:
+	template<typename T>
+	using SamplePair = std::pair<T, T>;
+	using F32SamplePair = SamplePair<float>;
+	using S16SamplePair = SamplePair<int16_t>;
+
 	virtual ~IAudioDecoder() {}
 	virtual void switchCodec
 	(
@@ -47,15 +53,16 @@ public:
 		const TimeSpec& time
 	) = 0;
 
+	virtual bool isResampled() const = 0;
 	virtual bool hasDecodedFrames() const = 0;
 	virtual size_t getSampleRate() const = 0;
-	virtual float getNextSampleF32() = 0;
-	virtual int16_t getNextSampleS16() = 0;
-	virtual size_t getSamples(Span<float> span) = 0;
-	virtual size_t getSamples(Span<int16_t> span) = 0;
+	virtual F32SamplePair getNextSampleF32() = 0;
+	virtual S16SamplePair getNextSampleS16() = 0;
+	virtual size_t getSamples(Span<F32SamplePair> span) = 0;
+	virtual size_t getSamples(Span<S16SamplePair> span) = 0;
 };
 
-class ISeekableAudioDecoder
+class ISeekableAudioDecoder : public IAudioDecoder
 {
 public:
 	virtual void seekToPos(const TimeSpec& pos) = 0;

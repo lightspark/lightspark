@@ -421,19 +421,19 @@ bool FFMpegVideoDecoder::decodeData
 	if (data.empty())
 		return false;
 
-	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57,106,102)
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 106, 102)
 	AVPacket* pkt = av_packet_alloc();
 	if (!pkt)
 		return 0;
-	pkt->data=data;
-	pkt->size=datalen;
+	pkt->data = data.getData();
+	pkt->size = data.getSize();
 	auto ret = avcodec_send_packet(codecContext, pkt);
 	while (!ret)
 	{
 		ret = avcodec_receive_frame(codecContext,frameIn);
 		if (ret && ret != AVERROR(EAGAIN))
 		{
-			LOG(LOG_INFO,"not decoded:"<<ret);
+			LOG(LOG_INFO, "not decoded:" << ret);
 			#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 12, 100)
 			av_packet_unref(pkt);
 			#else
@@ -445,7 +445,7 @@ bool FFMpegVideoDecoder::decodeData
 			break;
 
 		if (status == INIT && fillDataAndCheckValidity())
-			status=VALID;
+			status = VALID;
 
 		assert
 		(
@@ -474,7 +474,7 @@ bool FFMpegVideoDecoder::decodeData
 	#endif
 	if (ret < 0)
 	{
-		LOG(LOG_INFO,"not decoded:"<< ret << ' ' << frameOk);
+		LOG(LOG_INFO, "not decoded:" << ret << ' ' << frameOk);
 		return false;
 	}
 
@@ -562,8 +562,8 @@ bool FFMpegVideoDecoder::decodePacket(AVPacket* pkt, const TimeSpec& time)
 
 	//assert(codecContext->pix_fmt==PIX_FMT_YUV420P);
 
-	if(status==INIT && fillDataAndCheckValidity())
-		status=VALID;
+	if (status == INIT && fillDataAndCheckValidity())
+		status = VALID;
 
 	assert(frameIn->pts == int64_t(AV_NOPTS_VALUE) || !frameIn->pts);
 	copyFrameToBuffers(frameIn, time);
@@ -812,18 +812,27 @@ bool AudioDecoder::discardFrameF32()
 }
 
 template<typename T>
-T AudioDecoder::getNextSampleImpl(SamplesBuffer<T>& samples)
+IAudioDecoder::SamplePair<T> AudioDecoder::getNextSampleImpl
+(
+	SamplesBuffer<T>& samples
+)
 {
 	if (samples.isEmpty())
 	{
 		signalFlushed();
-		return T(0);
+		return { T(0), T(0) };
 	}
 
 	auto& frame = samples.front();
-	auto ret = *frame.current;
+	auto _channelCount = isResampled() ? 2 : channelCount;
+	bool isStereo = _channelCount == 2;
+	SamplePair<T> ret
+	{
+		frame.current[0],
+		frame.current[isStereo]
+	};
 
-	frame.size -= sizeof(T);
+	frame.size -= sizeof(T) * _channelCount;
 	assert(!(frame.size & 0x80000000));
 	if (!frame.size)
 	{
@@ -832,18 +841,23 @@ T AudioDecoder::getNextSampleImpl(SamplesBuffer<T>& samples)
 	}
 	else
 	{
-		frame.current++;
-		frame.time += TimeSpec::fromFloat(1 / number_t(sampleRate));
+		frame.current += _channelCount;
+		frame.time += TimeSpec::fromFloat
+		(
+			_channelCount /
+			number_t(sampleRate)
+		);
 	}
 
-	samplesConsumed(1);
+	samplesConsumed(_channelCount);
 	return ret;
 }
 
+template<typename T>
 size_t AudioDecoder::getSamplesImpl
 (
 	SamplesBuffer<T>& samples,
-	Span<T> span
+	Span<SampleBuffer<T>> span
 )
 {
 	assert(!data.empty());
@@ -855,10 +869,29 @@ size_t AudioDecoder::getSamplesImpl
 	}
 
 	auto& frame = samples.front();
-	auto frameSize = std::min(frame.size, data.getSize());
-	auto frameBytes = frameSize * sizeof(T);
-	memcpy(data.getData(), frame.current, frameBytes);
+	auto _channelCount = isResampled() ? 2 : channelCount;
+	bool isStereo = _channelCount == 2;
+	auto frameBytes = std::min
+	(
+		frame.size,
+		data.getByteSize() >> isStereo
+	);
+	auto frameSize = frameBytes / sizeof(T);
+
+	if (isStereo)
+		memcpy(data.getData(), frame.current, frameBytes);
+	else
+	{
+		Span<const float> sampleSpan(frame.current, frameSize);
+		data = data.getFirst(frameSize);
+		for (auto& pair : data)
+		{
+			auto sample = sampleSpan.read();
+			pair = { sample, sample };
+		}
+	}
 	frame.size -= frameBytes;
+
 	assert(!(frame.size & 0x80000000));
 	if (!frame.size)
 	{
@@ -1391,7 +1424,240 @@ size_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, const TimeSpec& time)
 
 	return ret;
 }
+#else
+template<typename T>
+size_t FFMpegAudioDecoder::decodeDataImpl
+(
+	T& samples,
+	Span<const uint8_t> data,
+	const TimeSpec& time
+)
+{
+	auto& curTail = samples.acquireLast();
+	int maxSize = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52, 23, 0)
+	AVPacket pkt;
+	av_init_packet(&pkt);
 
+	// If some data was left unprocessed on previous call,
+	// concatenate.
+	std::vector<uint8_t> combinedBuffer;
+	if (overflowBuffer.empty())
+	{
+		pkt.data = data.getData();
+		pkt.size = data.getSize();
+	}
+	else
+	{
+		combinedBuffer = overflowBuffer;
+		if (!data.empty())
+		{
+			combinedBuffer.insert
+			(
+				combinedBuffer.end(),
+				data.begin(),
+				data.end()
+			);
+		}
+
+		pkt.data = combinedBuffer.data();
+		pkt.size = combinedBuffer.size();
+		overflowBuffer.clear();
+	}
+
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 40, 0)
+	av_frame_unref(frameIn);
+	int frameOk = 0;
+	auto ret = avcodec_decode_audio4
+	(
+		codecContext,
+		frameIn,
+		&frameOk,
+		&pkt
+	);
+
+	if (!frameOk)
+	{
+		LOG(LOG_ERROR, "not decoded audio:" << ret);
+		goto end;
+	}
+
+	auto output = resampleFrame();
+	maxSize = output.getSize();
+	for (auto out = output; !out.empty();)
+	{
+		auto size = std::min(out.getSize(), sizeof(curTail.samples));
+		assert(!(size % 2));
+
+		memcpy(curTail.samples, out.getData(), size);
+		out = out.subSpan(size);
+		curTail.size = size;
+		assert(!(curTail.size & 0x80000000));
+		curTail.current = curTail.samples;
+		curTail.time = time;
+		samples.commitLast();
+	}
+
+	if (!output.empty())
+		av_freep(output.getData());
+end:
+	#else
+	auto ret = avcodec_decode_audio3
+	(
+		codecContext,
+		curTail.samples,
+		&maxSize,
+		&pkt
+	);
+	#endif
+
+	if (ret > 0)
+	{
+		auto tmp = Span<const uint8_t>
+		(
+			pkt.data,
+			pkt.size
+		).subSpan(ret);
+		if (!tmp.empty())
+			overflowBuffer.assign(tmp.begin(), tmp.end());
+	}
+	#else
+	auto ret = avcodec_decode_audio2
+	(
+		codecContext,
+		curTail.samples,
+		&maxSize,
+		data.getData(),
+		data.getSize()
+	);
+	#endif
+
+	curTail.size = maxSize;
+	assert(!(curTail.size & 0x80000000) && !(maxSize % 2));
+	curTail.current = curTail.samples;
+	curTail.time = time;
+	samples.commitLast();
+	return ret;
+}
+
+size_t FFMpegAudioDecoder::decodeData
+(
+	Span<const uint8_t> data,
+	const TimeSpec& time
+)
+{
+	auto ret =
+	(
+		engineData->audio_useFloatSampleFormat() ?
+		decodeDataImpl(samplesBufferF32, data, time) :
+		decodeDataImpl(samplesBufferS16, data, time)
+	);
+
+	if (status == INIT && fillDataAndCheckValidity())
+		status = VALID;
+	return maxLen;
+}
+
+template<template T>
+size_t FFMpegAudioDecoder::decodePacketImpl
+(
+	T& samples,
+	AVPacket* pkt,
+	const TimeSpec& time
+)
+{
+	auto& curTail = samples.acquireLast();
+	int maxSize = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 40, 0)
+	av_frame_unref(frameIn);
+	int frameOk = 0;
+	auto ret = avcodec_decode_audio4
+	(
+		codecContext,
+		frameIn,
+		&frameOk,
+		&pkt
+	);
+
+	if (!frameOk)
+	{
+		LOG(LOG_ERROR, "not decoded audio:" << ret);
+		goto end;
+	}
+
+	auto output = resampleFrame();
+	maxSize = output.getSize();
+	for (auto out = output; !out.empty();)
+	{
+		auto size = std::min(out.getSize(), sizeof(curTail.samples));
+		assert(!(size % 2));
+
+		memcpy(curTail.samples, out.getData(), size);
+		out = out.subSpan(size);
+		curTail.size = size;
+		assert(!(curTail.size & 0x80000000));
+		curTail.current = curTail.samples;
+		curTail.time = time;
+		samples.commitLast();
+	}
+
+	if (!output.empty())
+		av_freep(output.getData());
+end:
+	#elif LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52, 23, 0)
+	auto ret = avcodec_decode_audio3
+	(
+		codecContext,
+		curTail.samples,
+		&maxSize,
+		pkt
+	);
+	#else
+	auto ret = avcodec_decode_audio2
+	(
+		codecContext,
+		curTail.samples,
+		&maxSize,
+		pkt->data,
+		pkt->size
+	);
+	#endif
+
+	if (ret < 0)
+	{
+		//A decoding error occurred, create an empty sample buffer
+		LOG(LOG_ERROR, "Malformed audio packet");
+		curTail.size = 0;
+		curTail.current = curTail.samples;
+		curTail.time = time;
+		samples.commitLast();
+		return maxSize;
+	}
+
+	assert_and_throw(ret == pkt->size);
+	if (status == INIT && fillDataAndCheckValidity())
+		status = VALID;
+
+	curTail.size = maxSize;
+	assert(!(curTail.size & 0x80000000) && !(maxLen % 2));
+	curTail.current = curTail.samples;
+	curTail.time = time;
+	samples.commitLast();
+	return ret;
+}
+
+size_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, const TimeSpec& time)
+{
+	return
+	(
+		engineData->audio_useFloatSampleFormat() ?
+		decodePacketImpl(samplesBufferF32, pkt, time) :
+		decodePacketImpl(samplesBufferS16, pkt, time)
+	);
+}
+#endif
+
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 40, 0)
 Span<const uint8_t> FFMpegAudioDecoder::resampleFrame()
 {
 	auto _sampleRate = engineData->audio_getSampleRate();
@@ -1400,10 +1666,12 @@ Span<const uint8_t> FFMpegAudioDecoder::resampleFrame()
 	#else
 	auto chLayout = AV_CH_LAYOUT_STEREO;
 	#endif
-	#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56, 0, 100)
-	auto framesamplerate = av_frame_get_sample_rate(frameIn);
-	#else
+	#if LIBAVUTIL_VERSION_MAJOR < 57
+	auto frameSampleRate = av_frame_get_sample_rate(frameIn);
+	#elif LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 106, 102)
 	auto frameSampleRate = frameIn->sample_rate;
+	#else
+	auto frameSampleRate = codecContext->sample_rate;
 	#endif
 	auto outSampleFmt =
 	(
@@ -1421,18 +1689,18 @@ Span<const uint8_t> FFMpegAudioDecoder::resampleFrame()
 	if (resampleContext == nullptr)
 	{
 		resampleContext = swr_alloc();
-		#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
-		av_opt_set_chlayout(resamplecontext, "in_chlayout",  &frameIn->ch_layout, 0);
-		av_opt_set_chlayout(resamplecontext, "out_chlayout", &chLayout,  0);
+		#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 24, 100)
+		av_opt_set_chlayout(resampleContext, "in_chlayout",  &frameIn->ch_layout, 0);
+		av_opt_set_chlayout(resampleContext, "out_chlayout", &chLayout,  0);
 		#else
-		av_opt_set_int(resamplecontext, "in_channel_layout",  frameIn->channel_layout, 0);
-		av_opt_set_int(resamplecontext, "out_channel_layout", chLayout,  0);
+		av_opt_set_int(resampleContext, "in_channel_layout",  frameIn->channel_layout, 0);
+		av_opt_set_int(resampleContext, "out_channel_layout", chLayout,  0);
 		#endif
-		av_opt_set_int(resamplecontext, "in_sample_rate", frameSampleRate, 0);
-		av_opt_set_int(resamplecontext, "out_sample_rate", sampleRate, 0);
-		av_opt_set_int(resamplecontext, "in_sample_fmt", frameIn->format, 0);
-		av_opt_set_int(resamplecontext, "out_sample_fmt", outputsampleformat, 0);
-		swr_init(resamplecontext);
+		av_opt_set_int(resampleContext, "in_sample_rate", frameSampleRate, 0);
+		av_opt_set_int(resampleContext, "out_sample_rate", sampleRate, 0);
+		av_opt_set_int(resampleContext, "in_sample_fmt", frameIn->format, 0);
+		av_opt_set_int(resampleContext, "out_sample_fmt", outputsampleformat, 0);
+		swr_init(resampleContext);
 	}
 
 	const uint8_t* output = nullptr;
@@ -1531,152 +1799,6 @@ Span<const uint8_t> FFMpegAudioDecoder::resampleFrame()
 	);
 	return { nullptr, 0 };
 	#endif
-}
-#else
-template<typename T>
-size_t FFMpegAudioDecoder::decodeDataImpl
-(
-	T& samples,
-	Span<const uint8_t> data,
-	const TimeSpec& time
-)
-{
-	auto& curTail = samples.acquireLast();
-	int maxSize = AVCODEC_MAX_AUDIO_FRAME_SIZE;
-	AVPacket pkt;
-	av_init_packet(&pkt);
-
-	// If some data was left unprocessed on previous call,
-	// concatenate.
-	std::vector<uint8_t> combinedBuffer;
-	if (overflowBuffer.empty())
-	{
-		pkt.data = data.getData();
-		pkt.size = data.getSize();
-	}
-	else
-	{
-		combinedBuffer = overflowBuffer;
-		if (!data.empty())
-		{
-			combinedBuffer.insert
-			(
-				combinedBuffer.end(),
-				data.begin(),
-				data.end()
-			);
-		}
-
-		pkt.data = combinedBuffer.data();
-		pkt.size = combinedBuffer.size();
-		overflowBuffer.clear();
-	}
-
-	auto ret = avcodec_decode_audio3
-	(
-		codecContext,
-		curTail.samples,
-		&maxSize,
-		&pkt
-	);
-
-	if (ret > 0)
-	{
-		auto tmp = Span<const uint8_t>
-		(
-			pkt.data,
-			pkt.size
-		).subSpan(ret);
-		if (!tmp.empty())
-			overflowBuffer.assign(tmp.begin(), tmp.end());
-	}
-
-	curTail.size = maxSize;
-	assert(!(curTail.size & 0x80000000) && !(maxSize % 2));
-	curTail.current = curTail.samples;
-	curTail.time = time;
-	samples.commitLast();
-	return ret;
-}
-
-size_t FFMpegAudioDecoder::decodeData
-(
-	Span<const uint8_t> data,
-	const TimeSpec& time
-)
-{
-	auto ret =
-	(
-		engineData->audio_useFloatSampleFormat() ?
-		decodeDataImpl(samplesBufferF32, data, time) :
-		decodeDataImpl(samplesBufferS16, data, time)
-	);
-
-	if (status == INIT && fillDataAndCheckValidity())
-		status = VALID;
-	return maxLen;
-}
-
-template<template T>
-size_t FFMpegAudioDecoder::decodePacketImpl
-(
-	T& samples,
-	AVPacket* pkt,
-	const TimeSpec& time
-)
-{
-	auto& curTail = samples.acquireLast();
-	int maxSize = AVCODEC_MAX_AUDIO_FRAME_SIZE;
-	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(52, 23, 0)
-	auto ret = avcodec_decode_audio3
-	(
-		codecContext,
-		curTail.samples,
-		&maxSize,
-		pkt
-	);
-	#else
-	auto ret = avcodec_decode_audio2
-	(
-		codecContext,
-		curTail.samples,
-		&maxSize,
-		pkt->data,
-		pkt->size
-	);
-	#endif
-
-	if (ret < 0)
-	{
-		//A decoding error occurred, create an empty sample buffer
-		LOG(LOG_ERROR, "Malformed audio packet");
-		curTail.size = 0;
-		curTail.current = curTail.samples;
-		curTail.time = time;
-		samples.commitLast();
-		return maxSize;
-	}
-
-	assert_and_throw(ret == pkt->size);
-	if (status == INIT && fillDataAndCheckValidity())
-		status = VALID;
-
-	curTail.size = maxSize;
-	assert(!(curTail.size & 0x80000000) && !(maxLen % 2));
-	curTail.current = curTail.samples;
-	curTail.time = time;
-	samples.commitLast();
-	return ret;
-}
-
-size_t FFMpegAudioDecoder::decodePacket(AVPacket* pkt, const TimeSpec& time)
-{
-	return
-	(
-		engineData->audio_useFloatSampleFormat() ?
-		decodePacketImpl(samplesBufferF32, pkt, time) :
-		decodePacketImpl(samplesBufferS16, pkt, time)
-	);
 }
 #endif
 
@@ -1950,6 +2072,11 @@ size_t FFMpegSeekableAudioDecoder::decodeData
 	return decoder != nullptr ? decoder->decodeData(data, time) : 0;
 }
 
+bool FFMpegSeekableAudioDecoder::isResampled() const
+{
+	return decoder != nullptr && decoder->isResampled();
+}
+
 bool FFMpegSeekableAudioDecoder::hasDecodedFrames() const
 {
 	return decoder != nullptr && decoder->hasDecodedFrames();
@@ -1960,25 +2087,25 @@ size_t FFMpegSeekableAudioDecoder::getSampleRate() const
 	return decoder != nullptr ? decoder->sampleRate : 0;
 }
 
-float FFMpegSeekableAudioDecoder::getNextSampleF32()
+IAudioDecoder::F32SamplePair FFMpegSeekableAudioDecoder::getNextSampleF32()
 {
 	return
 	(
 		hasDecodedFrames() ||
 		decodeNextFrame()
-	) ? decoder->getNextSampleF32() : 0;
+	) ? decoder->getNextSampleF32() : { 0, 0 };
 }
 
-int16_t FFMpegSeekableAudioDecoder::getNextSampleS16()
+IAudioDecoder::S16SamplePair FFMpegSeekableAudioDecoder::getNextSampleS16()
 {
 	return
 	(
 		hasDecodedFrames() ||
 		decodeNextFrame()
-	) ? decoder->getNextSampleS16() : 0;
+	) ? decoder->getNextSampleS16() : { 0, 0 };
 }
 
-size_t FFMpegSeekableAudioDecoder::getSamples(Span<float> span)
+size_t FFMpegSeekableAudioDecoder::getSamples(Span<F32SamplePair> span)
 {
 	return
 	(
@@ -1987,7 +2114,7 @@ size_t FFMpegSeekableAudioDecoder::getSamples(Span<float> span)
 	) ? decoder->getSamples(span) : 0;
 }
 
-size_t FFMpegSeekableAudioDecoder::getSamples(Span<int16_t> span)
+size_t FFMpegSeekableAudioDecoder::getSamples(Span<S16SamplePair> span)
 {
 	return
 	(
@@ -2112,6 +2239,103 @@ int64_t FFMpegSeekableAudioDecoder::avioSeek(void* data, int64_t offset, int typ
 }
 #endif //ENABLE_LIBAVCODEC
 
+EventSoundDecoder::EventSoundDecoder
+(
+	EngineData* engineData,
+	size_t bufferTime,
+	StreamDecoder& _decoder,
+	const SOUNDINFO& info,
+	size_t samples,
+	size_t _skipSamples
+) :
+AudioDecoder(bufferTime, engineData),
+decoder(_decoder),
+loops(info.LoopCount),
+startSample(0),
+endSample(0),
+curSample(0),
+skipSamples(_skipSamples)
+exhausted(false)
+{
+	assert_and_throw(decoder.audioDecoder != nullptr);
+	sampleRate = decoder.audioDecoder->sampleRate;
+	auto sampleDiv = 44100.0 / number_t(sampleRate);
+	startSample = (info.InPoint / sampleDiv) + skipSamples;
+
+	endSample =
+	(
+		info.OutPoint ?
+		info.OutPoint / sampleDiv :
+		samples
+	) + skipSamples;
+	nextLoop();
+}
+
+IAudioDecoder::F32SamplePair EventSoundDecoder::getNextSampleF32()
+{
+	if (exhausted)
+		return { 0, 0 };
+
+	if (!hasDecodedFrames())
+	{
+		nextLoop();
+		return getNextSampleF32();
+	}
+
+	auto sample = decoder.getNextSampleF32();
+	if (endSample && ++curSample > endSample)
+		nextLoop();
+	return sample;
+}
+
+IAudioDecoder::S16SamplePair EventSoundDecoder::getNextSampleS16()
+{
+	if (exhausted)
+		return { 0, 0 };
+
+	if (!hasDecodedFrames())
+	{
+		nextLoop();
+		return getNextSampleS16();
+	}
+
+	auto sample = decoder.getNextSampleS16();
+	if (endSample && ++curSample > endSample)
+		nextLoop();
+	return sample;
+}
+
+template<typename T>
+size_t EventSoundDecoder::getSamplesImpl(Span<T> span)
+{
+	if (exhausted)
+		return 0;
+
+	auto _span = !endSample ? span : span.getFirst(std::min
+	(
+		endSample - curSample,
+		span.getSize()
+	));
+
+	auto ret = decoder.getSamples(_span);
+	assert_and_throw(ret <= span.getSize());
+
+	curSample += ret;
+	if (ret == span.getSize())
+		return ret;
+
+	nextLoop();
+	return ret + getSamplesImpl(span.subSpan(ret));
+}
+
+void EventSoundDecoder::nextLoop()
+{
+	if (exhausted |= !loops)
+		return;
+	--loops;
+	decoder.seekToSampleFrame(startSample);
+	curSample = startSample;
+}
 StreamDecoder::~StreamDecoder()
 {
 	delete audioDecoder;
@@ -2614,7 +2838,7 @@ size_t SampleDataAudioDecoder::decodeData
 	if (resampleContext == nullptr)
 	{
 		resampleContext = swr_alloc();
-		#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57,24,100)
+		#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 24, 100)
 		av_opt_set_chlayout(resampleContext, "in_chlayout", &channelLayout, 0);
 		av_opt_set_chlayout(resampleContext, "out_chlayout", &channelLayout, 0);
 		#else

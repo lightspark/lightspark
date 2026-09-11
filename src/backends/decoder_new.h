@@ -73,6 +73,7 @@ namespace lightspark
 class DefineVideoStreamTag;
 class EngineData;
 class NetStream;
+class SOUNDINFO;
 class SoundChannel;
 
 struct AudioFormat
@@ -358,9 +359,13 @@ private:
 	void skipUntilF32(const TimeSpec& time);
 	void skipUntilS16(const TimeSpec& time);
 	template<typename T>
-	T getNextSampleImpl(SamplesBuffer<T>& samples);
+	SamplePair<T> getNextSampleImpl(SamplesBuffer<T>& samples);
 	template<typename T>
-	size_t getSamplesImpl(SamplesBuffer<T>& samples, Span<T> span);
+	size_t getSamplesImpl
+	(
+		SamplesBuffer<T>& samples,
+		Span<SamplePair<T>> span
+	);
 protected:
 	template<typename T>
 	struct FrameSamples
@@ -408,26 +413,27 @@ public:
 	~AudioDecoder();
 
 	size_t getSampleRate() const override { return sampleRate; }
-	float getNextSampleF32() override
+	F32SamplePair getNextSampleF32() override
 	{
 		return getNextSampleImpl(samplesBufferF32);
 	}
 
-	int16_t getNextSampleS16() override
+	S16SamplePair getNextSampleS16() override
 	{
 		return getNextSampleImpl(samplesBufferS16);
 	}
 
-	size_t getSamples(Span<float> span) override
+	size_t getSamples(Span<F32SamplePair> span) override
 	{
 		return getSamplesImpl(samplesBufferF32, span);
 	}
 
-	size_t getSamples(Span<int16_t> span) override
+	size_t getSamples(Span<S16SamplePair> span) override
 	{
 		return getSamplesImpl(samplesBufferS16, span);
 	}
 
+	bool isResampled() const override { return false; }
 	bool hasDecodedFrames() const override
 	{
 		return
@@ -501,6 +507,7 @@ public:
 	int16_t getNextSampleS16() override { return 0; }
 	size_t getSamples(Span<float> span) override { return 0; }
 	size_t getSamples(Span<int16_t> span) override { return 0; }
+	bool isResampled() const override { return false; }
 };
 
 // this is the AudioDecoder for streaming Sounds by SampleDataEvent
@@ -537,6 +544,10 @@ public:
 		const TimeSpec& time
 	) override;
 
+	#if defined(HAVE_LIBSWRESAMPLE) || defined(HAVE_LIBAVRESAMPLE)
+	bool isResampled() const override { return true; }
+	#endif
+
 	size_t getBufferedSamples() const
 	{
 		return ACQUIRE_READ(bufferedSamples);
@@ -551,9 +562,12 @@ private:
 	bool ownedContext;
 	AVCodecContext* codecContext;
 	std::vector<uint8_t> overflowBuffer;
-	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 106, 102)
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 40, 0)
 	AVFrame* frameIn;
 	Span<const uint8_t> resampleFrame();
+	#endif
+
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(57, 106, 102)
 	template<typename T>
 	void decodeDataImpl
 	(
@@ -630,11 +644,13 @@ public:
 		Span<const uint8_t> data,
 		const TimeSpec& time
 	) override;
+
+	#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(53, 40, 0)
+	bool isResampled() const override { return true; }
+	#endif
 };
 
-class FFMpegSeekableAudioDecoder :
-public IAudioDecoder,
-public ISeekableAudioDecoder
+class FFMpegSeekableAudioDecoder : public ISeekableAudioDecoder
 {
 private:
 	bool valid;
@@ -683,12 +699,13 @@ public:
 		const TimeSpec& time
 	) override;
 
+	bool isResampled() const override;
 	bool hasDecodedFrames() const override;
 	size_t getSampleRate() const override;
-	float getNextSampleF32() override;
-	int16_t getNextSampleS16() override;
-	size_t getSamples(Span<float> span) override;
-	size_t getSamples(Span<int16_t> span) override;
+	F32SamplePair getNextSampleF32() override;
+	S16SamplePair getNextSampleS16() override;
+	size_t getSamples(Span<F32SamplePair> span) override;
+	size_t getSamples(Span<S16SamplePair> span) override;
 
 	// `ISeekableAudioDecoder`'s interface.
 	void seekToPos(const TimeSpec& pos) override;
@@ -698,6 +715,84 @@ public:
 	bool isAtEnd() const { return atEnd; }
 }
 #endif
+
+// Loosely based off Ruffle's `backend::audio::EventSoundStream`.
+class EventSoundDecoder : public IAudioDecoder
+{
+private:
+	ISeekableAudioDecoder& decoder;
+	size_t loops;
+	size_t startSample;
+	size_t endSample;
+	size_t curSample;
+	size_t skipSamples;
+	bool exhausted;
+
+	template<typename T>
+	size_t getSamplesImpl(Span<T> span);
+public:
+	EventSoundDecoder
+	(
+		EngineData* engineData,
+		size_t bufferTime,
+		ISeekableAudioDecoder& _decoder,
+		const SOUNDINFO& info,
+		size_t samples,
+		size_t _skipSamples
+	);
+
+	void switchCodec
+	(
+		const LS_AUDIO_CODEC& codec,
+		Span<const uint8_t> initData
+	) override
+	{
+		decoder.switchcodec(codec, initdata);
+	}
+
+	size_t decodeData
+	(
+		Span<const uint8_t> data,
+		const TimeSpec& time
+	) override
+	{
+		return 0;
+	}
+
+	F32SamplePair getNextSampleF32() override;
+	S16SamplePair getNextSampleS16() override;
+	size_t getSamples(Span<F32SamplePair> span) override
+	{
+		return getSamplesImpl(span);
+	}
+
+	size_t getSamples(Span<S16SamplePair> span) override
+	{
+		return getSamplesImpl(span);
+	}
+
+	size_t getSampleRate() const override
+	{
+		return decoder.getSampleRate();
+	}
+
+	bool isResampled() const override { return decoder.isResampled(); }
+	bool hasDecodedFrames() const override
+	{
+		return decoder.hasDecodedFrames();
+	}
+
+
+	void nextLoop();
+	const ISeekableAudioDecoder& getDecoder() const { return decoder; }
+	ISeekableAudioDecoder& getDecoder() { return decoder; }
+	size_t getLoops() const { return loops; }
+	size_t getStartSample() const { return startSample; }
+	size_t getEndSample() const { return endSample; }
+	size_t getCurSample() const { return curSample; }
+	size_t getSkipSamples() const { return skipSamples; }
+	bool isExhausted() const { return exhausted; }
+};
 
 class StreamDecoder
 {

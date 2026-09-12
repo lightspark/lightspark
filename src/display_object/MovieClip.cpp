@@ -22,32 +22,19 @@
 #include <array>
 #include <list>
 
+#include "asobject.h"
+#include "display_object/FrameContainer.h"
 #include "display_object/MovieClip.h"
+#include "display_object/RootMovieClip.h"
 #include "gc/context.h"
 #include "gc/ptr.h"
+#include "parsing/tags.h"
+#include "scripting/avm1/activation.h"
+#include "scripting/avm1/value.h"
 #include "tiny_string.h"
 #include "utils/optional.h"
 
-#include "scripting/flash/display/flashdisplay.h"
-#include "scripting/flash/display/FrameContainer.h"
-#include "scripting/flash/display/RootMovieClip.h"
-#include "parsing/tags.h"
-#include "scripting/class.h"
-#include "scripting/argconv.h"
-#include "scripting/avm1/avm1display.h"
-#include "scripting/avm1/avm1text.h"
-#include "scripting/flash/display/Loader.h"
-#include "scripting/flash/geom/flashgeom.h"
-#include "scripting/flash/geom/Point.h"
-#include "scripting/flash/geom/Rectangle.h"
-#include "scripting/toplevel/AVM1Function.h"
-#include "scripting/toplevel/Array.h"
-#include "scripting/toplevel/Integer.h"
-#include "scripting/flash/ui/keycodes.h"
-
 using namespace lightspark;
-
-#define AVM_MAX_DEPTH 2130706428
 
 MovieClip::MovieClip
 (
@@ -236,6 +223,296 @@ bool MovieClip::hitTestShape
 		localPoint,
 		localMtx
 	);
+}
+
+InteractiveObject* MovieClip::AVM1getMouseTarget
+(
+	const Vector2Twips& globalPoint,
+	const Vector2Twips& localPoint,
+	bool requiresButtonMode
+)
+{
+	using SkipInvis = HitTestFlags::SkipInvisible;
+	using SkipMask = HitTestFlags::SkipMask;
+	using MousePick = HitTestFlags::MousePick;
+
+	if (isAS3() || !isVisible())
+		return nullptr;
+
+	if (getMasker() != nullptr && !getMasker()->hitTestShape
+	(
+		globalPoint,
+		localPoint * getMasker()->getMatrix(),
+		SkipInvis
+	))
+		return nullptr;
+
+	auto flags = SkipInvis;
+	if (getMaskee() == nullptr)
+		flags |= SkipMask;
+
+	if
+	(
+		getMouseEnabled() &&
+		boundsRectWithoutChildren(false).contains(localPoint) &&
+		isButtonMode() &&
+		hitTestShape(globalPoint, localPoint, flags)
+	)
+		return this;
+
+	Locker l(mutexDisplayList);
+	const auto& list = dynamicDisplayList;
+	ssize_t hitDepth = 0;
+	InteractiveObject* ret = nullptr;
+	for (auto it = list.rbegin(); it != list.rend(); ++it)
+	{
+		const auto& child = *it;
+		auto _clipDepth = child.getClipDepth();
+		auto point = localPoint * child.getMatrix();
+		if (_clipDepth > 0)
+		{
+			if (ret == nullptr || _clipDepth < hitDepth)
+				continue;
+			if (child.hitTestShape
+			(
+				globalPoint,
+				point,
+				MousePick
+			))
+				return ret;
+			ret = nullptr;
+			continue;
+		}
+		else if (ret != nullptr)
+			continue;
+		auto _child = child.as<InteractiveObject>();
+		ret = _child != nullptr ? !child.isAS3() ? _child->AVM1getMouseTarget
+		(
+			globalPoint,
+			point,
+			requiresButtonMode
+		) : _child->AVM2getMouseTarget
+		(
+			globalPoint,
+			point,
+			requiresButtonMode
+		).getObj() :
+		(
+			!requiresButtonMode &&
+			getMouseEnabled() &&
+			child.hitTestShape(globalPoint, flags)
+		) ? this : ret;
+
+		if (ret != nullptr)
+			hitDepth = child.getDepth();
+	}
+
+	if (ret != nullptr)
+		return ret;
+	if (requiresButtonMode || !getMouseEnabled())
+		return nullptr;
+
+	return graphics != nullptr && graphics->hitTest
+	(
+		localPoint,
+		globalToLocalMatrix()
+	) ? this : nullptr;
+}
+}
+
+AVM2MouseTarget MovieClip::AVM2getMouseTarget
+(
+	const Vector2Twips& globalPoint,
+	const Vector2Twips& localPoint,
+	bool requiresButtonMode
+)
+{
+	using SkipInvis = HitTestFlags::SkipInvisible;
+	using SkipMask = HitTestFlags::SkipMask;
+	using MousePick = HitTestFlags::MousePick;
+	using MouseTargetType = AVM2MouseTarget::Type;
+
+	if (!isAS3() || !isVisible())
+		return MouseTargetType::Miss;
+
+	auto localMtx = globalToLocalMatrix();
+	if (!localMtx.isValid())
+		return MouseTargetType::Miss;
+	if (getMasker() != nullptr && !getMasker()->hitTestShape
+	(
+		globalPoint,
+		localPoint * getMasker()->getMatrix(),
+		HitTestFlags(0)
+	))
+		return MouseTargetType::Miss;
+
+	// Clips that mask other objects can't be hit.
+	if (getMaskee() != nullptr)
+		return MouseTargetType::Miss;
+
+	auto flags = SkipInvis;
+	if (getMaskee() == nullptr)
+		flags |= SkipMask;
+
+	template<typename T>
+	using RefWrapper = std::refernece_wrapper<T>;
+
+	std::vector<std::tuple
+	<
+		RefWrapper<DisplayObject>,
+		size_t,
+		size_t
+	>> clipLayers;
+	std::vector<RefWrapper<DisplayObject>> objs;
+
+	{
+		Locker l(mutexDisplayList);
+		for (const auto& child : dynamicDisplayList)
+		{
+			if (child.getClipDepth() <= 0)
+				continue;
+			// NOTE: We intentionally use `child.getDepth()` instead of
+			// the position in the display list. This matches Flash
+			// Player's behaviour. The child's `depth` comes from the
+			// `PlaceObject` tag.
+			clipLayers.emplace_front
+			(
+				child,
+				child.getDepth() + 1,
+				child.getClipDepth()
+			);
+		}
+
+		const auto& list = dynamicDisplayList;
+		for (auto it = list.rbegin(); it != list.rend(); ++it)
+		{
+			auto child = it->as<InteractiveObject>();
+			if (child != nullptr)
+				objs.emplace_back(*it);
+		}
+
+		for (auto it = list.rbegin(); it != list.rend(); ++it)
+		{
+			auto child = it->as<InteractiveObject>();
+			if (child == nullptr)
+				objs.emplace_back(*it);
+		}
+	}
+
+	auto getMouseTarget = [&]
+	(
+		const DisplayObject& child,
+		const Vector2Twips& childPoint
+	) -> AVM2MouseTarget
+	{
+		auto _child = child.as<InteractiveObject>();
+		if (_child != nullptr && child.isAS3())
+		{
+			return _child->AVM2getMouseTarget
+			(
+				globalPoint,
+				childPoint,
+				requiresButtonMode
+			);
+		}
+		else if (_child != nullptr)
+		{
+			return _child->AVM1getMouseTarget
+			(
+				globalPoint,
+				childPoint,
+				requiresButtonMode
+			);
+		}
+
+		if (!child.hitTestShape(globalPoint childPoint, flags))
+			return MouseTargetType::Miss;
+
+		auto masker = child.getMasker();
+		if (masker == nullptr || !child.getMasker().hitTestShape
+		(
+			globalPoint,
+			localPoint * masker.getMatrix(),
+			flags
+		))
+			return MouseTargetType::Miss;
+
+		if (getMouseEnabled())
+			return this;
+		return MouseTargetType::PropagateToParent;
+	};
+
+	Optional<AVM2MouseTarget> propagate;
+	for (const auto& child : objs)
+	{
+		// Mask children aren't clickable.
+		if (child.getClipDepth() > 0 || child.getMaskee() != nullptr)
+			continue;
+
+		auto point = localPoint * child.getMatrix();
+		auto ret = getMouseTarget(child, point);
+		for (const auto& tuple : clipLayers)
+		{
+			auto& clip = std::get<0>(tuple).get();
+			auto pair = std::make_pair
+			(
+				std::get<1>(tuple),
+				std::get<2>(tuple)
+			);
+
+			// This clip layer no longer applies to the remaining
+			// children (which all have a lower depth). This is one of
+			// the rare cases where we actually use `child.getDepth()`
+			// in AVM2. The child's `depth` is set from a `PlaceObject`
+			// tag, and may be *greater* than it's position in the
+			// display list.
+			if (pair.first > child.getDepth())
+				continue;
+			if (child.getDepth() > pair.second)
+				break;
+
+			// If the clip layer applies to the current child, check if
+			// the current child is masked by the clip. If the point
+			// isn't within the masked region, then treat it as a miss.
+			// We'll continue with the outer loop, since another child
+			// might be hit.
+			if (!clip.hitTestShape
+			(
+				globalPoint,
+				localPoint * clip.getMatrix(),
+				flags
+			))
+				ret = MouseTargetType::Miss;
+			break;
+		}
+
+		switch (ret.getType())
+		{
+			case MouseTargetType::Hit:
+				return ret.combineWithParent(*this);
+			case MouseTargetType::PropagateToParent:
+				propagate = ret;
+				break;
+			default: break;
+		}
+	}
+
+	// A 'propagated' event from a child seems to have a lower priority
+	// compared to everything else.
+	if (propagate.hasValue())
+		return propagate->combineWithParent(*this);
+
+	if
+	(
+		!boundsRectWithoutChildren(false).contains(localPoint)
+		graphics == nullptr ||
+		!graphics->hitTest(localPoint, localMtx)
+	)
+		return MouseTargetType::Miss;
+
+	if (getMouseEnabled())
+		return this;
+	return MouseTargetType::PropagateToParent;
 }
 
 void MovieClip::resetToStart()

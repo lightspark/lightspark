@@ -38,7 +38,41 @@ namespace lightspark
 class tiny_string;
 class ContextMenu;
 class Event;
+class InteractiveObject;
 class NativeMenuItem;
+
+class AVM2MouseTarget
+{
+public:
+	enum class Type
+	{
+		Miss,
+		PropagateToParent,
+		Hit,
+	};
+private:
+	Type type;
+	InteractiveObject* obj;
+public:
+	AVM2MouseTarget(const Type& _type = Type::Miss);
+	AVM2MouseTarget(InteractiveObject& _obj) :
+	type(Type::Hit),
+	obj(_obj) {}
+
+	AVM2MouseTarget(InteractiveObject* _obj) : type
+	(
+		_obj != nullptr ?
+		Type::Hit :
+		Type::Miss
+	), obj(obj) {}
+
+	AVM2MouseTarget combineWithParent(InteractiveObject& parent) const;
+	const Type& getType() const { return type; }
+	InteractiveObject* getObj() const
+	{
+		return type == Type::Hit ? obj : nullptr;
+	}
+};
 
 class InteractiveObject : public DisplayObject
 {
@@ -95,6 +129,26 @@ public:
 
 	Optional<bool> getFocusRect() const { return focusRect; }
 	void setFocusRect(const Optional<bool>& val) { focusRect = val; }
+
+	virtual InteractiveObject* AVM1getMouseTarget
+	(
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		bool requiresButtonMode
+	)
+	{
+		return nullptr;
+	}
+
+	virtual AVM2MouseTarget AVM2getMouseTarget
+	(
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		bool requiresButtonMode
+	)
+	{
+		return AVM2MouseTarget();
+	}
 
 	virtual bool isMouseFocusable() const;
 	virtual bool isHighlightable() const { return isHighlightEnabled(); }

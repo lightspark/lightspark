@@ -33,6 +33,35 @@
 
 using namespace lightspark;
 
+AVM2MouseTarget::AVM2MouseTarget(const Type& _type) :
+type(_type),
+obj(nullptr)
+{
+	assert_and_throw(type != Type::Hit);
+}
+
+AVM2MouseTarget AVM2MouseTarget::combineWithParent
+(
+	InteractiveObject& parent
+) const
+{
+	auto _parent = parent.as<DisplayObjectContainer>();
+	assert_and_throw(_parent != nullptr);
+	switch (type)
+	{
+		case Type::Hit:
+			assert_and_throw(obj != nullptr);
+			if (_parent->hasMouseChildren() && obj->isRoot())
+				return *obj;
+		// Falls through.
+		case Type::PropagateToParent:
+			if (parent.mouseEnabled)
+				return parent;
+			return Type::PropagateToParent;
+		case Type::Miss: return Type::Miss;
+	}
+}
+
 InteractiveObject::InteractiveObject
 (
 	const Type& type,

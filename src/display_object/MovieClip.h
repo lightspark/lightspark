@@ -347,6 +347,20 @@ public:
 		const HitTestFlags& flags
 	) override;
 
+	InteractiveObject* AVM1getMouseTarget
+	(
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		bool requiresButtonMode
+	) override;
+
+	AVM2MouseTarget AVM2getMouseTarget
+	(
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		bool requiresButtonMode
+	) override;
+
 	Optional<Rect<Twips>> tryBoundsRect(bool visibleOnly) override;
 	Optional<Rect<Twips>> tryBoundsRectWithoutChildren(bool visibleOnly) override;
 

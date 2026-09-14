@@ -233,13 +233,13 @@ void nanoVGCreateImage(BitmapContainer* container, EngineData* engineData)
 {
 	NVGcontext* nvgctxt = engineData->nvgcontext;
 	if (nvgctxt)
-		container->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,container->getWidth(),container->getHeight(),NVG_IMAGE_GENERATE_MIPMAPS,container->getData());
+		container->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,container->getWidth(),container->getHeight(),NVG_IMAGE_GENERATE_MIPMAPS | NVG_IMAGE_PREMULTIPLIED,container->getData());
 }
 int nanoVGCreateImageFromData(int width,int height, uint8_t* data, EngineData* engineData)
 {
 	NVGcontext* nvgctxt = engineData->nvgcontext;
 	if (nvgctxt)
-		return nvgCreateImageRGBA(nvgctxt,width,height,NVG_IMAGE_GENERATE_MIPMAPS,data);
+		return nvgCreateImageRGBA(nvgctxt,width,height,NVG_IMAGE_GENERATE_MIPMAPS | NVG_IMAGE_PREMULTIPLIED,data);
 	return -1;
 }
 
@@ -247,7 +247,7 @@ int setNanoVGImage(NVGcontext* nvgctxt,const FILLSTYLE* style, SystemState* sys)
 {
 	if (!style->bitmap)
 		return -1;
-	int imageFlags = NVG_IMAGE_GENERATE_MIPMAPS;
+	int imageFlags = NVG_IMAGE_GENERATE_MIPMAPS | NVG_IMAGE_PREMULTIPLIED;
 	if (!isSmoothed(style->FillStyleType))
 		imageFlags |= NVG_IMAGE_NEAREST;
 	if (isRepeating(style->FillStyleType))

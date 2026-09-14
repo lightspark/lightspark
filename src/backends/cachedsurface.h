@@ -38,7 +38,7 @@ class RenderContext;
 class Array;
 class DisplayObject;
 class CachedSurface;
-class RenderDisplayObjectToBitmapContainer;
+struct RenderDisplayObjectToBitmapContainer;
 class TextureChunk;
 
 struct FilterData

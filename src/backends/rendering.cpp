@@ -521,7 +521,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 						MATRIX m;
 						m = container.initialMatrix;
 						m.scale(realquality,realquality);
-						if (container.needsclear)
+						if (container.needsclear || realquality>1.0)
 						{
 							engineData->exec_glClearColor(0,0,0,0);
 							engineData->exec_glClear(CLEARMASK::COLOR);

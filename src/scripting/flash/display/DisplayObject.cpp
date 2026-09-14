@@ -2092,7 +2092,13 @@ number_t DisplayObject::computeHeight()
 
 	return (ret)?(y2-y1):0;
 }
-
+void DisplayObject::reset()
+{
+	currentScrollRect=RECT();
+	currentrendermatrix=MATRIX();
+	setMatrix(MATRIX());
+	filters.reset();
+}
 void DisplayObject::geometryChanged()
 {
 	if (this->is<DisplayObjectContainer>())

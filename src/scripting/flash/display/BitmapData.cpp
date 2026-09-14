@@ -165,6 +165,7 @@ Bitmap* BitmapData::getRenderCallBitmap()
 	}
 	else
 		ret->incRef();
+	ret->reset();
 	return ret;
 }
 void BitmapData::addUser(Bitmap* b, bool startupload)

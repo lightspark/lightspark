@@ -145,6 +145,7 @@ protected:
 	bool skipCountCylicMemberReferences(garbagecollectorstate& gcstate);
 public:
 	RECT currentScrollRect;
+	void reset();
 	void geometryChanged();
 	void handleConstruction();
 	bool boundsRectGlobal(RectF& rect, bool fromcurrentrendering=true);

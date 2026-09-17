@@ -153,6 +153,7 @@ private:
 	bool useRichTextClipboard;
 
 	Rect<Twips> getTextBounds(const tiny_string& txt);
+	bool isLinkAtImpl(const Vector2Twips& localPoint) const;
 protected:
 	void afterSetLegacyMatrix() override;
 public:
@@ -207,9 +208,25 @@ public:
 	number_t getScaleFactor() const override { return scaling; }
 	bool isInUpdateVarBinding() const { return inUpdateVarBinding; }
 	bool isFocusable(bool fromMouse) override;
+	bool wasStatic() const;
+	bool isLinkAt(const Vector2Twips& point) const;
 	size_t getTextCharCount();
 	void refreshSurfaceState() override;
 	void setupOriginalPosition();
+
+	InteractiveObject* AVM1getMouseTarget
+	(
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		bool requiresButtonMode
+	) override;
+
+	AVM2MouseTarget AVM2getMouseTarget
+	(
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		bool requiresButtonMode
+	) override;
 
 	const ANTI_ALIAS_TYPE& getAntiAliasType() const
 	{

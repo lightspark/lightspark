@@ -1546,7 +1546,7 @@ void TextField::tickFence()
 
 uint32_t TextField::getTagID() const
 {
-	return tag ? tag->getId() : UINT32_MAX;
+	return tag != nullptr ? tag->getId() : UINT32_MAX;
 }
 
 bool TextField::isFocusable(bool fromMouse)
@@ -1554,10 +1554,112 @@ bool TextField::isFocusable(bool fromMouse)
 	return selectable || !fromMouse;
 }
 
+bool TextField::wasStatic() const
+{
+	return tag != nullptr && tag->WasStatic;
+}
+
+bool TextField::isLinkAtImpl(const Vector2Twips& localPoint) const
+{
+	constexpr Vector2Twips padding
+	(
+		TEXTFIELD_PADDING,
+		TEXTFIELD_PADDING
+	);
+
+	auto point = localPoint + padding + Vector2Twips
+	(
+		number_t(scrollH),
+		getVScrollOffset()
+	);
+
+	Twips yMin;
+	Twips yMax;
+	Locker l(lineMutex);
+	for (const auto& line : textlines)
+	{
+		if (line.format.url.empty())
+			continue;
+		auto textWidth = line.textSize.x;
+		yMax += line.size.y;
+
+		bool inBounds = Rect<Twips>
+		{
+			Vector2Twips(line.autoSizePos, yMin),
+			Vector2Twips(line.autoSizePos + textWidth, yMax)
+		}.intersects(point);
+
+		if (inBounds)
+			return true;
+
+		yMin += line.size.y;
+	}
+	return false;
+}
+
+bool TextField::isLinkAt(const Vector2Twips& point) const
+{
+	auto localPoint = tryGlobalToLocal(point);
+	return localPoint.hasValue() && isLinkAtImpl(*localPoint);
+}
+
 int TextField::getTextCharCount()
 {
-	Locker l(*linemutex);
+	Locker l(*lineMutex);
 	return getText().numChars();
+}
+
+InteractiveObject* TextField::AVM1getMouseTarget
+(
+	const Vector2Twips& globalPoint,
+	const Vector2Twips& localPoint,
+	bool requiresButtonMode
+)
+{
+	// Don't bother, if we're invisible, or running in an AVM2 context.
+	if (isAS3() || !isVisible())
+		return nullptr;
+
+	// The text is considered hovered, if the mouse is over any child
+	// object.
+	return getMouseEnabled() &&
+	(
+		selectable ||
+		isLinkAtImpl(localPoint)
+	) && hitTestShape
+	(
+		globalPoint,
+		localPoint,
+		HitTestFlags::MousePick
+	) ? this : nullptr;
+}
+
+AVM2MouseTarget TextField::AVM2getMouseTarget
+(
+	const Vector2Twips& globalPoint,
+	const Vector2Twips& localPoint,
+	bool requiresButtonMode
+)
+{
+	using MousePick = HitTestFlags::MousePick;
+	using MouseTargetType = AVM2MouseTarget::Type;
+
+	// Don't bother, if we're invisible, or running in an AVM1 context.
+	if (!isAS3() || !isVisible())
+		return MouseTargetType::Miss;
+	if (!hitTestShape(globalPoint, localPoint, MousePick))
+		return MouseTargetType::Miss;
+	// NOTE: For mouse enabled selected text, we consider it a hit
+	// (which'll cause us to show the proper cursor on mouse over).
+	// However, mouse events aren't handled if it's selectable, and
+	// `WasStatic` is set.
+	if (!getMouseEnabled())
+		return MouseTargetType::PropagateToParent;
+
+	if (selectable || isLinkAtImpl(localPoint) || wasStatic())
+		return this;
+
+	return MouseTargetType::PropagateToParent;
 }
 
 void TextField::textUpdated()
@@ -1568,7 +1670,7 @@ void TextField::textUpdated()
 	scrollH = 0;
 	scrollV = 1;
 	{
-		Locker l(lineMutex;
+		Locker l(lineMutex);
 		checkEmbeddedFont(this);
 	}
 
@@ -1576,7 +1678,7 @@ void TextField::textUpdated()
 	setSizeAndPositionFromAutoSize();
 	setNeedsTextureRecalculation();
 	setHasChanged(true);
-	if(isOnStage() && isVisible())
+	if (isOnStage() && isVisible())
 		requestInvalidation(getSys());
 	else
 		requestInvalidationFilterParent(getSys());

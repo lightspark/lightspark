@@ -591,7 +591,10 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 	{
 		MATRIX m = ctxt.transformStack().transform().matrix;
 		sys->getEngineData()->exec_glScissor(m.getTranslateX()/TWIPS_FACTOR + state->scrollRect.Xmin
-											 ,m.getTranslateY()/TWIPS_FACTOR + state->scrollRect.Ymin
+											 ,m.getTranslateY()/TWIPS_FACTOR +
+																		sys->getRenderThread()->getFlipVertical()
+																		? sys->getRenderThread()->currentframebufferHeight-state->scrollRect.Ymax
+																		: state->scrollRect.Ymin
 											 ,(state->scrollRect.Xmax-state->scrollRect.Xmin)
 											 ,(state->scrollRect.Ymax-state->scrollRect.Ymin));
 	}

@@ -737,8 +737,8 @@ static int glnvg__renderCreate(void* uptr)
 		"#else\n"
 		"		vec4 color = texture2D(tex, pt);\n"
 		"#endif\n"
-		"		if (texType == 1) color = vec4(color.xyz*color.w,color.w);\n"
-		"		if (texType == 2) color = vec4(color.x);\n"
+		"		if (texType == 1) {\n color = vec4(color.xyz*color.w,color.w);\n}\n"
+		"		if (texType == 2) {\n color = vec4(color.x);\n}\n"
 		"		// Apply color tint and alpha.\n"
 		"		color *= innerCol;\n"
 		"		// Combine alpha\n"
@@ -752,8 +752,8 @@ static int glnvg__renderCreate(void* uptr)
 		"#else\n"
 		"		vec4 color = texture2D(tex, ftcoord);\n"
 		"#endif\n"
-		"		if (texType == 1) color = vec4(color.xyz*color.w,color.w);\n"
-		"		if (texType == 2) color = vec4(color.x);\n"
+		"		if (texType == 1) {\n color = vec4(color.xyz*color.w,color.w);\n}\n"
+		"		if (texType == 2) {\n color = vec4(color.x);\n}\n"
 		"		color *= scissor;\n"
 		"		result = color * innerCol;\n"
 		"	} else if (type == 4) {		// Multi-stop gradient\n"
@@ -980,7 +980,15 @@ static int glnvg__renderUpdateTexture(void* uptr, int image, int x, int y, int w
 #endif
 
 	if (tex->type == NVG_TEXTURE_RGBA)
+#ifndef NANOVG_GLES3
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_BGRA, GL_UNSIGNED_BYTE, data);  // Lightspark always delivers images in BGRA format
+#else
+	{
+		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_RGBA, GL_UNSIGNED_BYTE, data);  // Lightspark always delivers images in BGRA format
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+	}
+#endif
 	else
 #if defined(NANOVG_GLES2) || defined(NANOVG_GL2)
 		glTexSubImage2D(GL_TEXTURE_2D, 0, x,y, w,h, GL_LUMINANCE, GL_UNSIGNED_BYTE, data);

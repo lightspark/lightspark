@@ -87,6 +87,13 @@ public:
 		const HitTestFlags& flags
 	) override;
 
+	AVM2MouseTarget AVM2getMouseTarget
+	(
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		bool requiresButtonMode
+	) override;
+
 	bool propagateEventToChildren(const ClipEvent& ev) override;
 	bool handleEvent(const ClipEvent& ev) override;
 

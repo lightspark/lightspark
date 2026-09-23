@@ -62,6 +62,57 @@ bool SimpleButton::hitTestShape
 	return child->hitTestShape(_globalPoint, flags);
 }
 
+AVM2MouseTarget SimpleButton::AVM2getMouseTarget
+(
+	const Vector2Twips& globalPoint,
+	const Vector2Twips& localPoint,
+	bool requiresButtonMode
+)
+{
+	using MouseTargetType = AVM2MouseTarget::Type;
+	if (!isVisible() || !getMouseEnabled())
+		return MouseTargetType::Miss;
+
+	auto child = getStateObject(currentState);
+	if (child == nullptr)
+		goto checkHitArea;
+
+	// NOTE: Selecting a child of a button is the same as selecting the
+	// button itself.
+	auto _child = child->as<InteractiveObject>();
+	if (_child != nullptr && _child->AVM2getMouseTarget
+	(
+		globalPoint,
+		localPoint * _child->getMatrix(),
+		requiresButtonMode
+	) != MouseTargetType::Miss)
+		return this;
+checkHitArea:
+	auto hitArea = stateChild[STATE_OUT];
+	if (hitArea == nullptr)
+		return MouseTargetType::Miss;
+
+	if (hitArea->getParent() == nullptr && !getMatrix().isInvertible())
+		return MouseTargetType::Miss;
+
+	auto _globalPoint =
+	(
+		hitArea->getParent() == nullptr ?
+		// `hitArea` isn't actually a child, so use `localPoint` instead.
+		localPoint :
+		globalPoint
+	);
+
+	if (hitArea->hitTestShape
+	(
+		_globalPoint,
+		localPoint * hitArea->getMatrix(),
+		HitTestFlags::MousePick
+	))
+		return this;
+	return MouseTargetType::Miss;
+}
+
 // Based on Ruffle's `AVM2Button::propagate_to_children()`.
 bool SimpleButton::propagateEventToChildren(const ClipEvent& ev)
 {

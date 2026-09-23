@@ -200,6 +200,8 @@ private:
 	DEPTHSTENCIL_OP currentstencilop_dpfail_back;
 	DEPTHSTENCIL_OP currentstencilop_dppass_front;
 	DEPTHSTENCIL_OP currentstencilop_dppass_back;
+	BLEND_FACTOR currentblendsrc;
+	BLEND_FACTOR currentblenddst;
 	std::vector<uint32_t> bufferIDs;
 	std::list<uint32_t> bufferIDfreelist;
 

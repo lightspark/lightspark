@@ -183,7 +183,7 @@ void GLRenderContext::resetCurrentFrameBuffer()
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(baseFramebuffer);
 	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(baseRenderbuffer);
 }
-void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase& colortransform,SMOOTH_MODE smooth,AS_BLENDMODE blendmode)
+void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase& colortransform,AS_BLENDMODE blendmode)
 {
 	engineData->exec_glUniform1f(blendModeUniform, blendmode);
 	switch (blendmode)
@@ -218,11 +218,6 @@ void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase&
 			LOG(LOG_NOT_IMPLEMENTED,"renderTextured of blend mode "<<(int)blendmode);
 			break;
 	}
-	if (smooth == SMOOTH_MODE::SMOOTH_NONE)
-	{
-		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
-		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
-	}
 	//Set alpha
 	engineData->exec_glUniform1f(alphaUniform, alpha);
 	//Set colotransform
@@ -236,7 +231,7 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 									 bool isMask, float directMode, RGB directColor, SMOOTH_MODE smooth, const MATRIX& matrix, const RECT& scalingGrid,
 									 AS_BLENDMODE blendmode)
 {
-	setupRenderingState(alpha,colortransform,smooth,blendmode);
+	setupRenderingState(alpha,colortransform,blendmode);
 	float empty=0;
 	engineData->exec_glUniform1fv(filterdataUniform, 1, &empty);
 	engineData->exec_glUniform1f(yuvUniform, colorMode==COLOR_MODE::YUV_MODE?1.0:0.0);
@@ -335,6 +330,11 @@ void GLRenderContext::renderTextured(const TextureChunk& chunk, float alpha, COL
 	{
 		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
 		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+	}
+	else
+	{
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 	}
 }
 void GLRenderContext::renderpart(const MATRIX& matrix, const TextureChunk& chunk, float cropleft, float croptop, float cropwidth, float cropheight,float tx,float ty)

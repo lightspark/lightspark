@@ -63,6 +63,7 @@ bool Stage3D::renderImpl(RenderContext &ctxt) const
 			true,
 			false,
 			true,
+			true,
 			true
 		);
 	}

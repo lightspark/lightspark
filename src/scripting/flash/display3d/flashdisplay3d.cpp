@@ -240,8 +240,6 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(currentframebuffertextureid);
 				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(tex->textureframebuffer);
 				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(currentframebuffertextureid);
-				engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
-				engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 			}
 			else
 				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(tex->textureframebuffer);
@@ -465,6 +463,8 @@ void Context3D::handleRenderAction(EngineData* engineData, renderaction& action)
 			//action.udata1 = sourcefactor
 			//action.udata2 = destinationfactor
 			engineData->exec_glBlendFunc((BLEND_FACTOR)action.udata1,(BLEND_FACTOR)action.udata2);
+			currentblendsrc=(BLEND_FACTOR)action.udata1;
+			currentblenddst=(BLEND_FACTOR)action.udata2;
 			break;
 		}
 		case RENDER_SETDEPTHTEST:
@@ -645,6 +645,8 @@ void Context3D::setRegisters(EngineData* engineData,std::vector<RegisterMapEntry
 					it->program_register_id = engineData->exec_glGetUniformLocation(currentprogram->gpu_program,it->name.raw_buf());
 				if (it->program_register_id != UINT32_MAX)
 					engineData->exec_glUniform4fv(it->program_register_id,1, data);
+				else
+					LOG(LOG_ERROR,"Context3D:invalid vector name:"<<it->name);
 				break;
 			}
 			case RegisterUsage::MATRIX_4_4:
@@ -662,6 +664,8 @@ void Context3D::setRegisters(EngineData* engineData,std::vector<RegisterMapEntry
 				}
 				if (it->program_register_id != UINT32_MAX)
 					engineData->exec_glUniformMatrix4fv(it->program_register_id,1,false, data2);
+				else
+					LOG(LOG_ERROR,"Context3D:invalid matrix name:"<<it->name);
 				break;
 			}
 			case RegisterUsage::VECTOR_4_ARRAY:
@@ -683,6 +687,8 @@ void Context3D::setRegisters(EngineData* engineData,std::vector<RegisterMapEntry
 				}
 				if (it->program_register_id != UINT32_MAX)
 					engineData->exec_glUniform4fv(it->program_register_id,regcount, data2);
+				else
+					LOG(LOG_ERROR,"Context3D:invalid array name:"<<it->name);
 				delete[] data2;
 				break;
 			}
@@ -746,9 +752,9 @@ void Context3D::setSamplers(EngineData *engineData)
 		}
 		if (sampid != UINT32_MAX)
 		{
-			engineData->exec_glActiveTexture_GL_TEXTURE0(currentprogram->samplerState[i].registernumber);
 			if ((currentprogram->samplerState[i].special & SAMPLERSPECIAL_IGNORESAMPLER)==0)
 			{
+				engineData->exec_glActiveTexture_GL_TEXTURE0(currentprogram->samplerState[i].registernumber);
 				engineData->exec_glSetTexParameters(
 					currentprogram->samplerState[i].b
 					,currentprogram->samplerState[i].d
@@ -820,6 +826,9 @@ void Context3D::disposeintern()
 	currentstencilop_dpfail_back=DEPTHSTENCIL_KEEP;
 	currentstencilop_dppass_front=DEPTHSTENCIL_KEEP;
 	currentstencilop_dppass_back=DEPTHSTENCIL_KEEP;
+	currentblendsrc=BLEND_FACTOR::BLEND_ONE;
+	currentblenddst=BLEND_FACTOR::BLEND_ZERO;
+
 	stage3D=nullptr;
 	backBufferHeight=0;
 	backBufferWidth=0;
@@ -880,7 +889,8 @@ bool Context3D::renderImpl(RenderContext &ctxt)
 	// it seems that Context3D needs clockwise winding, see
 	// https://stackoverflow.com/questions/8677498/stage3d-culling-confusion
 	engineData->exec_glFrontFace(true);
-	engineData->exec_glBlendFunc(BLEND_ONE,BLEND_ZERO);
+
+	engineData->exec_glBlendFunc(currentblendsrc,currentblenddst);
 	engineData->exec_glColorMask(true,true,true,true);
 
 	// execute rendering actions
@@ -980,8 +990,6 @@ void Context3D::loadCubeTexture(CubeTexture *tex, uint32_t miplevel, uint32_t si
 	if (tex->textureID == UINT32_MAX)
 		engineData->exec_glGenTextures(1, &(tex->textureID));
 	engineData->exec_glBindTexture_GL_TEXTURE_CUBE_MAP(tex->textureID);
-	engineData->exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
-	engineData->exec_glTexParameteri_GL_TEXTURE_CUBE_MAP_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
 	if (tex->bitmaparray.size() == 0)
 	{
 		engineData->exec_glTexImage2D_GL_TEXTURE_CUBE_MAP_POSITIVE_X_GL_UNSIGNED_BYTE(0,0, tex->width, tex->height, 0, nullptr,tex->format,tex->compressedformat,0);
@@ -1045,8 +1053,6 @@ void Context3D::configureBackBufferIntern(bool enableDepthAndStencil, uint32_t w
 		engineData->exec_glGenTextures(1,&backframebufferID[index]);
 
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(backframebufferID[index]);
-	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
-	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(backframebufferID[index]);
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, width, height, 0, nullptr,true);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
@@ -1132,6 +1138,8 @@ Context3D::Context3D(ASWorker* wrk, Class_base *c)
 	,currentstencilop_dpfail_back(DEPTHSTENCIL_KEEP)
 	,currentstencilop_dppass_front(DEPTHSTENCIL_KEEP)
 	,currentstencilop_dppass_back(DEPTHSTENCIL_KEEP)
+	,currentblendsrc(BLEND_FACTOR::BLEND_ONE)
+	,currentblenddst(BLEND_FACTOR::BLEND_ZERO)
 	,stage3D(nullptr)
 	,backBufferHeight(0)
 	,backBufferWidth(0)
@@ -1639,6 +1647,7 @@ ASFUNCTIONBODY_ATOM(Context3D,setDepthTest)
 	}
 	th->addAction(action);
 }
+
 ASFUNCTIONBODY_ATOM(Context3D,setProgram)
 {
 	Context3D* th = asAtomHandler::as<Context3D>(obj);
@@ -2247,6 +2256,7 @@ void IndexBuffer3D::sinit(Class_base *c)
 {
 	CLASS_SETUP_NO_CONSTRUCTOR(c, ASObject, CLASS_SEALED);
 	c->isReusable=true;
+	c->canHaveCyclicMembers=false;
 	c->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uploadFromByteArray","",c->getSystemState()->getBuiltinFunction(uploadFromByteArray),NORMAL_METHOD,true);
 	c->setDeclaredMethodByQName("uploadFromVector","",c->getSystemState()->getBuiltinFunction(uploadFromVector),NORMAL_METHOD,true);
@@ -2380,6 +2390,7 @@ ASFUNCTIONBODY_ATOM(Program3D,dispose)
 	th->disposed=true;
 	th->context->rendermutex.unlock();
 }
+
 ASFUNCTIONBODY_ATOM(Program3D,upload)
 {
 	Program3D* th = asAtomHandler::as<Program3D>(obj);

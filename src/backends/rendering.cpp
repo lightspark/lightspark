@@ -391,7 +391,6 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				engineData->exec_glDrawBuffer_GL_BACK();
 				engineData->exec_glUseProgram(gpu_program);
 				bmTextureID = nanoVGGetTextureID(bmc->nanoVGImageHandle,engineData);
-				engineData->exec_glBindTexture_GL_TEXTURE_2D(bmTextureID);
 				// upload current content of bitmap container (no need for locking the bitmapcontainer as the worker thread is waiting until rendering is done)
 				if (bmc->getModifiedData())
 				{
@@ -399,7 +398,6 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 					engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_INT_8_8_8_8_HOST(0,w,h,0,bmc->getData());
 				}
 				uint32_t bmframebuffer = engineData->exec_glGenFramebuffer();
-				engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 				engineData->exec_glBindTexture_GL_TEXTURE_2D(bmTextureID);
 				engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(bmframebuffer);
 				uint32_t bmrenderbuffer = engineData->exec_glGenRenderbuffer();
@@ -414,6 +412,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 					engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(w, h);
 					engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(bmrenderbuffer);
 				}
+				engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(bmTextureID);
 				engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
 				engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 				baseFramebuffer=bmframebuffer;
@@ -440,7 +439,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 							engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(fbo);
 							engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(nanoVGGetTextureID(bmc->nanoVGImageHandle,engineData));
 							engineData->exec_glReadPixels_GL_BGRA(bmc->getWidth(), bmc->getHeight(), bmc->getData());
-							engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(0);
+							engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(bmframebuffer);
 							engineData->exec_glDeleteFramebuffers(1, &fbo);
 #else
 							engineData->exec_glGetTexImage_GL_TEXTURE_2D(bmc->getData());
@@ -448,9 +447,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 							wasmodifiedTexture=false;
 						}
 						bmc->setModifiedTexture(false);
-						nanoVGnewImage = nanoVGCreateImageFromData(w,h,bmc->getData(),engineData);
+						bmc->nanoVGImageHandle = nanoVGnewImage = nanoVGCreateImageFromData(w,h,bmc->getData(),engineData);
 						assert(nanoVGnewImage>=0);
-						bmTextureID = nanoVGGetTextureID(nanoVGnewImage,engineData);
 					}
 					uint32_t highqualitytexture=bmTextureID;
 					int highqualitywidth=w;
@@ -486,6 +484,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 						engineData->exec_glGenTextures(1,&highqualitytexture);
 						engineData->exec_glBindTexture_GL_TEXTURE_2D(highqualitytexture);
 						engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, highqualitywidth,highqualityheight, 0, nullptr,true);
+						engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+						engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 						setViewPort(highqualitywidth,highqualityheight,false);
 						if (engineData->supportPackedDepthStencil)
 							engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(highqualitywidth,highqualityheight);
@@ -537,7 +537,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 						else
 							engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(w,h);
 						engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(bmTextureID);
-						setupRenderingState(1.0,ColorTransformBase(),container.smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,BLENDMODE_NORMAL);
+						setupRenderingState(1.0,ColorTransformBase(),BLENDMODE_NORMAL);
 						setViewPort(w,h,false);
 						setModelView(MATRIX());
 						renderTextureToFrameBuffer
@@ -549,7 +549,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 								nullptr,
 								nullptr,
 								true,
-								false
+								false,
+								container.smoothing
 								);
 					}
 					resetCurrentFrameBuffer();
@@ -558,8 +559,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 					{
 						// set bitmapcontainer texture to new resulting texture and delete original
 						assert(nanoVGoriginalImage>=0);
-						bmc->nanoVGImageHandle=nanoVGnewImage;
-						nanoVGDeleteImage(nanoVGoriginalImage,engineData);
+						bmc->nanoVGImageHandle=nanoVGoriginalImage ;
+						nanoVGDeleteImage(nanoVGnewImage,engineData);
 					}
 				}
 				// reset everything for normal rendering
@@ -856,6 +857,7 @@ void RenderThread::renderTextureToFrameBuffer
 	float* gradientStops,
 	bool isFirstFilter,
 	bool flippedvertical,
+	bool smoothing,
 	bool clearstate,
 	bool renderstage3d,
 	RECT* scalingGrid,
@@ -933,8 +935,16 @@ void RenderThread::renderTextureToFrameBuffer
 	}
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureID);
-	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
-	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+	if (smoothing)
+	{
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_LINEAR();
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_LINEAR();
+	}
+	else
+	{
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
+		engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
+	}
 	float vertex_coords[] = {0,0, float(w),0, 0,float(h), float(w),float(h)};
 	float vertex_coords_flipped[] = {0,float(h), float(w),float(h), 0,0, float(w),0};
 	float texture_coords[] = {0,0, 1,0, 0,1, 1,1};
@@ -945,6 +955,7 @@ void RenderThread::renderTextureToFrameBuffer
 	engineData->exec_glDrawArrays_GL_TRIANGLE_STRIP(0, 4);
 	engineData->exec_glDisableVertexAttribArray(VERTEX_ATTRIB);
 	engineData->exec_glDisableVertexAttribArray(TEXCOORD_ATTRIB);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(0);
 }
 void RenderThread::generateScreenshot()
 {

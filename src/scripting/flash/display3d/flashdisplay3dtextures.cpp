@@ -658,12 +658,10 @@ void TextureBase::uploadFromBitmapDataIntern(BitmapData* source, uint32_t miplev
 	{
 		for (uint32_t j = 0; j < (width>>miplevel) && j < sourcewidth; j++)
 		{
-			// It seems that flash expects the bitmaps to be premultiplied-alpha in shaders
 			uint32_t* data = (uint32_t*)(&bmdata[i*source->getBitmapContainer()->getWidth()*4+j*4]);
-			uint8_t alpha = ((*data) >>24) & 0xff;
-			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4  ] = (uint8_t)((((*data)     ) & 0xff)*alpha /255);
-			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4+1] = (uint8_t)((((*data) >> 8) & 0xff)*alpha /255);
-			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4+2] = (uint8_t)((((*data) >>16) & 0xff)*alpha /255);
+			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4  ] = (uint8_t)((((*data)     ) & 0xff));
+			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4+1] = (uint8_t)((((*data) >> 8) & 0xff));
+			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4+2] = (uint8_t)((((*data) >>16) & 0xff));
 			bitmaparray[bitmappos][i*(width>>miplevel)*4 + j*4+3] = (uint8_t)((((*data) >>24) & 0xff)           );
 		}
 	}

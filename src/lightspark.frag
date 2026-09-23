@@ -314,9 +314,6 @@ void main()
 		slice9processAxis(ls_TexCoords[0].y, slice9sourceborder.y, slice9targetborder.y,slice9sourceborder.w,slice9targetborder.w)
 	);
 	vec4 vbase = texture2D(g_tex_standard,newUV);
-#ifdef GL_ES
-//	vbase.rgb = vbase.bgr;
-#endif
 	vbase.a = clamp(vbase.a+renderStage3D,0.0,1.0); // ensure that alpha component of stage3D content is ignored
 	// apply filter
 	if (filterdata[0] > 0.0) {

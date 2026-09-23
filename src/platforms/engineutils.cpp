@@ -1444,7 +1444,7 @@ void EngineData::exec_glBindBuffer_GL_ARRAY_BUFFER(uint32_t buffer)
 }
 void EngineData::exec_glEnable_GL_TEXTURE_2D()
 {
-#ifndef ENABLE_GLES2
+#if !defined ENABLE_GLES2 && !defined ENABLE_GLES3
 	glEnable(GL_TEXTURE_2D);
 #endif
 }

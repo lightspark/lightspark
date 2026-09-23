@@ -214,6 +214,7 @@ public:
 		float* gradientStops,
 		bool isFirstFilter,
 		bool flippedvertical,
+		bool smoothing,
 		bool clearstate = true,
 		bool renderstage3d = false,
 		RECT* scalingGrid = nullptr,

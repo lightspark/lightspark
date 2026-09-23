@@ -175,7 +175,7 @@ void nanoVGgetTextBounds(SystemState* sys, TextData& tData, const FormatText& fo
 		sys->getRenderThread()->mutexRendering.lock();
 	tw=0;
 	th=0;
-	auto nvgctxt = sys->getEngineData()->nvgcontext;
+	NVGcontext* nvgctxt = sys->getEngineData() ? sys->getEngineData()->nvgcontext : nullptr;
 	if (nvgctxt)
 	{
 		if (tData.nanoVGFontID < 0)
@@ -456,7 +456,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 		RectF bounds = boundsRectWithRenderTransform(baseTransform.matrix, initialMatrix);
 		Vector2f offset(bounds.min.x-baseTransform.matrix.x0,bounds.min.y-baseTransform.matrix.y0);
 		Vector2f size = bounds.size()/TWIPS_FACTOR;
-		
+
 		// don't force refresh if only the position has changed
 		bool hasDirtyMatrix = baseTransform.matrix.xx!=state->cachedMatrix.xx
 							  || baseTransform.matrix.yx!=state->cachedMatrix.yx
@@ -533,7 +533,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 				engineData->exec_glStencilFunc(DEPTHSTENCIL_FUNCTION::DEPTHSTENCIL_EQUAL,0x80,0x80);
 			}
 			sys->getRenderThread()->setModelView(m);
-			sys->getRenderThread()->setupRenderingState(state->alpha,ctxt.transformStack().transform().colorTransform,state->smoothing,state->blendmode);
+			sys->getRenderThread()->setupRenderingState(state->alpha,ctxt.transformStack().transform().colorTransform,state->blendmode);
 			sys->getRenderThread()->renderTextureToFrameBuffer
 			(
 				cachedFilterTextureID,
@@ -544,6 +544,7 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 				nullptr,
 				false,
 				true,
+				state->smoothing != SMOOTH_NONE,
 				false,
 				false,
 				hasScalingGrid ? &state->scalingGrid : nullptr,
@@ -559,19 +560,19 @@ void CachedSurface::Render(SystemState* sys,RenderContext& ctxt, const MATRIX* s
 			return;
 		}
 	}
-	
+
 	SurfaceState* maskstate = state->mask.isNull() ? nullptr : state->mask->getState();
 	if (maskstate)
 	{
 		// remove maskee matrix
 		ctxt.transformStack().pop();
-		
+
 		ctxt.transformStack().push(Transform2D(maskstate->matrix, ColorTransformBase(),AS_BLENDMODE::BLENDMODE_NORMAL));
 		ctxt.pushMask();
 		state->mask->renderImpl(sys, ctxt, container);
 		ctxt.transformStack().pop();
 		ctxt.activateMask();
-		
+
 		// re-add maskee matrix
 		ctxt.transformStack().push(currenttransform);
 	}
@@ -630,8 +631,8 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ZERO,NVG_ONE_MINUS_SRC_ALPHA);
 					break;
 				case BLENDMODE_INVERT:
-				 	nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE_MINUS_DST_COLOR,NVG_ZERO);
-				 	break;
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE_MINUS_DST_COLOR,NVG_ZERO);
+					break;
 				case BLENDMODE_INTERN_REPLACE: // ignored, only used for rendering to bitmap
 					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ONE_MINUS_SRC_ALPHA);
 					break;
@@ -998,7 +999,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 	}
 	else
 		defaultRender(ctxt);
-	
+
 	int clipDepth = 0;
 	vector<pair<int, CachedSurface*>> clipDepthStack;
 	//Now draw also the display list
@@ -1015,17 +1016,17 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 		{
 			clipDepth = clipDepthStack.back().first;
 			clipDepthStack.pop_back();
-			
+
 			ctxt.deactivateMask();
 			ctxt.popMask();
 		}
-		
+
 		if (childstate->clipdepth > 0 && childstate->allowAsMask)
 		{
 			// Push, and render this mask.
 			clipDepthStack.push_back(make_pair(clipDepth, child));
 			clipDepth = childstate->clipdepth;
-			
+
 			ctxt.pushMask();
 			child->Render(sys,ctxt);
 			ctxt.activateMask();
@@ -1033,7 +1034,7 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 		else if ((childstate->visible && !childstate->clipdepth && !childstate->isMask) || ctxt.isDrawingMask())
 			child->Render(sys,ctxt);
 	}
-	
+
 	// Pop remaining masks (if any).
 	for_each(clipDepthStack.rbegin(), clipDepthStack.rend(), [&](pair<int, CachedSurface*>& it)
 	{
@@ -1055,11 +1056,11 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	//   - for every step (blur, dropshadow...)
 	//     - set uniforms for step
 	//     - set one of the two textures as color attachment for fbo (use first generated texture in first step)
-	//     - render to texture 
+	//     - render to texture
 	//     - swap textures
 	//   - render resulting texture to "g_tex_filter2"
 	// - remember resulting texture in cachedSurface.cachedFilterTextureID
-	
+
 	if (w == 0 || h == 0)
 		return;
 
@@ -1090,15 +1091,23 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
 	uint32_t filterrenderbuffer = engineData->exec_glGenRenderbuffer();
 	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(filterrenderbuffer);
-	engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(w, h);
-	engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(filterrenderbuffer);
+	if (engineData->supportPackedDepthStencil)
+	{
+		engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_DEPTH_STENCIL(w, h);
+		engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_DEPTH_STENCIL_ATTACHMENT(filterrenderbuffer);
+	}
+	else
+	{
+		engineData->exec_glRenderbufferStorage_GL_RENDERBUFFER_GL_STENCIL_INDEX8(w, h);
+		engineData->exec_glFramebufferRenderbuffer_GL_FRAMEBUFFER_GL_STENCIL_ATTACHMENT(filterrenderbuffer);
+	}
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MIN_FILTER_GL_NEAREST();
 	engineData->exec_glTexParameteri_GL_TEXTURE_2D_GL_TEXTURE_MAG_FILTER_GL_NEAREST();
 	engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterTextureIDoriginal);
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
 	uint32_t parentframebufferWidth = sys->getRenderThread()->currentframebufferWidth;
 	uint32_t parentframebufferHeight = sys->getRenderThread()->currentframebufferHeight;
-	
+
 	sys->getRenderThread()->setViewPort(w,h,true);
 	engineData->exec_glDisable_GL_SCISSOR_TEST();
 	if (state->hasOpaqueBackground)
@@ -1111,15 +1120,17 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	fe.filterframebuffer=filterframebuffer;
 	fe.filterrenderbuffer=filterrenderbuffer;
 	fe.filtertextureID=filterTextureIDoriginal;
-	
+
 	sys->getRenderThread()->filterframebufferstack.push_back(fe);
 	renderImpl(sys, ctxt, nullptr);
+	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
+	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureIDoriginal);
 	// bind rendered filter source to g_tex_filter1
 	engineData->exec_glBindFramebuffer_GL_FRAMEBUFFER(filterframebuffer);
 	engineData->exec_glBindRenderbuffer_GL_RENDERBUFFER(filterrenderbuffer);
 	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_FILTER);
 	engineData->exec_glBindTexture_GL_TEXTURE_2D(filterTextureIDoriginal);
-	
+
 	// create filter output texture, and bind it to g_tex_filter2
 	uint32_t filterDstTexture;
 	engineData->exec_glGenTextures(1, &filterDstTexture);
@@ -1131,14 +1142,12 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	engineData->exec_glTexImage2D_GL_TEXTURE_2D_GL_UNSIGNED_BYTE(0, w, h, 0, nullptr,true);
 
 	// apply all filter steps
-	engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 	sys->getRenderThread()->setViewPort(w,h,true);
 	uint32_t texture1 = filterTextureIDoriginal;
 	uint32_t texture2 = filterTextureID2;
 	bool firstfilter = true;
 	for (auto it = state->filters.begin(); it != state->filters.end(); it++)
 	{
-		engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 		if ((*it).filterdata[0] == 0) // end of filter
 		{
 			engineData->exec_glFramebufferTexture2D_GL_FRAMEBUFFER(filterDstTexture);
@@ -1153,7 +1162,8 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 				nullptr,
 				nullptr,
 				false,
-				false
+				false,
+				true
 			);
 			firstfilter=false;
 		}
@@ -1171,6 +1181,7 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 				it->gradientColors,
 				it->gradientStops,
 				firstfilter,
+				false,
 				false
 			);
 			if (texture1 == filterTextureIDoriginal)
@@ -1189,7 +1200,6 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 		}
 		else
 			sys->getRenderThread()->resetViewPort();
-		engineData->exec_glActiveTexture_GL_TEXTURE0(SAMPLEPOSITION::SAMPLEPOS_STANDARD);
 	}
 	else
 	{
@@ -1201,13 +1211,20 @@ void CachedSurface::renderFilters(SystemState* sys,RenderContext& ctxt, uint32_t
 	}
 	engineData->exec_glDeleteFramebuffers(1,&filterframebuffer);
 	engineData->exec_glDeleteRenderbuffers(1,&filterrenderbuffer);
-	cachedFilterTextureID=texture1;
+	cachedFilterTextureID=filterDstTexture;
 	engineData->exec_glDeleteTextures(1,&texture2);
-	engineData->exec_glDeleteTextures(1,&filterDstTexture);
 	if (state->filters.empty())
+	{
+		cachedFilterTextureID=texture1;
+		engineData->exec_glDeleteTextures(1,&filterDstTexture);
 		engineData->exec_glDeleteTextures(1,&filterTextureID1);
+	}
 	else
+	{
+		cachedFilterTextureID=filterDstTexture;
+		engineData->exec_glDeleteTextures(1,&texture1);
 		engineData->exec_glDeleteTextures(1,&filterTextureIDoriginal);
+	}
 	ctxt.transformStack().pop();
 	ctxt.removeTransformStack();
 	state->needsFilterRefresh=false;
@@ -1219,7 +1236,7 @@ void CachedSurface::defaultRender(RenderContext& ctxt)
 		return;
 	if (tex->width == 0 || tex->height == 0)
 		return ;
-	
+
 	ctxt.lsglLoadIdentity();
 	ColorTransformBase ct = t.colorTransform;
 	MATRIX m = t.matrix;

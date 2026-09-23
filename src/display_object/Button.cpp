@@ -194,7 +194,49 @@ bool Button::handleEvent(const ClipEvent& ev)
 	return false;
 }
 
-Rect<Twips> boundsRectWithTransformImpl(const MATRIX& mtx)
+InteractiveObject* Button::AVM1getMouseTarget
+(
+	const Vector2Twips& globalPoint,
+	const Vector2Twips& localPoint,
+	bool requiresButtonMode
+)
+{
+	if (!isVisible() || !getMouseEnabled())
+		return nullptr;
+
+	Locker l(mutexDisplayList);
+	auto& list = dynamicDisplayList;
+	for (auto it = list.rbegin(); it != list.rend(); ++it)
+	{
+		auto child = it->as<InteractiveObject>();
+		if (child == nullptr)
+			continue;
+		auto ret = child->AVM1getMouseTarget
+		(
+			globalPoint,
+			localPoint * child->getMatrix(),
+			requiresButtonMode
+		);
+		if (ret != nullptr)
+			return ret;
+	}
+
+	for (auto& child : hitArea)
+	{
+		bool pointInChild = child.hitTestShape
+		(
+			globalPoint,
+			localPoint * child.getMatrix(),
+			HitTestFlags::MousePick
+		);
+		if (pointInChild)
+			return this;
+	}
+
+	return nullptr;
+}
+
+Rect<Twips> Button::boundsRectWithTransformImpl(const MATRIX& mtx)
 {
 	auto _bounds = mtx * boundsRect(false);
 	auto child = getStateObject(currentState);

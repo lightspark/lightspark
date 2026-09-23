@@ -92,6 +92,13 @@ public:
 		const HitTestFlags& flags
 	) override;
 
+	InteractiveObject* AVM1getMouseTarget
+	(
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		bool requiresButtonMode
+	) override;
+
 	bool filterEvent(const ClipEvent& ev) override;
 	bool handleEvent(const ClipEvent& ev) override;
 

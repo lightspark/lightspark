@@ -428,6 +428,99 @@ void Loader::unload()
 		contentLoaderInfo->resetState();
 }
 
+InteractiveObject* Loader::AVM1getMouseTarget
+(
+	const Vector2Twips& globalPoint,
+	const Vector2Twips& localPoint,
+	bool requiresButtonMode
+)
+{
+	// Don't bother, if we're running in an AVM2 context.
+	if (isAS3())
+		return nullptr;
+
+	Locker l(mutexDisplayList);
+	auto& list = dynamicDisplayList;
+	for (auto it = list.rbegin(); it != list.rend(); ++it)
+	{
+		auto child = it->as<InteractiveObject>();
+		if (child == nullptr)
+			continue;
+		auto point = localPoint * child->getMatrix();
+		auto ret = !child->isAS3() ? child->AVM1getMouseTarget
+		(
+			globalPoint,
+			point,
+			requiresButtonMode
+		) : child->AVM2getMouseTarget
+		(
+			globalPoint,
+			point,
+			requiresButtonMode
+		).getObj();
+		if (ret != nullptr)
+			return ret;
+	}
+	return nullptr;
+}
+
+AVM2MouseTarget Loader::AVM2getMouseTarget
+(
+	const Vector2Twips& globalPoint,
+	const Vector2Twips& localPoint,
+	bool requiresButtonMode
+)
+{
+	using SkipInvis = HitTestFlags::SkipInvisible;
+	using SkipMask = HitTestFlags::SkipMask;
+	using MousePick = HitTestFlags::MousePick;
+	using MouseTargetType = AVM2MouseTarget::Type;
+
+	// Don't bother, if we're running in an AVM1 context.
+	if (!isAS3())
+		return MouseTargetType::Miss;
+
+	auto flags = SkipInvis;
+	if (getMaskee() == nullptr)
+		flags |= SkipMask;
+	
+	DisplayObject* child;
+	{
+		Locker l(mutexDisplayList);
+		if (dynamicDisplayList.empty())
+			return MouseTargetType::Miss;
+		child = &dynamicDisplayList.front();
+	}
+
+	auto point = localPoint * child->getMatrix();
+	auto _child = child->as<InteractiveObject>();
+	if (_child != nullptr && _child->isAS3())
+	{
+		return _child->AVM2getMouseTarget
+		(
+			globalPoint,
+			point,
+			requiresButtonMode
+		);
+	}
+	else if (_child != nullptr)
+	{
+		return _child->AVM1getMouseTarget
+		(
+			globalPoint,
+			point,
+			requiresButtonMode
+		);
+	}
+
+	if (!child->hitTestShape(globalPoint point, flags))
+		return MouseTargetType::Miss;
+
+	if (getMouseEnabled())
+		return this;
+	return MouseTargetType::PropagateToParent;
+}
+
 Loader::Loader(SystemState* sys, SWFMovie& _movie) : InteractiveObject
 (
 	Type::Loader,

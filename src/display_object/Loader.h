@@ -106,6 +106,19 @@ public:
 	);
 
 	void unload();
+	InteractiveObject* AVM1getMouseTarget
+	(
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		bool requiresButtonMode
+	) override;
+
+	AVM2MouseTarget AVM2getMouseTarget
+	(
+		const Vector2Twips& globalPoint,
+		const Vector2Twips& localPoint,
+		bool requiresButtonMode
+	) override;
 };
 
 }

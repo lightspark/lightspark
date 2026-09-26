@@ -385,8 +385,10 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 				png_set_gray_to_rgb(pngPtr);
 			*hasAlpha = false;
 			break;
+		case PNG_COLOR_TYPE_RGB:
+			*hasAlpha = false;
+			break;
 		default:
-			// libpng also returns ARGB32 for RGB images without alpha channel
 			*hasAlpha = true;
 			break;
 	}
@@ -399,9 +401,6 @@ uint8_t* ImageDecoder::decodePNGImpl(png_structp pngPtr, uint32_t* width, uint32
 	// Update the infoPtr to reflect the transformations set
 	// above. Read new values by calling png_get_* again.
 	png_read_update_info(pngPtr, infoPtr);
-
-	//bitdepth = png_get_bit_depth(pngPtr, infoPtr);
-	//color_type = png_get_color_type(pngPtr, infoPtr);
 
 	const unsigned int stride = png_get_rowbytes(pngPtr, infoPtr);
 

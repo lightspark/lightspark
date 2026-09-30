@@ -589,7 +589,13 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				bmc->renderevent.signal();
 			}
 		}
-		RELEASE_WRITE(renderToBitmapContainerNeeded,false);
+		if (!wait && ACQUIRE_READ(renderToBitmapContainerWait))
+		{
+			// a waiting rendertoBitmapJob was added during rendering
+			event.signal();
+		}
+		else
+			RELEASE_WRITE(renderToBitmapContainerNeeded,false);
 		if (wait)
 			mutexRenderToBitmapContainer.unlock();
 	}
@@ -1991,7 +1997,8 @@ void RenderThread::readPixelsToBimapContainer(_NR<BitmapContainer> bm)
 	RELEASE_WRITE(renderToBitmapContainerWait,true);
 	event.signal();
 	mutexRenderToBitmapContainer.unlock();
-	bm->renderevent.wait(); // wait until render thread has completed reading pixels to BitmapContainer
+	if (ACQUIRE_READ(renderToBitmapContainerWait))
+		bm->renderevent.wait(); // wait until render thread has completed reading pixels to BitmapContainer
 	RELEASE_WRITE(renderToBitmapContainerWait,false);
 	bm->setModifiedTexture(false);
 	bm->setModifiedData(false);
@@ -2036,7 +2043,8 @@ void RenderThread::renderBitmap(BitmapContainer* bm, Bitmap* tempBitmap, bool wa
 		RELEASE_WRITE(renderToBitmapContainerWait,true);
 		event.signal();
 		mutexRenderToBitmapContainer.unlock();
-		bm->renderevent.wait(); // wait until render thread has completed rendering to BitmapContainer
+		if (ACQUIRE_READ(renderToBitmapContainerWait))
+			bm->renderevent.wait(); // wait until render thread has completed rendering to BitmapContainer
 		RELEASE_WRITE(renderToBitmapContainerWait,false);
 	}
 	else

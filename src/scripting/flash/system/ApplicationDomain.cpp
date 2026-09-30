@@ -668,7 +668,9 @@ ASObject* ApplicationDomain::getVariableByString(const std::string& str, ASObjec
 	}
 	asAtom ret=asAtomHandler::invalidAtom;
 	getVariableAndTargetByMultiname(ret,name, target,getInstanceWorker());
-	return asAtomHandler::toObject(ret,getInstanceWorker());
+	if (asAtomHandler::isValid(ret))
+		return asAtomHandler::toObject(ret,getInstanceWorker());
+	return nullptr;
 }
 
 bool ApplicationDomain::findTargetByMultiname(const multiname& name, ASObject*& target, ASWorker* wrk)

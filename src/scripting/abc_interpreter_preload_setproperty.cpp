@@ -96,7 +96,7 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 							v = typestack[typestack.size()-2].obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
 						else
 							v = getTempVariableFromClass(it->objtype,otmp,name,state.worker);
-						if (!v && it->objtype->is<Class_inherit>())
+						if (!v && it->objtype->is<Class_inherit>() && it->objtype->isSealed)
 						{
 							bool isBorrowed=false;
 							v = it->objtype->findVariableByMultiname(*name,nullptr,nullptr,&isBorrowed,false,state.worker);
@@ -206,7 +206,16 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 				break;
 			}
 			case 1:
-				if (state.operandlist.size() > 2 && (state.operandlist[state.operandlist.size()-2].objtype == Class<Integer>::getRef(state.function->getSystemState()).getPtr()))
+				if (getSys()->getStringFromUniqueId(state.function->functionname) == "manageOverwrites"
+					&& code.tellg() >= 300 && code.tellg() <= 490)
+				{
+					int x=0;
+				}
+				if (state.operandlist.size() > 2
+					&& (state.operandlist[state.operandlist.size()-2].objtype == Class<Integer>::getRef(state.function->getSystemState()).getPtr()
+						//|| state.operandlist[state.operandlist.size()-2].objtype == Class<UInteger>::getRef(state.function->getSystemState()).getPtr()
+						)
+					)
 				{
 					uint32_t startopcode = ABC_OP_OPTIMZED_SETPROPERTY_INTEGER;
 					if (state.operandlist[state.operandlist.size()-3].objtype
@@ -247,7 +256,11 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 				}
 				else
 				{
-					if (typestack.size() > 2 && typestack[typestack.size()-2].obj == Class<Integer>::getRef(state.function->getSystemState()).getPtr())
+					if (typestack.size() > 2
+						&& (typestack[typestack.size()-2].obj == Class<Integer>::getRef(state.function->getSystemState()).getPtr()
+//							|| typestack[typestack.size()-2].obj == Class<UInteger>::getRef(state.function->getSystemState()).getPtr()
+							)
+						)
 					{
 						state.preloadedcode.push_back((uint32_t)ABC_OP_OPTIMZED_SETPROPERTY_INTEGER_SIMPLE);
 						state.preloadedcode.at(state.preloadedcode.size()-1).pcode.local3.flags = opcode; // use local3.flags as indicator for setproperty/initproperty

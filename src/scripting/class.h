@@ -86,6 +86,7 @@ public:
 	void bindToTag(DictionaryTag* t)
 	{
 		tag=t;
+		isReusable=false; //TODO implement re-use for tag binded classes
 	}
 	void bindToRoot()
 	{
@@ -95,10 +96,7 @@ public:
 	{
 		return tag || bindedToRoot;
 	}
-	bool needsBindingCheck() const
-	{
-		return !bindingchecked;
-	}
+	void checkBinding(ASWorker* worker);
 	//Closure stack
 	std::vector<scope_entry> class_scope;
 	void describeClassMetadata(pugi::xml_node &root) const override;

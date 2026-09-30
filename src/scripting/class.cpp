@@ -184,7 +184,8 @@ void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, a
 	//We override the classdef
 	if(realClass==nullptr)
 		realClass=this;
-	if (isReusable && !tag) //TODO implement reuse for tag binded classes
+	this->checkBinding(worker); // it seems possible that an instance of a class is constructed before the binding of the class is available, so we have to
+	if (isReusable)
 	{
 		if(realClass==nullptr)
 			realClass=this;
@@ -198,12 +199,6 @@ void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, a
 				handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed(), callSyntheticConstructor);
 			return;
 		}
-	}
-	if (this->needsBindingCheck()) // it seems possible that an instance of a class is constructed before the binding of the class is available, so we have to check for a binding here
-	{
-		worker->rootClip->bindClass(this->class_name,this);
-		if (worker->rootClip->hasFinishedLoading())
-			this->bindingchecked=true;
 	}
 	if(tag)
 	{
@@ -305,6 +300,19 @@ void Class_inherit::setupDeclaredTraits(ASObject *target, bool checkclone)
 #endif
 		target->traitsInitialized = true;
 	}
+}
+void Class_inherit::checkBinding(ASWorker *worker)
+{
+	if (bindingchecked)
+		return;
+	worker->rootClip->bindClass(this->class_name,this);
+	if (super && super->is<Class_inherit>())
+	{
+		super->as<Class_inherit>()->checkBinding(worker);
+		this->isReusable = super->isReusable;
+	}
+	if (worker->rootClip->hasFinishedLoading())
+		this->bindingchecked=true;
 }
 
 void Class_inherit::describeClassMetadata(pugi::xml_node &root) const

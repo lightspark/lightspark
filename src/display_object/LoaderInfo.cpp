@@ -18,6 +18,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 **************************************************************************/
 
+#include <streambuf>
+
 #include "display_object/DisplayObject.h"
 #include "display_object/Loader.h"
 #include "display_object/LoaderInfo.h"
@@ -54,9 +56,9 @@ frameRate(0)
 {
 }
 
-void LoaderInfo::parseData(std::streambuf& _streamBuf)
+void LoaderInfo::parseData(std::streambuf* _streamBuf)
 {
-	streamBuf = &_streamBuf;
+	streamBuf = _streamBuf;
 	std::istream s(streamBuf);
 
 	parseThread = new ParseThread
@@ -98,12 +100,162 @@ void LoaderInfo::afterHandleEvent(Event* ev)
 	}
 }
 
+template<typename... Args>
+static void sendBroadcastMsg
+(
+	SystemState* sys,
+	_NGC<AVM1Object> broadcaster,
+	DisplayObject* target,
+	const tiny_string& name,
+	Args&&... args
+)
+{
+	if (broadcaster.isNull())
+		return;
+
+	sys->queueActionBack(target, MethodAction
+	(
+		broadcaster,
+		"broadcastMessage",
+		makeSpan
+		({
+			AVM1Value(name),
+			target.toAVM1ValueOrUndef(),
+			AVM1Value(args)...
+		});
+	));
+}
+
+void LoaderInfo::onStart()
+{
+	loaderData.visit(makeVisitor
+	(
+		[&](const AVM1LoaderData& data)
+		{
+			auto bcast = data.getBroadcaster();
+			sendBroadcastMsg(sys, bcast, target, "onLoadStart");
+		},
+		[&](const ASLoaderData& data)
+		{
+			auto obj = data.getLoaderInfo();
+			auto wrk = obj->getInstanceWorker();
+			getVm(sys)->tryAddEvent
+			(
+				obj,
+				_MR(Class<Event>::getInstanceS(wrk, "open"))
+			));
+		}
+	));
+}
+
+void LoaderInfo::onProgress(size_t bytesLoaded, size_t bytesTotal)
+{
+	loaderData.visit(makeVisitor
+	(
+		[&](const AVM1LoaderData& data)
+		{
+			sendBroadcastMsg
+			(
+				sys,
+				data.getBroadcaster(),
+				content,
+				"onLoadProgress"
+				bytesLoaded,
+				bytesTotal
+			);
+		},
+		[&](const ASLoaderData& data)
+		{
+			auto obj = data.getLoaderInfo();
+			auto wrk = obj->getInstanceWorker();
+			getVm(sys)->tryAddEvent
+			(
+				obj,
+				_MR(Class<ProgressEvent>::getInstanceS
+				(
+					wrk,
+					bytesLoaded,
+					bytesTotal
+				))
+			);
+		}
+	));
+}
+
+void LoaderInfo::onComplete
+(
+	DisplayObject* obj,
+	uint16_t status,
+	bool redirected
+)
+{
+	loaderData.visit(makeVisitor
+	(
+		[&](const AVM1LoaderData& data)
+		{
+			sendBroadcastMsg
+			(
+				sys,
+				data.getBroadcaster(),
+				target,
+				"onLoadComplete",
+				status
+			);
+		},
+		[&](const ASLoaderData& data)
+		{
+			auto obj = data.getLoaderInfo();
+			auto wrk = obj->getInstanceWorker();
+			if (!url.empty())
+			{
+				getVm(sys)->tryAddEvent
+				(
+					obj,
+					_MR(Class<HTTPStatusEvent>::getInstanceS(wrk))
+				);
+			}
+			getVm(sys)->tryAddEvent
+			(
+				obj,
+				_MR(Class<Event>::getInstanceS(wrk, "complete"))
+			));
+		}
+	));
+}
+
+void LoaderInfo::onError
+(
+	const tiny_string& msg,
+	uint16_t _status,
+	bool redirected,
+	const tiny_string& url
+)
+{
+}
+
+bool LoaderInfo::clipLoaded()
+{
+
+	if (!loaderData.isAVM1())
+		return false;
+
+	if (loadStatus < LoadStatus::InitSent)
+	{
+		onProgress(bytesTotal, bytesTotal);
+		return true;
+	}
+
+	auto& data = static_cast<AVM1LoaderData&>(loaderData);
+	auto bcast = data.getBroadcaster();
+	sendBroadcastMsg(sys, bcast, content, "onLoadInit");
+	return true;
+}
+
 void LoaderInfo::setOpened(bool fromBytes)
 {
 	if (loadStatus >= LoadStatus::Opened)
 		return;
 
-	auto wrk = sys->worker;
 	loadStatus =
 	(
 		fromByteArray = fromBytes ?
@@ -111,29 +263,12 @@ void LoaderInfo::setOpened(bool fromBytes)
 		LoadStatus::Opened
 	);
 
-	// it seems an additional ProgressEvent is always added at the start of loading (see ruffle test avm2/large_preload_from_*)
-	auto _progressEvent =
-	(
-		loader == nullptr ||
-		loader->isAS3()
-	) ? Class<ProgressEvent>::getInstanceS
-	(
-		wrk,
-		0,
-		bytesTotal
-	) : nullptr;
-
 	if (!fromByteArray)
-	{
-		getVm(sys)->tryAddEvent
-		(
-			_MR(this),
-			_MR(Class<Event>::getInstanceS(wrk, "open")
-		));
-	}
+		onStart();
 
-	if (_progressEvent != nullptr)
-		getVm(sys)->tryAddEvent(_MR(this), _MR(p));
+	// it seems an additional ProgressEvent is always added at the start of loading (see ruffle test avm2/large_preload_from_*)
+	if (loader == nullptr || loader->isAS3())
+		onProgress(0, bytesTotal);
 }
 
 void LoaderInfo::resetState()
@@ -149,31 +284,10 @@ void LoaderInfo::resetState()
 void LoaderInfo::setComplete()
 {
 	Locker l(mutex);
-	bool isInit = loadStatus >= LoadStatus::InitSent;
 	if (loader != nullptr && !loader->isAS3())
-	{
-		auto& target = *loader->avm1Target;
-		auto args = isInit ?
-		{
-			AVM1Value("onLoadInit"),
-			target.toAVM1ValueOrUndef()
-		} :
-		{
-			AVM1Value("onLoadProgress"),
-			target.toAVM1ValueOrUndef(),
-			AVM1Value(bytesTotal),
-			AVM1Value(bytesTotal)
-		};
+		clipLoaded();
 
-		sys->queueActionBack(target, MethodAction
-		(
-			loader->broadcaster,
-			"broadcastMessage",
-			makeSpan(args)
-		), false);
-	}
-
-	if (isInit)
+	if (loadStatus >= LoadStatus::InitSent)
 		sendInit();
 }
 
@@ -196,42 +310,7 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 	if (vm == nullptr || loadStatus < LoadStatus::Opened)
 		return;
 
-	if (fromByteArray)
-	{
-		assert(bytesLoaded == bytesTotal);
-		vm->tryAddEvent(_MR(this), Class<ProgressEvent>::getInstanceS
-		(
-			sys->worker,
-			bytesLoaded,
-			bytesTotal
-		));
-	}
-	// make sure that the event queue is not flooded with progressEvents
-	else if (progressEvent == nullptr)
-	{
-		progressEvent = Class<ProgressEvent>::getInstanceS
-		(
-			sys->worker,
-			bytesLoaded,
-			bytesTotal
-		);
-
-		progressEvent->incRef();
-		vm->addEvent(_MR(this), _MR(progressEvent));
-	}
-	else
-	{
-		// event already exists, we only update the values
-		Locker l(progressEvent->accessmutex);
-		progressEvent->bytesLoaded = bytesLoaded;
-		progressEvent->bytesTotal = bytesTotal;
-		// if event is already in event queue, we don't need to add it again
-		if (!ACQUIRE_READ(progressEvent->queued))
-		{
-			progressEvent->incRef();
-			vm->addEvent(_MR(this), _MR(progressEvent));
-		}
-	}
+	onProgress(bytesLoaded, bytesTotal);
 	checkSendComplete();
 }
 
@@ -268,21 +347,8 @@ void LoaderInfo::checkSendComplete()
 	)
 		return;
 
-	if (!url.empty())
-	{
-		getVm(sys)->addEvent
-		(
-			_MR(this),
-			_MR(Class<HTTPStatusEvent>::getInstanceS(sys->worker))
-		);
-	}
-
 	//The clip is also complete now
-	getVm(sys)->addEvent(_MR(this), _MR(Class<Event>::getInstanceS
-	(
-		sys->worker,
-		"complete"
-	)));
+	onComplete(content, 0, false);
 	loadStatus = LoadStatus::Complete;
 }
 

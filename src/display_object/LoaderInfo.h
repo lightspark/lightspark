@@ -24,7 +24,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <streambuf>
+#include <iosfwd>
 #include <unordered_set>
 #include <vector>
 
@@ -51,6 +51,75 @@ class SecurityDomain;
 class SystemState;
 class UncaughtErrorEvents;
 
+class LoaderData
+{
+public:
+	enum class Type
+	{
+		AVM1,
+		AVM2,
+	};
+private:
+	Type type;
+protected:
+	LoaderData(const Type& _type) : type(_type) {}
+public:
+	LoaderData() = delete;
+	virtual ~LoaderData() {}
+	const Type& getType() const { return type; }
+	bool isAVM1() const { return type == Type::AVM1; }
+	bool isAVM2() const { return type == Type::AVM2; }
+	template<typename V>
+	auto visit(V&& visitor) const;
+};
+
+class AVM1LoaderData : public LoaderData
+{
+private:
+	_NGC<AVM1Object> broadcaster;
+public:
+	AVM1LoaderData(_NGC<AVM1Object> _broadcaster) :
+	LoaderData(Type::AVM1),
+	broadcaster(_broadcaster) {}
+
+	_NGC<AVM1Object> getBroadcaster() const { return broadcaster; }
+};
+
+class ASLoaderData : public LoaderData
+{
+private:
+	_R<ASLoaderInfo> loaderInfo;
+	_NR<ASObject> context;
+	_R<ApplicationDomain> defaultDomain;
+public:
+	ASLoaderData
+	(
+		_R<ASLoaderInfo> _loaderInfo,
+		_NR<ASObject> _context,
+		_R<ApplicationDomain> domain
+	) :
+	LoaderData(Type::AVM2),
+	loaderInfo(_loaderInfo),
+	context(_context),
+	defaultDomain(domain) {}
+
+	_R<ASLoaderInfo> getLoaderInfo() const { return loaderInfo; }
+	_NR<ASObject> getContext() const { return context; }
+	_R<ApplicationDomain> getDefaultDomain() const { return defaultDomain; }
+};
+
+template<typename V>
+auto LoaderData::visit(V&& visitor) const
+{
+	using AVM1Loader = AVM1LoaderData;
+	using ASLoader = ASLoaderData;
+	switch (getType())
+	{
+		case Type::AVM1: return visitor(static_cast<const AVM1Loader&>(*this));
+		case Type::AVM2: return visitor(static_cast<const ASLoader&>(*this));
+	}
+}
+
 class LoaderInfo : public ILoadable
 {
 public
@@ -65,10 +134,10 @@ public
 		Complete,
 	};
 private:
-
 	SystemState* sys;
 	_NR<ApplicationDomain> appDomain;
 	_NR<SecurityDomain> secDomain;
+	LoaderData& loaderData;
 	ParseThread* parseThread;
 	std::streambuf* streamBuf;
 	size_t bytesLoaded;
@@ -103,12 +172,36 @@ private:
 	void sendInit();
 	void checkSendComplete();
 public:
-	LoaderInfo(SystemState* _sys, Loader* _loader = nullptr);
+	LoaderInfo
+	(
+		SystemState* _sys,
+		LoaderData& _loaderData,
+		Loader* _loader = nullptr
+	);
+
 	~LoaderInfo();
-	void parseData(std::streambuf& _streamBuf);
+	void parseData(std::streambuf* _streamBuf);
 	void beforeHandleEvent(Event* ev) override;
 	void afterHandleEvent(Event* ev) override;
 	void setOpened(bool fromBytes);
+	void onStart();
+	void onProgress(size_t bytesLoaded, size_t bytesTotal);
+	void onComplete
+	(
+		DisplayObject* obj,
+		uint16_t _status,
+		bool redirected
+	);
+
+	void onError
+	(
+		const tiny_string& msg,
+		uint16_t _status,
+		bool redirected,
+		const tiny_string& url
+	);
+
+	bool clipLoaded();
 	void setStarted() { loadStatus = LoadStatus::Started; }
 	const LoadStatus& getLoadStatus() const { return loadStatus; }
 	DisplayObject* getParsedObject() const { return content; }

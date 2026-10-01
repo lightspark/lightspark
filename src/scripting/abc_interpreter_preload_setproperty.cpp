@@ -142,8 +142,9 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 								}
 							}
 							bool getslotisvalue = state.preloadedcode.size() && state.preloadedcode.at(state.preloadedcode.size()-1).operator_start==ABC_OP_OPTIMZED_GETSLOT;
+							bool waslastopswapped = state.lastoperandsSwapped;
 							setupInstructionTwoArgumentsNoResult(state,operator_start,opcode,code);
-							if (!state.lastoperandsSwapped //TODO implement this optimization for setproperty following swap
+							if (!waslastopswapped //TODO implement this optimization for setproperty following swap
 								&& getslotisvalue
 								&& state.preloadedcode.size() > 1
 								&& v->slotid < ABC_OP_BITMASK_USED

@@ -662,7 +662,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			case 0x93://decrement
 			case 0xc0://increment_i
 			case 0xc1://decrement_i
-				if (argsneeded)
+				if (argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
 				{
 					b = code.peekbyteFromPosition(pos);
 					pos++;
@@ -755,11 +755,12 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			{
 				uint32_t argcount = code.peeku30FromPosition(pos);
 				if (state.jumptargets.find(pos) == state.jumptargets.end()
-						&& argsneeded && argcount==0)
+						&& argcount==0)
 				{
 					pos = code.skipu30FromPosition(pos);
 					b = code.peekbyteFromPosition(pos);
 					pos++;
+					argsneeded++;
 				}
 				else
 					keepchecking=false;

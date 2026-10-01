@@ -26,13 +26,88 @@
 #include "backends/netutils.h"
 #include "display_object/DisplayObjectContainer.h"
 #include "display_object/InteractiveObject.h"
+#include "gc/ptr.h"
+#include "smartrefs.h"
 #include "utils/span.h"
 
 namespace lightspark
 {
 
+class AVM1MovieClipLoader;
+class ApplicationDomain;
+class LoaderContext;
+class LoaderInfo;
 class SWFMovie;
 class URLRequest;
+
+class LoaderData
+{
+public:
+	enum class Type
+	{
+		AVM1,
+		AVM2,
+	};
+private:
+	Type type;
+protected:
+	LoaderData(const Type& _type) : type(_type) {}
+public:
+	LoaderData() = delete;
+	virtual ~LoaderData() {}
+	const Type& getType() const { return type; }
+	bool isAVM1() const { return type == Type::AVM1; }
+	bool isAVM2() const { return type == Type::AVM2; }
+	template<typename V>
+	auto visit(V&& visitor) const;
+};
+
+class AVM1LoaderData : public LoaderData
+{
+private:
+	_NGC<AVM1MovieClipLoader> broadcaster;
+public:
+	AVM1LoaderData(_NGC<AVM1Object> _broadcaster) :
+	LoaderData(Type::AVM1),
+	broadcaster(_broadcaster) {}
+
+	_NGC<AVM1MovieClipLoader> getBroadcaster() const { return broadcaster; }
+};
+
+class ASLoaderData : public LoaderData
+{
+private:
+	_R<LoaderInfo> loaderInfo;
+	_NR<LoaderContext> context;
+	_R<ApplicationDomain> defaultDomain;
+public:
+	ASLoaderData
+	(
+		_R<LoaderInfo> _loaderInfo,
+		_NR<LoaderContext> _context,
+		_R<ApplicationDomain> domain
+	) :
+	LoaderData(Type::AVM2),
+	loaderInfo(_loaderInfo),
+	context(_context),
+	defaultDomain(domain) {}
+
+	_R<LoaderInfo> getLoaderInfo() const { return loaderInfo; }
+	_NR<LoaderContext> getContext() const { return context; }
+	_R<ApplicationDomain> getDefaultDomain() const { return defaultDomain; }
+};
+
+template<typename V>
+auto LoaderData::visit(V&& visitor) const
+{
+	using AVM1Loader = AVM1LoaderData;
+	using ASLoader = ASLoaderData;
+	switch (getType())
+	{
+		case Type::AVM1: return visitor(static_cast<const AVM1Loader&>(*this));
+		case Type::AVM2: return visitor(static_cast<const ASLoader&>(*this));
+	}
+}
 
 class LoaderThread : public DownloaderThreadBase
 {
@@ -40,13 +115,25 @@ private:
 	enum SOURCE { URL, BYTES };
 	Span<uint8_t> bytes;
 	Loader& loader;
-	LoaderInfo* loaderInfo;
+	LoaderData& data;
 	SOURCE source;
 public:
 	void jobFence() override;
 	void execute() override;
-	LoaderThread(const URLRequest& request, Loader& _loader);
-	LoaderThread(Span<uint8_t> _bytes, Loader& _loader);
+	LoaderThread
+	(
+		const URLRequest& request,
+		Loader& _loader,
+		LoaderData& _data
+	);
+
+	LoaderThread
+	(
+		Span<uint8_t> _bytes,
+		Loader& _loader,
+		LoaderData& _data
+	);
+
 	const Loader& getLoader() const { return loader; }
 };
 
@@ -55,57 +142,77 @@ public InteractiveObject,
 public DisplayObjectContainer,
 public IDownloaderThreadListener
 {
+public
+	enum class LoadStatus
+	{
+		Start,
+		Started,
+		Opened,
+		Progressing,
+		DownloadDone,
+		InitSent,
+		Complete,
+	};
 private:
 	SWFMovie& movie;
-	mutable Mutex spinlock;
+	mutable Mutex mutex;
 	DisplayObject* content;
+	LoadStatus loadStatus;
+	ParseThread* parseThread;
+	std::streambuf* streamBuf;
+	URLInfo url;
+	bool loaded;
+	bool allowCodeImport;
 	// There can be multiple jobs, one active and aborted ones
 	// that have not yet terminated
 	std::list<IThreadJob*> jobs;
-	URLInfo url;
-	LoaderInfo* contentLoaderInfo;
-	bool loaded;
-	bool allowCodeImport;
-	int avm1level;
-protected:
-	DisplayObject* avm1Target;
-	ASObject* avm1container;
-public:
-	Loader::Loader(SystemState* sys, SWFMovie& _movie) : InteractiveObject
-	(
-		Type::Loader,
-		sys
-	),
-	DisplayObjectContainer(_movie),
-	content(nullptr),
-	loaded(false),
-	allowCodeImport(true)
-	avm1level(-1),
-	avm1Target(nullptr),
-	avm1container(nullptr)
-	{
-	}
 
+	/*
+	 * sendInit should be called with the spinlock held
+	 */
+	void sendInit();
+	void checkSendComplete();
+public:
 	Loader(SystemState* sys, SWFMovie& _movie);
+	~Loader();
+	void parseData(LoaderData& loaderData, std::streambuf* _streamBuf);
+	void setOpened(LoaderData& loaderData, bool fromBytes);
+	void setComplete(LoaderData& loaderData);
+	void onStart(LoaderData& loaderData);
+	void onProgress
+	(
+		LoaderData& loaderData,
+		size_t bytesLoaded,
+		size_t bytesTotal
+	);
+
+	void onComplete
+	(
+		LoaderData& loaderData,
+		DisplayObject* obj,
+		uint16_t _status,
+		bool redirected
+	);
+
+	void onError
+	(
+		LoaderData& loaderData,
+		const tiny_string& msg = "",
+		const tiny_string& errorCode = "LoadNeverCompleted",
+		uint16_t _status = 0,
+		bool redirected = false
+	);
+
+	void onSecError(LoaderData& loaderData, const tiny_string& msg = "");
+	bool clipLoaded(LoaderData& loaderData);
 	void threadFinished(IThreadJob* job) override;
 	void close();
-	void load(const URLRequest& req, LoaderContext* ctx);
+	void load(const URLRequest& req, LoaderData& data);
 	void loadBytes(Span<uint8_t> bytes, LoaderContext* ctx);
 	void setContent(DisplayObject& obj);
 	DisplayObject* getContent() const { return content; }
-	LoaderInfo* getContentLoaderInfo();
-	void checkContentLoaderInfo();
 	bool allowLoadingSWF() { return allowCodeImport; }
-	void AVM1setup(int level, ASObject* container);
-	int AVM1getLevel() const { return avm1level; }
-	void loadIntern
-	(
-		const URLRequest& req,
-		LoaderContext* ctx,
-		DisplayObject* avm1Target
-	);
-
-	void unload();
+	void unload(LoaderData& loaderData);
 	InteractiveObject* AVM1getMouseTarget
 	(
 		const Vector2Twips& globalPoint,

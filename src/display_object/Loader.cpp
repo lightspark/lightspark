@@ -30,10 +30,7 @@ LoaderThread::LoaderThread
 (
 	const URLRequest& request,
 	Loader& _loader
-) : DownloaderThreadBase(&request, _loader),
-loader(_loader),
-loaderInfo(_loader.getContentLoaderInfo()),
-source(URL)
+) : DownloaderThreadBase(&request, _loader), loader(_loader), source(URL)
 {
 }
 
@@ -44,7 +41,6 @@ LoaderThread::LoaderThread
 ) : DownloaderThreadBase(nullptr, _loader),
 bytes(_bytes),
 loader(_loader),
-loaderInfo(_loader.getContentLoaderInfo()),
 source(BYTES)
 {
 }
@@ -155,171 +151,421 @@ void LoaderThread::jobFence()
 	DownloaderThreadBase::jobFence();
 }
 
+template<typename... Args>
+static void sendBroadcastMsg
+(
+	SystemState* sys,
+	_NGC<AVM1Object> broadcaster,
+	DisplayObject* target,
+	const tiny_string& name,
+	Args&&... args
+)
+{
+	if (broadcaster.isNull())
+		return;
+
+	sys->queueActionBack(target, MethodAction
+	(
+		broadcaster,
+		"broadcastMessage",
+		makeSpan
+		({
+			AVM1Value(name),
+			target.toAVM1ValueOrUndef(),
+			AVM1Value(args)...
+		});
+	));
+}
+
+template<typename T = Event, typename... Args>
+static void sendEvent(SystemState* sys, _R<ASObject> obj, Args&&... args)
+{
+	auto wrk = obj->getInstanceWorker();
+	auto vm = getVm(sys);
+	vm->tryAddEvent(obj, _MR(Class<T>::getInstanceS(wrk, args...)));
+}
+
+void Loader::parseData(LoaderData& data, std::streambuf* _streamBuf)
+{
+	streamBuf = _streamBuf;
+	std::istream s(streamBuf);
+
+	parseThread = new ParseThread(s, *this, data, url);
+	parseThread->execute();
+}
+
+void Loader::setOpened(LoaderData& loaderData, bool fromBytes)
+{
+	if (loadStatus >= LoadStatus::Opened)
+		return;
+
+	loadStatus =
+	(
+		fromBytes ?
+		LoadStatus::DownloadDone :
+		LoadStatus::Opened
+	);
+
+	if (!fromBytes)
+		onStart(loaderData);
+
+	// it seems an additional ProgressEvent is always added at the start of loading (see ruffle test avm2/large_preload_from_*)
+	if (isAS3() || loaderData.isAVM2())
+		onProgress(loaderData, 0, bytesTotal);
+}
+
+void Loader::setComplete(LoaderData& loaderData)
+{
+	Locker l(mutex);
+	if (!isAS3() || loaderData.isAVM1())
+		clipLoaded(loaderData);
+
+	if (loadStatus >= LoadStatus::InitSent)
+		sendInit(loaderData);
+}
+
+void Loader::onStart(LoaderData& loaderData)
+{
+	loaderData.visit(makeVisitor
+	(
+		[&](const AVM1LoaderData& data)
+		{
+			auto bcast = data.getBroadcaster();
+			sendBroadcastMsg(sys, bcast, content, "onLoadStart");
+		},
+		[&](const ASLoaderData& data)
+		{
+			sendEvent(sys, data.getLoaderInfo(), "open");
+		}
+	));
+}
+
+void Loader::onProgress
+(
+	LoaderData& loaderData,
+	size_t bytesLoaded,
+	size_t bytesTotal
+)
+{
+	loaderData.visit(makeVisitor
+	(
+		[&](const AVM1LoaderData& data)
+		{
+			sendBroadcastMsg
+			(
+				sys,
+				data.getBroadcaster(),
+				content,
+				"onLoadProgress"
+				bytesLoaded,
+				bytesTotal
+			);
+		},
+		[&](const ASLoaderData& data)
+		{
+			sendEvent<ProgressEvent>
+			(
+				sys,
+				data.getLoaderInfo(),
+				bytesLoaded,
+				bytesTotal
+			);
+		}
+	));
+}
+
+void Loader::onComplete
+(
+	LoaderData& loaderData,
+	DisplayObject* obj,
+	uint16_t status,
+	bool redirected
+)
+{
+	loaderData.visit(makeVisitor
+	(
+		[&](const AVM1LoaderData& data)
+		{
+			sendBroadcastMsg
+			(
+				sys,
+				data.getBroadcaster(),
+				target,
+				"onLoadComplete",
+				status
+			);
+		},
+		[&](const ASLoaderData& data)
+		{
+			auto obj = data.getLoaderInfo();
+			if (!url.empty())
+				sendEvent<HTTPStatusEvent>(sys, obj);
+			sendEvent(sys, obj, "complete");
+		}
+	));
+}
+
+void Loader::onError
+(
+	LoaderData& loaderData,
+	const tiny_string& msg,
+	const tiny_string& errorCode,
+	uint16_t _status,
+	bool redirected
+)
+{
+	loaderData.visit(makeVisitor
+	(
+		[&](const AVM1LoaderData& data)
+		{
+			sendBroadcastMsg
+			(
+				sys,
+				data.getBroadcaster(),
+				content,
+				"onLoadError",
+				errorCode
+			);
+		},
+		[&](const ASLoaderData& data)
+		{
+			sendEvent<IOErrorEvent>
+			(
+				sys,
+				data.getLoaderInfo(),
+				"ioError",
+				msg
+			);
+		}
+	));
+}
+
+void Loader::onSecError(LoaderData& loaderData, const tiny_string& msg)
+{
+	if (loaderData.isAVM1())
+	{
+		onError(loaderData);
+		return;
+	}
+
+	auto data = static_cast<ASLoaderData&>(loaderData);
+	sendEvent<SecurityErrorEvent>(sys, data.getLoaderInfo(), msg);
+}
+
+bool Loader::clipLoaded(LoaderData& loaderData)
+{
+
+	if (!loaderData.isAVM1())
+		return false;
+
+	if (loadStatus < LoadStatus::InitSent)
+	{
+		onProgress(bytesTotal, bytesTotal);
+		return true;
+	}
+
+	auto& data = static_cast<AVM1LoaderData&>(loaderData);
+	auto bcast = data.getBroadcaster();
+	sendBroadcastMsg(sys, bcast, content, "onLoadInit");
+	return true;
+}
+
 void Loader::close()
 {
-	Locker l(spinlock);
+	Locker l(mutex);
 	for (auto job : jobs)
 		job->threadAbort();
 }
 
-void Loader::load(const URLRequest& req, LoaderContext* ctx)
+bool Loader::checkSecurityDomain(LoaderData& loaderData)
 {
-	unload();
-	loadIntern(req, ctx);
-}
+	if (!_data.isAVM2())
+		return false;
 
-void Loader::loadIntern
-(
-	const URLRequest& req,
-	LoaderContext* ctx,
-	DisplayObject* _avm1Target
-)
-{
-	if (_avm1Target != nullptr)
-		avm1Target = _avm1Target;
-
-	checkContentLoaderInfo();
-	url = req.getRequestURL();
-	contentLoaderInfo->setURL(url.getParsedURL());
-	contentLoaderInfo->setAVM1Target(avm1Rarget);
-	contentLoaderInfo->resetState();
-	//Check if a security domain has been manually set
 	SecurityDomain* secDomain = nullptr;
-	auto curSecDomain = getAVM2Root()->securityDomain.getPtr();
-	if (ctx != nullptr)
-	{
-		auto ctxDomain = ctx->securityDomain;
-		//The passed domain must be the current one. See Loader::load specs.
-		if (ctxDomain != nullptr && ctxDomain != curSecDomain)
+	SecurityDomain* curSecDomain = nullptr;
+	bool ret = loaderData.visit(makeVisitor
+	(
+		[&](const ASLoaderData& data)
 		{
-			createError<SecurityError>
-			(
-				this->getInstanceWorker(),
-				0,
-				"SecurityError: "
-				"securityDomain must be current one"
-			);
-			return;
-		}
-		else if (ctxDomain != nullptr)
-			secDomain = curSecDomain;
+			if (ctx.isNull())
+				return true;
+			auto ctx = data.getContext();
+			auto loaderInfo = data.getLoaderInfo();
+			auto wrk = loaderInfo->getInstanceWorker();
+			//Check if a security domain has been manually set
+			curSecDomain = getAVM2Root()->securityDomain.getPtr();
+			auto ctxDomain = ctx->securityDomain;
+			//The passed domain must be the current one. See Loader::load specs.
+			if (ctxDomain != nullptr && ctxDomain != curSecDomain)
+			{
+				createError<SecurityError>
+				(
+					wrk,
+					0,
+					"SecurityError: "
+					"securityDomain must be current one"
+				);
+				return false;
+			}
+			else if (ctxDomain != nullptr)
+				secDomain = _MR(curSecDomain);
 
-		bool sameDomain = secDomain == curSecDomain;
-		allowCodeImport = !sameDomain || ctx->getAllowCodeImport();
+			bool sameDomain = secDomain == curSecDomain;
+			allowCodeImport = !sameDomain || ctx->getAllowCodeImport();
 
-		if (!ctx->parameters.isNull())
-			contentLoaderInfo->setParameters(ctx->parameters);
-	}
+			if (!ctx->parameters.isNull())
+				loaderInfo->setParameters(ctx->parameters);
+			return true;
+		},
+		[](const auto&) { return true; }
+	));
+
+	if (!ret)
+		return false;
+
 	//Default is to create a child ApplicationDomain if the file is in the same security context
 	//otherwise create a child of the system domain. If the security domain is different
 	//the passed applicationDomain is ignored
-	auto appDomain =
+	if (!loaderData.isAVM2())
+		return true;
+
+	auto& data = static_cast<ASLoaderData&>(loaderData);
+	auto loaderInfo = data.getLoaderInfo();
+	auto wrk = loaderInfo->getInstanceWorker();
+	auto defDomain = data.getDefaultDomain();
+	auto ctx = data.getContext();
+	auto& domain =
 	(
-		loadedFrom != nullptr ?
-		loadedFrom :
-		getAVM2Root()->applicationDomain.getPtr()
-	);
+		!ctx.isNull() &&
+		!ctx->applicationDomain.isNull()
+	) ? *ctx->applicationDomain : *data.getDefaultDomain();
 
 	// empty origin is possible if swf is loaded by loadBytes()
-	auto origin = appDomain->getOrigin();
+	auto origin = domain.getOrigin();
 	if
 	(
-		origin.isEmpty() ||
-		origin.getHostname() == url.getHostname() ||
-		secDomain != nullptr
+		!origin.isEmpty() &&
+		origin.getHostname() != url.getHostname() &&
+		secDomain.isNull()
 	)
 	{
-		//Same domain
-		auto parentDomain =
-		(
-			loadedFrom != nullptr ?
-			loadedFrom :
-			nullptr
-		);
-		if
-		(
-			parentDomain == nullptr &&
-			getInstanceWorker()->currentCallContext != nullptr
-		)
-		{
-			parentDomain = ABCVm::getCurrentApplicationDomain
-			(
-				getInstanceWorker()->currentCallContext
-			);
-		}
-
-		if (parentDomain != nullptr)
-			parentDomain->incRef();
-		//Support for LoaderContext
-		if (ctx == nullptr || ctx->applicationDomain.isNull())
-		{
-			contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS
-			(
-				getInstanceWorker(),
-				_MNR(parentDomain)
-			));
-		}
-		else
-			contentLoaderInfo->applicationDomain = ctx->applicationDomain;
-		curSecDomain->incRef();
-		contentLoaderInfo->securityDomain = _MNR(curSecDomain);
-	}
-	else
-	{
 		//Different domain
-		auto parentDomain = _MR(getSys()->systemDomain);
-		contentLoaderInfo->applicationDomain = _MR(Class<ApplicationDomain>::getInstanceS
+		loaderInfo->appDomain = _MR(Class<ApplicationDomain>::getInstanceS
 		(
-			getInstanceWorker(),
-			parentDomain
+			wrk,
+			_MR(sys->systemDomain)
 		));
-		contentLoaderInfo->securityDomain = _MR(Class<SecurityDomain>::getInstanceS
-		(
-			getInstanceWorker()
-		));
+		secDomain = _MR(Class<SecurityDomain>::getInstanceS(wrk));
+		return true;
 	}
 
-	if(!this->url.isValid())
-	{
-		//Notify an error during loading
-		getSys()->currentVm->addEvent
-		(
-			_MR(this),
-			_MR(Class<IOErrorEvent>::getInstanceS
-			(
-				getInstanceWorker()
-			))
-		);
-		return;
-	}
-
-	SecurityManager::checkURLStaticAndThrow
+	//Same domain
+	auto callCtx = wrk->currentCallContext;
+	auto parentDomain =
 	(
-		url,
-		~SecurityManager::LOCAL_WITH_FILE,
-		(
-			SecurityManager::LOCAL_WITH_FILE |
-			SecurityManager::LOCAL_TRUSTED
-		),
-		true
+		callCtx != nullptr ?
+		ABCVm::getCurrentApplicationDomain(callCtx) :
+		defDomain.getPtr()
 	);
 
-	auto callCtx = getInstanceWorker()->currentCallContext;
-	if (callCtx != nullptr && callCtx->exceptionthrown != nullptr)
+	if (parentDomain != nullptr)
+		parentDomain->incRef();
+	//Support for LoaderContext
+	loaderInfo->appDomain =
+	(
+		ctx.isNull() ||
+		ctx->applicationDomain.isNull()
+	) ? _MR(Class<ApplicationDomain>::getInstanceS
+	(
+		wrk,
+		_MNR(parentDomain)
+	)) : ctx->applicationDomain;
+
+	curSecDomain->incRef();
+	loaderInfo->securityDomain = _MNR(curSecDomain);
+	return true;
+}
+
+void Loader::load(const URLRequest& req, LoaderData& data)
+{
+
+	url = req.getRequestURL();
+	if (!checkSecurityDomain(data))
 		return;
 
-	if (ctx != nullptr && ctx->getCheckPolicyFile())
+	if (!url.isValid())
+	{
+		//Notify an error during loading
+		onError(data, "", "URLNotFound");
+		return;
+	}
+
+	constexpr auto remoteAllowed = ~SecurityManager::LOCAL_WITH_FILE;
+	constexpr auto localAllowed =
+	(
+		SecurityManager::LOCAL_WITH_FILE |
+		SecurityManager::LOCAL_TRUSTED
+	);
+
+	auto checkPolicyFile = loaderData.visit(makeVisitor
+	(
+		[&](const AVM1LoaderData& data) -> Optional<bool>
+		{
+			auto secMgr = sys->securityManager;
+			auto evalRet = secMgr->evaluateURLStatic
+			(
+				url,
+				remoteAllowed,
+				localAllowed
+				true
+			);
+
+			auto loader = data.getBroadcaster();
+			if (evalRet != ALLOWED)
+			{
+				onError(sys, loader);
+				return {};
+			}
+
+			return
+			(
+				!loader.isNull() &&
+				loader->getCheckPolicyFile()
+			);
+		},
+		[&](const ASLoaderData& data) -> Optional<bool>
+		{
+			SecurityManager::checkURLStaticAndThrow
+			(
+				url,
+				remoteAllowed,
+				localAllowed
+				true
+			);
+
+			auto ctx = data.getContext();
+			auto obj = data.getLoaderInfo();
+			auto wrk = obj->getInstanceWorker();
+			auto callCtx = wrk->currentCallContext;
+			if (callCtx != nullptr && callCtx->exceptionthrown != nullptr)
+				return {};
+			return !ctx.isNull() && ctx->getCheckPolicyFile();
+		}
+	));
+
+	if (!checkPolicyFile.hasValue())
+		return;
+	else if (*checkPolicyFile)
 	{
 		auto secMgr = getSys()->securityManager;
 		//TODO: this should be async as it could block if invoked from ExternalInterface
 		auto evalRet = secMgr->evaluatePoliciesURL(url, true);
-		if (evalRet == SecurityManager::NA_CROSSDOMAIN_POLICY)
+		if (evalRet != SecurityManager::ALLOWED)
 		{
-			// should this dispatch SecurityErrorEvent instead of throwing?
-			createError<SecurityError>
+			onSecError
 			(
-				getInstanceWorker(),
-				0,
+				loaderData,
 				"SecurityError: "
 				"connection to domain not allowed by "
 				"securityManager"
@@ -327,8 +573,9 @@ void Loader::loadIntern
 			return;
 		}
 	}
-	contentLoaderInfo->setStarted();
-	auto thread = new LoaderThread(req, *this);
+
+	loadStatus = LoadStatus::Started;
+	auto thread = new LoaderThread(req, *this, data);
 	auto unaccountedMem = getSys()->unaccountedMemory;
 	getVm(getSys())->addEvent(NullRef, _MR
 	(
@@ -337,16 +584,18 @@ void Loader::loadIntern
 	jobs.push_back(thread);
 }
 
-void Loader::loadBytes(Span<uint8_t> bytes, LoaderContext* ctx)
+void Loader::loadBytes(Span<uint8_t> bytes, ASLoaderData& data)
 {
-	unload();
+	unload(data);
 
-	auto parentDomain = ABCVm::getCurrentApplicationDomain(wrk->currentCallContext);
-	if (parentDomain != nullptr)
-		parentDomain->incRef();
-	contentLoaderInfo->applicationDomain =
+	auto ctx = data.getContext();
+	auto loaderInfo = data.getLoaderInfo();
+	auto wrk = loaderInfo->getInstanceWorker();
+	auto parentDomain = data.getDefaultDomain();
+	parentDomain->incRef();
+	loaderInfo->appDomain =
 	(
-		ctx != nullptr &&
+		!ctx.isNull() &&
 		!ctx->applicationDomain.isNull()
 	) ? ctx->applicationDomain : _MR(Class<ApplicationDomain>::getInstanceS
 	(
@@ -358,12 +607,11 @@ void Loader::loadBytes(Span<uint8_t> bytes, LoaderContext* ctx)
 	auto curSecDomain = ABCVm::getCurrentSecurityDomain(wrk->currentCallContext);
 	if (curSecDomain != nullptr)
 		curSecDomain->incRef();
-	contentLoaderInfo->securityDomain = _MNR(curSecDomain);
+	loaderInfo->secDomain = _MNR(curSecDomain);
 
 	allowCodeImport = ctx == nullptr || ctx->getAllowCodeImport();
-
 	if (ctx != nullptr && !ctx->parameters.isNull())
-		contentLoaderInfo->setParameters(ctx->parameters);
+		loaderInfo->setParameters(ctx->parameters);
 
 	if (bytes.empty())
 	{
@@ -378,7 +626,7 @@ void Loader::loadBytes(Span<uint8_t> bytes, LoaderContext* ctx)
 	// better work on a copy of the source data as it may be modified by actionscript before loading is completed
 	std::vector<uint8_t> data(bytes.begin, bytes.end());
 
-	auto thread = new LoaderThread(makeSpan(data), *this);
+	auto thread = new LoaderThread(makeSpan(data), *this, data);
 	if (isVmThread())
 	{
 		thread->execute();
@@ -387,7 +635,7 @@ void Loader::loadBytes(Span<uint8_t> bytes, LoaderContext* ctx)
 	}
 
 	auto vm = getVm(getSys());
-	Locker l(spinlock);
+	Locker l(mutex);
 	jobs.push_back(thread);
 	vm->addEvent(NullRef, _MR(new
 	(
@@ -395,29 +643,20 @@ void Loader::loadBytes(Span<uint8_t> bytes, LoaderContext* ctx)
 	) StartJobEvent(thread)));
 }
 
-void Loader::unload()
+void Loader::unload(LoaderData& loaderData)
 {
 	close();
 
 	auto contentCopy = content;
 	content = nullptr;
 
-	if (loaded)
+	if (loaded && loaderData.isAVM2())
 	{
-		auto li = getContentLoaderInfo();
-		li->incRef();
-
-		getVm(getSys())->addEvent
-		(
-			_MR(li),
-			_MR(Class<Event>::getInstanceS
-			(
-				getInstanceWorker(),
-				"unload"
-			))
-		);
-		loaded = false;
+		auto data = static_cast<ASLoaderData&>(loaderData);
+		sendEvent(sys, data.getLoaderInfo(), "unload");
 	}
+
+	loaded = false;
 
 	// removeChild may execute AS code, release the lock before
 	// calling
@@ -521,24 +760,35 @@ AVM2MouseTarget Loader::AVM2getMouseTarget
 	return MouseTargetType::PropagateToParent;
 }
 
-Loader::Loader(SystemState* sys, SWFMovie& _movie) : InteractiveObject
+Loader::Loader
 (
-	Type::Loader,
-	sys
-),
+	SystemState* sys,
+	LoaderData& _loaderData,
+	SWFMovie& _movie
+) :
+InteractiveObject(Type::Loader, sys),
 DisplayObjectContainer(_movie),
 content(nullptr),
+loadStatus(LoadStatus::Start),
+loaderInfo(_loaderInfo),
+parseThread(nullptr),
+streamBuf(nullptr),
 loaded(false),
 allowCodeImport(true)
-avm1level(-1),
-avm1Target(nullptr),
-avm1container(nullptr)
 {
+}
+
+Loader::~Loader()
+{
+	if (parseThread != nullptr)
+		delete parseThread;
+	if (streamBuf != nullptr)
+		delete streamBuf;
 }
 
 void Loader::threadFinished(IThreadJob* finishedJob)
 {
-	Locker l(spinlock);
+	Locker l(mutex);
 	jobs.remove(finishedJob);
 	delete finishedJob;
 }
@@ -561,7 +811,7 @@ void Loader::setContent(DisplayObject& obj)
 
 	content = [&]
 	{
-		Locker l(spinlock);
+		Locker l(mutex);
 		bool addAVM1Movie =
 		(
 			isAS3() &&
@@ -633,32 +883,4 @@ void Loader::setContent(DisplayObject& obj)
 end:
 	if (obj.loaderInfo != nullptr)
 		obj.loaderInfo->setComplete();
-}
-
-LoaderInfo* Loader::getContentLoaderInfo()
-{
-	return contentLoaderInfo;
-}
-
-void Loader::checkContentLoaderInfo()
-{
-	if (contentLoaderInfo != nullptr)
-		return;
-	contentLoaderInfo = Class<LoaderInfo>::getInstanceS
-	(
-		getInstanceWorker(),
-		this
-	);
-}
-
-void Loader::AVM1setup(int level, ASObject* container)
-{
-	avm1level = level;
-	assert(avm1container == nullptr);
-	if (container == nullptr)
-		return;
-
-	// the container (AVM1MovieClipLoader) is set here to ensure it is kept alive until this Loader is destroyed,
-	// as it may have event handlers that need to be executed
-	avm1container = container;
 }

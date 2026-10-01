@@ -56,30 +56,6 @@ frameRate(0)
 {
 }
 
-void LoaderInfo::parseData(std::streambuf* _streamBuf)
-{
-	streamBuf = _streamBuf;
-	std::istream s(streamBuf);
-
-	parseThread = new ParseThread
-	(
-		s,
-		appDomain,
-		secDomain,
-		loader,
-		url
-	);
-	parseThread->execute();
-}
-
-LoaderInfo::~LoaderInfo()
-{
-	if (parseThread != nullptr)
-		delete parseThread;
-	if (streamBuf != nullptr)
-		delete streamBuf;
-}
-
 void LoaderInfo::beforeHandleEvent(Event* ev)
 {
 	if (ev->is<ProgressEvent>() && loadStatus == LOAD_OPENED)
@@ -100,177 +76,6 @@ void LoaderInfo::afterHandleEvent(Event* ev)
 	}
 }
 
-template<typename... Args>
-static void sendBroadcastMsg
-(
-	SystemState* sys,
-	_NGC<AVM1Object> broadcaster,
-	DisplayObject* target,
-	const tiny_string& name,
-	Args&&... args
-)
-{
-	if (broadcaster.isNull())
-		return;
-
-	sys->queueActionBack(target, MethodAction
-	(
-		broadcaster,
-		"broadcastMessage",
-		makeSpan
-		({
-			AVM1Value(name),
-			target.toAVM1ValueOrUndef(),
-			AVM1Value(args)...
-		});
-	));
-}
-
-void LoaderInfo::onStart()
-{
-	loaderData.visit(makeVisitor
-	(
-		[&](const AVM1LoaderData& data)
-		{
-			auto bcast = data.getBroadcaster();
-			sendBroadcastMsg(sys, bcast, target, "onLoadStart");
-		},
-		[&](const ASLoaderData& data)
-		{
-			auto obj = data.getLoaderInfo();
-			auto wrk = obj->getInstanceWorker();
-			getVm(sys)->tryAddEvent
-			(
-				obj,
-				_MR(Class<Event>::getInstanceS(wrk, "open"))
-			));
-		}
-	));
-}
-
-void LoaderInfo::onProgress(size_t bytesLoaded, size_t bytesTotal)
-{
-	loaderData.visit(makeVisitor
-	(
-		[&](const AVM1LoaderData& data)
-		{
-			sendBroadcastMsg
-			(
-				sys,
-				data.getBroadcaster(),
-				content,
-				"onLoadProgress"
-				bytesLoaded,
-				bytesTotal
-			);
-		},
-		[&](const ASLoaderData& data)
-		{
-			auto obj = data.getLoaderInfo();
-			auto wrk = obj->getInstanceWorker();
-			getVm(sys)->tryAddEvent
-			(
-				obj,
-				_MR(Class<ProgressEvent>::getInstanceS
-				(
-					wrk,
-					bytesLoaded,
-					bytesTotal
-				))
-			);
-		}
-	));
-}
-
-void LoaderInfo::onComplete
-(
-	DisplayObject* obj,
-	uint16_t status,
-	bool redirected
-)
-{
-	loaderData.visit(makeVisitor
-	(
-		[&](const AVM1LoaderData& data)
-		{
-			sendBroadcastMsg
-			(
-				sys,
-				data.getBroadcaster(),
-				target,
-				"onLoadComplete",
-				status
-			);
-		},
-		[&](const ASLoaderData& data)
-		{
-			auto obj = data.getLoaderInfo();
-			auto wrk = obj->getInstanceWorker();
-			if (!url.empty())
-			{
-				getVm(sys)->tryAddEvent
-				(
-					obj,
-					_MR(Class<HTTPStatusEvent>::getInstanceS(wrk))
-				);
-			}
-			getVm(sys)->tryAddEvent
-			(
-				obj,
-				_MR(Class<Event>::getInstanceS(wrk, "complete"))
-			));
-		}
-	));
-}
-
-void LoaderInfo::onError
-(
-	const tiny_string& msg,
-	uint16_t _status,
-	bool redirected,
-	const tiny_string& url
-)
-{
-}
-
-bool LoaderInfo::clipLoaded()
-{
-
-	if (!loaderData.isAVM1())
-		return false;
-
-	if (loadStatus < LoadStatus::InitSent)
-	{
-		onProgress(bytesTotal, bytesTotal);
-		return true;
-	}
-
-	auto& data = static_cast<AVM1LoaderData&>(loaderData);
-	auto bcast = data.getBroadcaster();
-	sendBroadcastMsg(sys, bcast, content, "onLoadInit");
-	return true;
-}
-
-void LoaderInfo::setOpened(bool fromBytes)
-{
-	if (loadStatus >= LoadStatus::Opened)
-		return;
-
-	loadStatus =
-	(
-		fromByteArray = fromBytes ?
-		LoadStatus::DownloadDone :
-		LoadStatus::Opened
-	);
-
-	if (!fromByteArray)
-		onStart();
-
-	// it seems an additional ProgressEvent is always added at the start of loading (see ruffle test avm2/large_preload_from_*)
-	if (loader == nullptr || loader->isAS3())
-		onProgress(0, bytesTotal);
-}
-
 void LoaderInfo::resetState()
 {
 	Locker l(mutex);
@@ -279,16 +84,6 @@ void LoaderInfo::resetState()
 	bytesTotal = 0;
 	bytesData.clear();
 	loadStatus = LoadStatus::Start;
-}
-
-void LoaderInfo::setComplete()
-{
-	Locker l(mutex);
-	if (loader != nullptr && !loader->isAS3())
-		clipLoaded();
-
-	if (loadStatus >= LoadStatus::InitSent)
-		sendInit();
 }
 
 void LoaderInfo::setContent(DisplayObject* c)
@@ -312,44 +107,6 @@ void LoaderInfo::setBytesLoaded(uint32_t b)
 
 	onProgress(bytesLoaded, bytesTotal);
 	checkSendComplete();
-}
-
-void LoaderInfo::sendInit()
-{
-	// loader.content has to be set before "init" event is dispatched
-	if (loader != nullptr && content != nullptr)
-	{
-		auto mem = sys->unaccountedMemory;
-		// we have a loader, so it is not the main clip
-		getVm(sys)->addEvent(NullRef, _MR(new (mem) SetLoaderContentEvent
-		(
-			_MR(content),
-			_MR(loader)
-		)));
-	}
-
-	getVm(sys)->addEvent(_MR(this), _MR(Class<Event>::getInstanceS
-	(
-		sys->worker,
-		"init"
-	)));
-	assert(loadStatus < LoadStatus::InitSent);
-	loadStatus = LoadStatus::InitSent;
-	checkSendComplete();
-}
-void LoaderInfo::checkSendComplete()
-{
-	if
-	(
-		loadStatus != LoadStatus::InitSent ||
-		!bytesTotal ||
-		bytesLoaded != bytesTotal
-	)
-		return;
-
-	//The clip is also complete now
-	onComplete(content, 0, false);
-	loadStatus = LoadStatus::Complete;
 }
 
 void LoaderInfo::setURL(const tiny_string& _url, bool setParameters)

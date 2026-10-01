@@ -591,13 +591,12 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 	if (hasscrollrect)
 	{
 		MATRIX m = ctxt.transformStack().transform().matrix;
-		sys->getEngineData()->exec_glScissor(m.getTranslateX()/TWIPS_FACTOR + state->scrollRect.Xmin
-											 ,m.getTranslateY()/TWIPS_FACTOR +
-																		sys->getRenderThread()->getFlipVertical()
-																		? sys->getRenderThread()->currentframebufferHeight-state->scrollRect.Ymax
-																		: state->scrollRect.Ymin
-											 ,(state->scrollRect.Xmax-state->scrollRect.Xmin)
-											 ,(state->scrollRect.Ymax-state->scrollRect.Ymin));
+		sys->getEngineData()->exec_glScissor(m.getTranslateX()/TWIPS_FACTOR + state->scrollRect.Xmin*m.getScaleX()
+											 ,sys->getRenderThread()->getFlipVertical()
+																		? sys->getRenderThread()->currentframebufferHeight-(m.getTranslateY()/TWIPS_FACTOR + state->scrollRect.Ymax*m.getScaleY())
+																		: m.getTranslateY()/TWIPS_FACTOR + state->scrollRect.Ymin
+											 ,(state->scrollRect.Xmax-state->scrollRect.Xmin)*m.getScaleX()
+											 ,(state->scrollRect.Ymax-state->scrollRect.Ymin)*m.getScaleY());
 	}
 	// first look if we have tokens or bitmaps to render
 	if (state->renderWithNanoVG)

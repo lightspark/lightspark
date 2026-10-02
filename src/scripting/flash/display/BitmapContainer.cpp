@@ -152,9 +152,25 @@ void convertBitmapWithAlpha(std::vector<uint8_t, reporter_allocator<uint8_t>>& d
 		for(uint32_t j = 0; j < width; j++)
 		{
 			uint32_t* outDataPos = (uint32_t*)(outData+i*(*stride)) + j;
-			// PNGs are always decoded in RGBA
-			*outDataPos = frompng ? inData[i*(*stride)+j*4+3]<<24 | inData[i*(*stride)+j*4  ]<<16 | inData[i*(*stride)+j*4+1]<<8 | inData[i*(*stride)+j*4+2]
-								  : inData[i*(*stride)+j*4  ]<<24 | inData[i*(*stride)+j*4+1]<<16 | inData[i*(*stride)+j*4+2]<<8 | inData[i*(*stride)+j*4+3];
+			if (frompng)
+			{
+				// PNGs are always decoded in RGBA
+				uint32_t alpha = inData[i*(*stride)+j*4+3] & 0xff;
+				uint32_t c = alpha<<24 | inData[i*(*stride)+j*4  ]<<16 | inData[i*(*stride)+j*4+1]<<8 | inData[i*(*stride)+j*4+2];
+				if (alpha != 0xff)
+				{
+					// premultiply alpha
+					uint32_t res=0;
+					res |= ((((c >> 0 ) &0xff) * alpha +0x7f)/0xff) << 0;
+					res |= ((((c >> 8 ) &0xff) * alpha +0x7f)/0xff) << 8;
+					res |= ((((c >> 16) &0xff) * alpha +0x7f)/0xff) << 16;
+					res |= alpha<<24;
+					c= res;
+				}
+				*outDataPos = c;
+			}
+			else
+				*outDataPos = inData[i*(*stride)+j*4  ]<<24 | inData[i*(*stride)+j*4+1]<<16 | inData[i*(*stride)+j*4+2]<<8 | inData[i*(*stride)+j*4+3];
 		}
 	}
 }

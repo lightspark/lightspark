@@ -29,8 +29,13 @@ using namespace lightspark;
 LoaderThread::LoaderThread
 (
 	const URLRequest& request,
-	Loader& _loader
-) : DownloaderThreadBase(&request, _loader), loader(_loader), source(URL)
+	Loader& _loader,
+	LoaderData& _data
+) :
+DownloaderThreadBase(&request, _loader),
+loader(_loader),
+data(_data),
+isBytes(false)
 {
 }
 
@@ -38,66 +43,23 @@ LoaderThread::LoaderThread
 (
 	Span<uint8_t> _bytes,
 	Loader& _loader
-) : DownloaderThreadBase(nullptr, _loader),
+	LoaderData& _data
+) :
+DownloaderThreadBase(nullptr, _loader),
 bytes(_bytes),
 loader(_loader),
-source(BYTES)
+data(_data),
+isBytes(false)
 {
 }
 
-void LoaderThread::execute()
+std::streambuf* LoaderThread::getStreamBuf()
 {
-	assert(source == URL || source == BYTES);
-
-	std::streambuf* sbuf = nullptr;
-	if (source == URL)
-	{
-		auto cache = _MR(new MemoryStreamCache(loader.getSys()));
-		loaderInfo->incRef();
-		if(!createDownloader(cache, _MR(loaderInfo), loaderInfo, false))
-			return;
-
-		sbuf = cache->createReader();
-
-		// Wait for some data, making sure our check for failure is working
-		sbuf->sgetc(); // peek one byte
-		if (downloader->hasEmptyAnswer())
-		{
-			LOG(LOG_INFO,"empty answer:" << url);
-			return;
-		}
-
-		if (cache->hasFailed()) //Check to see if the download failed for some reason
-		{
-			LOG
-			(
-				LOG_ERROR,
-				"Loader::execute(): "
-				"Download of URL failed: " << url
-			);
-			auto vm = getVm(loader->getSys());
-			auto ev = Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker());
-			loaderInfo->incRef();
-			vm->addEvent(_MR(loaderInfo), _MR(ev));
-			vm->addEvent
-			(
-				_MR(loader),
-				_MR(Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker()))
-			);
-			delete sbuf;
-			// downloader will be deleted in jobFence
-			return;
-		}
-		loaderInfo->setBytesTotal(downloader->getLength());
-		loaderInfo->setBytesLoaded(downloader->getReceivedLength());
-		loaderInfo->setOpened(false);
-	}
-	else if (source == BYTES)
+	if (isBytes)
 	{
 		assert_and_throw(bytes.getData() != nullptr);
-		loaderInfo->setBytesTotal(bytes.getSize());
-		loaderInfo->setOpened(true);
-		sbuf = new bytes_buf(bytes);
+		loader.onProgress(data, bytes.getSize(), bytes.getSize());
+		return new bytes_buf(bytes);
 
 // extract embedded swf to separate file
 //		char* name_used=nullptr;
@@ -106,25 +68,86 @@ void LoaderThread::execute()
 //		close(fd);
 //		g_free(name_used);
 	}
-	loaderInfo->parseData(sbuf);
 
-	if (source == URL)
+	auto cache = _MR(new MemoryStreamCache(loader.getSys()));
+	if (!createDownloader(cache, loader, data, false))
+		return nullptr;
+
+	auto ret = cache->createReader();
+
+	// Wait for some data, making sure our check for failure is working
+	ret->sgetc(); // peek one byte
+	if (downloader->hasEmptyAnswer())
+	{
+		LOG(LOG_INFO, "empty answer:" << url);
+		return nullptr;
+	}
+
+	if (!cache->hasFailed())
+	{
+		loader.onProgress
+		(
+			data,
+			downloader->getLength(),
+			downloader->getReceivedLength()
+		);
+		loader.onStart(data);
+		return ret;
+	}
+
+	// The download failed for some reason.
+	LOG
+	(
+		LOG_ERROR,
+		"Loader::getStreamBuf(): Download of URL failed: " << url
+	);
+
+	loader.onError
+	(
+		data,
+		"Movie loader error",
+		"LoadNeverCompleted",
+		downloader->getRequestStatus(),
+		downloader->isRedirected(),
+		downloader->getURL()
+	);
+
+	delete ret;
+	// downloader will be deleted in jobFence
+	return nullptr;
+}
+
+void LoaderThread::execute()
+{
+	auto streamBuf = getStreamBuf();
+	if (streamBuf == nullptr)
+		return;
+
+	loader.parseData(data, streamBuf);
+
+	if (!isBytes)
 	{
 		//Acquire the lock to ensure consistency in threadAbort
 		Locker l(downloaderLock);
-		if(downloader)
-			loaderInfo->getSystemState()->downloadManager->destroy(downloader);
-		downloader=nullptr;
+		if (downloader != nullptr)
+			loaderInfo.getSys()->downloadManager->destroy(downloader);
+		downloader = nullptr;
 	}
 
-	auto ret = loaderInfo->getParsedObject();
+	auto ret = loader.getContent();
 
 	// The stream did not contain RootMovieClip or Bitmap
 	if (ret == nullptr && !threadAborting)
 	{
-		auto ev = Class<IOErrorEvent>::getInstanceS(loader->getInstanceWorker());
-		loaderInfo->incRef();
-		getVm(loader.getSys()())->addEvent(_MR(loaderInfo),_MR(ev));
+		loader.onError
+		(
+			data,
+			"The stream doesn't contain a `RootMovieClip`, or `Bitmap`",
+			"LoadNeverCompleted",
+			status,
+			redirected,
+			_url
+		);
 		return;
 	}
 	else if (ret == nullptr)
@@ -135,18 +158,19 @@ void LoaderThread::execute()
 		return;
 
 	if (_root->isAS3() && !_root->hasMainClass)
-		loaderInfo->setComplete();
-
-	_root->AVM1setLevel(loader.AVM1getLevel());
+		loader.setComplete(data);
 }
 
 void LoaderThread::jobFence()
 {
 	auto vm = getVm(loader.getSys());
-	if (vm != nullptr)
+	if (vm != nullptr && data.isAVM2())
 	{
-		vm->addDeletableObject(loader);
-		vm->addDeletableObject(loaderInfo);
+		auto& data = static_cast<ASLoaderData&>(data);
+		auto obj = loader.toASObject();
+		if (!obj.isNull())
+			vm->addDeletableObject(obj);
+		vm->addDeletableObject(data.getLoaderInfo());
 	}
 	DownloaderThreadBase::jobFence();
 }
@@ -222,6 +246,46 @@ void Loader::setComplete(LoaderData& loaderData)
 
 	if (loadStatus >= LoadStatus::InitSent)
 		sendInit(loaderData);
+}
+
+void Loader::sendInit(LoaderData& loaderData)
+{
+	auto vm = getVm(sys);
+	// loader.content has to be set before "init" event is dispatched
+	if (content != nullptr)
+	{
+		auto mem = sys->unaccountedMemory;
+		// we have a loader, so it is not the main clip
+		vm->tryAddEvent(NullRef, _MR(new (mem) SetLoaderContentEvent
+		(
+			*content,
+			*this
+		)));
+	}
+
+	if (loaderData.isAVM2())
+	{
+		auto& data = static_cast<ASLoaderData&>(loaderData);
+		sendEvent(sys, data.getLoaderInfo(), "init");
+	}
+	assert(loadStatus < LoadStatus::InitSent);
+	loadStatus = LoadStatus::InitSent;
+	checkSendComplete(loaderData);
+}
+
+void LoaderInfo::checkSendComplete(LoaderData& loaderData)
+{
+	if
+	(
+		loadStatus != LoadStatus::InitSent ||
+		!movie.getBytesTotal() ||
+		movie.getBytesLoaded() != movie.getBytesTotal()
+	)
+		return;
+
+	//The clip is also complete now
+	onComplete(loaderData, content, 0, false);
+	loadStatus = LoadStatus::Complete;
 }
 
 void Loader::onStart(LoaderData& loaderData)
@@ -794,7 +858,7 @@ void Loader::threadFinished(IThreadJob* finishedJob)
 }
 
 #define LOADER_CONTENT_LEGACY_DEPTH -16384-0xF000
-void Loader::setContent(DisplayObject& obj)
+void Loader::setContent(LoaderData& loaderData, DisplayObject& obj)
 {
 	if
 	(
@@ -814,6 +878,7 @@ void Loader::setContent(DisplayObject& obj)
 		Locker l(mutex);
 		bool addAVM1Movie =
 		(
+			loaderData.isAVM2() &&
 			isAS3() &&
 			obj.is<RootMovieClip>() &&
 			&obj != getSys()->mainClip &&
@@ -827,7 +892,10 @@ void Loader::setContent(DisplayObject& obj)
 			return &obj;
 		}
 
-		auto m = Class<AVM1Movie>::getInstanceS(getInstanceWorker());
+		auto& data = static_cast<ASLoaderData&>(data);
+		auto loaderInfo = data.getLoaderInfo();
+		auto wrk = loaderInfo->getInstanceWorker();
+		auto m = Class<AVM1Movie>::getInstanceS(wrk);
 		m->setIsInitialized();
 		m->setConstructIndicator();
 		m->setLoaderInfo(loaderInfo);
@@ -842,7 +910,7 @@ void Loader::setContent(DisplayObject& obj)
 		return m;
 	}();
 
-	if (avm1Target == nullptr)
+	if (loaderData.isAVM2())
 	{
 		addChildAt(*content, 0);
 		goto end;
@@ -881,6 +949,5 @@ void Loader::setContent(DisplayObject& obj)
 
 	avm1target = nullptr;
 end:
-	if (obj.loaderInfo != nullptr)
-		obj.loaderInfo->setComplete();
+	loader.setComplete(loaderData);
 }

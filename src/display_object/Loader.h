@@ -112,11 +112,12 @@ auto LoaderData::visit(V&& visitor) const
 class LoaderThread : public DownloaderThreadBase
 {
 private:
-	enum SOURCE { URL, BYTES };
 	Span<uint8_t> bytes;
 	Loader& loader;
 	LoaderData& data;
-	SOURCE source;
+	bool isBytes;
+
+	std::streambuf* getStreamBuf();
 public:
 	void jobFence() override;
 	void execute() override;
@@ -170,7 +171,7 @@ private:
 	/*
 	 * sendInit should be called with the spinlock held
 	 */
-	void sendInit();
+	void sendInit(LoaderData& loaderData);
 	void checkSendComplete();
 public:
 	Loader(SystemState* sys, SWFMovie& _movie);
@@ -209,7 +210,7 @@ public:
 	void close();
 	void load(const URLRequest& req, LoaderData& data);
 	void loadBytes(Span<uint8_t> bytes, LoaderContext* ctx);
-	void setContent(DisplayObject& obj);
+	void setContent(LoaderData& loaderData, DisplayObject& obj);
 	DisplayObject* getContent() const { return content; }
 	bool allowLoadingSWF() { return allowCodeImport; }
 	void unload(LoaderData& loaderData);

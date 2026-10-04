@@ -577,13 +577,13 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 		LOG(LOG_NOT_IMPLEMENTED, "BitmapData.copyPixels doesn't support alpha bitmap");
 
 	Bitmap* d = source->getRenderCallBitmap();
-	d->currentScrollRect = sourceRect ? sourceRect->getRect() : RECT();
+	d->currentScrollRect = sourceRect->getRect();
 	MATRIX m;
 	m.translate(destPoint->getX()*TWIPS_FACTOR,destPoint->getY()*TWIPS_FACTOR);
 	if (mergeAlpha)
 		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,RECT(),source->getBitmapContainer()==th->getBitmapContainer(),nullptr,1,false);
 	else
-		th->drawDisplayObject(d, m,true,BLENDMODE_INTERN_REPLACE,nullptr,RECT(),source->getBitmapContainer()==th->getBitmapContainer(),nullptr);
+		th->drawDisplayObject(d, m,true,BLENDMODE_INTERN_REPLACE,nullptr,RECT(),source->getBitmapContainer()==th->getBitmapContainer(),nullptr,1,false);
 	th->getBitmapContainer()->addRenderCallBitmap(th->getSystemState()->getRenderThread(),d);
 
 	th->notifyUsers();
@@ -1440,7 +1440,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 	{
 		Bitmap* d = sourceBitmapData->getRenderCallBitmap();
 		d->setFilter(filter.getPtr());
-		d->currentScrollRect = sourceRect ? sourceRect->getRect() : RECT();
+		d->currentScrollRect = sourceRect->getRect();
 		MATRIX m;
 		m.translate(destPoint->getX()*TWIPS_FACTOR,destPoint->getY()*TWIPS_FACTOR);
 		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,RECT(),sourceBitmapData->getBitmapContainer()==th->getBitmapContainer());

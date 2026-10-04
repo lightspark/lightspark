@@ -249,7 +249,7 @@ ASFUNCTIONBODY_ATOM(XML,_constructor)
 		//ByteArray seems to be though (see XML test) so let's support it
 		ByteArray* ba=asAtomHandler::as<ByteArray>(args[0]);
 		uint32_t len=ba->getLength();
-		const uint8_t* str=ba->getBuffer(len, false);
+		const uint8_t* str=ba->getBufferNoCheck();
 		th->createTree(th->buildFromString(std::string((const char*)str,len), getParseMode()),false);
 	}
 	else if(asAtomHandler::isString(args[0]) ||

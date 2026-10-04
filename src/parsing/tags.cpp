@@ -2703,7 +2703,7 @@ ASObject* DefineBinaryDataTag::instance(Class_base* c, ASObject* prevInstance, b
 		classRet=bindedTo;
 	else
 		classRet=Class<ByteArray>::getClass(loadedFrom->getSystemState());
-
+	loadedFrom->checkBinding(this);
 	ByteArray* ret=new (classRet->memoryAccount) ByteArray(loadedFrom->getInstanceWorker(),classRet, b, len);
 	return ret;
 }

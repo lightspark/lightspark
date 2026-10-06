@@ -33,7 +33,9 @@
 namespace lightspark
 {
 
+class AVM1Activation;
 class AVM1MovieClipLoader;
+class AVM1MovieClipRef;
 class ApplicationDomain;
 class LoaderContext;
 class LoaderInfo;
@@ -65,12 +67,24 @@ public:
 class AVM1LoaderData : public LoaderData
 {
 private:
+	AVM1Activation& act;
+	_GC<AVM1MovieClipRef> target;
 	_NGC<AVM1MovieClipLoader> broadcaster;
 public:
-	AVM1LoaderData(_NGC<AVM1Object> _broadcaster) :
+	AVM1LoaderData
+	(
+		AVM1Activation& _act,
+		_GC<AVM1MovieClipRef> _target,
+		_NGC<AVM1Object> _broadcaster
+	) :
 	LoaderData(Type::AVM1),
+	act(_act),
+	target(_target),
 	broadcaster(_broadcaster) {}
 
+
+	AVM1Activation& getAct() { return act; }
+	_GC<AVM1MovieClipRef> getTarget() const { return target; }
 	_NGC<AVM1MovieClipLoader> getBroadcaster() const { return broadcaster; }
 };
 
@@ -143,7 +157,7 @@ public InteractiveObject,
 public DisplayObjectContainer,
 public IDownloaderThreadListener
 {
-public
+public:
 	enum class LoadStatus
 	{
 		Start,
@@ -190,7 +204,6 @@ public:
 	void onComplete
 	(
 		LoaderData& loaderData,
-		DisplayObject* obj,
 		uint16_t _status,
 		bool redirected
 	);

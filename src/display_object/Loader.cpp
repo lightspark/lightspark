@@ -19,9 +19,10 @@
 **************************************************************************/
 
 #include "backends/security.h"
+#include "display_object/Loader.h"
+#include "display_object/RootMovieClip.h"
+#include "scripting/avm1/movieclip_ref.h"
 #include "parsing/streams.h"
-#include "scripting/flash/display_object/Loader.h"
-#include "scripting/flash/display_object/RootMovieClip.h"
 
 using namespace std;
 using namespace lightspark;
@@ -179,8 +180,9 @@ template<typename... Args>
 static void sendBroadcastMsg
 (
 	SystemState* sys,
+	AVM1Activation& act,
 	_NGC<AVM1Object> broadcaster,
-	DisplayObject* target,
+	_GC<AVM1MovieClipRef> target,
 	const tiny_string& name,
 	Args&&... args
 )
@@ -188,14 +190,14 @@ static void sendBroadcastMsg
 	if (broadcaster.isNull())
 		return;
 
-	sys->queueActionBack(target, MethodAction
+	sys->queueActionBack(act, target, MethodAction
 	(
 		broadcaster,
 		"broadcastMessage",
 		makeSpan
 		({
 			AVM1Value(name),
-			target.toAVM1ValueOrUndef(),
+			AVM1Value(target),
 			AVM1Value(args)...
 		});
 	));
@@ -259,7 +261,8 @@ void Loader::sendInit(LoaderData& loaderData)
 		vm->tryAddEvent(NullRef, _MR(new (mem) SetLoaderContentEvent
 		(
 			*content,
-			*this
+			*this,
+			loaderData
 		)));
 	}
 
@@ -284,7 +287,7 @@ void LoaderInfo::checkSendComplete(LoaderData& loaderData)
 		return;
 
 	//The clip is also complete now
-	onComplete(loaderData, content, 0, false);
+	onComplete(loaderData, 0, false);
 	loadStatus = LoadStatus::Complete;
 }
 
@@ -294,8 +297,14 @@ void Loader::onStart(LoaderData& loaderData)
 	(
 		[&](const AVM1LoaderData& data)
 		{
-			auto bcast = data.getBroadcaster();
-			sendBroadcastMsg(sys, bcast, content, "onLoadStart");
+			sendBroadcastMsg
+			(
+				sys,
+				data.getAct(),
+				data.getBroadcaster(),
+				data.getTarget(),
+				"onLoadStart"
+			);
 		},
 		[&](const ASLoaderData& data)
 		{
@@ -318,8 +327,9 @@ void Loader::onProgress
 			sendBroadcastMsg
 			(
 				sys,
+				data.getAct(),
 				data.getBroadcaster(),
-				content,
+				data.getTarget(),
 				"onLoadProgress"
 				bytesLoaded,
 				bytesTotal
@@ -341,7 +351,6 @@ void Loader::onProgress
 void Loader::onComplete
 (
 	LoaderData& loaderData,
-	DisplayObject* obj,
 	uint16_t status,
 	bool redirected
 )
@@ -353,8 +362,9 @@ void Loader::onComplete
 			sendBroadcastMsg
 			(
 				sys,
+				data.getAct(),
 				data.getBroadcaster(),
-				target,
+				data.getTarget(),
 				"onLoadComplete",
 				status
 			);
@@ -385,8 +395,9 @@ void Loader::onError
 			sendBroadcastMsg
 			(
 				sys,
+				data.getAct(),
 				data.getBroadcaster(),
-				content,
+				data.getTarget(),
 				"onLoadError",
 				errorCode
 			);
@@ -429,8 +440,10 @@ bool Loader::clipLoaded(LoaderData& loaderData)
 	}
 
 	auto& data = static_cast<AVM1LoaderData&>(loaderData);
+	auto& act = data.getAct();
 	auto bcast = data.getBroadcaster();
-	sendBroadcastMsg(sys, bcast, content, "onLoadInit");
+	auto target = data.getTarget();
+	sendBroadcastMsg(sys, act, bcast, target, "onLoadInit");
 	return true;
 }
 
@@ -827,14 +840,12 @@ AVM2MouseTarget Loader::AVM2getMouseTarget
 Loader::Loader
 (
 	SystemState* sys,
-	LoaderData& _loaderData,
 	SWFMovie& _movie
 ) :
 InteractiveObject(Type::Loader, sys),
 DisplayObjectContainer(_movie),
 content(nullptr),
 loadStatus(LoadStatus::Start),
-loaderInfo(_loaderInfo),
 parseThread(nullptr),
 streamBuf(nullptr),
 loaded(false),
@@ -857,7 +868,6 @@ void Loader::threadFinished(IThreadJob* finishedJob)
 	delete finishedJob;
 }
 
-#define LOADER_CONTENT_LEGACY_DEPTH -16384-0xF000
 void Loader::setContent(LoaderData& loaderData, DisplayObject& obj)
 {
 	if
@@ -901,7 +911,7 @@ void Loader::setContent(LoaderData& loaderData, DisplayObject& obj)
 		m->setLoaderInfo(loaderInfo);
 		m->insertChildAt
 		(
-			16384 + 0xf000,
+			-0xf000,
 			obj,
 			false,
 			false
@@ -910,44 +920,41 @@ void Loader::setContent(LoaderData& loaderData, DisplayObject& obj)
 		return m;
 	}();
 
-	if (loaderData.isAVM2())
-	{
-		addChildAt(*content, 0);
-		goto end;
-	}
+	loaderData.visit(makeVisitor
+	(
+		[&](const AVM1LoaderData& data)
+		{
+			auto target = data.getTarget();
+			auto& act = data.getAct();
+			auto& targetClip = target.resolveClip(act)->second;
+			// _addChild may cause AS code to run, release locks beforehand.
+			obj.tx = targetClip.tx;
+			obj.ty = targetClip.ty;
+			obj.tz = targetClip.tz;
+			obj.rotation = targetClip.rotation;
+			obj.sx = targetClip.sx;
+			obj.sy = targetClip.sy;
+			obj.sz = targetClip.sz;
+			obj.name = targetClip.name;
 
-	// _addChild may cause AS code to run, release locks beforehand.
-	obj.tx = avm1Target->tx;
-	obj.ty = avm1Target->ty;
-	obj.tz = avm1Target->tz;
-	obj.rotation = avm1Target->rotation;
-	obj.sx = avm1Target->sx;
-	obj.sy = avm1Target->sy;
-	obj.sz = avm1Target->sz;
-	obj.name = avm1Target->name;
+			if (targetClip.getParent() == nullptr)
+				return;
 
-	if (avm1Target->getParent() != nullptr)
-	{
-		auto parent = avm1Target->getParent();
-		auto depth =
-		(
-			avm1level < 0 ?
-			avm1Target->getDepth() :
-			avm1level
-		);
+			auto parent = targetClip.getParent();
+			auto depth = targetClip.getDepth();
+			auto _targetClip = targetClip.as<DisplayObjectContainer>();
 
-		auto container = avm1Target->as<DisplayObjectContainer>();
-		if (container != nullptr)
-			container->removeAllChildren(true, true);
+			if (_targetClip != nullptr)
+				_targetClip->removeAllChildren(true, true);
 
-		if (parent->is<Stage>() && avm1level < 0)
-			parent->removeChild(*avm1Target);
-		else
-			parent->deleteChildAt(depth, false);
-		parent->insertChildAt(depth, obj, false, false);
-	}
+			if (parent->is<Stage>() && !target.hasLevel())
+				parent->removeChild(targetClip);
+			else
+				parent->deleteChildAt(depth, false);
+			parent->insertChildAt(depth, obj, false, false);
+		},
+		[&](const auto&) { addChildAt(*content, 0); }
+	));
 
-	avm1target = nullptr;
-end:
-	loader.setComplete(loaderData);
+	setComplete(loaderData);
 }

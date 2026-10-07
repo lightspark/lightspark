@@ -413,7 +413,7 @@ void ABCVm::abc_pop(call_context* context)
 	LOG_CALL("pop "<<asAtomHandler::toDebugString(*o));
 	ASObject* obj = asAtomHandler::getObject(*o);
 	if (obj)
-		obj->decRefAndGCCheck();
+		obj->decRef();
 	++(context->exec_pos);
 }
 void ABCVm::abc_dup(call_context* context)

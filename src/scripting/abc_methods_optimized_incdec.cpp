@@ -50,7 +50,7 @@ void lightspark::abc_increment_constant_localresult(call_context* context)
 	{
 		ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
 		if (o)
-			o->decRefAndGCCheck();
+			o->decRef();
 		if (asAtomHandler::isNumber(res))
 			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),asAtomHandler::toNumber(res));
 		else
@@ -70,7 +70,7 @@ void lightspark::abc_increment_local_localresult(call_context* context)
 	{
 		ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
 		if (o)
-			o->decRefAndGCCheck();
+			o->decRef();
 		if (asAtomHandler::isNumber(res))
 			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),asAtomHandler::toNumber(res));
 		else
@@ -110,7 +110,7 @@ void lightspark::abc_decrement_constant_localresult(call_context* context)
 	{
 		ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
 		if (o)
-			o->decRefAndGCCheck();
+			o->decRef();
 		if (asAtomHandler::isNumber(res))
 			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),asAtomHandler::toNumber(res));
 		else
@@ -129,7 +129,7 @@ void lightspark::abc_decrement_local_localresult(call_context* context)
 	{
 		ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos));
 		if (o)
-			o->decRefAndGCCheck();
+			o->decRef();
 		if (asAtomHandler::isNumber(res))
 			asAtomHandler::setNumber(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),asAtomHandler::toNumber(res));
 		else

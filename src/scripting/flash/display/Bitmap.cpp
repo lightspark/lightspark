@@ -52,7 +52,7 @@ Bitmap::Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, std::istream *s, FI
 	usedInRenderCall.clear();
 	setLoaderInfo(li);
 
-	bitmapData = _MR(Class<BitmapData>::getInstanceS(wrk));
+	bitmapData = _MR(Class<BitmapData>::getInstanceSNoArgs(wrk));
 	bitmapData->addUser(this);
 	if(!s)
 		return;

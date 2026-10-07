@@ -1015,6 +1015,12 @@ bool EventDispatcher::hasEventListener(const tiny_string& eventName)
 		return true;
 }
 
+bool EventDispatcher::hasAnyEventListener()
+{
+	Locker l(handlersMutex);
+	return !handlers.empty();
+}
+
 NetStatusEvent::NetStatusEvent(ASWorker* wrk, Class_base* c, const tiny_string& level, const tiny_string& code):Event(wrk,c, "netStatus"),statuscode(code)
 {
 	ASObject* info=new_asobject(wrk);

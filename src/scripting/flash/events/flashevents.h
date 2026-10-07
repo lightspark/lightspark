@@ -366,6 +366,7 @@ public:
 	void handleEvent(_R<Event> e);
 	void dumpHandlers();
 	bool hasEventListener(const tiny_string& eventName);
+	bool hasAnyEventListener();
 	virtual void defaultEventBehavior(_R<Event> e) {}
 	virtual void afterExecution(_R<Event> e) {}
 	ASFUNCTION_ATOM(_constructor);

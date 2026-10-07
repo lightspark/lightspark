@@ -32,7 +32,7 @@
 	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,pos)); \
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,pos),ret);\
 	if (o)\
-		o->decRefAndGCCheck();\
+		o->decRef();\
 }
 
 #endif /* SCRIPTING_ABC_OPTIMIZED_H */

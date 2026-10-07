@@ -38,10 +38,14 @@ void lightspark::abc_getfuncscopeobject_localresult(call_context* context)
 {
 	uint32_t t = context->exec_pos->arg2_uint;
 	assert(context->parent_scope_stack->scope.size() > t);
-	LOG_CALL("getfuncscopeobject_l "<<t<<" "<<asAtomHandler::toDebugString(context->parent_scope_stack->scope[t].object));
-	asAtom res =context->parent_scope_stack->scope[t].object;
-	ASATOM_INCREF(res);
-	REPLACELOCALRESULT(context,context->exec_pos->local3.pos,res);
+	LOG_CALL("getfuncscopeobject_l "<<t<<" "<<context->exec_pos->local3.pos<<":"<<asAtomHandler::toDebugString(context->parent_scope_stack->scope[t].object)<<" "<<asAtomHandler::toDebugString(CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos)));
+	asAtom ret =context->parent_scope_stack->scope[t].object;
+	if (ret.uintval != CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos).uintval)
+	{
+		ASATOM_INCREF(ret);
+		REPLACELOCALRESULT(context,context->exec_pos->local3.pos,ret);
+	}
+	LOG_CALL("getfuncscopeobject_l done "<<t<<" "<<context->exec_pos->local3.pos<<":"<<asAtomHandler::toDebugString(context->parent_scope_stack->scope[t].object));
 	++(context->exec_pos);
 }
 void lightspark::abc_getscopeobject_localresult(call_context* context)

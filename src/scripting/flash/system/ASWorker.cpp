@@ -318,7 +318,9 @@ void ASWorker::fillStackTrace(StackTraceList& strace)
 {
 	for (uint32_t i = cur_recursion; i > 0; i--)
 	{
-		Class_base* c = asAtomHandler::getClass(stacktrace[i-1].object,getSystemState());
+		Class_base* c = nullptr;
+		if (asAtomHandler::isAccessible(stacktrace[i-1].object))
+			c = asAtomHandler::getClass(stacktrace[i-1].object,getSystemState());
 		SyntheticFunction* f = stacktrace[i-1].function;
 		stacktrace_string_entry e;
 		e.clsname = c ? c->getQualifiedClassNameID() : (uint32_t)BUILTIN_STRINGS::EMPTY;

@@ -1222,18 +1222,21 @@ multiname *ASObject::setVariableByMultiname_intern(multiname& name, asAtom& o, C
 	{
 		assert_and_throw(asAtomHandler::isInvalid(obj->getter));
 		bool isfunc = asAtomHandler::is<SyntheticFunction>(o);
+		bool refcounted = asAtomHandler::getObject(o)!=this;
 		if (alreadyset)
 		{
 			if (obj->isEqualVar(o))
 				*alreadyset = true;
 			else
 			{
-				obj->setVar(wrk,o);
+				obj->setVar(wrk,o,refcounted);
 				*alreadyset = !obj->isEqualVar(o); // setVar may coerce the object into a new instance, so we need to check if decRef is necessary
 			}
 		}
 		else
-			obj->setVar(wrk,o);
+			obj->setVar(wrk,o,refcounted);
+		if (!refcounted)
+			ASATOM_DECREF(o);
 		if (isfunc)
 		{
 			if (obj->kind == CONSTANT_TRAIT)

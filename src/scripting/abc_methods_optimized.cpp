@@ -44,7 +44,7 @@ FORCE_INLINE void replacelocalresult(call_context* context,uint16_t pos,asAtom& 
 	ASObject* o = asAtomHandler::getObject(CONTEXT_GETLOCAL(context,pos));
 	asAtomHandler::set(CONTEXT_GETLOCAL(context,pos),ret);
 	if (o)
-		o->decRefAndGCCheck();
+		o->decRef();
 }
 void ABCVm::abc_ifnlt_constant_constant(call_context* context)
 {
@@ -610,9 +610,12 @@ void ABCVm::abc_getlexfromslot_localresult(call_context* context)
 	asAtom o = num ==-1 ? *context->locals : (context->function->func_scope->scope.rbegin()+num)->object;
 	ASObject* s = asAtomHandler::toObject(o,context->worker);
 	asAtom a = s->getSlot(t);
-	LOG_CALL("getlexfromslot_l "<<s->toDebugString()<<" "<<t<<" "<<asAtomHandler::toDebugString(a));
-	ASATOM_INCREF(a);
-	replacelocalresult(context,context->exec_pos->local3.pos,a);
+	LOG_CALL("getlexfromslot_l "<<s->toDebugString()<<" "<<t<<" "<<context->exec_pos->local3.pos<<" "<<asAtomHandler::toDebugString(a));
+	if (a.uintval != CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos).uintval)
+	{
+		ASATOM_INCREF(a);
+		replacelocalresult(context,context->exec_pos->local3.pos,a);
+	}
 	++(context->exec_pos);
 }
 void ABCVm::abc_pushScope_constant(call_context* context)
@@ -4848,7 +4851,7 @@ void ABCVm::abc_constructpropMultiArgs_constant_localresult(call_context* contex
 	{
 		ASObject* o = asAtomHandler::getObject(oldres);
 		if (o)
-			o->decRefAndGCCheck();
+			o->decRef();
 	}
 	++(context->exec_pos);
 }
@@ -4866,7 +4869,7 @@ void ABCVm::abc_constructpropMultiArgs_local_localresult(call_context* context)
 	{
 		ASObject* o = asAtomHandler::getObject(oldres);
 		if (o)
-			o->decRefAndGCCheck();
+			o->decRef();
 	}
 	++(context->exec_pos);
 }

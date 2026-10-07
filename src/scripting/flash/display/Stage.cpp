@@ -951,7 +951,7 @@ void Stage::cleanupRemovedDisplayObjects()
 		it = removedDisplayObjects.erase(it);
 		if (!getSystemState()->isShuttingDown())
 		{
-			if (o->hasBroadcastListeners()) // DisplayObjects with broadcast listeners are not destroyed, only hidden
+			if (o->hasAnyEventListener()) // DisplayObjects with listeners are not destroyed, only hidden
 			{
 				if (o->is<MovieClip>() && !o->as<MovieClip>()->state.advancedByTick)
 				{

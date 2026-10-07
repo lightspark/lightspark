@@ -1741,7 +1741,7 @@ void DisplayObjectContainer::_addChildAt(DisplayObject* child, unsigned int inde
 		}
 		else
 		{
-			child->getParent()->_removeChild(child,false,inskipping);
+			child->getParent()->_removeChild(child,false,inskipping,false,true,false);
 		}
 	}
 	getSystemState()->removeFromResetParentList(child);

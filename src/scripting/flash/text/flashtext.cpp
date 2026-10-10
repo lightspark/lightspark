@@ -102,6 +102,7 @@ ASFUNCTIONBODY_ATOM(ASFont,registerFont)
 		return;
 	}
 	ASFont* font = new (fontclass->as<Class_base>()->memoryAccount) ASFont(wrk,fontclass->as<Class_base>());
+	fontclass->as<Class_inherit>()->checkScriptInit();
 	fontclass->as<Class_base>()->setupDeclaredTraits(font);
 	font->constructionComplete();
 	font->setConstructIndicator();
@@ -1363,7 +1364,7 @@ void TextField::afterSetLegacyMatrix()
 }
 void TextField::setupOriginalPosition()
 {
-	originalXPosition = getMatrix().getTranslateX();
+	originalXPosition = tx;
 	originalWidth = width;
 }
 
@@ -1923,7 +1924,6 @@ void TextField::afterLegacyInsert()
 		constructionComplete();
 		afterConstruction();
 	}
-	originalWidth=width;
 	avm1SyncTagVar();
 	InteractiveObject::afterLegacyInsert();
 }

@@ -28,6 +28,7 @@
 #include "scripting/toplevel/Integer.h"
 #include "scripting/toplevel/Number.h"
 #include "scripting/toplevel/UInteger.h"
+#include "scripting/flash/system/ApplicationDomain.h"
 #include "parsing/streams.h"
 
 using namespace std;
@@ -35,7 +36,7 @@ using namespace lightspark;
 
 namespace lightspark
 {
-uint32_t skipIgnorables(memorystream& code,uint32_t pos, int32_t& positionsskipped)
+uint32_t skipIgnorables(preloadstate& state,memorystream& code,uint32_t pos, int32_t& positionsskipped, Class_base* resulttype)
 {
 	positionsskipped=0;
 	bool done = false;
@@ -67,6 +68,20 @@ uint32_t skipIgnorables(memorystream& code,uint32_t pos, int32_t& positionsskipp
 				pos++;
 				done=true;
 				break;
+			case 0x73://convert_i
+			case 0x74://convert_u
+			case 0x75://convert_d
+				if (resulttype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
+					|| resulttype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
+					|| resulttype == Class<Number>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
+					)
+				{
+					positionsskipped++;
+					pos++;
+				}
+				else
+					done=true;
+				break;
 			default:
 				done=true;
 				break;
@@ -93,6 +108,29 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 		// dup followed by pop, can be skipped
 		code.readbyte();
 		return;
+	}
+	if (!state.operandlist.empty() && !state.duplocalresult)
+	{
+		uint32_t setlocalnum;
+		if (needResultOnStack(
+				code.tellg()-1
+				,state
+				,code
+				,state.operandlist.back().objtype
+				,state.preloadedcode.size()-1
+				,state.preloadedcode.size()-1
+				,false
+				,true
+				,setlocalnum
+				,1
+				))
+		{
+			clearOperands(state,true,lastlocalresulttype);
+			state.preloadedcode.push_back((uint32_t)opcode);
+			state.refreshOldNewPosition(code);
+			typestack.push_back(typestack.back());
+			return;
+		}
 	}
 	bool dupoperand = state.operandlist.empty() && state.lastlocalresultpos != UINT32_MAX;
 	if (dupoperand)
@@ -167,7 +205,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 						while (it != state.jumptargets.end() && !skipped_iffalse)
 						{
 							int32_t positionsskipped;
-							int32_t newjumppos = skipIgnorables(code,jumppos-(numjumps ? 1 : 0),positionsskipped);
+							int32_t newjumppos = skipIgnorables(state,code,jumppos-(numjumps ? 1 : 0),positionsskipped,restype);
 							jumppos = newjumppos;
 							if (code.peekbyteFromPosition(jumppos-1) ==0x11)//iftrue
 							{
@@ -231,7 +269,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 						while (it != state.jumptargets.end() && !skipped_iftrue)
 						{
 							int32_t positionsskipped;
-							int32_t newjumppos = skipIgnorables(code,jumppos-(numjumps ? 1 : 0),positionsskipped);
+							int32_t newjumppos = skipIgnorables(state,code,jumppos-(numjumps ? 1 : 0),positionsskipped,restype);
 							jumppos = newjumppos;
 							if (code.peekbyteFromPosition(jumppos-1) ==0x12)//iffalse
 							{
@@ -284,7 +322,7 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 			if (opcode_optimized)
 			{
 				int32_t positionsskipped;
-				pos = skipIgnorables(code,pos,positionsskipped);
+				pos = skipIgnorables(state,code,pos,positionsskipped,restype);
 				b = code.peekbyteFromPosition(pos);
 				switch (b)
 				{

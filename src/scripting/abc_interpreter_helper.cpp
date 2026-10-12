@@ -236,18 +236,12 @@ void setForceInt(preloadstate& state,memorystream& code,Class_base** resulttype)
 		*resulttype = Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr();
 #endif
 }
-bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_jumpspace, Class_base* restype,int preloadpos,int preloadlocalpos, bool checkchanged,bool fromdup, uint32_t opcode_setslot)
+bool needResultOnStack(uint32_t pos,preloadstate& state, memorystream& code, Class_base* restype, int preloadpos, int preloadlocalpos, bool checkchanged, bool fromdup, uint32_t& setlocalnum,uint32_t argsneeded)
 {
 #ifdef ENABLE_OPTIMIZATION
 	bool res = false;
-	uint32_t pos = code.tellg()+1;
-	uint8_t b = code.peekbyte();
+	uint8_t b = code.peekbyteFromPosition(pos++);
 	bool keepchecking=true;
-	if (preloadpos == -1)
-		preloadpos = state.preloadedcode.size()-1;
-	if (preloadlocalpos == -1)
-		preloadlocalpos = state.preloadedcode.size()-1;
-	uint32_t argsneeded=0;
 
 	state.lastlocalresultpos=UINT32_MAX;
 	while (state.jumptargets.find(pos) == state.jumptargets.end() && keepchecking)
@@ -916,7 +910,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		}
 	}
 	skipjump(state,b,code,pos,!argsneeded);
-	bool setlocal=false;
+	setlocalnum=UINT32_MAX;
 	// check if we need to store the result of the operation on stack
 	switch (b)
 	{
@@ -936,17 +930,9 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 		{
 			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
 			{
-				uint32_t num = code.peeku30FromPosition(pos);
 				state.setlocal_handled.insert(make_pair(pos,state.operandlist.size()));
-				state.operandlist.push_back(operands(OP_LOCAL,restype,num,0,0));
-
-				// set optimized opcode to corresponding opcode with local result
-				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
-				state.preloadedcode[preloadlocalpos].pcode.local3.pos = num;
-				state.localtypes[num] = restype;
+				setlocalnum = code.peeku30FromPosition(pos);
 				pos = code.skipu30FromPosition(pos);
-				state.lastlocalresultpos=num;
-				setlocal=true;
 				res = true;
 			}
 			else
@@ -960,14 +946,7 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			if (!argsneeded && state.jumptargets.find(pos) == state.jumptargets.end())
 			{
 				state.setlocal_handled.insert(make_pair(pos,state.operandlist.size()));
-				state.operandlist.push_back(operands(OP_LOCAL,restype,b-0xd4,0,0));
-
-				// set optimized opcode to corresponding opcode with local result
-				state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
-				state.preloadedcode[preloadlocalpos].pcode.local3.pos = b-0xd4;
-				state.localtypes[b-0xd4] = restype;
-				state.lastlocalresultpos=b-0xd4;
-				setlocal=true;
+				setlocalnum = b-0xd4;
 				res = true;
 			}
 			else
@@ -1047,7 +1026,9 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 					    && (uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 0)
 					|| ((argsneeded==0) && (state.operandlist.size() > 1)
 						&& (uint32_t)state.mi->context->constant_pool.multinames[t].runtimeargs == 1
-						&& (state.operandlist.back().objtype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()))
+						&& (state.operandlist.back().objtype == Class<Integer>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr()
+							|| state.operandlist.back().objtype == Class<UInteger>::getRef(state.mi->context->applicationDomain->getSystemState()).getPtr())
+							)
 					)
 				)
 				res = true;
@@ -1194,9 +1175,29 @@ bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_
 			clearOperands(state,false,nullptr,checkchanged);
 			break;
 	}
+	return !res;
+}
+bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_jumpspace, Class_base* restype,int preloadpos,int preloadlocalpos, bool checkchanged,bool fromdup, uint32_t opcode_setslot)
+{
+	if (preloadpos == -1)
+		preloadpos = state.preloadedcode.size()-1;
+	if (preloadlocalpos == -1)
+		preloadlocalpos = state.preloadedcode.size()-1;
+	uint32_t setlocalnum;
+	bool res = !needResultOnStack(code.tellg(),state,code,restype,preloadpos,preloadlocalpos,checkchanged,fromdup,setlocalnum,0);
 	if (res)
 	{
-		if (!setlocal)
+		if (setlocalnum != UINT32_MAX)
+		{
+			state.operandlist.push_back(operands(OP_LOCAL,restype,setlocalnum,0,0));
+
+			// set optimized opcode to corresponding opcode with local result
+			state.preloadedcode[preloadpos].opcode += opcode_jumpspace;
+			state.preloadedcode[preloadlocalpos].pcode.local3.pos = setlocalnum;
+			state.localtypes[setlocalnum] = restype;
+			state.lastlocalresultpos=setlocalnum;
+		}
+		else
 		{
 			uint32_t resultpos;
 			if (state.localresultposfreelist.empty())

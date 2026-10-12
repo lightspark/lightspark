@@ -207,14 +207,9 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 				break;
 			}
 			case 1:
-				if (getSys()->getStringFromUniqueId(state.function->functionname) == "manageOverwrites"
-					&& code.tellg() >= 300 && code.tellg() <= 490)
-				{
-					int x=0;
-				}
 				if (state.operandlist.size() > 2
 					&& (state.operandlist[state.operandlist.size()-2].objtype == Class<Integer>::getRef(state.function->getSystemState()).getPtr()
-						//|| state.operandlist[state.operandlist.size()-2].objtype == Class<UInteger>::getRef(state.function->getSystemState()).getPtr()
+						|| state.operandlist[state.operandlist.size()-2].objtype == Class<UInteger>::getRef(state.function->getSystemState()).getPtr()
 						)
 					)
 				{
@@ -259,7 +254,7 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 				{
 					if (typestack.size() > 2
 						&& (typestack[typestack.size()-2].obj == Class<Integer>::getRef(state.function->getSystemState()).getPtr()
-//							|| typestack[typestack.size()-2].obj == Class<UInteger>::getRef(state.function->getSystemState()).getPtr()
+							|| typestack[typestack.size()-2].obj == Class<UInteger>::getRef(state.function->getSystemState()).getPtr()
 							)
 						)
 					{

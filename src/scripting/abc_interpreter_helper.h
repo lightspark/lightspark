@@ -191,6 +191,7 @@ void setOperandModified(preloadstate& state,OPERANDTYPES type, int index);
 bool canCallFunctionDirect(operands& op,multiname* name, bool ignoreoverridden=false);
 bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden);
 void setForceInt(preloadstate& state,memorystream& code,Class_base** resulttype);
+bool needResultOnStack(uint32_t pos, preloadstate& state, memorystream& code, Class_base* restype, int preloadpos, int preloadlocalpos, bool checkchanged, bool fromdup, uint32_t& setlocalnum, uint32_t argsneeded);
 bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_jumpspace, Class_base* restype,int preloadpos=-1,int preloadlocalpos=-1, bool checkchanged=false,bool fromdup = false, uint32_t opcode_setslot=UINT32_MAX);
 bool setupInstructionOneArgumentNoResult(preloadstate& state,int operator_start,int opcode,memorystream& code, uint32_t startcodepos);
 bool setupInstructionTwoArgumentsNoResult(preloadstate& state,int operator_start,int opcode,memorystream& code, int32_t ignorelocalresultindex=INT32_MAX);

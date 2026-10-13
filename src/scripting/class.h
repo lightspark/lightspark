@@ -60,6 +60,10 @@ public:
 	void getInstanceTemporary(ASWorker* worker,asAtom& ret) override;
 	Class_inherit(const QName& name, MemoryAccount* m,const traits_info* _classtrait, Global* _global);
 	bool checkScriptInit();
+	bool isInScriptInit() const
+	{
+		return inScriptInit;
+	}
 	bool destruct() override
 	{
 		instancefactory.reset();

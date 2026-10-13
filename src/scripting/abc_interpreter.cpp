@@ -3676,6 +3676,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 					setupInstructionIncDecInteger(state,code,typestack,&lastlocalresulttype,dup_indicator,0xc0);//increment_i
 					break;
 				}
+				if (typestack.back().obj == Class<UInteger>::getRef(function->getSystemState()).getPtr())
+				{
+					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_INCREMENT,opcode,code,true,true,Class<UInteger>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
+					dup_indicator=0;
+					break;
+				}
 #endif
 				setupInstructionOneArgument(state,ABC_OP_OPTIMZED_INCREMENT,opcode,code,true,true,Class<Number>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
 				dup_indicator=0;
@@ -3701,6 +3707,12 @@ void ABCVm::preloadFunction(SyntheticFunction* function, ASWorker* wrk)
 				{
 					// argument is an int, so we can use the decrement_i optimization instead
 					setupInstructionIncDecInteger(state,code,typestack,&lastlocalresulttype,dup_indicator,0xc1);//decrement_i
+					break;
+				}
+				if (typestack.back().obj == Class<UInteger>::getRef(function->getSystemState()).getPtr())
+				{
+					setupInstructionOneArgument(state,ABC_OP_OPTIMZED_DECREMENT,opcode,code,true,true,Class<UInteger>::getRef(function->getSystemState()).getPtr(),code.tellg(),dup_indicator == 0);
+					dup_indicator=0;
 					break;
 				}
 #endif

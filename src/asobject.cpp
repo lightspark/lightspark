@@ -332,7 +332,9 @@ bool ASObject::isEqual(ASObject* r)
 	{
 		case T_NULL:
 		case T_UNDEFINED:
-			if (!this->isInitialized() && !this->is<Class_base>())
+			if ((!this->isInitialized() && !this->is<Class_base>())
+				|| (this->is<Class_inherit>() && this->as<Class_inherit>()->isInScriptInit() )
+				)
 				return true;
 			return false;
 		case T_NUMBER:

@@ -206,7 +206,8 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 						{
 							int32_t positionsskipped;
 							int32_t newjumppos = skipIgnorables(state,code,jumppos-(numjumps ? 1 : 0),positionsskipped,restype);
-							jumppos = newjumppos;
+							if (positionsskipped)
+								jumppos = newjumppos;
 							if (code.peekbyteFromPosition(jumppos-1) ==0x11)//iftrue
 							{
 								if (!numjumps)
@@ -270,7 +271,8 @@ void preload_dup(preloadstate& state,std::vector<typestackentry>& typestack,memo
 						{
 							int32_t positionsskipped;
 							int32_t newjumppos = skipIgnorables(state,code,jumppos-(numjumps ? 1 : 0),positionsskipped,restype);
-							jumppos = newjumppos;
+							if (positionsskipped)
+								jumppos = newjumppos;
 							if (code.peekbyteFromPosition(jumppos-1) ==0x12)//iffalse
 							{
 								if (!numjumps)

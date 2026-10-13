@@ -397,16 +397,18 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 		if (done || getLexFindClass(state,name,false,typestack,code))
 			return;
 	}
-#endif
 	state.preloadedcode.push_back(ABC_OP_OPTIMZED_GETLEX);
 	state.refreshOldNewPosition(code);
-	state.preloadedcode[state.preloadedcode.size()-1].pcode.cachedmultiname2=name;
 	if (!checkForLocalResult(state,code,0,resulttype))
 	{
 		// no local result possible, use standard operation
 		state.preloadedcode[state.preloadedcode.size()-1].opcode=0x60;//getlex
 		clearOperands(state,true,lastlocalresulttype);
 	}
+#else
+	state.preloadedcode.push_back((uint32_t)opcode);
+#endif
+	state.preloadedcode[state.preloadedcode.size()-1].pcode.cachedmultiname2=name;
 	typestack.push_back(typestackentry(resulttype,true));
 }
 

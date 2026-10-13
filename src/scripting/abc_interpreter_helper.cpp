@@ -2128,6 +2128,7 @@ void removeInitializeLocalToConstant(preloadstate& state,int32_t value)
 
 bool getLexFindClass(preloadstate& state, multiname* name, bool checkfuncscope,std::vector<typestackentry>& typestack,memorystream& code)
 {
+#ifdef ENABLE_OPTIMIZATION
 	asAtom o=asAtomHandler::invalidAtom;
 	GET_VARIABLE_RESULT r = GETVAR_NORMAL;
 	if(checkfuncscope && !state.function->func_scope.isNull()) // check scope stack
@@ -2228,6 +2229,7 @@ bool getLexFindClass(preloadstate& state, multiname* name, bool checkfuncscope,s
 			return true;
 		}
 	}
+#endif
 	return false;
 }
 void optimize_lastsetlocal(memorystream& codetypes, std::map<int32_t,int32_t>& lastsetlocal,preloadstate& state, uint32_t t)

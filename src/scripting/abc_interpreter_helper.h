@@ -188,8 +188,8 @@ void skipjump(preloadstate& state,uint8_t& b,memorystream& code,uint32_t& pos,bo
 void clearOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastlocalresulttype,bool checkchanged=false, OPERANDTYPES type = OP_CACHED_CONSTANT, int index=-1);
 void removeOperands(preloadstate& state,bool resetlocaltypes,Class_base** lastlocalresulttype,uint32_t opcount);
 void setOperandModified(preloadstate& state,OPERANDTYPES type, int index);
-bool canCallFunctionDirect(operands& op,multiname* name, bool ignoreoverridden=false);
-bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden);
+bool canCallFunctionDirect(preloadstate& state, operands& op, multiname* name, bool ignoreoverridden=false);
+bool canCallFunctionDirect(preloadstate& state, ASObject* obj,multiname* name, bool ignoreoverridden);
 void setForceInt(preloadstate& state,memorystream& code,Class_base** resulttype);
 bool needResultOnStack(uint32_t pos, preloadstate& state, memorystream& code, Class_base* restype, int preloadpos, int preloadlocalpos, bool checkchanged, bool fromdup, uint32_t& setlocalnum, uint32_t argsneeded);
 bool checkForLocalResult(preloadstate& state,memorystream& code,uint32_t opcode_jumpspace, Class_base* restype,int preloadpos=-1,int preloadlocalpos=-1, bool checkchanged=false,bool fromdup = false, uint32_t opcode_setslot=UINT32_MAX);

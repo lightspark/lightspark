@@ -922,14 +922,17 @@ void DisplayObjectContainer::removeChildName(DisplayObject* obj)
 		if (asAtomHandler::getObject(a))
 		{
 			asAtom newobj = needsActionScript3() ? asAtomHandler::nullAtom : asAtomHandler::undefinedAtom;
-			for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); ++it)
+			if (!getSystemState()->isShuttingDown())
 			{
-				if ((*it) != obj && (*it)->name==obj->name)
+				for (auto it = dynamicDisplayList.begin(); it != dynamicDisplayList.end(); ++it)
 				{
-					// set to DisplayObject with same name and lowest depth
-					(*it)->incRef();
-					newobj=asAtomHandler::fromObjectNoPrimitive(*it);
-					break;
+					if ((*it) != obj && (*it)->name==obj->name)
+					{
+						// set to DisplayObject with same name and lowest depth
+						(*it)->incRef();
+						newobj=asAtomHandler::fromObjectNoPrimitive(*it);
+						break;
+					}
 				}
 			}
 			setVariableByMultiname(objName,newobj, CONST_NOT_ALLOWED,nullptr,loadedFrom->getInstanceWorker());

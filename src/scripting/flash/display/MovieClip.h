@@ -65,6 +65,7 @@ public:
 	FrameContainer* getFrameContainer() const { return framecontainer; }
 	MovieClip(ASWorker* wrk,Class_base* c);
 	MovieClip(ASWorker* wrk,Class_base* c, FrameContainer* f, uint32_t defineSpriteTagID);
+	void setupTag(DictionaryTag* tag) override;
 	bool destruct() override;
 	void finalize() override;
 	void prepareShutdown() override;

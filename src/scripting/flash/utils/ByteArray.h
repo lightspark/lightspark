@@ -62,6 +62,7 @@ public:
 	~ByteArray();
 	bool destruct() override;
 	void finalize() override;
+	void setupTag(DictionaryTag *tag) override;
 	//Helper interface for serialization
 	bool peekByte(uint8_t& b);
 	FORCE_INLINE bool readByte(uint8_t& b)

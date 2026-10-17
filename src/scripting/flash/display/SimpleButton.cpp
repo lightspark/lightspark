@@ -208,46 +208,53 @@ SimpleButton::SimpleButton(ASWorker* wrk, Class_base* c, DefineButtonTag *tag)
 	,upStateHasMovieClip(false)
 {
 	subtype = SUBTYPE_SIMPLEBUTTON;
+	setupTag(tag);
+	tabEnabled = asAtomHandler::trueAtom;
+}
+
+
+void SimpleButton::setupTag(DictionaryTag* tag)
+{
 	if (tag)
 		this->loadedFrom = tag->loadedFrom;
 	if (!needsActionScript3())
 		handleConstruction();
-	if (tag && tag->sounds)
+	DefineButtonTag* t = (DefineButtonTag*)tag;
+	if (t && t->sounds)
 	{
-		if (tag->sounds->SoundID0_OverUpToIdle)
+		if (t->sounds->SoundID0_OverUpToIdle)
 		{
-			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(tag->loadedFrom->dictionaryLookup(tag->sounds->SoundID0_OverUpToIdle));
+			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(t->loadedFrom->dictionaryLookup(t->sounds->SoundID0_OverUpToIdle));
 			if (sound)
-				soundchannel_OverUpToIdle = _MR(sound->createSoundChannel(&tag->sounds->SoundInfo0_OverUpToIdle));
+				soundchannel_OverUpToIdle = _MR(sound->createSoundChannel(&t->sounds->SoundInfo0_OverUpToIdle));
 			else
-				LOG(LOG_ERROR,"ButtonSound not found for OverUpToIdle:"<<tag->sounds->SoundID0_OverUpToIdle << " on button "<<tag->getId());
+				LOG(LOG_ERROR,"ButtonSound not found for OverUpToIdle:"<<t->sounds->SoundID0_OverUpToIdle << " on button "<<t->getId());
 		}
-		if (tag->sounds->SoundID1_IdleToOverUp)
+		if (t->sounds->SoundID1_IdleToOverUp)
 		{
-			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(tag->loadedFrom->dictionaryLookup(tag->sounds->SoundID1_IdleToOverUp));
+			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(t->loadedFrom->dictionaryLookup(t->sounds->SoundID1_IdleToOverUp));
 			if (sound)
-				soundchannel_IdleToOverUp = _MR(sound->createSoundChannel(&tag->sounds->SoundInfo1_IdleToOverUp));
+				soundchannel_IdleToOverUp = _MR(sound->createSoundChannel(&t->sounds->SoundInfo1_IdleToOverUp));
 			else
-				LOG(LOG_ERROR,"ButtonSound not found for IdleToOverUp:"<<tag->sounds->SoundID1_IdleToOverUp << " on button "<<tag->getId());
+				LOG(LOG_ERROR,"ButtonSound not found for IdleToOverUp:"<<t->sounds->SoundID1_IdleToOverUp << " on button "<<t->getId());
 		}
-		if (tag->sounds->SoundID2_OverUpToOverDown)
+		if (t->sounds->SoundID2_OverUpToOverDown)
 		{
-			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(tag->loadedFrom->dictionaryLookup(tag->sounds->SoundID2_OverUpToOverDown));
+			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(t->loadedFrom->dictionaryLookup(t->sounds->SoundID2_OverUpToOverDown));
 			if (sound)
-				soundchannel_OverUpToOverDown = _MR(sound->createSoundChannel(&tag->sounds->SoundInfo2_OverUpToOverDown));
+				soundchannel_OverUpToOverDown = _MR(sound->createSoundChannel(&t->sounds->SoundInfo2_OverUpToOverDown));
 			else
-				LOG(LOG_ERROR,"ButtonSound not found for OverUpToOverDown:"<<tag->sounds->SoundID2_OverUpToOverDown << " on button "<<tag->getId());
+				LOG(LOG_ERROR,"ButtonSound not found for OverUpToOverDown:"<<t->sounds->SoundID2_OverUpToOverDown << " on button "<<t->getId());
 		}
-		if (tag->sounds->SoundID3_OverDownToOverUp)
+		if (t->sounds->SoundID3_OverDownToOverUp)
 		{
-			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(tag->loadedFrom->dictionaryLookup(tag->sounds->SoundID3_OverDownToOverUp));
+			DefineSoundTag* sound = dynamic_cast<DefineSoundTag*>(t->loadedFrom->dictionaryLookup(t->sounds->SoundID3_OverDownToOverUp));
 			if (sound)
-				soundchannel_OverDownToOverUp = _MR(sound->createSoundChannel(&tag->sounds->SoundInfo3_OverDownToOverUp));
+				soundchannel_OverDownToOverUp = _MR(sound->createSoundChannel(&t->sounds->SoundInfo3_OverDownToOverUp));
 			else
-				LOG(LOG_ERROR,"ButtonSound not found for OverUpToOverDown:"<<tag->sounds->SoundID3_OverDownToOverUp << " on button "<<tag->getId());
+				LOG(LOG_ERROR,"ButtonSound not found for OverUpToOverDown:"<<t->sounds->SoundID3_OverDownToOverUp << " on button "<<t->getId());
 		}
 	}
-	tabEnabled = asAtomHandler::trueAtom;
 }
 
 void SimpleButton::finalize()

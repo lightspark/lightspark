@@ -2708,6 +2708,12 @@ ASObject* DefineBinaryDataTag::instance(Class_base* c, ASObject* prevInstance, b
 	return ret;
 }
 
+void DefineBinaryDataTag::fillData(ByteArray* ba)
+{
+	ba->setLength(0);
+	ba->append(bytes,len);
+}
+
 FileAttributesTag::FileAttributesTag(RECORDHEADER h, std::istream& in):Tag(h)
 {
 	LOG(LOG_TRACE,"FileAttributesTag Tag");

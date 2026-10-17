@@ -23,6 +23,7 @@
 #include "scripting/class.h"
 #include "compat.h"
 #include "parsing/amf3_generator.h"
+#include "parsing/tags.h"
 #include "scripting/argconv.h"
 #include "scripting/toplevel/Array.h"
 #include "scripting/toplevel/Number.h"
@@ -94,6 +95,11 @@ void ByteArray::finalize()
 		delete[] bytes;
 		bytes = nullptr;
 	}
+}
+
+void ByteArray::setupTag(DictionaryTag* tag)
+{
+	((DefineBinaryDataTag*)tag)->fillData(this);
 }
 
 void ByteArray::sinit(Class_base* c)

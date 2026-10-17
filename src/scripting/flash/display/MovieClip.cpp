@@ -94,6 +94,12 @@ MovieClip::MovieClip(ASWorker* wrk, Class_base* c, FrameContainer* f, uint32_t d
 	//For the root movie, it's the frame count from the header
 }
 
+void MovieClip::setupTag(DictionaryTag* tag)
+{
+	fromDefineSpriteTag = tag->getId();
+	framecontainer = ((DefineSpriteTag*)tag)->getFrameContainer();
+}
+
 bool MovieClip::destruct()
 {
 	framecontainer=nullptr;

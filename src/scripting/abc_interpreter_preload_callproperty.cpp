@@ -110,7 +110,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 		if (!v && typestack.size() >= operationcount)
 		{
 			bool isoverridden=false;
-			if (cls && canCallFunctionDirect(cls,name,false))
+			if (cls && canCallFunctionDirect(state,cls,name,false))
 			{
 				v = needSuper || typestack[typestack.size()-operationcount].classvar ?
 							cls->findVariableByMultiname(
@@ -119,7 +119,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							nullptr,nullptr,false,state.worker):
 							cls->as<Class_base>()->getBorrowedVariableByMultiname(*name);
 			}
-			else if (cls && canCallFunctionDirect(cls,name,true))
+			else if (cls && canCallFunctionDirect(state,cls,name,true))
 			{
 				isoverridden=true;
 				v = needSuper || typestack[typestack.size()-operationcount].classvar ?
@@ -134,7 +134,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 					&& (state.operandlist[state.operandlist.size()-operationcount].type == OP_LOCAL
 						|| state.operandlist[state.operandlist.size()-operationcount].type == OP_CACHED_CONSTANT)
 					&& state.operandlist[state.operandlist.size()-operationcount].objtype && state.operandlist[state.operandlist.size()-operationcount].objtype->is<Class_base>()
-					&& canCallFunctionDirect(state.operandlist.at(state.operandlist.size()-operationcount),name))
+					&& canCallFunctionDirect(state,state.operandlist.at(state.operandlist.size()-operationcount),name))
 			{
 				cls = state.operandlist[state.operandlist.size()-operationcount].objtype;
 				if (needSuper)
@@ -236,7 +236,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 								&& (state.operandlist.back().type == OP_LOCAL || state.operandlist.back().type == OP_CACHED_CONSTANT || state.operandlist.back().type == OP_CACHED_SLOT)
 								&& state.operandlist.back().objtype)
 						{
-							if (canCallFunctionDirect(state.operandlist.back(),name,needSuper))
+							if (canCallFunctionDirect(state,state.operandlist.back(),name,needSuper))
 							{
 								if (v && v->isFunctionVar() && asAtomHandler::isInvalid(v->getFunctionVar()->closure_this))
 								{
@@ -440,7 +440,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							auto it = state.operandlist.rbegin();
 							Class_base* argtype = it->objtype;
 							it++;
-							if (canCallFunctionDirect((*it),name,needSuper))
+							if (canCallFunctionDirect(state,cls,name,needSuper))
 							{
 								if (!fromglobal
 									&& v
@@ -643,7 +643,7 @@ void preload_callprop(preloadstate& state,std::vector<typestackentry>& typestack
 							state.preloadedcode.at(oppos+1).pcode.cachedmultiname3 = name;
 							if (state.operandlist.size() > argcount)
 							{
-								if (!fromglobal && canCallFunctionDirect((*it),name,needSuper))
+								if (!fromglobal && canCallFunctionDirect(state,cls,name,needSuper))
 								{
 									if (v && v->isFunctionVar() && asAtomHandler::isInvalid(v->getFunctionVar()->closure_this))
 									{

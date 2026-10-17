@@ -55,7 +55,7 @@ public:
 
 
 	IFunction* clonedFrom;
-	/* returns whether this is this a method of a function */
+	/* returns whether this is this a method of a class */
 	bool isMethod() const { return inClass != nullptr; }
 	bool isConstructed() const override { return constructIndicator; }
 	inline bool destruct() override

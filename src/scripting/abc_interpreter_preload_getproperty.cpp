@@ -75,7 +75,7 @@ void preload_getproperty(preloadstate& state, std::vector<typestackentry>& types
 				{
 					asAtom* a = state.mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
 					ASObject* obj = asAtomHandler::getObject(*a);
-					if (obj)
+					if (obj && (!obj->is<Class_inherit>() || obj->as<Class_inherit>()->isScriptInitDone()))
 					{
 						bool isborrowed=false;
 						variable* v = obj->findVariableByMultiname(*name,obj->getClass(),nullptr,&isborrowed,false,state.worker);
@@ -139,7 +139,10 @@ void preload_getproperty(preloadstate& state, std::vector<typestackentry>& types
 				}
 				if (state.operandlist.size() > 0 && state.operandlist.back().objtype)
 				{
-					if (state.operandlist.back().type != OP_LOCAL && state.operandlist.back().type != OP_CACHED_SLOT && state.operandlist.back().type != OP_CACHED_CONSTANT)
+					if (state.operandlist.back().type != OP_LOCAL
+						&& state.operandlist.back().type != OP_CACHED_SLOT
+						&& state.operandlist.back().type != OP_CACHED_CONSTANT
+						&& canCallFunctionDirect(state,state.operandlist.back(),name))
 					{
 						// pushed builtin constants, property can be called directly and stored as a constant
 						variable* v = state.operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
@@ -165,7 +168,7 @@ void preload_getproperty(preloadstate& state, std::vector<typestackentry>& types
 							asAtom* a = state.mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
 							isClassOperator = asAtomHandler::is<Class_base>(*a);
 						}
-						if (!isClassOperator && canCallFunctionDirect(state.operandlist.back(),name))
+						if (!isClassOperator && canCallFunctionDirect(state,state.operandlist.back(),name))
 						{
 							variable* v = state.operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
 							if (v && asAtomHandler::is<IFunction>(v->getter))
@@ -182,7 +185,7 @@ void preload_getproperty(preloadstate& state, std::vector<typestackentry>& types
 								break;
 							}
 						}
-						if (!isClassOperator && canCallFunctionDirect(state.operandlist.back(),name,true))
+						if (!isClassOperator && canCallFunctionDirect(state,state.operandlist.back(),name,true))
 						{
 							variable* v = state.operandlist.back().objtype->getBorrowedVariableByMultiname(*name);
 							if (v)
@@ -199,7 +202,9 @@ void preload_getproperty(preloadstate& state, std::vector<typestackentry>& types
 							if (isClassOperator)
 							{
 								asAtom* a = state.mi->context->getConstantAtom(state.operandlist.back().type,state.operandlist.back().index);
-								v = asAtomHandler::getObject(*a)->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
+								ASObject* obj = asAtomHandler::getObject(*a);
+								if (!obj->is<Class_inherit>() || obj->as<Class_inherit>()->isScriptInitDone())
+									v = obj->findVariableByMultiname(*name,nullptr,nullptr,nullptr,false,state.worker);
 								if (v && v->kind == TRAIT_KIND::INSTANCE_TRAIT)
 									v=nullptr;
 							}

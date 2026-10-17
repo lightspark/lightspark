@@ -506,6 +506,8 @@ class KERNINGRECORD
 {
 };
 
+class ByteArray;
+
 class DefineBinaryDataTag: public DictionaryTag
 {
 private:
@@ -518,6 +520,7 @@ public:
 	~DefineBinaryDataTag() { delete[] bytes; }
 	int getId() const override {return Tag;}
 	ASObject* instance(Class_base* c=nullptr,ASObject* prevInstance=nullptr, bool temporary=false) override;
+	void fillData(ByteArray* ba);
 };
 
 class FontTag: public DictionaryTag
@@ -704,6 +707,7 @@ public:
 	ASObject* instance(Class_base* c=nullptr,ASObject* prevInstance=nullptr, bool temporary=false) override;
 	bool needsDefaultName(DisplayObject* currchar) const override { return true; }
 	void setSoundStartFrame();
+	FrameContainer* getFrameContainer() const { return framecontainer; }
 };
 
 class ProtectTag: public ControlTag

@@ -867,6 +867,7 @@ public:
 };
 
 class ASWorker;
+class DictionaryTag;
 
 extern ASWorker* getWorker();
 
@@ -1134,6 +1135,7 @@ public:
 		return avm1ConstructorFunction;
 	}
 	virtual bool needsActionScript3() const;
+	virtual void setupTag(DictionaryTag* tag) { } // is called if an instance of an inherited class is reused from cache
 
 	/*
 	 * Helper method using the get the raw variable struct instead of calling the getter.

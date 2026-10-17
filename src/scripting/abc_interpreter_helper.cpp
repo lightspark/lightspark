@@ -174,41 +174,41 @@ void setOperandModified(preloadstate& state,OPERANDTYPES type, int index)
 	}
 }
 
-bool canCallFunctionDirect(operands& op,multiname* name, bool ignoreoverridden)
+bool canCallFunctionDirect(preloadstate& state,operands& op,multiname* name, bool ignoreoverridden)
 {
-	if (op.objtype && op.objtype->is<Class_inherit>() && !op.objtype->isConstructed())
+	if (op.objtype && op.objtype->is<Class_inherit>())
 	{
 		if (op.objtype->getInstanceWorker()->rootClip && !op.objtype->getInstanceWorker()->rootClip->hasFinishedLoading())
 			return false;
-		if (!op.objtype->as<Class_inherit>()->checkScriptInit())
+		if (!op.objtype->as<Class_inherit>()->isScriptInitDone())
 			return false;
 	}
 	return
-		op.objtype &&
-		!op.objtype->isInterface && // it's not an interface
-		(
-		ignoreoverridden ||
-		!op.objtype->as<Class_base>()->hasoverriddenmethod(name) // current method is not in overridden methods
-		);
+		op.objtype
+		   && !op.objtype->isInterface // it's not an interface
+		   && (
+			   ignoreoverridden ||
+			   !op.objtype->as<Class_base>()->hasoverriddenmethod(name) // current method is not in overridden methods
+			   );
 }
-bool canCallFunctionDirect(ASObject* obj,multiname* name, bool ignoreoverridden)
+bool canCallFunctionDirect(preloadstate& state,ASObject* obj,multiname* name, bool ignoreoverridden)
 {
 	if (!obj || !obj->is<Class_base>())
 		return false;
 	Class_base* objtype = obj->as<Class_base>();
-	if (objtype->is<Class_inherit>() && !objtype->isConstructed())
+	if (objtype->is<Class_inherit>())
 	{
 		if (objtype->getInstanceWorker()->rootClip && !objtype->getInstanceWorker()->rootClip->hasFinishedLoading())
 			return false;
-		if (!objtype->as<Class_inherit>()->checkScriptInit())
+		if (!objtype->as<Class_inherit>()->isScriptInitDone())
 			return false;
 	}
-	return !objtype->isInterface && // it's not an interface
-		(
-		!objtype->is<Class_inherit>() || // type is builtin class
-		ignoreoverridden ||
-		!objtype->as<Class_inherit>()->hasoverriddenmethod(name) // current method is not in overridden methods
-		);
+	return !objtype->isInterface // it's not an interface
+		   && (
+			   !objtype->is<Class_inherit>() || // type is builtin class
+			   ignoreoverridden ||
+			   !objtype->as<Class_inherit>()->hasoverriddenmethod(name) // current method is not in overridden methods
+			   );
 }
 void setForceInt(preloadstate& state,memorystream& code,Class_base** resulttype)
 {
@@ -2608,8 +2608,8 @@ void preloadFunction_secondPass(preloadstate& state)
 
 variable* getTempVariableFromClass(Class_base* cls, asAtom& otmp, multiname* name, ASWorker* wrk)
 {
-	if (cls->is<Class_inherit>())
-		cls->as<Class_inherit>()->checkScriptInit();
+	if (cls->is<Class_inherit>() && !cls->as<Class_inherit>()->isScriptInitDone())
+		return nullptr;
 
 	if (cls != Class_object::getRef(cls->getSystemState()).getPtr()
 		&& cls != Class<Global>::getRef(cls->getSystemState()).getPtr()

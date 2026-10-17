@@ -123,7 +123,18 @@ asAtom lightspark::new_AVM1SuperObject(asAtom o,ASObject* super, ASWorker* wrk)
 		return asAtomHandler::undefinedAtom;
 }
 
-Class_inherit::Class_inherit(const QName& name, MemoryAccount* m, const traits_info *_classtrait, Global *_global):Class_base(name, UINT32_MAX,m),tag(nullptr),bindedToRoot(false),bindingchecked(false),inScriptInit(false),classtrait(_classtrait)
+Class_inherit::Class_inherit(
+	const QName& name
+	,MemoryAccount* m
+	,const traits_info *_classtrait
+	,Global *_global)
+	:Class_base(name, UINT32_MAX,m)
+	,tag(nullptr)
+	,bindedToRoot(false)
+	,bindingchecked(false)
+	,inScriptInit(false)
+	,scriptInitDone(false)
+	,classtrait(_classtrait)
 {
 	this->global=_global;
 	this->incRef(); //create on reference for the classes map
@@ -142,6 +153,7 @@ bool Class_inherit::checkScriptInit()
 		inScriptInit=true;
 		global->checkScriptInit();
 		inScriptInit=false;
+		scriptInitDone=true;
 	}
 	return true;
 }
@@ -194,6 +206,8 @@ void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, a
 		{
 			obj->setClass(realClass);
 			obj->resetCached();
+			if (tag)
+				obj->setupTag(tag);
 			ret=asAtomHandler::fromObject(obj);
 			if(construct)
 				handleConstruction(ret,args,argslen,true,worker->isExplicitlyConstructed(), callSyntheticConstructor);

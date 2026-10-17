@@ -169,6 +169,7 @@ protected:
 	void afterSetLegacyMatrix() override;
 public:
 	TextField(ASWorker* wrk,Class_base* c, const TextData& textData=TextData(), bool _selectable=true, bool readOnly=true, const char* varname="", DefineEditTextTag* _tag=nullptr);
+	void setupTag(DictionaryTag *tag) override;
 	~TextField();
 	void finalize() override;
 	void prepareShutdown() override;

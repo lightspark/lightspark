@@ -2534,7 +2534,7 @@ bool variables_map::countCylicMemberReferences(garbagecollectorstate& gcstate, A
 
 	bool ret = false;
 	int step = 0;
-	// loop over members in two steps:
+	// loop over members in three steps:
 	// first loop sets "hasmember" of parent if it has startobject as member
 	// so that all variables checked in third loop will have the member indicator set if they also have an indirect reference to parent
 	// second loop looks for variables that are also members of a static object so we can stop gc early
@@ -2895,7 +2895,7 @@ bool ASObject::handleGarbageCollection()
 		bool neednewcheck=false;
 		for (auto it = gcstate.checkedobjects.begin(); it != gcstate.checkedobjects.end(); it++)
 		{
-			LOG_CALL("handleGarbageCollection checked:"<<(*it)<<" "<<(*it)->getRefCount()<<"/"<<(*it)->storedmembercount<<" count:"<<(*it)->gccounter.count<<" "<<((*it)->gccounter.hasmember ? "hasmember" : ""));
+			LOG_CALL("handleGarbageCollection checked:"<<(*it)<<" "<<(*it)->getRefCount()<<"/"<<(*it)->storedmembercount<<"/"<<(*it)->storedmembercountstatic<<" count:"<<(*it)->gccounter.count<<((*it)->gccounter.hasmember ? " hasmember" : "")<<((*it)->gccounter.ignore ? " ignored":""));
 			assert((*it) != this);
 			if (((*it)->gccounter.ignore || (*it)->getConstant() || (*it)->gccounter.count!=(uint32_t)(*it)->getRefCount()) && (*it)->gccounter.hasmember)
 			{

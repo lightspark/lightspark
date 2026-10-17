@@ -84,6 +84,7 @@ public:
 	void beforeConstruction(bool _explicit = false) override;
 	void afterConstruction(bool _explicit = false) override;
 	void addDisplayObject(BUTTONOBJECTTYPE state, uint32_t depth, DisplayObject* o);
+	void setupTag(DictionaryTag *tag) override;
 
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(_constructor);

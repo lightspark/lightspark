@@ -53,6 +53,7 @@ public:
 	void refreshSurfaceState() override;
 	IDrawable* invalidate(bool smoothing) override;
 	std::string toDebugString() const override;
+	void setupTag(DictionaryTag* tag) override;
 };
 
 }

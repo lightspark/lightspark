@@ -48,9 +48,10 @@ class Class_inherit:public Class_base
 private:
 	void getInstance(ASWorker* worker,asAtom& ret, bool construct, asAtom *args, const unsigned int argslen, Class_base* realClass=nullptr, bool callSyntheticConstructor=true) override;
 	DictionaryTag* tag;
-	bool bindedToRoot;
-	bool bindingchecked;
-	bool inScriptInit;
+	bool bindedToRoot:1;
+	bool bindingchecked:1;
+	bool inScriptInit:1;
+	bool scriptInitDone:1;
 	void recursiveBuild(ASObject* target) const;
 	const traits_info* classtrait;
 	_NR<ASObject> instancefactory;
@@ -63,6 +64,10 @@ public:
 	bool isInScriptInit() const
 	{
 		return inScriptInit;
+	}
+	bool isScriptInitDone() const
+	{
+		return scriptInitDone;
 	}
 	bool destruct() override
 	{

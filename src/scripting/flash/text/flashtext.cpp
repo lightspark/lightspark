@@ -167,12 +167,19 @@ TextField::TextField(ASWorker* wrk, Class_base* c, const TextData& textData, boo
 		tabEnabled = asAtomHandler::trueAtom;
 	}
 	fillstyleTextColor.push_back(0xff);
-	if (tag)
+	setupTag(tag);
+}
+
+void TextField::setupTag(DictionaryTag* tag)
+{
+	DefineEditTextTag* t = (DefineEditTextTag*)tag;
+	this->tag = t;
+	if (t)
 	{
-		this->antiAliasType = tag->UseFlashType ? AA_ADVANCED : AA_NORMAL;
-		this->sharpness = tag->Sharpness;
-		this->thickness = tag->Thickness;
-		this->align = ALIGNMENT(tag->Align+1);
+		this->antiAliasType = t->UseFlashType ? AA_ADVANCED : AA_NORMAL;
+		this->sharpness = t->Sharpness;
+		this->thickness = t->Thickness;
+		this->align = ALIGNMENT(t->Align+1);
 	}
 }
 

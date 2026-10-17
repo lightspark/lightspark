@@ -114,7 +114,8 @@ void preload_getlex(preloadstate& state, std::vector<typestackentry>& typestack,
 			variable* v = nullptr;
 			Class_base* cls = state.function->inClass;
 			asAtom otmp = asAtomHandler::invalidAtom;
-			if (!cls->hasoverriddenmethod(name))
+			if (!cls->hasoverriddenmethod(name)
+				&& canCallFunctionDirect(state,cls,name,true))
 			{
 				// property may be a slot variable, so check the class instance first
 				v = getTempVariableFromClass(cls->as<Class_base>(),otmp,name,state.worker);

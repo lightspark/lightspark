@@ -56,7 +56,7 @@ void preload_setproperty(preloadstate& state, std::vector<typestackentry>& types
 					auto it = state.operandlist.rbegin();
 					Class_base* contenttype = it->objtype;
 					it++;
-					if (canCallFunctionDirect((*it),name) && !typestack[typestack.size()-2].classvar)
+					if (canCallFunctionDirect(state,(*it),name) && !typestack[typestack.size()-2].classvar)
 					{
 						variable* v = it->objtype->getBorrowedVariableByMultiname(*name);
 						if (v)

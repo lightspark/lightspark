@@ -153,6 +153,11 @@ IDrawable *Shape::invalidate(bool smoothing)
 	return res;
 }
 
+void Shape::setupTag(DictionaryTag* tag)
+{
+	setupShape((DefineShapeTag*)tag,1.0);
+}
+
 string Shape::toDebugString() const
 {
 	std::string res = DisplayObject::toDebugString();

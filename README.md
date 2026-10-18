@@ -117,7 +117,7 @@ Many applications do not yet work yet because the implementation is
 incomplete. But we do support a number of them. See our [compatibility page]
 for more details.
 
-[compatibility page]: https://github.com/lightspark/lightspark/wiki/Status-of-Lightspark-support
+[compatibility page]: https://github.com/lightspark/lightspark/blob/master/SUPPORT_STATUS.md
 
 Testing
 -----------

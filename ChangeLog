@@ -1,6 +1,6 @@
 lightspark: An open source flash player implementation
 
-Version NEXT:
+Version 0.10.0:
 
 	* remove glib dependency
 	* remove gnash fallback and LIGHTSPARK_USE_GNASH environment variable

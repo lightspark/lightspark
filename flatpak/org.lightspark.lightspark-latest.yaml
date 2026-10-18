@@ -1,6 +1,6 @@
 app-id: org.lightspark.lightspark-latest
 runtime: org.freedesktop.Platform
-runtime-version: '24.08'
+runtime-version: '26.08'
 sdk: org.freedesktop.Sdk
 command: lightspark_start
 rename-desktop-file: lightspark.desktop

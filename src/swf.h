@@ -244,6 +244,8 @@ private:
 	std::map<uint32_t, LocalConnection*> localconnection_client_map;
 	ACQUIRE_RELEASE_VARIABLE(FramePhase, framePhase);
 	ATOMIC_INT32(instanceCounter); // used to create unique instanceX names for AVM1
+	list<ITickJob*> jobstoremove;
+	void removeJobIntern(ITickJob* job);
 public:
 	void setURL(const tiny_string& url) DLL_PUBLIC;
 	tiny_string getDumpedSWFPath() const { return dumpedSWFPath;}
@@ -419,6 +421,7 @@ public:
 	void addFrameTick(uint32_t tickTime, ITickJob* job);
 	void addWait(uint32_t waitTime, ITickJob* job);
 	void removeJob(ITickJob* job);
+	void cleanupJobs();
 	void pushEvent(const LSEvent& event);
 	void updateTimers(const TimeSpec& delta, bool allowFrameTimers = true);
 	TimeSpec getFakeCurrentTime() const { return timers.getFakeCurrentTime(); }

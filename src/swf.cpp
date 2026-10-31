@@ -758,7 +758,16 @@ SystemState::~SystemState()
 	dumpFunctionCallCount();
 #endif
 	mutexFrameListeners.lock();
-	frameListeners.clear();
+	while (!frameListeners.empty())
+	{
+		// cleanup framelisteners still registered on shutdown
+		DisplayObject* d = *frameListeners.begin();
+		while (d->hasBroadcastListeners())
+			d->removeBroadcastEventListener();
+		while (d->AVM1hasFrameListeners())
+			d->AVM1removeOneEventListener();
+		d->clearEventListeners();
+	}
 	mutexFrameListeners.unlock();
 
 	this->resetParentList();
@@ -1213,6 +1222,13 @@ void SystemState::addWait(uint32_t waitTime, ITickJob* job)
 
 void SystemState::removeJob(ITickJob* job)
 {
+	if (!isShuttingDown())
+		jobstoremove.push_back(job);
+	else
+		removeJobIntern(job);
+}
+void SystemState::removeJobIntern(ITickJob* job)
+{
 	// TODO: Use LSTimers in `TimerThread`.
 	if (timerThread != nullptr)
 	{
@@ -1227,6 +1243,15 @@ void SystemState::removeJob(ITickJob* job)
 			timers.removeJobNoLock(job);
 		else
 			timers.removeJob(job);
+	}
+}
+
+void SystemState::cleanupJobs()
+{
+	while (!jobstoremove.empty())
+	{
+		removeJobIntern(jobstoremove.front());
+		jobstoremove.pop_front();
 	}
 }
 

@@ -1146,6 +1146,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 				}
 				//no need to lock as this is the vm thread
 				shuttingdown=true;
+				m_sys->cleanupJobs();
 				m_sys->workerDomain->stopAllBackgroundWorkers();
 				m_sys->signalTerminated();
 				break;
@@ -1307,6 +1308,7 @@ void ABCVm::handleEvent(std::pair<_NR<EventDispatcher>, _R<Event> > e)
 			}
 			case IDLE_EVENT:
 			{
+				m_sys->cleanupJobs();
 				m_sys->setFramePhase(FramePhase::IDLE);
 				{
 					Locker l(event_queue_mutex);
@@ -1469,7 +1471,7 @@ bool ABCVm::addEvent(_NR<EventDispatcher> obj ,_R<Event> ev, bool isGlobalMessag
 	 * because otherwise waiting on them in the vm thread
 	 * will block the vm thread from executing them.
 	 */
-	if(isVmThread() && ev->is<WaitableEvent>())
+	if(isVmThread() && ev->is<WaitableEvent>() && !m_sys->runSingleThreaded)
 	{
 		RELEASE_WRITE(ev->queued,true);
 		handleEvent( make_pair(obj,ev) );

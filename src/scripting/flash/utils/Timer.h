@@ -30,12 +30,14 @@
 namespace lightspark
 {
 
-
 class Timer: public EventDispatcher, public ITickJob
 {
 private:
 	void tick() override;
 	void tickFence() override;
+	void stopTimer();
+	void startTimer(ASWorker* wrk);
+	Semaphore signal;
 protected:
 	bool running;
 	uint32_t delay;
@@ -60,7 +62,6 @@ public:
 	ASFUNCTION_ATOM(reset);
 	ASFUNCTION_ATOM(stop);
 };
-
 
 }
 

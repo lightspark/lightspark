@@ -671,6 +671,8 @@ void SyntheticFunction::prepareShutdown()
 	if (preparedforshutdown)
 		return;
 	IFunction::prepareShutdown();
+	if (this->clonedFrom)
+		func_scope.reset();
 	while(!func_scope.isNull() && !func_scope->scope.empty())
 	{
 		auto s = func_scope->scope.back();
@@ -812,12 +814,6 @@ void Function::prepareShutdown()
 	ASObject* pr = asAtomHandler::getObject(prototype);
 	if (pr)
 		pr->prepareShutdown();
-	ASObject* o = dynamic_cast<ASObject*>(returnType);
-	if (o)
-		o->prepareShutdown();
-	o = dynamic_cast<ASObject*>(returnTypeAllArgsInt);
-	if (o)
-		o->prepareShutdown();
 	IFunction::prepareShutdown();
 }
 

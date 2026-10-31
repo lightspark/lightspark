@@ -123,13 +123,6 @@ void IntervalManager::setupTimer(asAtom& ret, ASWorker* wrk, asAtom& obj, asAtom
 		callbackArgs[i] = args[i+paramstart];
 
 	uint32_t interval = asAtomHandler::toInt(args[delayarg]);
-	if (interval == 0 && isInterval)
-	{
-		// interval is 0, so we make sure the function is executed for the first time ahead of the next event in the event loop
-		ASATOM_INCREF(func);
-		_R<FunctionAsyncEvent> event(new (asAtomHandler::getObject(func)->getSystemState()->unaccountedMemory) FunctionAsyncEvent(func, o, callbackArgs, argslen-paramstart));
-		getVm(asAtomHandler::getObject(func)->getSystemState())->prependEvent(NullRef,event);
-	}
 	uint32_t id = getFreeID();
 	IntervalRunner* runner = new (asAtomHandler::getObject(func)->getSystemState()->unaccountedMemory)
 		IntervalRunner(isInterval ? IntervalRunner::INTERVAL : IntervalRunner::TIMEOUT, id, func, callbackArgs, argslen-paramstart, o);
@@ -160,7 +153,7 @@ void IntervalManager::clearInterval(uint32_t id, bool isTimeout)
 
 	std::map<uint32_t,IntervalRunner*>::iterator it = runners.find(id);
 	//If the entry exists and the types match, remove its tickjob, delete its intervalRunner and erase their entry
-	if(it != runners.end() && (*it).second->getType() == isTimeout? IntervalRunner::TIMEOUT : IntervalRunner::INTERVAL)
+	if(it != runners.end() && (*it).second->getType() == (isTimeout? IntervalRunner::TIMEOUT : IntervalRunner::INTERVAL))
 	{
 		IntervalRunner* r = (*it).second;
 		runners.erase(it);

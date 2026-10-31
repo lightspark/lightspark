@@ -34,18 +34,30 @@ using namespace lightspark;
 
 void Timer::tick()
 {
+	currentCount++;
 	//This will be executed once if repeatCount was originally 1
 	//Otherwise it's executed until stopMe is set to true
-	this->incRef();
-	getVm(getSystemState())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getInstanceWorker(),"timer")));
-
-	currentCount++;
+	if (getSystemState()->runSingleThreaded)
+		ABCVm::publicHandleEvent(this,_MR(Class<TimerEvent>::getInstanceS(getInstanceWorker(),"timer")));
+	else
+	{
+		this->incRef();
+		getVm(getSystemState())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getInstanceWorker(),"timer")));
+		signal.wait();
+	}
 	if(repeatCount!=0)
 	{
 		if(currentCount>=repeatCount)
 		{
-			this->incRef();
-			getVm(getSystemState())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getInstanceWorker(),"timerComplete")));
+			running=false;
+			if (getSystemState()->runSingleThreaded)
+				ABCVm::publicHandleEvent(this,_MR(Class<TimerEvent>::getInstanceS(getInstanceWorker(),"timerComplete")));
+			else
+			{
+				this->incRef();
+				getVm(getSystemState())->addEvent(_MR(this),_MR(Class<TimerEvent>::getInstanceS(getInstanceWorker(),"timerComplete")));
+				signal.wait();
+			}
 			stopMe=true;
 		}
 	}
@@ -56,7 +68,37 @@ void Timer::tickFence()
 	this->removeStoredMember();
 }
 
-Timer::Timer(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),running(false),delay(0),repeatCount(0),currentCount(0)
+void Timer::stopTimer()
+{
+	if(running)
+	{
+		running=false;
+		getSystemState()->removeJob(this);
+	}
+}
+void Timer::startTimer(ASWorker* wrk)
+{
+	if (!running)
+	{
+		running=true;
+		stopMe=false;
+		incRef();
+		addStoredMember();
+		// according to spec Adobe handles timers 60 times per second, so minimum delay is 17 ms
+		if(repeatCount==1)
+			wrk->getSystemState()->addWait(delay < 17 ? 17 : delay,this);
+		else
+			wrk->getSystemState()->addTick(delay < 17 ? 17 : delay,this);
+	}
+}
+
+Timer::Timer(ASWorker* wrk, Class_base* c)
+	:EventDispatcher(wrk,c)
+	,signal(0)
+	,running(false)
+	,delay(0)
+	,repeatCount(0)
+	,currentCount(0)
 {
 	subtype=SUBTYPE_TIMER;
 }
@@ -97,15 +139,13 @@ void Timer::prepareShutdown()
 }
 bool Timer::countCylicMemberReferences(garbagecollectorstate& gcstate)
 {
-	if (running)
-		return gcstate.hasMember(this);
 	return EventDispatcher::countCylicMemberReferences(gcstate);
 }
 
 void Timer::afterHandleEvent(Event* ev)
 {
-	if (stopMe && ev->type=="timer" && ev->is<TimerEvent>())
-		running=false;
+	if (ev->is<TimerEvent>())
+		signal.signal();
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_constructor)
@@ -136,11 +176,8 @@ ASFUNCTIONBODY_ATOM(Timer,_setRepeatCount)
 	int32_t count=asAtomHandler::toInt(args[0]);
 	Timer* th=asAtomHandler::as<Timer>(obj);
 	th->repeatCount=count;
-	if(th->repeatCount>0 && th->repeatCount<=th->currentCount)
-	{
-		getSys()->removeJob(th);
-		th->running=false;
-	}
+	if (th->repeatCount <= th->currentCount)
+		th->stopTimer();
 }
 
 ASFUNCTIONBODY_ATOM(Timer,_getRunning)
@@ -167,6 +204,11 @@ ASFUNCTIONBODY_ATOM(Timer,_setDelay)
 
 	Timer* th=asAtomHandler::as<Timer>(obj);
 	th->delay=newdelay;
+	if(th->running)
+	{
+		th->stopTimer();
+		th->startTimer(wrk);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(Timer,start)
@@ -174,41 +216,19 @@ ASFUNCTIONBODY_ATOM(Timer,start)
 	Timer* th=asAtomHandler::as<Timer>(obj);
 	if(th->running)
 		return;
-	th->running=true;
-	th->stopMe=false;
-	th->incRef();
-	th->addStoredMember();
-	// according to spec Adobe handles timers 60 times per second, so minimum delay is 17 ms
-	if(th->repeatCount==1)
-		wrk->getSystemState()->addWait(th->delay < 17 ? 17 : th->delay,th);
-	else
-		wrk->getSystemState()->addTick(th->delay < 17 ? 17 : th->delay,th);
+	th->startTimer(wrk);
 }
 
 ASFUNCTIONBODY_ATOM(Timer,reset)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	if(th->running)
-	{
-		//This spin waits if the timer is running right now
-		wrk->getSystemState()->removeJob(th);
-		//NOTE: although no new events will be sent now there might be old events in the queue.
-		//Is this behaviour right?
-		th->running=false;
-	}
+	th->stopTimer();
 	th->currentCount=0;
 }
 
 ASFUNCTIONBODY_ATOM(Timer,stop)
 {
 	Timer* th=asAtomHandler::as<Timer>(obj);
-	if(th->running)
-	{
-		//This spin waits if the timer is running right now
-		wrk->getSystemState()->removeJob(th);
-		//NOTE: although no new events will be sent now there might be old events in the queue.
-		//Is this behaviour right?
-		th->running=false;
-	}
+	th->stopTimer();
 }
 

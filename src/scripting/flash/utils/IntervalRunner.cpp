@@ -23,6 +23,7 @@
 #include "parsing/amf3_generator.h"
 #include "scripting/flash/utils/IntervalRunner.h"
 #include "scripting/flash/utils/IntervalManager.h"
+#include "scripting/toplevel/AVM1Function.h"
 
 using namespace std;
 using namespace lightspark;
@@ -55,12 +56,27 @@ void IntervalRunner::tick()
 	SystemState* sys = asAtomHandler::getObjectNoCheck(callback)->getSystemState();
 	if (sys->isShuttingDown())
 		return;
-	RELEASE_WRITE(running,true);
 
-	_R<FunctionEvent> event(new (sys->unaccountedMemory) FunctionEvent(callback, obj, args, argslen));
-	getVm(sys)->addEvent(NullRef,event);
-	event->wait();
-	RELEASE_WRITE(running,false);
+	if (!ACQUIRE_READ(finished))
+	{
+		RELEASE_WRITE(running,true);
+		if (sys->runSingleThreaded)
+		{
+			asAtom result=asAtomHandler::invalidAtom;
+			if (asAtomHandler::is<AVM1Function>(callback))
+				asAtomHandler::as<AVM1Function>(callback)->call(&result,&obj,args,argslen);
+			else
+				asAtomHandler::callFunction(callback,asAtomHandler::getObjectNoCheck(callback)->getInstanceWorker(),result,obj,args,argslen,false);
+			ASATOM_DECREF(result);
+		}
+		else
+		{
+			_R<FunctionEvent> event(new (sys->unaccountedMemory) FunctionEvent(callback, obj, args, argslen));
+			getVm(sys)->addEvent(NullRef,event);
+			event->wait();
+		}
+		RELEASE_WRITE(running,false);
+	}
 	if(type == TIMEOUT)
 	{
 		//remove ourselves from the active intervals list

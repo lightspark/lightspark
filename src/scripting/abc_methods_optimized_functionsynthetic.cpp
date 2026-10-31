@@ -53,6 +53,7 @@ void lightspark::abc_callFunctionSyntheticOneArgVoid_local_constant(call_context
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,ret,obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(obj);
 	ASATOM_DECREF(ret);
+	LOG_CALL("callFunctionSyntheticOneArgVoid_lc done " << asAtomHandler::toDebugString(func) << ' ' << asAtomHandler::toDebugString(obj));
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
 	++(context->exec_pos);
@@ -87,6 +88,7 @@ void lightspark::abc_callFunctionSyntheticOneArgVoid_local_local(call_context* c
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,ret,obj, &value, 1,false,(instrptr->local3.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(obj);
 	ASATOM_DECREF(ret);
+	LOG_CALL("callFunctionSyntheticOneArgVoid_ll done " << asAtomHandler::toDebugString(func) << ' ' << asAtomHandler::toDebugString(obj));
 	if (!fromglobal && context->exec_pos->cacheobj3->as<IFunction>()->clonedFrom)
 		context->exec_pos->cacheobj3->decRef();
 	++(context->exec_pos);
@@ -237,7 +239,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgsVoid(call_context* context)
 	func->call(context->worker,ret,*args, args+1, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(ret);
 	ASATOM_DECREF_POINTER(args);
-	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -264,7 +266,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgsVoid_constant(call_context* c
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,ret,obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(ret);
-	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -291,7 +293,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgsVoid_local(call_context* cont
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,ret,obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(ret);
-	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -307,7 +309,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs(call_context* context)
 	asAtomHandler::as<SyntheticFunction>(func)->call(context->worker,ret,*args, args+1, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF_POINTER(args);
 	RUNTIME_STACK_PUSH(context,ret);
-	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -334,7 +336,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_constant(call_context* conte
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,ret,obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	RUNTIME_STACK_PUSH(context,ret);
-	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -361,7 +363,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_local(call_context* context)
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,ret,obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	RUNTIME_STACK_PUSH(context,ret);
-	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -389,7 +391,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_constant_localResult(call_co
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(oldres);
-	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -417,7 +419,7 @@ void lightspark::abc_callFunctionSyntheticMultiArgs_local_localResult(call_conte
 	asAtom oldres = CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos);
 	asAtomHandler::getObjectNoCheck(func)->as<SyntheticFunction>()->call(context->worker,CONTEXT_GETLOCAL(context,context->exec_pos->local3.pos),obj, args, argcount,false,(instrptr->local2.flags&ABC_OP_COERCED)==0);
 	ASATOM_DECREF(oldres);
-	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }

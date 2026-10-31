@@ -46,7 +46,7 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_constant_constant(call_contex
 	}
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	ASATOM_DECREF(ret);
-	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -70,7 +70,7 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_local_constant(call_context* 
 	}
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	ASATOM_DECREF(ret);
-	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -94,7 +94,7 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_constant_local(call_context* 
 	}
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	ASATOM_DECREF(ret);
-	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -118,7 +118,7 @@ void lightspark::abc_callFunctionBuiltinOneArgVoid_local_local(call_context* con
 	}
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker, obj, &value, 1);
 	ASATOM_DECREF(ret);
-	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -275,7 +275,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgsVoid_constant(call_context* con
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker,obj, args, argcount);
 	ASATOM_DECREF(ret);
-	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -300,7 +300,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgsVoid_local(call_context* contex
 	asAtom ret=asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker,obj, args, argcount);
 	ASATOM_DECREF(ret);
-	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -324,7 +324,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgs_constant(call_context* context
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker,obj, args, argcount);
 	RUNTIME_STACK_PUSH(context,ret);
-	if (!fromglobal &&instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -348,7 +348,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgs_local(call_context* context)
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker,obj, args, argcount);
 	RUNTIME_STACK_PUSH(context,ret);
-	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -372,7 +372,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgs_constant_localResult(call_cont
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker,obj, args, argcount);
 	REPLACELOCALRESULT(context,context->exec_pos->local3.pos,ret);
-	if (!fromglobal && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!fromglobal && !instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -396,7 +396,7 @@ void lightspark::abc_callFunctionBuiltinMultiArgs_local_localResult(call_context
 	asAtom ret = asAtomHandler::invalidAtom;
 	asAtomHandler::getObjectNoCheck(func)->as<Function>()->call(ret,context->worker,obj, args, argcount);
 	REPLACELOCALRESULT(context,context->exec_pos->local3.pos,ret);
-	if (instrptr->cacheobj3->as<IFunction>()->clonedFrom)
+	if (!instrptr->cacheobj3->hasStoredMemberStatic() && instrptr->cacheobj3->as<IFunction>()->clonedFrom)
 		instrptr->cacheobj3->decRef();
 	++(context->exec_pos);
 }
@@ -447,7 +447,7 @@ void lightspark::abc_callFunctionBuiltinNoArgs_constant_localresult(call_context
 	preloadedcodedata* instrptr = context->exec_pos;
 	asAtom obj = *instrptr->arg1_constant;
 	asAtom func = asAtomHandler::fromObjectNoPrimitive(instrptr->cacheobj2);
-	LOG_CALL("callFunctionBuiltinNoArgs_cl " << asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
+	LOG_CALL("callFunctionBuiltinNoArgs_cl " <<instrptr->local3.pos<<" "<< asAtomHandler::as<IFunction>(func)->getSystemState()->getStringFromUniqueId(asAtomHandler::as<IFunction>(func)->functionname) << " on " << asAtomHandler::toDebugString(obj));
 	if(asAtomHandler::is<Null>(obj))
 	{
 		createError<TypeError>(context->worker,kConvertNullToObjectError);

@@ -677,7 +677,9 @@ void IOErrorEvent::sinit(Class_base* c)
 	c->setVariableAtomByQName("STANDARD_OUTPUT_IO_ERROR",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"standardOutputIoError"),CONSTANT_TRAIT);
 }
 
-EventDispatcher::EventDispatcher(ASWorker* wrk, Class_base* c):ASObject(wrk,c),forcedTarget(asAtomHandler::invalidAtom)
+EventDispatcher::EventDispatcher(ASWorker* wrk, Class_base* c)
+	:ASObject(wrk,c)
+	,forcedTarget(asAtomHandler::invalidAtom)
 {
 }
 
@@ -731,19 +733,21 @@ void EventDispatcher::prepareShutdown()
 		}
 	}
 }
+
 void EventDispatcher::clearEventListeners()
 {
 	auto it=handlers.begin();
 	while(it!=handlers.end())
 	{
-		auto it2 = it->second.begin();
-		while (it2 != it->second.end())
+		auto l = it->second;
+		it = handlers.erase(it);
+		auto it2 = l.begin();
+		while (it2 != l.end())
 		{
 			IFunction* f = asAtomHandler::as<IFunction>((*it2).f);
-			it2 = it->second.erase(it2);
+			it2 = l.erase(it2);
 			f->removeStoredMember();
 		}
-		it = handlers.erase(it);
 	}
 }
 
@@ -852,7 +856,6 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 			LOG(LOG_CALLS,"Event not found");
 			return;
 		}
-
 		const listener ls(args[1],0,useCapture,wrk);
 		for (auto it = h->second.begin(); it != h->second.end();)
 		{
@@ -861,7 +864,8 @@ ASFUNCTIONBODY_ATOM(EventDispatcher,removeEventListener)
 				ASObject* listenerfunc = asAtomHandler::getObject(it->f);
 				assert(listenerfunc != nullptr);
 				it = h->second.erase(it);
-				listenerfunc->removeStoredMember();
+				// ensure that function is not destructed while being executed
+				getVm(th->getSystemState())->addDeletableObject(listenerfunc);
 				removed=true;
 				break;
 			}
@@ -958,29 +962,19 @@ void EventDispatcher::handleEvent(_R<Event> e)
 	vector<listener> tmpListener(h->second.begin(),h->second.end());
 	l.release();
 	std::sort(tmpListener.begin(),tmpListener.end());
-	// listeners may be removed during the call to a listener, so we have to incref them before the call
-	// TODO how to handle listeners that are removed during the call to a listener, should they really be executed anyway?
-	for(unsigned int i=0;i<tmpListener.size();i++)
-	{
-		//tmpListener is now also owned by the vector
-		ASATOM_INCREF(tmpListener[i].f);
-	}
 	for(unsigned int i=0;i<tmpListener.size();i++)
 	{
 		if( (e->eventPhase != EventPhase::CAPTURING_PHASE && tmpListener[i].use_capture)
 		||  (e->eventPhase == EventPhase::CAPTURING_PHASE && !tmpListener[i].use_capture))
 		{
-			ASATOM_DECREF(tmpListener[i].f);
 			continue;
 		}
 		if (tmpListener[i].worker != e->getInstanceWorker()) // only handle listeners that are available in the current worker
 		{
-			ASATOM_DECREF(tmpListener[i].f);
 			continue;
 		}
 		if (e->immediatePropagationStopped)
 		{
-			ASATOM_DECREF(tmpListener[i].f);
 			continue;
 		}
 		asAtom arg0= asAtomHandler::fromObject(e.getPtr());
@@ -1000,8 +994,6 @@ void EventDispatcher::handleEvent(_R<Event> e)
 			cc->exceptionthrown=nullptr;
 		}
 		ASATOM_DECREF(ret);
-		//And now no more, f can also be deleted
-		ASATOM_DECREF(tmpListener[i].f);
 		afterExecution(e);
 	}
 }

@@ -155,6 +155,15 @@ void ASWorker::finalize()
 	}
 	if (inShutdown)
 		return;
+	while (ASObject* o = freelist_activationobject.getObjectFromFreeList())
+	{
+		delete o;
+	}
+	while (ASObject* o = freelist_asobject.getObjectFromFreeList())
+	{
+		delete o;
+	}
+
 	processGarbageCollection(true);
 	if (!isPrimordial)
 	{
@@ -227,10 +236,14 @@ void ASWorker::finalize()
 	inShutdown=true;
 	if (getWorker()==this)
 		setTLSWorker(nullptr);
-	delete[] stacktrace;
-	delete[] freelist;
+	if (stacktrace)
+		delete[] stacktrace;
+	stacktrace=nullptr;
+	if (freelist)
+		delete[] freelist;
 	freelist=nullptr;
-	delete[] freelist_template;
+	if (freelist_template)
+		delete[] freelist_template;
 	freelist_template=nullptr;
 	// destruct all constant refs
 	auto it = constantrefs.begin();

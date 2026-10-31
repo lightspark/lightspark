@@ -188,6 +188,10 @@ void Class_inherit::prepareShutdown()
 			o->prepareShutdown();
 		it++;
 	}
+	while (ASObject* o = freelist.getObjectFromFreeList())
+	{
+		delete o;
+	}
 }
 
 void Class_inherit::getInstance(ASWorker* worker, asAtom& ret, bool construct, asAtom* args, const unsigned int argslen, Class_base* realClass, bool callSyntheticConstructor)

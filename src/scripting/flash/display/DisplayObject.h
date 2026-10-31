@@ -262,6 +262,7 @@ public:
 	void AVM1removeOneKeyboardEventListener();
 	bool AVM1isHitByMouseEvent(ASObject* dispatcher, MouseEvent* e);
 	bool AVM1hasListeners() const;
+	bool AVM1hasFrameListeners() const;
 
 
 	// used by MorphShapes and embedded video

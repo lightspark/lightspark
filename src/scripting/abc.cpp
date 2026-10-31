@@ -786,12 +786,13 @@ ABCVm::ABCVm(SystemState* s, MemoryAccount* m):m_sys(s),status(CREATED),isIdle(t
 
 void ABCVm::start()
 {
+	initVM();
 	if (!m_sys->runSingleThreaded)
 		t = SDL_CreateThread(Run,"ABCVm",this);
 	else
 	{
 		tls_set(is_vm_thread, (void *)(int64_t)1);
-		initVM();
+		status=STARTED;
 	}
 }
 
@@ -1854,9 +1855,7 @@ void ABCVm::initVM(std::string* errStr)
 #endif
 	}
 	registerClasses();
-	if (!m_sys->mainClip->needsActionScript3())
-		registerClassesAVM1();
-	status=STARTED;
+	registerClassesAVM1();
 }
 
 void ABCVm::shutdownVM()
@@ -1889,8 +1888,7 @@ int ABCVm::Run(void* d)
 	/* set TLS variable for isVmThread() */
 	tls_set(is_vm_thread, (void *)(int64_t)1);
 
-	std::string errStr;
-	th->initVM(&errStr);
+	th->status=STARTED;
 
 	ThreadProfile* profile=th->m_sys->allocateProfiler(RGB(0,200,0));
 	profile->setTag("VM");

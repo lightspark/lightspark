@@ -3424,6 +3424,11 @@ bool DisplayObject::AVM1hasListeners() const
 	return avm1keyboardlistenercount || avm1mouselistenercount;
 }
 
+bool DisplayObject::AVM1hasFrameListeners() const
+{
+	return avm1framelistenercount;
+}
+
 bool DisplayObject::deleteVariableByMultiname(const multiname& name, ASWorker* wrk)
 {
 	if (!this->loadedFrom->usesActionScript3)

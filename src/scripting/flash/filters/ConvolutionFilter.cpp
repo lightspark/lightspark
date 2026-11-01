@@ -24,6 +24,7 @@
 #include "backends/rendering.h"
 #include "backends/cachedsurface.h"
 #include "scripting/toplevel/Array.h"
+#include "scripting/avm1/avm1array.h"
 
 
 using namespace std;
@@ -54,9 +55,9 @@ ConvolutionFilter::ConvolutionFilter(ASWorker* wrk,Class_base* c, const CONVOLUT
 	preserveAlpha(filter.PreserveAlpha)
 {
 	LOG(LOG_NOT_IMPLEMENTED,"ConvolutionFilter from Tag");
+	matrix = _MR(wrk->needsActionScript3() ? Class<Array>::getInstanceSNoArgs(wrk) : Class<AVM1Array>::getInstanceSNoArgs(wrk));
 	if (filter.MatrixX * filter.MatrixY > 0)
 	{
-		matrix = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		for (uint8_t i = 0; i < filter.MatrixX * filter.MatrixY; i++)
 		{
 			matrix->push(asAtomHandler::fromNumber((FLOAT)filter.Matrix[i]));
@@ -67,7 +68,7 @@ ConvolutionFilter::ConvolutionFilter(ASWorker* wrk,Class_base* c, const CONVOLUT
 void ConvolutionFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
-	REGISTER_GETTER_SETTER(c,alpha);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,alpha,Number);
 	REGISTER_GETTER_SETTER(c,bias);
 	REGISTER_GETTER_SETTER(c,clamp);
 	REGISTER_GETTER_SETTER(c,color);
@@ -178,7 +179,7 @@ void ConvolutionFilter::prepareShutdown()
 		matrix->prepareShutdown();
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,alpha)
+ASFUNCTIONBODY_GETTER_SETTER_CB(ConvolutionFilter,alpha,onSetAlpha)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,bias)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,clamp)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(ConvolutionFilter,color)
@@ -192,6 +193,14 @@ ASFUNCTIONBODY_ATOM(ConvolutionFilter,_constructor)
 {
 	ConvolutionFilter *th = asAtomHandler::as<ConvolutionFilter>(obj);
 	ARG_CHECK(ARG_UNPACK(th->matrixX,0)(th->matrixY,0)(th->matrix,NullRef)(th->divisor,1.0)(th->bias,0.0)(th->preserveAlpha,true)(th->clamp,true)(th->color,0)(th->alpha,0.0));
+	if (!th->matrix)
+		th->matrix = _MR(wrk->needsActionScript3() ? Class<Array>::getInstanceSNoArgs(wrk) : Class<AVM1Array>::getInstanceSNoArgs(wrk));
+	for (uint8_t i = th->matrix->size(); i < th->matrixX * th->matrixY; i++)
+	{
+		th->matrix->push(asAtomHandler::fromNumber(0));
+	}
+	th->matrix->resize(th->matrixX * th->matrixY);
+	th->onSetAlpha(0);
 }
 
 bool ConvolutionFilter::compareFILTER(const FILTER& filter) const
@@ -279,6 +288,11 @@ BitmapFilter* ConvolutionFilter::cloneImpl() const
 	cloned-> matrixY = matrixY;
 	cloned->preserveAlpha = preserveAlpha;
 	return cloned;
+}
+
+void ConvolutionFilter::onSetAlpha(number_t oldval)
+{
+	alpha = min(1.0,max(0.0,alpha));
 }
 
 

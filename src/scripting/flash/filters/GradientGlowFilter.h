@@ -29,6 +29,8 @@ class GradientGlowFilter: public BitmapFilter
 {
 private:
 	BitmapFilter* cloneImpl() const override;
+	void onSetBlurX(number_t oldval);
+	void onSetBlurY(number_t oldval);
 public:
 	GradientGlowFilter(ASWorker* wrk,Class_base* c);
 	GradientGlowFilter(ASWorker* wrk,Class_base* c, const GRADIENTGLOWFILTER& filter);

@@ -21,6 +21,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/toplevel/Integer.h"
 
 
 using namespace std;
@@ -42,18 +43,18 @@ void GlowFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c, alpha);
-	REGISTER_GETTER_SETTER(c, blurX);
-	REGISTER_GETTER_SETTER(c, blurY);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, blurX,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, blurY,Number);
 	REGISTER_GETTER_SETTER(c, color);
 	REGISTER_GETTER_SETTER(c, inner);
 	REGISTER_GETTER_SETTER(c, knockout);
-	REGISTER_GETTER_SETTER(c, quality);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, quality,Integer);
 	REGISTER_GETTER_SETTER(c, strength);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, alpha)
-ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, blurX)
-ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, blurY)
+ASFUNCTIONBODY_GETTER_SETTER_CB(GlowFilter, blurX,onSetBlurX)
+ASFUNCTIONBODY_GETTER_SETTER_CB(GlowFilter, blurY,onSetBlurY)
 ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, color)
 ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, inner)
 ASFUNCTIONBODY_GETTER_SETTER(GlowFilter, knockout)
@@ -71,6 +72,8 @@ ASFUNCTIONBODY_ATOM(GlowFilter,_constructor)
 		(th->quality, 1)
 		(th->inner, false)
 		(th->knockout, false));
+	th->onSetBlurX(0);
+	th->onSetBlurY(0);
 }
 
 bool GlowFilter::compareFILTER(const FILTER& filter) const
@@ -123,3 +126,20 @@ void GlowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, c
 	applyDropShadowFilter(target->getData(),target->getWidth(),target->getHeight(), tmpdata, sourceRect, xpos, ypos, strength, alpha, color, inner, knockout,scalex,scaley);
 	delete[] tmpdata;
 }
+
+void GlowFilter::onSetBlurX(number_t oldval)
+{
+	if (blurX < 0.0)
+		blurX = 0.0;
+	if (blurX > 255.0)
+		blurX = 255.0;
+}
+
+void GlowFilter::onSetBlurY(number_t oldval)
+{
+	if (blurY < 0.0)
+		blurY = 0.0;
+	if (blurY > 255.0)
+		blurY = 255.0;
+}
+

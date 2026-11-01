@@ -21,6 +21,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/toplevel/Integer.h"
 
 
 using namespace std;
@@ -33,10 +34,19 @@ DropShadowFilter::DropShadowFilter(ASWorker* wrk,Class_base* c):
 	knockout(false), quality(1), strength(1.0)
 {
 }
-DropShadowFilter::DropShadowFilter(ASWorker* wrk,Class_base* c,const DROPSHADOWFILTER& filter):
-	BitmapFilter(wrk,c,SUBTYPE_DROPSHADOWFILTER), alpha(filter.DropShadowColor.af()), angle(filter.Angle), blurX(filter.BlurX), blurY(filter.BlurY),
-	color(RGB(filter.DropShadowColor.Red,filter.DropShadowColor.Green,filter.DropShadowColor.Blue).toUInt()), distance(filter.Distance), hideObject(false), inner(filter.InnerShadow),
-	knockout(filter.Knockout), quality(filter.Passes), strength(filter.Strength)
+DropShadowFilter::DropShadowFilter(ASWorker* wrk,Class_base* c,const DROPSHADOWFILTER& filter)
+	:BitmapFilter(wrk,c,SUBTYPE_DROPSHADOWFILTER)
+	,alpha(filter.DropShadowColor.af())
+	,angle(filter.Angle*180.0/M_PI)
+	,blurX(filter.BlurX)
+	,blurY(filter.BlurY)
+	,color(RGB(filter.DropShadowColor.Red,filter.DropShadowColor.Green,filter.DropShadowColor.Blue).toUInt())
+	,distance(filter.Distance)
+	,hideObject(!filter.CompositeSource)
+	,inner(filter.InnerShadow)
+	,knockout(filter.Knockout)
+	,quality(filter.Passes)
+	,strength(filter.Strength)
 {
 }
 void DropShadowFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
@@ -62,21 +72,21 @@ void DropShadowFilter::sinit(Class_base* c)
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c, alpha);
 	REGISTER_GETTER_SETTER(c, angle);
-	REGISTER_GETTER_SETTER(c, blurX);
-	REGISTER_GETTER_SETTER(c, blurY);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, blurX,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, blurY,Number);
 	REGISTER_GETTER_SETTER(c, color);
 	REGISTER_GETTER_SETTER(c, distance);
 	REGISTER_GETTER_SETTER(c, hideObject);
 	REGISTER_GETTER_SETTER(c, inner);
 	REGISTER_GETTER_SETTER(c, knockout);
-	REGISTER_GETTER_SETTER(c, quality);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, quality,Integer);
 	REGISTER_GETTER_SETTER(c, strength);
 }
 
 ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, alpha)
 ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, angle)
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, blurX)
-ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, blurY)
+ASFUNCTIONBODY_GETTER_SETTER_CB(DropShadowFilter, blurX,onSetBlurX)
+ASFUNCTIONBODY_GETTER_SETTER_CB(DropShadowFilter, blurY,onSetBlurY)
 ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, color)
 ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, distance)
 ASFUNCTIONBODY_GETTER_SETTER(DropShadowFilter, hideObject)
@@ -99,6 +109,8 @@ ASFUNCTIONBODY_ATOM(DropShadowFilter,_constructor)
 		(th->inner, false)
 		(th->knockout, false)
 		(th->hideObject, false));
+	th->onSetBlurX(0);
+	th->onSetBlurY(0);
 }
 
 bool DropShadowFilter::compareFILTER(const FILTER& filter) const
@@ -157,4 +169,20 @@ BitmapFilter* DropShadowFilter::cloneImpl() const
 	cloned->quality = quality;
 	cloned->strength = strength;
 	return cloned;
+}
+
+void DropShadowFilter::onSetBlurX(number_t oldval)
+{
+	if (blurX < 0.0)
+		blurX = 0.0;
+	if (blurX > 255.0)
+		blurX = 255.0;
+}
+
+void DropShadowFilter::onSetBlurY(number_t oldval)
+{
+	if (blurY < 0.0)
+		blurY = 0.0;
+	if (blurY > 255.0)
+		blurY = 255.0;
 }

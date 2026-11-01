@@ -54,8 +54,6 @@ GradientBevelFilter::GradientBevelFilter(ASWorker* wrk,Class_base* c, const GRAD
 	strength(filter.Strength),
 	type(filter.OnTop ? "full" : filter.InnerShadow ? "inner" : "outer")
 {
-	if (filter.OnTop)
-		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter onTop flag");
 	colors = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 	alphas = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 	if (filter.NumColors)
@@ -95,8 +93,8 @@ void GradientBevelFilter::sinit(Class_base* c)
 
 ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,alphas)
 ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,angle)
-ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,blurX)
-ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,blurY)
+ASFUNCTIONBODY_GETTER_SETTER_CB(GradientBevelFilter,blurX,onSetBlurX)
+ASFUNCTIONBODY_GETTER_SETTER_CB(GradientBevelFilter,blurY,onSetBlurY)
 ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,colors)
 ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,distance)
 ASFUNCTIONBODY_GETTER_SETTER(GradientBevelFilter,knockout)
@@ -272,3 +270,20 @@ BitmapFilter* GradientBevelFilter::cloneImpl() const
 	cloned->type = type;
 	return cloned;
 }
+
+void GradientBevelFilter::onSetBlurX(number_t oldval)
+{
+	if (blurX < 0.0)
+		blurX = 0.0;
+	if (blurX > 255.0)
+		blurX = 255.0;
+}
+
+void GradientBevelFilter::onSetBlurY(number_t oldval)
+{
+	if (blurY < 0.0)
+		blurY = 0.0;
+	if (blurY > 255.0)
+		blurY = 255.0;
+}
+

@@ -23,6 +23,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "scripting/flash/display/flashdisplay.h"
 #include "scripting/flash/geom/Point.h"
+#include "scripting/avm1/avm1point.h"
 
 using namespace std;
 using namespace lightspark;
@@ -40,7 +41,7 @@ void DisplacementMapFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c,componentX);
 	REGISTER_GETTER_SETTER(c,componentY);
 	REGISTER_GETTER_SETTER(c,mapBitmap);
-	REGISTER_GETTER_SETTER(c,mapPoint);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,mapPoint,Point);
 	REGISTER_GETTER_SETTER(c,mode);
 	REGISTER_GETTER_SETTER(c,scaleX);
 	REGISTER_GETTER_SETTER(c,scaleY);
@@ -148,7 +149,7 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,color)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,componentX)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,componentY)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mapBitmap)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mapPoint)
+ASFUNCTIONBODY_GETTER_SETTER_CB(DisplacementMapFilter,mapPoint,onSetPoint)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mode)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleX)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleY)
@@ -157,6 +158,9 @@ ASFUNCTIONBODY_ATOM(DisplacementMapFilter,_constructor)
 {
 	DisplacementMapFilter *th = asAtomHandler::as<DisplacementMapFilter>(obj);
 	ARG_CHECK(ARG_UNPACK(th->mapBitmap,NullRef)(th->mapPoint,NullRef)(th->componentX,0)(th->componentY,0)(th->scaleX,0.0)(th->scaleY,0.0)(th->mode,"wrap")(th->color,0)(th->alpha,0.0));
+	if (!th->mapPoint)
+		th->mapPoint = _MR(wrk->needsActionScript3() ? Class<Point>::getInstanceSNoArgs(wrk) : Class<AVM1Point>::getInstanceSNoArgs(wrk));
+	th->onSetPoint(NullRef);
 }
 
 BitmapFilter* DisplacementMapFilter::cloneImpl() const
@@ -172,4 +176,13 @@ BitmapFilter* DisplacementMapFilter::cloneImpl() const
 	cloned->scaleX = scaleX;
 	cloned->scaleY = scaleY;
 	return cloned;
+}
+
+void DisplacementMapFilter::onSetPoint(NullableRef<Point> oldval)
+{
+	if (mapPoint)
+	{
+		ASWorker* wrk = getInstanceWorker();
+		mapPoint = _MR(Class<Point>::getInstanceS(wrk,floor(mapPoint->getX()),floor(mapPoint->getY())));
+	}
 }

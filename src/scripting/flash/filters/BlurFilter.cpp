@@ -21,6 +21,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/toplevel/Integer.h"
 
 
 using namespace std;
@@ -39,19 +40,21 @@ BlurFilter::BlurFilter(ASWorker* wrk,Class_base* c,const BLURFILTER& filter):
 void BlurFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
-	REGISTER_GETTER_SETTER(c, blurX);
-	REGISTER_GETTER_SETTER(c, blurY);
-	REGISTER_GETTER_SETTER(c, quality);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, blurX,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, blurY,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, quality,Integer);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, blurX)
-ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, blurY)
+ASFUNCTIONBODY_GETTER_SETTER_CB(BlurFilter, blurX, onSetBlurX)
+ASFUNCTIONBODY_GETTER_SETTER_CB(BlurFilter, blurY, onSetBlurY)
 ASFUNCTIONBODY_GETTER_SETTER(BlurFilter, quality)
 
 ASFUNCTIONBODY_ATOM(BlurFilter,_constructor)
 {
 	BlurFilter *th = asAtomHandler::as<BlurFilter>(obj);
-	ARG_CHECK(ARG_UNPACK(th->blurX,4.0)(th->blurY,4.0)(th->quality,1));
+	ARG_CHECK(ARG_UNPACK(th->blurX,4.0)(th->blurY,4.0)(th->quality,1))
+	th->onSetBlurX(0);
+	th->onSetBlurY(0);
 }
 void BlurFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
@@ -95,5 +98,21 @@ BitmapFilter* BlurFilter::cloneImpl() const
 	cloned->blurY = blurY;
 	cloned->quality = quality;
 	return cloned;
+}
+
+void BlurFilter::onSetBlurX(number_t oldval)
+{
+	if (blurX < 0.0)
+		blurX = 0.0;
+	if (blurX > 255.0)
+		blurX = 255.0;
+}
+
+void BlurFilter::onSetBlurY(number_t oldval)
+{
+	if (blurY < 0.0)
+		blurY = 0.0;
+	if (blurY > 255.0)
+		blurY = 255.0;
 }
 

@@ -29,6 +29,7 @@ class ConvolutionFilter: public BitmapFilter
 {
 private:
 	BitmapFilter* cloneImpl() const override;
+	void onSetAlpha(number_t oldval);
 public:
 	ConvolutionFilter(ASWorker* wrk,Class_base* c);
 	ConvolutionFilter(ASWorker* wrk,Class_base* c,const CONVOLUTIONFILTER& filter);

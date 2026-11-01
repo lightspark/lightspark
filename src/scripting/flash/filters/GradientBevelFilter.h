@@ -29,6 +29,8 @@ class GradientBevelFilter: public BitmapFilter
 {
 private:
 	BitmapFilter* cloneImpl() const override;
+	void onSetBlurX(number_t oldval);
+	void onSetBlurY(number_t oldval);
 public:
 	GradientBevelFilter(ASWorker* wrk,Class_base* c);
 	GradientBevelFilter(ASWorker* wrk,Class_base* c, const GRADIENTBEVELFILTER& filter);

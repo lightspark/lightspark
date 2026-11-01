@@ -29,6 +29,8 @@ class BevelFilter: public BitmapFilter
 {
 private:
 	BitmapFilter* cloneImpl() const override;
+	void onSetBlurX(number_t oldval);
+	void onSetBlurY(number_t oldval);
 public:
 	BevelFilter(ASWorker* wrk,Class_base* c);
 	BevelFilter(ASWorker* wrk,Class_base* c,const BEVELFILTER& filter);

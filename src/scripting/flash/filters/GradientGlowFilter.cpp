@@ -23,6 +23,7 @@
 #include "scripting/flash/display/BitmapData.h"
 #include "backends/rendering.h"
 #include "scripting/toplevel/Array.h"
+#include "scripting/toplevel/Integer.h"
 
 
 using namespace std;
@@ -33,24 +34,30 @@ GradientGlowFilter::GradientGlowFilter(ASWorker* wrk, Class_base* c):
 	BitmapFilter(wrk,c,SUBTYPE_GRADIENTGLOWFILTER),distance(4.0),angle(45), blurX(4.0), blurY(4.0), strength(1), quality(1), type("inner"), knockout(false)
 {
 }
-GradientGlowFilter::GradientGlowFilter(ASWorker* wrk, Class_base* c, const GRADIENTGLOWFILTER& filter):
-	BitmapFilter(wrk,c,SUBTYPE_GRADIENTGLOWFILTER),distance(filter.Distance),angle(filter.Angle), blurX(filter.BlurX), blurY(filter.BlurY), strength(filter.Strength), quality(filter.Passes),
-	type(filter.InnerGlow ? "inner": "outer"),// TODO: is type set based on "onTop" ?
-	knockout(filter.Knockout)
+GradientGlowFilter::GradientGlowFilter(ASWorker* wrk, Class_base* c, const GRADIENTGLOWFILTER& filter)
+	:BitmapFilter(wrk,c,SUBTYPE_GRADIENTGLOWFILTER)
+	,distance(filter.Distance)
+	,angle(filter.Angle*180.0/M_PI)
+	,blurX(filter.BlurX)
+	,blurY(filter.BlurY)
+	,strength(filter.Strength)
+	,quality(filter.Passes)
+	,type(filter.OnTop ? "full" : (filter.InnerGlow ? "inner": "outer"))
+	,knockout(filter.Knockout)
 {
+	colors = _MR(Class<Array>::getInstanceSNoArgs(wrk));
+	alphas = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 	if (filter.NumColors)
 	{
-		colors = _MR(Class<Array>::getInstanceSNoArgs(wrk));
-		alphas = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		for (uint8_t i = 0; i < filter.NumColors; i++)
 		{
 			colors->push(asAtomHandler::fromUInt(RGB(filter.GradientColors[i].Red,filter.GradientColors[i].Green,filter.GradientColors[i].Blue).toUInt()));
 			alphas->push(asAtomHandler::fromNumber(filter.GradientColors[i].af()));
 		}
 	}
+	ratios = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 	if (filter.NumColors)
 	{
-		ratios = _MR(Class<Array>::getInstanceSNoArgs(wrk));
 		for (uint8_t i = 0; i < filter.NumColors; i++)
 		{
 			ratios->push(asAtomHandler::fromUInt(filter.GradientRatio[i]));
@@ -68,10 +75,10 @@ void GradientGlowFilter::sinit(Class_base* c)
 	REGISTER_GETTER_SETTER(c, colors);
 	REGISTER_GETTER_SETTER(c, alphas);
 	REGISTER_GETTER_SETTER(c, ratios);
-	REGISTER_GETTER_SETTER(c, blurX);
-	REGISTER_GETTER_SETTER(c, blurY);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, blurX,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, blurY,Number);
 	REGISTER_GETTER_SETTER(c, strength);
-	REGISTER_GETTER_SETTER(c, quality);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c, quality,Integer);
 	REGISTER_GETTER_SETTER(c, type);
 	REGISTER_GETTER_SETTER(c, knockout);
 }
@@ -134,8 +141,8 @@ ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, angle)
 ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, colors)
 ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, alphas)
 ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, ratios)
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, blurX)
-ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, blurY)
+ASFUNCTIONBODY_GETTER_SETTER_CB(GradientGlowFilter, blurX,onSetBlurX)
+ASFUNCTIONBODY_GETTER_SETTER_CB(GradientGlowFilter, blurY,onSetBlurY)
 ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, strength)
 ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, quality)
 ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, type)
@@ -144,13 +151,41 @@ ASFUNCTIONBODY_GETTER_SETTER(GradientGlowFilter, knockout)
 ASFUNCTIONBODY_ATOM(GradientGlowFilter,_constructor)
 {
 	GradientGlowFilter *th = asAtomHandler::as<GradientGlowFilter>(obj);
-	ARG_CHECK(ARG_UNPACK(th->distance,4.0)(th->angle,45)(th->colors,NullRef)(th->alphas,NullRef)(th->ratios,NullRef)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false));
+	asAtom colors = asAtomHandler::invalidAtom;
+	asAtom alphas = asAtomHandler::invalidAtom;
+	asAtom ratios = asAtomHandler::invalidAtom;
+	ARG_CHECK(ARG_UNPACK(th->distance,4.0)(th->angle,45)(colors,asAtomHandler::nullAtom)(alphas,asAtomHandler::nullAtom)(ratios,asAtomHandler::nullAtom)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false));
+	if (asAtomHandler::is<Array>(colors))
+	{
+		th->colors = _MR(asAtomHandler::as<Array>(colors));
+		th->colors->incRef();
+	}
+	else
+		th->colors = _MR(Class<Array>::getInstanceSNoArgs(wrk));
+
+	if (asAtomHandler::is<Array>(alphas))
+	{
+		th->alphas = _MR(asAtomHandler::as<Array>(alphas));
+		th->alphas->incRef();
+	}
+	else
+		th->alphas = _MR(Class<Array>::getInstanceSNoArgs(wrk));
+	if (asAtomHandler::is<Array>(ratios))
+	{
+		th->ratios = _MR(asAtomHandler::as<Array>(ratios));
+		th->ratios->incRef();
+	}
+	else
+		th->ratios = _MR(Class<Array>::getInstanceSNoArgs(wrk));
+	// ensure all arrays have the same size
+	th->alphas->resize(th->colors->size());
+	th->ratios->resize(th->colors->size());
+	th->onSetBlurX(0);
+	th->onSetBlurY(0);
 }
 
 bool GradientGlowFilter::compareFILTER(const FILTER& filter) const
 {
-	if (filter.GradientGlowFilter.OnTop)
-		LOG(LOG_NOT_IMPLEMENTED,"GradientBevelFilter onTop flag");
 	bool ret = filter.FilterID == FILTER::FILTER_GRADIENTGLOW
 			   && filter.GradientGlowFilter.Angle == this->angle
 			   && filter.GradientGlowFilter.BlurX == this->blurX
@@ -248,3 +283,20 @@ BitmapFilter* GradientGlowFilter::cloneImpl() const
 	cloned->knockout = knockout;
 	return cloned;
 }
+
+void GradientGlowFilter::onSetBlurX(number_t oldval)
+{
+	if (blurX < 0.0)
+		blurX = 0.0;
+	if (blurX > 255.0)
+		blurX = 255.0;
+}
+
+void GradientGlowFilter::onSetBlurY(number_t oldval)
+{
+	if (blurY < 0.0)
+		blurY = 0.0;
+	if (blurY > 255.0)
+		blurY = 255.0;
+}
+

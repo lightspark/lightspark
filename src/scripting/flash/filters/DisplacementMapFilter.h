@@ -29,6 +29,7 @@ class DisplacementMapFilter: public BitmapFilter
 {
 private:
 	BitmapFilter* cloneImpl() const override;
+	void onSetPoint(_NR<Point> oldval);
 public:
 	DisplacementMapFilter(ASWorker* wrk,Class_base* c);
 	static void sinit(Class_base* c);

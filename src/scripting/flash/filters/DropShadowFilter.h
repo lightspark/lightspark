@@ -28,6 +28,10 @@ namespace lightspark
 class DropShadowFilter: public BitmapFilter
 {
 private:
+	BitmapFilter* cloneImpl() const override;
+	void onSetBlurX(number_t oldval);
+	void onSetBlurY(number_t oldval);
+public:
 	ASPROPERTY_GETTER_SETTER(number_t, alpha);
 	ASPROPERTY_GETTER_SETTER(number_t, angle);
 	ASPROPERTY_GETTER_SETTER(number_t, blurX);
@@ -39,8 +43,6 @@ private:
 	ASPROPERTY_GETTER_SETTER(bool, knockout);
 	ASPROPERTY_GETTER_SETTER(int32_t, quality);
 	ASPROPERTY_GETTER_SETTER(number_t, strength);
-	BitmapFilter* cloneImpl() const override;
-public:
 	DropShadowFilter(ASWorker* wrk,Class_base* c);
 	DropShadowFilter(ASWorker* wrk,Class_base* c,const DROPSHADOWFILTER& filter);
 	static void sinit(Class_base* c);

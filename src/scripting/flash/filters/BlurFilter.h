@@ -29,6 +29,8 @@ class BlurFilter: public BitmapFilter
 {
 private:
 	BitmapFilter* cloneImpl() const override;
+	void onSetBlurX(number_t oldval);
+	void onSetBlurY(number_t oldval);
 public:
 	BlurFilter(ASWorker* wrk,Class_base* c);
 	BlurFilter(ASWorker* wrk,Class_base* c,const BLURFILTER& filter);

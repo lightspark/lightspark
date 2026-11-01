@@ -28,6 +28,9 @@ namespace lightspark
 class GlowFilter: public BitmapFilter
 {
 private:
+	void onSetBlurX(number_t oldval);
+	void onSetBlurY(number_t oldval);
+public:
 	ASPROPERTY_GETTER_SETTER(number_t, alpha);
 	ASPROPERTY_GETTER_SETTER(number_t, blurX);
 	ASPROPERTY_GETTER_SETTER(number_t, blurY);
@@ -37,7 +40,6 @@ private:
 	ASPROPERTY_GETTER_SETTER(int32_t, quality);
 	ASPROPERTY_GETTER_SETTER(number_t, strength);
 	BitmapFilter* cloneImpl() const override;
-public:
 	GlowFilter(ASWorker* wrk,Class_base* c);
 	GlowFilter(ASWorker* wrk,Class_base* c,const GLOWFILTER& filter);
 	static void sinit(Class_base* c);

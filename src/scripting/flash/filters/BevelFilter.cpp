@@ -21,6 +21,7 @@
 #include "scripting/class.h"
 #include "scripting/argconv.h"
 #include "scripting/flash/display/BitmapData.h"
+#include "scripting/toplevel/Integer.h"
 
 using namespace std;
 using namespace lightspark;
@@ -34,45 +35,43 @@ BevelFilter::BevelFilter(ASWorker* wrk,Class_base* c):
 {
 }
 BevelFilter::BevelFilter(ASWorker* wrk, Class_base* c, const BEVELFILTER& filter):
-	BitmapFilter(wrk,c,SUBTYPE_BEVELFILTER),angle(filter.Angle),blurX(filter.BlurX), blurY(filter.BlurY),distance(filter.Distance), 
+	BitmapFilter(wrk,c,SUBTYPE_BEVELFILTER),angle(filter.Angle*180.0/M_PI),blurX(filter.BlurX), blurY(filter.BlurY),distance(filter.Distance),
 	highlightAlpha(filter.HighlightColor.af()), highlightColor(RGB(filter.HighlightColor.Red,filter.HighlightColor.Green,filter.HighlightColor.Blue).toUInt()),
 	knockout(filter.Knockout), quality(filter.Passes),
 	shadowAlpha(filter.ShadowColor.af()), shadowColor(RGB(filter.ShadowColor.Red,filter.ShadowColor.Green,filter.ShadowColor.Blue).toUInt()),
-	strength(filter.Strength), type(filter.InnerShadow ? "inner" : "outer") // TODO: is type set based on "onTop" ?
+	strength(filter.Strength), type(filter.OnTop ? "full" : (filter.InnerShadow ? "inner" : "outer"))
 {
-	if (filter.OnTop)
-		LOG(LOG_NOT_IMPLEMENTED,"BevelFilter onTop flag");
 }
 
 void BevelFilter::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, BitmapFilter, _constructor, CLASS_SEALED | CLASS_FINAL);
 	REGISTER_GETTER_SETTER(c,angle);
-	REGISTER_GETTER_SETTER(c,blurX);
-	REGISTER_GETTER_SETTER(c,blurY);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,blurX,Number);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,blurY,Number);
 	REGISTER_GETTER_SETTER(c,distance);
 	REGISTER_GETTER_SETTER(c,highlightAlpha);
 	REGISTER_GETTER_SETTER(c,highlightColor);
 	REGISTER_GETTER_SETTER(c,knockout);
-	REGISTER_GETTER_SETTER(c,quality);
+	REGISTER_GETTER_SETTER_RESULTTYPE(c,quality,Integer);
 	REGISTER_GETTER_SETTER(c,shadowAlpha);
 	REGISTER_GETTER_SETTER(c,shadowColor);
 	REGISTER_GETTER_SETTER(c,strength);
 	REGISTER_GETTER_SETTER(c,type);
 }
 
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,angle)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,blurX)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,blurY)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,distance)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,highlightAlpha)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,highlightColor)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,knockout)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,quality)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,shadowAlpha)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,shadowColor)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,strength)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(BevelFilter,type)
+ASFUNCTIONBODY_GETTER_SETTER(BevelFilter,angle)
+ASFUNCTIONBODY_GETTER_SETTER_CB(BevelFilter,blurX,onSetBlurX)
+ASFUNCTIONBODY_GETTER_SETTER_CB(BevelFilter,blurY,onSetBlurY)
+ASFUNCTIONBODY_GETTER_SETTER(BevelFilter,distance)
+ASFUNCTIONBODY_GETTER_SETTER(BevelFilter,highlightAlpha)
+ASFUNCTIONBODY_GETTER_SETTER(BevelFilter,highlightColor)
+ASFUNCTIONBODY_GETTER_SETTER(BevelFilter,knockout)
+ASFUNCTIONBODY_GETTER_SETTER(BevelFilter,quality)
+ASFUNCTIONBODY_GETTER_SETTER(BevelFilter,shadowAlpha)
+ASFUNCTIONBODY_GETTER_SETTER(BevelFilter,shadowColor)
+ASFUNCTIONBODY_GETTER_SETTER(BevelFilter,strength)
+ASFUNCTIONBODY_GETTER_SETTER(BevelFilter,type)
 
 void BevelFilter::applyFilter(BitmapContainer* target, BitmapContainer* source, const RECT& sourceRect, number_t xpos, number_t ypos, number_t scalex, number_t scaley, DisplayObject* owner)
 {
@@ -107,6 +106,8 @@ ASFUNCTIONBODY_ATOM(BevelFilter,_constructor)
 {
 	BevelFilter *th = asAtomHandler::as<BevelFilter>(obj);
 	ARG_CHECK(ARG_UNPACK(th->distance,4.0)(th->angle,45)(th->highlightColor,0xFFFFFF)(th->highlightAlpha,1.0)(th->shadowColor,0x000000)(th->shadowAlpha,1.0)(th->blurX,4.0)(th->blurY,4.0)(th->strength,1)(th->quality,1)(th->type,"inner")(th->knockout,false));
+	th->onSetBlurX(0);
+	th->onSetBlurY(0);
 }
 bool BevelFilter::compareFILTER(const FILTER& filter) const
 {
@@ -178,3 +179,20 @@ BitmapFilter* BevelFilter::cloneImpl() const
 	cloned->type = type;
 	return cloned;
 }
+
+void BevelFilter::onSetBlurX(number_t oldval)
+{
+	if (blurX < 0.0)
+		blurX = 0.0;
+	if (blurX > 255.0)
+		blurX = 255.0;
+}
+
+void BevelFilter::onSetBlurY(number_t oldval)
+{
+	if (blurY < 0.0)
+		blurY = 0.0;
+	if (blurY > 255.0)
+		blurY = 255.0;
+}
+

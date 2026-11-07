@@ -701,6 +701,11 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 	ARG_CHECK(ARG_UNPACK(startTime, 0)(loops,0)(soundtransform,NullRef));
 	if (!wrk->rootClip->needsActionScript3()) // actionscript2 expects the starttime in seconds, actionscript3 in milliseconds
 		startTime *= 1000;
+	if (th->length >= 0 && th->length <= startTime)
+	{
+		ret = asAtomHandler::nullAtom;
+		return;
+	}
 	if (soundtransform.isNull())
 		soundtransform = _MR(Class<SoundTransform>::getInstanceSNoArgs(wrk));
 	if (th->container)
@@ -713,12 +718,7 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 		RELEASE_WRITE(th->sampledataprocessed,true);
 		th->setSoundChannel(Class<SoundChannel>::getInstanceS(wrk,::ceil(th->buffertime/1000.0),NullRef, AudioFormat(LINEAR_PCM_FLOAT_PLATFORM_ENDIAN,44100,2),nullptr,th));
 		th->soundChannel->setLoops(loops);
-		th->soundChannel->soundTransform = soundtransform.getPtr();
-		if (th->soundChannel->soundTransform)
-		{
-			th->soundChannel->soundTransform->incRef();
-			th->soundChannel->soundTransform->addStoredMember();
-		}
+		th->soundChannel->setSoundTransform(soundtransform.getPtr());
 		th->soundChannel->play(startTime);
 		th->soundChannel->incRef();
 		ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel);
@@ -730,24 +730,21 @@ ASFUNCTIONBODY_ATOM(Sound,play)
 			th->soundChannel->setLoops(loops);
 			if (th->is<AVM1Sound>())
 				th->soundChannel->setSampleProducer(th);
-			th->soundChannel->soundTransform = soundtransform.getPtr();
+			th->soundChannel->setSoundTransform(soundtransform.getPtr());
 			th->soundChannel->play(startTime);
 			th->soundChannel->incRef();
 			ret = asAtomHandler::fromObjectNoPrimitive(th->soundChannel);
 			return;
 		}
 		SoundChannel* s = Class<SoundChannel>::getInstanceS(wrk,::ceil(th->buffertime/1000.0),th->soundData, th->format);
+		th->setSoundChannel(s);
 		s->setStartTime(startTime);
 		s->setLoops(loops);
 		if (th->is<AVM1Sound>())
 			th->soundChannel->setSampleProducer(th);
-		s->soundTransform = soundtransform.getPtr();
-		if (s->soundTransform)
-		{
-			s->soundTransform->incRef();
-			s->soundTransform->addStoredMember();
-		}
+		s->setSoundTransform(soundtransform.getPtr());
 		s->play(startTime);
+		s->incRef();
 		ret = asAtomHandler::fromObjectNoPrimitive(s);
 	}
 }
@@ -1174,6 +1171,18 @@ void SoundChannel::setSampleProducer(Sound* _sampleproducer)
 	}
 
 
+}
+
+void SoundChannel::setSoundTransform(SoundTransform* st)
+{
+	if (soundTransform)
+		soundTransform->removeStoredMember();
+	soundTransform = st;
+	if (soundTransform)
+	{
+		soundTransform->incRef();
+		soundTransform->addStoredMember();
+	}
 }
 void SoundChannel::sinit(Class_base* c)
 {
@@ -1630,13 +1639,12 @@ void SoundChannel::jobFence()
 	if (restartafterabort && !getSystemState()->isShuttingDown())
 	{
 		restartafterabort=false;
-		incRef();
-		addStoredMember();
 		getSystemState()->addJob(this);
 		RELEASE_WRITE(stopped,false);
 		RELEASE_WRITE(terminated,false);
 	}
-	getVm(getSystemState())->addDeletableObject(this);
+	else
+		getVm(getSystemState())->addDeletableObject(this);
 	mutex.unlock();
 }
 

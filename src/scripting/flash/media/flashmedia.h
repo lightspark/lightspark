@@ -162,6 +162,7 @@ public:
 	void setSampleProducer(Sound* _sampleproducer);
 	void setStartTime(number_t starttime) { startTime = starttime; }
 	void setLoops(int32_t loops) {loopstogo=loops;}
+	void setSoundTransform(SoundTransform* st);
 	static void sinit(Class_base* c);
 	void finalize() override;
 	bool destruct() override;

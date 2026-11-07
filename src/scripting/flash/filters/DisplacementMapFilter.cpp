@@ -151,8 +151,8 @@ ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,componentY)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mapBitmap)
 ASFUNCTIONBODY_GETTER_SETTER_CB(DisplacementMapFilter,mapPoint,onSetPoint)
 ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,mode)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleX)
-ASFUNCTIONBODY_GETTER_SETTER_NOT_IMPLEMENTED(DisplacementMapFilter,scaleY)
+ASFUNCTIONBODY_GETTER_SETTER_CB(DisplacementMapFilter,scaleX,onScaleX)
+ASFUNCTIONBODY_GETTER_SETTER_CB(DisplacementMapFilter,scaleY,onScaleY)
 
 ASFUNCTIONBODY_ATOM(DisplacementMapFilter,_constructor)
 {
@@ -161,6 +161,8 @@ ASFUNCTIONBODY_ATOM(DisplacementMapFilter,_constructor)
 	if (!th->mapPoint)
 		th->mapPoint = _MR(wrk->needsActionScript3() ? Class<Point>::getInstanceSNoArgs(wrk) : Class<AVM1Point>::getInstanceSNoArgs(wrk));
 	th->onSetPoint(NullRef);
+	th->onScaleX(0);
+	th->onScaleY(0);
 }
 
 BitmapFilter* DisplacementMapFilter::cloneImpl() const
@@ -185,4 +187,13 @@ void DisplacementMapFilter::onSetPoint(NullableRef<Point> oldval)
 		ASWorker* wrk = getInstanceWorker();
 		mapPoint = _MR(Class<Point>::getInstanceS(wrk,floor(mapPoint->getX()),floor(mapPoint->getY())));
 	}
+}
+
+void DisplacementMapFilter::onScaleX(number_t oldval)
+{
+	scaleX =(float)scaleX;
+}
+void DisplacementMapFilter::onScaleY(number_t oldval)
+{
+	scaleY =(float)scaleY;
 }

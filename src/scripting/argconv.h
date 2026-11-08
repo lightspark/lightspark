@@ -170,8 +170,11 @@ class ArgumentConversionAtom<NullableRef<ASObject>>
 public:
 	static NullableRef<ASObject> toConcrete(ASWorker* wrk,asAtom obj,const NullableRef<ASObject>& v)
 	{
-		ASObject* o = asAtomHandler::toObject(obj,wrk);
-		o->incRef();
+		ASObject* o = asAtomHandler::getObject(obj);
+		if (o)
+			o->incRef();
+		else
+			o = asAtomHandler::toObject(obj,wrk);
 		return _MNR(o);
 	}
 	static void toAbstract(asAtom& ret, ASWorker* /*wrk*/,const NullableRef<ASObject>& val)

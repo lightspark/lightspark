@@ -975,6 +975,7 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1AttachMovie)
 	}
 	ret=asAtomHandler::fromObjectNoPrimitive(toAdd);
 }
+
 ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 {
 	MovieClip* th=asAtomHandler::as<MovieClip>(obj);
@@ -989,22 +990,11 @@ ASFUNCTIONBODY_ATOM(MovieClip,AVM1CreateEmptyMovieClip)
 		ret=asAtomHandler::undefinedAtom;
 		return;
 	}
-	uint32_t nameId = asAtomHandler::toStringId(args[0],wrk);
-	multiname m(nullptr);
-	m.name_type=multiname::NAME_STRING;
-	m.name_s_id=nameId;
-	if (th->hasPropertyByMultiname(m,true,false,wrk))
-	{
-		asAtom oldclip = asAtomHandler::invalidAtom;
-		th->getVariableByMultiname(oldclip,m,GET_VARIABLE_OPTION::NONE,wrk);
-		if (asAtomHandler::is<DisplayObject>(oldclip))
-			th->_removeChild(asAtomHandler::as<DisplayObject>(oldclip));
-		ASATOM_DECREF(oldclip);
-	}
 	AVM1MovieClip* toAdd= Class<AVM1MovieClip>::getInstanceSNoArgs(wrk);
 	toAdd->loadedFrom = th->loadedFrom;
-	toAdd->name = nameId;
+	toAdd->name = asAtomHandler::toStringId(args[0],wrk);
 	toAdd->setMouseEnabled(true);
+	multiname m(nullptr);
 	m.name_type=multiname::NAME_STRING;
 	m.name_s_id=BUILTIN_STRINGS::STRING_LOCKROOT;
 	toAdd->setVariableByMultiname(m,asAtomHandler::falseAtom,CONST_ALLOWED,nullptr,wrk);

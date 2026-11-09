@@ -350,7 +350,8 @@ FFMpegVideoDecoder::FFMpegVideoDecoder(AVCodecContext* _c, double frameRateHint)
 
 FFMpegVideoDecoder::~FFMpegVideoDecoder()
 {
-	while(fenceCount);
+	if (!getSys()->runSingleThreaded)
+		while(fenceCount);
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55,63,100)
 	avcodec_free_context(&codecContext);
 #else

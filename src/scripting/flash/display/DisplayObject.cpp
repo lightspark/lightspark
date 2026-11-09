@@ -1072,6 +1072,7 @@ void DisplayObject::setupSurfaceState(IDrawable* d)
 		}
 	}
 	this->boundsRectWithoutChildren(state->bounds.min.x, state->bounds.max.x, state->bounds.min.y, state->bounds.max.y, false);
+	assert(currentScrollRect.Xmax >= currentScrollRect.Xmin && currentScrollRect.Ymax >= currentScrollRect.Ymin);
 	state->scrollRect=currentScrollRect;
 	// currentScrollRect may have been overwritten when rendering to bitmap
 	// so we have to reset it
@@ -1532,8 +1533,7 @@ ASFUNCTIONBODY_ATOM(DisplayObject,_getMask)
 ASFUNCTIONBODY_ATOM(DisplayObject,_setMask)
 {
 	DisplayObject* th=asAtomHandler::as<DisplayObject>(obj);
-	assert_and_throw(argslen==1);
-	if(asAtomHandler::is<DisplayObject>(args[0]))
+	if(argslen && asAtomHandler::is<DisplayObject>(args[0]))
 	{
 		//We received a valid mask object
 		DisplayObject* newMask=asAtomHandler::as<DisplayObject>(args[0]);

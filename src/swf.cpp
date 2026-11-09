@@ -618,7 +618,10 @@ _NR<ASObject> SystemState::getParameters() const
 void SystemState::waitThreadpool()
 {
 	if(threadPool)
+	{
+		threadPool->forceStop();
 		threadPool->waitAll();
+	}
 }
 void SystemState::stopEngines()
 {

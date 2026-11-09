@@ -960,6 +960,8 @@ void Sound::setBytesLoaded(uint32_t b)
 
 void Sound::setSoundChannel(SoundChannel* channel)
 {
+	if (soundChannel == channel)
+		return;
 	if (soundChannel)
 		soundChannel->removeStoredMember();
 	soundChannel = channel;
@@ -1634,6 +1636,12 @@ void SoundChannel::playStreamFromSamples()
 void SoundChannel::jobFence()
 {
 	mutex.lock();
+	if (ACQUIRE_READ(terminated))
+	{
+		mutex.unlock();
+		return;
+	}
+
 	RELEASE_WRITE(stopped,true);
 	RELEASE_WRITE(terminated,true);
 	if (restartafterabort && !getSystemState()->isShuttingDown())

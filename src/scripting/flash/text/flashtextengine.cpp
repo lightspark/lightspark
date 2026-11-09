@@ -1119,6 +1119,7 @@ ASFUNCTIONBODY_ATOM(TextElement,_constructor)
 	asAtom txtAtom = asAtomHandler::fromStringID(BUILTIN_STRINGS::EMPTY);
 	ARG_CHECK(ARG_UNPACK (txtAtom, asAtomHandler::nullAtom)(th->elementFormat, NullRef));
 	th->text = txtAtom;
+	ASATOM_ADDSTOREDMEMBER(th->text);
 }
 ASFUNCTIONBODY_ATOM(TextElement, replaceText)
 {
@@ -1313,7 +1314,7 @@ ASFUNCTIONBODY_GETTER(TextLine, textBlock)
 ASFUNCTIONBODY_GETTER(TextLine, nextLine)
 ASFUNCTIONBODY_GETTER(TextLine, previousLine)
 ASFUNCTIONBODY_GETTER_SETTER(TextLine, validity)
-ASFUNCTIONBODY_GETTER_SETTER(TextLine, userData)
+ASFUNCTIONBODY_GETTER_SETTER_ATOMTYPE(TextLine, userData,asAtomHandler::nullAtom)
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, hasGraphicElement)
 ASFUNCTIONBODY_GETTER_NOT_IMPLEMENTED(TextLine, hasTabs)
 ASFUNCTIONBODY_GETTER(TextLine, rawTextLength)

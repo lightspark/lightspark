@@ -1423,6 +1423,11 @@ NetStream::~NetStream()
 {
 	if(tickStarted)
 		getSys()->removeJob(this);
+	if (streamDecoder)
+	{
+		delete streamDecoder;
+		streamDecoder = nullptr;
+	}
 	delete videoDecoder;
 	delete audioDecoder;
 	if (datagenerationfile)
@@ -2181,7 +2186,7 @@ void NetStream::execute()
 						framesdecoded = streamDecoder->videoDecoder->framesdecoded;
 						if(frameRate==0)
 						{
-							assert(streamDecoder->videoDecoder->frameRate);
+							//assert(streamDecoder->videoDecoder->frameRate);
 							frameRate=streamDecoder->videoDecoder->frameRate;
 						}
 						if (frameRate)
@@ -2230,6 +2235,27 @@ void NetStream::execute()
 				this->incRef();
 				getVm(getSystemState())->addEvent(_MR(this),
 								  _MR(Class<NetStatusEvent>::getInstanceS(getInstanceWorker(),"status", "NetStream.Buffer.Full")));
+			}
+			if (!audioStream && audioDecoder && audioDecoder->isValid())
+			{
+				if (streamDecoder->atEnd())
+				{
+					audioDecoder->setFlushing();
+					done = true;
+				}
+				// no audiostream available, consume data anyway
+				if (getSystemState()->getEngineData()->audio_useFloatSampleFormat())
+				{
+					float buf[512];
+					while (audioDecoder->hasDecodedFrames())
+						audioDecoder->copyFrameF32(buf,512);
+				}
+				else
+				{
+					int16_t buf[512];
+					while (audioDecoder->hasDecodedFrames())
+						audioDecoder->copyFrameS16(buf,512);
+				}
 			}
 			profile->accountTime(chronometer.checkpoint());
 			if(threadAborting)
@@ -2291,11 +2317,6 @@ void NetStream::execute()
 		if (audioStream)
 			getSys()->audioManager->removeStream(audioStream);
 		audioStream=nullptr;
-	}
-	if (streamDecoder)
-	{
-		delete streamDecoder;
-		streamDecoder = nullptr;
 	}
 	if (sbuf)
 		delete sbuf;

@@ -577,7 +577,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 		LOG(LOG_NOT_IMPLEMENTED, "BitmapData.copyPixels doesn't support alpha bitmap");
 
 	Bitmap* d = source->getRenderCallBitmap();
-	d->currentScrollRect = sourceRect->getRect();
+	if (sourceRect->getRect().Xmax > sourceRect->getRect().Xmin && sourceRect->getRect().Ymax > sourceRect->getRect().Ymin)
+		d->currentScrollRect = sourceRect->getRect();
 	MATRIX m;
 	m.translate(destPoint->getX()*TWIPS_FACTOR,destPoint->getY()*TWIPS_FACTOR);
 	if (mergeAlpha)

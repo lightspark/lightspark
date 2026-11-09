@@ -230,7 +230,10 @@ class TextElement: public ContentElement
 private:
 	void settext_cb(asAtom oldValue);
 public:
-	TextElement(ASWorker* wrk,Class_base* c): ContentElement(wrk,c) { subtype = SUBTYPE_TEXTELEMENT; }
+	TextElement(ASWorker* wrk,Class_base* c): ContentElement(wrk,c),text(asAtomHandler::nullAtom)
+	{
+		subtype = SUBTYPE_TEXTELEMENT;
+	}
 	static void sinit(Class_base* c);
 	void finalize() override;
 	bool destruct() override;

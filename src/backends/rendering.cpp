@@ -323,6 +323,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 	if (ACQUIRE_READ(renderToBitmapContainerNeeded))
 	{
 		mutexRenderToBitmapContainer.lock();
+
 		// swap currentBitmapContainerQueue to keep lock as short as possible
 		currentBitmapContainerQueue = 1-currentBitmapContainerQueue;
 		bool wait = ACQUIRE_READ(renderToBitmapContainerWait);
@@ -366,6 +367,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 			bmc->setModifiedTexture(false);
 			int w = bmc->getWidth();
 			int h = bmc->getHeight();
+
 			if (renderdata->readpixels)
 			{
 				assert(bmc->nanoVGImageHandle>=0);
@@ -430,6 +432,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 						// the texture to render to is used during rendering, so we create a new texture
 						// and delete the old one at the end
 						nanoVGoriginalImage = bmc->nanoVGImageHandle;
+						bmc->setModifiedTexture(false);
 						if (wasmodifiedTexture)
 						{
 							// TODO avoid copying the texture from gpu to main memory
@@ -446,7 +449,6 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 #endif
 							wasmodifiedTexture=false;
 						}
-						bmc->setModifiedTexture(false);
 						bmc->nanoVGImageHandle = nanoVGnewImage = nanoVGCreateImageFromData(w,h,bmc->getData(),engineData);
 						assert(nanoVGnewImage>=0);
 					}
@@ -575,6 +577,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				engineData->exec_glDeleteFramebuffers(1,&bmframebuffer);
 				engineData->exec_glDeleteRenderbuffers(1,&bmrenderbuffer);
 			}
+			bmc->incRef();
 			// destroy temporary bitmaps used for rendering
 			renderdata->mutexRenderCallBitmaps.lock();
 			while (!renderdata->rendercallBitmaps.empty())
@@ -588,6 +591,7 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				// signal to waiting worker thread that rendering is complete
 				bmc->renderevent.signal();
 			}
+			bmc->decRef();
 		}
 		if (!wait && ACQUIRE_READ(renderToBitmapContainerWait))
 		{
@@ -1982,7 +1986,7 @@ void RenderThread::readPixelsToBimapContainer(_NR<BitmapContainer> bm)
 		Locker l(bm->getRenderData()->mutexRenderCallBitmaps);
 		while (!bm->getRenderData()->rendercallBitmaps.empty())
 		{
-			(*bm->getRenderData()->rendercallBitmaps.begin())->resetRenderCall();
+			bm->getRenderData()->rendercallBitmaps.front()->resetRenderCall();
 			bm->getRenderData()->rendercallBitmaps.pop_front();
 		}
 		return;

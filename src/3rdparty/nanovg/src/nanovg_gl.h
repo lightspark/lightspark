@@ -740,7 +740,8 @@ static int glnvg__renderCreate(void* uptr)
 		"		if (texType == 1) {\n color = vec4(color.xyz*color.w,color.w);\n}\n"
 		"		if (texType == 2) {\n color = vec4(color.x);\n}\n"
 		"		// Apply color tint and alpha.\n"
-		"		color *= innerCol;\n"
+		"		color *= innerCol;\n" // innerColor contains multiply part of colortransform
+		"		color += outerCol;\n" // outerColor contains add part of colortransform
 		"		// Combine alpha\n"
 		"		color *= strokeAlpha * scissor;\n"
 		"		result = color;\n"

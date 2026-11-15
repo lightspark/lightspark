@@ -284,6 +284,11 @@ void nanoVGFillStyle(NVGcontext* nvgctxt, const FILLSTYLE& style, ColorTransform
 		ct.applyTransformation(color, r, g, b, a);
 		return nvgRGBAf(r, g, b, a);
 	};
+	auto applyColorTransformToPattern = [&](NVGpaint& pattern, ColorTransformBase& ct)
+	{
+		pattern.innerColor = nvgRGBAf(int(ct.redMultiplier*255.0f)/255.0f, int(ct.greenMultiplier*255.0f)/255.0f, int(ct.blueMultiplier*255.0f)/255.0f, int(ct.alphaMultiplier*255.0f)/255.0f);
+		pattern.outerColor = nvgRGBAf(ct.redOffset/255.0f, ct.greenOffset/255.0f, ct.blueOffset/255.0f,ct.alphaOffset/255.0f);
+	};
 
 	auto applyMatrixTransform = [&](NVGpaint& pattern, const MATRIX& m)
 	{
@@ -340,8 +345,7 @@ void nanoVGFillStyle(NVGcontext* nvgctxt, const FILLSTYLE& style, ColorTransform
 				1.0
 			);
 			applyMatrixTransform(pattern, m);
-			RGBA color(255, 255, 255, 255);
-			pattern.innerColor = pattern.outerColor = applyColorTransform(color, ct);
+			applyColorTransformToPattern(pattern,ct);
 			paintPattern(pattern);
 			break;
 		}

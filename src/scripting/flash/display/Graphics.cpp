@@ -628,13 +628,14 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 {
 	if (commands.isNull() || data.isNull())
 		return;
-
+	if (data->size() == 0)
+		return;
 	if (winding != "evenOdd")
 		LOG(LOG_NOT_IMPLEMENTED, "Only event-odd winding implemented in Graphics.drawPath");
 
 	asAtom zero = asAtomHandler::fromInt(0);
 
-	int k = 0;
+	uint32_t k = 0;
 	for (unsigned int i=0; i<commands->size(); i++)
 	{
 		asAtom c = commands->at(i);
@@ -642,6 +643,11 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 		{
 			case GRAPHICSPATH_COMMANDTYPE::MOVE_TO:
 			{
+				if (data->size() < k+2)
+				{
+					createError<ArgumentError>(getInstanceWorker(),kInvalidParamError);
+					return;
+				}
 				asAtom ax = data->at(k++, zero);
 				asAtom ay = data->at(k++, zero);
 				number_t x = asAtomHandler::toNumber(ax)*TWIPS_FACTOR;
@@ -654,6 +660,11 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 
 			case GRAPHICSPATH_COMMANDTYPE::LINE_TO:
 			{
+				if (data->size() < k+2)
+				{
+					createError<ArgumentError>(getInstanceWorker(),kInvalidParamError);
+					return;
+				}
 				asAtom ax = data->at(k++, zero);
 				asAtom ay = data->at(k++, zero);
 				number_t x = asAtomHandler::toNumber(ax)*TWIPS_FACTOR;
@@ -666,6 +677,11 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 
 			case GRAPHICSPATH_COMMANDTYPE::CURVE_TO:
 			{
+				if (data->size() < k+4)
+				{
+					createError<ArgumentError>(getInstanceWorker(),kInvalidParamError);
+					return;
+				}
 				asAtom acx = data->at(k++, zero);
 				asAtom acy = data->at(k++, zero);
 				number_t cx = asAtomHandler::toNumber(acx)*TWIPS_FACTOR;
@@ -684,6 +700,11 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 
 			case GRAPHICSPATH_COMMANDTYPE::WIDE_MOVE_TO:
 			{
+				if (data->size() < k+4)
+				{
+					createError<ArgumentError>(getInstanceWorker(),kInvalidParamError);
+					return;
+				}
 				k+=2;
 				asAtom ax = data->at(k++, zero);
 				asAtom ay = data->at(k++, zero);
@@ -697,6 +718,11 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 
 			case GRAPHICSPATH_COMMANDTYPE::WIDE_LINE_TO:
 			{
+				if (data->size() < k+4)
+				{
+					createError<ArgumentError>(getInstanceWorker(),kInvalidParamError);
+					return;
+				}
 				k+=2;
 				asAtom ax = data->at(k++, zero);
 				asAtom ay = data->at(k++, zero);
@@ -710,6 +736,11 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 
 			case GRAPHICSPATH_COMMANDTYPE::CUBIC_CURVE_TO:
 			{
+				if (data->size() < k+6)
+				{
+					createError<ArgumentError>(getInstanceWorker(),kInvalidParamError);
+					return;
+				}
 				asAtom ac1x = data->at(k++, zero);
 				asAtom ac1y = data->at(k++, zero);
 				asAtom ac2x = data->at(k++, zero);
@@ -733,6 +764,7 @@ void Graphics::pathToTokens(_NR<Vector> commands, _NR<Vector> data,
 			}
 
 			case GRAPHICSPATH_COMMANDTYPE::NO_OP:
+				break;
 			default:
 				LOG(LOG_NOT_IMPLEMENTED,"pathToTokens:"<<asAtomHandler::toInt(c));
 				break;
@@ -1178,6 +1210,8 @@ ASFUNCTIONBODY_ATOM(Graphics,drawGraphicsData)
 	_NR<Vector> graphicsData;
 	ARG_CHECK(ARG_UNPACK(graphicsData));
 
+	if (!th->tokens.filltokens)
+		th->tokens.filltokens = _MR(new tokenListRef());
 	for (unsigned int i=0; i<graphicsData->size(); i++)
 	{
 		IGraphicsData *graphElement = dynamic_cast<IGraphicsData *>(asAtomHandler::getObject(graphicsData->at(i)));

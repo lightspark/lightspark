@@ -86,6 +86,7 @@ void IntervalRunner::tick()
 	{
 		// clearInterval was called from inside the callback, so we delete ourselves after the callback is completed
 		sys->removeJob(this);
+		stopMe=true; // avoids deadlock if this job is timed again before it is remved
 	}
 }
 

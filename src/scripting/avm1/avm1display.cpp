@@ -1337,7 +1337,7 @@ void AVM1BitmapData::sinit(Class_base *c)
 	c->prototype->setDeclaredMethodByQName("copyPixels","",c->getSystemState()->getBuiltinFunction(copyPixels),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("dispose","",c->getSystemState()->getBuiltinFunction(dispose),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("draw","",c->getSystemState()->getBuiltinFunction(draw),NORMAL_METHOD,false);
-	c->prototype->setDeclaredMethodByQName("fillRect","",c->getSystemState()->getBuiltinFunction(fillRect),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("fillRect","",c->getSystemState()->getBuiltinFunction(AVM1fillRect),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("floodFill","",c->getSystemState()->getBuiltinFunction(floodFill),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("generateFilterRect","",c->getSystemState()->getBuiltinFunction(generateFilterRect),NORMAL_METHOD,false);
 	c->prototype->setDeclaredMethodByQName("getColorBoundsRect","",c->getSystemState()->getBuiltinFunction(getColorBoundsRect,2,Class<Rectangle>::getClassUninitialized(c->getSystemState())),NORMAL_METHOD,false);
@@ -1369,6 +1369,61 @@ ASFUNCTIONBODY_ATOM(AVM1BitmapData,loadBitmap)
 		ret = asAtomHandler::fromObjectNoPrimitive(tag->instance());
 	else
 		LOG(LOG_ERROR,"BitmapData.loadBitmap tag not found:"<<name);
+}
+
+ASFUNCTIONBODY_ATOM(AVM1BitmapData,AVM1fillRect)
+{
+	AVM1BitmapData* th=asAtomHandler::as<AVM1BitmapData>(obj);
+	asAtom rect = asAtomHandler::invalidAtom;
+	uint32_t color;
+	ARG_CHECK(ARG_UNPACK(rect)(color));
+
+	if(th->checkDisposed(ret))
+		return;
+	if (!asAtomHandler::isObject(rect))
+	{
+		createError<TypeError>(wrk,kNullPointerError, "rect");
+		return;
+	}
+	RECT rc;
+	ASObject* o = asAtomHandler::getObject(rect);
+	if (o->is<Rectangle>())
+		rc = o->as<Rectangle>()->getRect();
+	else
+	{
+		asAtom a = asAtomHandler::invalidAtom;
+		multiname m(nullptr);
+		m.isAttribute = false;
+		m.name_type=multiname::NAME_STRING;
+
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("x");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
+		if (asAtomHandler::isValid(a))
+			rc.Xmin= asAtomHandler::toInt(a);
+		ASATOM_DECREF(a);
+
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("y");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
+		if (asAtomHandler::isValid(a))
+			rc.Ymin= asAtomHandler::toInt(a);
+		ASATOM_DECREF(a);
+
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("width");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
+		if (asAtomHandler::isValid(a))
+			rc.Xmax= asAtomHandler::toInt(a)-rc.Xmin;
+		ASATOM_DECREF(a);
+		m.name_s_id=wrk->getSystemState()->getUniqueStringId("height");
+		a = asAtomHandler::invalidAtom;
+		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
+		if (asAtomHandler::isValid(a))
+			rc.Ymax= asAtomHandler::toInt(a)-rc.Ymin;
+		ASATOM_DECREF(a);
+	}
+	th->fillRectIntern(rc,color);
 }
 
 AVM1Bitmap::AVM1Bitmap(ASWorker* wrk, Class_base* c, LoaderInfo* li, istream* s, FILE_TYPE type):Bitmap(wrk,c,li,s,type)

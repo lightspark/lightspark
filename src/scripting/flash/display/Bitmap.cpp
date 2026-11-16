@@ -300,6 +300,13 @@ IDrawable *Bitmap::invalidate(bool smoothing)
 	return TokenContainer::invalidate(smoothing ? SMOOTH_MODE::SMOOTH_ANTIALIAS : SMOOTH_MODE::SMOOTH_NONE,false,*this->tokens);
 }
 
+void Bitmap::invalidateForRenderToBitmap(BitmapContainerRenderData* container, bool smoothing)
+{
+	if (bitmapcontainer)
+		bitmapcontainer->flushRenderCalls(getSystemState()->getRenderThread(),nullptr,true);
+	DisplayObject::invalidateForRenderToBitmap(container,smoothing);
+}
+
 void Bitmap::setupRenderCallBitmap(BitmapData* data)
 {
 	bitmapcontainer = data->getBitmapContainer();

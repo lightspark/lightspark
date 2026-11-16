@@ -180,6 +180,7 @@ public:
 	}
 	static void sinit(Class_base* c);
 	ASFUNCTION_ATOM(loadBitmap);
+	ASFUNCTION_ATOM(AVM1fillRect);
 };
 
 class AVM1Bitmap: public Bitmap

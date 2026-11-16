@@ -220,7 +220,7 @@ void GLRenderContext::setupRenderingState(float alpha, const ColorTransformBase&
 	}
 	//Set alpha
 	engineData->exec_glUniform1f(alphaUniform, alpha);
-	//Set colotransform
+	//Set colortransform
 	engineData->exec_glUniform4f(colortransMultiplyUniform, colortransform.redMultiplier,colortransform.greenMultiplier,colortransform.blueMultiplier,colortransform.alphaMultiplier);
 	engineData->exec_glUniform4f(colortransAddUniform, colortransform.redOffset/255.0,colortransform.greenOffset/255.0,colortransform.blueOffset/255.0,colortransform.alphaOffset/255.0);
 	// set mask drawing indicator

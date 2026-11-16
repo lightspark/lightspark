@@ -233,7 +233,7 @@ void nanoVGCreateImage(BitmapContainer* container, EngineData* engineData)
 {
 	NVGcontext* nvgctxt = engineData->nvgcontext;
 	if (nvgctxt)
-		container->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,container->getWidth(),container->getHeight(),NVG_IMAGE_GENERATE_MIPMAPS | NVG_IMAGE_PREMULTIPLIED,container->getData());
+		container->nanoVGImageHandle = nvgCreateImageRGBA(nvgctxt,container->getWidth(),container->getHeight(),NVG_IMAGE_GENERATE_MIPMAPS | NVG_IMAGE_PREMULTIPLIED,container->getOriginalData());
 }
 int nanoVGCreateImageFromData(int width,int height, uint8_t* data, EngineData* engineData)
 {
@@ -636,8 +636,8 @@ void CachedSurface::renderImpl(SystemState* sys, RenderContext& ctxt, RenderDisp
 				case BLENDMODE_INVERT:
 					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE_MINUS_DST_COLOR,NVG_ZERO);
 					break;
-				case BLENDMODE_INTERN_REPLACE: // ignored, only used for rendering to bitmap
-					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ONE_MINUS_SRC_ALPHA);
+				case BLENDMODE_INTERN_REPLACE:
+					nvgGlobalCompositeBlendFunc(nvgctxt,NVG_ONE,NVG_ZERO);
 					break;
 				default:
 					LOG(LOG_NOT_IMPLEMENTED,"renderTextured of nanoVG blend mode "<<(int)ctxt.transformStack().transform().blendmode);

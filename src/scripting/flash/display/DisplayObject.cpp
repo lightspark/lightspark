@@ -21,6 +21,7 @@
 #include "compat.h"
 #include "swf.h"
 #include "scripting/flash/display/DisplayObject.h"
+#include "backends/rendering.h"
 #include "backends/rendering_context.h"
 #include "backends/cachedsurface.h"
 #include "backends/input.h"
@@ -1371,12 +1372,7 @@ void DisplayObject::invalidateForRenderToBitmap(BitmapContainerRenderData* conta
 		else
 #endif
 		{
-			RefreshableSurface s;
-			this->incRef();
-			this->addStoredMember();
-			s.displayobject = this;
-			s.drawable = d;
-			container->surfacesToRefresh.push_back(s);
+			getSystemState()->getRenderThread()->addRefreshableSurface(d,this);
 		}
 	}
 }

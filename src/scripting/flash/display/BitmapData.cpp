@@ -45,24 +45,50 @@
 using namespace lightspark;
 using namespace std;
 
-BitmapData::BitmapData(ASWorker* wrk, Class_base* c):ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),needsupload(true),transparent(true)
+BitmapData::BitmapData(ASWorker* wrk, Class_base* c)
+	:ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA)
+	,pixels(_MR(new BitmapContainer(c->memoryAccount)))
+	,locked(0)
+	,needsupload(true)
+	,transparent(true)
+	,fromTag(false)
 {
 }
 
-BitmapData::BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b):ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(b),locked(0),needsupload(true),transparent(true)
+BitmapData::BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b)
+	:ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA)
+	,pixels(_MR(new BitmapContainer(c->memoryAccount)))
+	,locked(0)
+	,needsupload(true)
+	,transparent(true)
+	,fromTag(true)
 {
+	//TODO only clone BitmapContainer if it is modified by BitmapData
+	b->clone(pixels.getPtr());
 }
 
 BitmapData::BitmapData(ASWorker* wrk,Class_base* c, const BitmapData& other)
-  : ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(other.pixels),locked(other.locked),needsupload(other.needsupload),transparent(other.transparent)
+	:ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA)
+	,pixels(_MR(new BitmapContainer(c->memoryAccount)))
+	,locked(other.locked)
+	,needsupload(other.needsupload)
+	,transparent(other.transparent)
+	,fromTag(other.fromTag)
 {
+	if (other.pixels)
+		other.pixels->clone(pixels.getPtr());
 	traitsInitialized = other.traitsInitialized;
 	constructIndicator = other.constructIndicator;
 	constructorCallComplete = other.constructorCallComplete;
 }
 
 BitmapData::BitmapData(ASWorker* wrk,Class_base* c, uint32_t width, uint32_t height)
- : ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA),pixels(_MR(new BitmapContainer(c->memoryAccount))),locked(0),needsupload(true),transparent(true)
+	:ASObject(wrk,c,T_OBJECT,SUBTYPE_BITMAPDATA)
+	,pixels(_MR(new BitmapContainer(c->memoryAccount)))
+	,locked(0)
+	,needsupload(true)
+	,transparent(true)
+	,fromTag(false)
 {
 	if (width!=0 && height!=0)
 	{
@@ -260,11 +286,15 @@ ASFUNCTIONBODY_ATOM(BitmapData,_constructor)
 		}
 	}
 	th->transparent=transparent;
-	th->pixels->fromRawData(nullptr,width,height);
-	th->pixels->setNeedsClear(true);
-	RGBA color(c,alpha);
-	th->pixels->nanoVGImageBackgroundcolor=color;
-	th->drawDisplayObject(nullptr, MATRIX(),true, BLENDMODE_NORMAL ,nullptr,RECT(),false,&color);
+	if (!th->fromTag)
+	{
+		th->pixels->fromRawData(nullptr,width,height);
+		th->pixels->setModifiedData(false);
+		th->pixels->setModifiedTexture(true);
+		RGBA color(c,alpha);
+		th->pixels->nanoVGImageBackgroundcolor=color;
+		th->drawDisplayObject(nullptr, MATRIX(),true, BLENDMODE_NORMAL ,nullptr,RECT(),false,&color);
+	}
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,dispose)
@@ -297,6 +327,7 @@ void BitmapData::drawDisplayObject(DisplayObject* d
 	r.hasClipRect = !(clipRect.Xmin==0 && clipRect.Ymin==0 && clipRect.Xmax==0 && clipRect.Ymax==0);
 	r.clipRect=clipRect;
 	r.qualityfactor=qualityfactor;
+	r.readpixels=false;
 
 	if (fillcolor)
 	{
@@ -309,11 +340,11 @@ void BitmapData::drawDisplayObject(DisplayObject* d
 		r.needsfill = false;
 		r.needsclear = needsclear;
 	}
+	r.needscopy=needscopy;
 	if (d)
 		d->invalidateForRenderToBitmap(pixels->getRenderData(),smoothing);
 	if (d)
 		r.cachedsurface = d->getCachedSurface();
-	r.needscopy=needscopy;
 	pixels->addRenderCall(r);
 }
 
@@ -413,7 +444,6 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel)
 	int32_t x;
 	int32_t y;
 	ARG_CHECK(ARG_UNPACK(x)(y));
-	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	uint32_t pix=th->pixels->getPixel(x, y,false);
 	asAtomHandler::setUInt(ret,pix & 0xffffff);
 }
@@ -426,8 +456,6 @@ ASFUNCTIONBODY_ATOM(BitmapData,getPixel32)
 	int32_t x;
 	int32_t y;
 	ARG_CHECK(ARG_UNPACK(x)(y));
-
-	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	if (wrk->needsActionScript3())
 	{
 		uint32_t pix=th->pixels->getPixel(x, y,false);
@@ -449,8 +477,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixel)
 	int32_t y;
 	uint32_t color;
 	ARG_CHECK(ARG_UNPACK(x)(y)(color));
+	if (x < 0 || y < 0
+		|| x >= th->getWidth() || y >= th->getHeight())
+		return;
 
-	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	th->pixels->setPixel(x, y, color, false,false);
 	th->notifyUsers();
 }
@@ -464,8 +494,10 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixel32)
 	int32_t y;
 	uint32_t color;
 	ARG_CHECK(ARG_UNPACK(x)(y)(color));
+	if (x < 0 || y < 0
+		|| x >= th->getWidth() || y >= th->getHeight())
+		return;
 
-	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
 	th->pixels->setPixel(x, y, color, th->transparent,false);
 	th->notifyUsers();
 }
@@ -518,8 +550,16 @@ ASFUNCTIONBODY_ATOM(BitmapData,fillRect)
 		createError<TypeError>(wrk,kNullPointerError, "rect");
 		return;
 	}
-
-	if (th->transparent)
+	th->fillRectIntern(rect->getRect(),color);
+}
+void BitmapData::fillRectIntern(const RECT& rect,uint32_t color)
+{
+	if (rect.Xmax < rect.Xmin
+		|| rect.Ymax < rect.Ymin)
+		return;
+	RECT cliprect;
+	pixels->clipRect(rect,cliprect);
+	if (transparent)
 	{
 		//premultiply alpha
 		uint32_t res = 0;
@@ -534,12 +574,12 @@ ASFUNCTIONBODY_ATOM(BitmapData,fillRect)
 		}
 	}
 	MATRIX m;
-	RGBA c(color,th->transparent ? (color>>24)&0xff : 0xff);
-	if (rect->getRect().Xmin==0 && rect->getRect().Ymin==0 && rect->getRect().Xmax==th->getWidth() && rect->getRect().Ymax==th->getHeight())
-		th->drawDisplayObject(nullptr, m,true, BLENDMODE_NORMAL ,nullptr,RECT(),false,&c);
+	RGBA c(color,transparent ? (color>>24)&0xff : 0xff);
+	if (cliprect.Xmin==0 && cliprect.Ymin==0 && cliprect.Xmax==getWidth() && cliprect.Ymax==getHeight())
+		drawDisplayObject(nullptr, m,true, BLENDMODE_NORMAL ,nullptr,RECT(),false,&c);
 	else
-		th->drawDisplayObject(nullptr, m,true, BLENDMODE_NORMAL ,nullptr,rect->getRect(),false,&c);
-	th->notifyUsers();
+		drawDisplayObject(nullptr, m,true, BLENDMODE_NORMAL ,nullptr,cliprect,false,&c);
+	notifyUsers();
 }
 
 ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
@@ -581,11 +621,11 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyPixels)
 		d->currentScrollRect = sourceRect->getRect();
 	MATRIX m;
 	m.translate(destPoint->getX()*TWIPS_FACTOR,destPoint->getY()*TWIPS_FACTOR);
+	th->getBitmapContainer()->addRenderCallBitmap(th->getSystemState()->getRenderThread(),d);
 	if (mergeAlpha)
 		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,RECT(),source->getBitmapContainer()==th->getBitmapContainer(),nullptr,1,false);
 	else
 		th->drawDisplayObject(d, m,true,BLENDMODE_INTERN_REPLACE,nullptr,RECT(),source->getBitmapContainer()==th->getBitmapContainer(),nullptr,1,false);
-	th->getBitmapContainer()->addRenderCallBitmap(th->getSystemState()->getRenderThread(),d);
 
 	th->notifyUsers();
 }
@@ -866,8 +906,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,scroll)
 	{
 		Bitmap* d = th->getRenderCallBitmap();
 		d->currentScrollRect = RECT(-x,-x+copyWidth,-y,-y+copyHeight);
-		th->drawDisplayObject(d, MATRIX(),false,BLENDMODE_NORMAL,nullptr,RECT(),true);
 		th->pixels->addRenderCallBitmap(th->getSystemState()->getRenderThread(),d);
+		th->drawDisplayObject(d, MATRIX(),false,BLENDMODE_NORMAL,nullptr,RECT(),true);
 		th->notifyUsers();
 	}
 }
@@ -935,9 +975,6 @@ ASFUNCTIONBODY_ATOM(BitmapData,copyChannel)
 
 	if (regionWidth < 0 || regionHeight < 0)
 		return;
-	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
-	source->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
-
 	uint32_t constantChannelsMask = ~(0xFF << destShift);
 	for (int32_t y=0; y<regionHeight; y++)
 	{
@@ -1173,7 +1210,6 @@ ASFUNCTIONBODY_ATOM(BitmapData,setPixels)
 
 	RECT rect;
 	th->pixels->clipRect(inputRect->getRect(), rect);
-	th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread());
 
 	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
 	{
@@ -1298,33 +1334,14 @@ ASFUNCTIONBODY_ATOM(BitmapData,colorTransform)
 		}
 	}
 	th->pixels->clipRect(inrect, rect);
-	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
-
-	for (int32_t y=rect.Ymin; y<rect.Ymax; y++)
-	{
-		for (int32_t x=rect.Xmin; x<rect.Xmax; x++)
-		{
-			uint32_t pixel = th->pixels->getPixel(x, y);
-
-			int a, r, g, b;
-			a = ((pixel >> 24 )&0xff) * inputColorTransform->alphaMultiplier + inputColorTransform->alphaOffset;
-			if (a > 255) a = 255;
-			if (a < 0) a = 0;
-			r = ((pixel >> 16 )&0xff) * inputColorTransform->redMultiplier + inputColorTransform->redOffset;
-			if (r > 255) r = 255;
-			if (r < 0) r = 0;
-			g = ((pixel >> 8 )&0xff) * inputColorTransform->greenMultiplier + inputColorTransform->greenOffset;
-			if (g > 255) g = 255;
-			if (g < 0) g = 0;
-			b = ((pixel )&0xff) * inputColorTransform->blueMultiplier + inputColorTransform->blueOffset;
-			if (b > 255) b = 255;
-			if (b < 0) b = 0;
-
-			pixel = (a<<24) | (r<<16) | (g<<8) | b;
-
-			th->pixels->setPixel(x, y, pixel, th->transparent,false);
-		}
-	}
+	if (rect.Xmax == rect.Xmin
+		||rect.Ymax == rect.Ymin)
+		return;
+	Bitmap* d = th->getRenderCallBitmap();
+	d->currentScrollRect = rect;
+	MATRIX m;
+	th->getBitmapContainer()->addRenderCallBitmap(th->getSystemState()->getRenderThread(),d);
+	th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,inputColorTransform.getPtr(),RECT(),true);
 	th->notifyUsers();
 }
 ASFUNCTIONBODY_ATOM(BitmapData,compare)
@@ -1444,8 +1461,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,applyFilter)
 		d->currentScrollRect = sourceRect->getRect();
 		MATRIX m;
 		m.translate(destPoint->getX()*TWIPS_FACTOR,destPoint->getY()*TWIPS_FACTOR);
+		th->getBitmapContainer()->addRenderCallBitmap(th->getSystemState()->getRenderThread(),d);
 		th->drawDisplayObject(d, m,true,BLENDMODE_NORMAL,nullptr,RECT(),sourceBitmapData->getBitmapContainer()==th->getBitmapContainer());
-		th->getBitmapContainer()->flushRenderCalls(th->getSystemState()->getRenderThread(),d);
 		th->notifyUsers();
 	}
 }
@@ -1679,6 +1696,8 @@ ASFUNCTIONBODY_ATOM(BitmapData,pixelDissolve)
 		createError<TypeError>(wrk,kNullPointerError,"destPoint");
 		return;
 	}
+	if(sourceBitmapData->checkDisposed(ret))
+		return;
 
 	uint32_t seed = (uint32_t)randomSeed;
 	RECT rc = sourceRect->getRect();
@@ -1730,7 +1749,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,pixelDissolve)
 		w = th->pixels->getWidth()-destx-rc.Xmin;
 	if (h > th->pixels->getHeight()-desty-rc.Ymin)
 		h = th->pixels->getHeight()-desty-rc.Ymin;
-	th->pixels->flushRenderCalls(wrk->getSystemState()->getRenderThread());
+	uint8_t* d = th->pixels->getOriginalData();
 	for (int32_t i = 0; i < numPixels; i++)
 	{
 		int x = (((number_t)LehmerRandom(seed))/(number_t)UINT32_MAX)*w+destx;
@@ -1739,7 +1758,7 @@ ASFUNCTIONBODY_ATOM(BitmapData,pixelDissolve)
 		{
 			int x1=x;
 			int y1=y;
-			while (th->pixels->getPixel(x,y)==fillColor)
+			while (*(reinterpret_cast<const uint32_t *>(&d[y*th->pixels->getWidth()*4 + 4*x]))==fillColor)
 			{
 				// simple search for next unfilled position
 				x++;

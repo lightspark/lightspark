@@ -118,6 +118,7 @@ _CRTIMP char* __cdecl __MINGW_NOTHROW   _strdup (const char*) __MINGW_ATTRIB_MAL
 #define ACQUIRE_RELEASE_VARIABLE(t, x) std::atomic<t> x
 #define ACQUIRE_READ(x) x.load(std::memory_order_acquire)
 #define RELEASE_WRITE(x, v) x.store(v, std::memory_order_release)
+#define RELEASE_WRITE_PREV_VALUE(x, v) x.exchange(v)
 
 // alloc space on stack
 #define LS_STACKALLOC(t,c) (t*)alloca(sizeof(t)*(c))

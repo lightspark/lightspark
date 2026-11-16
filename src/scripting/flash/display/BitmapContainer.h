@@ -50,17 +50,18 @@ struct RenderDisplayObjectToBitmapContainer
 	bool needsfill:1;
 	bool needscopy:1;
 	bool needsclear:1;
+	bool readpixels:1;
 };
 
 struct BitmapContainerRenderData
 {
 	Mutex mutexRenderCallBitmaps;
 	std::list<ITextureUploadable*> uploads;
-	std::list<RefreshableSurface> surfacesToRefresh;
 	std::queue<RenderDisplayObjectToBitmapContainer> rendercalls;
 	std::list<Bitmap*> rendercallBitmaps;
-	bool readpixels:1;
 	bool needswait:1;
+	ACQUIRE_RELEASE_FLAG(hasRenderCalls);
+	BitmapContainerRenderData();
 };
 
 class BitmapFilter;
@@ -83,16 +84,18 @@ protected:
 	uint32_t *getDataNoBoundsChecking(int32_t x, int32_t y);
 	uint8_t* getCurrentData();
 	void checkModifiedTexture();
-	bool hasModifiedData;
-	bool hasModifiedTexture;
+	ACQUIRE_RELEASE_FLAG(hasModifiedData);
+	ACQUIRE_RELEASE_FLAG(hasModifiedTexture);
 	bool needsclear;
 	bool isfromtag;
 	ATOMIC_INT32(currentrenderdata);
+	Mutex rendercallmutex;
 	BitmapContainerRenderData renderdata[2];
 public:
 	BitmapContainerRenderData* getRenderData() { return &renderdata[currentrenderdata];}
 	BitmapContainerRenderData* swapRenderData()
 	{
+		Locker l(rendercallmutex);
 		currentrenderdata=1-currentrenderdata;
 		return &renderdata[1-currentrenderdata];
 	}
@@ -159,8 +162,8 @@ public:
 	void clone(BitmapContainer* c);
 	void setModifiedData(bool modified);
 	void setModifiedTexture(bool modified);
-	bool getModifiedData() const { return hasModifiedData; }
-	bool getModifiedTexture() const { return hasModifiedTexture; }
+	bool getModifiedData() const { return ACQUIRE_READ(hasModifiedData); }
+	bool getModifiedTexture() const { return ACQUIRE_READ(hasModifiedTexture); }
 	void setNeedsClear(bool clear) { needsclear=clear; }
 	bool getNeedsClear() const { return needsclear; }
 	void addRenderCall(RenderDisplayObjectToBitmapContainer& call);

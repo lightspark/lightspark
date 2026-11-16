@@ -38,11 +38,14 @@ private:
 	int locked;
 	bool needsupload;
 	bool transparent;
+	bool fromTag;
 	//Avoid cycles by not using automatic references
 	//Bitmap will take care of removing itself when needed
 	std::set<Bitmap*> users;
 	void notifyUsers();
+protected:
 	bool checkDisposed(asAtom& ret);
+	void fillRectIntern(const RECT& rect,uint32_t color);
 public:
 	BitmapData(ASWorker* wrk,Class_base* c);
 	BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b);

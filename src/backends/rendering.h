@@ -151,7 +151,6 @@ public:
 	void addRefreshableSurface(IDrawable* d,DisplayObject* o);
 	void signalSurfaceRefresh();
 
-	void readPixelsToBimapContainer(_NR<BitmapContainer> bm);
 	void addRenderCallBitmap(BitmapContainer* bm, Bitmap* tempBitmap);
 	void renderBitmap(BitmapContainer* bm, Bitmap* tempBitmap, bool wait);
 

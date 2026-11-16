@@ -19,6 +19,7 @@
 
 #include <stack>
 #include "scripting/flash/display/BitmapContainer.h"
+#include "scripting/flash/display/Bitmap.h"
 #include "scripting/flash/display/DisplayObject.h"
 #include "scripting/flash/filters/flashfilters.h"
 #include "scripting/flash/geom/flashgeom.h"
@@ -34,16 +35,26 @@ using namespace lightspark;
 
 extern void nanoVGDeleteImage(int image, EngineData* engineData);
 extern void nanoVGUpdateImage(int image, const unsigned char* data, EngineData* engineData);
-BitmapContainer::BitmapContainer(MemoryAccount* m, bool _isfromtag):stride(0),width(0),height(0),
-	data(reporter_allocator<uint8_t>(m)),
-	hasModifiedData(false),hasModifiedTexture(false),needsclear(true),
-	isfromtag(_isfromtag),
-	currentrenderdata(0),
-	renderevent(0),
-	nanoVGImageHandle(-1)
+extern void nanoVGCreateImage(BitmapContainer* container, EngineData* engineData);
+BitmapContainer::BitmapContainer(MemoryAccount* m, bool _isfromtag)
+	:stride(0)
+	,width(0)
+	,height(0)
+	,data(reporter_allocator<uint8_t>(m))
+	,hasModifiedData(false)
+	,hasModifiedTexture(false)
+	,needsclear(true)
+	,isfromtag(_isfromtag)
+	,currentrenderdata(0)
+	,renderevent(0)
+	,nanoVGImageHandle(-1)
 #ifdef ENABLE_CAIRO
 	,cachedCairoPattern(nullptr)
 #endif
+{
+}
+
+BitmapContainerRenderData::BitmapContainerRenderData():needswait(false),hasRenderCalls(false)
 {
 }
 
@@ -363,19 +374,13 @@ bool BitmapContainer::checkTextureForUpload(SystemState* sys)
 		return false;
 	}
 
-	if (nanoVGImageHandle >= 0)
+	if (ACQUIRE_READ(this->hasModifiedData))
 	{
-		if (this->hasModifiedData)
-		{
-			nanoVGUpdateImage(nanoVGImageHandle,currentcolortransform.isIdentity() ? getData() : getDataColorTransformed(),sys->getEngineData());
-			setModifiedData(false);
-		}
-	}
-	else
-	{
-		if (!bitmaptexture.isValid())
-			bitmaptexture=sys->getRenderThread()->allocateTexture(width, height, true,true);
-		sys->getRenderThread()->loadChunkBGRA(bitmaptexture,width, height,currentcolortransform.isIdentity() ? getData() : getDataColorTransformed());
+		if (nanoVGImageHandle >= 0)
+			nanoVGUpdateImage(nanoVGImageHandle,getOriginalData(),sys->getEngineData());
+		else
+			nanoVGCreateImage(this,sys->getEngineData());
+		setModifiedData(false);
 	}
 	return true;
 }
@@ -383,35 +388,41 @@ bool BitmapContainer::checkTextureForUpload(SystemState* sys)
 void BitmapContainer::clone(BitmapContainer* c)
 {
 	checkModifiedTexture();
-	memcpy (c->getOriginalData(),getOriginalData(),getWidth()*getHeight()*4);
+	c->data.resize(this->data.size());
+	if (!data.empty())
+		memcpy (c->getOriginalData(),getOriginalData(),getWidth()*getHeight()*4);
 	if (!currentcolortransform.isIdentity())
 	{
 		c->currentcolortransform = currentcolortransform;
 		memcpy (c->getDataColorTransformed(),getDataColorTransformed(),getWidth()*getHeight()*4);
 	}
+	c->width=width;
+	c->height=height;
 	c->setModifiedData(true);
 }
 
 void BitmapContainer::setModifiedData(bool modified)
 {
-	assert(!modified || !hasModifiedTexture);
-	hasModifiedData=modified;
+	assert(!modified || !ACQUIRE_READ(hasModifiedTexture));
+	RELEASE_WRITE(hasModifiedData,modified);
 }
 
 void BitmapContainer::setModifiedTexture(bool modified)
 {
-	assert(!modified ||!hasModifiedData);
-	hasModifiedTexture=modified;
+	assert(!modified ||!ACQUIRE_READ(hasModifiedData));
+	RELEASE_WRITE(hasModifiedTexture,modified);
 }
 
 void BitmapContainer::addRenderCall(RenderDisplayObjectToBitmapContainer& call)
 {
+	RELEASE_WRITE(getRenderData()->hasRenderCalls,true);
+	Locker l(rendercallmutex);
 	getRenderData()->rendercalls.push(call);
 }
 
 void BitmapContainer::flushRenderCalls(RenderThread* renderthread, Bitmap* tempBitmap, bool wait)
 {
-	if (getRenderData()->rendercalls.empty())
+	if (!ACQUIRE_READ(getRenderData()->hasRenderCalls))
 		return;
 	renderthread->renderBitmap(this,tempBitmap, wait);
 }
@@ -434,7 +445,6 @@ void BitmapContainer::setPixel(int32_t x, int32_t y, uint32_t color, bool setAlp
 {
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return;
-	checkModifiedTexture();
 	uint8_t* d = getCurrentData();
 	uint32_t *p=reinterpret_cast<uint32_t *>(&d[y*stride + 4*x]);
 	if (ispremultiplied || ((color&0xff000000) == 0xff000000))
@@ -484,14 +494,15 @@ uint32_t BitmapContainer::getPixel(int32_t x, int32_t y,bool premultiplied)
 	if (x < 0 || x >= width || y < 0 || y >= height)
 		return 0;
 	uint32_t p;
-	if (needsclear && !hasModifiedData)
+
+	if (needsclear && !ACQUIRE_READ(hasModifiedData))
 	{
 		p=nanoVGImageBackgroundcolor.Blue|nanoVGImageBackgroundcolor.Green<<8|nanoVGImageBackgroundcolor.Red<<16|nanoVGImageBackgroundcolor.Alpha<<24;
 	}
 	else
 	{
 		uint8_t* d=nullptr;
-		if (hasModifiedData)
+		if (getModifiedData() && !ACQUIRE_READ(getRenderData()->hasRenderCalls))
 		{
 			// avoid roundtrip to RenderThread as we already have the current data in memory
 			d = (uint8_t*)data.data();
@@ -666,16 +677,20 @@ inline uint32_t *BitmapContainer::getDataNoBoundsChecking(int32_t x, int32_t y)
 uint8_t* BitmapContainer::getCurrentData()
 {
 	checkModifiedTexture();
-	return currentcolortransform.isIdentity() ? (uint8_t*)data.data() : (uint8_t*)data_colortransformed.data();
+	return (uint8_t*)data.data();
 }
 
 void BitmapContainer::checkModifiedTexture()
 {
-	if (hasModifiedTexture)
+	if (getModifiedTexture() || ACQUIRE_READ(getRenderData()->hasRenderCalls))
 	{
+		rendercallmutex.lock();
+		RenderDisplayObjectToBitmapContainer call;
+		call.readpixels=true;
+		getRenderData()->rendercalls.push(call);
+		rendercallmutex.unlock();
+		flushRenderCalls(getSys()->getRenderThread(),nullptr,true);
 		setModifiedTexture(false);
-		this->incRef();
-		getSys()->getRenderThread()->readPixelsToBimapContainer(_MR(this));
 	}
 }
 
@@ -724,6 +739,8 @@ void BitmapContainer::floodFill(int32_t startX, int32_t startY, uint32_t color)
 		int t = r.x1;
 		// pointer to the current pixel, keep in sync with t
 		uint32_t *p = getDataNoBoundsChecking(r.x1, r.y);
+		if (needsclear && !ACQUIRE_READ(hasModifiedData))
+			*p=seedColor;
 
 		// extend left
 		while (t >= 0 && *p == seedColor)
@@ -762,6 +779,8 @@ void BitmapContainer::floodFill(int32_t startX, int32_t startY, uint32_t color)
 		do
 		{
 			p = getDataNoBoundsChecking(t, r.y);
+			if (needsclear && !ACQUIRE_READ(hasModifiedData))
+				*p=seedColor;
 			while (t < width && *p == seedColor)
 			{
 				*p = color;

@@ -6,6 +6,8 @@ on:
       - master
     tags-ignore:
       - '**'
+    paths-ignore:
+      - '**/*.md'
   pull_request:
     branches:
       - master

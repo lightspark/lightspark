@@ -610,6 +610,8 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 				}
 				if (screenshotneeded)
 					generateScreenshot();
+				if (comparisonneeded)
+					compareCurrentRenderState();
 				renderNeeded=false;
 				return true;
 			}
@@ -625,6 +627,9 @@ bool RenderThread::doRender(ThreadProfile* profile,Chronometer* chronometer)
 		renderSettingsPage();
 	if (screenshotneeded)
 		generateScreenshot();
+	if (comparisonneeded)
+		compareCurrentRenderState();
+
 	engineData->DoSwapBuffers();
 
 	if (Log::getLevel() >= LOG_INFO)
@@ -1008,6 +1013,58 @@ void RenderThread::generateScreenshot()
 	delete[] buf;
 	LOG(LOG_INFO,"screenshot generated:"<<name_used);
 	screenshotneeded=false;
+}
+tiny_string RenderThread::compareToPNG(const tiny_string& pngfile, int tolerance)
+{
+	pngfilepathforcomparison=pngfile;
+	pngcomparisontolerance=tolerance;
+	comparisonneeded = true;
+	event.signal();
+	while (comparisonneeded)
+		compat_msleep(10);
+	return pngcomparisonresult;
+}
+bool RenderThread::compareWithTolerance(uint8_t a, uint8_t e)
+{
+	if (a > e)
+		return (a-e) <= pngcomparisontolerance;
+	else
+		return (e-a) <= pngcomparisontolerance;
+}
+
+void RenderThread::compareCurrentRenderState()
+{
+	uint8_t buf[windowWidth*windowHeight*4];
+	engineData->exec_glReadPixels_GL_BGRA(windowWidth,windowHeight,buf);
+
+	std::ifstream stream(pngfilepathforcomparison);
+	BitmapContainer bmc(nullptr);
+	bmc.fromPNG(stream);
+	pngcomparisonresult="";
+	for (uint32_t y = 0; y < windowHeight; y++)
+	{
+		for (uint32_t x = 0; x < windowWidth; x++)
+		{
+			// pixels from framebuffer are upside down
+			uint32_t actual = *(uint32_t*)(&buf[((windowHeight-1-y)*windowWidth+x)*4]);
+			uint32_t expected = *(uint32_t*)(&bmc.getData()[(y*windowWidth+x)*4]);
+			uint8_t* a=(uint8_t*)&actual;
+			uint8_t* e=(uint8_t*)&expected;
+			if (compareWithTolerance(a[0],e[0])
+				&& compareWithTolerance(a[1],e[1])
+				&& compareWithTolerance(a[2],e[2])
+				&& compareWithTolerance(a[3],e[3])
+				)
+				continue;
+			char ret[1000];
+			sprintf(ret,"colors do not match at %i/%i (expected:%08x actual:%08x)",x,y,expected,actual);
+			pngcomparisonresult=ret;
+			break;
+		}
+		if (!pngcomparisonresult.empty())
+			break;
+	}
+	comparisonneeded=false;
 }
 
 void RenderThread::addRefreshableSurface(IDrawable* d, DisplayObject* o)

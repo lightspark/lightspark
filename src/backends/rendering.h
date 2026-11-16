@@ -117,6 +117,12 @@ private:
 		bool onlyTranslate;
 	};
 	std::list<DebugRect> debugRects;
+	tiny_string pngfilepathforcomparison;
+	int pngcomparisontolerance;
+	tiny_string pngcomparisonresult;
+	volatile bool comparisonneeded;
+	bool compareWithTolerance(uint8_t a, uint8_t e);
+	void compareCurrentRenderState();
 public:
 	Mutex mutexRendering;
 	volatile bool screenshotneeded;
@@ -141,6 +147,12 @@ public:
 	void deinit();
 	bool doRender(ThreadProfile *profile=nullptr, Chronometer *chronometer=nullptr);
 	void generateScreenshot();
+	/**
+	 * @brief compares the current rendered screen to the provided png file
+	 * @param pngfile full path of the file to compare to
+	 * @return empty string, if screen and file match, otherwise error message
+	 */
+	tiny_string compareToPNG(const tiny_string& pngfile, int tolerance);
 	bool isStarted() const { return status == STARTED; }
 	/**
 	 * @brief updates the arguments of a cachedSurface without recreating the texture

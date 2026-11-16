@@ -29,6 +29,8 @@
 #include <lightspark/scripting/flash/display/RootMovieClip.h>
 #include "scripting/flash/system/ApplicationDomain.h"
 #include "scripting/flash/system/ASWorker.h"
+#include "scripting/flash/display/BitmapContainer.h"
+#include "backends/rendering.h"
 #include <lightspark/swf.h>
 #include <lightspark/tiny_string.h>
 #include <lightspark/utils/visitor.h>
@@ -74,7 +76,8 @@ injector(_injector),
 eventLoop(this),
 remainingTicks(-1),
 currentTick(0),
-swfFile(test.swfPath.getStr())
+swfFile(test.swfPath.getStr()),
+needsrendering(test.type==Test::Type::Rendering)
 {
 	Log::setLogLevel(debug ? logLevel : LOG_LEVEL(-1));
 
@@ -167,7 +170,13 @@ TestStatus TestRunner::test()
 				trace.erase(it);
 		}
 		compareOutput(trace);
-
+		if (this->needsrendering)
+		{
+			if (options.imageComparisons.empty())
+				compareRenderingOutput(0);
+			else
+				compareRenderingOutput(options.imageComparisons.begin()->second.tolerance);
+		}
 		return TestStatus::Finished;
 	}
 	return TestStatus::Continue;
@@ -279,7 +288,21 @@ void TestRunner::compareOutput(const tiny_string& actualOutput)
 		return nullOpt;
 	});
 }
-
+void TestRunner::compareRenderingOutput(int tolerance)
+{
+	Path expectedImagePath = outputPath.getDir() / "output.expected.png";
+	if (!expectedImagePath.exists())
+	{
+		throw TestRunnerException("expected image doesn't exist");
+	}
+	tiny_string res = sys->getRenderThread()->compareToPNG(expectedImagePath.getStr(),tolerance);
+	if (!res.empty())
+	{
+		std::stringstream s;
+		s << "rendered image does not match expected image: " << res;
+		throw TestRunnerException(s.str());
+	}
+}
 void assertTextMatches(const tiny_string& actual, const tiny_string& expected)
 {
 	auto _actualLines = actual.split('\n');

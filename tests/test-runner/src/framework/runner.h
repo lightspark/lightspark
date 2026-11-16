@@ -2,6 +2,7 @@
     Lightspark, a free flash player implementation
 
     Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
+	Copyright (C) 2026  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -66,6 +67,7 @@ public:
 	size_t currentTick;
 	tiny_string clipboard;
 	std::ifstream swfFile;
+	bool needsrendering;
 
 	TestRunner(const Test& test, const InputInjector& _injector, bool debug, const LOG_LEVEL& logLevel);
 	~TestRunner();
@@ -77,6 +79,7 @@ public:
 	void tick();
 	TestStatus test();
 	void compareOutput(const tiny_string& actualOutput);
+	void compareRenderingOutput(int tolerance);
 };
 
 #endif /* FRAMEWORK_RUNNER_H */

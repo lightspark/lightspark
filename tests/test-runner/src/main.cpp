@@ -1,7 +1,8 @@
 /**************************************************************************
     Lightspark, a free flash player implementation
 
-    Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
+	Copyright (C) 2024-2025  mr b0nk 500 (b0nk@b0nk.xyz)
+	Copyright (C) 2026  Ludger Krämer <dbluelle@onlinehome.de>
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
@@ -195,10 +196,29 @@ Trial runTest(const Options& options, const Path& file, const tiny_string& name,
 		if (knownFailType == FailureType::Crash)
 			return Outcome(OutcomeType::Ignored);
 
-		// TODO: Support non-trace based tests.
-		if (test.type != Test::Type::Trace)
-			return Outcome(OutcomeType::Ignored);
-
+		switch (test.type)
+		{
+			case Test::Type::Trace:
+				break;
+			case Test::Type::Rendering:
+			{
+				Path expectedImagePath = test.outputPath.getDir() / "output.expected.png";
+				// TODO handle tests with multiple output images or maxOutliers option
+				if (!expectedImagePath.exists())
+					return Outcome(OutcomeType::Ignored);
+				if (test.options.imageComparisons.empty())
+					break;
+				if (test.options.imageComparisons.size()>1
+					||test.options.imageComparisons.begin()->second.maxOutliers
+					||test.options.imageComparisons.begin()->second.trigger.type != ImageTrigger::Type::LastFrame
+					)
+					return Outcome(OutcomeType::Ignored);
+				break;
+			}
+			default:
+				// TODO handle Video/Audio tests
+				return Outcome(OutcomeType::Ignored);
+		}
 		Optional<tiny_string> failReason;
 		auto runner = test.createTestRunner(options.debug, options.logLevel);
 		if (runner.sys->isOnError())

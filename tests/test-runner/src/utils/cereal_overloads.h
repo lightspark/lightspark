@@ -146,22 +146,10 @@ namespace cereal
 	template<class Archive, typename... Types>
 	void load(Archive& archive, std::variant<Types...>& variant)
 	{
-		TypeName type;
+		// Must own the name: a std::string_view would point into the temporary string that cereal destroys after load_minimal().
+		std::string type;
 		archive(CEREAL_NVP(type));
-#ifdef NDEBUG
 		loadVariant(archive, variant, fromVariantName(variant, type));
-#else
-		// HACK for some reason the string_view "type" is made invalid during fromVariantName() when in debug mode.
-		// There seems to be a problem with allocating memory on the heap (even malloc doesn't work),
-		// so we allocate memory on stack
-		// this does only work on gcc, not on llvm
-		auto i=type.size();
-		char* c=new char[i];
-		memcpy(c,type.data(),i);
-		std::string s(c,i);
-		loadVariant(archive, variant, fromVariantName(variant, s));
-		delete[] c;
-#endif
 	}
 
 	template<class Archive, typename T>

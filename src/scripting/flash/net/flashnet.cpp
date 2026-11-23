@@ -1235,8 +1235,17 @@ ASFUNCTIONBODY_ATOM(NetConnection,connect)
 	//When the URI is undefined the connect is successful (tested on Adobe player)
 	if(isNull || isRTMP)
 	{
-		th->incRef();
-		getVm(wrk->getSystemState())->addEvent(_MR(th), _MR(Class<NetStatusEvent>::getInstanceS(wrk,"status", "NetConnection.Connect.Success")));
+		_R<Event> e=_MR(Class<NetStatusEvent>::getInstanceS(wrk,"status", "NetConnection.Connect.Success"));
+		if(isVmThread())
+		{
+			ABCVm::publicHandleEvent(th,e);
+			th->_connected = true;
+		}
+		else
+		{
+			th->incRef();
+			getVm(wrk->getSystemState())->addEvent(_MR(th), e);
+		}
 	}
 }
 void NetConnection::afterExecution(_R<Event> ev)
@@ -1397,26 +1406,105 @@ void NetStreamAppendBytesAction::sinit(Class_base* c)
 }
 
 
-NetStream::NetStream(ASWorker* wrk, Class_base* c):EventDispatcher(wrk,c),tickStarted(false),paused(false),closed(true),
-	streamTime(0),frameRate(0),connection(),downloader(nullptr),videoDecoder(nullptr),
-	audioDecoder(nullptr),audioStream(nullptr),datagenerationfile(nullptr),datagenerationthreadstarted(false),client(NullRef),
-	oldVolume(-1.0),checkPolicyFile(false),rawAccessAllowed(false),framesdecoded(0),playbackBytesPerSecond(0),maxBytesPerSecond(0),datagenerationexpecttype(DATAGENERATION_HEADER),datagenerationbuffer(Class<ByteArray>::getInstanceS(wrk)),
-	streamDecoder(nullptr),
-	backBufferLength(0),backBufferTime(30),bufferLength(0),bufferTime(0.1),bufferTimeMax(0),
-	maxPauseBufferTime(0)
+NetStream::NetStream(ASWorker* wrk, Class_base* c)
+	:EventDispatcher(wrk,c)
+	,tickStarted(false)
+	,paused(false)
+	,closed(true)
+	,streamTime(0)
+	,frameRate(0)
+	,connection()
+	,downloader(nullptr)
+	,videoDecoder(nullptr)
+	,audioDecoder(nullptr)
+	,audioStream(nullptr)
+	,datagenerationfile(nullptr)
+	,datagenerationthreadstarted(false)
+	,client(asAtomHandler::invalidAtom)
+	,oldVolume(-1.0)
+	,checkPolicyFile(false)
+	,rawAccessAllowed(false)
+	,framesdecoded(0)
+	,playbackBytesPerSecond(0)
+	,maxBytesPerSecond(0)
+	,datagenerationexpecttype(DATAGENERATION_HEADER)
+	,datagenerationbuffer(Class<ByteArray>::getInstanceSNoArgs(wrk))
+	,streamDecoder(nullptr)
+	,backBufferLength(0)
+	,backBufferTime(30)
+	,bufferLength(0)
+	,bufferTime(0.1)
+	,bufferTimeMax(0)
+	,maxPauseBufferTime(0)
 {
 	subtype=SUBTYPE_NETSTREAM;
-	soundTransform = _MNR(Class<SoundTransform>::getInstanceS(wrk));
+	soundTransform = _MNR(Class<SoundTransform>::getInstanceSNoArgs(wrk));
 }
 
 void NetStream::finalize()
 {
 	EventDispatcher::finalize();
 	connection.reset();
-	client.reset();
+	ASATOM_REMOVESTOREDMEMBER(client);
+	client = asAtomHandler::invalidAtom;
 	if (streamDecoder)
 		delete streamDecoder;
 	streamDecoder=nullptr;
+}
+bool NetStream::destruct()
+{
+	tickStarted=false;
+	paused=false;
+	closed=true;
+	streamTime=0;
+	frameRate=0;
+	downloader=nullptr;
+	videoDecoder=nullptr;
+	audioDecoder=nullptr;
+	audioStream=nullptr;
+	datagenerationfile=nullptr;
+	datagenerationthreadstarted=false;
+	oldVolume=-1.0;
+	checkPolicyFile=false;
+	rawAccessAllowed=false;
+	framesdecoded=0;
+	playbackBytesPerSecond=0;
+	maxBytesPerSecond=0;
+	datagenerationexpecttype=DATAGENERATION_HEADER;
+	datagenerationbuffer=_MR(Class<ByteArray>::getInstanceSNoArgs(getInstanceWorker()));
+	backBufferLength=0;
+	backBufferTime=30;
+	bufferLength=0;
+	bufferTime=0.1;
+	bufferTimeMax=0;
+	maxPauseBufferTime=0;
+	connection.reset();
+	ASATOM_REMOVESTOREDMEMBER(client);
+	client = asAtomHandler::invalidAtom;
+	if (streamDecoder)
+		delete streamDecoder;
+	streamDecoder=nullptr;
+	if (datagenerationfile)
+		delete datagenerationfile;
+	datagenerationfile=nullptr;
+	return EventDispatcher::destruct();
+}
+bool NetStream::countCylicMemberReferences(garbagecollectorstate& gcstate)
+{
+	bool ret = EventDispatcher::countCylicMemberReferences(gcstate);
+	ASObject* c = asAtomHandler::getObject(client);
+	if (c)
+		ret = c->countAllCylicMemberReferences(gcstate) || ret;
+	return ret;
+}
+void NetStream::prepareShutdown()
+{
+	if (this->preparedforshutdown)
+		return;
+	EventDispatcher::prepareShutdown();
+	if (connection)
+			connection->prepareShutdown();
+	ASATOM_PREPARESHUTDOWN(client);
 }
 
 NetStream::~NetStream()
@@ -1437,6 +1525,7 @@ NetStream::~NetStream()
 void NetStream::sinit(Class_base* c)
 {
 	CLASS_SETUP(c, EventDispatcher, _constructor, CLASS_SEALED);
+	c->isReusable=true;
 	c->setVariableAtomByQName("CONNECT_TO_FMS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"connectToFMS"),DECLARED_TRAIT);
 	c->setVariableAtomByQName("DIRECT_CONNECTIONS",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),"directConnections"),DECLARED_TRAIT);
 	c->setDeclaredMethodByQName("play","",c->getSystemState()->getBuiltinFunction(play),NORMAL_METHOD,true);
@@ -1528,12 +1617,12 @@ ASFUNCTIONBODY_ATOM(NetStream,_getInfo)
 ASFUNCTIONBODY_ATOM(NetStream,_getClient)
 {
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
-	if(th->client.isNull())
+	if(asAtomHandler::isInvalid(th->client))
 		asAtomHandler::setUndefined(ret);
 	else
 	{
-		th->client->incRef();
-		ret = asAtomHandler::fromObject(th->client.getPtr());
+		ASATOM_INCREF(th->client);
+		ret = th->client;
 	}
 }
 
@@ -1548,8 +1637,9 @@ ASFUNCTIONBODY_ATOM(NetStream,_setClient)
 
 	NetStream* th=asAtomHandler::as<NetStream>(obj);
 
-	ASATOM_INCREF(args[0]);
-	th->client = _MR(asAtomHandler::toObject(args[0],wrk));
+	ASATOM_ADDSTOREDMEMBER(args[0]);
+	ASATOM_REMOVESTOREDMEMBER(th->client);
+	th->client = args[0];
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getCheckPolicyFile)
@@ -1595,7 +1685,9 @@ ASFUNCTIONBODY_ATOM(NetStream,_constructor)
 	if (netConnection.isNull())
 		netConnection = _MR(Class<NetConnection>::getInstanceSNoArgs(wrk));
 	th->connection=netConnection;
-	th->client = _NR<ASObject>(th);
+	th->incRef();
+	th->addStoredMember();
+	th->client = asAtomHandler::fromObjectNoPrimitive(th);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,play)
@@ -2347,34 +2439,30 @@ void NetStream::threadAbort()
 
 void NetStream::sendClientNotification(const tiny_string& name, std::list<asAtom>& arglist)
 {
-	if (client.isNull())
+	if (!asAtomHandler::isObject(client))
 		return;
 	multiname callbackName(nullptr);
 	callbackName.name_type=multiname::NAME_STRING;
 	callbackName.name_s_id=getSys()->getUniqueStringId(name);
 	callbackName.ns.push_back(nsNameAndKind(getSystemState(),"",NAMESPACE));
 	asAtom callback=asAtomHandler::invalidAtom;
-	client->getVariableByMultiname(callback,callbackName,GET_VARIABLE_OPTION::NONE,client->getInstanceWorker());
+	asAtomHandler::getObjectNoCheck(client)->getVariableByMultiname(callback,callbackName,GET_VARIABLE_OPTION::NONE,getInstanceWorker());
 	if(asAtomHandler::isFunction(callback))
 	{
 		asAtom callbackArgs[arglist.size()];
 		
-		ASObject* closure = asAtomHandler::getObject(asAtomHandler::getClosureAtom(callback,asAtomHandler::invalidAtom));
-		if (!closure)
-			closure = client.getPtr();
-		closure->incRef();
+		asAtom closure = asAtomHandler::getClosureAtom(callback,asAtomHandler::invalidAtom);
+		if (!asAtomHandler::isInvalid(closure))
+			closure = client;
+		ASATOM_INCREF(closure);
 		int i= 0;
 		for (auto it = arglist.cbegin();it != arglist.cend(); it++)
-		{
-			asAtom arg = (*it);
-			ASATOM_INCREF(arg);
-			callbackArgs[i++] = arg;
-		}
-		ASATOM_INCREF(callback);
+			callbackArgs[i++] = (*it);
 		_R<FunctionEvent> event(new (getSys()->unaccountedMemory) FunctionEvent(callback,
-				asAtomHandler::fromObject(closure), callbackArgs, arglist.size()));
+				closure, callbackArgs, arglist.size()));
 		getVm(getSystemState())->addEvent(NullRef,event);
 	}
+	ASATOM_DECREF(callback);
 }
 
 ASFUNCTIONBODY_ATOM(NetStream,_getBytesLoaded)

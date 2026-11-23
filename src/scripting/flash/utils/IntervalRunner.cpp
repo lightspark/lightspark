@@ -74,6 +74,8 @@ void IntervalRunner::tick()
 			_R<FunctionEvent> event(new (sys->unaccountedMemory) FunctionEvent(callback, obj, args, argslen));
 			getVm(sys)->addEvent(NullRef,event);
 			event->wait();
+			for(uint32_t i=0; i<argslen; i++)
+				ASATOM_DECREF(args[i]);
 		}
 		RELEASE_WRITE(running,false);
 	}

@@ -322,7 +322,7 @@ private:
 	void tick() override;
 	void tickFence() override;
 	bool isReady() const;
-	_NR<ASObject> client;
+	asAtom client;
 
 	ASPROPERTY_GETTER_SETTER(NullableRef<SoundTransform>,soundTransform);
 	number_t oldVolume;
@@ -351,6 +351,9 @@ public:
 	NetStream(ASWorker* wrk,Class_base* c);
 	~NetStream();
 	void finalize() override;
+	bool destruct() override;
+	bool countCylicMemberReferences(garbagecollectorstate& gcstate) override;
+	void prepareShutdown() override;
 	static void sinit(Class_base*);
 	ASFUNCTION_ATOM(_constructor);
 	ASFUNCTION_ATOM(play);

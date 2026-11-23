@@ -90,6 +90,7 @@ void ThreadPool::forceStop()
 
 			SDL_WaitThread(thread, nullptr);
 		}
+		additionalThreads.clear();
 	}
 }
 

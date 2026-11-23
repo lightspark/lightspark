@@ -214,6 +214,7 @@ bool BuiltinStreamDecoder::decodeNextFrame()
 						asAtom v=asAtomHandler::invalidAtom;
 						o->getVariableByMultiname(v,m,GET_VARIABLE_OPTION::NONE,o->getInstanceWorker());
 						frameRate = asAtomHandler::toNumber(v);
+						ASATOM_DECREF(v);
 						break;
 					}
 					it++;

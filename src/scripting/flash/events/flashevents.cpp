@@ -1016,8 +1016,9 @@ bool EventDispatcher::hasAnyEventListener()
 NetStatusEvent::NetStatusEvent(ASWorker* wrk, Class_base* c, const tiny_string& level, const tiny_string& code):Event(wrk,c, "netStatus"),statuscode(code)
 {
 	ASObject* info=new_asobject(wrk);
-	info->setVariableAtomByQName("level",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),level),DECLARED_TRAIT);
+	// variables need to be set in this order to match adobes behaviour
 	info->setVariableAtomByQName("code",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),code),DECLARED_TRAIT);
+	info->setVariableAtomByQName("level",nsNameAndKind(),asAtomHandler::fromString(c->getSystemState(),level),DECLARED_TRAIT);
 	setVariableByQName("info","",info, DECLARED_TRAIT);
 }
 
@@ -1329,6 +1330,7 @@ FunctionEvent::FunctionEvent(asAtom _f, asAtom _obj, asAtom* _args, uint32_t _nu
 	uint32_t i;
 	for(i=0; i<numArgs; i++)
 	{
+		ASATOM_INCREF(_args[i]);
 		args[i] = _args[i];
 	}
 }

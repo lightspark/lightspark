@@ -45,7 +45,7 @@ private:
 	void notifyUsers();
 protected:
 	bool checkDisposed(asAtom& ret);
-	void fillRectIntern(const RECT& rect,uint32_t color);
+	void fillRectIntern(RECT& rect, uint32_t color);
 public:
 	BitmapData(ASWorker* wrk,Class_base* c);
 	BitmapData(ASWorker* wrk,Class_base* c, _R<BitmapContainer> b);

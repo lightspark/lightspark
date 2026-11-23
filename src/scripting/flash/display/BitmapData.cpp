@@ -550,15 +550,24 @@ ASFUNCTIONBODY_ATOM(BitmapData,fillRect)
 		createError<TypeError>(wrk,kNullPointerError, "rect");
 		return;
 	}
-	th->fillRectIntern(rect->getRect(),color);
-}
-void BitmapData::fillRectIntern(const RECT& rect,uint32_t color)
-{
-	if (rect.Xmax < rect.Xmin
-		|| rect.Ymax < rect.Ymin)
-		return;
 	RECT cliprect;
-	pixels->clipRect(rect,cliprect);
+	th->pixels->clipRect(rect->getRect(),cliprect);
+	th->fillRectIntern(cliprect,color);
+}
+void BitmapData::fillRectIntern(RECT& rect,uint32_t color)
+{
+	if (rect.Xmin < 0)
+		rect.Xmin=0;
+	if (rect.Ymin < 0)
+		rect.Ymin=0;
+	if (rect.Xmin > rect.Xmax)
+		std::swap(rect.Xmin,rect.Xmax);
+	if (rect.Ymin > rect.Ymax)
+		std::swap(rect.Ymin,rect.Ymax);
+
+	if (rect.Xmax <= rect.Xmin
+		|| rect.Ymax <= rect.Ymin)
+		return;
 	if (transparent)
 	{
 		//premultiply alpha
@@ -575,10 +584,10 @@ void BitmapData::fillRectIntern(const RECT& rect,uint32_t color)
 	}
 	MATRIX m;
 	RGBA c(color,transparent ? (color>>24)&0xff : 0xff);
-	if (cliprect.Xmin==0 && cliprect.Ymin==0 && cliprect.Xmax==getWidth() && cliprect.Ymax==getHeight())
+	if (rect.Xmin==0 && rect.Ymin==0 && rect.Xmax==getWidth() && rect.Ymax==getHeight())
 		drawDisplayObject(nullptr, m,true, BLENDMODE_NORMAL ,nullptr,RECT(),false,&c);
 	else
-		drawDisplayObject(nullptr, m,true, BLENDMODE_NORMAL ,nullptr,cliprect,false,&c);
+		drawDisplayObject(nullptr, m,true, BLENDMODE_NORMAL ,nullptr,rect,false,&c);
 	notifyUsers();
 }
 

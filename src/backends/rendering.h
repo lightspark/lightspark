@@ -104,7 +104,7 @@ private:
 	ACQUIRE_RELEASE_FLAG(renderToBitmapContainerWait);
 	Mutex mutexRenderToBitmapContainer;
 	ATOMIC_INT32(currentBitmapContainerQueue);
-	std::queue<_NR<BitmapContainer>> bitmapContainerToRenderTo[2];
+	std::queue<std::queue<_NR<BitmapContainer>>> bitmapContainerToRenderTo;
 
 	std::list<uint32_t> texturesToDelete;
 

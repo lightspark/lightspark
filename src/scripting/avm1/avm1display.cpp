@@ -1386,6 +1386,7 @@ ASFUNCTIONBODY_ATOM(AVM1BitmapData,AVM1fillRect)
 		return;
 	}
 	RECT rc;
+	int32_t w=0,h=0;
 	ASObject* o = asAtomHandler::getObject(rect);
 	if (o->is<Rectangle>())
 		rc = o->as<Rectangle>()->getRect();
@@ -1414,14 +1415,16 @@ ASFUNCTIONBODY_ATOM(AVM1BitmapData,AVM1fillRect)
 		a = asAtomHandler::invalidAtom;
 		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isValid(a))
-			rc.Xmax= asAtomHandler::toInt(a)-rc.Xmin;
+			w = asAtomHandler::toInt(a);
 		ASATOM_DECREF(a);
 		m.name_s_id=wrk->getSystemState()->getUniqueStringId("height");
 		a = asAtomHandler::invalidAtom;
 		o->getVariableByMultiname(a,m,GET_VARIABLE_OPTION::NONE,wrk);
 		if (asAtomHandler::isValid(a))
-			rc.Ymax= asAtomHandler::toInt(a)-rc.Ymin;
+			h = asAtomHandler::toInt(a);
 		ASATOM_DECREF(a);
+		rc.Xmax=rc.Xmin+w;
+		rc.Ymax=rc.Ymin+h;
 	}
 	th->fillRectIntern(rc,color);
 }

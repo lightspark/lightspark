@@ -272,7 +272,8 @@ void AVM1LoadVars::AVM1HandleEvent(EventDispatcher *dispatcher, Event* e)
 void AVM1NetConnection::sinit(Class_base *c)
 {
 	CLASS_SETUP(c, ASObject, _constructor, CLASS_DYNAMIC_NOT_FINAL);
-	c->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,true);
+	c->prototype->setDeclaredMethodByQName("connect","",c->getSystemState()->getBuiltinFunction(connect),NORMAL_METHOD,false);
+	c->prototype->setDeclaredMethodByQName("isConnected","",c->getSystemState()->getBuiltinFunction(_getConnected),GETTER_METHOD,false);
 }
 
 void AVM1XMLSocket::sinit(Class_base* c)

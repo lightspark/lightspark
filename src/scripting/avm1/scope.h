@@ -20,25 +20,24 @@
 #ifndef SCRIPTING_AVM1_SCOPE_H
 #define SCRIPTING_AVM1_SCOPE_H 1
 
-#include "forwards/asobject.h"
-#include "forwards/scripting/flash/display/DisplayObject.h"
-#include "forwards/scripting/toplevel/Global.h"
-#include "forwards/swftypes.h"
-#include "smartrefs.h"
+#include "gc/ptr.h"
+#include "gc/resource.h"
 
 // Based on Ruffle's `avm1::scope::Scope`.
 
 namespace lightspark
 {
 
-union asAtom;
-struct garbagecollectorstate;
-struct multiname;
-class ASObject;
-class ASWorker;
-class DisplayObject;
-class Global;
-enum GET_VARIABLE_RESULT;
+class tiny_string;
+class GcContext;
+class AVM1Activation
+class AVM1CallableValue;
+class AVM1DisplayObject;
+class AVM1Global;
+class AVM1Object;
+class AVM1Value;
+template<typename T>
+class Impl;
 template<typename T>
 class Optional;
 
@@ -63,33 +62,40 @@ enum class AVM1ScopeClass
 };
 
 // The scope chain of an AVM1 context.
-class AVM1Scope : public RefCountable
+class AVM1Scope : public GcResource
 {
 private:
-	AVM1Scope* parent;
+	NullableGcPtr<AVM1Scope> parent;
 	AVM1ScopeClass _class;
-	asAtom values;
-	uint32_t storedmembercount;
-	bool gcchecked;
-	bool gcHasMember;
-	bool preparedforshutdown;
+	GcPtr<AVM1Object> values;
 public:
 	// Contructs/Creates an arbitrary scope.
 	AVM1Scope
 	(
-		AVM1Scope* _parent,
+		const GcContext& ctx,
+		const GcPtr<AVM1Scope>& parent,
 		const AVM1ScopeClass& type,
-		asAtom _values
+		const GcPtr<AVM1Object>& values
+	);
+	AVM1Scope
+	(
+		const GcPtr<AVM1Scope>& parent,
+		const AVM1ScopeClass& type,
+		const GcPtr<AVM1Object>& values
 	);
 
 	// Constructs a global scope (A parentless scope).
-	AVM1Scope(Global* globals);
+	AVM1Scope(const GcPtr<AVM1Global>& globals);
 
 	// Constructs a target/timeline scope.
-	AVM1Scope(AVM1Scope* _parent, DisplayObject* clip);
+	AVM1Scope
+	(
+		const GcPtr<AVM1Scope> parent,
+		const GcPtr<AVM1DisplayObject>& clip
+	);
 
 	// Constructs a child/local scope of another scope.
-	AVM1Scope(AVM1Scope* _parent, ASWorker* wrk);
+	AVM1Scope(const GcPtr<AVM1Scope>& parent);
 
 	// Constructs a `with` scope, used as the scope in a `with` block.
 	//
@@ -97,8 +103,8 @@ public:
 	// unqualified references will attempt to resolve that object first.
 	AVM1Scope
 	(
-		AVM1Scope* parent,
-		asAtom withObj
+		const GcPtr<AVM1Scope>& parent,
+		const GcPtr<AVM1Object>& withObj
 	) : AVM1Scope(parent, AVM1ScopeClass::With, withObj) {}
 
 	AVM1Scope(const AVM1Scope& other) : AVM1Scope
@@ -118,18 +124,16 @@ public:
 		return *this;
 	}
 
-	~AVM1Scope();
-
 	// Replaces the target/timeline scope with another object.
-	void setTargetScope(DisplayObject* clip);
+	void setTargetScope(const GcPtr<AVM1DisplayObject>& clip);
 
 	// Returns the parent scope.
-	AVM1Scope* getParentScope() const { return parent; }
+	const NullableGcPtr<AVM1Scope>& getParentScope() const { return parent; }
 
 	// Returns the current local scope object.
-	asAtom getLocals() const { return values; }
-	const ASObject* getLocalsPtr() const { return asAtomHandler::getObject(values); }
-	ASObject* getLocalsPtr() { return asAtomHandler::getObject(values); }
+	const GcPtr<AVM1Object>& getLocals() const { return values; }
+	const AVM1Object* getLocalsPtr() const { return values.getPtr(); }
+	AVM1Object* getLocalsPtr() { return values.getPtr(); }
 
 	// Returns the class type.
 	AVM1ScopeClass getClass() const { return _class; }
@@ -142,42 +146,38 @@ public:
 	template<typename F>
 	void forEachScope(F&& callback) const
 	{
-		if (callback(*this) && parent)
+		if (callback(*this) && !parent.isNull())
 			parent->forEachScope(callback);
 	}
 
 	template<typename F>
 	void forEachScope(F&& callback)
 	{
-		if (callback(*this) && parent)
+		if (callback(*this) && !parent.isNull())
 			parent->forEachScope(callback);
 	}
 
 	// Gets/Resolves a specific variable on the scope chain.
 	//
 	// Since scopes are just object chains, the same rules for
-	// `ASObject::AVM1getVariableByMultiname` still apply here.
-	asAtom getVariableByMultiname
+	// `AVM1Object::getProp()` still apply here.
+	Impl<AVM1CallableValue> getVar
 	(
-		DisplayObject* baseClip,
-		const multiname& name,
-		const GET_VARIABLE_OPTION& options,
-		ASWorker* wrk
-	)
+		AVM1Activation& act,
+		const tiny_string& name
+	) const
 	{
-		return resolveRecursiveByMultiname(baseClip, name, options, wrk, true);
+		return resolveRecursive(act, name, true);
 	}
 
 	// Recursively resolve a variable on the scope chain.
-	// See `AVM1Scope::getVariableByMultiname` for details.
-	asAtom resolveRecursiveByMultiname
+	// See `AVM1Scope::getVar()` for details.
+	Impl<AVM1CallableValue> resolveRecursive
 	(
-		DisplayObject* baseClip,
-		const multiname& name,
-		const GET_VARIABLE_OPTION& options,
-		ASWorker* wrk,
+		AVM1Activation& act,
+		const tiny_string& name,
 		bool isTopLevel
-	);
+	) const;
 
 	// Sets a specific variable on the scope chain.
 	//
@@ -187,12 +187,11 @@ public:
 	// `MovieClip` timeline the code is executing in.
 	// If no variable is found, it'll be created in the current
 	// target scope.
-	bool setVariableByMultiname
+	void setVar
 	(
-		multiname& name,
-		asAtom& value,
-		const CONST_ALLOWED_FLAG& allowConst,
-		ASWorker* wrk
+		AVM1Activation& act,
+		const tiny_string& name,
+		const AVM1Value& value
 	);
 
 	// Defines a named local variable on the scope.
@@ -201,12 +200,11 @@ public:
 	// Otherwise, the existing variable will be set to `value`, which
 	// doesn't traverse the scope chain. Any variables that have the same
 	// name, but are deeper in the chain get shadowed.
-	bool defineLocalByMultiname
+	void defineLocal
 	(
-		multiname& name,
-		asAtom& value,
-		const CONST_ALLOWED_FLAG& allowConst,
-		ASWorker* wrk
+		AVM1Activation& act,
+		const tiny_string& name,
+		const AVM1Value& value
 	);
 
 	// Creates a local variable on the activation.
@@ -214,38 +212,13 @@ public:
 	// This inserts the value as a stored variable on the local
 	// scope. If the variable already exists, it'll be forcefully
 	// overwritten. Used internally for initializing objects.
-	bool forceDefineLocalByMultiname
-	(
-		multiname& name,
-		asAtom& value,
-		const CONST_ALLOWED_FLAG& allowConst,
-		ASWorker* wrk
-	);
-
-	bool forceDefineLocal
-	(
-		const tiny_string& name,
-		asAtom& value,
-		const CONST_ALLOWED_FLAG& allowConst,
-		ASWorker* wrk
-	);
-
-	bool forceDefineLocal
-	(
-		uint32_t nameID,
-		asAtom& value,
-		const CONST_ALLOWED_FLAG& allowConst,
-		ASWorker* wrk
-	);
-	void addStoredMember();
-	void removeStoredMember();
+	void forceDefineLocal(const tiny_string& name, const AVM1Value& value);
+	#ifdef USE_STRING_ID
+	void forceDefineLocal(uint32_t nameID, const AVM1Value& value);
+	#endif
 
 	// Deletes a variable from the scope.
-	bool deleteVariableByMultiname(const multiname& name, ASWorker* wrk);
-
-	bool countAllCyclicMemberReferences(garbagecollectorstate& gcstate, bool inStack=false);
-	void gcCounterReset();
-	void prepareShutdown();
+	bool deleteVar(AVM1Activation& act, const tiny_string& name);
 };
 
 }
